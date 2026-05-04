@@ -249,7 +249,7 @@ function TokenProfileList() {
         <>
             <Widget
                 title="List of Token Profiles"
-                busy={isBusy}
+                busy={isBusy && !(isFetching && tokenProfiles.length === 0)}
                 widgetLockName={LockWidgetNameEnum.ListOfTokenProfiles}
                 widgetButtons={buttons}
                 titleSize="large"
@@ -262,6 +262,7 @@ function TokenProfileList() {
                     canSearch={true}
                     hasCheckboxes={true}
                     hasPagination={true}
+                    isLoading={isFetching && tokenProfiles.length === 0}
                 />
             </Widget>
 

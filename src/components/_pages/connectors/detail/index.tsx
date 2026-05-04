@@ -26,6 +26,7 @@ import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import ConnectorForm from '../form';
 import FunctionGroupDetailsV1 from './FunctionGroupDetailsV1';
 import SupportedInterfacesV2 from './SupportedInterfacesV2';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 function getHealthStatusIcon(status: string): { Icon: typeof CircleCheck; className: string } {
     if (status === HealthStatus.Up) {
@@ -375,6 +376,10 @@ export default function ConnectorDetail() {
 
         return data;
     }, [health, renderStatusBadge]);
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={4} />;
+    }
 
     const healthStatus = health?.status?.toUpperCase?.() ?? HealthStatus.Unknown;
     const { Icon: HealthIcon, className: healthIconClassName } = getHealthStatusIcon(healthStatus);

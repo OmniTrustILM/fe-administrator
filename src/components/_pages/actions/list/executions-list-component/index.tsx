@@ -137,7 +137,7 @@ const ExecutionsList = () => {
                 titleSize="large"
                 title="Executions"
                 refreshAction={getFreshListActionGroups}
-                busy={isBusy}
+                busy={isBusy && !(isFetchingList && executions.length === 0)}
                 widgetButtons={buttons}
                 widgetInfoCard={{
                     title: 'Information',
@@ -158,6 +158,7 @@ const ExecutionsList = () => {
                     disablePaginationControls={isBusy}
                     disableSelectionControls={isBusy}
                     disableSearchControls={isBusy}
+                    isLoading={isFetchingList && executions.length === 0}
                 />
             </Widget>
 

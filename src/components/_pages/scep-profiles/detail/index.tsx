@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import AttributeViewer from 'components/Attributes/AttributeViewer';
 import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
@@ -351,6 +352,10 @@ export default function ScepProfileDetail() {
             },
         ];
     }, [scepProfile, ownerName, groupNames]);
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
+    }
 
     return (
         <div>

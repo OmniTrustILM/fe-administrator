@@ -18,6 +18,7 @@ import { createWidgetDetailHeaders } from 'utils/widget';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 function CredentialDetail() {
     const dispatch = useDispatch();
@@ -135,6 +136,10 @@ function CredentialDetail() {
                   ],
         [credential],
     );
+
+    if (isFetching) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
+    }
 
     return (
         <div>

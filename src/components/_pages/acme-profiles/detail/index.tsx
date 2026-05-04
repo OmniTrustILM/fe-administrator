@@ -21,6 +21,7 @@ import { actions as userAction, selectors as userSelectors } from 'ducks/users';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 export default function AdministratorDetail() {
     const dispatch = useDispatch();
@@ -327,6 +328,10 @@ export default function AdministratorDetail() {
             },
         ];
     }, [acmeProfile, ownerName, groupNames]);
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
+    }
 
     return (
         <div>

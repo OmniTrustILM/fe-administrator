@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import AttributeViewer from 'components/Attributes/AttributeViewer';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
@@ -100,6 +101,10 @@ function VaultDetail() {
                 : [],
         [vault],
     );
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={3} />;
+    }
 
     return (
         <div>

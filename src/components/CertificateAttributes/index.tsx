@@ -6,9 +6,10 @@ import { dateFormatter } from 'utils/dateUtil';
 interface Props {
     certificate?: CertificateDetailResponseModel;
     csr?: boolean;
+    isLoading?: boolean;
 }
 
-function CertificateAttributes({ certificate, csr = false }: Props) {
+function CertificateAttributes({ certificate, csr = false, isLoading = false }: Props) {
     const detailHeaders: TableHeader[] = useMemo(
         () => [
             {
@@ -58,6 +59,10 @@ function CertificateAttributes({ certificate, csr = false }: Props) {
         }
         return result;
     }, [certificate, csr]);
+
+    if (isLoading) {
+        return <CustomTable headers={detailHeaders} data={[]} isLoading />;
+    }
 
     return (
         <>

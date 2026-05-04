@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import CertificateSettings from 'components/_pages/platform-settings/certificates/CertificateSettings';
 import UtilsSettings from 'components/_pages/platform-settings/utils/UtilsSettings';
 import TabLayout from 'components/Layout/TabLayout';
@@ -11,12 +12,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import Dialog from 'components/Dialog';
 import PlatformSettingsForm from '../form';
-
-// import Container from 'components/Container';
-// import Breadcrumb from 'components/Breadcrumb';
-
-// import Container from 'components/Container';
-// import Breadcrumb from 'components/Breadcrumb';
 
 export default function PlatformSettingsDetail() {
     const dispatch = useDispatch();
@@ -60,11 +55,14 @@ export default function PlatformSettingsDetail() {
         [onEditClick],
     );
 
+    if (isFetchingPlatform) {
+        return <DetailPageSkeleton layout="tabs" tabCount={2} />;
+    }
+
     return (
         <div>
             <Widget
                 title="Platform Settings"
-                busy={isFetchingPlatform}
                 widgetLockName={LockWidgetNameEnum.PlatformSettings}
                 widgetButtons={buttons}
                 titleSize="large"
@@ -72,6 +70,7 @@ export default function PlatformSettingsDetail() {
             >
                 <TabLayout
                     noBorder
+                    isLoading={isFetchingPlatform}
                     tabs={[
                         {
                             title: 'Utils',

@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { of } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
+import { catchError, filter, map, mergeMap, startWith, switchMap } from 'rxjs/operators';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { ConnectorVersion } from 'types/openapi';
 import { extractError } from 'utils/net';
@@ -59,6 +59,7 @@ const listConnectors: AppEpic = (action$, state, deps) => {
                             userInterfaceActions.insertWidgetLock(error, LockWidgetNameEnum.ConnectorStore),
                         ),
                     ),
+                    startWith(pagingActions.list(EntityType.CONNECTOR)),
                 );
         }),
     );

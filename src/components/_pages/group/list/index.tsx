@@ -134,7 +134,7 @@ export default function GroupList() {
         <>
             <Widget
                 title="List of Groups"
-                busy={isBusy}
+                busy={isBusy && !(isFetching && groups.length === 0)}
                 widgetLockName={LockWidgetNameEnum.ListOfGroups}
                 widgetButtons={buttons}
                 titleSize="large"
@@ -147,6 +147,7 @@ export default function GroupList() {
                     canSearch
                     hasCheckboxes
                     hasPagination
+                    isLoading={isFetching && groups.length === 0}
                 />
             </Widget>
 

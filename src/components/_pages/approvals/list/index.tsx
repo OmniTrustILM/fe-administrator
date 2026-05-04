@@ -215,7 +215,7 @@ export default function ApprovalsList() {
                         content: (
                             <Widget
                                 title="My Approvals"
-                                busy={isBusy}
+                                busy={isBusy && !(isFetching && userApprovals.length === 0)}
                                 widgetButtons={buttons}
                                 titleSize="large"
                                 refreshAction={listUserApprovals}
@@ -240,6 +240,7 @@ export default function ApprovalsList() {
                                         totalPages: userApprovalsTotalItems ? Math.ceil(userApprovalsTotalItems / pageSize) : 0,
                                         page: pageNumber,
                                     }}
+                                    isLoading={isFetching && userApprovals.length === 0}
                                 />
                             </Widget>
                         ),
@@ -254,7 +255,7 @@ export default function ApprovalsList() {
                         content: (
                             <Widget
                                 title="List of Approvals"
-                                busy={isBusy}
+                                busy={isBusy && !(isFetching && approvals.length === 0)}
                                 widgetButtons={buttons}
                                 widgetLockName={LockWidgetNameEnum.ListOfApprovals}
                                 titleSize="large"
@@ -280,6 +281,7 @@ export default function ApprovalsList() {
                                         totalPages: approvalsTotalItems ? Math.ceil(approvalsTotalItems / pageSize) : 0,
                                         page: pageNumber,
                                     }}
+                                    isLoading={isFetching && approvals.length === 0}
                                 />
                             </Widget>
                         ),

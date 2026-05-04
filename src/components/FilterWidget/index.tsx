@@ -92,6 +92,46 @@ interface Props {
     filterGridCols?: 2 | 4;
 }
 
+export function FilterWidgetSkeleton({
+    title = '',
+    filterGridCols = 4,
+    dataTestId,
+    hasExtraFilter = false,
+}: {
+    title?: string;
+    filterGridCols?: 2 | 4;
+    dataTestId?: string;
+    hasExtraFilter?: boolean;
+}) {
+    const colCount = filterGridCols === 2 ? 2 : 4;
+    return (
+        <Widget title={title} titleSize="large" dataTestId={dataTestId}>
+            <div className="animate-pulse">
+                <div className="flex flex-row gap-2 mb-4 items-end">
+                    <div className={`grid w-full ${filterGridCols === 2 ? 'grid-cols-2 gap-4' : 'grid-cols-4 gap-2'}`}>
+                        {Array.from({ length: colCount }, (_, i) => (
+                            <div key={i} className="flex flex-col gap-2">
+                                <div className="h-4 w-24 rounded bg-gray-200 dark:bg-neutral-700 mb-1" />
+                                <div className="h-[46px] w-full rounded bg-gray-200 dark:bg-neutral-700" />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="h-[46px] min-w-[62px] rounded bg-gray-200 dark:bg-neutral-700" />
+                </div>
+                {hasExtraFilter && (
+                    <>
+                        <div className="border-t border-gray-200 mt-8 mb-4" />
+                        <div className="flex items-center gap-3">
+                            <div className="h-4 w-28 rounded bg-gray-200 dark:bg-neutral-700" />
+                            <div className="h-7 w-13 rounded-full bg-gray-200 dark:bg-neutral-700" />
+                        </div>
+                    </>
+                )}
+            </div>
+        </Widget>
+    );
+}
+
 export default function FilterWidget({
     onFilterUpdate,
     title,
@@ -593,6 +633,10 @@ export default function FilterWidget({
         if (field?.type === FilterFieldType.Boolean) return `'${booleanOptions.find((b) => !!f.value === b.value)?.label}'`;
         if (Array.isArray(f.value)) return `'${f.value.map((v) => mapArrayValue(v)).join(' OR ')}'`;
         return `'${mapValue()}'`;
+    }
+
+    if (isFetchingAvailableFilters && availableFilters.length === 0) {
+        return <FilterWidgetSkeleton title={title} filterGridCols={filterGridCols} hasExtraFilter={!!extraFilterComponent} />;
     }
 
     return (

@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
@@ -366,6 +367,10 @@ function VaultProfileDetail() {
                 : [],
         [profile],
     );
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
+    }
 
     return (
         <div>

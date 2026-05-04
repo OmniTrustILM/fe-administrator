@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
@@ -555,6 +556,10 @@ function SecretDetail() {
             },
         ];
     }, [secret, vaultProfiles]);
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="tabs" tabCount={5} />;
+    }
 
     return (
         <div>

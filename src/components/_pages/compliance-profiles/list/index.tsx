@@ -189,7 +189,7 @@ export default function AdministratorsList() {
         <Container>
             <Widget
                 title="List of Compliance Profiles"
-                busy={isBusy}
+                busy={isBusy && !(isFetching && complianceProfiles.length === 0)}
                 widgetLockName={LockWidgetNameEnum.ListOfComplianceProfiles}
                 widgetButtons={buttons}
                 titleSize="large"
@@ -203,6 +203,7 @@ export default function AdministratorsList() {
                     canSearch={true}
                     hasCheckboxes={true}
                     hasPagination={true}
+                    isLoading={isFetching && complianceProfiles.length === 0}
                 />
             </Widget>
 

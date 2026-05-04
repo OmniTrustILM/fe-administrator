@@ -183,7 +183,7 @@ const TriggerList = () => {
                 titleSize="large"
                 title="Triggers"
                 refreshAction={getFreshList}
-                busy={isBusy}
+                busy={isBusy && !(isFetchingList && triggers.length === 0)}
                 widgetButtons={buttons}
                 widgetInfoCard={{
                     title: 'Information',
@@ -203,6 +203,7 @@ const TriggerList = () => {
                     disablePaginationControls={isBusy}
                     disableSelectionControls={isBusy}
                     disableSearchControls={isBusy}
+                    isLoading={isFetchingList && triggers.length === 0}
                 />
             </Widget>
 

@@ -1,5 +1,6 @@
 import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE } from 'components/Attributes/AttributeViewer';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import Dialog from 'components/Dialog';
 
 import Widget from 'components/Widget';
@@ -169,6 +170,10 @@ export default function DiscoveryDetail() {
                   ],
         [discovery],
     );
+
+    if (isFetching) {
+        return <DetailPageSkeleton layout="tabs" tabCount={2} />;
+    }
 
     const triggerHeaders: TableHeader[] = [
         {

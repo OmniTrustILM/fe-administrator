@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import type { ApiClients } from '../../../../api';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
@@ -314,6 +315,10 @@ const RuleDetails = () => {
             <></>
         );
     }, [ruleDetails]);
+
+    if (isFetchingRuleDetails) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
+    }
 
     return (
         <Container>

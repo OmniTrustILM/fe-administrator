@@ -1,5 +1,6 @@
 import AttributeViewer from 'components/Attributes/AttributeViewer';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import Dialog from 'components/Dialog';
 import ProgressButton from 'components/ProgressButton';
 import StatusBadge from 'components/StatusBadge';
@@ -929,6 +930,10 @@ export default function RaProfileDetail() {
 
         return data;
     }, [raProfile, platformSettings]);
+
+    if (isFetchingProfile) {
+        return <DetailPageSkeleton layout="tabs" tabCount={5} />;
+    }
 
     return (
         <div>

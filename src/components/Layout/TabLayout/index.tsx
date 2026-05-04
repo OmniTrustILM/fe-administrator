@@ -1,6 +1,7 @@
 import Tabs from 'components/Tabs';
 import { useMemo, useState, useEffect } from 'react';
 import Widget from 'components/Widget';
+import TabLayoutSkeleton from './TabLayoutSkeleton';
 
 type Props = {
     tabs: {
@@ -14,9 +15,17 @@ type Props = {
     selectedTab?: number;
     noBorder?: boolean;
     onTabChange?: (tab: number) => void;
+    isLoading?: boolean;
 };
 
-export default function TabLayout({ tabs, onlyActiveTabContent = true, selectedTab, noBorder = false, onTabChange }: Props) {
+export default function TabLayout({
+    tabs,
+    onlyActiveTabContent = true,
+    selectedTab,
+    noBorder = false,
+    onTabChange,
+    isLoading = false,
+}: Props) {
     const [activeTab, setActiveTab] = useState(selectedTab ?? 0);
 
     const memoizedTabs = useMemo(() => {
@@ -41,6 +50,10 @@ export default function TabLayout({ tabs, onlyActiveTabContent = true, selectedT
             onTabChange(tab);
         }
     };
+
+    if (isLoading) {
+        return <TabLayoutSkeleton tabCount={tabs.filter((t) => !t.hidden).length} noBorder={noBorder} />;
+    }
 
     return (
         <Widget noBorder={noBorder} dataTestId="tab-layout">

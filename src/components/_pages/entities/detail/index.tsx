@@ -20,6 +20,7 @@ import { getEditAndDeleteWidgetButtons, createWidgetDetailHeaders } from 'utils/
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 export default function EntityDetail() {
     const dispatch = useDispatch();
@@ -112,6 +113,10 @@ export default function EntityDetail() {
                   ],
         [entity],
     );
+
+    if (isFetching) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={3} />;
+    }
 
     return (
         <div>

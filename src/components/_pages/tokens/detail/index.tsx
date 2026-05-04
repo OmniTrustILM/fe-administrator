@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE } from 'components/Attributes/AttributeViewer';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
@@ -218,6 +219,10 @@ export default function TokenDetail() {
                   ],
         [token],
     );
+
+    if (isFetching) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={5} />;
+    }
 
     return (
         <div>

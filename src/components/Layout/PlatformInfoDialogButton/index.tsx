@@ -1,6 +1,5 @@
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
-import Spinner from 'components/Spinner';
 import { actions, selectors } from 'ducks/info';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -83,32 +82,9 @@ const PlatformInfoDialogLink = ({ initiallyOpen = false, forceOpen }: PlatformIn
         [platformInfo, buildTimeFormatted, coreBuildTimeFormatted],
     );
 
-    const content = useMemo(() => {
-        if (!platformInfo) return;
-        const copyText = `${platformInfo.app.name}: ${platformInfo.app.version} (${coreBuildTimeFormatted})\nILM Frontend: ${packageJson.version} (${buildTimeFormatted})\n${platformInfo.db.system}: ${platformInfo.db.version}`;
-        return (
-            <div>
-                <CustomTable data={data} headers={headers} />
-                <div>
-                    Click to copy:{' '}
-                    <Button
-                        className="mt-2"
-                        variant="transparent"
-                        title="Version Info"
-                        onClick={() =>
-                            copyToClipboard(
-                                copyText,
-                                'Platform version info was copied to clipboard',
-                                'Failed to copy platform version info to clipboard',
-                            )
-                        }
-                    >
-                        <Copy size={16} />
-                    </Button>
-                </div>
-            </div>
-        );
-    }, [platformInfo, copyToClipboard, data, headers, buildTimeFormatted, coreBuildTimeFormatted]);
+    const copyText = platformInfo
+        ? `${platformInfo.app.name}: ${platformInfo.app.version} (${coreBuildTimeFormatted})\nILM Frontend: ${packageJson.version} (${buildTimeFormatted})\n${platformInfo.db.system}: ${platformInfo.db.version}`
+        : '';
 
     return (
         <>
@@ -124,7 +100,30 @@ const PlatformInfoDialogLink = ({ initiallyOpen = false, forceOpen }: PlatformIn
                 isOpen={isOpen}
                 caption="Platform versions info"
                 toggle={() => setIsOpenState(false)}
-                body={isFetching ? <Spinner active /> : content}
+                body={
+                    <div>
+                        <CustomTable data={data} headers={headers} isLoading={isFetching} />
+                        {!isFetching && platformInfo && (
+                            <div>
+                                Click to copy:{' '}
+                                <Button
+                                    className="mt-2"
+                                    variant="transparent"
+                                    title="Version Info"
+                                    onClick={() =>
+                                        copyToClipboard(
+                                            copyText,
+                                            'Platform version info was copied to clipboard',
+                                            'Failed to copy platform version info to clipboard',
+                                        )
+                                    }
+                                >
+                                    <Copy size={16} />
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                }
                 size="lg"
                 icon="info"
                 dataTestId="platform-info-dialog"

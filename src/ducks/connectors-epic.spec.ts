@@ -118,11 +118,12 @@ describe('connectors epics', () => {
                     },
                 } as any,
             },
-            3,
+            4,
         );
-        expect(emitted[0].type).toBe(slice.actions.listConnectorsSuccess.type);
-        expect(emitted[1]).toEqual(pagingActions.listSuccess({ entity: EntityType.CONNECTOR, totalItems: response.totalItems }));
-        expect(emitted[2]).toEqual(userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ConnectorStore));
+        expect(emitted[0]).toEqual(pagingActions.list(EntityType.CONNECTOR));
+        expect(emitted[1].type).toBe(slice.actions.listConnectorsSuccess.type);
+        expect(emitted[2]).toEqual(pagingActions.listSuccess({ entity: EntityType.CONNECTOR, totalItems: response.totalItems }));
+        expect(emitted[3]).toEqual(userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ConnectorStore));
     });
 
     test('listConnectors with undefined payload uses default search and emits success', async () => {
@@ -138,11 +139,12 @@ describe('connectors epics', () => {
                     },
                 } as any,
             },
-            3,
+            4,
         );
-        expect(emitted[0].type).toBe(slice.actions.listConnectorsSuccess.type);
-        expect(emitted[1]).toEqual(pagingActions.listSuccess({ entity: EntityType.CONNECTOR, totalItems: 0 }));
-        expect(emitted[2]).toEqual(userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ConnectorStore));
+        expect(emitted[0]).toEqual(pagingActions.list(EntityType.CONNECTOR));
+        expect(emitted[1].type).toBe(slice.actions.listConnectorsSuccess.type);
+        expect(emitted[2]).toEqual(pagingActions.listSuccess({ entity: EntityType.CONNECTOR, totalItems: 0 }));
+        expect(emitted[3]).toEqual(userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ConnectorStore));
     });
 
     test('listConnectors failure emits listConnectorsFailure, paging listFailure and insertWidgetLock', async () => {
@@ -150,12 +152,13 @@ describe('connectors epics', () => {
             0,
             slice.actions.listConnectors({ pageNumber: 1, itemsPerPage: 10, filters: [] } as any),
             { connectorsV2: { listConnectorsV2: () => throwError(() => new Error('list failed')) } as any },
-            3,
+            4,
         );
-        expect(emitted[0]).toEqual(slice.actions.listConnectorsFailure());
-        expect(emitted[1]).toEqual(pagingActions.listFailure(EntityType.CONNECTOR));
-        expect(emitted[2].type).toBe(userInterfaceActions.insertWidgetLock.type);
-        expect(emitted[2].payload.widgetName).toBe(LockWidgetNameEnum.ConnectorStore);
+        expect(emitted[0]).toEqual(pagingActions.list(EntityType.CONNECTOR));
+        expect(emitted[1]).toEqual(slice.actions.listConnectorsFailure());
+        expect(emitted[2]).toEqual(pagingActions.listFailure(EntityType.CONNECTOR));
+        expect(emitted[3].type).toBe(userInterfaceActions.insertWidgetLock.type);
+        expect(emitted[3].payload.widgetName).toBe(LockWidgetNameEnum.ConnectorStore);
     });
 
     test('listConnectorsMerge success emits merge success and removeWidgetLock', async () => {

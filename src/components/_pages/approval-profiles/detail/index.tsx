@@ -15,6 +15,7 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 const ApprovalProfileDetails = () => {
     const dispatch = useDispatch();
@@ -192,6 +193,10 @@ const ApprovalProfileDetails = () => {
                   })),
         [profileApprovalDetail, renderApproverRedirect],
     );
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
+    }
 
     return (
         <div>

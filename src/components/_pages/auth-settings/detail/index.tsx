@@ -15,6 +15,7 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import { renderOAuth2StateBadges } from 'utils/oauth2Providers';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 export default function OAuth2ProviderDetail() {
     const { providerName } = useParams();
@@ -143,6 +144,10 @@ export default function OAuth2ProviderDetail() {
                   ],
         [oauth2Provider],
     );
+    if (isFetchingProvider) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={1} />;
+    }
+
     return (
         <div>
             <Breadcrumb

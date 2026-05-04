@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import AttributeViewer from 'components/Attributes/AttributeViewer';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
@@ -221,6 +222,10 @@ export default function TokenProfileDetail() {
 
         setKeyUsageUpdate(false);
     }, [dispatch, tokenProfile, keyUsages]);
+
+    if (isFetchingProfile) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={4} />;
+    }
 
     return (
         <div>

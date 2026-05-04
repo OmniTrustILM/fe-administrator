@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import AttributeViewer from 'components/Attributes/AttributeViewer';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
@@ -366,6 +367,10 @@ export default function CryptographicKeyDetail() {
             setSelectedTab(keyTab < 0 ? 0 : keyTab);
         }
     }, [cryptographicKey, keyItemUuid]);
+
+    if (state.isFetchingDetail) {
+        return <DetailPageSkeleton layout="split" tabCount={2} rowCount={9} buttonsCount={6} />;
+    }
 
     const breadcrumbItems = [
         { label: `${getEnumLabel(resourceEnum, Resource.Keys)} Inventory`, href: '/keys' },

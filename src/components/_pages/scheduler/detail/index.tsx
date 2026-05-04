@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
 import Widget from 'components/Widget';
@@ -297,6 +298,10 @@ export default function SchedulerJobDetail() {
                   ],
         [schedulerJob, schedulerJobExecutionStatusEnum],
     );
+
+    if (isFetching) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
+    }
 
     return (
         <div>

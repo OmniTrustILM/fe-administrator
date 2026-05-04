@@ -119,7 +119,7 @@ export default function GlobalMetadataList() {
         <>
             <Widget
                 title="List of Global Metadata"
-                busy={isBusy}
+                busy={isBusy && !(isFetching && globalMetadata.length === 0)}
                 widgetLockName={LockWidgetNameEnum.ListOfGlobalMetadata}
                 widgetButtons={buttons}
                 titleSize="large"
@@ -132,6 +132,7 @@ export default function GlobalMetadataList() {
                     canSearch={true}
                     hasCheckboxes={true}
                     hasPagination={true}
+                    isLoading={isFetching && globalMetadata.length === 0}
                 />
             </Widget>
 

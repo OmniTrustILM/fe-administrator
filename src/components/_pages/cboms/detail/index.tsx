@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router';
@@ -607,6 +608,10 @@ export default function CbomDetail() {
         },
         [activeTab],
     );
+
+    if (isFetching) {
+        return <DetailPageSkeleton layout="tabs" tabCount={3} />;
+    }
 
     const tabSwitchLoadingContent = (
         <Container>

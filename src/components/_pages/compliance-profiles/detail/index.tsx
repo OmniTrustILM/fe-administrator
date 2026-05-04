@@ -1,4 +1,5 @@
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import Dialog from 'components/Dialog';
 import type { ApiClients } from '../../../../api';
 import Widget from 'components/Widget';
@@ -386,6 +387,10 @@ export default function ComplianceProfileDetail() {
         if (!profile) return;
         dispatch(actions.bulkForceDeleteComplianceProfiles({ uuids: [profile.uuid], redirect: `../../complianceprofiles` }));
     }, [profile, dispatch]);
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="tabs" tabCount={2} />;
+    }
 
     return (
         <div>

@@ -1,4 +1,5 @@
 import { Buffer } from 'buffer';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import AttributeEditor from 'components/Attributes/AttributeEditor';
 import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE } from 'components/Attributes/AttributeViewer';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
@@ -1077,6 +1078,10 @@ export default function CertificateDetail() {
         }),
         [deviceType],
     );
+
+    if (isFetching) {
+        return <DetailPageSkeleton layout="tabs" tabCount={9} />;
+    }
 
     return (
         <div>

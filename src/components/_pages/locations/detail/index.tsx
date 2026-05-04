@@ -1,6 +1,7 @@
 import AttributeEditor from 'components/Attributes/AttributeEditor';
 import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE } from 'components/Attributes/AttributeViewer';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import Dialog from 'components/Dialog';
 import ProgressButton from 'components/ProgressButton';
 import Spinner from 'components/Spinner';
@@ -658,6 +659,10 @@ export default function LocationDetail() {
                 : [],
         [location],
     );
+
+    if (isFetching) {
+        return <DetailPageSkeleton layout="tabs" tabCount={5} />;
+    }
 
     return (
         <div>

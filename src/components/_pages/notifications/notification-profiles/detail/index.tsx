@@ -19,6 +19,7 @@ import { getInputStringFromIso8601String } from 'utils/duration';
 import Dialog from 'components/Dialog';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 export default function NotificationProfileDetail() {
     const { id, version } = useParams();
@@ -249,6 +250,10 @@ export default function NotificationProfileDetail() {
                   ],
         [notificationInstance],
     );
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
+    }
 
     return (
         <div>

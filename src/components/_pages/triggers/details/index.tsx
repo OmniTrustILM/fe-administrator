@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
 import FlowChart from 'components/FlowChart';
@@ -490,6 +491,10 @@ const TriggerDetails = () => {
                   }),
         [triggerDetails, isUpdatingTrigger, onDeleteRule],
     );
+
+    if (isFetchingTriggerDetail) {
+        return <DetailPageSkeleton layout="tabs" tabCount={2} />;
+    }
 
     return (
         <div>

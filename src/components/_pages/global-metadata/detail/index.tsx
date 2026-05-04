@@ -1,3 +1,4 @@
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 
 import Dialog from 'components/Dialog';
@@ -108,6 +109,10 @@ export default function GlobalMetadataDetail() {
                   ],
         [globalMetadata, attributeContentTypeEnum],
     );
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={1} />;
+    }
 
     return (
         <div>

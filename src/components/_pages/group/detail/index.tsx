@@ -1,5 +1,5 @@
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
-
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import Dialog from 'components/Dialog';
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
@@ -96,6 +96,10 @@ export default function GroupDetail() {
                   ],
         [group],
     );
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="tabs" tabCount={2} />;
+    }
 
     return (
         <div>

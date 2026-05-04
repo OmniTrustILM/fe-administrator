@@ -8,6 +8,7 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import Dialog from 'components/Dialog';
 import FilterWidget from 'components/FilterWidget';
 import Widget from 'components/Widget';
+import PagedListSkeleton from './PagedListSkeleton';
 import type { IconName } from 'types/icons';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { actions, selectors } from 'ducks/paging';
@@ -73,6 +74,8 @@ function PagedList({
 
     const [confirmDelete, setConfirmDelete] = useState(false);
     const previousFiltersSnapshotRef = useRef<string | undefined>(undefined);
+    const hasLoadedOnce = useRef(false);
+    if (!isFetchingList && data.length > 0) hasLoadedOnce.current = true;
 
     const onCheckedRowsChanged = useCallback(
         (rows: (string | number)[]) => {
@@ -182,6 +185,20 @@ function PagedList({
         [pageNumber, totalItems, pageSize],
     );
 
+    if (isFetchingList && data.length === 0 && !hasLoadedOnce.current) {
+        const estimatedButtonCount = (!addHidden ? 1 : 0) + (onDeleteCallback ? 1 : 0) + (additionalButtons?.length ?? 0);
+        return (
+            <PagedListSkeleton
+                hasFilter={!!getAvailableFiltersApi && !!filterTitle}
+                filterTitle={filterTitle}
+                buttonsCount={estimatedButtonCount}
+                columnsCount={headers.length}
+                hasCheckboxes={hasCheckboxes}
+                hasExtraFilter={!!extraFilterComponent}
+            />
+        );
+    }
+
     return (
         <div className="flex flex-col gap-4 md:gap-8">
             {getAvailableFiltersApi && filterTitle && (
@@ -195,7 +212,7 @@ function PagedList({
 
             <Widget
                 title={title}
-                busy={isBusy || isFetchingList}
+                busy={isBusy || (isFetchingList && data.length > 0)}
                 enableBusyOverlay
                 widgetLockName={pageWidgetLockName}
                 refreshAction={getFreshData}
@@ -215,6 +232,7 @@ function PagedList({
                     onPageChanged={onPageNumberChanged}
                     onCheckedRowsChanged={onCheckedRowsChanged}
                     onPageSizeChanged={onPageSizeChanged}
+                    isLoading={isFetchingList && data.length === 0}
                     disablePaginationControls={isBusy || isFetchingList}
                     disableSelectionControls={isBusy || isFetchingList}
                     disableSearchControls={isBusy || isFetchingList}

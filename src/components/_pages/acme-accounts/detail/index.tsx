@@ -19,6 +19,7 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import Badge from 'components/Badge';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 export default function AcmeAccountDetail() {
     const dispatch = useDispatch();
@@ -202,6 +203,10 @@ export default function AcmeAccountDetail() {
                   ],
         [acmeAccount],
     );
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={3} />;
+    }
 
     return (
         <div>

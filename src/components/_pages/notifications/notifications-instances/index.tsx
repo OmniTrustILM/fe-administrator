@@ -128,7 +128,7 @@ const NotificationInstanceList = () => {
                 titleSize="large"
                 title="Notification Store"
                 refreshAction={getFreshNotificationInstances}
-                busy={isBusy}
+                busy={isBusy && !(isFetchingNotificationInstances && notificationInstances.length === 0)}
                 widgetButtons={buttons}
                 widgetLockName={LockWidgetNameEnum.NotificationStore}
             >
@@ -144,6 +144,7 @@ const NotificationInstanceList = () => {
                     }}
                     canSearch={true}
                     hasPagination={true}
+                    isLoading={isFetchingNotificationInstances && notificationInstances.length === 0}
                 />
             </Widget>
 

@@ -18,6 +18,7 @@ import Breadcrumb from 'components/Breadcrumb';
 import { Copy } from 'lucide-react';
 import CustomAttributeForm from '../form';
 import Button from 'components/Button';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 export default function CustomAttributeDetail() {
     const dispatch = useDispatch();
@@ -226,6 +227,10 @@ export default function CustomAttributeDetail() {
                   ],
         [customAttribute, attributeContentTypeEnum, resourceEnum, protectionLevelEnum, onContentCopyClick],
     );
+
+    if (isFetchingDetail) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
+    }
 
     return (
         <div>

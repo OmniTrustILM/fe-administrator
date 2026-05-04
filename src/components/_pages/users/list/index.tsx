@@ -255,7 +255,7 @@ export default function UsersList() {
         <div>
             <Widget
                 title="List of Users"
-                busy={isBusy}
+                busy={isBusy && !(isFetching && users.length === 0)}
                 enableBusyOverlay
                 widgetLockName={LockWidgetNameEnum.ListOfUsers}
                 widgetButtons={buttons}
@@ -272,6 +272,7 @@ export default function UsersList() {
                     disableSearchControls={isBusy}
                     disableSelectionControls={isBusy}
                     disablePaginationControls={isBusy}
+                    isLoading={isFetching && users.length === 0}
                 />
             </Widget>
 

@@ -14,6 +14,7 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { getEditAndDeleteWidgetButtons, createWidgetDetailHeaders, createTableDataRow } from 'utils/widget';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 export default function CustomOIDDetail() {
     const dispatch = useDispatch();
@@ -102,6 +103,11 @@ export default function CustomOIDDetail() {
                   ],
         [oid],
     );
+
+    if (isFetching) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
+    }
+
     return (
         <div>
             <Breadcrumb

@@ -16,6 +16,8 @@ import Container from 'components/Container';
 import TextInput from 'components/TextInput';
 import { Check, X, Trash2 } from 'lucide-react';
 import EditIcon from 'components/icons/EditIcon';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
+
 interface SelectChangeValue {
     value: string;
     label: string;
@@ -317,6 +319,10 @@ const RuleDetails = () => {
             <></>
         );
     }, [actionDetails]);
+
+    if (isFetchingActionDetails) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
+    }
 
     return (
         <div>

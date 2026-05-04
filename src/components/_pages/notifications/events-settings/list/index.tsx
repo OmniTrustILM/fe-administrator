@@ -44,6 +44,8 @@ const EventsList = () => {
         [isFetchingEventsSetting, isFetchingResourcesList, isFetchingResourcesWithEventsList],
     );
 
+    const isInitialLoad = isFetchingResourcesList && resourceEvents.length === 0;
+
     const buttons: WidgetButtonProps[] = useMemo(
         () => [
             {
@@ -125,14 +127,14 @@ const EventsList = () => {
             widgetButtons={buttons}
             widgetLockName={LockWidgetNameEnum.EventSettings}
             lockSize="large"
-            busy={isBusy}
+            busy={isBusy && !isInitialLoad}
             widgetInfoCard={{
                 title: 'Information',
                 description: 'When an Event is produced, assigned Triggers are fired',
             }}
         >
             <br />
-            <CustomTable headers={headers} data={dataRows} hasPagination={true} />
+            <CustomTable headers={headers} data={dataRows} hasPagination={true} isLoading={isInitialLoad} />
         </Widget>
     );
 };

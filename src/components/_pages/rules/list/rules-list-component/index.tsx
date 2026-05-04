@@ -121,7 +121,7 @@ const RulesList = () => {
                 titleSize="large"
                 title="Rules"
                 refreshAction={getFreshList}
-                busy={isBusy}
+                busy={isBusy && !(isFetchingList && rules.length === 0)}
                 widgetButtons={buttons}
                 widgetInfoCard={{
                     title: 'Information',
@@ -141,6 +141,7 @@ const RulesList = () => {
                     disablePaginationControls={isBusy}
                     disableSelectionControls={isBusy}
                     disableSearchControls={isBusy}
+                    isLoading={isFetchingList && rules.length === 0}
                 />
             </Widget>
 

@@ -119,7 +119,7 @@ const ActionsList = () => {
             <Widget
                 titleSize="large"
                 title="Actions"
-                busy={isBusy}
+                busy={isBusy && !(isFetchingList && actionsList.length === 0)}
                 refreshAction={getFreshList}
                 widgetButtons={buttons}
                 widgetInfoCard={{
@@ -141,6 +141,7 @@ const ActionsList = () => {
                     disablePaginationControls={isBusy}
                     disableSelectionControls={isBusy}
                     disableSearchControls={isBusy}
+                    isLoading={isFetchingList && actionsList.length === 0}
                 />
             </Widget>
 

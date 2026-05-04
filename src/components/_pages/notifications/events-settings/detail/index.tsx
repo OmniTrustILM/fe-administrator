@@ -17,6 +17,7 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import type { TriggerDto } from 'types/rules';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 export default function EventDetail() {
     const { event } = useParams();
@@ -165,6 +166,10 @@ export default function EventDetail() {
                 : [],
         [eventSettings, triggers, triggerTypeEnum, resourceTypeEnum, resourceEventEnum],
     );
+    if (isFetchingEventsSetting) {
+        return <DetailPageSkeleton layout="simple" buttonsCount={1} />;
+    }
+
     return (
         <div>
             <Breadcrumb
