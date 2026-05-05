@@ -62,7 +62,7 @@ import {
     OIDUtilsAPIApi,
 } from 'types/openapi/utils';
 
-const apiUrl = window !== undefined ? window?.__ENV__?.API_URL || '/api' : '/api';
+const apiUrl = typeof window !== 'undefined' ? window.__ENV__?.API_URL || '/api' : '/api';
 const configuration = new Configuration({ basePath: apiUrl });
 
 export interface ApiClients {

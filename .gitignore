@@ -23,6 +23,7 @@ yarn-error.log*
 # IDE files
 .idea/
 .vscode/
+.claude/
 
 # Proxy Files
 src/*.pem
