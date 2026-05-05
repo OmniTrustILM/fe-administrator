@@ -4,7 +4,7 @@ import { type ReactNode, useEffect } from 'react';
 // export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right' | 'auto';
 export type TooltipPlacement = 'bottom';
 
-interface Props {
+type Props = Readonly<{
     content: string | ReactNode;
     placement?: TooltipPlacement;
     children: ReactNode;
@@ -12,7 +12,7 @@ interface Props {
     triggerClassName?: string;
     contentClassName?: string;
     disabled?: boolean;
-}
+}>;
 
 function Tooltip({ content, placement = 'bottom', children, className, triggerClassName, contentClassName, disabled = false }: Props) {
     useEffect(() => {
@@ -21,16 +21,15 @@ function Tooltip({ content, placement = 'bottom', children, className, triggerCl
 
     const getArrowClasses = () => {
         const baseClasses = 'absolute w-0 h-0 border-4';
-        switch (placement) {
-            case 'bottom':
-                return cn(
-                    baseClasses,
-                    'top-0 left-1/2 -translate-x-1/2 -translate-y-full',
-                    'border-b-[var(--tooltip-background-color)] border-r-transparent border-t-transparent border-l-transparent',
-                    'dark:border-b-neutral-700',
-                );
-            default:
-                return '';
+        if (placement === 'bottom') {
+            return cn(
+                baseClasses,
+                'top-0 left-1/2 -translate-x-1/2 -translate-y-full',
+                'border-b-[var(--tooltip-background-color)] border-r-transparent border-t-transparent border-l-transparent',
+                'dark:border-b-neutral-700',
+            );
+        } else {
+            return '';
         }
     };
 

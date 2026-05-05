@@ -18,7 +18,7 @@ export function transformCustomAttributeDetailResponseDtoToModel(
 ): CustomAttributeDetailResponseModel {
     return {
         ...customAttribute,
-        content: customAttribute.content ? JSON.parse(JSON.stringify(customAttribute.content)) : undefined,
+        content: customAttribute.content ? structuredClone(customAttribute.content) : undefined,
     };
 }
 
@@ -27,7 +27,7 @@ export function transformCustomAttributeCreateRequestModelToDto(
 ): CustomAttributeCreateRequestDto {
     return {
         ...customAttribute,
-        content: customAttribute.content ? JSON.parse(JSON.stringify(customAttribute.content)) : undefined,
+        content: customAttribute.content ? structuredClone(customAttribute.content) : undefined,
     };
 }
 
@@ -36,6 +36,6 @@ export function transformCustomAttributeUpdateRequestModelToDto(
 ): CustomAttributeUpdateRequestDto {
     return {
         ...customAttribute,
-        content: customAttribute.content ? JSON.parse(JSON.stringify(customAttribute.content)) : undefined,
+        content: customAttribute.content ? structuredClone(customAttribute.content) : undefined,
     };
 }

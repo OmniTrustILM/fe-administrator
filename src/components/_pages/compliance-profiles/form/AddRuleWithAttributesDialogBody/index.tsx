@@ -12,7 +12,7 @@ import { collectFormAttributes } from 'utils/attributes/attributes';
 import TabLayout from '../../../../Layout/TabLayout';
 import Container from 'components/Container';
 
-interface Props {
+type Props = Readonly<{
     complianceProfileUuid?: string;
     connectorUuid: string;
     connectorName: string;
@@ -24,7 +24,7 @@ interface Props {
     attributes: AttributeDescriptorModel[];
 
     onClose: () => void;
-}
+}>;
 
 export default function AddRuleWithAttributesDialogBody({
     complianceProfileUuid,
@@ -74,50 +74,46 @@ export default function AddRuleWithAttributesDialogBody({
         [dispatch, complianceProfileUuid, connectorUuid, kind, ruleUuid, attributes, onClose, groupAttributesCallbackAttributes],
     );
 
-    if (!complianceProfileUuid) return <></>;
+    if (!complianceProfileUuid) return null;
 
     return (
-        <>
-            <FormProvider {...methods}>
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    {!attributes || attributes.length === 0 ? (
-                        <></>
-                    ) : (
-                        <div className="mb-4">
-                            <TabLayout
-                                tabs={[
-                                    {
-                                        title: 'Custom Attributes',
-                                        content: (
-                                            <AttributeEditor
-                                                id="attributes"
-                                                attributeDescriptors={attributes}
-                                                groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
-                                                setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
-                                            />
-                                        ),
-                                    },
-                                ]}
-                            />
-                        </div>
-                    )}
+        <FormProvider {...methods}>
+            <form onSubmit={handleSubmit(onSubmit)}>
+                {!attributes || attributes.length === 0 ? null : (
+                    <div className="mb-4">
+                        <TabLayout
+                            tabs={[
+                                {
+                                    title: 'Custom Attributes',
+                                    content: (
+                                        <AttributeEditor
+                                            id="attributes"
+                                            attributeDescriptors={attributes}
+                                            groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
+                                            setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
+                                        />
+                                    ),
+                                },
+                            ]}
+                        />
+                    </div>
+                )}
 
-                    <Container className="flex-row justify-end modal-footer" gap={4}>
-                        <Button
-                            type="submit"
-                            color="primary"
-                            disabled={formState.isSubmitting || !formState.isValid}
-                            onClick={handleSubmit(onSubmit)}
-                        >
-                            Add
-                        </Button>
+                <Container className="flex-row justify-end modal-footer" gap={4}>
+                    <Button
+                        type="submit"
+                        color="primary"
+                        disabled={formState.isSubmitting || !formState.isValid}
+                        onClick={handleSubmit(onSubmit)}
+                    >
+                        Add
+                    </Button>
 
-                        <Button type="button" color="secondary" disabled={formState.isSubmitting} onClick={onClose}>
-                            Cancel
-                        </Button>
-                    </Container>
-                </form>
-            </FormProvider>
-        </>
+                    <Button type="button" color="secondary" disabled={formState.isSubmitting} onClick={onClose}>
+                        Cancel
+                    </Button>
+                </Container>
+            </form>
+        </FormProvider>
     );
 }

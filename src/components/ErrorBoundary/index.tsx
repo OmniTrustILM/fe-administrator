@@ -3,11 +3,11 @@ import { useLocation } from 'react-router';
 import Button from 'components/Button';
 import Container from 'components/Container';
 
-interface Props {
+type Props = Readonly<{
     children: ReactNode;
     fallback?: ReactNode;
     resetKey?: string | number;
-}
+}>;
 
 interface State {
     hasError: boolean;

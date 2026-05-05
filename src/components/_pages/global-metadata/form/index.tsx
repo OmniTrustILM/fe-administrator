@@ -19,11 +19,11 @@ import Select from 'components/Select';
 import Label from 'components/Label';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 
-interface GlobalMetadataFormProps {
+type GlobalMetadataFormProps = Readonly<{
     globalMetadataId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 export default function GlobalMetadataForm({ globalMetadataId, onCancel, onSuccess }: GlobalMetadataFormProps) {
     const dispatch = useDispatch();
@@ -55,7 +55,7 @@ export default function GlobalMetadataForm({ globalMetadataId, onCancel, onSucce
         [],
     );
     const defaultValuesUpdate: GlobalMetadataUpdateRequestModel = useMemo(
-        () => (globalMetadataDetail ? globalMetadataDetail : defaultValuesCreate),
+        () => globalMetadataDetail ?? defaultValuesCreate,
         [globalMetadataDetail, defaultValuesCreate],
     );
 

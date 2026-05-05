@@ -14,11 +14,11 @@ import TabLayout from '../../../Layout/TabLayout';
 import TextInput from 'components/TextInput';
 import Container from 'components/Container';
 
-interface Props {
+type Props = Readonly<{
     tokenUuid?: string;
     visible: boolean;
     onClose: () => void;
-}
+}>;
 
 export default function RandomDataGeneration({ tokenUuid, visible, onClose }: Props) {
     const dispatch = useDispatch();

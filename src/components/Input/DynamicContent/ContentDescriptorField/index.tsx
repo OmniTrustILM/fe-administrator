@@ -87,10 +87,10 @@ function DescriptorInputControl({
     );
 }
 
-type Props = {
+type Props = Readonly<{
     isList: boolean;
     contentType: AttributeContentType;
-};
+}>;
 
 export default function ContentDescriptorField({ isList, contentType }: Props) {
     const { control, setValue, watch } = useFormContext();

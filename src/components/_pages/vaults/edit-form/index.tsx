@@ -18,11 +18,11 @@ import { FunctionGroupCode, Resource, type VaultInstanceDetailDto } from 'types/
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 
-interface VaultEditFormProps {
+type VaultEditFormProps = Readonly<{
     vault?: VaultInstanceDetailDto | null;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     description: string;

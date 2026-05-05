@@ -179,7 +179,7 @@ function VaultProfileDetail() {
             {
                 id: 'disable',
                 icon: 'times',
-                disabled: !profile || !profile.enabled,
+                disabled: !profile?.enabled,
                 tooltip: 'Disable',
                 onClick: onDisapprove,
             },
@@ -256,9 +256,8 @@ function VaultProfileDetail() {
 
     const complianceProfileData: TableDataRow[] = useMemo(
         () =>
-            !associatedComplianceProfiles
-                ? []
-                : associatedComplianceProfiles.map((complianceProfile) => ({
+            associatedComplianceProfiles
+                ? associatedComplianceProfiles.map((complianceProfile) => ({
                       id: complianceProfile.uuid,
                       columns: [
                           <Link key="name" to={`/${Resource.ComplianceProfiles.toLowerCase()}/detail/${complianceProfile.uuid}`}>
@@ -278,7 +277,8 @@ function VaultProfileDetail() {
                               ]}
                           />,
                       ],
-                  })),
+                  }))
+                : [],
         [associatedComplianceProfiles, onDissociateComplianceProfile],
     );
 
@@ -306,9 +306,8 @@ function VaultProfileDetail() {
 
     const approvalProfileData: TableDataRow[] = useMemo(
         () =>
-            !associatedApprovalProfiles
-                ? []
-                : associatedApprovalProfiles.map((approvalProfile) => ({
+            associatedApprovalProfiles
+                ? associatedApprovalProfiles.map((approvalProfile) => ({
                       id: approvalProfile.uuid,
                       columns: [
                           <Link key="name" to={`/${Resource.ApprovalProfiles.toLowerCase()}/detail/${approvalProfile.uuid}`}>
@@ -329,7 +328,8 @@ function VaultProfileDetail() {
                               ]}
                           />,
                       ],
-                  })),
+                  }))
+                : [],
         [associatedApprovalProfiles, onDissociateApprovalProfile],
     );
 

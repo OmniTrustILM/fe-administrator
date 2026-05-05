@@ -136,9 +136,8 @@ const AuthenticationSettings = () => {
 
     const providerDataRows: TableDataRow[] = useMemo(
         () =>
-            !authenticationSettings?.oauth2Providers
-                ? []
-                : Object.entries(authenticationSettings.oauth2Providers).map(([providerName, provider]) => ({
+            authenticationSettings?.oauth2Providers
+                ? Object.entries(authenticationSettings.oauth2Providers).map(([providerName, provider]) => ({
                       id: providerName,
                       columns: [
                           <Link key="link" to={`./detail/${providerName}`}>
@@ -157,7 +156,8 @@ const AuthenticationSettings = () => {
                               <Key className="w-4 h-4" />
                           </Button>,
                       ],
-                  })),
+                  }))
+                : [],
         [authenticationSettings, onShowProviderJwkSetKeys],
     );
 

@@ -2,12 +2,12 @@ import { type ReactNode, useEffect, useRef } from 'react';
 
 export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right' | 'auto';
 
-interface Props {
+type Props = Readonly<{
     content: string | ReactNode;
     children: ReactNode;
     title?: string;
     width?: number;
-}
+}>;
 
 function Popover({ content, children, title, width = 300 }: Props) {
     const contentRef = useRef<HTMLDivElement>(null);
@@ -18,7 +18,7 @@ function Popover({ content, children, title, width = 300 }: Props) {
 
         const handleClick = (event: MouseEvent) => {
             const target = event.target as Node;
-            if (contentRef.current && contentRef.current.contains(target)) {
+            if (contentRef.current?.contains(target)) {
                 event.stopImmediatePropagation();
                 event.preventDefault();
             }

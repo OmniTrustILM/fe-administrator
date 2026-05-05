@@ -5,14 +5,14 @@ const barClass = 'rounded bg-gray-200 dark:bg-neutral-700';
 const cardClass =
     'relative flex flex-col rounded-xl border border-gray-200 dark:border-neutral-700 p-4 md:p-5 shadow-2xs bg-white dark:bg-neutral-900 w-full';
 
-interface Props {
+type Props = Readonly<{
     hasFilter?: boolean;
     filterTitle?: string;
     buttonsCount?: number;
     columnsCount?: number;
     hasCheckboxes?: boolean;
     hasExtraFilter?: boolean;
-}
+}>;
 
 function PagedListSkeleton({
     hasFilter = false,

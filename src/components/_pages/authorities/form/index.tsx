@@ -30,11 +30,11 @@ import { collectFormAttributes } from 'utils/attributes/attributes';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
-interface AuthorityFormProps {
+type AuthorityFormProps = Readonly<{
     authorityId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -103,7 +103,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Auth
     useEffect(() => {
         if (editMode && id) {
             // Fetch if id changed or if we don't have the correct authority loaded
-            if (previousIdRef.current !== id || !authoritySelector || authoritySelector.uuid !== id) {
+            if (previousIdRef.current !== id || authoritySelector?.uuid !== id) {
                 dispatch(authorityActions.getAuthorityDetail({ uuid: id }));
                 previousIdRef.current = id;
                 fetchedDescriptorsRef.current = undefined;
@@ -139,7 +139,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Auth
             const provider = authorityProviders.find((p) => p.uuid === authoritySelector.connectorUuid);
 
             if (provider) {
-                if (!authorityProvider || authorityProvider.uuid !== provider.uuid) {
+                if (authorityProvider?.uuid !== provider.uuid) {
                     setAuthorityProvider(provider);
                 }
                 const descriptorKey = `${authoritySelector.connectorUuid}-${authoritySelector.kind}`;
@@ -281,7 +281,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Auth
 
     // Reset form values when authority is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && authority && authority.uuid === id && !isFetchingAuthorityDetail) {
+        if (editMode && id && authority?.uuid === id && !isFetchingAuthorityDetail) {
             const newDefaultValues: FormValues = {
                 name: authority.name || '',
                 authorityProvider: authority.connectorUuid || '',

@@ -80,9 +80,8 @@ export default function EntityDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !entity
-                ? []
-                : [
+            entity
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', entity.uuid],
@@ -110,7 +109,8 @@ export default function EntityDetail() {
                               ),
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [entity],
     );
 

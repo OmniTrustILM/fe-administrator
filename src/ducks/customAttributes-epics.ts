@@ -32,7 +32,7 @@ const normalizeAttributeVersion = (version: unknown): AttributeVersion => {
 
 const toAttributeRequestModel = (attribute: AttributeResponseModel): AttributeRequestModel => {
     const version = normalizeAttributeVersion(attribute.version);
-    const content = JSON.parse(JSON.stringify(attribute.content ?? []));
+    const content = structuredClone(attribute.content ?? []);
 
     return {
         uuid: attribute.uuid,
@@ -306,7 +306,7 @@ const handleSecretsContentUpdate = (
 ): Observable<AnyAction> => {
     const currentSecret = state.secrets.secret;
 
-    if (!currentSecret || currentSecret.uuid !== payload.resourceUuid) {
+    if (currentSecret?.uuid !== payload.resourceUuid) {
         return of(
             createContentFailureAction(
                 operation,

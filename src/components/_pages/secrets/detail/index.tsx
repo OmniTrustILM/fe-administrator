@@ -459,19 +459,20 @@ function SecretDetail() {
         const sourceVaultProfileVaultUuid =
             vaultProfiles.find((p) => p.uuid === secret?.sourceVaultProfile?.uuid)?.vaultInstance?.uuid ?? undefined;
 
-        const sourceVaultProfileCell = secret?.sourceVaultProfile ? (
-            sourceVaultProfileVaultUuid ? (
+        let sourceVaultProfileCell: JSX.Element | string | undefined;
+        if (!secret?.sourceVaultProfile) {
+            sourceVaultProfileCell = 'Unassigned';
+        } else if (sourceVaultProfileVaultUuid) {
+            sourceVaultProfileCell = (
                 <Link
                     to={`/${Resource.VaultProfiles.toLowerCase()}/detail/${sourceVaultProfileVaultUuid}/${secret.sourceVaultProfile.uuid}`}
                 >
                     {secret.sourceVaultProfile.name}
                 </Link>
-            ) : (
-                secret.sourceVaultProfile.name
-            )
-        ) : (
-            'Unassigned'
-        );
+            );
+        } else {
+            sourceVaultProfileCell = secret.sourceVaultProfile.name;
+        }
 
         return [
             {

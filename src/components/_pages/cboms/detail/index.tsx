@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router';
 import Button from 'components/Button';
-import { Copy, Download, Eye, Info, X } from 'lucide-react';
+import { Copy, Download, Info, X } from 'lucide-react';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
@@ -63,7 +63,10 @@ const NonCbomNotice = () => (
     </div>
 );
 
-const toArray = <T,>(v: T | T[] | undefined | null): T[] => (v == null ? [] : Array.isArray(v) ? v : [v]);
+const toArray = <T,>(v: T | T[] | undefined | null): T[] => {
+    if (v == null) return [];
+    return Array.isArray(v) ? v : [v];
+};
 
 const toChartRows = (map: Map<string, number>): TableDataRow[] =>
     [...map.entries()].sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ id: `${name}-${count}`, columns: [name, count] }));
@@ -225,7 +228,7 @@ export default function CbomDetail() {
         anchor.download = `cbom-${detail?.serialNumber ?? id}.json`;
         document.body.appendChild(anchor);
         anchor.click();
-        document.body.removeChild(anchor);
+        anchor.remove();
         URL.revokeObjectURL(url);
     }, [rawJsonText, detail, id]);
 
@@ -459,8 +462,8 @@ export default function CbomDetail() {
         const versionOptions = [...cbomVersions]
             .sort((a, b) => b.version - a.version)
             .map((version) => {
-                const suffix =
-                    version.version === latestVersionNumber ? ' (Latest)' : version.version === originalVersionNumber ? ' (Original)' : '';
+                const originalOrNone = version.version === originalVersionNumber ? ' (Original)' : '';
+                const suffix = version.version === latestVersionNumber ? ' (Latest)' : originalOrNone;
 
                 return {
                     value: version.uuid,
@@ -481,12 +484,8 @@ export default function CbomDetail() {
 
     const handleVersionSelect = useCallback(
         (value: string | number | object | { value: string | number | object; label: string }) => {
-            const selectedValue =
-                typeof value === 'string' || typeof value === 'number'
-                    ? String(value)
-                    : typeof value === 'object' && value !== null && 'value' in value
-                      ? String(value.value)
-                      : '';
+            const objectValue = typeof value === 'object' && value !== null && 'value' in value ? String(value.value) : '';
+            const selectedValue = typeof value === 'string' || typeof value === 'number' ? String(value) : objectValue;
 
             if (!selectedValue || !id) return;
 
@@ -563,12 +562,9 @@ export default function CbomDetail() {
     }, [cryptographicComponents, assetSearchQuery, selectedAssetType]);
 
     const handleAssetTypeChange = useCallback((value: string | number | object | { value: string | number | object; label: string }) => {
-        const selectedValue =
-            typeof value === 'string' || typeof value === 'number'
-                ? String(value)
-                : typeof value === 'object' && value !== null && 'value' in value
-                  ? String(value.value)
-                  : ALL_ASSET_TYPES_OPTION_VALUE;
+        const objectValue =
+            typeof value === 'object' && value !== null && 'value' in value ? String(value.value) : ALL_ASSET_TYPES_OPTION_VALUE;
+        const selectedValue = typeof value === 'string' || typeof value === 'number' ? String(value) : objectValue;
 
         setSelectedAssetType(selectedValue || ALL_ASSET_TYPES_OPTION_VALUE);
     }, []);

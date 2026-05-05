@@ -14,12 +14,12 @@ interface SelectChangeValue {
     label: string;
 }
 
-type Props = {
+type Props = Readonly<{
     mode: 'form' | 'detail';
     isUpdating?: boolean;
     notificationProfileItems?: SelectChangeValue[];
     onNotificationProfileItemsChange: (items: SelectChangeValue[]) => void;
-};
+}>;
 
 export function SendNotificationExecutionItems({ mode, isUpdating, notificationProfileItems, onNotificationProfileItemsChange }: Props) {
     const dispatch = useDispatch();

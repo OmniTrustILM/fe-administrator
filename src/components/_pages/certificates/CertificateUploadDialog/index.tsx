@@ -20,7 +20,7 @@ import Container from 'components/Container';
 
 type FormValues = {};
 
-interface Props {
+type Props = Readonly<{
     onCancel: () => void;
     onUpload: (data: {
         fileContent: string;
@@ -29,7 +29,7 @@ interface Props {
     }) => void;
     okButtonTitle?: string;
     showCustomAttributes?: boolean;
-}
+}>;
 
 export default function CertificateUploadDialog({ onCancel, onUpload, okButtonTitle = 'Upload', showCustomAttributes = true }: Props) {
     const dispatch = useDispatch();

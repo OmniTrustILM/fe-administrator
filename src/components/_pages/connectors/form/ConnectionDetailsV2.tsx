@@ -3,10 +3,10 @@ import { useMemo } from 'react';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Badge from 'components/Badge';
 
-interface Props {
+type Props = Readonly<{
     connectInfo?: any[];
     errorMessage?: string;
-}
+}>;
 
 const connectionDetailsHeaders: TableHeader[] = [
     {

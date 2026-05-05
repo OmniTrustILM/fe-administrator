@@ -19,12 +19,12 @@ import type { AttributeResponseModel } from 'types/attributes';
 import { Download } from 'lucide-react';
 import Dropdown from 'components/Dropdown';
 
-interface Props {
+type Props = Readonly<{
     certificate: CertificateDetailResponseModel | undefined;
     isBusy: boolean;
     getFreshCertificateDetail: () => void;
     setSelectedAttributesInfo: (attributes: AttributeResponseModel[] | null) => void;
-}
+}>;
 
 export default function CertificateRequestContent({ certificate, isBusy, getFreshCertificateDetail, setSelectedAttributesInfo }: Props) {
     const copyToClipboard = useCopyToClipboard();

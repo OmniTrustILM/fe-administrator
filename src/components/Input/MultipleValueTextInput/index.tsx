@@ -7,7 +7,7 @@ interface OptionType {
     label: string;
 }
 
-type Props = {
+type Props = Readonly<{
     id?: string;
     selectedValues: string[];
     onValuesChange: (values: string[]) => void;
@@ -16,7 +16,7 @@ type Props = {
     initialOptions?: OptionType[];
     options?: OptionType[];
     setOptions?: (options: OptionType[]) => void;
-};
+}>;
 
 export default function MultipleValueTextInput({
     id,
@@ -33,7 +33,7 @@ export default function MultipleValueTextInput({
 
     // Use external options if provided, otherwise use internal
     const options = externalOptions === undefined ? internalOptions : externalOptions;
-    const setOptions = externalSetOptions || setInternalOptions;
+    const setOptions = externalSetOptions ?? setInternalOptions;
 
     // Update internal options when initialOptions change
     useEffect(() => {

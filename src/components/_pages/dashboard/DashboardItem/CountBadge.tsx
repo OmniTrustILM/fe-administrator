@@ -1,12 +1,12 @@
 import Widget from 'components/Widget';
 
-interface Props {
+type Props = Readonly<{
     //TODO: Add a null type to data which should also be sent from the backend then we can use widget lock for this component
     data?: number;
     title: string;
     link: string;
     extraComponent?: React.ReactNode;
-}
+}>;
 
 function CountBadge({ data, title, link, extraComponent }: Props) {
     return (

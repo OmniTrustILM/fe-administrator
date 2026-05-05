@@ -29,11 +29,11 @@ import ConnectionDetailsV1 from './ConnectionDetailsV1';
 import ConnectionDetailsV2 from './ConnectionDetailsV2';
 import Switch from 'components/Switch';
 
-interface ConnectorFormProps {
+type ConnectorFormProps = Readonly<{
     connectorId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     uuid: string;

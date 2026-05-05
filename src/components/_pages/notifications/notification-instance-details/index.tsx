@@ -90,9 +90,8 @@ const NotificationInstanceDetails = () => {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !notificationInstance
-                ? []
-                : [
+            notificationInstance
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', notificationInstance.uuid],
@@ -122,7 +121,8 @@ const NotificationInstanceDetails = () => {
                               </Link>,
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [notificationInstance],
     );
 

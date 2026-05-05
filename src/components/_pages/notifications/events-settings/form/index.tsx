@@ -1,6 +1,6 @@
 import ProgressButton from 'components/ProgressButton';
 import Widget from 'components/Widget';
-import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
+import { selectors as enumSelectors } from 'ducks/enums';
 import { actions as settingsActions, selectors as settingsSelectors } from 'ducks/settings';
 
 import { actions as resourceActions, selectors as resourceSelectors } from 'ducks/resource';

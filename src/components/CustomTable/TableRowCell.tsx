@@ -3,14 +3,14 @@ import cn from 'classnames';
 import Button from 'components/Button';
 import type { TableDataRow, TableHeader } from './types';
 
-export interface TableRowCellProps {
+export type TableRowCellProps = Readonly<{
     column: string | React.ReactNode | React.ReactNode[];
     index: number;
     row: TableDataRow;
     tblHeaders: TableHeader[] | undefined;
     hasDetails?: boolean;
     onDetailClick: (rowId: number | string) => void;
-}
+}>;
 
 export function TableRowCell({ column, index, row, tblHeaders, hasDetails = false, onDetailClick }: TableRowCellProps) {
     const isFirstColumn = index === 0;

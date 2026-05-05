@@ -89,9 +89,8 @@ const ApprovalProfileDetails = () => {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !profileApprovalDetail
-                ? []
-                : [
+            profileApprovalDetail
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', profileApprovalDetail.uuid],
@@ -119,7 +118,8 @@ const ApprovalProfileDetails = () => {
                           id: 'version',
                           columns: ['Version', profileApprovalDetail?.version.toString() || ''],
                       },
-                  ],
+                  ]
+                : [],
         [profileApprovalDetail],
     );
 
@@ -175,9 +175,8 @@ const ApprovalProfileDetails = () => {
 
     const stepsRows: TableDataRow[] = useMemo(
         () =>
-            !profileApprovalDetail
-                ? []
-                : (profileApprovalDetail.approvalSteps || []).map((profile) => ({
+            profileApprovalDetail
+                ? (profileApprovalDetail.approvalSteps || []).map((profile) => ({
                       id: profile.order,
                       columns: [
                           profile.order.toString(),
@@ -190,7 +189,8 @@ const ApprovalProfileDetails = () => {
 
                           renderApproverRedirect(profile) || '',
                       ],
-                  })),
+                  }))
+                : [],
         [profileApprovalDetail, renderApproverRedirect],
     );
 

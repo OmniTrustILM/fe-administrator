@@ -103,9 +103,8 @@ const NotificationProfilesList = () => {
 
     const dataRows: TableDataRow[] = useMemo(
         () =>
-            !notificationProfiles
-                ? []
-                : notificationProfiles.map((profile) => ({
+            notificationProfiles
+                ? notificationProfiles.map((profile) => ({
                       id: profile.uuid,
                       columns: [
                           <Link key="name" to={`./detail/${profile.uuid}/${profile.version}`}>
@@ -118,7 +117,8 @@ const NotificationProfilesList = () => {
                           <BooleanBadge key="internalNotification" value={profile.internalNotification} />,
                           profile.version.toString(),
                       ],
-                  })),
+                  }))
+                : [],
         [notificationProfiles, recipientTypeEnum],
     );
 

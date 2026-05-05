@@ -10,11 +10,11 @@ import Spinner from 'components/Spinner';
 import Button from 'components/Button';
 import Container from 'components/Container';
 
-interface Props {
+type Props = Readonly<{
     uuids: string[];
     onCancel: () => void;
     onUpdate: () => void;
-}
+}>;
 
 interface SelectChangeValue {
     value: string;

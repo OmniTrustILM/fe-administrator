@@ -29,13 +29,13 @@ import TabLayout from '../../../Layout/TabLayout';
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
 
-interface TokenProfileFormProps {
+type TokenProfileFormProps = Readonly<{
     tokenProfileId?: string;
     tokenId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
     usesGlobalModal?: boolean;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -99,7 +99,7 @@ export default function TokenProfileForm({
     useEffect(() => {
         if (editMode && id && tokenId) {
             // Fetch if id changed or if we don't have the correct profile loaded
-            if (previousIdRef.current !== id || !tokenProfileSelector || tokenProfileSelector.uuid !== id) {
+            if (previousIdRef.current !== id || tokenProfileSelector?.uuid !== id) {
                 dispatch(tokenProfilesActions.getTokenProfileDetail({ tokenInstanceUuid: tokenId, uuid: id }));
                 previousIdRef.current = id;
             }
@@ -109,7 +109,7 @@ export default function TokenProfileForm({
     }, [dispatch, editMode, id, tokenId, tokenProfileSelector]);
 
     useEffect(() => {
-        if (editMode && tokenProfileSelector && tokenProfileSelector.uuid === id) {
+        if (editMode && tokenProfileSelector?.uuid === id) {
             setTokenProfile(tokenProfileSelector);
             dispatch(tokensActions.getTokenProfileAttributesDescriptors({ tokenUuid: tokenProfileSelector.tokenInstanceUuid }));
         }
@@ -156,7 +156,7 @@ export default function TokenProfileForm({
 
     // Reset form values when tokenProfile is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && tokenProfile && tokenProfile.uuid === id && !isFetchingDetail) {
+        if (editMode && id && tokenProfile?.uuid === id && !isFetchingDetail) {
             const newDefaultValues: FormValues = {
                 name: tokenProfile.name || '',
                 description: tokenProfile.description || '',
@@ -400,9 +400,7 @@ export default function TokenProfileForm({
                             tabs={[
                                 {
                                     title: 'Connector Attributes',
-                                    content: !tokenProfileAttributeDescriptors ? (
-                                        <></>
-                                    ) : (
+                                    content: tokenProfileAttributeDescriptors ? (
                                         <AttributeEditor
                                             id="token-profile"
                                             callbackParentUuid={tokenProfile?.tokenInstanceUuid || watchedToken}
@@ -412,6 +410,8 @@ export default function TokenProfileForm({
                                             groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                                             setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                                         />
+                                    ) : (
+                                        <></>
                                     ),
                                 },
                                 {

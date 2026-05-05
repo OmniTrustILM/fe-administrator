@@ -137,7 +137,7 @@ export default function CryptographicKeyDetail() {
     }, [dispatch, cryptographicKey]);
 
     const optionForCompromise = useMemo(() => {
-        var options = [];
+        const options = [];
         if (keyCompromiseReasonEnum) {
             for (const reason in KeyCompromiseReason) {
                 const myReason: KeyCompromiseReason = KeyCompromiseReason[reason as keyof typeof KeyCompromiseReason];
@@ -229,7 +229,7 @@ export default function CryptographicKeyDetail() {
 
     const associationBody = useMemo(
         () =>
-            !cryptographicKey || !cryptographicKey.associations
+            !cryptographicKey?.associations
                 ? []
                 : cryptographicKey.associations.map((item) => ({
                       id: item.uuid,
@@ -250,9 +250,8 @@ export default function CryptographicKeyDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !cryptographicKey
-                ? []
-                : [
+            cryptographicKey
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', cryptographicKey.uuid],
@@ -330,7 +329,8 @@ export default function CryptographicKeyDetail() {
                                   : '',
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [cryptographicKey],
     );
 
@@ -364,7 +364,7 @@ export default function CryptographicKeyDetail() {
                 (a, b) => Object.values(KeyType).indexOf(a.type) - Object.values(KeyType).indexOf(b.type),
             );
             const keyTab = keyItems.findIndex((item) => item.uuid === keyItemUuid);
-            setSelectedTab(keyTab < 0 ? 0 : keyTab);
+            setSelectedTab(Math.max(0, keyTab));
         }
     }, [cryptographicKey, keyItemUuid]);
 

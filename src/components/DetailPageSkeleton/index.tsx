@@ -7,14 +7,14 @@ const cardClass =
 
 type SkeletonLayout = 'simple' | 'tabs' | 'split';
 
-interface Props {
+type Props = Readonly<{
     layout?: SkeletonLayout;
     tabCount?: number;
     rowCount?: number;
     buttonsCount?: number;
     tabWidgetButtonsCount?: number;
     showBreadcrumb?: boolean;
-}
+}>;
 
 function BreadcrumbSkeleton() {
     return (

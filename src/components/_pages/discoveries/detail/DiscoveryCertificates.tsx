@@ -16,10 +16,10 @@ import TabLayout from '../../../Layout/TabLayout';
 import TriggerHistorySummaryViewer from './TriggerHistorySummaryViewer';
 import { Info } from 'lucide-react';
 
-interface Props {
+type Props = Readonly<{
     id: string;
     triggerHistorySummary?: TriggerHistorySummaryModel;
-}
+}>;
 
 export default function DiscoveryCertificates({ id, triggerHistorySummary }: Props) {
     const dispatch = useDispatch();
@@ -74,14 +74,16 @@ export default function DiscoveryCertificates({ id, triggerHistorySummary }: Pro
         ];
 
         if (newlyDiscovered === true) {
-            discoveryHeaders.push({
-                id: 'triggers',
-                content: 'Triggers',
-            });
-            discoveryHeaders.push({
-                id: 'errorInfo',
-                content: '',
-            });
+            discoveryHeaders.push(
+                {
+                    id: 'triggers',
+                    content: 'Triggers',
+                },
+                {
+                    id: 'errorInfo',
+                    content: '',
+                },
+            );
         }
 
         return discoveryHeaders;

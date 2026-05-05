@@ -21,11 +21,11 @@ import TabLayout from '../../../Layout/TabLayout';
 import Label from 'components/Label';
 import TextInput from 'components/TextInput';
 
-interface ComplianceProfileFormProps {
+type ComplianceProfileFormProps = Readonly<{
     complianceProfileId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;

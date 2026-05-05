@@ -26,7 +26,7 @@ const defaultEnumsPreload = {
     },
 };
 
-export interface FilterWidgetRuleActionTestWrapperProps {
+export type FilterWidgetRuleActionTestWrapperProps = Readonly<{
     title?: string;
     entity?: EntityType;
     availableFilters?: SearchFieldListModel[];
@@ -35,7 +35,7 @@ export interface FilterWidgetRuleActionTestWrapperProps {
     disableBadgeRemove?: boolean;
     busyBadges?: boolean;
     platformEnumsOverride?: Record<string, Record<string, { label: string }>>;
-}
+}>;
 
 export function FilterWidgetRuleActionTestWrapper({
     title = 'Filter rule actions',

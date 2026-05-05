@@ -1,6 +1,5 @@
 import { test, expect } from '../../../../../playwright/ct-test';
-import ContentValueFieldTestWrapper from './ContentValueFieldTestWrapper';
-import { buildDescriptor } from './ContentValueFieldTestWrapper';
+import ContentValueFieldTestWrapper, { buildDescriptor } from './ContentValueFieldTestWrapper';
 import { AttributeContentType } from 'types/openapi';
 
 type Page = import('@playwright/test').Page;

@@ -1,5 +1,4 @@
 import { test, expect } from '../../../../playwright/ct-test';
-import CustomFlowNode from './index';
 import CustomFlowNodeMountWrapper from './CustomFlowNodeMountWrapper';
 import type { CustomNodeData, EntityNodeProps, OtherProperties } from 'types/flowchart';
 import { CertificateValidationStatus } from 'types/openapi';

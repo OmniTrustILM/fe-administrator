@@ -13,7 +13,7 @@ export interface ColorOptions {
     colors: string[];
 }
 
-interface Props {
+type Props = Readonly<{
     title: string;
     data?: DashboardDict;
     entity: EntityType;
@@ -25,7 +25,7 @@ interface Props {
     chartSize?: 'full' | 'fixed';
     showCenterLabel?: boolean;
     shrinkOnSmallScreen?: boolean;
-}
+}>;
 
 function DonutChart({
     title,

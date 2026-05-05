@@ -10,13 +10,13 @@ import { base64ToUtf8 } from 'utils/common-utils';
 import type { CodeBlockAttributeContentModel } from '../../../types/attributes';
 import type { ProgrammingLanguageEnum } from '../../../types/openapi';
 
-type Props = {
+type Props = Readonly<{
     content: CodeBlockAttributeContentModel;
-};
+}>;
 
 export const getHighLightedCode = (code: string, language: ProgrammingLanguageEnum) => {
     try {
-        return hljs.highlight(code == null ? '' : code, { language }).value;
+        return hljs.highlight(code ?? '', { language }).value;
     } catch (e) {
         console.error(e);
         return code;

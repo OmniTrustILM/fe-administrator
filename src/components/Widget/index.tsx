@@ -19,7 +19,7 @@ interface WidgetInfoCard {
     notesList?: string[];
 }
 
-interface Props {
+type Props = Readonly<{
     id?: string;
     title?: string;
     titleLink?: string;
@@ -40,7 +40,7 @@ interface Props {
     dataTestId?: string;
     noBorder?: boolean;
     enableBusyOverlay?: boolean;
-}
+}>;
 
 function Widget({
     id,

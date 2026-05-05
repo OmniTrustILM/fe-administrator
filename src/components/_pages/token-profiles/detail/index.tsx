@@ -15,7 +15,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import TokenProfileForm from '../form';
 import KeyUsageSelect from '../../cryptographic-keys/KeyUsageSelect';
-import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
+import { selectors as enumSelectors } from 'ducks/enums';
 import Label from 'components/Label';
 import Badge from 'components/Badge';
 import { type KeyUsage, PlatformEnum, Resource } from 'types/openapi';
@@ -156,9 +156,8 @@ export default function TokenProfileDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !tokenProfile
-                ? []
-                : [
+            tokenProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', tokenProfile.uuid],
@@ -205,7 +204,8 @@ export default function TokenProfileDetail() {
                               )),
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [tokenProfile],
     );
 

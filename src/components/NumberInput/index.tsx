@@ -1,6 +1,6 @@
 import { Minus, Plus } from 'lucide-react';
 
-interface Props {
+type Props = Readonly<{
     value: number;
     onChange: (value: number) => void;
     min?: number;
@@ -8,7 +8,7 @@ interface Props {
     step?: number;
     disabled?: boolean;
     zeroPad?: boolean;
-}
+}>;
 
 export default function NumberInput({ value, onChange, min = 0, max = 999, step = 1, disabled = false, zeroPad = false }: Props) {
     const decrement = () => onChange(Math.max(min, value - step));

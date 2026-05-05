@@ -98,7 +98,7 @@ export default function UsersList() {
     }, [checkedRows, users]);
 
     const isCurrentUserSelected = useMemo(() => {
-        return checkedRows.some((uuid) => uuid === profile?.uuid);
+        return checkedRows.includes(profile?.uuid ?? '');
     }, [checkedRows, profile]);
 
     const canEnable: boolean = useMemo(() => {
@@ -243,7 +243,7 @@ export default function UsersList() {
 
                     <span style={{ whiteSpace: 'nowrap' }}>{user.email || ''}</span>,
 
-                    <Badge color={!user.systemUser ? 'success' : 'danger'}>{user.systemUser ? 'Yes' : 'No'}</Badge>,
+                    <Badge color={user.systemUser ? 'danger' : 'success'}>{user.systemUser ? 'Yes' : 'No'}</Badge>,
 
                     <StatusBadge enabled={user.enabled} />,
                 ],

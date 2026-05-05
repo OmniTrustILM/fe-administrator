@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { of } from 'rxjs';
-import { catchError, filter, map, switchMap } from 'rxjs/operators';
+import { catchError, filter, switchMap } from 'rxjs/operators';
 import { actions as appRedirectActions } from './app-redirect';
 import { actions as userInterfaceActions } from './user-interface';
 

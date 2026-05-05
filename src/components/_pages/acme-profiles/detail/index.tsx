@@ -145,9 +145,8 @@ export default function AdministratorDetail() {
 
     const acmeProfileDetailData: TableDataRow[] = useMemo(
         () =>
-            !acmeProfile
-                ? []
-                : [
+            acmeProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', acmeProfile.uuid],
@@ -180,13 +179,14 @@ export default function AdministratorDetail() {
                           id: 'directoryUrl',
                           columns: ['Directory URL', acmeProfile.directoryUrl || 'N/A'],
                       },
-                  ],
+                  ]
+                : [],
         [acmeProfile],
     );
 
     const raProfileDetailData: TableDataRow[] = useMemo(
         () =>
-            !acmeProfile || !acmeProfile.raProfile
+            !acmeProfile?.raProfile
                 ? []
                 : [
                       {
@@ -218,9 +218,8 @@ export default function AdministratorDetail() {
 
     const dnsData: TableDataRow[] = useMemo(
         () =>
-            !acmeProfile
-                ? []
-                : [
+            acmeProfile
+                ? [
                       {
                           id: 'dnsResolverIpAddress',
                           columns: ['DNS Resolver IP Address', acmeProfile.dnsResolverIp || 'N/A'],
@@ -229,51 +228,41 @@ export default function AdministratorDetail() {
                           id: 'dnsResolverPort',
                           columns: ['DNS Resolver Port', acmeProfile.dnsResolverPort || 'N/A'],
                       },
-                  ],
+                  ]
+                : [],
         [acmeProfile],
     );
 
-    const termsOfServiceData: TableDataRow[] = useMemo(
-        () =>
-            !acmeProfile
-                ? []
-                : [
-                      {
-                          id: 'termsOfServiceUrl',
-                          columns: ['Terms of Service URL', acmeProfile.termsOfServiceUrl || 'N/A'],
-                      },
-                      {
-                          id: 'changesToTermsOfServiceUrl',
-                          columns: ['Changes of Terms of Service URL', acmeProfile.termsOfServiceChangeUrl || 'N/A'],
-                      },
-                      {
-                          id: 'disableNewOrderPlacement',
-                          columns: [
-                              'Disable new Order placement? (due to change in Terms Of Service)',
-                              acmeProfile.termsOfServiceChangeDisable !== undefined
-                                  ? acmeProfile.termsOfServiceChangeDisable
-                                      ? 'Yes'
-                                      : 'No'
-                                  : 'N/A',
-                          ],
-                      },
-                      {
-                          id: 'requireContact',
-                          columns: [
-                              'Require Contact information for new Accounts?',
-                              acmeProfile.requireContact !== undefined ? (acmeProfile.requireContact ? 'Yes' : 'No') : 'N/A',
-                          ],
-                      },
-                      {
-                          id: 'requireAgreement',
-                          columns: [
-                              'Require Agreement for new Accounts?',
-                              acmeProfile.requireTermsOfService !== undefined ? (acmeProfile.requireTermsOfService ? 'Yes' : 'No') : 'N/A',
-                          ],
-                      },
-                  ],
-        [acmeProfile],
-    );
+    const termsOfServiceData: TableDataRow[] = useMemo(() => {
+        if (!acmeProfile) return [];
+        const disableOrdersText =
+            acmeProfile.termsOfServiceChangeDisable !== undefined ? (acmeProfile.termsOfServiceChangeDisable ? 'Yes' : 'No') : 'N/A';
+        const requireContactText = acmeProfile.requireContact !== undefined ? (acmeProfile.requireContact ? 'Yes' : 'No') : 'N/A';
+        const requireAgreementText =
+            acmeProfile.requireTermsOfService !== undefined ? (acmeProfile.requireTermsOfService ? 'Yes' : 'No') : 'N/A';
+        return [
+            {
+                id: 'termsOfServiceUrl',
+                columns: ['Terms of Service URL', acmeProfile.termsOfServiceUrl || 'N/A'],
+            },
+            {
+                id: 'changesToTermsOfServiceUrl',
+                columns: ['Changes of Terms of Service URL', acmeProfile.termsOfServiceChangeUrl || 'N/A'],
+            },
+            {
+                id: 'disableNewOrderPlacement',
+                columns: ['Disable new Order placement? (due to change in Terms Of Service)', disableOrdersText],
+            },
+            {
+                id: 'requireContact',
+                columns: ['Require Contact information for new Accounts?', requireContactText],
+            },
+            {
+                id: 'requireAgreement',
+                columns: ['Require Agreement for new Accounts?', requireAgreementText],
+            },
+        ];
+    }, [acmeProfile]);
 
     const raProfileText = useMemo(
         () => (raProfileDetailData.length > 0 ? 'RA Profile Configuration' : 'Default RA Profile not selected'),

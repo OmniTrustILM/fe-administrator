@@ -7,10 +7,10 @@ import { selectors } from 'ducks/settings';
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
-interface PlatformSettingsFormProps {
+type PlatformSettingsFormProps = Readonly<{
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 export default function PlatformSettingsForm({ onCancel, onSuccess }: PlatformSettingsFormProps) {
     const isFetchingPlatform = useSelector(selectors.isFetchingPlatform);

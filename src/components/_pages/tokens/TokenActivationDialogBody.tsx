@@ -12,11 +12,11 @@ import { collectFormAttributes } from 'utils/attributes/attributes';
 import TabLayout from '../../Layout/TabLayout';
 import Container from 'components/Container';
 
-interface Props {
+type Props = Readonly<{
     tokenUuid?: string;
     visible: boolean;
     onClose: () => void;
-}
+}>;
 
 export default function TokenActivationDialogBody({ tokenUuid, visible, onClose }: Props) {
     const dispatch = useDispatch();

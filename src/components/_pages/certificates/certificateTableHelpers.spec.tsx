@@ -1,7 +1,6 @@
 import { test, expect } from '../../../../playwright/ct-test';
 import { buildCertificateRowColumns, buildCertificateDetailBaseRows } from './certificateTableHelpers';
-import type { CertificateListResponseModel } from 'types/certificate';
-import type { CertificateDetailResponseModel } from 'types/certificate';
+import type { CertificateListResponseModel, CertificateDetailResponseModel } from 'types/certificate';
 import { CertificateType } from 'types/openapi';
 
 const mockDateFormatter = (d: Date) => d.toISOString().slice(0, 10);

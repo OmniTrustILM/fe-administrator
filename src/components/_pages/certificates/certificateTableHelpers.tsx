@@ -2,13 +2,9 @@ import React from 'react';
 import { Link } from 'react-router';
 import Badge from 'components/Badge';
 import { KeyRound } from 'lucide-react';
-import { actions as filterActions } from 'ducks/filters';
-import { EntityType } from 'ducks/filters';
-import { CertificateType } from 'types/openapi';
-import type { CertificateListResponseModel } from 'types/certificate';
-import type { CertificateDetailResponseModel } from 'types/certificate';
-import type { CertificateValidationResultDto } from 'types/openapi';
-import { CertificateValidationStatus, ComplianceStatus } from 'types/openapi';
+import { actions as filterActions, EntityType } from 'ducks/filters';
+import { CertificateType, type CertificateValidationResultDto, CertificateValidationStatus, ComplianceStatus } from 'types/openapi';
+import type { CertificateListResponseModel, CertificateDetailResponseModel } from 'types/certificate';
 import type { TableDataRow } from 'components/CustomTable';
 import CertificateStatus from './CertificateStatus';
 
@@ -50,36 +46,27 @@ export function buildCertificateRowColumns(
               </React.Fragment>
           ))
         : 'Unassigned';
-    const raProfileCell = certificate.raProfile ? (
-        isLinkDisabled ? (
-            (certificate.raProfile.name ?? 'Unassigned')
-        ) : (
-            <Link to={`../raprofiles/detail/${certificate.raProfile.authorityInstanceUuid}/${certificate.raProfile.uuid}`}>
-                {certificate.raProfile.name ?? 'Unassigned'}
-            </Link>
-        )
+    const raProfileLinked = isLinkDisabled ? (
+        (certificate.raProfile?.name ?? 'Unassigned')
     ) : (
-        (certificate.raProfile ?? 'Unassigned')
+        <Link to={`../raprofiles/detail/${certificate.raProfile?.authorityInstanceUuid}/${certificate.raProfile?.uuid}`}>
+            {certificate.raProfile?.name ?? 'Unassigned'}
+        </Link>
     );
-    const ownerCell = certificate?.ownerUuid ? (
-        isLinkDisabled ? (
-            (certificate.owner ?? 'Unassigned')
-        ) : (
-            <Link to={`../users/detail/${certificate?.ownerUuid}`}>{certificate.owner ?? 'Unassigned'}</Link>
-        )
-    ) : (
+    const raProfileCell = certificate.raProfile ? raProfileLinked : (certificate.raProfile ?? 'Unassigned');
+    const ownerLinked = isLinkDisabled ? (
         (certificate.owner ?? 'Unassigned')
+    ) : (
+        <Link to={`../users/detail/${certificate?.ownerUuid}`}>{certificate.owner ?? 'Unassigned'}</Link>
+    );
+    const ownerCell = certificate?.ownerUuid ? ownerLinked : (certificate.owner ?? 'Unassigned');
+    const issuerLinked = isLinkDisabled ? (
+        certificate.issuerCommonName
+    ) : (
+        <Link to={`./detail/${certificate.issuerCertificateUuid}`}>{certificate.issuerCommonName}</Link>
     );
     const issuerCell =
-        certificate.issuerCommonName && certificate?.issuerCertificateUuid ? (
-            isLinkDisabled ? (
-                certificate.issuerCommonName
-            ) : (
-                <Link to={`./detail/${certificate.issuerCertificateUuid}`}>{certificate.issuerCommonName}</Link>
-            )
-        ) : (
-            certificate.issuerCommonName || ''
-        );
+        certificate.issuerCommonName && certificate?.issuerCertificateUuid ? issuerLinked : certificate.issuerCommonName || '';
     const certTypeCell = certificate.certificateType ? (
         <Badge color={certificate.certificateType === CertificateType.X509 ? 'primary' : 'gray'} size="small">
             {getEnumLabel(certificateTypeEnum, certificate.certificateType)}
@@ -162,13 +149,14 @@ export function buildCertificateDetailBaseRows(
             id: 'issuerCommonName',
             columns: [
                 'Issuer Common Name',
-                certificate?.issuerCommonName && certificate?.issuerCertificateUuid ? (
-                    <Link to={`../certificates/detail/${certificate.issuerCertificateUuid}`}>{certificate.issuerCommonName}</Link>
-                ) : certificate?.issuerCommonName ? (
-                    certificate.issuerCommonName
-                ) : (
-                    ''
-                ),
+                (() => {
+                    if (certificate?.issuerCommonName && certificate?.issuerCertificateUuid) {
+                        return (
+                            <Link to={`../certificates/detail/${certificate.issuerCertificateUuid}`}>{certificate.issuerCommonName}</Link>
+                        );
+                    }
+                    return certificate?.issuerCommonName ?? '';
+                })(),
             ],
         },
         { id: 'issuerDN', columns: ['Issuer DN', certificate.issuerDn || ''] },

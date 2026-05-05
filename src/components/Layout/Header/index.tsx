@@ -8,9 +8,9 @@ import { selectors } from 'ducks/auth';
 
 import logo from '../../../resources/images/ot-logo-white.svg';
 
-interface Props {
+type Props = Readonly<{
     sidebarToggle: () => void;
-}
+}>;
 
 function Header({ sidebarToggle }: Props) {
     const profile = useSelector(selectors.profile);

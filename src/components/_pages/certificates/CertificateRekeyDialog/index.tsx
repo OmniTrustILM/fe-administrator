@@ -47,10 +47,10 @@ interface FormValues {
     altKey?: CryptographicKeyPairResponseModel;
 }
 
-interface props {
+type props = Readonly<{
     onCancel: () => void;
     certificate?: CertificateDetailResponseModel;
-}
+}>;
 
 export default function CertificateRekeyDialog({ onCancel, certificate }: props) {
     const dispatch = useDispatch();
@@ -159,8 +159,8 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: props)
                     uuid: key.uuid,
                     tokenProfileUuid: key.tokenProfileUuid,
                     tokenInstanceUuid: key.tokenInstanceUuid,
-                    keyItemUuid: key.items.filter((e) => e.type === KeyType.Private)[0].uuid,
-                    algorithm: key.items.filter((e) => e.type === KeyType.Private)[0].keyAlgorithm,
+                    keyItemUuid: key.items.find((e) => e.type === KeyType.Private)!.uuid,
+                    algorithm: key.items.find((e) => e.type === KeyType.Private)!.keyAlgorithm,
                     store: type,
                 }),
             );
@@ -255,8 +255,9 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: props)
     }, [watchedKey, watchedAltKey, defaultValues]);
 
     const getSignatureAttributesTabs = useCallback(() => {
-        return !watchedUploadCsr
-            ? [
+        return watchedUploadCsr
+            ? []
+            : [
                   ...(watchedKey?.uuid !== certificate?.key?.uuid
                       ? [
                             {
@@ -287,8 +288,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: props)
                             },
                         ]
                       : []),
-              ]
-            : [];
+              ];
     }, [
         watchedUploadCsr,
         watchedKey?.uuid,

@@ -177,9 +177,8 @@ export default function AcmeAccountDetail() {
 
     const orderData: TableDataRow[] = useMemo(
         () =>
-            !acmeAccount
-                ? []
-                : [
+            acmeAccount
+                ? [
                       {
                           id: 'Successful orders',
                           columns: ['Successful orders', acmeAccount.successfulOrders.toString()],
@@ -200,7 +199,8 @@ export default function AcmeAccountDetail() {
                           id: 'Processing orders',
                           columns: ['Processing orders', acmeAccount.processingOrders.toString()],
                       },
-                  ],
+                  ]
+                : [],
         [acmeAccount],
     );
 

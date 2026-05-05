@@ -31,10 +31,10 @@ function StartTimePicker({
     );
 }
 
-interface Props {
+type Props = Readonly<{
     value: string;
     onChange: (value: string) => void;
-}
+}>;
 
 export default function CronBuilder({ value, onChange }: Props) {
     const [state, setState] = useState<CronState>(() => parseCron(value));

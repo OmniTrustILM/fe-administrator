@@ -144,9 +144,8 @@ export default function AdministratorDetail() {
 
     const cmpProfileDetailData: TableDataRow[] = useMemo(
         () =>
-            !cmpProfile
-                ? []
-                : [
+            cmpProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', cmpProfile.uuid],
@@ -171,13 +170,14 @@ export default function AdministratorDetail() {
                           id: 'cmpUrl',
                           columns: ['CMP URL', cmpProfile.cmpUrl || 'N/A'],
                       },
-                  ],
+                  ]
+                : [],
         [cmpProfile, cmpCmpProfileVariantEnum],
     );
 
     const raProfileDetailData: TableDataRow[] = useMemo(
         () =>
-            !cmpProfile || !cmpProfile.raProfile
+            !cmpProfile?.raProfile
                 ? []
                 : [
                       {
@@ -209,7 +209,7 @@ export default function AdministratorDetail() {
 
     const requestConfigurationData: TableDataRow[] = useMemo(
         () =>
-            !cmpProfile || !cmpProfile.requestProtectionMethod
+            !cmpProfile?.requestProtectionMethod
                 ? []
                 : [
                       {
@@ -222,9 +222,8 @@ export default function AdministratorDetail() {
 
     const responseConfigurationData: TableDataRow[] = useMemo(
         () =>
-            !cmpProfile
-                ? []
-                : [
+            cmpProfile
+                ? [
                       {
                           id: 'responseProtectionMethod',
                           columns: ['Response Protection Method', getEnumLabel(protectionMethodEnum, cmpProfile?.responseProtectionMethod)],
@@ -242,7 +241,8 @@ export default function AdministratorDetail() {
                               ),
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [cmpProfile, protectionMethodEnum],
     );
 

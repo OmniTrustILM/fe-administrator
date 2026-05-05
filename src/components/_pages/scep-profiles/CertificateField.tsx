@@ -7,9 +7,9 @@ import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-hel
 import { validateRequired } from 'utils/validators';
 import cn from 'classnames';
 
-interface Props {
+type Props = Readonly<{
     certificates: CertificateListResponseModel[] | undefined;
-}
+}>;
 
 export default function CertificateField({ certificates }: Props) {
     const { control, setValue } = useFormContext();

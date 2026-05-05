@@ -3,13 +3,13 @@ import * as ReactHookForm from 'react-hook-form';
 import { AttributeFieldInput } from './AttributeFieldInput';
 import type { DataAttributeModel } from 'types/attributes';
 
-export interface AttributeFieldInputTestWrapperProps {
+export type AttributeFieldInputTestWrapperProps = Readonly<{
     name: string;
     descriptor: DataAttributeModel;
     busy?: boolean;
     deleteButton?: React.ReactNode;
     defaultValues?: Record<string, unknown>;
-}
+}>;
 
 export function AttributeFieldInputTestWrapper({
     name,
@@ -37,7 +37,7 @@ export function AttributeFieldInputTestWrapper({
                 type="button"
                 data-testid="trigger-validation"
                 onClick={() => {
-                    void methods.setValue(name, '', {
+                    methods.setValue(name, '', {
                         shouldTouch: true,
                         shouldValidate: true,
                     });

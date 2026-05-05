@@ -99,7 +99,7 @@ export type TextAttributeContentDtoV3 = TextAttributeContentV3;
 export type TimeAttributeContentDtoV2 = TimeAttributeContentV2;
 export type TimeAttributeContentDtoV3 = TimeAttributeContentV3;
 
-export type { BaseAttributeContentDtoV2, BaseAttributeContentDtoV3 };
+export type { BaseAttributeContentDtoV2, BaseAttributeContentDtoV3 } from 'types/openapi';
 
 export type BooleanAttributeContentDto = BooleanAttributeContent;
 export type BooleanAttributeContentModel = BooleanAttributeContentDto;

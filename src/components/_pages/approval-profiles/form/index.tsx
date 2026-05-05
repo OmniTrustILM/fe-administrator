@@ -29,11 +29,11 @@ const defaultApprovalSteps: ApprovalStepRequestModel[] = [
     },
 ];
 
-interface ApprovalProfileFormProps {
+type ApprovalProfileFormProps = Readonly<{
     approvalProfileId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 function ApprovalProfileForm({ approvalProfileId, onCancel, onSuccess }: ApprovalProfileFormProps) {
     const dispatch = useDispatch();
@@ -57,7 +57,7 @@ function ApprovalProfileForm({ approvalProfileId, onCancel, onSuccess }: Approva
     useEffect(() => {
         if (editMode && id) {
             // Fetch if id changed or if we don't have the correct profile loaded
-            if (previousIdRef.current !== id || !profileApprovalDetail || profileApprovalDetail.uuid !== id) {
+            if (previousIdRef.current !== id || profileApprovalDetail?.uuid !== id) {
                 dispatch(profileApprovalActions.getApprovalProfile({ uuid: id }));
                 previousIdRef.current = id;
             }
@@ -96,12 +96,12 @@ function ApprovalProfileForm({ approvalProfileId, onCancel, onSuccess }: Approva
 
     const onSubmit = useCallback(
         (values: ProfileApprovalRequestModel) => {
-            if (!editMode) {
-                dispatch(profileApprovalActions.createApprovalProfile(values));
-            } else {
+            if (editMode) {
                 if (!id) return;
 
                 dispatch(profileApprovalActions.editApprovalProfile({ editProfileApproval: values, uuid: id }));
+            } else {
+                dispatch(profileApprovalActions.createApprovalProfile(values));
             }
         },
         [dispatch, editMode, id],
@@ -109,7 +109,7 @@ function ApprovalProfileForm({ approvalProfileId, onCancel, onSuccess }: Approva
 
     // Reset form values when profileApprovalDetail is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && profileApprovalDetail && profileApprovalDetail.uuid === id && !isFetchingDetail) {
+        if (editMode && id && profileApprovalDetail?.uuid === id && !isFetchingDetail) {
             const newDefaultValues: ProfileApprovalRequestModel = {
                 ...profileApprovalDetail,
                 enabled: false,

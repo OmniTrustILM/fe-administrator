@@ -7,7 +7,7 @@ import { createMockStore } from 'utils/test-helpers';
 import AttributeEditor from './index';
 import type { AttributeDescriptorModel, AttributeResponseModel } from 'types/attributes';
 
-export interface AttributeEditorTestWrapperProps {
+export type AttributeEditorTestWrapperProps = Readonly<{
     id: string;
     attributeDescriptors: AttributeDescriptorModel[];
     attributes?: AttributeResponseModel[];
@@ -18,7 +18,7 @@ export interface AttributeEditorTestWrapperProps {
     kind?: string;
     withRemoveAction?: boolean;
     preloadedState?: Record<string, unknown>;
-}
+}>;
 
 /** Build form defaultValues so Data/Custom fields exist on first paint (before AttributeEditor effects run) */
 function buildAttributeDefaultValues(

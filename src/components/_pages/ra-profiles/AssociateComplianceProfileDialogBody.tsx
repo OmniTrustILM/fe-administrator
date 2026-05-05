@@ -16,12 +16,12 @@ import type { RaProfileResponseModel } from 'types/ra-profiles';
 import { Resource } from 'types/openapi';
 import Container from 'components/Container';
 
-interface Props {
+type Props = Readonly<{
     raProfile?: RaProfileResponseModel;
     availableComplianceProfileUuids?: string[];
     visible: boolean;
     onClose: () => void;
-}
+}>;
 
 export default function AssociateComplianceProfileDialogBody({ raProfile, availableComplianceProfileUuids, visible, onClose }: Props) {
     const dispatch = useDispatch();

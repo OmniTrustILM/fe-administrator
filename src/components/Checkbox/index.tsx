@@ -1,7 +1,7 @@
 import cn from 'classnames';
 import Label from 'components/Label';
 
-interface Props {
+type Props = Readonly<{
     checked: boolean;
     onChange: (checked: boolean) => void;
     placeholder?: string;
@@ -9,7 +9,7 @@ interface Props {
     label?: string;
     disabled?: boolean;
     dataTestId?: string;
-}
+}>;
 
 function Checkbox({ checked, onChange, id, label, disabled = false, dataTestId }: Props) {
     return (

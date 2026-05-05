@@ -8,12 +8,12 @@ export interface ForceDeleteErrorItem {
     message: string;
 }
 
-interface ForceDeleteErrorTableProps {
+type ForceDeleteErrorTableProps = Readonly<{
     items?: ForceDeleteErrorItem[];
     entityNameSingular: string;
     entityNamePlural: string;
     itemsCount: number;
-}
+}>;
 
 export default function ForceDeleteErrorTable({ items, entityNameSingular, entityNamePlural, itemsCount }: ForceDeleteErrorTableProps) {
     const headers: TableHeader[] = useMemo(

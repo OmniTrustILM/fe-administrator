@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router';
 import { createMockStore } from 'utils/test-helpers';
 import TabLayout from './index';
 
-export type TabLayoutWithStoreProps = React.ComponentProps<typeof TabLayout>;
+export type TabLayoutWithStoreProps = Readonly<React.ComponentProps<typeof TabLayout>>;
 
 export default function TabLayoutWithStore(props: TabLayoutWithStoreProps) {
     const store = createMockStore();

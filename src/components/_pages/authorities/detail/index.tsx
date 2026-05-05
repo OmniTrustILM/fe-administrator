@@ -71,9 +71,8 @@ export default function AuthorityDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !authority
-                ? []
-                : [
+            authority
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', authority.uuid],
@@ -101,7 +100,8 @@ export default function AuthorityDetail() {
                               ),
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [authority],
     );
 

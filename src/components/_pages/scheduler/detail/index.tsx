@@ -229,9 +229,8 @@ export default function SchedulerJobDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !schedulerJob
-                ? []
-                : [
+            schedulerJob
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', schedulerJob.uuid],
@@ -271,13 +270,12 @@ export default function SchedulerJobDetail() {
                               'Last Execution Status',
                               <Badge
                                   key="lastExecutionStatus"
-                                  color={
-                                      schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Failed
-                                          ? 'danger'
-                                          : schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Succeeded
-                                            ? 'success'
-                                            : 'primary'
-                                  }
+                                  color={(() => {
+                                      if (schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Failed) return 'danger';
+                                      return schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Succeeded
+                                          ? 'success'
+                                          : 'primary';
+                                  })()}
                               >
                                   {getEnumLabel(schedulerJobExecutionStatusEnum, schedulerJob.lastExecutionStatus)}
                               </Badge>,
@@ -295,7 +293,8 @@ export default function SchedulerJobDetail() {
                               </>,
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [schedulerJob, schedulerJobExecutionStatusEnum],
     );
 

@@ -43,11 +43,11 @@ function DonutChartSkeleton() {
     );
 }
 
-interface Props {
+type Props = Readonly<{
     countBadges: number;
     charts: number;
     firstBadgeWithSwitch?: boolean;
-}
+}>;
 
 function DashboardSkeleton({ countBadges, charts, firstBadgeWithSwitch = false }: Props) {
     return (

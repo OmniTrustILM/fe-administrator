@@ -59,9 +59,8 @@ const UtilsSettings = ({ platformSettings }: Props) => {
 
     const data: TableDataRow[] = useMemo(
         () =>
-            !platformSettings
-                ? []
-                : [
+            platformSettings
+                ? [
                       {
                           id: 'utilsUrl',
                           columns: [
@@ -90,7 +89,8 @@ const UtilsSettings = ({ platformSettings }: Props) => {
                               ),
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [platformSettings, health, cbomHealth],
     );
 

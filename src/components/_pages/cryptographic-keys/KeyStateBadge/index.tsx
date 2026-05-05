@@ -3,9 +3,9 @@ import { useSelector } from 'react-redux';
 import Badge from 'components/Badge';
 import { KeyState, PlatformEnum } from 'types/openapi';
 
-interface Props {
+type Props = Readonly<{
     state: KeyState;
-}
+}>;
 
 function KeyStateBadge({ state }: Props) {
     const keyStateEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyState));

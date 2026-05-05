@@ -43,10 +43,10 @@ const ConditionsExecutionsList = ({
         [isFetchingAvailableFiltersConditions, isFetchingAvailableFiltersActions, isFetchingRuleDetails, isFetchingActionsDetails],
     );
 
-    const widgetTitle = useMemo(
-        () => (ruleConditions?.length ? 'Condition Items' : actionExecutions?.length ? 'Execution Items' : ''),
-        [ruleConditions, actionExecutions],
-    );
+    const widgetTitle = useMemo(() => {
+        if (ruleConditions?.length) return 'Condition Items';
+        return actionExecutions?.length ? 'Execution Items' : '';
+    }, [ruleConditions, actionExecutions]);
 
     const renderListData = useMemo(() => {
         if (isBusy) return <Spinner active={isBusy} />;

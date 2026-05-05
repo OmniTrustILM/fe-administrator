@@ -22,11 +22,11 @@ import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
 import Label from 'components/Label';
 
-interface CustomOIDFormProps {
+type CustomOIDFormProps = Readonly<{
     oidId?: string;
     onCancel: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     oid: string;

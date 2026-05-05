@@ -98,9 +98,8 @@ export default function EventDetail() {
 
     const profileData: TableDataRow[] = useMemo(
         () =>
-            !eventSettings
-                ? []
-                : [
+            eventSettings
+                ? [
                       {
                           id: 'name',
                           columns: ['Name', getEnumLabel(resourceEventEnum, eventSettings.event)],
@@ -116,7 +115,8 @@ export default function EventDetail() {
                           id: 'triggersCount',
                           columns: ['Triggers Count', eventSettings.triggerUuids.length.toString()],
                       },
-                  ],
+                  ]
+                : [],
         [event, resourceEvents, eventSettings, resourceEventEnum, resourceEnum],
     );
 

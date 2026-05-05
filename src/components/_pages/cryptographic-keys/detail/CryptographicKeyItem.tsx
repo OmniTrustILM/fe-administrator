@@ -29,13 +29,13 @@ import Button from 'components/Button';
 import { Info } from 'lucide-react';
 import Container from 'components/Container';
 
-interface Props {
+type Props = Readonly<{
     keyUuid: string;
     tokenInstanceUuid?: string;
     tokenProfileUuid?: string;
     keyItem: CryptographicKeyItemDetailResponseModel;
     totalKeyItems: number;
-}
+}>;
 
 export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, tokenProfileUuid, keyItem, totalKeyItems }: Props) {
     const dispatch = useDispatch();
@@ -80,7 +80,7 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
 
     useEffect(() => {
         if (history) {
-            setKeyHistory(history.filter((item) => item.uuid === keyItem.uuid)?.[0]?.history || []);
+            setKeyHistory(history.find((item) => item.uuid === keyItem.uuid)?.history || []);
         }
     }, [history, keyItem.uuid]);
 
@@ -269,9 +269,8 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !keyItem
-                ? []
-                : [
+            keyItem
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', keyItem.uuid],
@@ -342,7 +341,8 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
                               ),
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [keyItem, keyTypeEnum, isUpdatingKeyItem, onEditName, keyCompromiseReasonEnum],
     );
 
@@ -377,7 +377,7 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
     );
 
     const optionForCompromise = () => {
-        var options = [];
+        const options = [];
         for (const reason in KeyCompromiseReason) {
             const myReason: KeyCompromiseReason = KeyCompromiseReason[reason as keyof typeof KeyCompromiseReason];
             options.push({ value: myReason, label: getEnumLabel(keyCompromiseReasonEnum, myReason) });
@@ -387,9 +387,8 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
 
     const historyEntry: TableDataRow[] = useMemo(
         () =>
-            !keyHistory
-                ? []
-                : keyHistory.map((history) => ({
+            keyHistory
+                ? keyHistory.map((history) => ({
                       id: history.uuid,
                       columns: [
                           <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(history.created)}</span>,
@@ -414,7 +413,8 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
                               ''
                           ),
                       ],
-                  })),
+                  }))
+                : [],
         [keyHistory],
     );
 

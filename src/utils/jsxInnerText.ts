@@ -1,18 +1,18 @@
 export function jsxInnerText(obj: React.ReactNode): string {
-    var buf = '';
+    let buf = '';
 
     if (obj !== null && obj !== undefined) {
-        var type = typeof obj;
+        const type = typeof obj;
 
         if (type === 'string' || type === 'number' || type === 'boolean') {
             buf += obj.toString();
         } else if (type === 'object') {
-            var children = null;
+            let children = null;
 
             if (Array.isArray(obj)) {
                 children = obj;
             } else {
-                var props = obj.props;
+                const props = obj.props;
 
                 if (props) {
                     children = props.children;

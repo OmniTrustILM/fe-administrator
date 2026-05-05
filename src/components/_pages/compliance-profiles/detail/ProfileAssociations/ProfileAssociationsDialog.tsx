@@ -15,12 +15,12 @@ import { makeOptions } from 'utils/compliance-profile';
 import Button from 'components/Button';
 import cn from 'classnames';
 
-type Props = {
+type Props = Readonly<{
     isOpen: boolean;
     onClose: () => void;
     profile: ComplianceProfileDtoV2 | undefined;
     associationsOfComplianceProfile: ResourceObjectDto[];
-};
+}>;
 
 export default function ProfileAssociationsDialog({ isOpen, onClose, profile, associationsOfComplianceProfile }: Props) {
     const dispatch = useDispatch();

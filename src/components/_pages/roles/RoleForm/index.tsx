@@ -6,7 +6,7 @@ import { actions as rolesActions, selectors as rolesSelectors } from 'ducks/role
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 
 import Button from 'components/Button';
 import Container from 'components/Container';
@@ -19,11 +19,11 @@ import AttributeEditor from '../../../Attributes/AttributeEditor';
 import TabLayout from '../../../Layout/TabLayout';
 import TextInput from 'components/TextInput';
 
-interface RoleFormProps {
+type RoleFormProps = Readonly<{
     roleId?: string;
     onCancel: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -84,7 +84,7 @@ function RoleForm({ roleId, onCancel, onSuccess }: RoleFormProps) {
     // Reset form values when roleSelector is loaded in edit mode
     useEffect(() => {
         if (editMode && id) {
-            if (roleSelector && roleSelector.uuid === id && !isFetchingRoleDetail) {
+            if (roleSelector?.uuid === id && !isFetchingRoleDetail) {
                 const newDefaultValues: FormValues = {
                     name: roleSelector.name || '',
                     description: roleSelector.description || '',

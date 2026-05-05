@@ -6,7 +6,6 @@ import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { FunctionGroupCode } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { extractError } from 'utils/net';
-import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { actions as authActions } from './auth';
 import { EntityType } from './filters';

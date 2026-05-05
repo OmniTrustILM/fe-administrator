@@ -6,7 +6,7 @@ import GlobalModal from 'components/GlobalModal';
 import { Attribute } from './index';
 import type { DataAttributeModel, InfoAttributeModel, CustomAttributeModel } from 'types/attributes';
 
-export interface AttributeTestWrapperProps {
+export type AttributeTestWrapperProps = Readonly<{
     name: string;
     descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel | undefined;
     options?: { label: string; value: any }[];
@@ -16,7 +16,7 @@ export interface AttributeTestWrapperProps {
     defaultValues?: Record<string, unknown>;
     /** Preloaded store state (e.g. userInterface.initiateAttributeCallback) */
     preloadedState?: Record<string, unknown>;
-}
+}>;
 
 export function AttributeTestWrapper({
     name,

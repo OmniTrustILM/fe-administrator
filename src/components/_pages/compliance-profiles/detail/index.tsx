@@ -86,9 +86,8 @@ export default function ComplianceProfileDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !profile
-                ? []
-                : [
+            profile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', profile.uuid],
@@ -101,7 +100,8 @@ export default function ComplianceProfileDetail() {
                           id: 'description',
                           columns: ['Description', profile.description || ''],
                       },
-                  ],
+                  ]
+                : [],
         [profile],
     );
 

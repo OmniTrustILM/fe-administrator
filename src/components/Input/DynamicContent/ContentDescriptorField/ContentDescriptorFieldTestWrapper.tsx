@@ -3,13 +3,13 @@ import * as ReactHookForm from 'react-hook-form';
 import ContentDescriptorField from './index';
 import type { AttributeContentType } from 'types/openapi';
 
-export interface ContentDescriptorFieldTestWrapperProps {
+export type ContentDescriptorFieldTestWrapperProps = Readonly<{
     isList: boolean;
     contentType: AttributeContentType;
     defaultContent?: unknown[];
     readOnly?: boolean;
     showSubmitButton?: boolean;
-}
+}>;
 
 export function ContentDescriptorFieldTestWrapper({
     isList,

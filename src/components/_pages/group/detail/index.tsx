@@ -74,9 +74,8 @@ export default function GroupDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !group
-                ? []
-                : [
+            group
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', group.uuid],
@@ -93,7 +92,8 @@ export default function GroupDetail() {
                           id: 'description',
                           columns: ['Description', group.description || ''],
                       },
-                  ],
+                  ]
+                : [],
         [group],
     );
 

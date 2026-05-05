@@ -19,12 +19,12 @@ import { FunctionGroupCode, Resource, type VaultInstanceDto, type VaultProfileDe
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 
-interface VaultProfileEditFormProps {
+type VaultProfileEditFormProps = Readonly<{
     profile: VaultProfileDetailDto;
     vaultUuid: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     description: string;

@@ -58,9 +58,8 @@ export default function UserProfileDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !profile
-                ? []
-                : [
+            profile
+                ? [
                       {
                           id: 'username',
                           columns: ['Username', profile.username],
@@ -81,7 +80,8 @@ export default function UserProfileDetail() {
                           id: 'email',
                           columns: ['Email', profile.email || ''],
                       },
-                  ],
+                  ]
+                : [],
         [profile],
     );
 

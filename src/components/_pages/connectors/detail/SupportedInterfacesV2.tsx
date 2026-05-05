@@ -3,10 +3,10 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import Widget from 'components/Widget';
 import Badge from 'components/Badge';
 
-interface Props {
+type Props = Readonly<{
     interfaces?: any[];
     isBusy: boolean;
-}
+}>;
 
 export default function SupportedInterfacesV2({ interfaces, isBusy }: Props) {
     const rows: TableDataRow[] = (interfaces || []).map((iface: any) => {

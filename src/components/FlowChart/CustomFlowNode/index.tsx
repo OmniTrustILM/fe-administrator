@@ -50,7 +50,21 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
     const dispatch = useDispatch();
 
     const toggleHiddenNodes = useCallback(() => {
-        if (expandedHiddenNodeId !== id) {
+        if (expandedHiddenNodeId === id) {
+            const updatedNodes = flowChartNoedesState?.map((node) => {
+                if (node?.parentId === id && node.hidden !== undefined) {
+                    return {
+                        ...node,
+                        hidden: true,
+                    };
+                }
+                return node;
+            });
+
+            if (updatedNodes) dispatch(userInterfaceActions.updateReactFlowNodes(updatedNodes));
+
+            dispatch(userInterfaceActions.setShowHiddenNodes(undefined));
+        } else {
             const updatedNodes = flowChartNoedesState?.map((node, i) => {
                 const totalNodes = flowChartNoedesState?.filter((node) => node.parentId === id).length || 1; // Total child nodes
 
@@ -86,20 +100,6 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
             if (updatedNodes) dispatch(userInterfaceActions.updateReactFlowNodes(updatedNodes));
 
             dispatch(userInterfaceActions.setShowHiddenNodes(id));
-        } else {
-            const updatedNodes = flowChartNoedesState?.map((node) => {
-                if (node?.parentId === id && node.hidden !== undefined) {
-                    return {
-                        ...node,
-                        hidden: true,
-                    };
-                }
-                return node;
-            });
-
-            if (updatedNodes) dispatch(userInterfaceActions.updateReactFlowNodes(updatedNodes));
-
-            dispatch(userInterfaceActions.setShowHiddenNodes(undefined));
         }
     }, [flowChartNoedesState, dispatch, id, expandedHiddenNodeId, isNodeExpanded]);
 
@@ -315,24 +315,21 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                         className="mt-1 !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px] !bg-[#e37582] !border-none hover:!bg-[#ef4444ec] active:!bg-[#ef4444d8]"
                                         onClick={() => {
                                             if (data.deleteAction) {
-                                                switch (data.deleteAction.disableCondition) {
-                                                    case 'SingleChild': {
-                                                        const totalSiblings = flowChartNoedesState?.filter(
-                                                            (node) =>
-                                                                node.parentId === thisNodeState?.parentId &&
-                                                                node.id !== id &&
-                                                                node.parentId !== undefined,
-                                                        ).length;
-                                                        if (totalSiblings === 0) {
-                                                            dispatch(
-                                                                alertActions.error(
-                                                                    data.deleteAction.disabledMessage ||
-                                                                        'Cannot delete the last node of this group',
-                                                                ),
-                                                            );
-                                                            return;
-                                                        }
-                                                        break;
+                                                if (data.deleteAction.disableCondition === 'SingleChild') {
+                                                    const totalSiblings = flowChartNoedesState?.filter(
+                                                        (node) =>
+                                                            node.parentId === thisNodeState?.parentId &&
+                                                            node.id !== id &&
+                                                            node.parentId !== undefined,
+                                                    ).length;
+                                                    if (totalSiblings === 0) {
+                                                        dispatch(
+                                                            alertActions.error(
+                                                                data.deleteAction.disabledMessage ||
+                                                                    'Cannot delete the last node of this group',
+                                                            ),
+                                                        );
+                                                        return;
                                                     }
                                                 }
 
@@ -357,19 +354,17 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                         <h6 className="text-[var(--dark-gray-color)] font-bold text-lg">{data.customNodeCardTitle}</h6>
                     </div>
 
-                    {data.redirectUrl && data.entityLabel ? (
+                    {data.entityLabel ? (
                         <div className="flex font-medium text-[#64748b] [&>*]:min-w-0 [&>*]:flex-shrink [&>*]:break-words">
                             <h6>Entity Name:</h6>
                             &nbsp;
-                            <Link to={data.redirectUrl} className="text-[var(--primary-blue-color)] font-semibold">
-                                <h6 className="text-wrap">{data.entityLabel}</h6>
-                            </Link>
-                        </div>
-                    ) : data.entityLabel ? (
-                        <div className="flex font-medium text-[#64748b] [&>*]:min-w-0 [&>*]:flex-shrink [&>*]:break-words">
-                            <h6>Entity Name:</h6>
-                            &nbsp;
-                            <h6>{data.entityLabel}</h6>
+                            {data.redirectUrl ? (
+                                <Link to={data.redirectUrl} className="text-[var(--primary-blue-color)] font-semibold">
+                                    <h6 className="text-wrap">{data.entityLabel}</h6>
+                                </Link>
+                            ) : (
+                                <h6>{data.entityLabel}</h6>
+                            )}
                         </div>
                     ) : (
                         <div className="mt-4" />

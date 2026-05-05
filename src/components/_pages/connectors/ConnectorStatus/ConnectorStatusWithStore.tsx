@@ -20,7 +20,7 @@ const preloadedState: Parameters<typeof createMockStore>[0] = {
     },
 };
 
-export type ConnectorStatusWithStoreProps = React.ComponentProps<typeof InventoryStatusBadge>;
+export type ConnectorStatusWithStoreProps = Readonly<React.ComponentProps<typeof InventoryStatusBadge>>;
 
 export default function ConnectorStatusWithStore(props: ConnectorStatusWithStoreProps) {
     const store = createMockStore(preloadedState as any);

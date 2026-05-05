@@ -4,14 +4,14 @@ import { useLocation } from 'react-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { actions as tablePaginationActions, selectors as tablePaginationSelectors } from 'ducks/table-pagination';
 
-interface Props {
+type Props = Readonly<{
     headers: TableHeader[];
     data: TableDataRow[];
     totalItems?: number;
     onReloadData: (pageSize: number, pageNumber: number) => void;
     stateKey?: string;
     tableStateKey?: string;
-}
+}>;
 
 export default function PagedCustomTable({ headers, data, totalItems, onReloadData, stateKey, tableStateKey }: Props) {
     const dispatch = useDispatch();

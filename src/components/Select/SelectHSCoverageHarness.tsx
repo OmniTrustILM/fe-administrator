@@ -87,7 +87,7 @@ export function SelectTooltipSyncHarness() {
 // --------------------------------------------------------------------------------------------------------------
 type LateOptionsCapture = string | string[];
 
-interface LateOptionsHarnessProps {
+type LateOptionsHarnessProps = Readonly<{
     mode: 'single' | 'multi';
     id: string;
     stateKey: string;
@@ -95,7 +95,7 @@ interface LateOptionsHarnessProps {
     loadOptions: { value: string; label: string }[];
     initialSingleValue?: string;
     initialMultiValue?: { value: string; label: string }[];
-}
+}>;
 
 export function SelectLateOptionsHarness({
     mode,

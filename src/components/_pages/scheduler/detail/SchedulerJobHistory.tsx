@@ -17,9 +17,9 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import { Info, ArrowRight } from 'lucide-react';
 import { dateFormatter, timeFormatter } from 'utils/dateUtil';
 
-interface Props {
+type Props = Readonly<{
     uuid: string;
-}
+}>;
 
 function SchedulerJobHistory({ uuid }: Props) {
     const dispatch = useDispatch();
@@ -73,13 +73,10 @@ function SchedulerJobHistory({ uuid }: Props) {
                         : '',
                     <div key="status-actions" className="flex items-center gap-1">
                         <Badge
-                            color={
-                                history.status === SchedulerJobExecutionStatus.Failed
-                                    ? 'danger'
-                                    : history.status === SchedulerJobExecutionStatus.Succeeded
-                                      ? 'success'
-                                      : 'primary'
-                            }
+                            color={(() => {
+                                if (history.status === SchedulerJobExecutionStatus.Failed) return 'danger';
+                                return history.status === SchedulerJobExecutionStatus.Succeeded ? 'success' : 'primary';
+                            })()}
                         >
                             {getEnumLabel(schedulerJobExecutionStatusEnum, history.status)}
                         </Badge>

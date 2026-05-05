@@ -1,7 +1,7 @@
 import ProgressButton from 'components/ProgressButton';
 import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/auth-settings';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
@@ -17,11 +17,11 @@ import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-hel
 import type { OAuth2ProviderSettingsUpdateDto } from 'types/auth-settings';
 import { isValidJWTBearerProvider, isValidOAuth2FlowProvider } from 'utils/oauth2Providers';
 
-interface OAuth2ProviderFormProps {
+type OAuth2ProviderFormProps = Readonly<{
     providerName?: string;
     onCancel: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 enum AuthenticationScheme {
     JwtBearer = 'JwtBearer',

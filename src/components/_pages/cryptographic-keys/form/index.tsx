@@ -33,12 +33,12 @@ import Container from 'components/Container';
 import Button from 'components/Button';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 
-interface CryptographicKeyFormProps {
+type CryptographicKeyFormProps = Readonly<{
     usesGlobalModal?: boolean;
     keyId?: string;
     onSuccess?: () => void;
     onCancel?: () => void;
-}
+}>;
 
 interface SelectChangeValue {
     value: string;
@@ -48,9 +48,9 @@ interface FormValues {
     name: string;
     description: string;
     tokenProfile: string | undefined;
-    type?: string | undefined;
+    type?: string;
     selectedGroups: SelectChangeValue[];
-    owner?: string | undefined;
+    owner?: string;
 }
 
 export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesGlobalModal = false }: CryptographicKeyFormProps) {
@@ -157,11 +157,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
             name: editMode ? keyDetail?.name || '' : '',
             description: editMode ? keyDetail?.description || '' : '',
             tokenProfile: editMode ? keyDetail?.tokenProfileUuid || undefined : undefined,
-            selectedGroups: editMode
-                ? keyDetail && keyDetail.groups?.length
-                    ? keyDetail.groups?.map((group) => ({ value: group.uuid, label: group.name }))
-                    : []
-                : [],
+            selectedGroups: editMode ? (keyDetail?.groups?.map((group) => ({ value: group.uuid, label: group.name })) ?? []) : [],
             owner: editMode ? keyDetail?.ownerUuid || undefined : undefined,
             type: undefined,
         }),
@@ -301,9 +297,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
             return [
                 {
                     title: 'Connector Attributes',
-                    content: !cryptographicKeyAttributeDescriptors ? (
-                        <></>
-                    ) : (
+                    content: cryptographicKeyAttributeDescriptors ? (
                         <AttributeEditor
                             id="cryptographicKey"
                             callbackParentUuid={keyDetail?.tokenProfileUuid || tokenProfileUuid || ''}
@@ -312,6 +306,8 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                             groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                             setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                         />
+                    ) : (
+                        <></>
                     ),
                 },
                 {

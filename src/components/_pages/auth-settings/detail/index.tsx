@@ -107,9 +107,8 @@ export default function OAuth2ProviderDetail() {
 
     const data: TableDataRow[] = useMemo(
         () =>
-            !oauth2Provider
-                ? []
-                : [
+            oauth2Provider
+                ? [
                       { id: 'name', columns: ['Name', <>{oauth2Provider.name}</>] },
                       { id: 'scheme', columns: ['Authentication Scheme', renderOAuth2StateBadges(oauth2Provider)] },
                       { id: 'clientId', columns: ['Client Id', <>{oauth2Provider.clientId}</>] },
@@ -141,7 +140,8 @@ export default function OAuth2ProviderDetail() {
                               </>,
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [oauth2Provider],
     );
     if (isFetchingProvider) {

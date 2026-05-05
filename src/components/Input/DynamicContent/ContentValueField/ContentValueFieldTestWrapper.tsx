@@ -14,12 +14,12 @@ const defaultProperties: CustomAttributeModel['properties'] = {
     extensibleList: false,
 };
 
-export interface ContentValueFieldTestWrapperProps {
+export type ContentValueFieldTestWrapperProps = Readonly<{
     id?: string;
     descriptor: CustomAttributeModel;
     initialContent?: BaseAttributeContentModel[];
     onSubmit?: (attributeUuid: string, content: BaseAttributeContentModel[]) => void;
-}
+}>;
 
 export function buildDescriptor(overrides: Partial<CustomAttributeModel> = {}): CustomAttributeModel {
     const base: CustomAttributeModel = {

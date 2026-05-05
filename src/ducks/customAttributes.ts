@@ -386,7 +386,7 @@ export const slice = createSlice({
             if (attribute) {
                 attribute.enabled = true;
             }
-            if (state.customAttribute && state.customAttribute.uuid === action.payload) {
+            if (state.customAttribute?.uuid === action.payload) {
                 state.customAttribute.enabled = true;
             }
         },
@@ -405,7 +405,7 @@ export const slice = createSlice({
             if (attribute) {
                 attribute.enabled = false;
             }
-            if (state.customAttribute && state.customAttribute.uuid === action.payload) {
+            if (state.customAttribute?.uuid === action.payload) {
                 state.customAttribute.enabled = false;
             }
         },

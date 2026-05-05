@@ -14,10 +14,10 @@ import { transformParseRequestResponseDtoToCertificateResponseDetailModelToAsn1S
 import { ParseCertificateRequestDtoParseTypeEnum, ParseRequestRequestDtoParseTypeEnum } from '../../../../types/openapi/utils';
 import { actions as userInterfaceActions } from 'ducks/user-interface';
 
-interface Props {
+type Props = Readonly<{
     content: string;
     isCSR?: boolean;
-}
+}>;
 
 export default function Asn1Dialog({ content, isCSR }: Props) {
     const dispatch = useDispatch();
@@ -96,18 +96,18 @@ export default function Asn1Dialog({ content, isCSR }: Props) {
                 disabled={!health || isFetchingDetail || isFetchingCSRDetails}
                 onClick={() => {
                     if (content && health) {
-                        if (!isCSR) {
-                            dispatch(
-                                utilsCertificateActions.parseCertificate({
-                                    certificate: content,
-                                    parseType: ParseCertificateRequestDtoParseTypeEnum.Asn1,
-                                }),
-                            );
-                        } else {
+                        if (isCSR) {
                             dispatch(
                                 utilsCertificateRequestActions.parseCertificateRequest({
                                     content,
                                     requestParseType: ParseRequestRequestDtoParseTypeEnum.Asn1,
+                                }),
+                            );
+                        } else {
+                            dispatch(
+                                utilsCertificateActions.parseCertificate({
+                                    certificate: content,
+                                    parseType: ParseCertificateRequestDtoParseTypeEnum.Asn1,
                                 }),
                             );
                         }

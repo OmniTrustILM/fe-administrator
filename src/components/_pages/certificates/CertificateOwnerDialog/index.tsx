@@ -8,12 +8,12 @@ import Button from 'components/Button';
 import type { UserResponseModel } from 'types/users';
 import Container from 'components/Container';
 
-interface Props {
+type Props = Readonly<{
     uuids: string[];
     users: UserResponseModel[];
     onCancel: () => void;
     onUpdate: () => void;
-}
+}>;
 
 export default function CertificateOwnerDialog({ uuids, onCancel, onUpdate, users }: Props) {
     const dispatch = useDispatch();

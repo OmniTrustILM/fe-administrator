@@ -1,7 +1,7 @@
-interface Props {
+type Props = Readonly<{
     status: boolean;
     dataTestId?: string;
-}
+}>;
 
 function KeyStatusCircle({ status, dataTestId = 'key-status-circle' }: Props) {
     const { color, text } = status

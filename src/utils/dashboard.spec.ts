@@ -61,7 +61,7 @@ describe('dashboard utils', () => {
 
     describe('getCertificateDonutChartColorsByDaysOfExpiration', () => {
         test('should return undefined for undefined input', () => {
-            expect(getCertificateDonutChartColorsByDaysOfExpiration(undefined)).toBeUndefined();
+            expect(getCertificateDonutChartColorsByDaysOfExpiration()).toBeUndefined();
         });
 
         test('should map keys to colors', () => {
@@ -76,7 +76,7 @@ describe('dashboard utils', () => {
 
     describe('getSecretDonutChartColors', () => {
         test('returns empty colors for undefined input', () => {
-            expect(getSecretDonutChartColors(undefined)).toEqual({ colors: [] });
+            expect(getSecretDonutChartColors()).toEqual({ colors: [] });
         });
 
         test('returns empty colors for empty object', () => {
@@ -114,7 +114,7 @@ describe('dashboard utils', () => {
 
     describe('getCertificateDonutChartColors', () => {
         test('returns empty colors for undefined input', () => {
-            expect(getCertificateDonutChartColors(undefined)).toEqual({ colors: [] });
+            expect(getCertificateDonutChartColors()).toEqual({ colors: [] });
         });
 
         test('returns empty colors for empty object', () => {

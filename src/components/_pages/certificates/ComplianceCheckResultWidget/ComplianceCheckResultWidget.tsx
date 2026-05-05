@@ -12,12 +12,12 @@ import Button from 'components/Button';
 import { Info } from 'lucide-react';
 import type { AttributeResponseModel } from 'types/attributes';
 
-type Props = {
+type Props = Readonly<{
     objectUuid: string;
     resource: Resource;
     widgetLockName: LockWidgetNameEnum;
     setSelectedAttributesInfo: (attributes: AttributeResponseModel[]) => void;
-};
+}>;
 
 export default function ComplianceCheckResultWidget({ widgetLockName, objectUuid, setSelectedAttributesInfo, resource }: Props) {
     const dispatch = useDispatch();

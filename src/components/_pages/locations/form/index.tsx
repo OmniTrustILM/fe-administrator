@@ -11,7 +11,7 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 
 import Select from 'components/Select';
 import Button from 'components/Button';
@@ -29,12 +29,12 @@ import { selectors as pagingSelectors } from '../../../../ducks/paging';
 import { Resource } from '../../../../types/openapi';
 import TabLayout from '../../../Layout/TabLayout';
 
-interface LocationFormProps {
+type LocationFormProps = Readonly<{
     locationId?: string;
     entityId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -105,7 +105,7 @@ export default function LocationForm({ locationId, entityId: propEntityId, onCan
     useEffect(() => {
         if (editMode && id && entityId) {
             // Fetch if id changed or if we don't have the correct location loaded
-            if (previousIdRef.current !== id || !locationSelector || locationSelector.uuid !== id) {
+            if (previousIdRef.current !== id || locationSelector?.uuid !== id) {
                 dispatch(locationActions.getLocationDetail({ entityUuid: entityId, uuid: id }));
                 previousIdRef.current = id;
             }
@@ -166,7 +166,7 @@ export default function LocationForm({ locationId, entityId: propEntityId, onCan
 
     // Reset form values when location is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && location && location.uuid === id && !isFetchingLocationDetail) {
+        if (editMode && id && location?.uuid === id && !isFetchingLocationDetail) {
             const newDefaultValues: FormValues = {
                 name: location.name || '',
                 description: location.description || '',

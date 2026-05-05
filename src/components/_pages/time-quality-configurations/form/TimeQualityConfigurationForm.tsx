@@ -162,8 +162,8 @@ export const TimeQualityConfigurationForm = () => {
                 ntpServers: values.ntpServers,
                 ntpCheckInterval: values.ntpCheckInterval || undefined,
                 ntpCheckTimeout: values.ntpCheckTimeout || undefined,
-                ntpSamplesPerServer: values.ntpSamplesPerServer ? parseInt(values.ntpSamplesPerServer, 10) : undefined,
-                ntpServersMinReachable: values.ntpServersMinReachable ? parseInt(values.ntpServersMinReachable, 10) : undefined,
+                ntpSamplesPerServer: values.ntpSamplesPerServer ? Number.parseInt(values.ntpSamplesPerServer, 10) : undefined,
+                ntpServersMinReachable: values.ntpServersMinReachable ? Number.parseInt(values.ntpServersMinReachable, 10) : undefined,
                 maxClockDrift: values.maxClockDrift || undefined,
                 leapSecondGuard: values.leapSecondGuard,
                 customAttributes: collectFormAttributes(

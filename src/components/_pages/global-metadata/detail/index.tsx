@@ -38,7 +38,7 @@ export default function GlobalMetadataDetail() {
 
     useEffect(() => {
         if (!id) return;
-        if (!globalMetadata || id !== globalMetadata.uuid) {
+        if (id !== globalMetadata?.uuid) {
             dispatch(actions.getGlobalMetadata(id));
         }
     }, [dispatch, globalMetadata, id]);
@@ -68,9 +68,8 @@ export default function GlobalMetadataDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !globalMetadata
-                ? []
-                : [
+            globalMetadata
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', globalMetadata.uuid],
@@ -106,7 +105,8 @@ export default function GlobalMetadataDetail() {
                               globalMetadata.visible ? <Badge color="success">Yes</Badge> : <Badge color="danger">No</Badge>,
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [globalMetadata, attributeContentTypeEnum],
     );
 

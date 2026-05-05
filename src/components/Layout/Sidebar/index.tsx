@@ -384,9 +384,9 @@ function getAllowedMenuItems(allowedResources?: Resource[]): MenuItemMapping[] {
     return allowedLinks;
 }
 
-type Props = {
+type Props = Readonly<{
     allowedResources?: Resource[];
-};
+}>;
 export default function Sidebar({ allowedResources }: Props) {
     const [defaultMenuSize, setDefaultMenuSize] = useLocalStorage<'small' | 'large'>('menu-size', 'small');
     const [menuSize, setMenuSize] = useState<'small' | 'large' | 'flying'>(defaultMenuSize);

@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import React from 'react';
+import React, { act } from 'react';
 import { Provider } from 'react-redux';
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
-import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import PagedList from 'components/PagedList/PagedList';
 import pagingReducer, { actions as pagingActions } from './paging';
@@ -46,8 +45,9 @@ vi.mock('components/Widget', () => ({
             'section',
             { 'data-testid': 'mock-widget', 'data-busy': String(!!busy), 'data-hide-widget-buttons': String(!!hideWidgetButtons) },
             React.createElement('h2', null, title),
-            !hideWidgetButtons
-                ? React.createElement(
+            hideWidgetButtons
+                ? null
+                : React.createElement(
                       'div',
                       { 'data-testid': 'mock-widget-buttons' },
                       ...(widgetButtons || []).map((button: any, index: number) =>
@@ -63,8 +63,7 @@ vi.mock('components/Widget', () => ({
                               button.tooltip,
                           ),
                       ),
-                  )
-                : null,
+                  ),
             children,
         ),
 }));

@@ -105,9 +105,8 @@ const NotificationInstanceList = () => {
 
     const notificationInstanceData: TableDataRow[] = useMemo(
         () =>
-            !notificationInstances.length
-                ? []
-                : notificationInstances.map((notificationInstance) => ({
+            notificationInstances.length
+                ? notificationInstances.map((notificationInstance) => ({
                       id: notificationInstance.uuid,
                       columns: [
                           <Link to={`../../../notificationinstances/detail/${notificationInstance.uuid}`}>
@@ -117,7 +116,8 @@ const NotificationInstanceList = () => {
                           <Badge color="primary">{notificationInstance.connectorName}</Badge>,
                           <Badge color="primary">{notificationInstance.kind}</Badge>,
                       ],
-                  })),
+                  }))
+                : [],
         [notificationInstances],
     );
 

@@ -28,11 +28,11 @@ import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-hel
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from '../../../../ducks/customAttributes';
 import TabLayout from '../../../Layout/TabLayout';
 
-interface EntityFormProps {
+type EntityFormProps = Readonly<{
     entityId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -96,7 +96,7 @@ export default function EntityForm({ entityId, onCancel, onSuccess }: EntityForm
     useEffect(() => {
         if (editMode && id) {
             // Fetch if id changed or if we don't have the correct entity loaded
-            if (previousIdRef.current !== id || !entitySelector || entitySelector.uuid !== id) {
+            if (previousIdRef.current !== id || entitySelector?.uuid !== id) {
                 dispatch(entityActions.getEntityDetail({ uuid: id }));
                 previousIdRef.current = id;
             }
@@ -189,7 +189,7 @@ export default function EntityForm({ entityId, onCancel, onSuccess }: EntityForm
 
     // Reset form values when entity is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && entity && entity.uuid === id && !isFetchingEntityDetail) {
+        if (editMode && id && entity?.uuid === id && !isFetchingEntityDetail) {
             const newDefaultValues: FormValues = {
                 name: entity.name || '',
                 entityProvider: entity.connectorUuid || '',

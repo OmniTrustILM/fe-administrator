@@ -264,7 +264,7 @@ function CryptographicKeyList() {
     );
 
     const optionForCompromise = useMemo(() => {
-        var options = [];
+        const options = [];
         if (keyCompromiseReasonEnum) {
             for (const reason in KeyCompromiseReason) {
                 const myReason: KeyCompromiseReason = KeyCompromiseReason[reason as keyof typeof KeyCompromiseReason];

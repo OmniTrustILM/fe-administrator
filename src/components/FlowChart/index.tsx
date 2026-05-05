@@ -31,7 +31,7 @@ export interface FlowChartProps {
     flowDirection?: 'TB' | 'BT' | 'LR' | 'RL' | 'STAR';
     flowChartNodes: CustomNode[];
     flowChartEdges: Edge[];
-    defaultViewport?: Viewport | undefined;
+    defaultViewport?: Viewport;
     busy?: boolean;
     legends?: LegendItem[];
 }

@@ -1,10 +1,10 @@
 import cn from 'classnames';
-interface Props {
+type Props = Readonly<{
     active?: boolean;
     color?: 'light' | 'primary';
     size?: 'sm' | 'md' | 'lg' | 'xl';
     dataTestId?: string;
-}
+}>;
 
 function Spinner({ active = true, color = 'primary', size = 'md', dataTestId }: Props) {
     if (!active) return null;

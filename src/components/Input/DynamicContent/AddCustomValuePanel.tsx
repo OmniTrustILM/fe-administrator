@@ -7,7 +7,7 @@ import { ContentFieldConfiguration } from './contentFieldConfiguration';
 import { AddCustomValueInput } from './AddCustomValueInput';
 import { Check, X } from 'lucide-react';
 
-type Props = {
+type Props = Readonly<{
     open: boolean;
     onClose: () => void;
     idPrefix: string;
@@ -18,7 +18,7 @@ type Props = {
     onFieldChange: (value: any) => void;
     parseValue?: (raw: string | number | boolean) => any;
     inputClassName?: string;
-};
+}>;
 
 export function AddCustomValuePanel({
     open,

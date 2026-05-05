@@ -167,7 +167,7 @@ export default function ConnectorDetail() {
 
     const onFunctionGroupChange = useCallback(
         (groupCode: string) => {
-            const group = (connector?.functionGroups || []).find((group) => group.functionGroupCode === groupCode);
+            const group = (connector?.functionGroups ?? []).find((group) => group.functionGroupCode === groupCode);
             if (group) setFunctionGroup(group);
         },
         [connector],

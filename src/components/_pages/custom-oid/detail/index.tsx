@@ -82,25 +82,25 @@ export default function CustomOIDDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !oid
-                ? []
-                : [
+            oid
+                ? [
                       createTableDataRow('OID', oid.oid),
                       createTableDataRow('Display Name', oid.displayName),
                       createTableDataRow('Description', oid.description),
                       createTableDataRow('Category', oidCategoryEnum[oid.category as OidCategory]?.label),
-                  ],
+                  ]
+                : [],
         [oid, oidCategoryEnum],
     );
 
     const additionalPropertiesData: TableDataRow[] = useMemo<TableDataRow[]>(
         () =>
-            !oid
-                ? []
-                : [
+            oid
+                ? [
                       createTableDataRow('Code', oid.additionalProperties?.code),
                       createTableDataRow('Alternative Codes', oid.additionalProperties?.altCodes?.join(', ')),
-                  ],
+                  ]
+                : [],
         [oid],
     );
 

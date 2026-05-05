@@ -13,7 +13,7 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 
 import Select from 'components/Select';
 import Button from 'components/Button';
@@ -28,11 +28,11 @@ import { collectFormAttributes } from 'utils/attributes/attributes';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
-interface TokenFormProps {
+type TokenFormProps = Readonly<{
     tokenId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -96,7 +96,7 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
     useEffect(() => {
         if (editMode && id) {
             // Fetch if id changed or if we don't have the correct token loaded
-            if (previousIdRef.current !== id || !tokenDetail || tokenDetail.uuid !== id) {
+            if (previousIdRef.current !== id || tokenDetail?.uuid !== id) {
                 dispatch(tokenActions.getTokenDetail({ uuid: id }));
                 previousIdRef.current = id;
             }
@@ -226,7 +226,7 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
 
     // Reset form values when token is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && token && token.uuid === id && !isFetchingTokenDetail) {
+        if (editMode && id && token?.uuid === id && !isFetchingTokenDetail) {
             const newDefaultValues: FormValues = {
                 name: token.name || '',
                 tokenProvider: token.connectorUuid || '',

@@ -29,12 +29,12 @@ interface FieldStateError {
     error?: { message?: string } | string;
 }
 
-interface AttributeFieldInputProps {
+type AttributeFieldInputProps = Readonly<{
     name: string;
     descriptor: DataAttributeModel | CustomAttributeModel;
     busy: boolean;
     deleteButton?: React.ReactNode;
-}
+}>;
 
 function StandardInputControl({
     name,
@@ -93,7 +93,8 @@ function StandardInputControl({
     }
 
     if (descriptor.contentType === AttributeContentType.Datetime) {
-        const dateValue = field.value ? (field.value.includes('T') ? field.value : field.value.replace(' ', 'T')) : undefined;
+        const normalizedValue = field.value?.includes('T') ? field.value : field.value?.replace(' ', 'T');
+        const dateValue = field.value ? normalizedValue : undefined;
         let errorMessage: string | undefined;
         if (!validationVisible || !fieldState.invalid) {
             errorMessage = undefined;

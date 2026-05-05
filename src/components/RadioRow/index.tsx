@@ -1,11 +1,11 @@
 import cn from 'classnames';
 
-interface Props {
+type Props = Readonly<{
     checked: boolean;
     onSelect: () => void;
     children: React.ReactNode;
     maxWidth?: number;
-}
+}>;
 
 export default function RadioRow({ checked, onSelect, children, maxWidth }: Props) {
     return (

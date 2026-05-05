@@ -20,7 +20,7 @@ export function transformAttributeResponseDtoToModel(attribute: AttributeRespons
 
         return {
             ...attributeV2,
-            content: attributeV2.content ? JSON.parse(JSON.stringify(attributeV2.content)) : undefined,
+            content: attributeV2.content ? structuredClone(attributeV2.content) : undefined,
         };
     }
 
@@ -33,14 +33,14 @@ export function transformAttributeResponseDtoToModel(attribute: AttributeRespons
 export function transformAttributeRequestModelToDto(attributeRequest: AttributeRequestModel): AttributeRequestDto {
     return {
         ...attributeRequest,
-        content: JSON.parse(JSON.stringify(attributeRequest.content)),
+        content: structuredClone(attributeRequest.content),
     };
 }
 
 export function transformCustomAttributeDtoToModel(attribute: CustomAttributeDto): CustomAttributeModel {
     return {
         ...attribute,
-        content: attribute.content ? JSON.parse(JSON.stringify(attribute.content)) : undefined,
+        content: attribute.content ? structuredClone(attribute.content) : undefined,
     };
 }
 
@@ -55,7 +55,7 @@ export function transformAttributeMappingModelToDto(attributeMapping: AttributeM
 export function transformAttributeDescriptorDtoToModel(attributeDescriptor: AttributeDescriptorDto): AttributeDescriptorModel {
     return {
         ...attributeDescriptor,
-        content: attributeDescriptor?.content ? JSON.parse(JSON.stringify(attributeDescriptor.content)) : undefined,
+        content: attributeDescriptor?.content ? structuredClone(attributeDescriptor.content) : undefined,
     };
 }
 

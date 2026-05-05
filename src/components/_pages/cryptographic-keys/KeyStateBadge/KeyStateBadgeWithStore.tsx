@@ -6,7 +6,7 @@ import KeyStateBadge from './index';
 
 import { keyStatePreloadedState } from '../keyStateStorePreload';
 
-export type KeyStateBadgeWithStoreProps = React.ComponentProps<typeof KeyStateBadge>;
+export type KeyStateBadgeWithStoreProps = Readonly<React.ComponentProps<typeof KeyStateBadge>>;
 
 export default function KeyStateBadgeWithStore(props: KeyStateBadgeWithStoreProps) {
     const store = createMockStore(keyStatePreloadedState as any);

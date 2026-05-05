@@ -12,14 +12,14 @@ const KEY_TYPE_ALLOWED_USAGES: Partial<Record<KeyType, KeyUsage[]>> = {
     [KeyType.Private]: [KeyUsage.Sign, KeyUsage.Decrypt, KeyUsage.Unwrap],
 };
 
-export interface KeyUsageSelectProps {
+export type KeyUsageSelectProps = Readonly<{
     value: KeyUsage[];
     onChange: (values: KeyUsage[]) => void;
     keyUsageEnum: KeyUsageEnum;
     keyType?: KeyType;
     id?: string;
     label?: string;
-}
+}>;
 
 export default function KeyUsageSelect({ value, onChange, keyUsageEnum, keyType, id = 'field', label = 'Key Usage' }: KeyUsageSelectProps) {
     const allowedUsages = keyType ? KEY_TYPE_ALLOWED_USAGES[keyType] : undefined;

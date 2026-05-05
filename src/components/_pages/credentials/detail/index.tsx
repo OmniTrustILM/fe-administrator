@@ -103,9 +103,8 @@ function CredentialDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !credential
-                ? []
-                : [
+            credential
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', credential.uuid],
@@ -133,7 +132,8 @@ function CredentialDetail() {
                           id: 'credentialProviderUuid',
                           columns: ['Credential Provider UUID', credential.connectorUuid ?? ''],
                       },
-                  ],
+                  ]
+                : [],
         [credential],
     );
 

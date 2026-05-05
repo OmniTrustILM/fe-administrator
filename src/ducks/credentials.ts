@@ -125,7 +125,7 @@ export const slice = createSlice({
 
         getCredentialDetailSuccess: (state, action: PayloadAction<{ credential: CredentialResponseModel }>) => {
             // state.credential = action.payload.credential;
-            state.credential = JSON.parse(JSON.stringify(action.payload.credential));
+            state.credential = structuredClone(action.payload.credential);
             state.isFetchingDetail = false;
         },
 

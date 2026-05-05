@@ -25,10 +25,10 @@ import type { AttributeDescriptorModel } from 'types/attributes';
 import type { SearchRequestModel } from 'types/certificate';
 import { FunctionGroupCode, Resource, type VaultInstanceDto, type VaultProfileRequestDto } from 'types/openapi';
 
-interface VaultProfileFormProps {
+type VaultProfileFormProps = Readonly<{
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 type SelectOption = {
     value: string;

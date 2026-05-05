@@ -1,7 +1,7 @@
 import cn from 'classnames';
 import Label from 'components/Label';
 
-interface Props {
+type Props = Readonly<{
     value?: string;
     onChange: (value: string) => void;
     onBlur?: () => void;
@@ -14,7 +14,7 @@ interface Props {
     className?: string;
     required?: boolean;
     rows?: number;
-}
+}>;
 
 function TextArea({
     value,

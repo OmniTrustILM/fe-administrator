@@ -10,13 +10,13 @@ import ContentValueField from '../../Input/DynamicContent/ContentValueField';
 import Widget from '../../Widget';
 import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE } from '../AttributeViewer';
 
-export type Props = {
+export type Props = Readonly<{
     resource: Resource;
     resourceUuid: string;
     attributes: AttributeResponseModel[] | undefined;
     className?: string;
     noBorder?: boolean;
-};
+}>;
 
 export default function CustomAttributeWidget({ resource, resourceUuid, attributes, className, noBorder }: Props) {
     const dispatch = useDispatch();

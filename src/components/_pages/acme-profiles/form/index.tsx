@@ -24,8 +24,6 @@ import type { AcmeProfileAddRequestModel, AcmeProfileEditRequestModel, AcmeProfi
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { RaProfileSimplifiedModel } from 'types/ra-profiles';
 
-import { collectFormAttributes } from 'utils/attributes/attributes';
-
 import {
     validateAlphaNumericWithoutAccents,
     validateCustomIp,
@@ -38,14 +36,14 @@ import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-hel
 import { Resource } from '../../../../types/openapi';
 import useAttributeEditor, { buildGroups, buildOwner } from 'utils/widget';
 import CertificateAssociationsFormWidget from 'components/CertificateAssociationsFormWidget/CertificateAssociationsFormWidget';
-import { transformAttributes, mapProfileAttribute } from 'utils/attributes/attributes';
+import { collectFormAttributes, transformAttributes, mapProfileAttribute } from 'utils/attributes/attributes';
 import { deepEqual } from 'utils/deep-equal';
 
-interface AcmeProfileFormProps {
+type AcmeProfileFormProps = Readonly<{
     acmeProfileId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -118,7 +116,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     useEffect(() => {
         if (editMode && id) {
             // Fetch if id changed or if we don't have the correct profile loaded
-            if (previousIdRef.current !== id || !acmeProfileSelector || acmeProfileSelector.uuid !== id) {
+            if (previousIdRef.current !== id || acmeProfileSelector?.uuid !== id) {
                 dispatch(acmeProfileActions.getAcmeProfile({ uuid: id }));
                 previousIdRef.current = id;
             }
@@ -126,7 +124,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             previousIdRef.current = undefined;
         }
 
-        if (editMode && acmeProfileSelector && acmeProfileSelector.uuid === id) {
+        if (editMode && acmeProfileSelector?.uuid === id) {
             setAcmeProfile(acmeProfileSelector);
             setRaProfile(acmeProfileSelector.raProfile);
         }
@@ -137,7 +135,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     }, [dispatch]);
 
     useEffect(() => {
-        if (raProfile && raProfile.authorityInstanceUuid) {
+        if (raProfile?.authorityInstanceUuid) {
             dispatch(
                 raProfileActions.listIssuanceAttributeDescriptors({ authorityUuid: raProfile.authorityInstanceUuid, uuid: raProfile.uuid }),
             );
@@ -305,7 +303,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                 return;
             }
 
-            setRaProfile(raProfiles.find((p) => p.uuid === value) || undefined);
+            setRaProfile(raProfiles.find((p) => p.uuid === value));
 
             if (acmeProfile) {
                 setAcmeProfile({
@@ -344,7 +342,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
 
     // Reset form values when acmeProfile is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && acmeProfile && acmeProfile.uuid === id && !isFetchingDetail && optionsForRaProfiles.length > 0) {
+        if (editMode && id && acmeProfile?.uuid === id && !isFetchingDetail && optionsForRaProfiles.length > 0) {
             // Only reset if the profile ID changed or we haven't reset yet
             if (lastResetProfileIdRef.current !== id || lastResetEditModeRef.current !== editMode) {
                 const initialAssociatedAttributes = mapProfileAttribute(

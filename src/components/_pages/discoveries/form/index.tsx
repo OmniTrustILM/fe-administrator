@@ -30,10 +30,10 @@ import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-hel
 import TriggerEditorWidget from 'components/TriggerEditorWidget';
 import TextInput from 'components/TextInput';
 
-interface DiscoveryFormProps {
+type DiscoveryFormProps = Readonly<{
     onSuccess?: () => void;
     onCancel?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;

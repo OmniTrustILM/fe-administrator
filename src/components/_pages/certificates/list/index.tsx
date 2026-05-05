@@ -30,7 +30,7 @@ import { ArrowDownToLine } from 'lucide-react';
 import Switch from 'components/Switch';
 import { buildCertificateRowColumns } from '../certificateTableHelpers';
 
-interface Props {
+type Props = Readonly<{
     selectCertsOnly?: boolean;
     multiSelect?: boolean;
     onCheckedRowsChanged?: (checkedRows: (string | number)[]) => void;
@@ -38,7 +38,7 @@ interface Props {
     hideAdditionalButtons?: boolean;
     isLinkDisabled?: boolean;
     withPreservedFilters?: boolean;
-}
+}>;
 
 export default function CertificateList({
     hideWidgetButtons = false,

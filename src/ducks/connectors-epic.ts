@@ -28,7 +28,6 @@ import {
     transformConnectorResponseDtoToModel,
     transformConnectorUpdateRequestModelToDto,
     transformConnectInfoDtoToFunctionGroups,
-    transformFunctionGroupDtoToModel,
 } from './transform/connectors';
 import { transformSearchRequestModelToDto } from './transform/certificates';
 

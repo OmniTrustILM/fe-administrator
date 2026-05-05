@@ -14,11 +14,11 @@ export interface WidgetButtonProps {
     className?: string;
 }
 
-interface Props {
+type Props = Readonly<{
     buttons: WidgetButtonProps[];
     justify?: 'start' | 'end' | 'center';
     className?: string;
-}
+}>;
 
 function WidgetButtons({ buttons, justify = 'center', className }: Props) {
     return (

@@ -16,7 +16,7 @@ import type { Observable } from 'rxjs';
 import type { SearchFieldListModel, SearchFilterModel, SearchRequestModel } from 'types/certificate';
 import type { LockWidgetNameEnum } from 'types/user-interface';
 
-interface Props {
+type Props = Readonly<{
     entity: EntityType;
     headers: TableHeader[];
     data: TableDataRow[];
@@ -37,7 +37,7 @@ interface Props {
     hasDetails?: boolean;
     columnForDetail?: string;
     extraFilterComponent?: React.ReactNode;
-}
+}>;
 
 function PagedList({
     headers,
@@ -186,7 +186,7 @@ function PagedList({
     );
 
     if (isFetchingList && data.length === 0 && !hasLoadedOnce.current) {
-        const estimatedButtonCount = (!addHidden ? 1 : 0) + (onDeleteCallback ? 1 : 0) + (additionalButtons?.length ?? 0);
+        const estimatedButtonCount = (addHidden ? 0 : 1) + (onDeleteCallback ? 1 : 0) + (additionalButtons?.length ?? 0);
         return (
             <PagedListSkeleton
                 hasFilter={Boolean(getAvailableFiltersApi) && Boolean(filterTitle)}

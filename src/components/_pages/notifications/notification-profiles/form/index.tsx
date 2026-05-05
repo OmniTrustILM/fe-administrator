@@ -9,7 +9,7 @@ import { actions as notificationsActions, selectors as notificationsSelectors } 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Controller, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import Select from 'components/Select';
 import Button from 'components/Button';
 import Container from 'components/Container';
@@ -31,12 +31,12 @@ import { getInputStringFromIso8601String, getIso8601StringFromInputString } from
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
 
-interface NotificationProfileFormProps {
+type NotificationProfileFormProps = Readonly<{
     notificationProfileId?: string;
     version?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -93,9 +93,8 @@ export default function NotificationProfileForm({
             if (
                 previousIdRef.current !== id ||
                 previousVersionRef.current !== version ||
-                !notificationProfile ||
-                notificationProfile.uuid !== id ||
-                notificationProfile.version !== Number(version)
+                notificationProfile?.uuid !== id ||
+                notificationProfile?.version !== Number(version)
             ) {
                 dispatch(actions.resetState());
                 dispatch(actions.getNotificationProfileDetail({ uuid: id, version: Number(version) }));
@@ -211,149 +210,147 @@ export default function NotificationProfileForm({
         ((type === RecipientType.User || type === RecipientType.Role || type === RecipientType.Group) && !formValues.internalNotification);
 
     return (
-        <>
-            <FormProvider {...methods}>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    <Widget busy={isBusy} widgetLockName={LockWidgetNameEnum.NotificationProfileDetails} noBorder>
-                        <div className="space-y-4">
-                            {!editMode && (
-                                <Controller
-                                    name="name"
-                                    control={control}
-                                    rules={buildValidationRules([validateRequired(), validateAlphaNumericWithSpecialChars()])}
-                                    render={({ field, fieldState }) => (
-                                        <TextInput
-                                            {...field}
-                                            id="name"
-                                            type="text"
-                                            label="Profile Name"
-                                            required
-                                            disabled={editMode}
-                                            invalid={fieldState.error && fieldState.isTouched}
-                                            error={getFieldErrorMessage(fieldState)}
-                                        />
-                                    )}
-                                />
-                            )}
-
+        <FormProvider {...methods}>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <Widget busy={isBusy} widgetLockName={LockWidgetNameEnum.NotificationProfileDetails} noBorder>
+                    <div className="space-y-4">
+                        {!editMode && (
                             <Controller
-                                name="description"
+                                name="name"
                                 control={control}
+                                rules={buildValidationRules([validateRequired(), validateAlphaNumericWithSpecialChars()])}
                                 render={({ field, fieldState }) => (
-                                    <TextArea
+                                    <TextInput
                                         {...field}
-                                        id="description"
-                                        label="Description"
-                                        rows={3}
+                                        id="name"
+                                        type="text"
+                                        label="Profile Name"
+                                        required
+                                        disabled={editMode}
                                         invalid={fieldState.error && fieldState.isTouched}
                                         error={getFieldErrorMessage(fieldState)}
                                     />
                                 )}
                             />
+                        )}
 
-                            <RecipientTypeFields />
-
-                            <div>
-                                <Controller
-                                    name="notificationInstance"
-                                    control={control}
-                                    rules={isNotificationInstanceRequired ? buildValidationRules([validateRequired()]) : {}}
-                                    render={({ field, fieldState }) => (
-                                        <>
-                                            <Select
-                                                id="notificationInstance"
-                                                label="Notification Instance"
-                                                required
-                                                value={field.value || ''}
-                                                onChange={(value) => {
-                                                    field.onChange(value);
-                                                }}
-                                                options={notificationInstanceOptions}
-                                                placeholder="Select Notification Instance"
-                                                isClearable
-                                                placement="bottom"
-                                            />
-                                            {fieldState.error && fieldState.isTouched && (
-                                                <p className="mt-1 text-sm text-red-600">
-                                                    Notification Instance is required if Recipient Type is Default or None, or if the send
-                                                    internal notifications is false
-                                                </p>
-                                            )}
-                                        </>
-                                    )}
+                        <Controller
+                            name="description"
+                            control={control}
+                            render={({ field, fieldState }) => (
+                                <TextArea
+                                    {...field}
+                                    id="description"
+                                    label="Description"
+                                    rows={3}
+                                    invalid={fieldState.error && fieldState.isTouched}
+                                    error={getFieldErrorMessage(fieldState)}
                                 />
-                            </div>
+                            )}
+                        />
 
-                            <Controller
-                                name="internalNotification"
-                                control={control}
-                                render={({ field }) => (
-                                    <Switch
-                                        id="internalNotification"
-                                        checked={field.value}
-                                        onChange={field.onChange}
-                                        label="Send internal notifications"
-                                        disabled={type === RecipientType.Default || type === RecipientType.None}
-                                    />
-                                )}
-                            />
+                        <RecipientTypeFields />
 
+                        <div>
                             <Controller
-                                name="frequency"
+                                name="notificationInstance"
                                 control={control}
-                                rules={buildValidationRules([validateDuration(['d', 'h'])])}
+                                rules={isNotificationInstanceRequired ? buildValidationRules([validateRequired()]) : {}}
                                 render={({ field, fieldState }) => (
                                     <>
-                                        <TextInput
-                                            {...field}
-                                            id="frequency"
-                                            type="text"
-                                            label="Frequency"
-                                            placeholder="ex: 5d 4h"
-                                            invalid={fieldState.error && fieldState.isTouched}
-                                            error={getFieldErrorMessage(fieldState)}
+                                        <Select
+                                            id="notificationInstance"
+                                            label="Notification Instance"
+                                            required
+                                            value={field.value || ''}
+                                            onChange={(value) => {
+                                                field.onChange(value);
+                                            }}
+                                            options={notificationInstanceOptions}
+                                            placeholder="Select Notification Instance"
+                                            isClearable
+                                            placement="bottom"
                                         />
-                                        {!fieldState.error && <p className="mt-1 text-sm text-gray-500">Enter duration in format: 0d 0h</p>}
+                                        {fieldState.error && fieldState.isTouched && (
+                                            <p className="mt-1 text-sm text-red-600">
+                                                Notification Instance is required if Recipient Type is Default or None, or if the send
+                                                internal notifications is false
+                                            </p>
+                                        )}
                                     </>
                                 )}
                             />
-
-                            <div>
-                                <p className="text-sm text-gray-500 mb-2">Maximum number of repetitions of the same notification</p>
-                                <Controller
-                                    name="repetitions"
-                                    control={control}
-                                    rules={buildValidationRules([validatePositiveInteger(), validateNonZeroInteger()])}
-                                    render={({ field, fieldState }) => (
-                                        <TextInput
-                                            {...field}
-                                            id="repetitions"
-                                            type="number"
-                                            label="Repetitions"
-                                            invalid={fieldState.error && fieldState.isTouched}
-                                            error={getFieldErrorMessage(fieldState)}
-                                        />
-                                    )}
-                                />
-                            </div>
-
-                            <Container className="flex-row justify-end modal-footer" gap={4}>
-                                <Button variant="outline" onClick={onCancel} disabled={isSubmitting} type="button">
-                                    Cancel
-                                </Button>
-                                <ProgressButton
-                                    title={editMode ? 'Save' : 'Create'}
-                                    inProgressTitle={editMode ? 'Saving...' : 'Creating...'}
-                                    inProgress={isSubmitting}
-                                    disabled={areDefaultValuesSame(formValues) || isBusy}
-                                    type="submit"
-                                />
-                            </Container>
                         </div>
-                    </Widget>
-                </form>
-            </FormProvider>
-        </>
+
+                        <Controller
+                            name="internalNotification"
+                            control={control}
+                            render={({ field }) => (
+                                <Switch
+                                    id="internalNotification"
+                                    checked={field.value}
+                                    onChange={field.onChange}
+                                    label="Send internal notifications"
+                                    disabled={type === RecipientType.Default || type === RecipientType.None}
+                                />
+                            )}
+                        />
+
+                        <Controller
+                            name="frequency"
+                            control={control}
+                            rules={buildValidationRules([validateDuration(['d', 'h'])])}
+                            render={({ field, fieldState }) => (
+                                <>
+                                    <TextInput
+                                        {...field}
+                                        id="frequency"
+                                        type="text"
+                                        label="Frequency"
+                                        placeholder="ex: 5d 4h"
+                                        invalid={fieldState.error && fieldState.isTouched}
+                                        error={getFieldErrorMessage(fieldState)}
+                                    />
+                                    {!fieldState.error && <p className="mt-1 text-sm text-gray-500">Enter duration in format: 0d 0h</p>}
+                                </>
+                            )}
+                        />
+
+                        <div>
+                            <p className="text-sm text-gray-500 mb-2">Maximum number of repetitions of the same notification</p>
+                            <Controller
+                                name="repetitions"
+                                control={control}
+                                rules={buildValidationRules([validatePositiveInteger(), validateNonZeroInteger()])}
+                                render={({ field, fieldState }) => (
+                                    <TextInput
+                                        {...field}
+                                        id="repetitions"
+                                        type="number"
+                                        label="Repetitions"
+                                        invalid={fieldState.error && fieldState.isTouched}
+                                        error={getFieldErrorMessage(fieldState)}
+                                    />
+                                )}
+                            />
+                        </div>
+
+                        <Container className="flex-row justify-end modal-footer" gap={4}>
+                            <Button variant="outline" onClick={onCancel} disabled={isSubmitting} type="button">
+                                Cancel
+                            </Button>
+                            <ProgressButton
+                                title={editMode ? 'Save' : 'Create'}
+                                inProgressTitle={editMode ? 'Saving...' : 'Creating...'}
+                                inProgress={isSubmitting}
+                                disabled={areDefaultValuesSame(formValues) || isBusy}
+                                type="submit"
+                            />
+                        </Container>
+                    </div>
+                </Widget>
+            </form>
+        </FormProvider>
     );
 }
 

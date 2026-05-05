@@ -63,38 +63,23 @@ const ExecutionsItemsList = ({
                 }
             }
 
-            value = coincideValueToShow?.length
-                ? coincideValueToShow
-                : field && field.type === FilterFieldType.Boolean
-                  ? `'${booleanOptions.find((b) => !!f.data === b.value)?.label}'`
-                  : Array.isArray(f.data)
-                    ? `${f.data
-                          .map(
-                              (v) =>
-                                  `'${
-                                      field?.platformEnum
-                                          ? platformEnums[field.platformEnum][v]?.label
-                                          : v?.name
-                                            ? v.name
-                                            : field && field.attributeContentType === AttributeContentType.Date
-                                              ? getFormattedDate(v as unknown as string)
-                                              : field && field.attributeContentType === AttributeContentType.Datetime
-                                                ? getFormattedDateTime(v as unknown as string)
-                                                : v
-                                  }'`,
-                          )
-                          .join(', ')}`
-                    : f.data
-                      ? `'${
-                            field?.platformEnum
-                                ? platformEnums[field.platformEnum][f.data as unknown as string]?.label
-                                : field && field.attributeContentType === AttributeContentType.Date
-                                  ? getFormattedDate(f.data as unknown as string)
-                                  : field && field.attributeContentType === AttributeContentType.Datetime
-                                    ? getFormattedDateTime(f.data as unknown as string)
-                                    : f.data
-                        }'`
-                      : '';
+            const formatSingleValue = (v: unknown): string => {
+                if (field?.platformEnum) return platformEnums[field.platformEnum][v as string]?.label ?? String(v);
+                if ((v as any)?.name) return (v as any).name;
+                if (field?.attributeContentType === AttributeContentType.Date) return getFormattedDate(v as unknown as string);
+                if (field?.attributeContentType === AttributeContentType.Datetime) return getFormattedDateTime(v as unknown as string);
+                return String(v);
+            };
+
+            if (coincideValueToShow?.length) {
+                value = coincideValueToShow;
+            } else if (field?.type === FilterFieldType.Boolean) {
+                value = `'${booleanOptions.find((b) => !!f.data === b.value)?.label}'`;
+            } else if (Array.isArray(f.data)) {
+                value = f.data.map((v) => `'${formatSingleValue(v)}'`).join(', ');
+            } else if (f.data) {
+                value = `'${formatSingleValue(f.data)}'`;
+            }
 
             return (
                 <Badge key={i.toString() + label + value}>
@@ -148,38 +133,23 @@ const ExecutionsItemsList = ({
                 }
             }
 
-            value = coincideValueToShow?.length
-                ? coincideValueToShow
-                : field && field.type === FilterFieldType.Boolean
-                  ? `'${booleanOptions.find((b) => !!f.data === b.value)?.label}'`
-                  : Array.isArray(f.data)
-                    ? `${f.data
-                          .map(
-                              (v) =>
-                                  `'${
-                                      field?.platformEnum
-                                          ? platformEnums[field.platformEnum][v]?.label
-                                          : v?.name
-                                            ? v.name
-                                            : field && field.attributeContentType === AttributeContentType.Date
-                                              ? getFormattedDate(v as unknown as string)
-                                              : field && field.attributeContentType === AttributeContentType.Datetime
-                                                ? getFormattedDateTime(v as unknown as string)
-                                                : v
-                                  }'`,
-                          )
-                          .join(', ')}`
-                    : f.data
-                      ? `'${
-                            field?.platformEnum
-                                ? platformEnums[field.platformEnum][f.data as unknown as string]?.label
-                                : field && field.attributeContentType === AttributeContentType.Date
-                                  ? getFormattedDate(f.data as unknown as string)
-                                  : field && field.attributeContentType === AttributeContentType.Datetime
-                                    ? getFormattedDateTime(f.data as unknown as string)
-                                    : f.data
-                        }'`
-                      : '';
+            const formatSingleValue = (v: unknown): string => {
+                if (field?.platformEnum) return platformEnums[field.platformEnum][v as string]?.label ?? String(v);
+                if ((v as any)?.name) return (v as any).name;
+                if (field?.attributeContentType === AttributeContentType.Date) return getFormattedDate(v as unknown as string);
+                if (field?.attributeContentType === AttributeContentType.Datetime) return getFormattedDateTime(v as unknown as string);
+                return String(v);
+            };
+
+            if (coincideValueToShow?.length) {
+                value = coincideValueToShow;
+            } else if (field?.type === FilterFieldType.Boolean) {
+                value = `'${booleanOptions.find((b) => !!f.data === b.value)?.label}'`;
+            } else if (Array.isArray(f.data)) {
+                value = f.data.map((v) => `'${formatSingleValue(v)}'`).join(', ');
+            } else if (f.data) {
+                value = `'${formatSingleValue(f.data)}'`;
+            }
 
             return (
                 <div key={i.toString() + label + value} className="mt-2 mr-1">

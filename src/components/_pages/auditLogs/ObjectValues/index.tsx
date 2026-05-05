@@ -1,7 +1,7 @@
-interface Props {
+type Props = Readonly<{
     className?: string;
     obj: any;
-}
+}>;
 
 function ObjectValues({ className, obj }: Props) {
     if (!obj) return null;

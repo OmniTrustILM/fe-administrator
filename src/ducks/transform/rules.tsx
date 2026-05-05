@@ -404,44 +404,45 @@ export function useTransformTriggerObjectToNodesAndEdges(
 
     const otherPropertiesCurrentCertificate: OtherProperties[] = [];
 
-    otherPropertiesCurrentCertificate.push({
-        propertyContent: (
-            <div className={cn('flex items-center ')}>
-                <h6>Ignore Trigger :</h6>
-                <div className="ml-1">
-                    <Switch
-                        id="ignoreTrigger"
-                        checked={triggerDetails.ignoreTrigger}
-                        onChange={(checked) => {
-                            if (checked) {
-                                dispatch(
-                                    rulesActions.updateTrigger({
-                                        triggerUuid: triggerDetails.uuid,
-                                        trigger: {
-                                            ignoreTrigger: true,
-                                            description: triggerDetails.description || '',
-                                            rulesUuids: triggerDetails?.rules.map((rule) => rule.uuid) || [],
-                                            resource: triggerDetails.resource,
-                                            type: triggerDetails.type,
-                                            actionsUuids: [],
-                                            event: triggerDetails.event || undefined,
-                                        },
-                                    }),
-                                );
-                            } else {
-                                dispatch(alertActions.info('Please add actions from the Add Actions dropdown'));
-                            }
-                        }}
-                    />
+    otherPropertiesCurrentCertificate.push(
+        {
+            propertyContent: (
+                <div className={cn('flex items-center ')}>
+                    <h6>Ignore Trigger :</h6>
+                    <div className="ml-1">
+                        <Switch
+                            id="ignoreTrigger"
+                            checked={triggerDetails.ignoreTrigger}
+                            onChange={(checked) => {
+                                if (checked) {
+                                    dispatch(
+                                        rulesActions.updateTrigger({
+                                            triggerUuid: triggerDetails.uuid,
+                                            trigger: {
+                                                ignoreTrigger: true,
+                                                description: triggerDetails.description || '',
+                                                rulesUuids: triggerDetails?.rules.map((rule) => rule.uuid) || [],
+                                                resource: triggerDetails.resource,
+                                                type: triggerDetails.type,
+                                                actionsUuids: [],
+                                                event: triggerDetails.event || undefined,
+                                            },
+                                        }),
+                                    );
+                                } else {
+                                    dispatch(alertActions.info('Please add actions from the Add Actions dropdown'));
+                                }
+                            }}
+                        />
+                    </div>
                 </div>
-            </div>
-        ),
-    });
-
-    otherPropertiesCurrentCertificate.push({
-        propertyName: 'Resource',
-        propertyValue: getEnumLabel(resourceTypeEnum, triggerDetails.resource),
-    });
+            ),
+        },
+        {
+            propertyName: 'Resource',
+            propertyValue: getEnumLabel(resourceTypeEnum, triggerDetails.resource),
+        },
+    );
 
     if (triggerDetails?.type) {
         otherPropertiesCurrentCertificate.push({

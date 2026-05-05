@@ -3,7 +3,7 @@ import cn from 'classnames';
 export type SingleValue<T> = T | undefined;
 export type MultiValue<T> = T[] | undefined;
 
-interface Props {
+type Props = Readonly<{
     htmlFor?: string;
     title?: string;
     children?: React.ReactNode;
@@ -11,7 +11,7 @@ interface Props {
     className?: string;
     onClick?: () => void;
     dataTestId?: string;
-}
+}>;
 
 function Label({ htmlFor, title, children, required, className, onClick, dataTestId }: Props) {
     const defaultClasses = 'block text-left text-sm font-medium mb-2 text-center dark:text-white text-[var(--dark-gray-color)]';

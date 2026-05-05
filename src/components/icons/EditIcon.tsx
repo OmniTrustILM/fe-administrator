@@ -1,8 +1,8 @@
-interface EditIconProps {
+type EditIconProps = Readonly<{
     size?: number;
     className?: string;
     dataTestId?: string;
-}
+}>;
 
 function EditIcon({ size = 16, className, dataTestId = 'edit-icon' }: EditIconProps) {
     return (

@@ -1,10 +1,10 @@
-interface Props {
+type Props = Readonly<{
     page: number;
     totalPages: number;
     onPageChange: (page: number) => void;
     dataTestId?: string;
     disabled?: boolean;
-}
+}>;
 
 function Pagination({ page, totalPages, onPageChange, dataTestId, disabled = false }: Props) {
     const getPageNumbers = () => {

@@ -35,7 +35,7 @@ export function useGetLabels(data: DashboardDict) {
                     result.push(secretLabel);
                 } else {
                     const splitValue = i[0].split('=');
-                    result.push(splitValue[splitValue.length - 1]);
+                    result.push(splitValue.at(-1)!);
                 }
             }
         }

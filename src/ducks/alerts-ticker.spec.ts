@@ -110,9 +110,11 @@ describe('alerts-ticker', () => {
         const now = 1000000;
         vi.setSystemTime(now);
 
-        messages.push({ id: 1, time: now - 18000, message: 'm1', color: 'info' });
-        messages.push({ id: 2, time: now - 21000, message: 'm2', color: 'info' });
-        messages.push({ id: 3, time: now - 5000, message: 'm3', color: 'info' });
+        messages.push(
+            { id: 1, time: now - 18000, message: 'm1', color: 'info' },
+            { id: 2, time: now - 21000, message: 'm2', color: 'info' },
+            { id: 3, time: now - 5000, message: 'm3', color: 'info' },
+        );
 
         startAlertsTicker(mockStore);
         vi.advanceTimersByTime(1000);

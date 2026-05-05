@@ -9,7 +9,7 @@ import { Plus } from 'lucide-react';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import { getSelectValueFromField, buildAttributeValidators, parseListValueByContentType } from './attributeHelpers';
 
-interface AttributeFieldSelectProps {
+type AttributeFieldSelectProps = Readonly<{
     name: string;
     descriptor: DataAttributeModel | CustomAttributeModel;
     options?: { label: string; value: any }[];
@@ -18,7 +18,7 @@ interface AttributeFieldSelectProps {
     addNewAttributeValue?: { label: string; value: string; disabled?: boolean };
     onSelectChangeMulti: (fieldOnChange: (v: any) => void) => (newValue: any) => void;
     onSelectChangeSingle: (fieldOnChange: (v: any) => void) => (newValue: any) => void;
-}
+}>;
 
 export function AttributeFieldSelect({
     name,

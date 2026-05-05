@@ -1,4 +1,3 @@
-import { CronExpressionParser } from 'cron-parser';
 import cronstrue from 'cronstrue';
 import { AttributeContentType, FilterConditionOperator, FilterFieldType, type SearchFieldDataDto } from 'types/openapi';
 
@@ -12,11 +11,9 @@ function leading0(s: string, count: number) {
 
 export function durationFormatter(startDate: string | null | undefined, endDate: string | null | undefined): string {
     try {
-        return startDate
-            ? endDate
-                ? timeFormatter(new Date(endDate).valueOf() - new Date(startDate).valueOf())
-                : timeFormatter(new Date().valueOf() - new Date(startDate).valueOf())
-            : '';
+        if (!startDate) return '';
+        const endMs = endDate ? new Date(endDate).valueOf() : new Date().valueOf();
+        return timeFormatter(endMs - new Date(startDate).valueOf());
     } catch (error) {
         console.debug('Unable to convert the given date strings to date object');
         return '';

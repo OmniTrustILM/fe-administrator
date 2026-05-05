@@ -44,12 +44,12 @@ interface SelectChangeValue {
     label: string;
 }
 
-interface Props {
+type Props = Readonly<{
     certificate: CertificateDetailResponseModel | undefined;
     validationResult: CertificateValidationResultDto | undefined;
     isBusy: boolean;
     getFreshCertificateDetail: () => void;
-}
+}>;
 
 export default function CertificateDetailsContent({ certificate, validationResult, isBusy, getFreshCertificateDetail }: Props) {
     const dispatch = useDispatch();

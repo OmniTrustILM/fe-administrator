@@ -94,12 +94,13 @@ export default function CustomAttributeDetail() {
                 icon: customAttribute?.enabled ? 'times' : 'check',
                 disabled: !customAttribute || isEnabling || isDisabling,
                 tooltip: customAttribute?.enabled ? 'Disable' : 'Enable',
-                onClick: () =>
-                    customAttribute?.enabled
-                        ? dispatch(actions.disableCustomAttribute(customAttribute?.uuid))
-                        : customAttribute
-                          ? dispatch(actions.enableCustomAttribute(customAttribute?.uuid))
-                          : {},
+                onClick: () => {
+                    if (customAttribute?.enabled) {
+                        dispatch(actions.disableCustomAttribute(customAttribute.uuid));
+                    } else if (customAttribute) {
+                        dispatch(actions.enableCustomAttribute(customAttribute.uuid));
+                    }
+                },
             },
         ],
         [onEditClick, customAttribute, dispatch, isDisabling, isEnabling],
@@ -131,9 +132,8 @@ export default function CustomAttributeDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !customAttribute
-                ? []
-                : [
+            customAttribute
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', customAttribute.uuid],
@@ -224,7 +224,8 @@ export default function CustomAttributeDetail() {
                               </Fragment>,
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [customAttribute, attributeContentTypeEnum, resourceEnum, protectionLevelEnum, onContentCopyClick],
     );
 

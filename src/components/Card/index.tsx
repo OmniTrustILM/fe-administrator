@@ -1,12 +1,12 @@
 import Spinner from 'components/Spinner';
 
-interface Props {
+type Props = Readonly<{
     children: React.ReactNode;
     isLoading?: boolean;
     title?: string;
     subtitle?: string;
     content?: string;
-}
+}>;
 
 function Card({ title, subtitle, content, children, isLoading }: Props) {
     if (isLoading) {

@@ -6,7 +6,7 @@ import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
 import Button from 'components/Button';
 
-interface Props {
+type Props = Readonly<{
     onFileContentLoaded: (fileContent: string) => void;
     onContentChange?: () => void;
     id?: string;
@@ -18,7 +18,7 @@ interface Props {
     error?: string;
     contentPlaceholderText?: string;
     dropZoneHintText?: string;
-}
+}>;
 
 export default function FileUpload({
     id = '',
@@ -75,7 +75,7 @@ export default function FileUpload({
     const onFileDrop = useCallback(
         (e: React.DragEvent<HTMLDivElement>) => {
             e.preventDefault();
-            if (!e.dataTransfer || !e.dataTransfer.files || e.dataTransfer.files.length === 0) {
+            if (!e.dataTransfer?.files?.length) {
                 return;
             }
 

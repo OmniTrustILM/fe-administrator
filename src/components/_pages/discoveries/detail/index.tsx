@@ -91,9 +91,8 @@ export default function DiscoveryDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !discovery
-                ? []
-                : [
+            discovery
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', discovery.uuid],
@@ -167,7 +166,8 @@ export default function DiscoveryDetail() {
                           id: 'message',
                           columns: ['Message', discovery.message || ''],
                       },
-                  ],
+                  ]
+                : [],
         [discovery],
     );
 

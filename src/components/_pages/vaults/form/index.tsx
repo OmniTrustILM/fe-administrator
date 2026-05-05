@@ -25,10 +25,10 @@ import { ConnectorInterface, FilterConditionOperator, FilterFieldSource, Functio
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 
-interface VaultFormProps {
+type VaultFormProps = Readonly<{
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;

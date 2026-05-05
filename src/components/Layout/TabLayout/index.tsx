@@ -3,7 +3,7 @@ import { useMemo, useState, useEffect } from 'react';
 import Widget from 'components/Widget';
 import TabLayoutSkeleton from './TabLayoutSkeleton';
 
-type Props = {
+type Props = Readonly<{
     tabs: {
         title: string | React.ReactNode;
         hidden?: boolean;
@@ -16,7 +16,7 @@ type Props = {
     noBorder?: boolean;
     onTabChange?: (tab: number) => void;
     isLoading?: boolean;
-};
+}>;
 
 export default function TabLayout({
     tabs,
@@ -32,7 +32,7 @@ export default function TabLayout({
         return tabs.filter((e) => !e.hidden);
     }, [tabs]);
 
-    const currentTab = selectedTab !== undefined ? selectedTab : activeTab;
+    const currentTab = selectedTab ?? activeTab;
 
     useEffect(() => {
         if (selectedTab !== undefined) {

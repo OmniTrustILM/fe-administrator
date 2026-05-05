@@ -160,7 +160,7 @@ export const slice = createSlice({
             }
 
             if (state.user?.uuid === action.payload.user.uuid) {
-                state.user = JSON.parse(JSON.stringify(action.payload.user));
+                state.user = structuredClone(action.payload.user);
             }
             state.isUpdating = false;
             state.updateUserSucceeded = true;

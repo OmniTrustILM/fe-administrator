@@ -206,8 +206,8 @@ test.describe('attributeHelpers', () => {
         });
 
         test('returns undefined when options is undefined', () => {
-            expect(getUpdatedOptionsForEditSelect([], undefined)).toBeUndefined();
-            expect(getUpdatedOptionsForEditSelect([{ label: 'A', value: 1 }], undefined)).toBeUndefined();
+            expect(getUpdatedOptionsForEditSelect([])).toBeUndefined();
+            expect(getUpdatedOptionsForEditSelect([{ label: 'A', value: 1 }])).toBeUndefined();
         });
 
         test('filters out options that appear in valuesRecieved', () => {

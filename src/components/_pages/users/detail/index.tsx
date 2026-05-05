@@ -21,7 +21,7 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import { PlatformEnum, Resource } from '../../../../types/openapi';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders } from 'utils/widget';
-import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
+import { selectors as enumSelectors } from 'ducks/enums';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
 
@@ -60,7 +60,7 @@ export default function UserDetail() {
 
     const getFreshCertificateDetails = useCallback(() => {
         // TODO: Add Toast to notify user
-        if (!user || !user.certificate || !user.certificate.uuid || user.uuid !== id) return;
+        if (!user?.certificate?.uuid || user.uuid !== id) return;
         dispatch(certActions.getCertificateDetail({ uuid: user.certificate.uuid }));
     }, [user, dispatch, id]);
 
@@ -165,9 +165,8 @@ export default function UserDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !user
-                ? []
-                : [
+            user
+                ? [
                       {
                           id: 'username',
                           columns: ['Username', user.username],
@@ -206,7 +205,7 @@ export default function UserDetail() {
                           id: 'systemUser',
                           columns: [
                               'System user',
-                              <Badge color={!user.systemUser ? 'success' : 'danger'}>{user.systemUser ? 'Yes' : 'No'}</Badge>,
+                              <Badge color={user.systemUser ? 'danger' : 'success'}>{user.systemUser ? 'Yes' : 'No'}</Badge>,
                           ],
                       },
                       {
@@ -217,7 +216,8 @@ export default function UserDetail() {
                           id: 'roles',
                           columns: ['Roles', user.roles?.map((role) => role.name).join(', ') || ''],
                       },
-                  ],
+                  ]
+                : [],
         [user],
     );
 

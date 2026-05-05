@@ -178,9 +178,8 @@ export default function TokenDetail() {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !token
-                ? []
-                : [
+            token
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', token.uuid],
@@ -216,7 +215,8 @@ export default function TokenDetail() {
                           id: 'tokenProfiles',
                           columns: ['Number of Token Profiles', token.tokenProfiles.toString()],
                       },
-                  ],
+                  ]
+                : [],
         [token],
     );
 

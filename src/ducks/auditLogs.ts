@@ -60,7 +60,7 @@ export const slice = createSlice({
             a.download = 'auditLogs.zip';
             document.body.appendChild(a); // Temporarily add to DOM
             a.click(); // Trigger file download
-            document.body.removeChild(a); // Remove the element
+            a.remove(); // Remove the element
             URL.revokeObjectURL(downloadUrl); // Release the object URL
 
             state.isExporting = false;

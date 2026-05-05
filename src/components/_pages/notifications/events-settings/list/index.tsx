@@ -96,9 +96,8 @@ const EventsList = () => {
 
     const dataRows: TableDataRow[] = useMemo(
         () =>
-            !resourceEvents
-                ? []
-                : resourceEvents
+            resourceEvents
+                ? resourceEvents
                       .filter((el) => selectedResource === undefined || selectedResource === el.producedResource)
                       .reduce(
                           (acc, event) => [
@@ -115,7 +114,8 @@ const EventsList = () => {
                               },
                           ],
                           [] as TableDataRow[],
-                      ),
+                      )
+                : [],
         [resourceEvents, resourceEventEnum, resourceEnum, selectedResource, eventsSettings],
     );
 

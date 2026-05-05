@@ -2,9 +2,9 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { useSelector } from 'react-redux';
 import { KeyState, PlatformEnum } from 'types/openapi';
 
-interface Props {
+type Props = Readonly<{
     state: KeyState;
-}
+}>;
 
 function KeyStateCircle({ state }: Props) {
     const keyStateEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyState));

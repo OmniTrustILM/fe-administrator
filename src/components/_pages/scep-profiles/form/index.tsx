@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import Select from 'components/Select';
 import Button from 'components/Button';
 import Container from 'components/Container';
@@ -33,11 +33,11 @@ import CertificateAssociationsFormWidget from 'components/CertificateAssociation
 import { deepEqual } from 'utils/deep-equal';
 import TextInput from 'components/TextInput';
 
-interface ScepProfileFormProps {
+type ScepProfileFormProps = Readonly<{
     scepProfileId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -99,7 +99,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
     useEffect(() => {
         if (editMode && id) {
             // Fetch if id changed or if we don't have the correct profile loaded
-            if (previousIdRef.current !== id || !scepProfileSelector || scepProfileSelector.uuid !== id) {
+            if (previousIdRef.current !== id || scepProfileSelector?.uuid !== id) {
                 dispatch(scepProfileActions.getScepProfile({ uuid: id }));
                 previousIdRef.current = id;
             }
@@ -107,7 +107,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
             previousIdRef.current = undefined;
         }
 
-        if (editMode && scepProfileSelector && scepProfileSelector.uuid === id) {
+        if (editMode && scepProfileSelector?.uuid === id) {
             setIntune(scepProfileSelector.enableIntune ?? false);
             setScepProfile(scepProfileSelector);
             setRaProfile(scepProfileSelector.raProfile);
@@ -132,7 +132,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
     }, [dispatch, intune]);
 
     useEffect(() => {
-        if (raProfile && raProfile.authorityInstanceUuid) {
+        if (raProfile?.authorityInstanceUuid) {
             dispatch(
                 raProfileActions.listIssuanceAttributeDescriptors({ authorityUuid: raProfile.authorityInstanceUuid, uuid: raProfile.uuid }),
             );
@@ -179,9 +179,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
             intuneApplicationKey: '',
             challengePassword: '',
             raProfile: editMode
-                ? scepProfileSelector?.raProfile
-                    ? optionsForRaProfiles.find((raProfile) => raProfile.value === scepProfileSelector.raProfile?.uuid)?.value || ''
-                    : ''
+                ? (optionsForRaProfiles.find((raProfile) => raProfile.value === scepProfileSelector?.raProfile?.uuid)?.value ?? '')
                 : '',
             certificate: editMode && scepProfileSelector?.caCertificate ? scepProfileSelector.caCertificate.uuid : '',
             owner: editMode ? buildOwner(userOptions, scepProfileSelector?.certificateAssociations?.ownerUuid)?.value || '' : '',
@@ -288,7 +286,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                 return;
             }
 
-            setRaProfile(raProfiles.find((p) => p.uuid === value) || undefined);
+            setRaProfile(raProfiles.find((p) => p.uuid === value));
 
             if (scepProfile) {
                 setScepProfile({
@@ -314,14 +312,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
 
     // Reset form values when scepProfile is loaded in edit mode
     useEffect(() => {
-        if (
-            editMode &&
-            id &&
-            scepProfileSelector &&
-            scepProfileSelector.uuid === id &&
-            !isFetchingDetail &&
-            optionsForRaProfiles.length > 0
-        ) {
+        if (editMode && id && scepProfileSelector?.uuid === id && !isFetchingDetail && optionsForRaProfiles.length > 0) {
             // Only reset if the profile ID changed or we haven't reset yet
             if (lastResetProfileIdRef.current !== id || lastResetEditModeRef.current !== editMode) {
                 const initialAssociatedAttributes = mapProfileAttribute(

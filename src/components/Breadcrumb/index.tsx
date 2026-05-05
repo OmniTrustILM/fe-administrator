@@ -2,17 +2,17 @@ import cn from 'classnames';
 import { Link } from 'react-router';
 import type React from 'react';
 
-interface Props {
+type Props = Readonly<{
     items: {
         label: string;
         href?: string;
     }[];
     title?: string;
     rightContent?: React.ReactNode;
-}
+}>;
 
 function Breadcrumb({ items, title: titleProp, rightContent }: Props) {
-    const title = titleProp || items[items.length - 1]?.label || '';
+    const title = titleProp || items.at(-1)?.label || '';
     return (
         <div className="mb-4 md:mb-8">
             <ol className="flex items-center whitespace-nowrap">

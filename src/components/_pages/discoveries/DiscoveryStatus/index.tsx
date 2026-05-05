@@ -1,9 +1,9 @@
 import Badge from 'components/Badge';
 import { DiscoveryStatus } from 'types/openapi';
 
-interface Props {
+type Props = Readonly<{
     status: DiscoveryStatus | undefined;
-}
+}>;
 
 export default function DiscoveryStatusBadge({ status }: Props) {
     const statusMap: { [key in DiscoveryStatus]: { color: string; text: string } } = {

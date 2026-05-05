@@ -81,7 +81,7 @@ interface ObjectValueOptions {
     value: any;
 }
 
-interface Props {
+type Props = Readonly<{
     title: string;
     entity: EntityType;
     getAvailableFiltersApi: (apiClients: ApiClients) => Observable<Array<SearchFieldListModel>>;
@@ -90,7 +90,7 @@ interface Props {
     busyBadges?: boolean;
     extraFilterComponent?: React.ReactNode;
     filterGridCols?: 2 | 4;
-}
+}>;
 
 export function FilterWidgetSkeleton({
     title = '',

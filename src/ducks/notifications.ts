@@ -253,7 +253,7 @@ export const slice = createSlice({
 
         bulkDeleteNotificationSuccess: (state, action: PayloadAction<{ deletedNotificationUuids: string[] }>) => {
             state.notifications = state.notifications.filter(
-                (notification) => action.payload.deletedNotificationUuids.indexOf(notification.uuid) === -1,
+                (notification) => !action.payload.deletedNotificationUuids.includes(notification.uuid),
             );
             state.deleteErrorMessage = undefined;
             state.isBulkDeleting = false;

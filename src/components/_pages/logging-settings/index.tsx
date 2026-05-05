@@ -10,7 +10,6 @@ import { AuditLoggingSettingsDtoOutputEnum, Module, PlatformEnum, Resource } fro
 
 import Select from 'components/Select';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
-import { isObjectSame } from 'utils/common-utils';
 import ProgressButton from 'components/ProgressButton';
 import Switch from 'components/Switch';
 

@@ -176,17 +176,14 @@ async function runEpic(
 }
 
 function contentAction(operation: 'update' | 'remove', resource: Resource, attributeUuid = 'attr-1') {
+    const nonVaultUuid = resource === Resource.Secrets ? 'sec-1' : 'obj-1';
+    const vaultOrNonUuid = resource === Resource.Vaults ? 'vault-1' : nonVaultUuid;
+    const resourceUuid = resource === Resource.VaultProfiles ? 'vp-1' : vaultOrNonUuid;
+
     if (operation === 'update') {
         return slice.actions.updateCustomAttributeContent({
             resource,
-            resourceUuid:
-                resource === Resource.VaultProfiles
-                    ? 'vp-1'
-                    : resource === Resource.Vaults
-                      ? 'vault-1'
-                      : resource === Resource.Secrets
-                        ? 'sec-1'
-                        : 'obj-1',
+            resourceUuid,
             attributeUuid,
             content: baseContent,
         });
@@ -194,14 +191,7 @@ function contentAction(operation: 'update' | 'remove', resource: Resource, attri
 
     return slice.actions.removeCustomAttributeContent({
         resource,
-        resourceUuid:
-            resource === Resource.VaultProfiles
-                ? 'vp-1'
-                : resource === Resource.Vaults
-                  ? 'vault-1'
-                  : resource === Resource.Secrets
-                    ? 'sec-1'
-                    : 'obj-1',
+        resourceUuid,
         attributeUuid,
     });
 }

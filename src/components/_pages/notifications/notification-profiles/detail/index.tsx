@@ -128,9 +128,8 @@ export default function NotificationProfileDetail() {
     );
     const profileData: TableDataRow[] = useMemo(
         () =>
-            !notificationProfile
-                ? []
-                : [
+            notificationProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', notificationProfile.uuid],
@@ -174,14 +173,14 @@ export default function NotificationProfileDetail() {
                           id: 'repetitions',
                           columns: ['Max Repetitions', notificationProfile.repetitions?.toString() ?? ''],
                       },
-                  ],
+                  ]
+                : [],
         [notificationProfile, recipientTypeEnum],
     );
     const recipientsData: TableDataRow[] = useMemo(
         () =>
-            !notificationProfile?.recipients
-                ? []
-                : notificationProfile.recipients?.map((recipient) => ({
+            notificationProfile?.recipients
+                ? notificationProfile.recipients?.map((recipient) => ({
                       id: recipient.uuid,
                       columns: [
                           recipient.uuid ?? '',
@@ -205,14 +204,14 @@ export default function NotificationProfileDetail() {
                               {recipient.name}
                           </Link>,
                       ],
-                  })),
+                  }))
+                : [],
         [notificationProfile],
     );
     const notificationInstanceData: TableDataRow[] = useMemo(
         () =>
-            !notificationInstance
-                ? []
-                : [
+            notificationInstance
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', notificationInstance.uuid],
@@ -247,7 +246,8 @@ export default function NotificationProfileDetail() {
                               </Link>,
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [notificationInstance],
     );
 

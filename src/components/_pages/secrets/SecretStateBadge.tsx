@@ -12,10 +12,10 @@ const stateColorMap: Record<SecretState, BadgeColor> = {
     [SecretState.Rejected]: 'danger',
 };
 
-interface Props {
+type Props = Readonly<{
     state: SecretState;
     children: React.ReactNode;
-}
+}>;
 
 export default function SecretStateBadge({ state, children }: Props) {
     const color = stateColorMap[state] ?? 'secondary';

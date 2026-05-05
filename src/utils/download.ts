@@ -16,11 +16,11 @@ function triggerBlobDownload(blob: Blob, fileName: string) {
 export function downloadFile(content: any, fileName: string, type?: string) {
     const element = document.createElement('a');
 
-    var byteNumbers = new Array(content.length);
-    for (var i = 0; i < content.length; i++) {
+    const byteNumbers = new Array(content.length);
+    for (let i = 0; i < content.length; i++) {
         byteNumbers[i] = content.codePointAt(i) ?? 0;
     }
-    var byteArray = new Uint8Array(byteNumbers);
+    const byteArray = new Uint8Array(byteNumbers);
 
     if (!type) {
         type = 'text/plain';

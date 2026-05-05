@@ -19,11 +19,11 @@ import { AttributeContentType, PlatformEnum, ProtectionLevel } from 'types/opena
 import { validateAlphaNumericWithSpecialChars, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
-interface CustomAttributeFormProps {
+type CustomAttributeFormProps = Readonly<{
     customAttributeId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 export default function CustomAttributeForm({ customAttributeId, onCancel, onSuccess }: CustomAttributeFormProps) {
     const dispatch = useDispatch();

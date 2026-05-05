@@ -1,4 +1,3 @@
-import React, { useRef } from 'react';
 import { test, expect } from '../../../../../playwright/ct-test';
 import { AttributeTestWrapper } from './AttributeTestWrapper';
 import type { DataAttributeModel, InfoAttributeModel, CustomAttributeModel } from 'types/attributes';

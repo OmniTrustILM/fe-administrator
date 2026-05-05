@@ -28,12 +28,12 @@ import { actions as userInterfaceActions } from '../../../../ducks/user-interfac
 import { FunctionGroupCode, Resource } from '../../../../types/openapi';
 import TabLayout from '../../../Layout/TabLayout';
 
-interface CredentialFormProps {
+type CredentialFormProps = Readonly<{
     credentialId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
     usesGlobalModal?: boolean;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -93,7 +93,7 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
     useEffect(() => {
         if (editMode && id) {
             // Fetch if id changed or if we don't have the correct credential loaded
-            if (previousIdRef.current !== id || !credentialSelector || credentialSelector.uuid !== id) {
+            if (previousIdRef.current !== id || credentialSelector?.uuid !== id) {
                 dispatch(actions.getCredentialDetail({ uuid: id }));
                 previousIdRef.current = id;
             }
@@ -297,7 +297,7 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
 
     // Reset form values when credential is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && credential && credential.uuid === id && !isFetchingCredentialDetail) {
+        if (editMode && id && credential?.uuid === id && !isFetchingCredentialDetail) {
             const newDefaultValues: FormValues = {
                 name: credential.name || '',
                 credentialProvider: credential.connectorUuid || '',

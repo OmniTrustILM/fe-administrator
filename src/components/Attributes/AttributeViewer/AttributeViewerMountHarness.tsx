@@ -1,10 +1,8 @@
 import { MemoryRouter } from 'react-router';
 import { Provider } from 'react-redux';
 import { createMockStore } from 'utils/test-helpers';
-import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE, type Props } from './index';
-import { PlatformEnum } from 'types/openapi';
-import { AttributeContentType } from 'types/openapi';
-import { Resource } from 'types/openapi';
+import AttributeViewer, { type Props } from './index';
+import { PlatformEnum, AttributeContentType, Resource } from 'types/openapi';
 import GlobalModal from 'components/GlobalModal';
 
 const contentTypeLabels: Record<string, { label: string }> = {

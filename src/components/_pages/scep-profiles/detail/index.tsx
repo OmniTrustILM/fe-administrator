@@ -147,9 +147,8 @@ export default function ScepProfileDetail() {
 
     const scepProfileDetailData: TableDataRow[] = useMemo(
         () =>
-            !scepProfile
-                ? []
-                : [
+            scepProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', scepProfile.uuid],
@@ -216,15 +215,15 @@ export default function ScepProfileDetail() {
                           id: 'scepUrl',
                           columns: ['URL', scepProfile.scepUrl || 'N/A'],
                       },
-                  ],
+                  ]
+                : [],
         [scepProfile],
     );
 
     const intuneDetailData: TableDataRow[] = useMemo(
         () =>
-            !scepProfile
-                ? []
-                : [
+            scepProfile
+                ? [
                       {
                           id: 'intuneTenant',
                           columns: ['Intune Tenant', scepProfile.intuneTenant ?? ''],
@@ -233,13 +232,14 @@ export default function ScepProfileDetail() {
                           id: 'intuneApplicationId',
                           columns: ['Intune Application ID', scepProfile.intuneApplicationId ?? ''],
                       },
-                  ],
+                  ]
+                : [],
         [scepProfile],
     );
 
     const raProfileDetailData: TableDataRow[] = useMemo(
         () =>
-            !scepProfile || !scepProfile.raProfile
+            !scepProfile?.raProfile
                 ? []
                 : [
                       {
@@ -271,7 +271,7 @@ export default function ScepProfileDetail() {
 
     const certificateDetailData: TableDataRow[] = useMemo(
         () =>
-            !scepProfile || !scepProfile.caCertificate
+            !scepProfile?.caCertificate
                 ? []
                 : [
                       {

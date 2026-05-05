@@ -3,9 +3,9 @@ import { createMockStore } from 'utils/test-helpers';
 import Alerts from './index';
 import { alertsSlice } from 'ducks/alert-slice';
 
-export type AlertsWithStoreProps = {
+export type AlertsWithStoreProps = Readonly<{
     preloadedState?: Parameters<typeof createMockStore>[0];
-};
+}>;
 
 const defaultPreloadedState: Parameters<typeof createMockStore>[0] = {
     [alertsSlice.name]: {

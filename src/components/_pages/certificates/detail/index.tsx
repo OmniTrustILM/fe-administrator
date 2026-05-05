@@ -40,7 +40,7 @@ import type { AttributeDescriptorModel, AttributeResponseModel } from 'types/att
 import { PlatformEnum, Resource } from 'types/openapi';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { collectFormAttributes } from 'utils/attributes/attributes';
-import { downloadFile, formatPEM } from 'utils/certificate';
+import { downloadFile } from 'utils/certificate';
 
 import { dateFormatter } from 'utils/dateUtil';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
@@ -63,7 +63,7 @@ import CertificateDetailsContent from './CertificateDetailsContent';
 import CertificateRequestContent from './CertificateRequestContent';
 import Label from 'components/Label';
 
-interface LocationPushFormProps {
+type LocationPushFormProps = Readonly<{
     onSubmit: (values: any) => void;
     selectLocationsHeaders: TableHeader[];
     selectLocationsData: TableDataRow[];
@@ -74,7 +74,7 @@ interface LocationPushFormProps {
     setGroupAttributesCallbackAttributes: React.Dispatch<React.SetStateAction<AttributeDescriptorModel[]>>;
     onCancel: () => void;
     isPushing: boolean;
-}
+}>;
 
 function LocationPushForm({
     onSubmit,
@@ -521,9 +521,8 @@ export default function CertificateDetail() {
 
     const historyEntry: TableDataRow[] = useMemo(
         () =>
-            !eventHistory
-                ? []
-                : eventHistory.map((history) => ({
+            eventHistory
+                ? eventHistory.map((history) => ({
                       id: history.uuid,
                       columns: [
                           <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(history.created)}</span>,
@@ -548,7 +547,8 @@ export default function CertificateDetail() {
                               ''
                           ),
                       ],
-                  })),
+                  }))
+                : [],
         [eventHistory],
     );
 
@@ -620,9 +620,8 @@ export default function CertificateDetail() {
 
     const validationData: TableDataRow[] = useMemo(() => {
         const validationDataRows =
-            !certificate && validationResult?.validationChecks
-                ? []
-                : [
+            certificate && validationResult?.validationChecks
+                ? [
                       ...Object.entries(validationResult?.validationChecks ?? {}).map(([key, value]) => ({
                           id: key,
                           columns: [
@@ -638,7 +637,8 @@ export default function CertificateDetail() {
                               </div>,
                           ],
                       })),
-                  ];
+                  ]
+                : [];
 
         validationDataRows.push({
             id: 'validationStatus',
@@ -906,9 +906,8 @@ export default function CertificateDetail() {
 
     const locationsData: TableDataRow[] = useMemo(
         () =>
-            !certLocations
-                ? []
-                : certLocations.map((location) => ({
+            certLocations
+                ? certLocations.map((location) => ({
                       id: location.uuid,
 
                       columns: [
@@ -926,7 +925,8 @@ export default function CertificateDetail() {
 
                           certificate?.validationStatus ? <CertificateStatus status={certificate?.validationStatus} /> : '',
                       ],
-                  })),
+                  }))
+                : [],
         [certLocations, certificate?.state, certificate?.validationStatus],
     );
 
@@ -978,9 +978,8 @@ export default function CertificateDetail() {
 
     const selectLocationsData: TableDataRow[] = useMemo(
         () =>
-            !locations
-                ? []
-                : (locations
+            locations
+                ? (locations
                       .map((location) => {
                           if (certLocations?.find((cl) => cl.uuid === location.uuid)) return undefined;
 
@@ -1002,7 +1001,8 @@ export default function CertificateDetail() {
                               ],
                           };
                       })
-                      .filter((location) => location !== undefined) as TableDataRow[]),
+                      .filter((location) => location !== undefined) as TableDataRow[])
+                : [],
         [certLocations, locations],
     );
 
@@ -1056,11 +1056,7 @@ export default function CertificateDetail() {
             columns: [
                 <Link to={`../../../approvals/detail/${approval.approvalUuid}`}>{approval.approvalUuid}</Link>,
                 <Link to={`../../../approvalprofiles/detail/${approval.approvalProfileUuid}`}>{approval.approvalProfileName}</Link>,
-                (
-                    <>
-                        <StatusBadge textStatus={approval.status} />
-                    </>
-                ) || '',
+                <StatusBadge textStatus={approval.status} /> || '',
                 approval.creatorUsername || '',
                 approval.resource || '',
                 approval.resourceAction || '',
@@ -1070,14 +1066,14 @@ export default function CertificateDetail() {
         }));
     }, [approvals]);
 
-    const defaultViewport = useMemo(
-        () => ({
+    const defaultViewport = useMemo(() => {
+        const xOffset = deviceType === DeviceType.Mobile ? -150 : 300;
+        return {
             zoom: 0.5,
-            x: deviceType === DeviceType.Tablet ? -50 : deviceType === DeviceType.Mobile ? -150 : 300,
+            x: deviceType === DeviceType.Tablet ? -50 : xOffset,
             y: 0,
-        }),
-        [deviceType],
-    );
+        };
+    }, [deviceType]);
 
     if (isFetching) {
         return <DetailPageSkeleton layout="tabs" tabCount={9} />;

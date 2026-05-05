@@ -10,8 +10,7 @@ import {
     makeOptions,
     rulesSourceOptions,
 } from './compliance-profile';
-import { ComplianceRuleAvailabilityStatus } from 'types/openapi';
-import { Resource } from 'types/openapi';
+import { ComplianceRuleAvailabilityStatus, Resource } from 'types/openapi';
 
 describe('compliance-profile utils', () => {
     describe('getComplianceProfileStatusColor', () => {

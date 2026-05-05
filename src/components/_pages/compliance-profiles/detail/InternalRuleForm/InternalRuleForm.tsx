@@ -15,10 +15,10 @@ import cn from 'classnames';
 import TextInput from 'components/TextInput';
 import Container from 'components/Container';
 
-type Props = {
+type Props = Readonly<{
     rule?: ComplianceRuleListDto;
     onCancel: () => void;
-};
+}>;
 
 type FormValues = {
     name: string;

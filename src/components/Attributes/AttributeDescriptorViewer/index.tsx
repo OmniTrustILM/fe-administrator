@@ -7,9 +7,9 @@ import { useSelector } from 'react-redux';
 import { type AttributeDescriptorModel, isDataAttributeModel, isInfoAttributeModel } from 'types/attributes';
 import { AttributeConstraintType, PlatformEnum } from 'types/openapi';
 
-export interface Props {
+export type Props = Readonly<{
     attributeDescriptors: AttributeDescriptorModel[];
-}
+}>;
 
 export default function AttributeDescriptorViewer({ attributeDescriptors }: Props) {
     const attributeTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.AttributeType));
@@ -53,10 +53,11 @@ export default function AttributeDescriptorViewer({ attributeDescriptors }: Prop
     const getColumns = useCallback(
         (attr: AttributeDescriptorModel) => {
             if (isDataAttributeModel(attr) || isInfoAttributeModel(attr)) {
+                const requiredText = isDataAttributeModel(attr) ? (attr.properties.required ? 'Yes' : 'No') : 'n/a';
                 return [
                     attr.properties.label || attributeFieldNameTransform[attr.name] || attr.name,
                     getEnumLabel(attributeTypeEnum, attr.type),
-                    isDataAttributeModel(attr) ? (attr.properties.required ? 'Yes' : 'No') : 'n/a',
+                    requiredText,
                     attr.description ?? 'Not set',
                     getAttributeContent(attr.contentType, attr.content),
                 ];

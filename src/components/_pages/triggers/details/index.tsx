@@ -44,14 +44,14 @@ const TriggerDetails = () => {
     const deviceType = useDeviceType();
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
 
-    const defaultViewport = useMemo(
-        () => ({
+    const defaultViewport = useMemo(() => {
+        const xOffset = deviceType === DeviceType.Mobile ? -150 : 300;
+        return {
             zoom: 0.5,
-            x: deviceType === DeviceType.Tablet ? -50 : deviceType === DeviceType.Mobile ? -150 : 300,
+            x: deviceType === DeviceType.Tablet ? -50 : xOffset,
             y: 0,
-        }),
-        [deviceType],
-    );
+        };
+    }, [deviceType]);
     const { nodes, edges } = useTransformTriggerObjectToNodesAndEdges(triggerDetails, rules, actions);
 
     useEffect(() => {
@@ -280,9 +280,8 @@ const TriggerDetails = () => {
 
     const triggerDetailsData: TableDataRow[] = useMemo(
         () =>
-            !triggerDetails || isFetchingTriggerDetail
-                ? []
-                : [
+            triggerDetails && !isFetchingTriggerDetail
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', triggerDetails.uuid, ''],
@@ -380,7 +379,8 @@ const TriggerDetails = () => {
                               </div>,
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [
             triggerTypeEnum,
             triggerDetails,
@@ -467,9 +467,8 @@ const TriggerDetails = () => {
 
     const rulesData: TableDataRow[] = useMemo(
         () =>
-            !triggerDetails?.rules.length
-                ? []
-                : triggerDetails?.rules.map((rule, i) => {
+            triggerDetails?.rules.length
+                ? triggerDetails?.rules.map((rule, i) => {
                       return {
                           id: rule.uuid,
                           columns: [
@@ -488,7 +487,8 @@ const TriggerDetails = () => {
                               </Button>,
                           ],
                       };
-                  }),
+                  })
+                : [],
         [triggerDetails, isUpdatingTrigger, onDeleteRule],
     );
 

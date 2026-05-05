@@ -21,13 +21,13 @@ interface ResourceObject {
     name: string;
 }
 
-interface Props {
+type Props = Readonly<{
     resourceObject?: ResourceObject;
     availableApprovalProfileUuids?: string[];
     resource: Resource;
     visible: boolean;
     onClose: () => void;
-}
+}>;
 
 export default function AssociateApprovalProfileDialogBody({
     resourceObject,

@@ -26,11 +26,11 @@ type FormValues = {
     expiringThreshold?: number;
 };
 
-interface Props {
+type Props = Readonly<{
     platformSettings?: SettingsPlatformModel;
     raProfile?: RaProfileResponseModel;
     onClose: () => void;
-}
+}>;
 
 export default function CertificateValidationDialogBody({ raProfile, platformSettings, onClose }: Props) {
     const dispatch = useDispatch();

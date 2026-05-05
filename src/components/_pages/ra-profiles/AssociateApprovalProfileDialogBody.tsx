@@ -70,60 +70,55 @@ const AssociateApprovalProfileDialogBody = ({ raProfile, visible, onClose, avail
     );
 
     return (
-        <>
-            <FormProvider {...methods}>
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    <Controller
-                        name="approvalProfiles"
-                        control={control}
-                        rules={buildValidationRules([validateRequired()])}
-                        render={({ field, fieldState }) => (
-                            <div className="mb-4">
-                                <Label
-                                    htmlFor="approvalProfileSelect"
-                                    className="block text-sm font-medium mb-2 text-gray-700 dark:text-white"
-                                >
-                                    Select Approval profile
-                                </Label>
+        <FormProvider {...methods}>
+            <form onSubmit={handleSubmit(onSubmit)}>
+                <Controller
+                    name="approvalProfiles"
+                    control={control}
+                    rules={buildValidationRules([validateRequired()])}
+                    render={({ field, fieldState }) => (
+                        <div className="mb-4">
+                            <Label htmlFor="approvalProfileSelect" className="block text-sm font-medium mb-2 text-gray-700 dark:text-white">
+                                Select Approval profile
+                            </Label>
 
-                                <Select
-                                    id="approvalProfileSelect"
-                                    options={optionsForApprovalProfiles}
-                                    value={field.value}
-                                    onChange={(value) => field.onChange(value as string | undefined)}
-                                    placeholder="Select Approval profile to be associated"
-                                    className={cn({
-                                        'border-red-500': fieldState.error && fieldState.isTouched,
-                                    })}
-                                />
+                            <Select
+                                id="approvalProfileSelect"
+                                options={optionsForApprovalProfiles}
+                                value={field.value}
+                                onChange={(value) => field.onChange(value as string | undefined)}
+                                placeholder="Select Approval profile to be associated"
+                                className={cn({
+                                    'border-red-500': fieldState.error && fieldState.isTouched,
+                                })}
+                            />
 
-                                {fieldState.error && fieldState.isTouched && (
-                                    <p className="mt-1 text-sm text-red-600">
-                                        {typeof fieldState.error === 'string'
-                                            ? fieldState.error
-                                            : fieldState.error?.message || 'Required Field'}
-                                    </p>
-                                )}
-                            </div>
-                        )}
-                    />
+                            {fieldState.error && fieldState.isTouched && (
+                                <p className="mt-1 text-sm text-red-600">
+                                    {typeof fieldState.error === 'string'
+                                        ? fieldState.error
+                                        : fieldState.error?.message || 'Required Field'}
+                                </p>
+                            )}
+                        </div>
+                    )}
+                />
 
-                    <Container className="flex-row justify-end modal-footer" gap={4}>
-                        <Button type="button" variant="outline" color="secondary" disabled={formState.isSubmitting} onClick={onClose}>
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            color="primary"
-                            disabled={formState.isSubmitting || !formState.isValid || isAssociatingApprovalProfile}
-                            onClick={handleSubmit(onSubmit)}
-                        >
-                            Associate
-                        </Button>
-                    </Container>
-                </form>
-            </FormProvider>
-        </>
+                <Container className="flex-row justify-end modal-footer" gap={4}>
+                    <Button type="button" variant="outline" color="secondary" disabled={formState.isSubmitting} onClick={onClose}>
+                        Cancel
+                    </Button>
+                    <Button
+                        type="submit"
+                        color="primary"
+                        disabled={formState.isSubmitting || !formState.isValid || isAssociatingApprovalProfile}
+                        onClick={handleSubmit(onSubmit)}
+                    >
+                        Associate
+                    </Button>
+                </Container>
+            </form>
+        </FormProvider>
     );
 };
 

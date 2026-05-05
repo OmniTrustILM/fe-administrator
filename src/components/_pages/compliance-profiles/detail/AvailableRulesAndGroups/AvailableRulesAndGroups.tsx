@@ -77,12 +77,12 @@ const AttributeEditorDialogBody = ({
     );
 };
 
-interface Props {
+type Props = Readonly<{
     profile: ComplianceProfileDtoV2 | undefined;
     setSelectedEntityDetails: (entityDetails: any) => void;
     setIsEntityDetailMenuOpen: (isEntityDetailMenuOpen: boolean) => void;
     onReset?: (resetFn: () => void) => void;
-}
+}>;
 
 export default function AvailableRulesAndGroups({ profile, setSelectedEntityDetails, setIsEntityDetailMenuOpen, onReset }: Props) {
     const { id } = useParams();

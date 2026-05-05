@@ -3,8 +3,7 @@ import { Provider } from 'react-redux';
 import { createMockStore } from 'utils/test-helpers';
 import CustomAttributeWidget from './index';
 import type { CustomAttributeModel } from 'types/attributes';
-import { Resource } from 'types/openapi';
-import { AttributeType, AttributeContentType } from 'types/openapi';
+import { Resource, AttributeType, AttributeContentType } from 'types/openapi';
 
 function minimalDescriptor(overrides: Partial<CustomAttributeModel> = {}): CustomAttributeModel {
     return {
@@ -25,13 +24,13 @@ function minimalDescriptor(overrides: Partial<CustomAttributeModel> = {}): Custo
     } as CustomAttributeModel;
 }
 
-type HarnessProps = {
+type HarnessProps = Readonly<{
     resource?: Resource;
     resourceUuid?: string;
     attributes?: any;
     className?: string;
     availableAttributes?: CustomAttributeModel[];
-};
+}>;
 
 /**
  * Creates store and renders CustomAttributeWidget in browser (for CT).

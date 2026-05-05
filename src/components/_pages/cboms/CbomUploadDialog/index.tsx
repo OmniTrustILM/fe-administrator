@@ -8,11 +8,11 @@ import ProgressButton from 'components/ProgressButton';
 import { actions as alertActions } from 'ducks/alerts';
 import { selectors as cbomSelectors } from 'ducks/cbom';
 
-interface Props {
+type Props = Readonly<{
     onCancel: () => void;
     onUpload: (data: { content: any }) => void;
     okButtonTitle?: string;
-}
+}>;
 
 type FormValues = {};
 

@@ -9,11 +9,11 @@ import { attributeFieldNameTransform } from 'utils/attributes/attributes';
 
 import InventoryStatusBadge from '../ConnectorStatus';
 
-interface Props {
+type Props = Readonly<{
     url?: string;
     connectionDetails?: any[];
     errorMessage?: string;
-}
+}>;
 
 const connectionDetailsHeaders: TableHeader[] = [
     {

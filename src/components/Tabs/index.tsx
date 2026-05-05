@@ -1,14 +1,14 @@
 import cn from 'classnames';
 import SimpleBar from 'simplebar-react';
 
-interface Props {
+type Props = Readonly<{
     tabs: {
         title: React.ReactNode;
         onClick?: () => void;
     }[];
     selectedTab: number;
     onTabChange: (tab: number) => void;
-}
+}>;
 
 function Tabs({ tabs, selectedTab, onTabChange }: Props) {
     return (

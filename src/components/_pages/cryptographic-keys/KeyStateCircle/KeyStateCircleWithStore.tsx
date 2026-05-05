@@ -6,7 +6,7 @@ import KeyStateCircle from './index';
 
 import { keyStatePreloadedState } from '../keyStateStorePreload';
 
-export type KeyStateCircleWithStoreProps = React.ComponentProps<typeof KeyStateCircle>;
+export type KeyStateCircleWithStoreProps = Readonly<React.ComponentProps<typeof KeyStateCircle>>;
 
 export default function KeyStateCircleWithStore(props: KeyStateCircleWithStoreProps) {
     const store = createMockStore(keyStatePreloadedState as any);

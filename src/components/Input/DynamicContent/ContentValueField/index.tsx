@@ -205,13 +205,13 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
     }
 }
 
-type Props = {
+type Props = Readonly<{
     id?: string;
     descriptor: CustomAttributeModel;
     initialContent?: BaseAttributeContentModel[];
     onSubmit: (attributeUuid: string, content: BaseAttributeContentModel[]) => void;
     onCancel?: () => void;
-};
+}>;
 
 export default function ContentValueField({ id, descriptor, initialContent, onSubmit, onCancel }: Props) {
     const { control, setValue } = useFormContext();
@@ -247,11 +247,8 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
             initialValue = undefined;
         }
 
-        const descriptorValue = !descriptor.properties.list
-            ? descriptor.content && descriptor.content.length > 0
-                ? descriptor.content[0].data
-                : undefined
-            : undefined;
+        const firstDescriptorData = descriptor.content && descriptor.content.length > 0 ? descriptor.content[0].data : undefined;
+        const descriptorValue = !descriptor.properties.list ? firstDescriptorData : undefined;
 
         const scalarDefault = descriptor.properties.list ? undefined : ContentFieldConfiguration[descriptor.contentType].initial;
         setValue(descriptor.name, initialValue ?? descriptorValue ?? scalarDefault);

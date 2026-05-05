@@ -2,7 +2,7 @@ import cn from 'classnames';
 import { X, Check } from 'lucide-react';
 import Label from 'components/Label';
 
-interface Props {
+type Props = Readonly<{
     checked: boolean | undefined;
     onChange: (checked: boolean) => void;
     placeholder?: string;
@@ -13,7 +13,7 @@ interface Props {
     className?: string;
     labelClassName?: string;
     dataTestId?: string;
-}
+}>;
 
 function Switch({ checked, onChange, id, label, secondaryLabel, disabled = false, className, labelClassName, dataTestId }: Props) {
     return (

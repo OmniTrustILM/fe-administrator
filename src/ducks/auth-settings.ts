@@ -74,7 +74,7 @@ export const slice = createSlice({
                 ...state.authenticationSettings,
             };
 
-            for (const provider of action.payload.authenticationSettingsUpdateModel?.oauth2Providers || []) {
+            for (const provider of action.payload.authenticationSettingsUpdateModel?.oauth2Providers ?? []) {
                 if (!authenticationSettings.oauth2Providers) {
                     authenticationSettings.oauth2Providers = {};
                 }

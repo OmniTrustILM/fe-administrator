@@ -8,13 +8,13 @@ import CertificateAssociationsFormWidget from './CertificateAssociationsFormWidg
 
 type Option = { value: string; label: string };
 
-type WrapperProps = {
+type WrapperProps = Readonly<{
     users?: Array<{ uuid: string; username: string; firstName?: string; lastName?: string }>;
     groups?: Array<{ uuid: string; name: string }>;
     initialUserOptions?: Option[];
     initialGroupOptions?: Option[];
     renderCustomAttributes?: React.ReactNode;
-};
+}>;
 
 type FormData = {
     owner: string;

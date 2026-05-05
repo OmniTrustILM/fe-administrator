@@ -7,11 +7,11 @@ import { testInitialState } from 'ducks/test-reducers';
 
 type StoreType = ReturnType<typeof createMockStore>;
 
-type Props = {
+type Props = Readonly<{
     flowChartProps: FlowChartProps;
     initialStoreState?: typeof testInitialState;
     onStoreReady?: (store: StoreType) => void;
-};
+}>;
 
 export default function FlowChartMountWrapper({ flowChartProps, initialStoreState, onStoreReady }: Props) {
     const store = React.useMemo(() => createMockStore((initialStoreState ?? testInitialState) as any), [initialStoreState]);

@@ -185,9 +185,7 @@ function RaProfileList() {
 
     const getProtocolsForDisplay = useCallback(
         (protocols?: string[]) =>
-            !protocols ? (
-                <></>
-            ) : (
+            protocols ? (
                 <>
                     {protocols.map((protocol) => (
                         <Fragment key={protocol}>
@@ -196,6 +194,8 @@ function RaProfileList() {
                         </Fragment>
                     ))}
                 </>
+            ) : (
+                <></>
             ),
         [],
     );

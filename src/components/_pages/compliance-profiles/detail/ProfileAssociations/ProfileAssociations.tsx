@@ -11,9 +11,9 @@ import { actions, selectors } from 'ducks/compliance-profiles';
 import ProfileAssociationsDialog from 'components/_pages/compliance-profiles/detail/ProfileAssociations/ProfileAssociationsDialog';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 
-interface Props {
+type Props = Readonly<{
     profile: ComplianceProfileDtoV2 | undefined;
-}
+}>;
 
 export default function ProfileAssociations({ profile }: Props) {
     const dispatch = useDispatch();

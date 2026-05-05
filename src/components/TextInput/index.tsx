@@ -8,7 +8,7 @@ import { inputBaseClassName } from './inputStyles';
 
 export { inputBaseClassName } from './inputStyles';
 
-interface Props {
+type Props = Readonly<{
     value?: string;
     onChange: (value: string) => void;
     onBlur?: () => void;
@@ -23,7 +23,7 @@ interface Props {
     required?: boolean;
     buttonRight?: ReactNode;
     dataTestId?: string;
-}
+}>;
 
 function TextInput({
     value,

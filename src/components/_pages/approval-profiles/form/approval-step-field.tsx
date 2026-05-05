@@ -14,11 +14,11 @@ import { validateLength, validateNonZeroInteger, validatePositiveInteger, valida
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { Plus, X } from 'lucide-react';
 
-type Props = {
+type Props = Readonly<{
     approvalSteps: ApprovalStepRequestModel[];
     inProgress: boolean;
     onCancelClick: () => void;
-};
+}>;
 
 type SelectOptionApprover = { label: string; value: string } | null;
 type SelectOptionApproverType = { label: string; value: string };
@@ -265,7 +265,7 @@ export default function ApprovalStepField({ approvalSteps }: Props) {
                             )}
                         />
                         <div>
-                            {selectedApprovalTypeList && selectedApprovalTypeList[index]?.label && (
+                            {selectedApprovalTypeList?.[index]?.label && (
                                 <Controller
                                     name={`approvalSteps.${index}.${selectedApprovalTypeList[index].value}` as any}
                                     control={control}

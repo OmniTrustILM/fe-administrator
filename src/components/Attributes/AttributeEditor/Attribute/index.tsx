@@ -18,14 +18,14 @@ import { AttributeFieldSelect } from './AttributeFieldSelect';
 import { AttributeFieldFile } from './AttributeFieldFile';
 import { AttributeFieldInput } from './AttributeFieldInput';
 
-interface Props {
+type Props = Readonly<{
     name: string;
     descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel | undefined;
     options?: { label: string; value: any }[];
     busy?: boolean;
     userInteractedRef?: React.MutableRefObject<boolean>;
     deleteButton?: React.ReactNode;
-}
+}>;
 
 export function Attribute({
     name,

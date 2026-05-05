@@ -63,9 +63,8 @@ const PlatformInfoDialogLink = ({ initiallyOpen = false, forceOpen }: PlatformIn
 
     const data: TableDataRow[] = useMemo(
         () =>
-            !platformInfo
-                ? []
-                : [
+            platformInfo
+                ? [
                       {
                           id: 'app',
                           columns: [platformInfo.app.name, platformInfo.app.version, coreBuildTimeFormatted],
@@ -78,7 +77,8 @@ const PlatformInfoDialogLink = ({ initiallyOpen = false, forceOpen }: PlatformIn
                           id: 'db',
                           columns: [platformInfo.db.system, platformInfo.db.version, ''],
                       },
-                  ],
+                  ]
+                : [],
         [platformInfo, buildTimeFormatted, coreBuildTimeFormatted],
     );
 

@@ -10,7 +10,7 @@ import { actions as raProfileActions, selectors as raProfileSelectors } from 'du
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import Select from 'components/Select';
 import Button from 'components/Button';
 import Container from 'components/Container';
@@ -25,20 +25,19 @@ import {
     ProtectionMethod,
     Resource,
 } from 'types/openapi';
-import { RaProfileSimplifiedModel } from 'types/ra-profiles';
 import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
 import { useAreDefaultValuesSame } from 'utils/common-hooks';
 import { validateAlphaNumericWithoutAccents, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
-import useAttributeEditor, { buildGroups, buildOwner, buildSelectedOption } from 'utils/widget';
+import useAttributeEditor, { buildGroups, buildOwner } from 'utils/widget';
 import CertificateAssociationsFormWidget from 'components/CertificateAssociationsFormWidget/CertificateAssociationsFormWidget';
 import { deepEqual } from 'utils/deep-equal';
 
-interface CmpProfileFormProps {
+type CmpProfileFormProps = Readonly<{
     cmpProfileId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -152,7 +151,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
     useEffect(() => {
         if (editMode && id) {
             // Fetch if id changed or if we don't have the correct profile loaded
-            if (previousIdRef.current !== id || !cmpProfile || cmpProfile.uuid !== id) {
+            if (previousIdRef.current !== id || cmpProfile?.uuid !== id) {
                 dispatch(cmpProfileActions.getCmpProfile({ uuid: id }));
                 previousIdRef.current = id;
             }
@@ -256,15 +255,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
 
     // Reset form values when cmpProfile is loaded in edit mode
     useEffect(() => {
-        if (
-            editMode &&
-            id &&
-            cmpProfile &&
-            cmpProfile.uuid === id &&
-            !isFetchingDetail &&
-            userOptions.length > 0 &&
-            groupOptions.length > 0
-        ) {
+        if (editMode && id && cmpProfile?.uuid === id && !isFetchingDetail && userOptions.length > 0 && groupOptions.length > 0) {
             // Only reset if the profile ID changed or we haven't reset yet
             if (lastResetProfileIdRef.current !== id || lastResetEditModeRef.current !== editMode) {
                 const initialAssociatedAttributes = mapProfileAttribute(

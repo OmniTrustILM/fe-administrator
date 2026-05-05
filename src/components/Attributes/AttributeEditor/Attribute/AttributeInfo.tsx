@@ -3,11 +3,11 @@ import parse from 'html-react-parser';
 import { marked } from 'marked';
 import type React from 'react';
 
-interface AttributeInfoProps {
+type AttributeInfoProps = Readonly<{
     name: string;
     label: string;
     content: string | React.ReactNode;
-}
+}>;
 
 export function AttributeInfo({ name, label, content }: AttributeInfoProps): React.ReactNode {
     const renderedContent = typeof content === 'string' ? parse(DOMPurify.sanitize(marked.parse(content) as string)) : content;

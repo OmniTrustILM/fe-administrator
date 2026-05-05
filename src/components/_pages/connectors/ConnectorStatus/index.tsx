@@ -3,9 +3,9 @@ import { useSelector } from 'react-redux';
 import { ConnectorStatus, PlatformEnum } from 'types/openapi';
 import Badge from 'components/Badge';
 
-interface Props {
+type Props = Readonly<{
     status: ConnectorStatus | undefined;
-}
+}>;
 
 export default function InventoryStatusBadge({ status }: Props) {
     const connectorStatusEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ConnectorStatus));

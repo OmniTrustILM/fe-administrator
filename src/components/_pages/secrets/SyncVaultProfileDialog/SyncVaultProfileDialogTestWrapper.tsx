@@ -11,7 +11,7 @@ import type { SecretDetailDto, SecretType, VaultProfileDto } from 'types/openapi
 
 import { SyncVaultProfileDialog } from './SyncVaultProfileDialog';
 
-export interface SyncVaultProfileDialogTestWrapperProps {
+export type SyncVaultProfileDialogTestWrapperProps = Readonly<{
     secret: SecretDetailDto;
     vaultProfiles?: VaultProfileDto[];
     syncVaultProfileAttributeDescriptors?: AttributeDescriptorModel[];
@@ -19,7 +19,7 @@ export interface SyncVaultProfileDialogTestWrapperProps {
     onGetSyncVaultProfileAttributes?: (params: { vaultUuid: string; vaultProfileUuid: string; secretType: SecretType }) => void;
     onAddSyncVaultProfile?: (params: { uuid: string; vaultProfileUuid: string; attributes: AttributeRequestModel[] }) => void;
     onClose?: () => void;
-}
+}>;
 
 export function SyncVaultProfileDialogTestWrapper({
     secret,

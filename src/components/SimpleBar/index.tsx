@@ -1,9 +1,11 @@
 import { useEffect, useRef, useCallback } from 'react';
 import SimpleBarOriginal from 'simplebar-react';
 
-interface Props extends React.ComponentProps<typeof SimpleBarOriginal> {
-    children: React.ReactNode;
-}
+type Props = Readonly<
+    React.ComponentProps<typeof SimpleBarOriginal> & {
+        children: React.ReactNode;
+    }
+>;
 
 function SimpleBar({ children, ...props }: Props) {
     const simpleBarRef = useRef<any>(null);

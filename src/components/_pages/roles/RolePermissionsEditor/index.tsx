@@ -15,13 +15,13 @@ import type { ObjectPermissionsResponseModel, ResourcePermissionsResponseModel, 
 import cn from 'classnames';
 import Container from 'components/Container';
 
-interface Props {
+type Props = Readonly<{
     submitButtonsGroup: React.ReactNode;
     resources?: AuthResourceModel[];
     permissions?: SubjectPermissionsModel;
     disabled?: boolean;
     onPermissionsChanged?: (permissions: SubjectPermissionsModel) => void;
-}
+}>;
 
 function RolePermissionsEditor({
     submitButtonsGroup,
@@ -62,7 +62,7 @@ function RolePermissionsEditor({
         [permissions],
     );
 
-    const clonePerms = useCallback(() => JSON.parse(JSON.stringify(permissions)) as SubjectPermissionsModel, [permissions]);
+    const clonePerms = useCallback(() => structuredClone(permissions) as SubjectPermissionsModel, [permissions]);
 
     const onResourceSelected = useCallback(
         (resource: AuthResourceModel) => {
@@ -227,11 +227,7 @@ function RolePermissionsEditor({
 
     const permissionsList = useMemo(
         () =>
-            !currentResource ? (
-                <div className="flex items-center justify-center h-64 text-gray-500 dark:text-neutral-400">
-                    Select a resource from the left to configure permissions
-                </div>
-            ) : (
+            currentResource ? (
                 <div>
                     <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-6">
                         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Resource Action Permissions</h3>
@@ -292,6 +288,10 @@ function RolePermissionsEditor({
                             </Container>
                         </div>
                     </div>
+                </div>
+            ) : (
+                <div className="flex items-center justify-center h-64 text-gray-500 dark:text-neutral-400">
+                    Select a resource from the left to configure permissions
                 </div>
             ),
         [allowAction, allowAllActions, allowAllResources, currentResource, disabled, permissions],

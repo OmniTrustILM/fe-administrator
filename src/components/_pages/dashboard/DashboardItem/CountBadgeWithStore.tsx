@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router';
 import { createMockStore } from 'utils/test-helpers';
 import CountBadge from './CountBadge';
 
-export type CountBadgeWithStoreProps = React.ComponentProps<typeof CountBadge>;
+export type CountBadgeWithStoreProps = Readonly<React.ComponentProps<typeof CountBadge>>;
 
 export default function CountBadgeWithStore(props: CountBadgeWithStoreProps) {
     const store = createMockStore();

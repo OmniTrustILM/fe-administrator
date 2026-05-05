@@ -2,7 +2,7 @@ import cn from 'classnames';
 import Button, { type ButtonColor } from 'components/Button';
 import Spinner from 'components/Spinner';
 
-interface Props {
+type Props = Readonly<{
     disabled?: boolean;
     inProgress: boolean | undefined;
     title: string;
@@ -12,7 +12,7 @@ interface Props {
     type?: 'submit' | 'reset' | 'button';
     onClick?: () => void;
     dataTestId?: string;
-}
+}>;
 
 function ProgressButton({
     inProgress,

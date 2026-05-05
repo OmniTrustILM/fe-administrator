@@ -2,9 +2,9 @@ import cn from 'classnames';
 
 import PlatformInfoDialogButton from 'components/Layout/PlatformInfoDialogButton';
 
-interface Props {
+type Props = Readonly<{
     className?: string;
-}
+}>;
 
 function Footer({ className }: Props) {
     return (

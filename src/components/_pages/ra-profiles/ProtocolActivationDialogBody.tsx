@@ -28,13 +28,13 @@ export enum Protocol {
     CMP = 'CMP',
 }
 
-interface Props {
+type Props = Readonly<{
     protocol: Protocol;
     raProfileUuid?: string;
     authorityInstanceUuid?: string;
     visible: boolean;
     onClose: () => void;
-}
+}>;
 
 export default function ProtocolActivationDialogBody({ protocol, raProfileUuid, authorityInstanceUuid, visible, onClose }: Props) {
     const dispatch = useDispatch();

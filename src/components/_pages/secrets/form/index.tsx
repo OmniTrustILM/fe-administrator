@@ -46,11 +46,11 @@ interface SelectOption {
     label: string;
 }
 
-interface SecretFormProps {
+type SecretFormProps = Readonly<{
     onCancel?: () => void;
     onSuccess?: () => void;
     initialSecret?: SecretDetailDto;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -266,7 +266,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
             const vaultUuid = selectedProfile?.vaultInstance?.uuid;
             if (!vaultUuid) return;
 
-            let includeSecret = false;
+            let includeSecret: boolean;
 
             switch (effectiveType) {
                 case SecretType.BasicAuth:

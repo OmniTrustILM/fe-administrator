@@ -55,7 +55,7 @@ function RolePermissionsForm() {
     /* Load role && role permissions */
 
     useEffect(() => {
-        if (!id || (roleSelector && roleSelector.uuid === id)) return;
+        if (!id || roleSelector?.uuid === id) return;
 
         dispatch(rolesActions.getDetail({ uuid: id }));
         dispatch(rolesActions.getPermissions({ uuid: id }));
@@ -70,9 +70,9 @@ function RolePermissionsForm() {
 
     const patchPermissions = useCallback(
         (outPerms: SubjectPermissionsModel) => {
-            const perms = JSON.parse(JSON.stringify(outPerms));
+            const perms = structuredClone(outPerms);
 
-            const inPerms: SubjectPermissionsModel = rolePermissionsSelector?.permissions || {
+            const inPerms: SubjectPermissionsModel = rolePermissionsSelector?.permissions ?? {
                 allowAllResources: false,
                 resources: [],
             };
@@ -83,7 +83,7 @@ function RolePermissionsForm() {
 
                 if (!outRes.objects) continue;
 
-                if (outRes.objects?.length === 0 && (!inRes || (inRes.objects && inRes.objects.length === 0))) {
+                if (outRes.objects?.length === 0 && (!inRes || inRes.objects?.length === 0)) {
                     delete perms.objects;
                 }
             }

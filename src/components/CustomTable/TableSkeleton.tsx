@@ -8,13 +8,13 @@ function getCellWidth(row: number, col: number): number {
 
 const headerWidths = [96, 64, 80, 56];
 
-interface Props {
+type Props = Readonly<{
     columnsCount?: number;
     hasCheckboxes?: boolean;
     hasPagination?: boolean;
     canSearch?: boolean;
     rowCount?: number;
-}
+}>;
 
 function TableSkeleton({ columnsCount = 4, hasCheckboxes = true, hasPagination = true, canSearch = false, rowCount = 10 }: Props) {
     const columns = Array.from({ length: columnsCount }, (_, i) => i);

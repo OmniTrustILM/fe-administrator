@@ -9,7 +9,7 @@ import { actions as raProfilesActions, selectors as raProfilesSelectors } from '
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import Select from 'components/Select';
 import Button from 'components/Button';
 import Container from 'components/Container';
@@ -26,12 +26,12 @@ import TabLayout from '../../../Layout/TabLayout';
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
 
-interface RaProfileFormProps {
+type RaProfileFormProps = Readonly<{
     raProfileId?: string;
     authorityId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -88,7 +88,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     useEffect(() => {
         if (editMode && id && authorityId) {
             // Fetch if id changed or if we don't have the correct profile loaded
-            if (previousIdRef.current !== id || !raProfileSelector || raProfileSelector.uuid !== id) {
+            if (previousIdRef.current !== id || raProfileSelector?.uuid !== id) {
                 dispatch(raProfilesActions.getRaProfileDetail({ authorityUuid: authorityId, uuid: id }));
                 previousIdRef.current = id;
                 setLocalProfileModifications({}); // Reset local modifications when fetching new profile
@@ -121,9 +121,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
             name: editMode ? raProfile?.name || '' : '',
             description: editMode ? raProfile?.description || '' : '',
             authority: editMode
-                ? raProfile
-                    ? optionsForAuthorities.find((option) => option.value === raProfile.authorityInstanceUuid)?.value || ''
-                    : ''
+                ? (optionsForAuthorities.find((option) => option.value === raProfile?.authorityInstanceUuid)?.value ?? '')
                 : '',
         }),
         [editMode, optionsForAuthorities, raProfile],
@@ -150,7 +148,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
 
     // Reset form values when raProfile is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && raProfile && raProfile.uuid === id && !isFetchingDetail) {
+        if (editMode && id && raProfile?.uuid === id && !isFetchingDetail) {
             const newDefaultValues: FormValues = {
                 name: raProfile.name || '',
                 description: raProfile.description || '',
@@ -314,9 +312,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                             tabs={[
                                 {
                                     title: 'Connector Attributes',
-                                    content: !raProfileAttributeDescriptors ? (
-                                        <>Group Attr</>
-                                    ) : (
+                                    content: raProfileAttributeDescriptors ? (
                                         <AttributeEditor
                                             id="ra-profile"
                                             callbackParentUuid={raProfile?.authorityInstanceUuid || watchedAuthority || ''}
@@ -326,6 +322,8 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                             groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                                             setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                                         />
+                                    ) : (
+                                        <>Group Attr</>
                                     ),
                                 },
                                 {

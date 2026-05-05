@@ -7,13 +7,13 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { buildUserOption } from 'utils/widget';
 
-interface Props {
+type Props = Readonly<{
     userOptions: { value: string; label: string }[];
     groupOptions: { value: string; label: string }[];
     setUserOptions: (options: { value: string; label: string }[]) => void;
     setGroupOptions: (options: { value: string; label: string }[]) => void;
     renderCustomAttributes: React.ReactNode;
-}
+}>;
 
 export default function CertificateAssociationsFormWidget({
     renderCustomAttributes,

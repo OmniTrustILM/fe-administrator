@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import cn from 'classnames';
 
-type Props = {
+type Props = Readonly<{
     value: string;
     height?: number | string;
     className?: string;
     paddingTop?: number;
-};
+}>;
 
 const STRING_CHAR = '\\\\u[\\da-fA-F]{4}|\\\\[^u]|[^\\\\"]';
 const JSON_STRING = `"(?:${STRING_CHAR})*"`;

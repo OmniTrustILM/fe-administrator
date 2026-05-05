@@ -58,15 +58,15 @@ function AttributeEditForm({
     );
 }
 
-export interface Props {
-    attributes?: AttributeResponseModel[] | undefined;
+export type Props = Readonly<{
+    attributes?: AttributeResponseModel[];
     descriptors?: AttributeDescriptorModel[] | CustomAttributeModel[];
-    metadata?: MetadataModel[] | undefined;
+    metadata?: MetadataModel[];
     viewerType?: ATTRIBUTE_VIEWER_TYPE;
     hasHeader?: boolean;
     onSubmit?: (attributeUuid: string, content: BaseAttributeContentModel[]) => void;
     onRemove?: (attributeUuid: string) => void;
-}
+}>;
 
 export default function AttributeViewer({
     attributes = [],
@@ -298,24 +298,26 @@ export default function AttributeViewer({
                     },
                 });
             } else {
-                buttons.push({
-                    id: 'copy',
-                    icon: 'copy',
-                    disabled: AttributeContentType.Secret === attribute.contentType,
-                    tooltip: 'Copy to clipboard',
-                    onClick: () => {
-                        onCopyContentClick(attribute);
+                buttons.push(
+                    {
+                        id: 'copy',
+                        icon: 'copy',
+                        disabled: AttributeContentType.Secret === attribute.contentType,
+                        tooltip: 'Copy to clipboard',
+                        onClick: () => {
+                            onCopyContentClick(attribute);
+                        },
                     },
-                });
-                buttons.push({
-                    id: 'edit',
-                    icon: 'pencil',
-                    disabled: descriptor.properties.readOnly,
-                    tooltip: descriptor.properties.readOnly ? 'Attribute is read only, edit is disabled' : 'Edit',
-                    onClick: () => {
-                        setEditingAttributesNames([...editingAttributesNames, attributeName]);
+                    {
+                        id: 'edit',
+                        icon: 'pencil',
+                        disabled: descriptor.properties.readOnly,
+                        tooltip: descriptor.properties.readOnly ? 'Attribute is read only, edit is disabled' : 'Edit',
+                        onClick: () => {
+                            setEditingAttributesNames([...editingAttributesNames, attributeName]);
+                        },
                     },
-                });
+                );
             }
             onRemove &&
                 buttons.push({

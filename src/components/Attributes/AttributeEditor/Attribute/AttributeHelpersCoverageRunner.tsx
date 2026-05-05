@@ -74,7 +74,7 @@ export default function AttributeHelpersCoverageRunner() {
                 { label: 'B', value: 2 },
             ],
         );
-        getUpdatedOptionsForEditSelect([], undefined);
+        getUpdatedOptionsForEditSelect([]);
 
         // Exercise parseListValueByContentType for coverage
         parseListValueByContentType(AttributeContentType.Integer, '42');

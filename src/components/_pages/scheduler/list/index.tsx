@@ -120,13 +120,10 @@ function SchedulerJobsList() {
                     schedulerJob.jobType,
                     schedulerJob.cronExpression,
                     <Badge
-                        color={
-                            schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Failed
-                                ? 'danger'
-                                : schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Succeeded
-                                  ? 'success'
-                                  : 'primary'
-                        }
+                        color={(() => {
+                            if (schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Failed) return 'danger';
+                            return schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Succeeded ? 'success' : 'primary';
+                        })()}
                     >
                         {getEnumLabel(schedulerJobExecutionStatusEnum, schedulerJob.lastExecutionStatus)}
                     </Badge>,

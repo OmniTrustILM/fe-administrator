@@ -36,11 +36,11 @@ import AttributeEditor from '../../../Attributes/AttributeEditor';
 import TabLayout from '../../../Layout/TabLayout';
 import TextInput from 'components/TextInput';
 
-interface UserFormProps {
+type UserFormProps = Readonly<{
     userId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     username: string;
@@ -168,7 +168,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
     useEffect(() => {
         if (editMode && id) {
             // Fetch if id changed or if we don't have the correct user loaded
-            if (previousIdRef.current !== id || !userSelector || userSelector.uuid !== id) {
+            if (previousIdRef.current !== id || userSelector?.uuid !== id) {
                 dispatch(userActions.getDetail({ uuid: id }));
                 previousIdRef.current = id;
             }
@@ -207,7 +207,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
     /* Process cert detail loaded for user */
 
     useEffect(() => {
-        if (user && user.certificate && user.certificate.uuid && certificateDetail && certificateDetail.uuid === user.certificate.uuid) {
+        if (user?.certificate?.uuid && certificateDetail?.uuid === user.certificate.uuid) {
             const certs = [...loadedCerts];
 
             setSelectedCertificate({
@@ -319,11 +319,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
         () => ({
             username: editMode ? user?.username || '' : '',
             description: editMode ? user?.description || '' : '',
-            selectedGroups: editMode
-                ? user?.groups?.length
-                    ? user.groups.map((group) => ({ label: group.name, value: group.uuid }))
-                    : []
-                : [],
+            selectedGroups: editMode ? (user?.groups?.map((group) => ({ label: group.name, value: group.uuid })) ?? []) : [],
             firstName: editMode ? user?.firstName || '' : '',
             lastName: editMode ? user?.lastName || '' : '',
             email: editMode ? user?.email || '' : '',
@@ -354,7 +350,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
 
     // Reset form values when user is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && user && user.uuid === id && !isFetchingUserDetail) {
+        if (editMode && id && user?.uuid === id && !isFetchingUserDetail) {
             const newDefaultValues: FormValues = {
                 username: user.username || '',
                 description: user.description || '',
@@ -422,7 +418,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
 
                     role.description || '',
 
-                    <Badge color={!role.systemRole ? 'success' : 'danger'}>{role.systemRole ? 'Yes' : 'No'}</Badge>,
+                    <Badge color={role.systemRole ? 'danger' : 'success'}>{role.systemRole ? 'Yes' : 'No'}</Badge>,
                 ],
             })),
 
@@ -637,13 +633,11 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
                                     <div className="flex items-center gap-2 mb-2">
                                         {certToUpload ? (
                                             <CertificateAttributes certificate={certToUpload} />
-                                        ) : certFileContent ? (
-                                            <span className="text-sm text-gray-600 dark:text-neutral-400">
-                                                Certificate to be uploaded selected.
-                                            </span>
                                         ) : (
                                             <span className="text-sm text-gray-600 dark:text-neutral-400">
-                                                Certificate to be uploaded not selected
+                                                {certFileContent
+                                                    ? 'Certificate to be uploaded selected.'
+                                                    : 'Certificate to be uploaded not selected'}
                                             </span>
                                         )}
 

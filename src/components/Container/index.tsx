@@ -1,12 +1,12 @@
 import cn from 'classnames';
 
-interface Props {
+type Props = Readonly<{
     children: React.ReactNode;
     className?: string;
     marginTop?: boolean;
     gap?: number;
     'data-testid'?: string;
-}
+}>;
 
 function Container({ children, className, marginTop, gap, 'data-testid': dataTestId }: Props) {
     const gapClass = gap ? `gap-${gap}` : 'gap-4 md:gap-8';

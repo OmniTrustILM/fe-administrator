@@ -6,7 +6,7 @@ import { inputBaseClassName } from 'components/TextInput/inputStyles';
 import Button from 'components/Button';
 import Container from 'components/Container';
 
-interface Props {
+type Props = Readonly<{
     value?: string;
     onChange: (value: string) => void;
     onBlur?: () => void;
@@ -17,7 +17,7 @@ interface Props {
     className?: string;
     required?: boolean;
     timePicker?: boolean;
-}
+}>;
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];

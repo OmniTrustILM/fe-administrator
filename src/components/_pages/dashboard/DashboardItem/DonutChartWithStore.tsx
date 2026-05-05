@@ -22,7 +22,7 @@ const preloadedState: Parameters<typeof createMockStore>[0] = {
     },
 };
 
-export type DonutChartWithStoreProps = React.ComponentProps<typeof DonutChart>;
+export type DonutChartWithStoreProps = Readonly<React.ComponentProps<typeof DonutChart>>;
 
 export default function DonutChartWithStore(props: DonutChartWithStoreProps) {
     const store = createMockStore(preloadedState as any);

@@ -14,7 +14,7 @@ import TabLayout from '../../../Layout/TabLayout';
 import Container from 'components/Container';
 import Widget from 'components/Widget';
 
-interface Props {
+type Props = Readonly<{
     tokenUuid?: string;
     tokenProfileUuid?: string;
     keyUuid?: string;
@@ -23,7 +23,7 @@ interface Props {
     visible: boolean;
     action: 'sign' | 'verify';
     onClose: () => void;
-}
+}>;
 
 export default function SignVerifyData({ tokenUuid, tokenProfileUuid, keyUuid, keyItemUuid, algorithm, visible, action, onClose }: Props) {
     const dispatch = useDispatch();

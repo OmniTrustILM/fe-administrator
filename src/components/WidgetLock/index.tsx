@@ -21,7 +21,8 @@ const WidgetLock = ({
     lockDetails,
     dataTestId,
 }: Props) => {
-    const iconSize = size === 'large' ? 48 : size === 'small' ? 24 : 32;
+    const smallIconSize = size === 'small' ? 24 : 32;
+    const iconSize = size === 'large' ? 48 : smallIconSize;
 
     const getIcon = () => {
         switch (lockType) {
@@ -40,7 +41,8 @@ const WidgetLock = ({
         }
     };
 
-    const maxWidthClass = size === 'small' ? 'max-w-md' : size === 'normal' ? 'max-w-xl' : 'max-w-full';
+    const normalOrLargeClass = size === 'normal' ? 'max-w-xl' : 'max-w-full';
+    const maxWidthClass = size === 'small' ? 'max-w-md' : normalOrLargeClass;
 
     return (
         <Container>

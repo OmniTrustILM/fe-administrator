@@ -3,11 +3,11 @@ import { useMemo } from 'react';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { dateFormatter } from 'utils/dateUtil';
 
-interface Props {
+type Props = Readonly<{
     certificate?: CertificateDetailResponseModel;
     csr?: boolean;
     isLoading?: boolean;
-}
+}>;
 
 function CertificateAttributes({ certificate, csr = false, isLoading = false }: Props) {
     const detailHeaders: TableHeader[] = useMemo(

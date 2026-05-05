@@ -12,7 +12,7 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { PlatformEnum } from 'types/openapi';
 import { attributeFieldNameTransform } from 'utils/attributes/attributes';
 
-interface Props {
+type Props = Readonly<{
     functionGroups: FunctionGroupModel[];
     currentFunctionGroup?: FunctionGroupModel;
     currentFunctionGroupKind?: string;
@@ -23,7 +23,7 @@ interface Props {
     onFunctionGroupChange: (value: string) => void;
     onFunctionGroupKindChange: (value: string) => void;
     getFreshConnectorAttributesDesc: () => void;
-}
+}>;
 
 export default function FunctionGroupDetailsV1({
     functionGroups,

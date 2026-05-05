@@ -18,7 +18,6 @@ import {
 import {
     AttributeContentType,
     AttributeVersion,
-    CodeBlockAttributeContentV2,
     type FileAttributeContentData,
     ProgrammingLanguageEnum,
     type SecretAttributeContentV2,
@@ -254,7 +253,7 @@ export function collectFormAttributes(
                 content = getAttributeFormValue(descriptor.contentType, descriptor.content, attributes[attribute]);
             }
 
-            if (typeof content.data !== 'undefined' || Array.isArray(content)) {
+            if (content.data !== undefined || Array.isArray(content)) {
                 const contentArray = Array.isArray(content) ? content : [content];
                 const existing = existingAttributes?.find((a) => a.name === attributeName);
                 const existingVersion = (existing as { version?: AttributeVersion })?.version;
@@ -332,12 +331,14 @@ export const mapAttributeContentToOptionValue = (
     content: BaseAttributeContentModel,
     descriptor: DataAttributeModel | CustomAttributeModel,
 ) => {
+    const datetimeLabel =
+        descriptor.contentType === AttributeContentType.Datetime
+            ? getFormattedDateTime(content?.data as unknown as string)?.toString()
+            : (content?.data as unknown as string)?.toString();
     const nonReferenceLabel =
         descriptor.contentType === AttributeContentType.Date
             ? getFormattedDate(content?.data as unknown as string)?.toString()
-            : descriptor.contentType === AttributeContentType.Datetime
-              ? getFormattedDateTime(content?.data as unknown as string)?.toString()
-              : (content?.data as unknown as string)?.toString();
+            : datetimeLabel;
     return {
         label: content.reference ? content.reference : nonReferenceLabel,
         value: content,

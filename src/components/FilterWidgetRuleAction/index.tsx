@@ -112,7 +112,7 @@ function mapActionToExecutionItem(a: ExecutionItemRequestModel, availableFilters
     return { fieldSource: a.fieldSource, fieldIdentifier: a.fieldIdentifier, data };
 }
 
-interface Props {
+type Props = Readonly<{
     title: string;
     entity: EntityType;
     getAvailableFiltersApi: (apiClients: ApiClients) => Observable<Array<SearchFieldListModel>>;
@@ -120,7 +120,7 @@ interface Props {
     ExecutionsList?: ExecutionItemModel[];
     disableBadgeRemove?: boolean;
     busyBadges?: boolean;
-}
+}>;
 
 export default function FilterWidgetRuleAction({
     ExecutionsList,
@@ -629,129 +629,127 @@ export default function FilterWidgetRuleAction({
         [filterField, fieldSource, filterValue],
     );
 
+    const renderBooleanValueSelect = (
+        <Select
+            id="value"
+            options={filterField ? booleanOptions.map((opt) => ({ label: opt.label, value: String(opt.value) })) : []}
+            value={typeof filterValue === 'boolean' ? String(filterValue) : ''}
+            onChange={(value) => {
+                if (value === 'true') {
+                    setFilterValue(true);
+                } else if (value === 'false') {
+                    setFilterValue(false);
+                } else {
+                    setFilterValue(undefined);
+                }
+            }}
+            isDisabled={!filterField}
+        />
+    );
+
+    const isTextInputField =
+        currentField?.type === undefined ||
+        currentField?.type === FilterFieldType.String ||
+        currentField?.type === FilterFieldType.Date ||
+        currentField?.type === FilterFieldType.Number;
+
+    const renderBooleanOrObjectValueField =
+        currentField?.type === FilterFieldType.Boolean ? renderBooleanValueSelect : renderObjectValueSelector;
+
+    const renderValueField = isTextInputField ? (
+        <TextInput
+            id="valueSelect"
+            type={(() => {
+                const typeFromFieldType = currentField?.type ? getFormTypeFromFilterFieldType(currentField?.type) : 'text';
+                const rawType =
+                    currentField?.attributeContentType && checkIfFieldAttributeTypeIsDate(currentField)
+                        ? getFormTypeFromAttributeContentType(currentField?.attributeContentType)
+                        : typeFromFieldType;
+
+                return supportedInputTypes.has(rawType) ? (rawType as any) : 'text';
+            })()}
+            value={filterValue !== undefined && typeof filterValue !== 'object' ? String(filterValue) : ''}
+            onChange={(value) => {
+                setFilterValue(structuredClone(value));
+            }}
+            placeholder="Enter filter value"
+            disabled={!filterField}
+        />
+    ) : (
+        renderBooleanOrObjectValueField
+    );
+
     return (
-        <>
-            <Widget title={title} busy={isFetchingAvailableFilters} titleSize="large">
-                <div id="unselectFilters" role="button" tabIndex={0} onClick={onUnselectFiltersClick} onKeyDown={onUnselectFiltersKeyDown}>
-                    <div className="flex flex-row gap-2 mb-4 items-end">
-                        <div className="grid grid-cols-4 gap-2 w-full">
-                            <Select
-                                id="group"
-                                options={availableFilters.map((f) => ({
-                                    label: getEnumLabel(searchGroupEnum, f.filterFieldSource),
-                                    value: f.filterFieldSource,
-                                }))}
-                                onChange={(value) => {
-                                    setFieldSource((value as FilterFieldSource) || undefined);
-                                    setFilterField(undefined);
-                                    setFilterValue(undefined);
-                                }}
-                                value={fieldSource || ''}
-                                isClearable
-                                label="Field Source"
-                            />
+        <Widget title={title} busy={isFetchingAvailableFilters} titleSize="large">
+            <div id="unselectFilters" role="button" tabIndex={0} onClick={onUnselectFiltersClick} onKeyDown={onUnselectFiltersKeyDown}>
+                <div className="flex flex-row gap-2 mb-4 items-end">
+                    <div className="grid grid-cols-4 gap-2 w-full">
+                        <Select
+                            id="group"
+                            options={availableFilters.map((f) => ({
+                                label: getEnumLabel(searchGroupEnum, f.filterFieldSource),
+                                value: f.filterFieldSource,
+                            }))}
+                            onChange={(value) => {
+                                setFieldSource((value as FilterFieldSource) || undefined);
+                                setFilterField(undefined);
+                                setFilterValue(undefined);
+                            }}
+                            value={fieldSource || ''}
+                            isClearable
+                            label="Field Source"
+                        />
 
-                            <Select
-                                id="field"
-                                options={currentFields?.map((f) => ({ label: f.fieldLabel, value: f.fieldIdentifier }))}
-                                onChange={(value) => {
-                                    setFilterField((value as string) || undefined);
-                                    setFilterValue(undefined);
-                                }}
-                                value={filterField || ''}
-                                isDisabled={!fieldSource}
-                                isClearable
-                                label="Field"
-                            />
+                        <Select
+                            id="field"
+                            options={currentFields?.map((f) => ({ label: f.fieldLabel, value: f.fieldIdentifier }))}
+                            onChange={(value) => {
+                                setFilterField((value as string) || undefined);
+                                setFilterValue(undefined);
+                            }}
+                            value={filterField || ''}
+                            isDisabled={!fieldSource}
+                            isClearable
+                            label="Field"
+                        />
 
-                            <div>
-                                <Label htmlFor="valueSelect">Value</Label>
-                                {currentField?.type === undefined ||
-                                currentField?.type === FilterFieldType.String ||
-                                currentField?.type === FilterFieldType.Date ||
-                                currentField?.type === FilterFieldType.Number ? (
-                                    <TextInput
-                                        id="valueSelect"
-                                        type={(() => {
-                                            const rawType =
-                                                currentField?.attributeContentType && checkIfFieldAttributeTypeIsDate(currentField)
-                                                    ? getFormTypeFromAttributeContentType(currentField?.attributeContentType)
-                                                    : currentField?.type
-                                                      ? getFormTypeFromFilterFieldType(currentField?.type)
-                                                      : 'text';
+                        <div>
+                            <Label htmlFor="valueSelect">Value</Label>
+                            {renderValueField}
+                        </div>
 
-                                            return supportedInputTypes.has(rawType) ? (rawType as any) : 'text';
-                                        })()}
-                                        value={filterValue !== undefined && typeof filterValue !== 'object' ? String(filterValue) : ''}
-                                        onChange={(value) => {
-                                            setFilterValue(structuredClone(value));
-                                        }}
-                                        placeholder="Enter filter value"
-                                        disabled={!filterField}
-                                    />
-                                ) : currentField?.type === FilterFieldType.Boolean ? (
-                                    <Select
-                                        id="value"
-                                        options={
-                                            filterField ? booleanOptions.map((opt) => ({ label: opt.label, value: String(opt.value) })) : []
-                                        }
-                                        value={typeof filterValue === 'boolean' ? String(filterValue) : ''}
-                                        onChange={(value) => {
-                                            if (value === 'true') {
-                                                setFilterValue(true);
-                                            } else if (value === 'false') {
-                                                setFilterValue(false);
-                                            } else {
-                                                setFilterValue(undefined);
-                                            }
-                                        }}
-                                        isDisabled={!filterField}
-                                    />
-                                ) : (
-                                    renderObjectValueSelector
-                                )}
-                            </div>
-
-                            <div className="flex items-end">
-                                <Button
-                                    color="primary"
-                                    className="py-3 min-w-[62px]"
-                                    onClick={onUpdateClick}
-                                    disabled={isUpdateButtonDisabled}
-                                >
-                                    {selectedFilter === -1 ? 'Add' : 'Update'}
-                                </Button>
-                            </div>
+                        <div className="flex items-end">
+                            <Button color="primary" className="py-3 min-w-[62px]" onClick={onUpdateClick} disabled={isUpdateButtonDisabled}>
+                                {selectedFilter === -1 ? 'Add' : 'Update'}
+                            </Button>
                         </div>
                     </div>
-
-                    <div className="flex gap-2 flex-wrap">
-                        {actions.map((f, i) => {
-                            const field = findFieldDef(availableFilters, f.fieldSource, f.fieldIdentifier);
-                            const label = field ? field.fieldLabel : f.fieldIdentifier;
-                            const value =
-                                field?.type === FilterFieldType.Boolean
-                                    ? `'${booleanOptions.find((b) => !!f.data === b.value)?.label}'`
-                                    : Array.isArray(f.data)
-                                      ? f.data.map((v) => `'${formatBadgeDataValue(v, field, platformEnums)}'`).join(', ')
-                                      : f.data
-                                        ? `'${formatBadgeDataValue(f.data, field, platformEnums)}'`
-                                        : '';
-                            return (
-                                <Badge
-                                    key={`${i}-${f.fieldSource}-${f.fieldIdentifier}`}
-                                    onClick={() => toggleFilter(i)}
-                                    color={selectedFilter === i ? 'primary' : 'secondary'}
-                                >
-                                    {!isFetchingAvailableFilters && !busyBadges && (
-                                        <>{renderBadgeContent(i, value, label, f.fieldSource)}</>
-                                    )}
-                                </Badge>
-                            );
-                        })}
-                    </div>
                 </div>
-            </Widget>
-        </>
+
+                <div className="flex gap-2 flex-wrap">
+                    {actions.map((f, i) => {
+                        const field = findFieldDef(availableFilters, f.fieldSource, f.fieldIdentifier);
+                        const label = field ? field.fieldLabel : f.fieldIdentifier;
+                        const nonArrayValue = f.data ? `'${formatBadgeDataValue(f.data, field, platformEnums)}'` : '';
+                        const arrayOrScalarValue = Array.isArray(f.data)
+                            ? f.data.map((v) => `'${formatBadgeDataValue(v, field, platformEnums)}'`).join(', ')
+                            : nonArrayValue;
+                        const value =
+                            field?.type === FilterFieldType.Boolean
+                                ? `'${booleanOptions.find((b) => !!f.data === b.value)?.label}'`
+                                : arrayOrScalarValue;
+                        return (
+                            <Badge
+                                key={`${i}-${f.fieldSource}-${f.fieldIdentifier}`}
+                                onClick={() => toggleFilter(i)}
+                                color={selectedFilter === i ? 'primary' : 'secondary'}
+                            >
+                                {!isFetchingAvailableFilters && !busyBadges && <>{renderBadgeContent(i, value, label, f.fieldSource)}</>}
+                            </Badge>
+                        );
+                    })}
+                </div>
+            </div>
+        </Widget>
     );
 }

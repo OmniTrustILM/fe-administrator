@@ -131,7 +131,7 @@ export const slice = createSlice({
         updateSuccess: (state, action: PayloadAction<{ role: RoleDetailModel }>) => {
             state.roles = state.roles.map((role) => (role.uuid === action.payload.role.uuid ? action.payload.role : role));
 
-            if (state.role && state.role.uuid === action.payload.role.uuid) {
+            if (state.role?.uuid === action.payload.role.uuid) {
                 state.role = action.payload.role;
             }
 
@@ -151,7 +151,7 @@ export const slice = createSlice({
         deleteSuccess: (state, action: PayloadAction<{ uuid: string; redirect?: string }>) => {
             state.roles = state.roles.filter((role) => role.uuid !== action.payload.uuid);
 
-            if (state.role && state.role.uuid === action.payload.uuid) {
+            if (state.role?.uuid === action.payload.uuid) {
                 state.role = undefined;
             }
 
@@ -170,7 +170,7 @@ export const slice = createSlice({
         bulkDeleteSuccess: (state, action: PayloadAction<{ uuids: string[] }>) => {
             state.roles = state.roles.filter((role) => !action.payload.uuids.includes(role.uuid));
 
-            if (state.role && action.payload.uuids.includes(state.role.uuid)) {
+            if (state.role?.uuid && action.payload.uuids.includes(state.role.uuid)) {
                 state.role = undefined;
             }
 
@@ -188,7 +188,7 @@ export const slice = createSlice({
         },
 
         getUsersSuccess: (state, action: PayloadAction<{ uuid: string; users: UserResponseModel[] }>) => {
-            if (state.role && state.role.uuid === action.payload.uuid) {
+            if (state.role?.uuid === action.payload.uuid) {
                 state.role.users = action.payload.users;
             }
 
@@ -204,7 +204,7 @@ export const slice = createSlice({
         },
 
         updateUsersSuccess: (state, action: PayloadAction<{ role: RoleDetailModel }>) => {
-            if (state.role && state.role.uuid === action.payload.role.uuid) {
+            if (state.role?.uuid === action.payload.role.uuid) {
                 state.role.users = action.payload.role.users;
             }
 
@@ -239,8 +239,7 @@ export const slice = createSlice({
         },
 
         updatePermissionsSuccess: (state, action: PayloadAction<{ uuid: string; permissions: SubjectPermissionsModel }>) => {
-            if (state.rolePermissions && state.rolePermissions.uuid === action.payload.uuid)
-                state.rolePermissions.permissions = action.payload.permissions;
+            if (state.rolePermissions?.uuid === action.payload.uuid) state.rolePermissions.permissions = action.payload.permissions;
             state.isUpdatingPermissions = false;
         },
 

@@ -48,7 +48,7 @@ export interface DialogButton {
     variant?: ButtonVariant;
 }
 
-interface Props {
+type Props = Readonly<{
     isOpen: boolean;
     toggle?: () => void;
     caption?: string | React.ReactNode;
@@ -58,7 +58,7 @@ interface Props {
     dataTestId?: string;
     icon?: ModalIcon;
     noBorder?: boolean;
-}
+}>;
 
 export default function Dialog({ isOpen, toggle, caption, body, buttons, size = 'sm', dataTestId, icon, noBorder = false }: Props) {
     const sizeClasses = {

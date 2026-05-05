@@ -9,7 +9,7 @@ export interface DropdownItem {
     color?: ButtonColor;
 }
 
-interface Props {
+type Props = Readonly<{
     title: React.ReactNode;
     items?: DropdownItem[];
     disabled?: boolean;
@@ -19,7 +19,7 @@ interface Props {
     hideArrow?: boolean;
     menu?: React.ReactNode;
     buttonRef?: React.RefObject<HTMLButtonElement | null>;
-}
+}>;
 
 function Dropdown({ title, items, disabled = false, btnStyle, className, menuClassName, hideArrow = false, menu, buttonRef }: Props) {
     useEffect(() => {

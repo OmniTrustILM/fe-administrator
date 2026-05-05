@@ -88,10 +88,10 @@ function buildRows(content: SecretContent, copyToClipboard: (text: string, msg: 
     }
 }
 
-interface Props {
+type Props = Readonly<{
     content: SecretContent | undefined;
     isFetching: boolean;
-}
+}>;
 
 export function SecretContentDialog({ content, isFetching }: Props) {
     const copyToClipboard = useCopyToClipboard();

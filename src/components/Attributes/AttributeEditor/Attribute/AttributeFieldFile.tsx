@@ -6,14 +6,14 @@ import cn from 'classnames';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import { buildAttributeValidators } from './attributeHelpers';
 
-interface AttributeFieldFileProps {
+type AttributeFieldFileProps = Readonly<{
     name: string;
     descriptor: DataAttributeModel | CustomAttributeModel;
     deleteButton?: React.ReactNode;
     onFileDrop: (e: React.DragEvent<HTMLInputElement>) => void;
     onFileDragOver: (e: React.DragEvent<HTMLInputElement>) => void;
     onFileChanged: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}
+}>;
 
 export function AttributeFieldFile({
     name,

@@ -42,7 +42,10 @@ const TriggerHistorySummaryViewer = ({ triggerHistoryObjectSummary }: TriggerHis
                 ? trigger.records.map((r, i) => ({
                       id: i,
                       columns: [
-                          r?.condition ? 'Condition' : r?.execution ? 'Execution' : '',
+                          (() => {
+                              const failSource = r?.execution ? 'Execution' : '';
+                              return r?.condition ? 'Condition' : failSource;
+                          })(),
                           r.condition?.name || r.execution?.name || '',
                           r.message || '',
                       ],

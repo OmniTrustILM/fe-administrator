@@ -10,10 +10,10 @@ import Button from 'components/Button';
 import Select from 'components/Select';
 import { CircleArrowUp } from 'lucide-react';
 
-type Props = {
+type Props = Readonly<{
     show: boolean;
     setShow: (value: boolean) => void;
-};
+}>;
 
 export default function ConnectorMetadataDialog({ show, setShow }: Props) {
     const dispatch = useDispatch();

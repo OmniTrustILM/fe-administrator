@@ -1,7 +1,6 @@
-import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
+import type { CustomAttributeModel, DataAttributeModel, RegexpAttributeConstraintModel } from 'types/attributes';
 import { AttributeConstraintType, AttributeContentType, type RangeAttributeConstraintData } from 'types/openapi';
 import { isCustomAttributeModel, isDataAttributeModel } from 'types/attributes';
-import type { RegexpAttributeConstraintModel } from 'types/attributes';
 import { getFormattedDateTime } from 'utils/dateUtil';
 import { composeValidators, validateFloat, validateInteger, validatePattern, validateRequired } from 'utils/validators';
 
@@ -120,10 +119,10 @@ function addDataAttributeConstraintValidators(descriptor: DataAttributeModel, va
 
 export function buildAttributeValidators(descriptor: DataAttributeModel | CustomAttributeModel | undefined): any {
     const validators: any[] = [];
-    if (!descriptor) return composeValidators.apply(undefined, validators);
+    if (!descriptor) return composeValidators(...validators);
 
     if (!isDataAttributeModel(descriptor) && !isCustomAttributeModel(descriptor)) {
-        return composeValidators.apply(undefined, validators);
+        return composeValidators(...validators);
     }
     if (descriptor.properties.required) validators.push(validateRequired());
 
@@ -140,7 +139,7 @@ export function buildAttributeValidators(descriptor: DataAttributeModel | Custom
     if (isDataAttributeModel(descriptor)) {
         addDataAttributeConstraintValidators(descriptor, validators);
     }
-    return composeValidators.apply(undefined, validators);
+    return composeValidators(...validators);
 }
 
 export function getUpdatedOptionsForEditSelect(

@@ -13,7 +13,7 @@ import StatusBadge from 'components/StatusBadge';
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import TokenStatusBadge from 'components/_pages/tokens/TokenStatusBadge';
-import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
+import { selectors as enumSelectors } from 'ducks/enums';
 import KeyUsageSelect from '../../cryptographic-keys/KeyUsageSelect';
 import { type KeyUsage, PlatformEnum } from 'types/openapi';
 import type { TokenProfileResponseModel } from 'types/token-profiles';

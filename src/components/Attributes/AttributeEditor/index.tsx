@@ -57,7 +57,7 @@ function cloneForCompare<T>(value: T): T {
 const emptyAttributes: AttributeResponseModel[] = [];
 const emptyGroupAttributesCallbackAttributes: AttributeDescriptorModel[] = [];
 
-export interface Props {
+export type Props = Readonly<{
     id: string;
     attributeDescriptors: AttributeDescriptorModel[];
     groupAttributesCallbackAttributes?: AttributeDescriptorModel[];
@@ -69,7 +69,7 @@ export interface Props {
     callbackResource?: Resource;
     callbackParentUuid?: string;
     withRemoveAction?: boolean;
-}
+}>;
 
 function AttributeEditorInner({
     id,
@@ -224,29 +224,21 @@ function AttributeEditorInner({
         (mapping: AttributeCallbackMappingModel): any => {
             const attributeFromValue = getAttributeValue(attributes, mapping.from);
             const formAttributes = formValues[`__attributes__${id}__`] ?? undefined;
-            const formMappingName = mapping.from ? (mapping.from.includes('.') ? mapping.from.split('.')[0] : mapping.from) : '';
+            const formMappingName = mapping.from?.includes('.') ? mapping.from.split('.')[0] : (mapping.from ?? '');
             const formAttribute = formAttributes
                 ? Object.keys(formAttributes).find((key) => key.startsWith(`${formMappingName}`))
                 : undefined;
 
             // only lists are supported now, because of this the 'value' is added to the path as the list selected option is { label: "", value: "" }
-            const formMappingPath = mapping.from
-                ? mapping.from.includes('.')
-                    ? 'value.' + mapping.from.split('.').slice(1).join('.')
-                    : 'value'
-                : 'value';
+            const formMappingPath = mapping.from?.includes('.') ? 'value.' + mapping.from.split('.').slice(1).join('.') : 'value';
             const currentContent = formAttribute
                 ? (getObjectPropertyValue(formAttributes[formAttribute], formMappingPath) ?? formAttributes[formAttribute])
                 : undefined;
 
-            const depDescriptor = attributeDescriptors.find(
-                (d) => d.name === (mapping.from ? (mapping.from.includes('.') ? mapping.from.split('.')[0] : mapping.from) : ''),
-            );
+            const depDescriptor = attributeDescriptors.find((d) => d.name === formMappingName);
             const depDescriptorValue = depDescriptor ? getObjectPropertyValue(depDescriptor, `content.${formMappingPath}`) : undefined;
 
-            const groupDescriptor = groupAttributesCallbackAttributes.find(
-                (d) => d.name === (mapping.from ? (mapping.from.includes('.') ? mapping.from.split('.')[0] : mapping.from) : ''),
-            );
+            const groupDescriptor = groupAttributesCallbackAttributes.find((d) => d.name === formMappingName);
             const groupDescriptorValue = groupDescriptor
                 ? getObjectPropertyValue(groupDescriptor, `content.${formMappingPath}`)
                 : undefined;
@@ -280,7 +272,7 @@ function AttributeEditorInner({
                     let value = mapping.value || getCurrentFromMappingValue(mapping);
                     if (typeof value === 'object' && value !== null) {
                         // Resolve dot path from mapping.from (e.g. "endEntityProfile.data.id" -> extract value at data.id)
-                        if (mapping.from && mapping.from.includes('.')) {
+                        if (mapping.from?.includes('.')) {
                             const pathParts = mapping.from.split('.').slice(1);
                             const tryResolve = (obj: any, parts: string[]): any => {
                                 let resolved = obj;
@@ -508,11 +500,8 @@ function AttributeEditorInner({
             // For re-added attributes, we want empty values but still need access to descriptor options for selects
             // So we use a separate flag for value setting vs options access
             const shouldUseAttributeValues = !wasDeletedLocally;
-            const appliedContent = shouldUseAttributeValues
-                ? forceDefaultDescriptorValue
-                    ? descriptor?.content
-                    : attribute?.content
-                : undefined;
+            const contentFromValues = forceDefaultDescriptorValue ? descriptor?.content : attribute?.content;
+            const appliedContent = shouldUseAttributeValues ? contentFromValues : undefined;
 
             function handleFileAttributeContentType() {
                 if (appliedContent) {
@@ -931,7 +920,7 @@ function AttributeEditorInner({
                 const first = callbackValues[0] as any;
                 if (!first) return;
                 const value = first.reference ?? first.data;
-                if (typeof value === 'undefined') return;
+                if (value === undefined) return;
                 setValue(callbackId, value, { shouldValidate: true });
             } else if (userInteractedRef.current) {
                 setValue(callbackId, undefined, { shouldValidate: true });

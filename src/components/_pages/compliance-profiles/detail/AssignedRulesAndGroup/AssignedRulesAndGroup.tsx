@@ -25,12 +25,12 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import type { TRuleGroupType } from 'types/complianceProfiles';
 import Badge from 'components/Badge';
 
-interface Props {
+type Props = Readonly<{
     profile: ComplianceProfileDtoV2 | undefined;
     setSelectedEntityDetails: (entityDetails: any) => void;
     setIsEntityDetailMenuOpen: (isEntityDetailMenuOpen: boolean) => void;
     onReset?: (resetFn: () => void) => void;
-}
+}>;
 
 export default function AssignedRulesAndGroup({ profile, setSelectedEntityDetails, setIsEntityDetailMenuOpen, onReset }: Props) {
     const { id } = useParams();

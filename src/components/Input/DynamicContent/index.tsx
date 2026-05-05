@@ -7,10 +7,9 @@ import { validateRequired } from 'utils/validators';
 import ContentDescriptorField from './ContentDescriptorField';
 import Label from 'components/Label';
 import Select from 'components/Select';
-import { ContentFieldConfiguration } from './contentFieldConfiguration';
 import Widget from 'components/Widget';
 
-export { ContentFieldConfiguration };
+export { ContentFieldConfiguration } from './contentFieldConfiguration';
 
 const AllowedAttributeContentType = [
     AttributeContentType.String,
@@ -23,10 +22,10 @@ const AllowedAttributeContentType = [
     AttributeContentType.Datetime,
 ];
 
-type Props = {
+type Props = Readonly<{
     editable: boolean;
     isList: boolean;
-};
+}>;
 
 export default function DynamicContent({ editable, isList }: Props) {
     const { control, setValue } = useFormContext();

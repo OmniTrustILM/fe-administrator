@@ -94,7 +94,7 @@ export const defaultAvailableFilters: SearchFieldListModel[] = [
     },
 ];
 
-export interface FilterWidgetTestWrapperProps {
+export type FilterWidgetTestWrapperProps = Readonly<{
     title?: string;
     entity?: EntityType;
     availableFilters?: SearchFieldListModel[];
@@ -104,7 +104,7 @@ export interface FilterWidgetTestWrapperProps {
     busyBadges?: boolean;
     extraFilterComponent?: React.ReactNode;
     filterGridCols?: 2 | 4;
-}
+}>;
 
 export default function FilterWidgetTestWrapper({
     title = 'Filters',

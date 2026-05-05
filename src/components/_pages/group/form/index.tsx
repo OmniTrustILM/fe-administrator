@@ -10,7 +10,7 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import Button from 'components/Button';
 import Container from 'components/Container';
 import type { CertificateGroupResponseModel } from 'types/certificateGroups';
@@ -20,11 +20,11 @@ import { validateAlphaNumericWithSpecialChars, validateEmail, validateLength, va
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import TabLayout from '../../../Layout/TabLayout';
 
-interface GroupFormProps {
+type GroupFormProps = Readonly<{
     groupId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}
+}>;
 
 interface FormValues {
     name: string;
@@ -93,7 +93,7 @@ export default function GroupForm({ groupId, onCancel, onSuccess }: GroupFormPro
     useEffect(() => {
         if (editMode && id) {
             // Fetch if id changed or if we don't have the correct group loaded
-            if (previousIdRef.current !== id || !groupSelector || groupSelector.uuid !== id) {
+            if (previousIdRef.current !== id || groupSelector?.uuid !== id) {
                 dispatch(actions.getGroupDetail({ uuid: id }));
                 previousIdRef.current = id;
             }
@@ -153,7 +153,7 @@ export default function GroupForm({ groupId, onCancel, onSuccess }: GroupFormPro
 
     // Reset form values when group is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && group && group.uuid === id && !isFetchingDetail) {
+        if (editMode && id && group?.uuid === id && !isFetchingDetail) {
             const newDefaultValues: FormValues = {
                 name: group.name || '',
                 description: group.description || '',

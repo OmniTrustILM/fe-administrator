@@ -1,9 +1,9 @@
 import Badge from 'components/Badge';
 import { TokenInstanceStatus } from 'types/openapi';
 
-interface Props {
+type Props = Readonly<{
     status: TokenInstanceStatus;
-}
+}>;
 
 function TokenStatusBadge({ status }: Props) {
     switch (status) {
