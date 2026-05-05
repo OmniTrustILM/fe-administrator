@@ -115,7 +115,8 @@
     },
     "overrides": {
         "typescript": "$typescript",
-        "nodemailer": "^8.0.5"
+        "nodemailer": "^8.0.5",
+        "uuid": "^14.0.0"
     },
     "lint-staged": {
         "*.{ts,tsx,js,cjs,jsx,mjs,json}": [
