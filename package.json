@@ -116,7 +116,11 @@
     "overrides": {
         "typescript": "$typescript",
         "nodemailer": "^8.0.5",
-        "uuid": "^14.0.0"
+        "nyc": {
+            "istanbul-lib-processinfo": {
+                "uuid": "^14.0.0"
+            }
+        }
     },
     "lint-staged": {
         "*.{ts,tsx,js,cjs,jsx,mjs,json}": [
