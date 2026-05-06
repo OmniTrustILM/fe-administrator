@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import {
     CertificateEventHistoryDtoStatusEnum,
     CertificateState,
@@ -7,6 +7,7 @@ import {
     ComplianceRuleStatus,
     ComplianceStatus,
 } from 'types/openapi';
+import { runDownloadFileSuite } from './__tests__/anchor-download-mock';
 import { formatPEM, getCertificateStatusColor, downloadFile } from './certificate';
 
 vi.mock('react-redux', () => ({
@@ -120,51 +121,7 @@ describe('certificate utils', () => {
     });
 
     describe('downloadFile', () => {
-        let mockClick: ReturnType<typeof vi.fn>;
-        let mockAppendChild: ReturnType<typeof vi.fn>;
-        let fakeAnchor: any;
-
-        beforeEach(() => {
-            vi.clearAllMocks();
-            mockClick = vi.fn();
-            fakeAnchor = { href: '', download: '', click: mockClick };
-            mockAppendChild = vi.fn();
-
-            vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-                if (tag === 'a') return fakeAnchor as any;
-                return document.createElement(tag);
-            });
-
-            vi.spyOn(document.body, 'appendChild').mockImplementation(mockAppendChild);
-        });
-
-        test('creates anchor element and triggers click', () => {
-            downloadFile('hello', 'test.txt');
-            expect(document.createElement).toHaveBeenCalledWith('a');
-            expect(mockClick).toHaveBeenCalledTimes(1);
-        });
-
-        test('sets download filename on anchor', () => {
-            downloadFile('hello', 'myfile.txt');
-            expect(fakeAnchor.download).toBe('myfile.txt');
-        });
-
-        test('sets anchor href to object URL', () => {
-            downloadFile('hello', 'test.txt');
-            expect(fakeAnchor.href).toBe('blob:mock-url');
-        });
-
-        test('appends anchor to document.body', () => {
-            downloadFile('hello', 'test.txt');
-            expect(mockAppendChild).toHaveBeenCalledWith(fakeAnchor);
-        });
-
-        test('calls URL.createObjectURL with a Blob', () => {
-            downloadFile('content', 'file.txt');
-            expect(mockCreateObjectURL).toHaveBeenCalledTimes(1);
-            const arg = mockCreateObjectURL.mock.calls[0][0];
-            expect(arg).toBeInstanceOf(Blob);
-        });
+        runDownloadFileSuite(downloadFile, mockCreateObjectURL);
     });
 });
 

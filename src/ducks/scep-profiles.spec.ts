@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { runCommonSliceTests } from './__tests__/common-slice-tests';
 import reducer, { actions, initialState, selectors } from './scep-profiles';
 
 describe('scep-profiles slice', () => {
@@ -6,25 +7,16 @@ describe('scep-profiles slice', () => {
         expect(reducer(undefined, { type: 'unknown' })).toEqual(initialState);
     });
 
-    test('resetState restores initialState', () => {
-        const dirty = { ...initialState, isCreating: true, isFetchingList: true } as any;
-        expect(reducer(dirty, actions.resetState())).toEqual(initialState);
-    });
-
-    test('setCheckedRows sets checkedRows', () => {
-        const next = reducer(initialState, actions.setCheckedRows({ checkedRows: ['a', 'b'] }));
-        expect(next.checkedRows).toEqual(['a', 'b']);
-    });
-
-    test('clearDeleteErrorMessages clears error fields', () => {
-        const withErrors = {
-            ...initialState,
-            deleteErrorMessage: 'some error',
-            bulkDeleteErrorMessages: [{ uuid: 'x', name: 'x', errors: [] }],
-        };
-        const next = reducer(withErrors, actions.clearDeleteErrorMessages());
-        expect(next.deleteErrorMessage).toBe('');
-        expect(next.bulkDeleteErrorMessages).toHaveLength(0);
+    runCommonSliceTests({
+        reducer,
+        actions,
+        initialState,
+        dirtyOverrides: { isCreating: true, isFetchingList: true } as any,
+        deleteErrorOverrides: { deleteErrorMessage: 'some error', bulkDeleteErrorMessages: [{ uuid: 'x', name: 'x', errors: [] }] as any },
+        deleteErrorAssertions: (next) => {
+            expect(next.deleteErrorMessage).toBe('');
+            expect(next.bulkDeleteErrorMessages).toHaveLength(0);
+        },
     });
 
     test('listScepProfiles / Success / Failure', () => {

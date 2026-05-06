@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { runCommonSliceTests } from './__tests__/common-slice-tests';
 import reducer, { actions, initialState, selectors } from './customAttributes';
 import { Resource } from '../types/openapi';
 
@@ -7,14 +8,11 @@ describe('customAttributes slice', () => {
         expect(reducer(undefined, { type: 'unknown' })).toEqual(initialState);
     });
 
-    test('resetState restores initialState', () => {
-        const dirty = { ...initialState, isCreating: true, isFetchingList: true } as any;
-        expect(reducer(dirty, actions.resetState())).toEqual(initialState);
-    });
-
-    test('setCheckedRows sets checkedRows', () => {
-        const next = reducer(initialState, actions.setCheckedRows({ checkedRows: ['a', 'b'] }));
-        expect(next.checkedRows).toEqual(['a', 'b']);
+    runCommonSliceTests({
+        reducer,
+        actions,
+        initialState,
+        dirtyOverrides: { isCreating: true, isFetchingList: true } as any,
     });
 
     test('listCustomAttributes / Success / Failure', () => {

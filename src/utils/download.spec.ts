@@ -1,5 +1,6 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 
+import { runDownloadFileSuite, setupAnchorDownloadMocks } from './__tests__/anchor-download-mock';
 import { downloadFile, downloadFileZip, formatPEM } from './download';
 
 const mockCreateObjectURL = vi.fn(() => 'blob:mock-url');
@@ -23,21 +24,11 @@ vi.mock('jszip', () => {
 describe('downloadFileZip', () => {
     let mockClick: ReturnType<typeof vi.fn>;
     let mockRemove: ReturnType<typeof vi.fn>;
-    let mockAppendChild: ReturnType<typeof vi.fn>;
     let fakeAnchor: any;
 
     beforeEach(() => {
         vi.clearAllMocks();
-        mockClick = vi.fn();
-        mockRemove = vi.fn();
-        fakeAnchor = { href: '', download: '', click: mockClick, remove: mockRemove, style: {} };
-        mockAppendChild = vi.fn();
-
-        vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-            if (tag === 'a') return fakeAnchor as any;
-            return document.createElement(tag);
-        });
-        vi.spyOn(document.body, 'appendChild').mockImplementation(mockAppendChild);
+        ({ fakeAnchor, mockClick, mockRemove } = setupAnchorDownloadMocks());
     });
 
     test('triggers blob download for pem certificates', async () => {
@@ -117,41 +108,7 @@ describe('formatPEM', () => {
 });
 
 describe('downloadFile', () => {
-    let mockClick: ReturnType<typeof vi.fn>;
-    let mockAppendChild: ReturnType<typeof vi.fn>;
-    let fakeAnchor: any;
-
-    beforeEach(() => {
-        vi.clearAllMocks();
-        mockClick = vi.fn();
-        fakeAnchor = { href: '', download: '', click: mockClick, style: {} };
-        mockAppendChild = vi.fn();
-
-        vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-            if (tag === 'a') return fakeAnchor as any;
-            return document.createElement(tag);
-        });
-
-        vi.spyOn(document.body, 'appendChild').mockImplementation(mockAppendChild);
-    });
-
-    test('creates an anchor element and triggers click', () => {
-        downloadFile('hello', 'test.txt');
-        expect(document.createElement).toHaveBeenCalledWith('a');
-        expect(mockClick).toHaveBeenCalledTimes(1);
-    });
-
-    test('sets the download filename on the anchor', () => {
-        downloadFile('hello', 'myfile.txt');
-        expect(fakeAnchor.download).toBe('myfile.txt');
-    });
-
-    test('calls URL.createObjectURL with a Blob', () => {
-        downloadFile('hello', 'test.txt');
-        expect(mockCreateObjectURL).toHaveBeenCalledTimes(1);
-        const arg = mockCreateObjectURL.mock.calls[0][0];
-        expect(arg).toBeInstanceOf(Blob);
-    });
+    runDownloadFileSuite(downloadFile, mockCreateObjectURL);
 
     test('uses text/plain as default type', () => {
         downloadFile('hello', 'test.txt');
@@ -165,17 +122,8 @@ describe('downloadFile', () => {
         expect(blob.type).toBe('application/x-pem-file');
     });
 
-    test('sets anchor href to the object URL', () => {
-        downloadFile('hello', 'test.txt');
-        expect(fakeAnchor.href).toBe('blob:mock-url');
-    });
-
-    test('appends the anchor to document.body', () => {
-        downloadFile('hello', 'test.txt');
-        expect(mockAppendChild).toHaveBeenCalledWith(fakeAnchor);
-    });
-
     test('handles empty content string', () => {
+        const { mockClick } = setupAnchorDownloadMocks();
         downloadFile('', 'empty.txt');
         expect(mockClick).toHaveBeenCalledTimes(1);
     });

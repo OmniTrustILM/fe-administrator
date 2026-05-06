@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
+import { runCommonSliceTests } from './__tests__/common-slice-tests';
 import reducer, { actions, initialState, selectors } from './credentials';
 
 describe('credentials slice', () => {
@@ -7,21 +8,16 @@ describe('credentials slice', () => {
         expect(reducer(undefined, { type: 'unknown' })).toEqual(initialState);
     });
 
-    test('resetState restores initialState', () => {
-        const dirty = { ...initialState, isCreating: true, checkedRows: ['x'], credentials: [{ uuid: 'c1' } as any] };
-        expect(reducer(dirty as any, actions.resetState())).toEqual(initialState);
-    });
-
-    test('setCheckedRows updates checkedRows', () => {
-        const next = reducer(initialState, actions.setCheckedRows({ checkedRows: ['a', 'b'] }));
-        expect(next.checkedRows).toEqual(['a', 'b']);
-    });
-
-    test('clearDeleteErrorMessages clears error fields', () => {
-        const state = { ...initialState, deleteErrorMessage: 'err', bulkDeleteErrorMessages: [{ uuid: 'x' } as any] };
-        const next = reducer(state as any, actions.clearDeleteErrorMessages());
-        expect(next.deleteErrorMessage).toBe('');
-        expect(next.bulkDeleteErrorMessages).toEqual([]);
+    runCommonSliceTests({
+        reducer,
+        actions,
+        initialState,
+        dirtyOverrides: { isCreating: true, checkedRows: ['x'], credentials: [{ uuid: 'c1' } as any] },
+        deleteErrorOverrides: { deleteErrorMessage: 'err', bulkDeleteErrorMessages: [{ uuid: 'x' } as any] },
+        deleteErrorAssertions: (next) => {
+            expect(next.deleteErrorMessage).toBe('');
+            expect(next.bulkDeleteErrorMessages).toEqual([]);
+        },
     });
 
     test('listCredentialProviders / success / failure', () => {

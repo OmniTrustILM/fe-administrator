@@ -10,14 +10,32 @@ const searchGroupEnum = {
     [FilterFieldSource.Property]: { label: 'Property' },
 } as any;
 
+const entityMap: Record<string, string> = {
+    '&#x27;': "'",
+    '&amp;': '&',
+    '&nbsp;': ' ',
+};
+
 const renderItems = (...args: Parameters<typeof renderExecutionItems>) => {
     const elements = renderExecutionItems(...args);
     const html = renderToStaticMarkup(elements as any);
-    return html
-        .replace(/&#x27;/g, "'")
-        .replace(/&amp;/g, '&')
-        .replace(/&nbsp;/g, ' ');
+    return html.replace(/&(?:#x27|amp|nbsp);/g, (match) => entityMap[match] ?? match);
 };
+
+const buildAvailableFilters = (searchFieldData: any[]): SearchFieldListModel[] => [
+    {
+        filterFieldSource: FilterFieldSource.Property,
+        searchFieldData,
+    } as any,
+];
+
+const stateEnumField = {
+    fieldIdentifier: 'state',
+    fieldLabel: 'State',
+    type: FilterFieldType.String,
+    platformEnum: 'StateEnum',
+};
+const stateEnumPlatformEnums = { StateEnum: { active: { label: 'Active' } } };
 
 describe('execution-badges', () => {
     it('returns empty array for unsupported execution type', () => {
@@ -53,22 +71,17 @@ describe('execution-badges', () => {
     });
 
     it('uses field label and uuid mapping when available', () => {
-        const availableFilters: SearchFieldListModel[] = [
+        const availableFilters = buildAvailableFilters([
             {
-                filterFieldSource: FilterFieldSource.Property,
-                searchFieldData: [
-                    {
-                        fieldIdentifier: 'group',
-                        fieldLabel: 'Group',
-                        type: FilterFieldType.String,
-                        value: [
-                            { uuid: 'u1', name: 'GroupOne' },
-                            { uuid: 'u2', name: 'GroupTwo' },
-                        ],
-                    } as any,
+                fieldIdentifier: 'group',
+                fieldLabel: 'Group',
+                type: FilterFieldType.String,
+                value: [
+                    { uuid: 'u1', name: 'GroupOne' },
+                    { uuid: 'u2', name: 'GroupTwo' },
                 ],
             } as any,
-        ];
+        ]);
 
         const items: ExecutionItemModel[] = [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'group', data: ['u1', 'u2'] }];
 
@@ -78,13 +91,9 @@ describe('execution-badges', () => {
     });
 
     it('renders boolean field with True label for truthy data', () => {
-        const availableFilters: SearchFieldListModel[] = [
-            {
-                filterFieldSource: FilterFieldSource.Property,
-                searchFieldData: [{ fieldIdentifier: 'enabled', fieldLabel: 'Enabled', type: FilterFieldType.Boolean } as any],
-            } as any,
-        ];
-
+        const availableFilters = buildAvailableFilters([
+            { fieldIdentifier: 'enabled', fieldLabel: 'Enabled', type: FilterFieldType.Boolean } as any,
+        ]);
         const items: ExecutionItemModel[] = [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'enabled', data: true }];
 
         const html = renderItems(items, ExecutionType.SetField, availableFilters, {}, searchGroupEnum, 'badge');
@@ -92,13 +101,9 @@ describe('execution-badges', () => {
     });
 
     it('renders boolean field with False label for falsy data', () => {
-        const availableFilters: SearchFieldListModel[] = [
-            {
-                filterFieldSource: FilterFieldSource.Property,
-                searchFieldData: [{ fieldIdentifier: 'enabled', fieldLabel: 'Enabled', type: FilterFieldType.Boolean } as any],
-            } as any,
-        ];
-
+        const availableFilters = buildAvailableFilters([
+            { fieldIdentifier: 'enabled', fieldLabel: 'Enabled', type: FilterFieldType.Boolean } as any,
+        ]);
         const items: ExecutionItemModel[] = [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'enabled', data: false }];
 
         const html = renderItems(items, ExecutionType.SetField, availableFilters, {}, searchGroupEnum, 'badge');
@@ -106,20 +111,14 @@ describe('execution-badges', () => {
     });
 
     it('formats Date attribute content type', () => {
-        const availableFilters: SearchFieldListModel[] = [
+        const availableFilters = buildAvailableFilters([
             {
-                filterFieldSource: FilterFieldSource.Property,
-                searchFieldData: [
-                    {
-                        fieldIdentifier: 'createdAt',
-                        fieldLabel: 'Created At',
-                        type: FilterFieldType.Date,
-                        attributeContentType: AttributeContentType.Date,
-                    } as any,
-                ],
+                fieldIdentifier: 'createdAt',
+                fieldLabel: 'Created At',
+                type: FilterFieldType.Date,
+                attributeContentType: AttributeContentType.Date,
             } as any,
-        ];
-
+        ]);
         const items: ExecutionItemModel[] = [
             { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'createdAt', data: '2024-01-15T00:00:00Z' },
         ];
@@ -129,20 +128,14 @@ describe('execution-badges', () => {
     });
 
     it('formats Datetime attribute content type', () => {
-        const availableFilters: SearchFieldListModel[] = [
+        const availableFilters = buildAvailableFilters([
             {
-                filterFieldSource: FilterFieldSource.Property,
-                searchFieldData: [
-                    {
-                        fieldIdentifier: 'updatedAt',
-                        fieldLabel: 'Updated At',
-                        type: FilterFieldType.Date,
-                        attributeContentType: AttributeContentType.Datetime,
-                    } as any,
-                ],
+                fieldIdentifier: 'updatedAt',
+                fieldLabel: 'Updated At',
+                type: FilterFieldType.Date,
+                attributeContentType: AttributeContentType.Datetime,
             } as any,
-        ];
-
+        ]);
         const items: ExecutionItemModel[] = [
             { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'updatedAt', data: '2024-01-15T10:30:00Z' },
         ];
@@ -169,24 +162,10 @@ describe('execution-badges', () => {
     });
 
     it('uses platformEnum label when available', () => {
-        const availableFilters: SearchFieldListModel[] = [
-            {
-                filterFieldSource: FilterFieldSource.Property,
-                searchFieldData: [
-                    {
-                        fieldIdentifier: 'state',
-                        fieldLabel: 'State',
-                        type: FilterFieldType.String,
-                        platformEnum: 'StateEnum',
-                    } as any,
-                ],
-            } as any,
-        ];
-        const platformEnums = { StateEnum: { active: { label: 'Active' } } };
-
+        const availableFilters = buildAvailableFilters([stateEnumField as any]);
         const items: ExecutionItemModel[] = [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'state', data: 'active' }];
 
-        const html = renderItems(items, ExecutionType.SetField, availableFilters, platformEnums, searchGroupEnum, 'badge');
+        const html = renderItems(items, ExecutionType.SetField, availableFilters, stateEnumPlatformEnums, searchGroupEnum, 'badge');
         expect(html).toContain("'Active'");
     });
 
@@ -212,24 +191,10 @@ describe('execution-badges', () => {
     });
 
     it('handles platformEnum lookup miss by falling back to raw value', () => {
-        const availableFilters: SearchFieldListModel[] = [
-            {
-                filterFieldSource: FilterFieldSource.Property,
-                searchFieldData: [
-                    {
-                        fieldIdentifier: 'state',
-                        fieldLabel: 'State',
-                        type: FilterFieldType.String,
-                        platformEnum: 'StateEnum',
-                    } as any,
-                ],
-            } as any,
-        ];
-        const platformEnums = { StateEnum: { active: { label: 'Active' } } };
-
+        const availableFilters = buildAvailableFilters([stateEnumField as any]);
         const items: ExecutionItemModel[] = [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'state', data: 'unknown' }];
 
-        const html = renderItems(items, ExecutionType.SetField, availableFilters, platformEnums, searchGroupEnum, 'badge');
+        const html = renderItems(items, ExecutionType.SetField, availableFilters, stateEnumPlatformEnums, searchGroupEnum, 'badge');
         expect(html).toContain("'unknown'");
     });
 });
