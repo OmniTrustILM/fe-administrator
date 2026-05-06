@@ -51,5 +51,4 @@ function ContentValueFieldTestWrapper({ id, descriptor, initialContent, onSubmit
     );
 }
 
-export { ContentValueFieldTestWrapper };
 export default ContentValueFieldTestWrapper;
