@@ -123,6 +123,29 @@ describe('raProfiles slice', () => {
         expect(next.updateRaProfileSucceeded).toBe(false);
     });
 
+    test('updateRaProfileCertificateValidation / success / failure', () => {
+        const existingProfile = { uuid: 'ra-1', name: 'RA Profile', attributes: [{ uuid: 'attr-1' }], customAttributes: [] } as any;
+
+        let next = reducer(
+            { ...initialState, raProfile: existingProfile },
+            actions.updateRaProfileCertificateValidation({
+                profileUuid: 'ra-1',
+                authorityInstanceUuid: 'a-1',
+                validation: {} as any,
+            }),
+        );
+        expect(next.isUpdating).toBe(true);
+
+        const updatedProfile = { uuid: 'ra-1', name: 'RA Profile Updated', attributes: [], customAttributes: [] } as any;
+        next = reducer(next, actions.updateRaProfileCertificateValidationSuccess({ raProfile: updatedProfile }));
+        expect(next.isUpdating).toBe(false);
+        expect(next.raProfile?.name).toBe('RA Profile Updated');
+        expect(next.raProfile?.attributes).toEqual([{ uuid: 'attr-1' }]);
+
+        next = reducer({ ...next, isUpdating: true }, actions.updateRaProfileCertificateValidationFailure({ error: 'err' }));
+        expect(next.isUpdating).toBe(false);
+    });
+
     test('enableRaProfile / success updates list and detail / failure', () => {
         const items = [{ uuid: 'ra-1', enabled: false } as any];
         const profile = { uuid: 'ra-1', enabled: false } as any;
@@ -192,6 +215,18 @@ describe('raProfiles slice', () => {
 
         next = reducer({ ...next, isBulkDeleting: true }, actions.bulkDeleteRaProfilesFailure({ error: 'err' }));
         expect(next.isBulkDeleting).toBe(false);
+    });
+
+    test('bulkDeleteRaProfilesSuccess clears raProfile when uuid matches', () => {
+        const items = [{ uuid: 'ra-1' } as any, { uuid: 'ra-2' } as any];
+        const profile = { uuid: 'ra-1' } as any;
+
+        const next = reducer(
+            { ...initialState, raProfiles: items, raProfile: profile },
+            actions.bulkDeleteRaProfilesSuccess({ uuids: ['ra-1'] }),
+        );
+        expect(next.raProfiles).toEqual([{ uuid: 'ra-2' }]);
+        expect(next.raProfile).toBeUndefined();
     });
 
     test('bulkEnableRaProfiles / success / failure', () => {
@@ -487,6 +522,14 @@ describe('raProfiles slice', () => {
         expect(next.isDissociatingApprovalProfile).toBe(false);
     });
 
+    test('disassociateRAProfileFromApprovalProfileSuccess skips splice when associatedApprovalProfiles is falsy', () => {
+        const payload = { raProfileUuid: 'ra-1', approvalProfileUuid: 'ap-1', authorityUuid: 'a-1' };
+
+        const state = { ...initialState, associatedApprovalProfiles: undefined as any };
+        const next = reducer(state, actions.disassociateRAProfileFromApprovalProfileSuccess(payload));
+        expect(next.isDissociatingApprovalProfile).toBe(false);
+    });
+
     test('getRaProfileWithoutAuthority / success / failure', () => {
         let next = reducer(initialState, actions.getRaProfileWithoutAuthority({ uuid: 'ra-1' }));
         expect(next.isFetchingDetail).toBe(true);
@@ -516,10 +559,14 @@ describe('raProfiles slice', () => {
 describe('raProfiles selectors', () => {
     test('selectors read values from raProfiles state', () => {
         const profile = { uuid: 'ra-1' } as any;
+        const approvalProfile = { uuid: 'ap-1' } as any;
+        const acmeDetails = { directoryUrl: 'https://acme.example.com' } as any;
         const featureState = {
             ...initialState,
             raProfile: profile,
             raProfiles: [profile],
+            associatedApprovalProfiles: [approvalProfile],
+            acmeDetails,
             checkedRows: ['ra-1'],
             isFetchingList: true,
             isFetchingDetail: true,
@@ -545,6 +592,8 @@ describe('raProfiles selectors', () => {
 
         expect(selectors.raProfile(state)).toEqual(profile);
         expect(selectors.raProfiles(state)).toEqual([profile]);
+        expect(selectors.associatedApprovalProfiles(state)).toEqual([approvalProfile]);
+        expect(selectors.acmeDetails(state)).toEqual(acmeDetails);
         expect(selectors.checkedRows(state)).toEqual(['ra-1']);
         expect(selectors.isFetchingList(state)).toBe(true);
         expect(selectors.isFetchingDetail(state)).toBe(true);

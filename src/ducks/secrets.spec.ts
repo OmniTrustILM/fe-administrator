@@ -248,6 +248,47 @@ describe('secrets slice', () => {
         next = reducer({ ...next, isDisabling: true }, actions.disableSecretFailure({ error: 'err' }));
         expect(next.isDisabling).toBe(false);
     });
+
+    test('listSecretAttributes / success / failure update secret creation attribute flags and data', () => {
+        const payload = { vaultUuid: 'v-1', vaultProfileUuid: 'vp-1', secretType: 'Generic' as any };
+
+        let next = reducer(
+            { ...initialState, secretCreationAttributeDescriptors: [{ uuid: 'old' }] as any },
+            actions.listSecretAttributes(payload),
+        );
+        expect(next.isFetchingSecretCreationAttributes).toBe(true);
+        expect(next.secretCreationAttributeDescriptors).toEqual([]);
+
+        const descriptors = [{ uuid: 'a-1' }] as any[];
+        next = reducer(next, actions.listSecretAttributesSuccess({ descriptors }));
+        expect(next.isFetchingSecretCreationAttributes).toBe(false);
+        expect(next.secretCreationAttributeDescriptors).toEqual(descriptors);
+
+        next = reducer({ ...next, isFetchingSecretCreationAttributes: true }, actions.listSecretAttributesFailure());
+        expect(next.isFetchingSecretCreationAttributes).toBe(false);
+    });
+
+    test('addSyncVaultProfile / success / failure toggle isUpdating flag', () => {
+        let next = reducer(initialState, actions.addSyncVaultProfile({ uuid: 's-1', vaultProfileUuid: 'vp-1', attributes: [] }));
+        expect(next.isUpdating).toBe(true);
+
+        next = reducer(next, actions.addSyncVaultProfileSuccess({ uuid: 's-1' }));
+        expect(next.isUpdating).toBe(false);
+
+        next = reducer({ ...next, isUpdating: true }, actions.addSyncVaultProfileFailure({ error: 'err' }));
+        expect(next.isUpdating).toBe(false);
+    });
+
+    test('removeSyncVaultProfile / success / failure toggle isUpdating flag', () => {
+        let next = reducer(initialState, actions.removeSyncVaultProfile({ uuid: 's-1', vaultProfileUuid: 'vp-1' }));
+        expect(next.isUpdating).toBe(true);
+
+        next = reducer(next, actions.removeSyncVaultProfileSuccess({ uuid: 's-1', vaultProfileUuid: 'vp-1' }));
+        expect(next.isUpdating).toBe(false);
+
+        next = reducer({ ...next, isUpdating: true }, actions.removeSyncVaultProfileFailure({ error: 'err' }));
+        expect(next.isUpdating).toBe(false);
+    });
 });
 
 describe('secrets selectors', () => {

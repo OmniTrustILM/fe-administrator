@@ -242,6 +242,47 @@ describe('locations slice', () => {
         next = reducer({ ...next, isRemovingCertificate: true }, actions.removeCertificateFailure({ error: 'err' }));
         expect(next.isRemovingCertificate).toBe(false);
     });
+
+    test('editLocationSuccess updates location in list when found at non-zero index', () => {
+        const original = { uuid: 'l-2', name: 'Old' } as any;
+        const updated = { uuid: 'l-2', name: 'Updated' } as any;
+        const items = [{ uuid: 'l-1' } as any, original];
+
+        const next = reducer({ ...initialState, locations: items }, actions.editLocationSuccess({ location: updated }));
+        expect(next.locations[1]).toEqual(updated);
+        expect(next.updateLocationSucceeded).toBe(true);
+    });
+
+    test('deleteLocationSuccess removes location when found at non-zero index', () => {
+        const items = [{ uuid: 'l-1' } as any, { uuid: 'l-2' } as any, { uuid: 'l-3' } as any];
+
+        const next = reducer({ ...initialState, locations: items }, actions.deleteLocationSuccess({ uuid: 'l-2' }));
+        expect(next.isDeleting).toBe(false);
+        expect(next.locations.find((l) => l.uuid === 'l-2')).toBeUndefined();
+        expect(next.locations).toHaveLength(2);
+    });
+
+    test('bulkDeleteLocationsSuccess clears state.location when its uuid is in the deleted list', () => {
+        const items = [{ uuid: 'l-1' } as any, { uuid: 'l-2' } as any];
+        const selected = { uuid: 'l-1' } as any;
+
+        const next = reducer(
+            { ...initialState, locations: items, location: selected },
+            actions.bulkDeleteLocationsSuccess({ uuids: ['l-1', 'l-2'] }),
+        );
+        expect(next.location).toBeUndefined();
+        expect(next.locations).toHaveLength(0);
+    });
+
+    test('syncLocationSuccess updates location in list when found at non-zero index', () => {
+        const original = { uuid: 'l-2', name: 'Old' } as any;
+        const synced = { uuid: 'l-2', name: 'Synced' } as any;
+        const items = [{ uuid: 'l-1' } as any, original];
+
+        const next = reducer({ ...initialState, locations: items }, actions.syncLocationSuccess({ location: synced }));
+        expect(next.isSyncing).toBe(false);
+        expect(next.locations[1]).toEqual(synced);
+    });
 });
 
 describe('locations selectors', () => {

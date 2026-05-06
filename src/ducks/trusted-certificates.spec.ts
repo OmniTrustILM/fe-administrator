@@ -7,6 +7,28 @@ describe('trustedCertificates slice', () => {
         expect(reducer(undefined, { type: 'unknown' })).toEqual(initialState);
     });
 
+    test('resetState restores initialState', () => {
+        const dirty = { ...initialState, isFetchingList: true, trustedCertificates: [{ uuid: 'x' } as any] } as any;
+        expect(reducer(dirty, actions.resetState())).toEqual(initialState);
+    });
+
+    test('getTrustedCertificate / success / failure update detail flags', () => {
+        let next = reducer(
+            { ...initialState, trustedCertificate: { uuid: 'old' } as any },
+            actions.getTrustedCertificate({ uuid: 'tc-1' }),
+        );
+        expect(next.trustedCertificate).toBeUndefined();
+        expect(next.isFetchingDetail).toBe(true);
+
+        const cert = { uuid: 'tc-1', certificateContent: 'BASE64' } as any;
+        next = reducer(next, actions.getTrustedCertificateSuccess({ trustedCertificate: cert }));
+        expect(next.trustedCertificate).toEqual(cert);
+        expect(next.isFetchingDetail).toBe(false);
+
+        next = reducer({ ...next, isFetchingDetail: true }, actions.getTrustedCertificateFailure({ error: 'err' }));
+        expect(next.isFetchingDetail).toBe(false);
+    });
+
     test('listTrustedCertificates / success / failure update flags and list', () => {
         let next = reducer({ ...initialState, trustedCertificates: [{ uuid: 'old' } as any] }, actions.listTrustedCertificates());
         expect(next.isFetchingList).toBe(true);

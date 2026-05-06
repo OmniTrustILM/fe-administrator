@@ -302,6 +302,75 @@ describe('complianceProfiles slice', () => {
         expect(next.isCheckingCompliance).toBe(false);
     });
 
+    test('bulkDeleteComplianceProfilesSuccess clears complianceProfile when uuid matches', () => {
+        const profile = { uuid: 'cp-1', name: 'P1' } as any;
+        const items = [{ uuid: 'cp-1' } as any, { uuid: 'cp-2' } as any];
+
+        const next = reducer(
+            { ...initialState, complianceProfiles: items, complianceProfile: profile },
+            actions.bulkDeleteComplianceProfilesSuccess({ uuids: ['cp-1'], errors: [] }),
+        );
+        expect(next.complianceProfiles).toEqual([{ uuid: 'cp-2' }]);
+        expect(next.complianceProfile).toBeUndefined();
+    });
+
+    test('bulkForceDeleteComplianceProfilesSuccess clears complianceProfile when uuid matches', () => {
+        const profile = { uuid: 'cp-1', name: 'P1' } as any;
+        const items = [{ uuid: 'cp-1' } as any, { uuid: 'cp-2' } as any];
+
+        const next = reducer(
+            { ...initialState, complianceProfiles: items, complianceProfile: profile },
+            actions.bulkForceDeleteComplianceProfilesSuccess({ uuids: ['cp-1'] }),
+        );
+        expect(next.complianceProfiles).toEqual([{ uuid: 'cp-2' }]);
+        expect(next.complianceProfile).toBeUndefined();
+    });
+
+    test('associateComplianceProfileSuccess returns early when complianceProfile is undefined', () => {
+        const next = reducer(
+            { ...initialState, complianceProfile: undefined, associationsOfComplianceProfile: [] },
+            actions.associateComplianceProfileSuccess({
+                uuid: 'cp-1',
+                resource: 'raProfiles' as any,
+                associationObjectUuid: 'ra-1',
+                associationObjectName: 'RA Profile 1',
+            }),
+        );
+        expect(next.isAssociatingComplianceProfile).toBe(false);
+        expect(next.associationsOfComplianceProfile).toEqual([]);
+    });
+
+    test('createComplianceInternalRule / success / failure', () => {
+        let next = reducer(
+            initialState,
+            actions.createComplianceInternalRule({ complianceInternalRuleRequestDto: { name: 'rule-1' } as any }),
+        );
+        expect(next.isCreatingComplienceInternalRule).toBe(true);
+
+        next = reducer(next, actions.createComplianceInternalRuleSuccess());
+        expect(next.isCreatingComplienceInternalRule).toBe(false);
+
+        next = reducer({ ...next, isCreatingComplienceInternalRule: true }, actions.createComplianceInternalRuleFailed({ error: 'err' }));
+        expect(next.isCreatingComplienceInternalRule).toBe(false);
+    });
+
+    test('updateComplienceInternalRule / success / failure', () => {
+        let next = reducer(
+            initialState,
+            actions.updateComplienceInternalRule({
+                internalRuleUuid: 'rule-1',
+                complianceInternalRuleRequestDto: { name: 'rule-updated' } as any,
+            }),
+        );
+        expect(next.isUpdatingComplienceInternalRule).toBe(true);
+
+        next = reducer(next, actions.updateComplienceInternalRuleSuccess());
+        expect(next.isUpdatingComplienceInternalRule).toBe(false);
+
+        next = reducer({ ...next, isUpdatingComplienceInternalRule: true }, actions.updateComplienceInternalRuleFailed({ error: 'err' }));
+        expect(next.isUpdatingComplienceInternalRule).toBe(false);
+    });
+
     test('getComplianceCheckResult / success / failure', () => {
         let next = reducer(initialState, actions.getComplianceCheckResult({ resource: 'certificates' as any, objectUuid: 'cert-1' }));
         expect(next.isFetchingComplianceCheckResultByKey['certificates:cert-1']).toBe(true);
@@ -323,6 +392,31 @@ describe('complianceProfiles slice', () => {
             actions.getComplianceCheckResultFailed({ resource: 'certificates' as any, objectUuid: 'cert-1', error: 'err' }),
         );
         expect(next.isFetchingComplianceCheckResultByKey['certificates:cert-1']).toBe(false);
+    });
+
+    test('deleteComplienceInternalRule / success / failure', () => {
+        let next = reducer(initialState, actions.deleteComplienceInternalRule({ internalRuleUuid: 'rule-1' }));
+        expect(next.isDeletingComplienceInternalRule).toBe(true);
+
+        next = reducer(next, actions.deleteComplienceInternalRuleSuccess({ uuid: 'rule-1' }));
+        expect(next.isDeletingComplienceInternalRule).toBe(false);
+
+        next = reducer({ ...next, isDeletingComplienceInternalRule: true }, actions.deleteComplienceInternalRuleFailed({ error: 'err' }));
+        expect(next.isDeletingComplienceInternalRule).toBe(false);
+    });
+
+    test('checkComplianceForResourceObjects / success / failure', () => {
+        let next = reducer(
+            initialState,
+            actions.checkComplianceForResourceObjects({ resource: 'certificates' as any, requestBody: ['cert-1'] }),
+        );
+        expect(next.isCheckingCompliance).toBe(true);
+
+        next = reducer(next, actions.checkComplianceForResourceObjectsSuccess());
+        expect(next.isCheckingCompliance).toBe(false);
+
+        next = reducer({ ...next, isCheckingCompliance: true }, actions.checkComplianceForResourceObjectsFailed({ error: 'err' }));
+        expect(next.isCheckingCompliance).toBe(false);
     });
 });
 

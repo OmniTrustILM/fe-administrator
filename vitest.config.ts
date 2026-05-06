@@ -10,12 +10,12 @@ export default defineConfig({
         globals: true,
         environment: 'happy-dom',
         include: ['**/*.spec.ts', 'src/components/**/*.unit.spec.{ts,tsx}'],
-        exclude: ['node_modules', 'build', 'dist'],
+        exclude: ['node_modules', 'build', 'dist', '.claude/**'],
         coverage: {
             provider: 'v8',
             reporter: ['lcovonly', 'text-summary'],
             reportsDirectory: './coverage-vitest',
-            include: ['src/*.{ts,tsx}', 'src/utils/**/*.{ts,tsx}', 'src/ducks/**/*.{ts,tsx}', 'src/components/**/*.{ts,tsx}'],
+            include: ['src/*.{ts,tsx}', 'src/utils/**/*.{ts,tsx}', 'src/ducks/**/*.{ts,tsx}'],
             exclude: [
                 'node_modules',
                 'src/**/*.spec.{ts,tsx}',

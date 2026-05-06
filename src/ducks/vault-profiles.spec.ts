@@ -138,6 +138,87 @@ describe('vaultProfiles slice', () => {
         expect(next.vaultProfileAttributesVaultUuid).toBe('v-1');
         expect(next.isFetchingVaultProfileAttributes).toBe(true);
     });
+
+    test('enableVaultProfile / success / failure update isEnabling flag', () => {
+        let next = reducer(initialState, actions.enableVaultProfile({ vaultUuid: 'v-1', vaultProfileUuid: 'vp-1' }));
+        expect(next.isEnabling).toBe(true);
+
+        const profile = { uuid: 'vp-1', name: 'P', vaultInstance: { uuid: 'v-1', name: 'V' }, enabled: true } as any;
+        next = reducer({ ...next, vaultProfile: profile }, actions.enableVaultProfileSuccess({ profile }));
+        expect(next.isEnabling).toBe(false);
+        expect(next.vaultProfile).toEqual(profile);
+
+        next = reducer({ ...next, isEnabling: true }, actions.enableVaultProfileFailure({ error: 'err' }));
+        expect(next.isEnabling).toBe(false);
+    });
+
+    test('enableVaultProfileSuccess does not update vaultProfile when uuid does not match', () => {
+        const stored = { uuid: 'vp-other', name: 'Other', vaultInstance: { uuid: 'v-1', name: 'V' }, enabled: false } as any;
+        const incoming = { uuid: 'vp-1', name: 'P', vaultInstance: { uuid: 'v-1', name: 'V' }, enabled: true } as any;
+        const next = reducer(
+            { ...initialState, isEnabling: true, vaultProfile: stored },
+            actions.enableVaultProfileSuccess({ profile: incoming }),
+        );
+        expect(next.isEnabling).toBe(false);
+        expect(next.vaultProfile).toEqual(stored);
+    });
+
+    test('disableVaultProfile / success / failure update isDisabling flag', () => {
+        let next = reducer(initialState, actions.disableVaultProfile({ vaultUuid: 'v-1', vaultProfileUuid: 'vp-1' }));
+        expect(next.isDisabling).toBe(true);
+
+        const profile = { uuid: 'vp-1', name: 'P', vaultInstance: { uuid: 'v-1', name: 'V' }, enabled: false } as any;
+        next = reducer({ ...next, vaultProfile: profile }, actions.disableVaultProfileSuccess({ profile }));
+        expect(next.isDisabling).toBe(false);
+        expect(next.vaultProfile).toEqual(profile);
+
+        next = reducer({ ...next, isDisabling: true }, actions.disableVaultProfileFailure({ error: 'err' }));
+        expect(next.isDisabling).toBe(false);
+    });
+
+    test('disableVaultProfileSuccess does not update vaultProfile when uuid does not match', () => {
+        const stored = { uuid: 'vp-other', name: 'Other', vaultInstance: { uuid: 'v-1', name: 'V' }, enabled: true } as any;
+        const incoming = { uuid: 'vp-1', name: 'P', vaultInstance: { uuid: 'v-1', name: 'V' }, enabled: false } as any;
+        const next = reducer(
+            { ...initialState, isDisabling: true, vaultProfile: stored },
+            actions.disableVaultProfileSuccess({ profile: incoming }),
+        );
+        expect(next.isDisabling).toBe(false);
+        expect(next.vaultProfile).toEqual(stored);
+    });
+
+    test('updateVaultProfile / success / failure update isUpdating and updateVaultProfileSucceeded', () => {
+        const request = { name: 'Updated', description: 'desc', attributes: [] } as any;
+
+        let next = reducer(initialState, actions.updateVaultProfile({ vaultUuid: 'v-1', vaultProfileUuid: 'vp-1', request }));
+        expect(next.isUpdating).toBe(true);
+        expect(next.updateVaultProfileSucceeded).toBe(false);
+
+        const profile = { uuid: 'vp-1', name: 'Updated', vaultInstance: { uuid: 'v-1', name: 'V' }, enabled: true } as any;
+        next = reducer({ ...next, vaultProfile: profile }, actions.updateVaultProfileSuccess({ profile }));
+        expect(next.isUpdating).toBe(false);
+        expect(next.updateVaultProfileSucceeded).toBe(true);
+        expect(next.vaultProfile).toEqual(profile);
+
+        next = reducer(
+            { ...next, isUpdating: true, updateVaultProfileSucceeded: true },
+            actions.updateVaultProfileFailure({ error: 'err' }),
+        );
+        expect(next.isUpdating).toBe(false);
+        expect(next.updateVaultProfileSucceeded).toBe(false);
+    });
+
+    test('updateVaultProfileSuccess does not update vaultProfile when uuid does not match', () => {
+        const stored = { uuid: 'vp-other', name: 'Other', vaultInstance: { uuid: 'v-1', name: 'V' }, enabled: true } as any;
+        const incoming = { uuid: 'vp-1', name: 'Updated', vaultInstance: { uuid: 'v-1', name: 'V' }, enabled: true } as any;
+        const next = reducer(
+            { ...initialState, isUpdating: true, vaultProfile: stored },
+            actions.updateVaultProfileSuccess({ profile: incoming }),
+        );
+        expect(next.isUpdating).toBe(false);
+        expect(next.updateVaultProfileSucceeded).toBe(true);
+        expect(next.vaultProfile).toEqual(stored);
+    });
 });
 
 describe('vaultProfiles selectors', () => {
@@ -151,7 +232,12 @@ describe('vaultProfiles selectors', () => {
             isFetchingList: true,
             isFetchingDetail: true,
             isCreating: true,
+            createVaultProfileSucceeded: true,
             isDeleting: true,
+            isEnabling: true,
+            isDisabling: true,
+            isUpdating: true,
+            updateVaultProfileSucceeded: true,
             vaultProfileAttributeDescriptors: attrs,
             vaultProfileAttributesVaultUuid: 'v-1',
             isFetchingVaultProfileAttributes: true,
@@ -164,7 +250,12 @@ describe('vaultProfiles selectors', () => {
         expect(selectors.isFetchingList(state)).toBe(true);
         expect(selectors.isFetchingDetail(state)).toBe(true);
         expect(selectors.isCreating(state)).toBe(true);
+        expect(selectors.createVaultProfileSucceeded(state)).toBe(true);
         expect(selectors.isDeleting(state)).toBe(true);
+        expect(selectors.isEnabling(state)).toBe(true);
+        expect(selectors.isDisabling(state)).toBe(true);
+        expect(selectors.isUpdating(state)).toBe(true);
+        expect(selectors.updateVaultProfileSucceeded(state)).toBe(true);
         expect(selectors.vaultProfileAttributeDescriptors(state)).toEqual(attrs);
         expect(selectors.vaultProfileAttributesVaultUuid(state)).toBe('v-1');
         expect(selectors.isFetchingVaultProfileAttributes(state)).toBe(true);
