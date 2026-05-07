@@ -43,7 +43,6 @@ apis/ScheduledJobsManagementApi.ts
 apis/SecretManagementApi.ts
 apis/SettingsApi.ts
 apis/StatisticsDashboardApi.ts
-apis/TimeQualityConfigurationManagementApi.ts
 apis/TokenInstanceManagementApi.ts
 apis/TokenProfileManagementApi.ts
 apis/UserManagementApi.ts
@@ -129,6 +128,7 @@ models/BulkKeyItemUsageRequestDto.ts
 models/BulkKeyUsageRequestDto.ts
 models/BulkOperationResponse.ts
 models/BulkTokenProfileKeyUsageRequestDto.ts
+models/CancelPendingCertificateRequestDto.ts
 models/CbomDetailDto.ts
 models/CbomDto.ts
 models/CbomUploadRequestDto.ts
@@ -389,7 +389,6 @@ models/PaginationRequestDto.ts
 models/PaginationResponseDtoCbomDto.ts
 models/PaginationResponseDtoConnectorDtoV2.ts
 models/PaginationResponseDtoSecretDto.ts
-models/PaginationResponseDtoTimeQualityConfigurationListDto.ts
 models/PaginationResponseDtoVaultInstanceDto.ts
 models/PaginationResponseDtoVaultProfileDto.ts
 models/PlatformEnum.ts
@@ -403,6 +402,8 @@ models/ProtocolCertificateAssociationsDto.ts
 models/ProtocolCertificateAssociationsRequestDto.ts
 models/ProviderComplianceRulesDto.ts
 models/ProviderComplianceRulesRequestDto.ts
+models/ProxyDto.ts
+models/ProxyStatus.ts
 models/PushToLocationRequestDto.ts
 models/RaProfileAcmeDetailResponseDto.ts
 models/RaProfileAssociationRequestDto.ts
@@ -494,9 +495,6 @@ models/TextAttributeContentV2.ts
 models/TextAttributeContentV3.ts
 models/TimeAttributeContentV2.ts
 models/TimeAttributeContentV3.ts
-models/TimeQualityConfigurationDto.ts
-models/TimeQualityConfigurationListDto.ts
-models/TimeQualityConfigurationRequestDto.ts
 models/TokenInstanceDetailDto.ts
 models/TokenInstanceDto.ts
 models/TokenInstanceRequestDto.ts

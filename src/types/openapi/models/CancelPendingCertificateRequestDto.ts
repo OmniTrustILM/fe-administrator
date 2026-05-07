@@ -13,13 +13,13 @@
 
 /**
  * @export
- * @interface RaProfileAssociationRequestDto
+ * @interface CancelPendingCertificateRequestDto
  */
-export interface RaProfileAssociationRequestDto {
+export interface CancelPendingCertificateRequestDto {
     /**
-     * List of UUIDs of RA Profiles to be associated
-     * @type {Array<string>}
-     * @memberof RaProfileAssociationRequestDto
+     * Optional free-text reason from the user explaining why the pending operation is being cancelled. Recorded in the certificate event history.
+     * @type {string}
+     * @memberof CancelPendingCertificateRequestDto
      */
-    raProfileUuids: Array<string>;
+    reason?: string;
 }
