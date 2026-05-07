@@ -13,6 +13,12 @@ export function getIso8601StringFromInputString(string: string): string {
     return getIso8601StringFromDuration(getDurationFromInputString(string));
 }
 
+export function getMillisecondsFromIso8601String(string: string | undefined | null): number | undefined {
+    if (!string) return undefined;
+    const d = getDurationFromIso8601String(string);
+    return ((d.days * 24 + d.hours) * 60 + d.minutes) * 60 * 1000 + d.seconds * 1000 + d.milliseconds;
+}
+
 function getInputStringFromDuration(duration: Duration): string {
     const parts: string[] = [];
 

@@ -20,6 +20,7 @@ import {
     validateQuartzCronExpression,
     validatePostgresPosixRegex,
     validateIso8601Duration,
+    validateNtpServer,
     validateNtpServers,
 } from './validators';
 
@@ -564,6 +565,30 @@ describe('validators', () => {
             expect(validateIso8601Duration()('abc')).toBe('Value must be a valid ISO 8601 duration (e.g., PT1H)');
             expect(validateIso8601Duration()('P1DT')).toBe('Value must be a valid ISO 8601 duration (e.g., PT1H)');
             expect(validateIso8601Duration()('PT')).toBe('Value must be a valid ISO 8601 duration (e.g., PT1H)');
+        });
+    });
+
+    describe('validateNtpServer', () => {
+        test('should accept a valid hostname or IP', () => {
+            expect(validateNtpServer()('pool.ntp.org')).toBeUndefined();
+            expect(validateNtpServer()('time.google.com')).toBeUndefined();
+            expect(validateNtpServer()('ntp')).toBeUndefined();
+            expect(validateNtpServer()('127.0.0.1')).toBeUndefined();
+        });
+
+        test('should accept empty value', () => {
+            expect(validateNtpServer()('')).toBeUndefined();
+            expect(validateNtpServer()(undefined)).toBeUndefined();
+        });
+
+        test('should trim before validating', () => {
+            expect(validateNtpServer()('  pool.ntp.org  ')).toBeUndefined();
+        });
+
+        test('should reject invalid values', () => {
+            expect(validateNtpServer()('invalid@host')).toBe('Value must be a valid NTP server address (IP or hostname)');
+            expect(validateNtpServer()('pool.ntp.org, time.google.com')).toBe('Value must be a valid NTP server address (IP or hostname)');
+            expect(validateNtpServer()('999.999.999.999')).toBe('Value must be a valid NTP server address (IP or hostname)');
         });
     });
 

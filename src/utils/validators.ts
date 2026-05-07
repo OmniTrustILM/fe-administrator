@@ -375,17 +375,24 @@ export const validateIso8601Duration = () => (value: unknown) => {
         : 'Value must be a valid ISO 8601 duration (e.g., PT1H)';
 };
 
+const NTP_FQDN_REGEX = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+const NTP_SIMPLE_HOST_REGEX = /^[a-zA-Z0-9-]+$/;
+const NTP_IPV4_REGEX = /^\d{1,3}(\.\d{1,3}){3}$/;
+
+const isValidNtpServer = (s: string): boolean =>
+    NTP_FQDN_REGEX.test(s) || NTP_SIMPLE_HOST_REGEX.test(s) || (NTP_IPV4_REGEX.test(s) && s.split('.').every((p) => Number(p) <= 255));
+
+export const validateNtpServer = () => (value: string | undefined) => {
+    if (!value) return undefined;
+    return isValidNtpServer(value.trim()) ? undefined : 'Value must be a valid NTP server address (IP or hostname)';
+};
+
 export const validateNtpServers = () => (value: string | string[] | undefined) => {
     if (!value) return undefined;
     const servers = Array.isArray(value) ? value : value.split(',').map((s) => s.trim());
     if (servers.length === 0 || (servers.length === 1 && servers[0] === '')) return undefined;
 
-    const fqdnRegex = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
-    const simpleHostRegex = /^[a-zA-Z0-9-]+$/;
-    const ipv4Regex = /^\d{1,3}(\.\d{1,3}){3}$/;
-    const isValidServer = (s: string) =>
-        fqdnRegex.test(s) || simpleHostRegex.test(s) || (ipv4Regex.test(s) && s.split('.').every((p) => Number(p) <= 255));
-    const invalid = servers.filter((s) => !isValidServer(s));
+    const invalid = servers.filter((s) => !isValidNtpServer(s));
     if (invalid.length > 0) {
         return `Value must be a comma-separated list of valid NTP server addresses (IP or hostname)`;
     }
