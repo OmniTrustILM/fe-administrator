@@ -18,7 +18,7 @@ function Breadcrumb({ items, title: titleProp, rightContent }: Props) {
             <ol className="flex items-center whitespace-nowrap">
                 {items.map((item, index) => (
                     <li
-                        key={index}
+                        key={item.label}
                         className={cn('inline-flex items-center text-sm', {
                             'text-gray-700 dark:text-neutral-600': index < items.length - 1,
                         })}

@@ -382,8 +382,8 @@ function DatePicker({ value, onChange, onBlur, disabled, id, invalid, error, cla
                             </div>
 
                             {/* Calendar Days */}
-                            {calendarRows.map((row, rowIndex) => (
-                                <div key={rowIndex} className="flex">
+                            {calendarRows.map((row) => (
+                                <div key={`week-${row[0].day}-${row[6].day}`} className="flex">
                                     {row.map((dayInfo, dayIndex) => {
                                         const { day, isCurrentMonth } = dayInfo;
                                         const isSelected = isSelectedDate(day, isCurrentMonth);

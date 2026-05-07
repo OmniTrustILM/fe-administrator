@@ -17,7 +17,6 @@ import type {
     CryptographicKeyItemDetailResponseModel,
     CryptographicKeyItemDto,
     CryptographicKeyItemEditRequestDto,
-    CryptographicKeyItemEditRequestModel,
     CryptographicKeyItemModel,
     CryptographicKeyKeyUsageBulkUpdateRequestDto,
     CryptographicKeyKeyUsageBulkUpdateRequestModel,
@@ -87,7 +86,7 @@ export function transformCryptographicKeyEditRequestModelToDto(
 }
 
 export function transformCryptographicKeyItemEditRequestModelToDto(
-    keyItemEditReq: CryptographicKeyItemEditRequestModel,
+    keyItemEditReq: CryptographicKeyItemEditRequestDto,
 ): CryptographicKeyItemEditRequestDto {
     return {
         ...keyItemEditReq,

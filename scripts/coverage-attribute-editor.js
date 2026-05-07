@@ -9,7 +9,14 @@ const subfolder = arg1 === 'Attribute' ? 'AttributeEditor/Attribute' : null;
 /** Path filter for any folder (e.g. "DatePicker") — show coverage for files under that path */
 const pathFilter =
     arg1 && arg1 !== 'Attribute' && (arg1.includes('/') || arg1.includes('DatePicker') || !/\.(ts|tsx|js|jsx)$/.test(arg1)) ? arg1 : null;
-const fileFilter = subfolder ? arg2 : pathFilter ? null : arg1; // e.g. AttributeFieldInput.tsx
+let fileFilter;
+if (subfolder) {
+    fileFilter = arg2;
+} else if (pathFilter) {
+    fileFilter = null;
+} else {
+    fileFilter = arg1; // e.g. AttributeFieldInput.tsx
+}
 
 if (!fs.existsSync(input)) {
     console.error('No coverage/lcov.info. Run tests first, e.g.:');
@@ -28,7 +35,7 @@ const files = [];
 for (const r of records) {
     if (!r.trim()) continue;
 
-    const sf = (r.match(/^SF:(.*)$/m)?.[1] ?? '').replaceAll('\\', '/');
+    const sf = (/^SF:(.*)$/m.exec(r)?.[1] ?? '').replaceAll('\\', '/');
     if (pathFilter) {
         if (!sf.includes(pathFilter.replace(/^src\/?/, ''))) continue;
     } else {
@@ -37,8 +44,8 @@ for (const r of records) {
         if (fileFilter && !sf.endsWith(fileFilter) && !sf.includes('/' + fileFilter)) continue;
     }
 
-    const lf = Number(r.match(/^LF:(\d+)$/m)?.[1] ?? 0);
-    const lh = Number(r.match(/^LH:(\d+)$/m)?.[1] ?? 0);
+    const lf = Number(/^LF:(\d+)$/m.exec(r)?.[1] ?? 0);
+    const lh = Number(/^LH:(\d+)$/m.exec(r)?.[1] ?? 0);
     if (lf === 0) continue;
 
     totalLines += lf;
@@ -53,13 +60,16 @@ if (files.length === 0) {
 }
 
 const pct = totalLines ? ((hitLines / totalLines) * 100).toFixed(1) : '0';
-const title = pathFilter
-    ? `Coverage for ${pathFilter}`
-    : fileFilter
-      ? `Coverage for ${fileFilter}`
-      : subfolder
-        ? `Coverage for src/components/Attributes/${subfolder}/`
-        : `Coverage for src/components/Attributes/${folder}/`;
+let title;
+if (pathFilter) {
+    title = `Coverage for ${pathFilter}`;
+} else if (fileFilter) {
+    title = `Coverage for ${fileFilter}`;
+} else if (subfolder) {
+    title = `Coverage for src/components/Attributes/${subfolder}/`;
+} else {
+    title = `Coverage for src/components/Attributes/${folder}/`;
+}
 console.log(`\n${title}\n`);
 files.forEach((f) => console.log(`  ${f.pct}%  ${f.path}`));
 console.log(`\n  Total: ${hitLines}/${totalLines} lines  →  ${pct}%\n`);

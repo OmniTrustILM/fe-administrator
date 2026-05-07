@@ -284,7 +284,7 @@ function AttributeEditorInner({
                             };
                             const resolved =
                                 tryResolve(value, pathParts) ??
-                                (value?.value !== undefined ? tryResolve(value, ['value', ...pathParts]) : undefined);
+                                (value?.value === undefined ? undefined : tryResolve(value, ['value', ...pathParts]));
                             if (resolved !== undefined && (typeof resolved !== 'object' || resolved === null)) {
                                 value = resolved;
                             }
@@ -376,7 +376,7 @@ function AttributeEditorInner({
                     }
                     return false;
                 })
-                .filter((descriptor) => !shownCustomAttributes.find((el) => el.uuid === descriptor.uuid)),
+                .filter((descriptor) => !shownCustomAttributes.some((el) => el.uuid === descriptor.uuid)),
         [attributeDescriptors, shownCustomAttributes],
     );
 
@@ -386,7 +386,7 @@ function AttributeEditorInner({
     const notYetShownCustomAttributeDescriptors = useMemo(
         () =>
             availableCustomAttributeDescriptors
-                .filter((descriptor) => !shownCustomAttributes.find((el) => el.uuid === descriptor.uuid))
+                .filter((descriptor) => !shownCustomAttributes.some((el) => el.uuid === descriptor.uuid))
                 .filter((descriptor) => {
                     // For custom attributes, allow them to be re-added even if deleted
                     // For non-custom attributes, filter out deleted ones
@@ -403,7 +403,7 @@ function AttributeEditorInner({
      */
     const orderedAttributeDescriptors = useMemo(() => {
         const initiallyShownDescriptors = [...attributeDescriptors, ...groupAttributesCallbackAttributes]
-            .filter((descriptor) => !initiallyHiddenCustomAttributeDescriptors.find((el) => el.uuid === descriptor.uuid))
+            .filter((descriptor) => !initiallyHiddenCustomAttributeDescriptors.some((el) => el.uuid === descriptor.uuid))
             .filter((descriptor) => {
                 // For all attributes (including custom ones), filter out deleted ones from rendering
                 return !deletedAttributes.includes(descriptor.name);
@@ -440,7 +440,11 @@ function AttributeEditorInner({
             orderedAttributeDescriptors.forEach((descriptor) => {
                 if (isDataAttributeModel(descriptor) || isInfoAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) {
                     const groupName = descriptor.properties.group || '__';
-                    grouped[groupName] ? grouped[groupName].push(descriptor) : (grouped[groupName] = [descriptor]);
+                    if (grouped[groupName]) {
+                        grouped[groupName].push(descriptor);
+                    } else {
+                        grouped[groupName] = [descriptor];
+                    }
                 }
             });
             return grouped;
@@ -578,13 +582,13 @@ function AttributeEditorInner({
             }
 
             if (descriptor.contentType === AttributeContentType.Codeblock && formAttributeValue !== undefined) {
-                if ((formAttributeValue as CodeBlockAttributeContentDataModel).code !== undefined) {
+                if ((formAttributeValue as CodeBlockAttributeContentDataModel).code === undefined) {
                     formAttributeValue = {
-                        code: base64ToUtf8((formAttributeValue as CodeBlockAttributeContentDataModel).code),
                         language: (formAttributeValue as CodeBlockAttributeContentDataModel).language,
                     };
                 } else {
                     formAttributeValue = {
+                        code: base64ToUtf8((formAttributeValue as CodeBlockAttributeContentDataModel).code),
                         language: (formAttributeValue as CodeBlockAttributeContentDataModel).language,
                     };
                 }
@@ -609,7 +613,7 @@ function AttributeEditorInner({
             let newOptions = {};
 
             if (isDataAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) {
-                const typedDescriptor = descriptor as DataAttributeModel | CustomAttributeModel;
+                const typedDescriptor = descriptor;
                 const hasArrayContent = Array.isArray(typedDescriptor.content);
                 const shouldHaveStaticOptions =
                     hasArrayContent && (typedDescriptor.properties.list || typedDescriptor.contentType === AttributeContentType.Resource);
@@ -620,7 +624,7 @@ function AttributeEditorInner({
                         .map((data: any) => {
                             const ref = data?.reference;
                             const val = data?.data;
-                            const label = ref ?? (val != null ? String(val) : '');
+                            const label = ref ?? (val == null ? '' : String(val));
                             return { label, value: data };
                         });
 
@@ -917,7 +921,7 @@ function AttributeEditorInner({
             if (callbackValues.length === 0) return;
 
             if (!callbackDescriptor.properties.list && callbackDescriptor.contentType !== AttributeContentType.Resource) {
-                const first = callbackValues[0] as any;
+                const first = callbackValues[0];
                 if (!first) return;
                 const value = first.reference ?? first.data;
                 if (value === undefined) return;
@@ -973,8 +977,7 @@ function AttributeEditorInner({
             if (callbackDescriptor) {
                 const newGroupCallbackDescriptors = Object.values(callbackData)
                     .filter(Array.isArray)
-                    .map((callbackDataArray) => callbackDataArray.filter(isAttributeDescriptorModel))
-                    .reduce((acc, el) => [...acc, ...el], []);
+                    .flatMap((callbackDataArray) => callbackDataArray.filter(isAttributeDescriptorModel));
 
                 setGroupAttributesCallbackAttributes(newGroupCallbackDescriptors);
                 updateValueFromCallbackData(callbackId, callbackDescriptor);

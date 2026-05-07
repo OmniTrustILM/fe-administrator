@@ -6,7 +6,13 @@ import { ProgrammingLanguageEnum } from 'types/openapi';
 import type { CodeBlockAttributeContentModel } from 'types/attributes';
 
 function base64Encode(s: string): string {
-    return typeof Buffer !== 'undefined' ? Buffer.from(s, 'utf8').toString('base64') : btoa(unescape(encodeURIComponent(s)));
+    if (typeof Buffer === 'undefined') {
+        const bytes = new TextEncoder().encode(s);
+        let binary = '';
+        for (const byte of bytes) binary += String.fromCharCode(byte);
+        return btoa(binary);
+    }
+    return Buffer.from(s, 'utf8').toString('base64');
 }
 
 test.describe('CodeBlock getHighLightedCode', () => {

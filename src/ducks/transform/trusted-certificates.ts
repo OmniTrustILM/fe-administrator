@@ -1,18 +1,13 @@
-import type {
-    TrustedCertificateRequestDto,
-    TrustedCertificateRequestModel,
-    TrustedCertificateResponseDto,
-    TrustedCertificateResponseModel,
-} from 'types/trusted-certificates';
+import type { TrustedCertificateRequestDto, TrustedCertificateResponseDto } from 'types/trusted-certificates';
 
 export function transformTrustedCertificateResponseDtoToModel(
     trustedCertificate: TrustedCertificateResponseDto,
-): TrustedCertificateResponseModel {
+): TrustedCertificateResponseDto {
     return { ...trustedCertificate };
 }
 
 export function transformTrustedCertificateRequestModelToDto(
-    trustedCertificate: TrustedCertificateRequestModel,
+    trustedCertificate: TrustedCertificateRequestDto,
 ): TrustedCertificateRequestDto {
     return { ...trustedCertificate };
 }

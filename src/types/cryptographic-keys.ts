@@ -30,7 +30,6 @@ export type CryptographicKeyEditRequestModel = Omit<CryptographicKeyEditRequestD
 };
 
 export type CryptographicKeyItemEditRequestDto = EditKeyItemDto;
-export type CryptographicKeyItemEditRequestModel = CryptographicKeyItemEditRequestDto;
 
 export type CryptographicKeyResponseDto = KeyItemDto;
 export type CryptographicKeyResponseModel = CryptographicKeyResponseDto;

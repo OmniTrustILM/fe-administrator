@@ -34,9 +34,8 @@ export function AttributeFieldFile({
             )}
 
             {descriptor.properties.visible && (
-                <div
+                <section
                     id={`${name}-dragAndDrop`}
-                    role="region"
                     aria-label="File drop zone"
                     className="border-2 border-dashed border-gray-200 rounded-lg p-4 dark:border-neutral-700"
                     style={{ display: 'flex', flexWrap: 'wrap' }}
@@ -132,7 +131,7 @@ export function AttributeFieldFile({
                         Select or Drag &amp; Drop file to Drop Zone.
                     </div>
                     {deleteButton}
-                </div>
+                </section>
             )}
         </>
     );

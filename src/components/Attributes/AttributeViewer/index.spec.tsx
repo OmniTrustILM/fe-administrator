@@ -51,7 +51,7 @@ test.describe('AttributeViewer', () => {
     });
 
     test('ATTRIBUTE type: copy button copies content', async ({ mount, page }) => {
-        const component = await mount(
+        await mount(
             <AttributeViewerMountHarness
                 viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE}
                 attributes={[attrResponse({ content: [{ data: 'copy-me' } as any] })]}
@@ -140,7 +140,7 @@ test.describe('AttributeViewer', () => {
             expect(uuid).toBe('desc-uuid-1');
         };
         const descriptors = [
-            customDescriptor({ uuid: 'desc-uuid-1', name: 'attr1', properties: { ...customDescriptor().properties!, required: false } }),
+            customDescriptor({ uuid: 'desc-uuid-1', name: 'attr1', properties: { ...customDescriptor().properties, required: false } }),
         ];
         const attributes = [attrResponse({ name: 'attr1' })];
         const component = await mount(
@@ -156,7 +156,7 @@ test.describe('AttributeViewer', () => {
     });
 
     test('ATTRIBUTE_EDIT type: delete disabled when required', async ({ mount }) => {
-        const descriptors = [customDescriptor({ properties: { ...customDescriptor().properties!, required: true } })];
+        const descriptors = [customDescriptor({ properties: { ...customDescriptor().properties, required: true } })];
         const attributes = [attrResponse({ name: 'attr1' })];
         const component = await mount(
             <AttributeViewerMountHarness
@@ -170,7 +170,7 @@ test.describe('AttributeViewer', () => {
     });
 
     test('ATTRIBUTE_EDIT type: edit disabled when readOnly', async ({ mount }) => {
-        const descriptors = [customDescriptor({ properties: { ...customDescriptor().properties!, readOnly: true } })];
+        const descriptors = [customDescriptor({ properties: { ...customDescriptor().properties, readOnly: true } })];
         const attributes = [attrResponse({ name: 'attr1' })];
         const component = await mount(
             <AttributeViewerMountHarness

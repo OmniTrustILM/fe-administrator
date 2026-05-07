@@ -84,7 +84,7 @@ describe('formatPEM', () => {
         const lines = result.split('\n');
         const contentLines = lines.filter((l) => !l.startsWith('-----'));
         contentLines.forEach((line) => {
-            expect(line.replace(/\r/g, '').length).toBeLessThanOrEqual(64);
+            expect(line.replaceAll('\r', '').length).toBeLessThanOrEqual(64);
         });
     });
 

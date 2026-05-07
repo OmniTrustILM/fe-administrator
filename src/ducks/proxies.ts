@@ -1,6 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import type { ProxyListModel, ProxyRequestModel, ProxyResponseModel, ProxyUpdateRequestModel } from 'types/proxies';
+import type { ProxyListModel, ProxyRequestDto, ProxyResponseModel, ProxyUpdateRequestDto } from 'types/proxies';
 import type { ProxyStatus } from 'types/openapi';
 
 export type State = {
@@ -103,7 +103,7 @@ export const slice = createSlice({
             state.isFetchingInstructions = false;
         },
 
-        createProxy: (state, action: PayloadAction<ProxyRequestModel>) => {
+        createProxy: (state, action: PayloadAction<ProxyRequestDto>) => {
             state.isCreating = true;
             state.createProxySucceeded = false;
         },
@@ -128,7 +128,7 @@ export const slice = createSlice({
             state.createProxySucceeded = false;
         },
 
-        updateProxy: (state, action: PayloadAction<{ uuid: string; proxyUpdateRequest: ProxyUpdateRequestModel }>) => {
+        updateProxy: (state, action: PayloadAction<{ uuid: string; proxyUpdateRequest: ProxyUpdateRequestDto }>) => {
             state.isUpdating = true;
         },
 

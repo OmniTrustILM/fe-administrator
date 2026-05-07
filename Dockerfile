@@ -8,19 +8,14 @@ ENV PATH=/app/node_modules/.bin:$PATH
 COPY package.json ./
 COPY package-lock.json ./
 
-RUN npm ci --silent
-# RUN npm install react-scripts@3.4.1 -g --silent
-RUN npm install -g --silent
-# RUN npm install -g
-COPY . ./
+RUN npm ci --silent --ignore-scripts
+COPY src ./src
+COPY public ./public
+COPY index.html vite.config.js tsconfig.json ./
 RUN npm run build
 
 # production environment
 FROM nginxinc/nginx-unprivileged:1.30.0-alpine
-
-USER root
-RUN apk update && apk upgrade --no-cache
-USER 101
 
 WORKDIR /usr/share/nginx/html
 

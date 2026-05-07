@@ -53,7 +53,12 @@ export default function AttributeDescriptorViewer({ attributeDescriptors }: Prop
     const getColumns = useCallback(
         (attr: AttributeDescriptorModel) => {
             if (isDataAttributeModel(attr) || isInfoAttributeModel(attr)) {
-                const requiredText = isDataAttributeModel(attr) ? (attr.properties.required ? 'Yes' : 'No') : 'n/a';
+                let requiredText: string;
+                if (isDataAttributeModel(attr)) {
+                    requiredText = attr.properties.required ? 'Yes' : 'No';
+                } else {
+                    requiredText = 'n/a';
+                }
                 return [
                     attr.properties.label || attributeFieldNameTransform[attr.name] || attr.name,
                     getEnumLabel(attributeTypeEnum, attr.type),
@@ -74,34 +79,39 @@ export default function AttributeDescriptorViewer({ attributeDescriptors }: Prop
 
             if (isDataAttributeModel(attr)) {
                 const regex = attr.constraints?.find((c) => c.type === AttributeConstraintType.RegExp);
+                const regexValue = typeof regex?.data === 'string' ? regex.data : 'Not set';
                 columns = [
-                    { id: 'required', columns: [<b>Required</b>, attr.properties.required ? 'Yes' : 'No'] },
-                    { id: 'readOnly', columns: [<b>Read Only</b>, attr.properties.readOnly ? 'Yes' : 'No'] },
-                    { id: 'list', columns: [<b>List</b>, attr.properties.list ? 'Yes' : 'No'] },
-                    { id: 'multiValue', columns: [<b>Multiple Values</b>, attr.properties.multiSelect ? 'Yes' : 'No'] },
-                    { id: 'validationRegex', columns: [<b>Validation Regex</b>, regex?.data?.toString() ?? 'Not set'] },
+                    { id: 'required', columns: [<b key="label">Required</b>, attr.properties.required ? 'Yes' : 'No'] },
+                    { id: 'readOnly', columns: [<b key="label">Read Only</b>, attr.properties.readOnly ? 'Yes' : 'No'] },
+                    { id: 'list', columns: [<b key="label">List</b>, attr.properties.list ? 'Yes' : 'No'] },
+                    { id: 'multiValue', columns: [<b key="label">Multiple Values</b>, attr.properties.multiSelect ? 'Yes' : 'No'] },
+                    { id: 'validationRegex', columns: [<b key="label">Validation Regex</b>, regexValue] },
                 ];
             }
 
             if (isDataAttributeModel(attr) || isInfoAttributeModel(attr)) {
                 columns = [
-                    { id: 'label', columns: [<b>Label</b>, attr.properties.label] },
-                    { id: 'group', columns: [<b>Group</b>, attr.properties.group || 'Not set'] },
-                    { id: 'contentType', columns: [<b>Content Type</b>, getEnumLabel(attributeContentTypeEnum, attr.contentType)] },
+                    { id: 'label', columns: [<b key="label">Label</b>, attr.properties.label] },
+                    { id: 'group', columns: [<b key="label">Group</b>, attr.properties.group || 'Not set'] },
+                    {
+                        id: 'contentType',
+                        columns: [<b key="label">Content Type</b>, getEnumLabel(attributeContentTypeEnum, attr.contentType)],
+                    },
                     ...columns,
-                    { id: 'defaults', columns: [<b>Defaults</b>, getAttributeContent(attr.contentType, attr.content)] },
+                    { id: 'defaults', columns: [<b key="label">Defaults</b>, getAttributeContent(attr.contentType, attr.content)] },
                 ];
             }
 
             return [
                 <CustomTable
+                    key="detail-table"
                     headers={[
                         { id: 'name', content: 'Name' },
                         { id: 'value', content: 'Value' },
                     ]}
                     data={[
-                        { id: 'name', columns: [<b>Name</b>, attr.name] },
-                        { id: 'desc', columns: [<b>Description</b>, attr.description || 'Not set'] },
+                        { id: 'name', columns: [<b key="label">Name</b>, attr.name] },
+                        { id: 'desc', columns: [<b key="label">Description</b>, attr.description || 'Not set'] },
                         ...columns,
                     ]}
                     hasHeader={false}
