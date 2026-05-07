@@ -106,6 +106,6 @@ test.describe('HostnameListInput', () => {
 
     test('should not render tag list when there are no values', async ({ mount }) => {
         const component = await mount(<HostnameListInput id="ntpServers" values={[]} onValuesChange={() => {}} />);
-        await expect(component.getByTestId('hostname-list-tags-ntpServers')).toBeHidden();
+        await expect(component.getByTestId('hostname-list-tags-ntpServers')).toHaveCount(0);
     });
 });

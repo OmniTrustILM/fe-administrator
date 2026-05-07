@@ -87,6 +87,10 @@ describe('duration', () => {
             expect(getMillisecondsFromIso8601String(null)).toBeUndefined();
         });
 
+        test.each(['garbage', 'PT', 'P', '1H', 'PT1X', 'P1H', '   '])('returns undefined for invalid input %p', (input) => {
+            expect(getMillisecondsFromIso8601String(input)).toBeUndefined();
+        });
+
         test('orders durations correctly', () => {
             const drift = getMillisecondsFromIso8601String('PT0.5S')!;
             const accuracy = getMillisecondsFromIso8601String('PT1S')!;

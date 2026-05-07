@@ -121,7 +121,7 @@ export const TimeQualityConfigurationForm = () => {
     const lastResetIdRef = useRef<string | undefined>(undefined);
 
     const valuesToReset = useMemo<FormValues | undefined>(() => {
-        if (!editMode || !id || !timeQualityConfiguration || timeQualityConfiguration.uuid !== id || isFetchingDetail) return undefined;
+        if (!editMode || !id || timeQualityConfiguration?.uuid !== id || isFetchingDetail) return undefined;
 
         const attributeInitialValues = mapProfileAttribute(
             timeQualityConfiguration,
@@ -137,14 +137,10 @@ export const TimeQualityConfigurationForm = () => {
             ntpServers: timeQualityConfiguration.ntpServers || [],
             ntpCheckInterval: timeQualityConfiguration.ntpCheckInterval || '',
             ntpCheckTimeout: timeQualityConfiguration.ntpCheckTimeout || '',
-            ntpSamplesPerServer:
-                timeQualityConfiguration.ntpSamplesPerServer !== undefined ? String(timeQualityConfiguration.ntpSamplesPerServer) : '',
-            ntpServersMinReachable:
-                timeQualityConfiguration.ntpServersMinReachable !== undefined
-                    ? String(timeQualityConfiguration.ntpServersMinReachable)
-                    : '',
+            ntpSamplesPerServer: timeQualityConfiguration.ntpSamplesPerServer?.toString() ?? '',
+            ntpServersMinReachable: timeQualityConfiguration.ntpServersMinReachable?.toString() ?? '',
             maxClockDrift: timeQualityConfiguration.maxClockDrift || '',
-            leapSecondGuard: timeQualityConfiguration.leapSecondGuard ?? false,
+            leapSecondGuard: timeQualityConfiguration.leapSecondGuard ?? true,
             ...transformAttributes(attributeInitialValues ?? []),
         };
     }, [editMode, id, timeQualityConfiguration, isFetchingDetail, multipleResourceCustomAttributes]);
@@ -393,7 +389,7 @@ export const TimeQualityConfigurationForm = () => {
                                                     positive: validatePositiveInteger(),
                                                     leServerCount: (value, allValues) => {
                                                         if (!value) return undefined;
-                                                        const min = parseInt(value, 10);
+                                                        const min = Number.parseInt(value, 10);
                                                         if (Number.isNaN(min)) return undefined;
                                                         const count = allValues.ntpServers?.length ?? 0;
                                                         return min <= count
