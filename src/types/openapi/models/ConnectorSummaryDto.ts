@@ -11,41 +11,35 @@
  * Do not edit the class manually.
  */
 
-import type { ProxyStatus } from './';
+import type { ConnectorStatus } from './';
 
 /**
  * @export
- * @interface ProxyListDto
+ * @interface ConnectorSummaryDto
  */
-export interface ProxyListDto {
+export interface ConnectorSummaryDto {
     /**
      * Object identifier
      * @type {string}
-     * @memberof ProxyListDto
+     * @memberof ConnectorSummaryDto
      */
     uuid: string;
     /**
      * Object Name
      * @type {string}
-     * @memberof ProxyListDto
+     * @memberof ConnectorSummaryDto
      */
     name: string;
     /**
-     * Detailed description of the Proxy
+     * URL of the Connector
      * @type {string}
-     * @memberof ProxyListDto
+     * @memberof ConnectorSummaryDto
      */
-    description?: string;
+    url: string;
     /**
-     * Status of the Proxy
-     * @type {ProxyStatus}
-     * @memberof ProxyListDto
+     * Status of the Connector
+     * @type {ConnectorStatus}
+     * @memberof ConnectorSummaryDto
      */
-    status: ProxyStatus;
-    /**
-     * Timestamp of the last activity from the Proxy
-     * @type {string}
-     * @memberof ProxyListDto
-     */
-    lastActivity?: string;
+    status: ConnectorStatus;
 }

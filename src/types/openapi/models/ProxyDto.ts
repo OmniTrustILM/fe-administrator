@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { ConnectorDto, ProxyStatus } from './';
+import type { ConnectorSummaryDto, ProxyStatus } from './';
 
 /**
  * @export
@@ -56,8 +56,8 @@ export interface ProxyDto {
     lastActivity?: string;
     /**
      * List of Connectors associated with the Proxy
-     * @type {Array<ConnectorDto>}
+     * @type {Array<ConnectorSummaryDto>}
      * @memberof ProxyDto
      */
-    connectors?: Array<ConnectorDto>;
+    connectors?: Array<ConnectorSummaryDto>;
 }

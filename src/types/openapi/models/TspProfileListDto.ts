@@ -11,41 +11,34 @@
  * Do not edit the class manually.
  */
 
-import type { ProxyStatus } from './';
-
 /**
+ * TSP (Timestamping Protocol) profile details for listing
  * @export
- * @interface ProxyListDto
+ * @interface TspProfileListDto
  */
-export interface ProxyListDto {
+export interface TspProfileListDto {
     /**
      * Object identifier
      * @type {string}
-     * @memberof ProxyListDto
+     * @memberof TspProfileListDto
      */
     uuid: string;
     /**
      * Object Name
      * @type {string}
-     * @memberof ProxyListDto
+     * @memberof TspProfileListDto
      */
     name: string;
     /**
-     * Detailed description of the Proxy
+     * Description of the TSP Profile
      * @type {string}
-     * @memberof ProxyListDto
+     * @memberof TspProfileListDto
      */
     description?: string;
     /**
-     * Status of the Proxy
-     * @type {ProxyStatus}
-     * @memberof ProxyListDto
+     * Enabled flag of the TSP Profile
+     * @type {boolean}
+     * @memberof TspProfileListDto
      */
-    status: ProxyStatus;
-    /**
-     * Timestamp of the last activity from the Proxy
-     * @type {string}
-     * @memberof ProxyListDto
-     */
-    lastActivity?: string;
+    enabled: boolean;
 }
