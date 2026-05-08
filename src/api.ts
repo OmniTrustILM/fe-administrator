@@ -50,6 +50,7 @@ import {
     VaultProfileManagementApi,
     TrustedCertificateManagementApi,
     TimeQualityConfigurationManagementApi,
+    TSPProfileManagementApi,
 } from 'types/openapi';
 // Deep import: the openapi barrel only re-exports TokenInstanceManagementApi because
 // both modules export overlapping request interfaces that would collide via `export *`.
@@ -121,6 +122,7 @@ export interface ApiClients {
     vaultProfiles: VaultProfileManagementApi;
     secrets: SecretManagementApi;
     timeQualityConfigurations: TimeQualityConfigurationManagementApi;
+    tspProfiles: TSPProfileManagementApi;
 }
 
 type ApiClientKey = keyof ApiClients;
@@ -177,6 +179,7 @@ const factories: Partial<{ [K in ApiClientKey]: () => ApiClients[K] }> = {
     vaultProfiles: () => new VaultProfileManagementApi(configuration),
     secrets: () => new SecretManagementApi(configuration),
     timeQualityConfigurations: () => new TimeQualityConfigurationManagementApi(configuration),
+    tspProfiles: () => new TSPProfileManagementApi(configuration),
 };
 
 const overrides: Partial<Record<ApiClientKey, unknown>> = Object.create(null);

@@ -77,4 +77,5 @@ export enum Resource {
     TrustedCertificates = 'trustedCertificates',
     Proxies = 'proxies',
     TimeQualityConfigurations = 'timeQualityConfigurations',
+    TspProfiles = 'tspProfiles',
 }

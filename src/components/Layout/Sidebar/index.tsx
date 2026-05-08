@@ -233,6 +233,12 @@ const menuItemMappings: MenuItemMapping[] = [
             { _key: '/acmeprofiles', name: 'ACME Profiles', link: '/acmeprofiles', requiredResources: [Resource.AcmeProfiles] },
             { _key: '/cmpprofiles', name: 'CMP Profiles', link: '/cmpprofiles', requiredResources: [Resource.CmpProfiles] },
             { _key: '/scepprofiles', name: 'SCEP Profiles', link: '/scepprofiles', requiredResources: [Resource.ScepProfiles] },
+            {
+                _key: `/${Resource.TspProfiles.toLowerCase()}`,
+                name: 'TSP Profiles',
+                link: `/${Resource.TspProfiles.toLowerCase()}`,
+                requiredResources: [Resource.TspProfiles],
+            },
         ],
     },
 

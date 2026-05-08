@@ -25,6 +25,7 @@ export enum EntityType {
     CONNECTOR,
     SECRET,
     TIME_QUALITY_CONFIGURATION,
+    TSP_PROFILE,
 }
 
 export type Filter = {

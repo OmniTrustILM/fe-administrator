@@ -97,6 +97,10 @@ const TimeQualityConfigurationsList = lazy(() =>
     })),
 );
 
+const TspProfileDetail = lazy(() => import('./_pages/tsp-profiles/detail/TspProfileDetail').then((m) => ({ default: m.TspProfileDetail })));
+const TspProfileForm = lazy(() => import('./_pages/tsp-profiles/form/TspProfileForm').then((m) => ({ default: m.TspProfileForm })));
+const TspProfilesList = lazy(() => import('./_pages/tsp-profiles/list/TspProfilesList').then((m) => ({ default: m.TspProfilesList })));
+
 const GroupDetail = lazy(() => import('./_pages/group/detail'));
 const GroupList = lazy(() => import('./_pages/group/list'));
 
@@ -294,6 +298,15 @@ export default function AppRouter() {
                         path={`/${Resource.TimeQualityConfigurations.toLowerCase()}/detail/:id`}
                         element={<TimeQualityConfigurationDetail />}
                     />
+
+                    <Route path={`/${Resource.TspProfiles.toLowerCase()}`} element={<TspProfilesList />} />
+                    <Route
+                        path={`/${Resource.TspProfiles.toLowerCase()}/list`}
+                        element={<Navigate to={`/${Resource.TspProfiles.toLowerCase()}`} />}
+                    />
+                    <Route path={`/${Resource.TspProfiles.toLowerCase()}/add`} element={<TspProfileForm />} />
+                    <Route path={`/${Resource.TspProfiles.toLowerCase()}/edit/:id`} element={<TspProfileForm />} />
+                    <Route path={`/${Resource.TspProfiles.toLowerCase()}/detail/:id`} element={<TspProfileDetail />} />
 
                     <Route path={`/${Resource.Groups.toLowerCase()}`} element={<GroupList />} />
                     <Route
