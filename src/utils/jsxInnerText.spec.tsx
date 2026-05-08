@@ -55,4 +55,23 @@ test.describe('jsxInnerText', () => {
     test('should return empty string for empty array', () => {
         expect(jsxInnerText([])).toBe('');
     });
+
+    test('should return empty string for self-closing element with no props', () => {
+        expect(jsxInnerText(<br />)).toBe('');
+    });
+
+    test('should iterate own props for element without children', () => {
+        const node = { props: { foo: 'bar', baz: 1 } } as unknown as React.ReactNode;
+        expect(jsxInnerText(node)).toBe('foobarbaz1');
+    });
+
+    test('should return empty string for plain object without props or children', () => {
+        const node = {} as unknown as React.ReactNode;
+        expect(jsxInnerText(node)).toBe('');
+    });
+
+    test('should return empty string for unsupported types', () => {
+        const node = (() => {}) as unknown as React.ReactNode;
+        expect(jsxInnerText(node)).toBe('');
+    });
 });

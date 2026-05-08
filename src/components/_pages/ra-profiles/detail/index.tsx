@@ -19,6 +19,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import RaProfileForm from '../form';
 import { Resource } from 'types/openapi';
+import { renderProtocolDetail } from './renderProtocolDetail';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
@@ -690,38 +691,13 @@ export default function RaProfileDetail() {
                     <></>,
                     <></>,
                     <></>,
-
-                    acmeDetails?.acmeAvailable ? (
-                        <>
-                            <b>Protocol settings</b>
-                            <br />
-                            <br />
-                            <CustomTable hasHeader={false} headers={protocolProfileHeaders} data={acmeProfileData} />
-
-                            {acmeDetails?.issueCertificateAttributes && acmeDetails.issueCertificateAttributes.length > 0 ? (
-                                <>
-                                    <b>Settings for certificate issuing</b>
-                                    <br />
-                                    <br />
-                                    <AttributeViewer hasHeader={false} attributes={acmeDetails?.issueCertificateAttributes} />
-                                </>
-                            ) : (
-                                <></>
-                            )}
-
-                            {acmeDetails?.revokeCertificateAttributes && acmeDetails.revokeCertificateAttributes.length > 0 ? (
-                                <>
-                                    <b>Settings for certificate revocation</b>
-                                    <br />
-                                    <br />
-                                    <AttributeViewer hasHeader={false} attributes={acmeDetails?.revokeCertificateAttributes} />
-                                </>
-                            ) : (
-                                <></>
-                            )}
-                        </>
-                    ) : (
-                        <>ACME is not active</>
+                    renderProtocolDetail(
+                        acmeDetails?.acmeAvailable,
+                        'ACME is not active',
+                        protocolProfileHeaders,
+                        acmeProfileData,
+                        acmeDetails?.issueCertificateAttributes,
+                        acmeDetails?.revokeCertificateAttributes,
                     ),
                 ],
             },
@@ -743,31 +719,15 @@ export default function RaProfileDetail() {
                     <></>,
                     <></>,
                     <></>,
-
-                    scepDetails?.scepAvailable ? (
-                        <>
-                            <b>Protocol settings</b>
-                            <br />
-                            <br />
-                            <CustomTable hasHeader={false} headers={protocolProfileHeaders} data={scepProfileData} />
-
-                            {scepDetails?.issueCertificateAttributes && scepDetails.issueCertificateAttributes.length > 0 ? (
-                                <>
-                                    <b>Settings for certificate issuing</b>
-                                    <br />
-                                    <br />
-                                    <AttributeViewer hasHeader={false} attributes={scepDetails?.issueCertificateAttributes} />
-                                </>
-                            ) : (
-                                <></>
-                            )}
-                        </>
-                    ) : (
-                        <>SCEP is not active</>
+                    renderProtocolDetail(
+                        scepDetails?.scepAvailable,
+                        'SCEP is not active',
+                        protocolProfileHeaders,
+                        scepProfileData,
+                        scepDetails?.issueCertificateAttributes,
                     ),
                 ],
             },
-
             {
                 id: 'cmp',
                 columns: [
@@ -786,37 +746,13 @@ export default function RaProfileDetail() {
                     <></>,
                     <></>,
                     <></>,
-                    cmpDetails?.cmpAvailable ? (
-                        <>
-                            <b>Protocol settings</b>
-                            <br />
-                            <br />
-                            <CustomTable hasHeader={false} headers={protocolProfileHeaders} data={cmpProfileData} />
-
-                            {cmpDetails?.issueCertificateAttributes && cmpDetails.issueCertificateAttributes.length > 0 ? (
-                                <>
-                                    <b>Settings for certificate issuing</b>
-                                    <br />
-                                    <br />
-                                    <AttributeViewer hasHeader={false} attributes={cmpDetails?.issueCertificateAttributes} />
-                                </>
-                            ) : (
-                                <></>
-                            )}
-
-                            {cmpDetails?.revokeCertificateAttributes && cmpDetails.revokeCertificateAttributes.length > 0 ? (
-                                <>
-                                    <b>Settings for certificate revocation</b>
-                                    <br />
-                                    <br />
-                                    <AttributeViewer hasHeader={false} attributes={cmpDetails?.revokeCertificateAttributes} />
-                                </>
-                            ) : (
-                                <></>
-                            )}
-                        </>
-                    ) : (
-                        <>CMP is not active</>
+                    renderProtocolDetail(
+                        cmpDetails?.cmpAvailable,
+                        'CMP is not active',
+                        protocolProfileHeaders,
+                        cmpProfileData,
+                        cmpDetails?.issueCertificateAttributes,
+                        cmpDetails?.revokeCertificateAttributes,
                     ),
                 ],
             },

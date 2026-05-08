@@ -200,6 +200,64 @@ export const getCodeBlockLanguage = (
     return ProgrammingLanguageEnum.Javascript;
 };
 
+const resolveAttributeVersion = (descriptor: DataAttributeModel | CustomAttributeModel): AttributeVersion => {
+    const schemaVersion = (descriptor as any).schemaVersion;
+    if (schemaVersion === AttributeVersion.V2 || schemaVersion === AttributeVersion.V3) {
+        return schemaVersion;
+    }
+
+    const version = (descriptor as any).version;
+    if (version === AttributeVersion.V3 || version === '3' || version === 3) {
+        return AttributeVersion.V3;
+    }
+
+    return AttributeVersion.V2;
+};
+
+const resolveFinalAttributeVersion = (
+    existingVersion: AttributeVersion | undefined,
+    attributeVersion: AttributeVersion,
+): AttributeVersion => {
+    if (existingVersion === AttributeVersion.V3 || existingVersion === AttributeVersion.V2) {
+        return existingVersion;
+    }
+    if (attributeVersion === AttributeVersion.V3) {
+        return AttributeVersion.V3;
+    }
+    return AttributeVersion.V2;
+};
+
+const buildAttributeRequestModel = (
+    attributeName: string,
+    contentArray: any[],
+    descriptor: DataAttributeModel | CustomAttributeModel,
+    version: AttributeVersion,
+): AttributeRequestModel => {
+    if (version === AttributeVersion.V3) {
+        const finalContent = contentArray.map((item: { data: unknown }) => ({
+            ...item,
+            contentType: descriptor.contentType,
+        })) as BaseAttributeContentDtoV3[];
+        const attr: AttributeRequestModelV3 = {
+            name: attributeName,
+            content: finalContent,
+            contentType: descriptor.contentType,
+            uuid: descriptor.uuid,
+            version,
+        };
+        return attr;
+    }
+    const finalContent = contentArray as BaseAttributeContentDtoV2[];
+    const attr: AttributeRequestModelV2 = {
+        name: attributeName,
+        content: finalContent,
+        contentType: descriptor.contentType,
+        uuid: descriptor.uuid,
+        version,
+    };
+    return attr;
+};
+
 export function collectFormAttributes(
     id: string,
     descriptors: AttributeDescriptorModel[] | undefined,
@@ -212,86 +270,32 @@ export function collectFormAttributes(
     const deletedAttributes = values[`deletedAttributes_${id}`] || [];
 
     const attrs: AttributeRequestModel[] = [];
-    const resolveAttributeVersion = (descriptor: DataAttributeModel | CustomAttributeModel): AttributeVersion => {
-        const schemaVersion = (descriptor as any).schemaVersion;
-        if (schemaVersion === AttributeVersion.V2 || schemaVersion === AttributeVersion.V3) {
-            return schemaVersion;
-        }
-
-        const version = (descriptor as any).version;
-        if (version === AttributeVersion.V3 || version === '3' || version === 3) {
-            return AttributeVersion.V3;
-        }
-
-        return AttributeVersion.V2;
-    };
 
     for (const attribute in attributes) {
         if (!Object.hasOwn(attributes, attribute)) continue;
 
-        const info = attribute.split(':');
+        const attributeName = attribute.split(':')[0];
 
-        const attributeName = info[0];
-
-        // Skip if this attribute was deleted
-        if (deletedAttributes.includes(attributeName)) {
-            continue;
-        }
+        if (deletedAttributes.includes(attributeName)) continue;
 
         const descriptor = descriptors?.find((d) => d.name === attributeName);
         if (!descriptor) continue;
         if (attributes[attribute] === undefined || attributes[attribute] === null) continue;
+        if (!isDataAttributeModel(descriptor) && !isCustomAttributeModel(descriptor)) continue;
 
-        let content: any;
+        const rawValue = attributes[attribute];
+        const content = Array.isArray(rawValue)
+            ? rawValue.map((i: any) => getAttributeFormValue(descriptor.contentType, descriptor.content, i))
+            : getAttributeFormValue(descriptor.contentType, descriptor.content, rawValue);
 
-        if (isDataAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) {
-            const attributeVersion = resolveAttributeVersion(descriptor);
+        if (content.data === undefined && !Array.isArray(content)) continue;
 
-            if (Array.isArray(attributes[attribute])) {
-                content = attributes[attribute].map((i: any) => getAttributeFormValue(descriptor.contentType, descriptor.content, i));
-            } else {
-                content = getAttributeFormValue(descriptor.contentType, descriptor.content, attributes[attribute]);
-            }
+        const contentArray = Array.isArray(content) ? content : [content];
+        const existing = existingAttributes?.find((a) => a.name === attributeName);
+        const existingVersion = (existing as { version?: AttributeVersion })?.version;
+        const version = resolveFinalAttributeVersion(existingVersion, resolveAttributeVersion(descriptor));
 
-            if (content.data !== undefined || Array.isArray(content)) {
-                const contentArray = Array.isArray(content) ? content : [content];
-                const existing = existingAttributes?.find((a) => a.name === attributeName);
-                const existingVersion = (existing as { version?: AttributeVersion })?.version;
-                let version: AttributeVersion;
-                if (existingVersion === AttributeVersion.V3 || existingVersion === AttributeVersion.V2) {
-                    version = existingVersion;
-                } else if (attributeVersion === AttributeVersion.V3) {
-                    version = AttributeVersion.V3;
-                } else {
-                    version = AttributeVersion.V2;
-                }
-
-                if (version === AttributeVersion.V3) {
-                    const finalContent = contentArray.map((item: { data: unknown }) => ({
-                        ...item,
-                        contentType: descriptor.contentType,
-                    })) as BaseAttributeContentDtoV3[];
-                    const attr: AttributeRequestModelV3 = {
-                        name: attributeName,
-                        content: finalContent,
-                        contentType: descriptor.contentType,
-                        uuid: descriptor.uuid,
-                        version,
-                    };
-                    attrs.push(attr);
-                } else {
-                    const finalContent = contentArray as BaseAttributeContentDtoV2[];
-                    const attr: AttributeRequestModelV2 = {
-                        name: attributeName,
-                        content: finalContent,
-                        contentType: descriptor.contentType,
-                        uuid: descriptor.uuid,
-                        version,
-                    };
-                    attrs.push(attr);
-                }
-            }
-        }
+        attrs.push(buildAttributeRequestModel(attributeName, contentArray, descriptor, version));
     }
     return attrs;
 }
