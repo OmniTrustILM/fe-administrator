@@ -21,7 +21,7 @@ export default function AppRedirect() {
         if (!unauthorized) return;
         dispatch(actions.clearUnauthorized());
 
-        const url = window.location.toString().substring(window.location.origin.length);
+        const url = globalThis.location.toString().substring(globalThis.location.origin.length);
         if (!url.includes('#/login?redirect=')) {
             const redirect = encodeURIComponent(url);
             navigate(`/login?redirect=${redirect}`);

@@ -37,7 +37,7 @@ export type ModalIcon =
     | 'shuffle'
     | 'minus'
     | 'plug'
-    | React.ReactNode;
+    | Exclude<React.ReactNode, string>;
 
 export interface DialogButton {
     key?: string;

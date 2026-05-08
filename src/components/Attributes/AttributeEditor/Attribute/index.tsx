@@ -23,7 +23,7 @@ type Props = Readonly<{
     descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel | undefined;
     options?: { label: string; value: any }[];
     busy?: boolean;
-    userInteractedRef?: React.MutableRefObject<boolean>;
+    userInteractedRef?: React.RefObject<boolean>;
     deleteButton?: React.ReactNode;
 }>;
 
@@ -36,7 +36,7 @@ export function Attribute({
     deleteButton,
 }: Props): React.ReactNode {
     const { setValue } = useFormContext<Record<string, any>>();
-    const [addNewAttributeValue, setIsAddNewAttributeValue] = useState<AddNewAttributeType | undefined>();
+    const [addNewAttributeValue, setAddNewAttributeValue] = useState<AddNewAttributeType | undefined>();
     const attributeCallbackValue = useSelector(userInterfaceSelectors.selectAttributeCallbackValue);
     const initiateAttributeCallback = useSelector(userInterfaceSelectors.selectInitiateAttributeCallback);
     const dispatch = useDispatch();
@@ -44,7 +44,7 @@ export function Attribute({
     useEffect(() => {
         if (descriptor?.name) {
             const addNew = AddNewAttributeList.find((a) => a.contentType === descriptor.contentType);
-            setIsAddNewAttributeValue(addNew);
+            setAddNewAttributeValue(addNew);
         }
     }, [descriptor]);
 
@@ -181,7 +181,12 @@ export function Attribute({
 
     const infoDescriptor = descriptor as InfoAttributeModel;
     const rawContent = getAttributeContent(infoDescriptor.contentType, infoDescriptor.content);
-    const content = typeof rawContent === 'string' ? rawContent : String(rawContent ?? '');
+    let content = '';
+    if (typeof rawContent === 'string') {
+        content = rawContent;
+    } else if (rawContent != null) {
+        content = JSON.stringify(rawContent);
+    }
 
     return <AttributeInfo name={infoDescriptor.name} label={infoDescriptor.properties.label} content={content} />;
 }

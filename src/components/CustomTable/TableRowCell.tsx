@@ -17,7 +17,7 @@ export function TableRowCell({ column, index, row, tblHeaders, hasDetails = fals
     const shouldShowButton = hasDetails && isFirstColumn && row.detailColumns && row.detailColumns.length > 0;
     const align = tblHeaders?.[index]?.align;
     const maxWidth = tblHeaders?.[index]?.maxWidth;
-    const maxWidthCss = maxWidth != null ? `${maxWidth}px` : undefined;
+    const maxWidthCss = maxWidth == null ? undefined : `${maxWidth}px`;
 
     const cellStyle: React.CSSProperties = {
         ...(align ? { textAlign: align } : {}),

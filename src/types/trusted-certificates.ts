@@ -4,7 +4,5 @@ import type {
 } from './openapi';
 
 export type TrustedCertificateResponseDto = TrustedCertificateDtoOpenApi;
-export type TrustedCertificateResponseModel = TrustedCertificateResponseDto;
 
 export type TrustedCertificateRequestDto = TrustedCertificateRequestDtoOpenApi;
-export type TrustedCertificateRequestModel = TrustedCertificateRequestDto;

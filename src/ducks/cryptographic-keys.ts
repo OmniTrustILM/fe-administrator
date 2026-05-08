@@ -10,7 +10,7 @@ import type {
     CryptographicKeyHistoryModel,
     CryptographicKeyItemBulkCompromiseRequestModel,
     CryptographicKeyItemDetailResponseModel,
-    CryptographicKeyItemEditRequestModel,
+    CryptographicKeyItemEditRequestDto,
     CryptographicKeyKeyUsageBulkUpdateRequestModel,
     CryptographicKeyKeyUsageUpdateRequestModel,
     CryptographicKeyPairResponseModel,
@@ -272,7 +272,7 @@ export const slice = createSlice({
             action: PayloadAction<{
                 uuid: string;
                 keyItemUuid: string;
-                cryptographicKeyItemEditRequest: CryptographicKeyItemEditRequestModel;
+                cryptographicKeyItemEditRequest: CryptographicKeyItemEditRequestDto;
                 redirect?: string;
             }>,
         ) => {

@@ -11,7 +11,7 @@ export type AttributeTestWrapperProps = Readonly<{
     descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel | undefined;
     options?: { label: string; value: any }[];
     busy?: boolean;
-    userInteractedRef?: React.MutableRefObject<boolean>;
+    userInteractedRef?: React.RefObject<boolean>;
     deleteButton?: React.ReactNode;
     defaultValues?: Record<string, unknown>;
     /** Preloaded store state (e.g. userInterface.initiateAttributeCallback) */

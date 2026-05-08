@@ -160,7 +160,7 @@ export default function AttributeViewer({
             viewerType === ATTRIBUTE_VIEWER_TYPE.METADATA_FLAT ||
             viewerType === ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT
         ) {
-            if (!result.find((r) => r.id === 'actions')) {
+            if (!result.some((r) => r.id === 'actions')) {
                 result.push({
                     id: 'actions',
                     content: 'Actions',
@@ -184,7 +184,7 @@ export default function AttributeViewer({
             const createData = (so: NameAndUuidDto) => ({
                 id: so.uuid,
                 columns: [
-                    <Link onClick={() => dispatch(userInterfaceActions.resetState())} to={`/${resource}/detail/${so.uuid}`}>
+                    <Link key="link" onClick={() => dispatch(userInterfaceActions.resetState())} to={`/${resource}/detail/${so.uuid}`}>
                         {so.name}
                     </Link>,
                     so.uuid,
@@ -276,6 +276,7 @@ export default function AttributeViewer({
             ],
             detailColumns: [
                 <CustomTable
+                    key="metadata-table"
                     headers={tableHeaders(ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE)}
                     data={attribute.items.map((attributeItem) => getAttributesTableData(attributeItem, attribute.sourceObjectType))}
                     hasHeader={true}
@@ -288,7 +289,7 @@ export default function AttributeViewer({
     const getButtons = useCallback(
         (attribute: AttributeResponseModel, descriptor: CustomAttributeModel, attributeName: string) => {
             const buttons: WidgetButtonProps[] = [];
-            if (editingAttributesNames.find((a) => a === attributeName)) {
+            if (editingAttributesNames.some((a) => a === attributeName)) {
                 buttons.push({
                     id: 'cancel',
                     icon: 'times',
@@ -348,8 +349,9 @@ export default function AttributeViewer({
                             a.label || '',
                             a.version || '',
                             getEnumLabel(contentTypeEnum, a.contentType) || a.contentType,
-                            onSubmit && descriptor && editingAttributesNames.find((n) => n === a.name) ? (
+                            onSubmit && descriptor && editingAttributesNames.some((n) => n === a.name) ? (
                                 <AttributeEditForm
+                                    key="edit-form"
                                     descriptor={descriptor}
                                     initialContent={a.content}
                                     onSubmit={(uuid, content) => {
@@ -363,7 +365,7 @@ export default function AttributeViewer({
                             ) : (
                                 getContent(a.contentType, a.content)
                             ),
-                            <WidgetButtons buttons={getButtons(a, descriptor!, a.name)} />,
+                            <WidgetButtons key="widget-buttons" buttons={getButtons(a, descriptor!, a.name)} />,
                         ],
                     };
                 });

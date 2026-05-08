@@ -74,7 +74,7 @@ function mapFieldValueToOption(
 
 interface CurrentActionOptions {
     label: string;
-    value: string | any;
+    value: any;
 }
 
 function findSearchFieldData(availableFilters: SearchFieldListModel[], source: FilterFieldSource | undefined) {
@@ -516,7 +516,7 @@ export default function FilterWidgetRuleAction({
         }
 
         const updatedActions = ExecutionsList.map((action) => {
-            if (!(typeof action.data === 'object')) return action;
+            if (typeof action.data !== 'object') return action;
 
             const thisCurrentField = findFieldDef(availableFilters, action.fieldSource, action.fieldIdentifier);
             if (!thisCurrentField) return action;

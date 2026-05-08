@@ -41,14 +41,18 @@ function CertificateAttributes({ certificate, csr = false, isLoading = false }: 
                     id: 'validFrom',
                     columns: [
                         'Valid From',
-                        <span style={{ whiteSpace: 'nowrap' }}>{certificate?.notBefore ? dateFormatter(certificate.notBefore) : ''}</span>,
+                        <span key="value" style={{ whiteSpace: 'nowrap' }}>
+                            {certificate?.notBefore ? dateFormatter(certificate.notBefore) : ''}
+                        </span>,
                     ],
                 },
                 {
                     id: 'validTo',
                     columns: [
                         'Valid To',
-                        <span style={{ whiteSpace: 'nowrap' }}>{certificate?.notAfter ? dateFormatter(certificate.notAfter) : ''}</span>,
+                        <span key="value" style={{ whiteSpace: 'nowrap' }}>
+                            {certificate?.notAfter ? dateFormatter(certificate.notAfter) : ''}
+                        </span>,
                     ],
                 },
                 {

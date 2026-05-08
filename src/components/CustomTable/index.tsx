@@ -297,14 +297,10 @@ function CustomTable({
                 const sortDirection = sortCol.sort || 'asc';
 
                 filtered.sort((a, b) => {
-                    const aVal =
-                        typeof a.columns[sortColumnIndex] === 'string'
-                            ? (a.columns[sortColumnIndex] as string).toLowerCase()
-                            : jsxInnerText(a.columns[sortColumnIndex] as React.ReactNode).toLowerCase();
-                    const bVal =
-                        typeof b.columns[sortColumnIndex] === 'string'
-                            ? (b.columns[sortColumnIndex] as string).toLowerCase()
-                            : jsxInnerText(b.columns[sortColumnIndex] as React.ReactNode).toLowerCase();
+                    const aCell = a.columns[sortColumnIndex];
+                    const bCell = b.columns[sortColumnIndex];
+                    const aVal = typeof aCell === 'string' ? aCell.toLowerCase() : jsxInnerText(aCell as React.ReactNode).toLowerCase();
+                    const bVal = typeof bCell === 'string' ? bCell.toLowerCase() : jsxInnerText(bCell as React.ReactNode).toLowerCase();
 
                     switch (sortCol.sortType) {
                         case 'date': {
@@ -435,8 +431,8 @@ function CustomTable({
 
             if (value) {
                 if (id && !checked.includes(id)) checked.push(id);
-            } else {
-                if (id && checked.includes(id)) checked.splice(checked.indexOf(id), 1);
+            } else if (id && checked.includes(id)) {
+                checked.splice(checked.indexOf(id), 1);
             }
 
             setTblCheckedRows(checked);

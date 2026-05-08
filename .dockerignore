@@ -3,8 +3,13 @@
 /.pnp
 .pnp.js
 
-# testing
+# testing & coverage
 /coverage
+/coverage-vitest
+/coverage-playwright
+/test-results
+/playwright-report
+/monocart-report
 
 # production
 /build
@@ -29,8 +34,35 @@ src/gateway_client_key.pem
 src/gateway_client_cert.pem
 src/setupProxy.js
 
+# Version control
+.git/
+.gitignore
+.gitattributes
+.github/
+
 # Docker
 Dockerfile
 .dockerignore
-.gitignore
+
+# Project docs & local agent files
 README.md
+LICENSE.md
+CLAUDE.md
+.claude/
+
+# Tooling configs not needed for production build
+biome.json
+renovate.json
+openapitools.json
+sonar-project.properties
+.sonarcloud.properties
+playwright.config.ts
+playwright-ct.config.ts
+vitest.config.ts
+vitest.pagedlist.config.ts
+
+# Test/dev-only directories
+/playwright
+/hooks
+/scripts
+/config

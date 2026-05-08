@@ -9,8 +9,8 @@ const keep = [];
 for (const r of records) {
     if (!r.trim()) continue;
 
-    const sf = r.match(/^SF:(.*)$/m)?.[1] ?? '';
-    const lf = Number(r.match(/^LF:(\d+)$/m)?.[1] ?? '0');
+    const sf = /^SF:(.*)$/m.exec(r)?.[1] ?? '';
+    const lf = Number(/^LF:(\d+)$/m.exec(r)?.[1] ?? '0');
 
     const isCss = sf.endsWith('.css');
     const isAssets = sf.includes('/assets/') || sf.includes('assets/');

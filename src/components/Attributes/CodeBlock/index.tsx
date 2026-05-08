@@ -41,7 +41,7 @@ export default function CodeBlock({ content }: Props) {
                             {parse(
                                 DOMPurify.sanitize(
                                     getHighLightedCode(
-                                        content.data.code != null ? base64ToUtf8(content.data.code) : '',
+                                        content.data.code == null ? '' : base64ToUtf8(content.data.code),
                                         content.data.language,
                                     ),
                                 ),

@@ -177,7 +177,7 @@ test.describe('attributeHelpers', () => {
                         errorMessage: 'Lowercase only',
                     },
                 ],
-            } as any;
+            };
             const fn = buildAttributeValidators(d);
             expect(fn('ABC')).toBe('Lowercase only');
             expect(fn('abc')).toBeUndefined();
@@ -193,7 +193,7 @@ test.describe('attributeHelpers', () => {
                         errorMessage: 'Between 1 and 10',
                     },
                 ],
-            } as any;
+            };
             const fn = buildAttributeValidators(d);
             expect(typeof fn).toBe('function');
         });

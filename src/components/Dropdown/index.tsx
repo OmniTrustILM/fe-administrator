@@ -23,9 +23,8 @@ type Props = Readonly<{
 
 function Dropdown({ title, items, disabled = false, btnStyle, className, menuClassName, hideArrow = false, menu, buttonRef }: Props) {
     useEffect(() => {
-        if (typeof window !== 'undefined' && (window as any).HSStaticMethods) {
-            (window as any).HSStaticMethods.autoInit();
-        }
+        const hsMethods = (globalThis as any).HSStaticMethods;
+        if (hsMethods) hsMethods.autoInit();
     }, [disabled]);
 
     return (

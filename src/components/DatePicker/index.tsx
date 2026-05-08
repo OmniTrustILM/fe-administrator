@@ -92,19 +92,19 @@ function DatePicker({ value, onChange, onBlur, disabled, id, invalid, error, cla
                     // Position above the input
                     let top = inputRect.top - dropdownHeight - 4; // 4px gap
 
-                    // Ensure dropdown doesn't go above viewport
+                    // Ensure the dropdown doesn't go above the viewport
                     if (top < 8) {
                         top = 8; // 8px margin from top
                     }
 
                     let left = inputRect.left;
 
-                    // Ensure dropdown doesn't go off right edge
+                    // Ensure the dropdown doesn't go off the right edge
                     if (left + dropdownWidth > window.innerWidth - 8) {
                         left = window.innerWidth - dropdownWidth - 8; // 8px margin from right
                     }
 
-                    // Ensure dropdown doesn't go off left edge
+                    // Ensure dropdown doesn't go off the left edge
                     if (left < 8) {
                         left = 8; // 8px margin from left
                     }
@@ -234,7 +234,7 @@ function DatePicker({ value, onChange, onBlur, disabled, id, invalid, error, cla
         const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
         const daysInPrevMonth = getDaysInMonth(prevMonth, prevYear);
 
-        // Add days from previous month
+        // Add days from the previous month
         for (let i = firstDay - 1; i >= 0; i--) {
             days.push({ day: daysInPrevMonth - i, isCurrentMonth: false, isPrevMonth: true });
         }
@@ -277,6 +277,7 @@ function DatePicker({ value, onChange, onBlur, disabled, id, invalid, error, cla
                     readOnly
                     value={inputValue}
                     disabled={disabled}
+                    required={required}
                     id={id}
                     onClick={() => !disabled && setIsOpen(!isOpen)}
                     placeholder={timePicker ? 'dd.mm.yyyy 00:00:00' : 'dd.mm.yyyy'}
@@ -383,7 +384,7 @@ function DatePicker({ value, onChange, onBlur, disabled, id, invalid, error, cla
 
                             {/* Calendar Days */}
                             {calendarRows.map((row, rowIndex) => (
-                                <div key={rowIndex} className="flex">
+                                <div key={`week-${row[0].day}-${row[6].day}`} className="flex">
                                     {row.map((dayInfo, dayIndex) => {
                                         const { day, isCurrentMonth } = dayInfo;
                                         const isSelected = isSelectedDate(day, isCurrentMonth);

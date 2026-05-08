@@ -6,9 +6,7 @@ import type {
 } from './openapi';
 
 export type ProxyRequestDto = ProxyRequestDtoOpenApi;
-export type ProxyRequestModel = ProxyRequestDto;
 export type ProxyUpdateRequestDto = ProxyUpdateRequestDtoOpenApi;
-export type ProxyUpdateRequestModel = ProxyUpdateRequestDto;
 export type ProxyResponseDto = ProxyDto;
 export type ProxyResponseModel = ProxyDto;
 export type ProxyListDto = ProxyListDtoOpenApi;
