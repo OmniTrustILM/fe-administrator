@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { getInputStringFromIso8601String, getIso8601StringFromInputString } from './duration';
+import { getInputStringFromIso8601String, getIso8601StringFromInputString, getMillisecondsFromIso8601String } from './duration';
 
 describe('duration', () => {
     describe('getInputStringFromIso8601String', () => {
@@ -65,6 +65,36 @@ describe('duration', () => {
             for (const part of expectedParts) {
                 expect(back).toContain(part);
             }
+        });
+    });
+
+    describe('getMillisecondsFromIso8601String', () => {
+        test.each([
+            ['PT1S', 1000],
+            ['PT1H', 3600000],
+            ['PT30S', 30000],
+            ['PT0.5S', 500],
+            ['P1D', 86400000],
+            ['PT1H30M', 5400000],
+            ['PT0S', 0],
+        ])('parses %s to %d ms', (input, expected) => {
+            expect(getMillisecondsFromIso8601String(input)).toBe(expected);
+        });
+
+        test('returns undefined for empty/nullish values', () => {
+            expect(getMillisecondsFromIso8601String('')).toBeUndefined();
+            expect(getMillisecondsFromIso8601String(undefined)).toBeUndefined();
+            expect(getMillisecondsFromIso8601String(null)).toBeUndefined();
+        });
+
+        test.each(['garbage', 'PT', 'P', '1H', 'PT1X', 'P1H', '   '])('returns undefined for invalid input %p', (input) => {
+            expect(getMillisecondsFromIso8601String(input)).toBeUndefined();
+        });
+
+        test('orders durations correctly', () => {
+            const drift = getMillisecondsFromIso8601String('PT0.5S')!;
+            const accuracy = getMillisecondsFromIso8601String('PT1S')!;
+            expect(drift).toBeLessThan(accuracy);
         });
     });
 });

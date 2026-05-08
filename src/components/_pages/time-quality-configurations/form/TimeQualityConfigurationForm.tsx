@@ -8,7 +8,7 @@ import Breadcrumb from 'components/Breadcrumb';
 import Button from 'components/Button';
 import Container from 'components/Container';
 import DurationInput from 'components/Input/DurationInput';
-import MultipleValueTextInput from 'components/Input/MultipleValueTextInput';
+import HostnameListInput from 'components/Input/HostnameListInput';
 import ProgressButton from 'components/ProgressButton';
 import Switch from 'components/Switch';
 import TextInput from 'components/TextInput';
@@ -19,9 +19,11 @@ import { actions as tqcActions, selectors as tqcSelectors } from 'ducks/time-qua
 
 import { Resource } from 'types/openapi';
 import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
+import { getMillisecondsFromIso8601String } from 'utils/duration';
 import {
     validateAlphaNumericWithoutAccents,
     validateIso8601Duration,
+    validateNtpServer,
     validateNtpServers,
     validatePositiveInteger,
     validateRequired,
@@ -95,10 +97,10 @@ export const TimeQualityConfigurationForm = () => {
             ntpServers: [],
             ntpCheckInterval: '',
             ntpCheckTimeout: '',
-            ntpSamplesPerServer: '',
-            ntpServersMinReachable: '',
+            ntpSamplesPerServer: '3',
+            ntpServersMinReachable: '1',
             maxClockDrift: '',
-            leapSecondGuard: false,
+            leapSecondGuard: true,
             ...transformAttributes(initialCustomAttributes ?? []),
         }),
         [initialCustomAttributes],
@@ -119,7 +121,7 @@ export const TimeQualityConfigurationForm = () => {
     const lastResetIdRef = useRef<string | undefined>(undefined);
 
     const valuesToReset = useMemo<FormValues | undefined>(() => {
-        if (!editMode || !id || !timeQualityConfiguration || timeQualityConfiguration.uuid !== id || isFetchingDetail) return undefined;
+        if (!editMode || !id || timeQualityConfiguration?.uuid !== id || isFetchingDetail) return undefined;
 
         const attributeInitialValues = mapProfileAttribute(
             timeQualityConfiguration,
@@ -135,14 +137,10 @@ export const TimeQualityConfigurationForm = () => {
             ntpServers: timeQualityConfiguration.ntpServers || [],
             ntpCheckInterval: timeQualityConfiguration.ntpCheckInterval || '',
             ntpCheckTimeout: timeQualityConfiguration.ntpCheckTimeout || '',
-            ntpSamplesPerServer:
-                timeQualityConfiguration.ntpSamplesPerServer !== undefined ? String(timeQualityConfiguration.ntpSamplesPerServer) : '',
-            ntpServersMinReachable:
-                timeQualityConfiguration.ntpServersMinReachable !== undefined
-                    ? String(timeQualityConfiguration.ntpServersMinReachable)
-                    : '',
+            ntpSamplesPerServer: timeQualityConfiguration.ntpSamplesPerServer?.toString() ?? '',
+            ntpServersMinReachable: timeQualityConfiguration.ntpServersMinReachable?.toString() ?? '',
             maxClockDrift: timeQualityConfiguration.maxClockDrift || '',
-            leapSecondGuard: timeQualityConfiguration.leapSecondGuard ?? false,
+            leapSecondGuard: timeQualityConfiguration.leapSecondGuard ?? true,
             ...transformAttributes(attributeInitialValues ?? []),
         };
     }, [editMode, id, timeQualityConfiguration, isFetchingDetail, multipleResourceCustomAttributes]);
@@ -238,7 +236,10 @@ export const TimeQualityConfigurationForm = () => {
                                 <Controller
                                     name="accuracy"
                                     control={control}
-                                    rules={buildValidationRules([validateRequired(), validateIso8601Duration()])}
+                                    rules={{
+                                        ...buildValidationRules([validateRequired(), validateIso8601Duration()]),
+                                        deps: ['maxClockDrift'],
+                                    }}
                                     render={({ field, fieldState }) => (
                                         <DurationInput
                                             id="accuracy"
@@ -288,15 +289,17 @@ export const TimeQualityConfigurationForm = () => {
                                                 required: validateRequired(),
                                                 ntpServers: validateNtpServers(),
                                             },
+                                            deps: ['ntpServersMinReachable'],
                                         }}
                                         render={({ field, fieldState }) => (
                                             <>
-                                                <MultipleValueTextInput
+                                                <HostnameListInput
                                                     id="ntpServers"
-                                                    selectedValues={field.value}
+                                                    values={field.value}
                                                     onValuesChange={field.onChange}
-                                                    placeholder="Select or add NTP server addresses"
-                                                    addPlaceholder="Type hostname or IP and press Enter"
+                                                    placeholder="Type hostname or IP, then press Enter or click Add"
+                                                    validateValue={validateNtpServer()}
+                                                    invalid={!!fieldState.error}
                                                 />
                                                 {fieldState.error && (
                                                     <p className="text-xs text-red-600 mt-0.5">{fieldState.error.message}</p>
@@ -310,7 +313,10 @@ export const TimeQualityConfigurationForm = () => {
                                     <Controller
                                         name="ntpCheckInterval"
                                         control={control}
-                                        rules={buildValidationRules([validateIso8601Duration()])}
+                                        rules={{
+                                            ...buildValidationRules([validateRequired(), validateIso8601Duration()]),
+                                            deps: ['ntpCheckTimeout'],
+                                        }}
                                         render={({ field, fieldState }) => (
                                             <DurationInput
                                                 id="ntpCheckInterval"
@@ -318,6 +324,7 @@ export const TimeQualityConfigurationForm = () => {
                                                 value={field.value}
                                                 onChange={field.onChange}
                                                 onBlur={field.onBlur}
+                                                required
                                                 invalid={!!(fieldState.error && fieldState.isTouched)}
                                                 error={getFieldErrorMessage(fieldState)}
                                             />
@@ -327,7 +334,20 @@ export const TimeQualityConfigurationForm = () => {
                                     <Controller
                                         name="ntpCheckTimeout"
                                         control={control}
-                                        rules={buildValidationRules([validateIso8601Duration()])}
+                                        rules={{
+                                            validate: {
+                                                required: validateRequired(),
+                                                iso: validateIso8601Duration(),
+                                                lessThanInterval: (value, allValues) => {
+                                                    const timeoutMs = getMillisecondsFromIso8601String(value);
+                                                    const intervalMs = getMillisecondsFromIso8601String(allValues.ntpCheckInterval);
+                                                    if (timeoutMs === undefined || intervalMs === undefined) return undefined;
+                                                    return timeoutMs < intervalMs
+                                                        ? undefined
+                                                        : 'Check Timeout must be less than Check Interval';
+                                                },
+                                            },
+                                        }}
                                         render={({ field, fieldState }) => (
                                             <DurationInput
                                                 id="ntpCheckTimeout"
@@ -335,6 +355,7 @@ export const TimeQualityConfigurationForm = () => {
                                                 value={field.value}
                                                 onChange={field.onChange}
                                                 onBlur={field.onBlur}
+                                                required
                                                 invalid={!!(fieldState.error && fieldState.isTouched)}
                                                 error={getFieldErrorMessage(fieldState)}
                                             />
@@ -363,7 +384,20 @@ export const TimeQualityConfigurationForm = () => {
                                         <Controller
                                             name="ntpServersMinReachable"
                                             control={control}
-                                            rules={buildValidationRules([validatePositiveInteger()])}
+                                            rules={{
+                                                validate: {
+                                                    positive: validatePositiveInteger(),
+                                                    leServerCount: (value, allValues) => {
+                                                        if (!value) return undefined;
+                                                        const min = Number.parseInt(value, 10);
+                                                        if (Number.isNaN(min)) return undefined;
+                                                        const count = allValues.ntpServers?.length ?? 0;
+                                                        return min <= count
+                                                            ? undefined
+                                                            : 'Min Reachable Servers cannot exceed the number of NTP servers';
+                                                    },
+                                                },
+                                            }}
                                             render={({ field, fieldState }) => (
                                                 <TextInput
                                                     {...field}
@@ -381,7 +415,18 @@ export const TimeQualityConfigurationForm = () => {
                                 <Controller
                                     name="maxClockDrift"
                                     control={control}
-                                    rules={buildValidationRules([validateIso8601Duration()])}
+                                    rules={{
+                                        validate: {
+                                            required: validateRequired(),
+                                            iso: validateIso8601Duration(),
+                                            lessThanAccuracy: (value, allValues) => {
+                                                const driftMs = getMillisecondsFromIso8601String(value);
+                                                const accuracyMs = getMillisecondsFromIso8601String(allValues.accuracy);
+                                                if (driftMs === undefined || accuracyMs === undefined) return undefined;
+                                                return driftMs < accuracyMs ? undefined : 'Max Clock Drift must be less than Accuracy';
+                                            },
+                                        },
+                                    }}
                                     render={({ field, fieldState }) => (
                                         <DurationInput
                                             id="maxClockDrift"
@@ -389,6 +434,7 @@ export const TimeQualityConfigurationForm = () => {
                                             value={field.value}
                                             onChange={field.onChange}
                                             onBlur={field.onBlur}
+                                            required
                                             invalid={!!(fieldState.error && fieldState.isTouched)}
                                             error={getFieldErrorMessage(fieldState)}
                                         />

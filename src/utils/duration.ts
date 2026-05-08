@@ -13,6 +13,16 @@ export function getIso8601StringFromInputString(string: string): string {
     return getIso8601StringFromDuration(getDurationFromInputString(string));
 }
 
+const ISO_8601_DURATION_REGEX = /^P(\d+D)?(T(\d+H)?(\d+M)?(\d+(?:\.\d+)?S)?)?$/;
+
+export function getMillisecondsFromIso8601String(string: string | undefined | null): number | undefined {
+    if (!string) return undefined;
+    const trimmed = string.trim();
+    if (!trimmed || trimmed === 'P' || trimmed.endsWith('T') || !ISO_8601_DURATION_REGEX.test(trimmed)) return undefined;
+    const d = getDurationFromIso8601String(trimmed);
+    return ((d.days * 24 + d.hours) * 60 + d.minutes) * 60 * 1000 + d.seconds * 1000 + d.milliseconds;
+}
+
 function getInputStringFromDuration(duration: Duration): string {
     const parts: string[] = [];
 
