@@ -181,12 +181,10 @@ export function Attribute({
 
     const infoDescriptor = descriptor as InfoAttributeModel;
     const rawContent = getAttributeContent(infoDescriptor.contentType, infoDescriptor.content);
-    let content: string;
+    let content = '';
     if (typeof rawContent === 'string') {
         content = rawContent;
-    } else if (rawContent == null) {
-        content = '';
-    } else {
+    } else if (rawContent != null) {
         content = JSON.stringify(rawContent);
     }
 

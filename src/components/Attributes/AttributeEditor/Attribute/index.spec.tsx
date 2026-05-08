@@ -96,6 +96,15 @@ test.describe('Attribute', () => {
         await expect(page.getByText('Info content')).toBeVisible();
     });
 
+    test('Info descriptor with non-string rawContent (Codeblock) goes through JSON.stringify branch', async ({ mount, page }) => {
+        const descriptor = infoDescriptor({
+            content: [{ data: { code: 'Y29uc3QgeCA9IDE=', language: 'javascript' } }] as any,
+            contentType: AttributeContentType.Codeblock,
+        });
+        await mount(<AttributeTestWrapper name="field" descriptor={descriptor} />);
+        await expect(page.getByRole('heading', { name: 'Info Label' })).toBeVisible();
+    });
+
     test('Info descriptor with non-string rawContent converts to string', async ({ mount, page }) => {
         const descriptor = infoDescriptor({
             content: [{ data: 42 }] as any,
