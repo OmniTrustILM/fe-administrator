@@ -235,11 +235,13 @@ export default function AdministratorDetail() {
 
     const termsOfServiceData: TableDataRow[] = useMemo(() => {
         if (!acmeProfile) return [];
-        const disableOrdersText =
-            acmeProfile.termsOfServiceChangeDisable !== undefined ? (acmeProfile.termsOfServiceChangeDisable ? 'Yes' : 'No') : 'N/A';
-        const requireContactText = acmeProfile.requireContact !== undefined ? (acmeProfile.requireContact ? 'Yes' : 'No') : 'N/A';
-        const requireAgreementText =
-            acmeProfile.requireTermsOfService !== undefined ? (acmeProfile.requireTermsOfService ? 'Yes' : 'No') : 'N/A';
+        const yesNoOrNa = (value: boolean | undefined) => {
+            if (value === undefined) return 'N/A';
+            return value ? 'Yes' : 'No';
+        };
+        const disableOrdersText = yesNoOrNa(acmeProfile.termsOfServiceChangeDisable);
+        const requireContactText = yesNoOrNa(acmeProfile.requireContact);
+        const requireAgreementText = yesNoOrNa(acmeProfile.requireTermsOfService);
         return [
             {
                 id: 'termsOfServiceUrl',

@@ -65,10 +65,6 @@ export default function UsersList() {
         setEditingUserId(undefined);
     }, []);
 
-    const _onAddClick = useCallback(() => {
-        handleOpenAddModal();
-    }, [handleOpenAddModal]);
-
     const onEnableClick = useCallback(() => {
         checkedRows.forEach((uuid) => dispatch(actions.enable({ uuid })));
     }, [checkedRows, dispatch]);

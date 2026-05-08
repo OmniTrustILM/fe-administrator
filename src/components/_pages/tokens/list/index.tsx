@@ -65,10 +65,6 @@ function TokenList() {
         setEditingTokenId(undefined);
     }, []);
 
-    const _onAddClick = useCallback(() => {
-        handleOpenAddModal();
-    }, [handleOpenAddModal]);
-
     const setCheckedRows = useCallback(
         (rows: (string | number)[]) => {
             dispatch(actions.setCheckedRows({ checkedRows: rows as string[] }));

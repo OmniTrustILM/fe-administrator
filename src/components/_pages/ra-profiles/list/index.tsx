@@ -70,10 +70,6 @@ function RaProfileList() {
         setEditingAuthorityId(undefined);
     }, []);
 
-    const _onAddClick = useCallback(() => {
-        handleOpenAddModal();
-    }, [handleOpenAddModal]);
-
     const onEnableClick = useCallback(() => {
         dispatch(actions.bulkEnableRaProfiles({ uuids: checkedRows }));
     }, [checkedRows, dispatch]);

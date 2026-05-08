@@ -29,7 +29,6 @@ export default function AuthorityDetail() {
 
     const isFetching = useSelector(selectors.isFetchingDetail);
     const isDeleting = useSelector(selectors.isDeleting);
-    const _isUpdating = useSelector(selectors.isUpdating);
 
     const deleteErrorMessage = useSelector(selectors.deleteErrorMessage);
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));

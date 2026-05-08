@@ -51,7 +51,7 @@ import { transformCertificateObjectToNodesAndEdges } from 'ducks/transform/certi
 import { Info } from 'lucide-react';
 import type { Edge } from 'reactflow';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { DeviceType, useCopyToClipboard, useDeviceType } from 'utils/common-hooks';
+import { DeviceType, useDeviceType } from 'utils/common-hooks';
 import CertificateStatus from '../CertificateStatus';
 import CertificateList from 'components/_pages/certificates/list';
 import { capitalize } from 'utils/common-utils';
@@ -171,7 +171,6 @@ export default function CertificateDetail() {
     const dispatch = useDispatch();
     const { id } = useParams();
 
-    const _copyToClipboard = useCopyToClipboard();
     const certificate = useSelector(selectors.certificateDetail);
     const certificateRelations = useSelector(selectors.certificateRelations);
     const certificateChain = useSelector(selectors.certificateChain);

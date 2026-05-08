@@ -5,14 +5,13 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { actions as notificationsActions, selectors as notificationsSelectors } from 'ducks/notifications';
 import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import Badge from 'components/Badge';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import NotificationInstanceForm from '../notification-instance-form';
 
 const NotificationInstanceList = () => {
     const dispatch = useDispatch();
-    const _navigate = useNavigate();
 
     const notificationInstances = useSelector(notificationsSelectors.notificationInstances);
     const isFetchingNotificationInstances = useSelector(notificationsSelectors.isFetchingNotificationInstances);

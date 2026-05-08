@@ -14,7 +14,7 @@ export function durationFormatter(startDate: string | null | undefined, endDate:
         if (!startDate) return '';
         const endMs = endDate ? new Date(endDate).valueOf() : Date.now();
         return timeFormatter(endMs - new Date(startDate).valueOf());
-    } catch (_error) {
+    } catch {
         console.debug('Unable to convert the given date strings to date object');
         return '';
     }
@@ -30,7 +30,7 @@ export function timeFormatter(date: any): string {
         const seconds = leading0(dateObj.getSeconds().toString(), 2);
 
         return days > 0 ? `${leading0(days.toString(), 2)}.${hours}:${minutes}:${seconds}` : `${hours}:${minutes}:${seconds}`;
-    } catch (_error) {
+    } catch {
         console.debug('Unable to convert the given time to date object');
         return date;
     }
@@ -48,7 +48,7 @@ export function dateFormatter(date: any): string {
         const seconds = leading0(dateObj.getSeconds().toString(), 2);
 
         return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    } catch (_error) {
+    } catch {
         console.debug('Unable to convert the given date to date object');
         return date;
     }
@@ -58,7 +58,7 @@ export const getStrongFromCronExpression = (cronExpression: string | undefined) 
     if (cronExpression) {
         try {
             return cronstrue.toString(cronExpression);
-        } catch (_err) {}
+        } catch {}
     }
     return undefined;
 };

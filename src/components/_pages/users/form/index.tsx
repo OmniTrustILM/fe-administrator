@@ -299,18 +299,6 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
         [user, certFileContent, dispatch, editMode, userRoles, resourceCustomAttributes],
     );
 
-    const _loadNextCertificates = useCallback(() => {
-        if (loadedCerts.length === 0) return;
-
-        dispatch(
-            certActions.listCertificates({
-                itemsPerPage: 100,
-                pageNumber: currentPage,
-                filters: [],
-            }),
-        );
-    }, [dispatch, currentPage, loadedCerts]);
-
     const submitTitle = useMemo(() => (editMode ? 'Save' : 'Create'), [editMode]);
 
     const inProgressTitle = useMemo(() => (editMode ? 'Saving...' : 'Creating...'), [editMode]);
@@ -448,7 +436,6 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
             ),
         [editMode, control],
     );
-    const _title = useMemo(() => (editMode ? 'Edit user' : 'Create user'), [editMode]);
 
     const renderCustomAttributesEditor = useCallback(() => {
         if (isBusy) return <></>;

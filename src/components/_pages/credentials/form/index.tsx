@@ -144,16 +144,6 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
         [credentialProviders, dispatch],
     );
 
-    const _onKindChange = useCallback(
-        (value: string) => {
-            if (!value || !credentialProvider) return;
-            dispatch(connectorActions.clearCallbackData());
-            setGroupAttributesCallbackAttributes([]);
-            dispatch(actions.getCredentialProviderAttributesDescriptors({ uuid: credentialProvider.uuid, kind: value }));
-        },
-        [dispatch, credentialProvider],
-    );
-
     const combinedAttributeValues = useMemo(
         () =>
             Object.values(attributeValuesMap).reduce<Record<string, any>>((acc, current) => {

@@ -59,10 +59,6 @@ export default function GroupList() {
         setEditingGroupId(undefined);
     }, []);
 
-    const _onAddClick = useCallback(() => {
-        handleOpenAddModal();
-    }, [handleOpenAddModal]);
-
     const onDeleteConfirmed = useCallback(() => {
         dispatch(actions.bulkDeleteGroups({ uuids: checkedRows }));
         setConfirmDelete(false);

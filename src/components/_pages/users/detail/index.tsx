@@ -39,7 +39,6 @@ export default function UserDetail() {
     const updateUserSucceeded = useSelector(selectors.updateUserSucceeded);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const isUpdatingContent = useSelector(customAttributesSelectors.isUpdatingContent);
-    const _resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const certificate = useSelector(certSelectors.certificateDetail);
     const isFetchingCertificateDetail = useSelector(certSelectors.isFetchingDetail);
     const profile = useSelector(authSelectors.profile);

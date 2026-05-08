@@ -13,7 +13,7 @@ import { actions as tokenProfilesActions, selectors as tokenProfilesSelectors } 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import Select from 'components/Select';
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
@@ -55,7 +55,6 @@ interface FormValues {
 
 export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesGlobalModal = false }: CryptographicKeyFormProps) {
     const dispatch = useDispatch();
-    const _navigate = useNavigate();
 
     const { id: routeId, tokenId } = useParams();
     const id = keyId || routeId;

@@ -40,7 +40,6 @@ const TriggerDetails = () => {
     const [updateDescriptionEditEnable, setUpdateDescription] = useState<boolean>(false);
     const [updatedDescription, setUpdatedDescription] = useState('');
     const triggerTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.TriggerType));
-    const [_highlight, setHighlight] = useState(false);
     const deviceType = useDeviceType();
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
 
@@ -58,14 +57,6 @@ const TriggerDetails = () => {
         if (!triggerDetails?.description || triggerDetails.uuid !== id) return;
         setUpdatedDescription(triggerDetails.description);
     }, [triggerDetails, id]);
-
-    const triggerHighlight = useCallback(() => {
-        setHighlight(true);
-        const timer = setTimeout(() => {
-            setHighlight(false);
-        }, 2000);
-        return () => clearTimeout(timer);
-    }, []);
 
     const getFreshDetails = useCallback(() => {
         if (!id) return;
@@ -276,7 +267,6 @@ const TriggerDetails = () => {
                                           setConfirmIgnoreTrigger(true);
                                       } else {
                                           dispatch(alertActions.info('Please add actions from the actions table'));
-                                          triggerHighlight();
                                       }
                                   }}
                               />,
@@ -365,7 +355,6 @@ const TriggerDetails = () => {
             eventNameEnum,
             dispatch,
             isFetchingTriggerDetail,
-            triggerHighlight,
         ],
     );
 

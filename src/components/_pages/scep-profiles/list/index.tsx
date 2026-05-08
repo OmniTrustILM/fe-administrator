@@ -72,10 +72,6 @@ export default function ScepProfiles() {
         setEditingScepProfileId(undefined);
     }, []);
 
-    const _onAddClick = useCallback(() => {
-        handleOpenAddModal();
-    }, [handleOpenAddModal]);
-
     const onEnableClick = useCallback(() => {
         dispatch(actions.bulkEnableScepProfiles({ uuids: checkedRows }));
     }, [checkedRows, dispatch]);

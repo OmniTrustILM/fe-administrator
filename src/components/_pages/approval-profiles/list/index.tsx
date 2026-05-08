@@ -56,10 +56,6 @@ export default function ApprovalProfilesList() {
         setEditingApprovalProfileId(undefined);
     }, []);
 
-    const _onAddClick = useCallback(() => {
-        handleOpenAddModal();
-    }, [handleOpenAddModal]);
-
     const buttons: WidgetButtonProps[] = useMemo(
         () => [
             {

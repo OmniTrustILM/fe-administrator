@@ -37,9 +37,6 @@ export default function EventForm() {
     const isFetchingEventsSetting = useSelector(settingsSelectors.isFetchingEventsSetting);
     const isUpdatingEventsSetting = useSelector(settingsSelectors.isUpdatingEventsSetting);
 
-    const _resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
-    const _resourceEventEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ResourceEvent));
-
     const isBusy = useMemo(
         () => isFetchingEventsSetting || isUpdatingEventsSetting || isFetchingResourcesList,
         [isFetchingEventsSetting, isUpdatingEventsSetting, isFetchingResourcesList],

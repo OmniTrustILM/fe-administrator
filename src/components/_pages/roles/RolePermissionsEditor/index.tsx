@@ -42,8 +42,6 @@ function RolePermissionsEditor({
 
     const [objectListDialog, setObjectListDialog] = useState<boolean>(false);
 
-    const _isBusy = isFetchingObjects;
-
     const getPermissions = useCallback(
         (resource: AuthResourceModel) => {
             if (permissions.allowAllResources) return 'All actions allowed';

@@ -1,6 +1,6 @@
 import Spinner from 'components/Spinner';
 import { actions as utilsActuatorActions, selectors as utilsActuatorSelectors } from 'ducks/utilsActuator';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from 'components/Button';
 import { transformParseCertificateResponseDtoToAsn1String } from '../../../../ducks/transform/utilsCertificate';
@@ -25,7 +25,6 @@ export default function Asn1Dialog({ content, isCSR }: Props) {
     const parsedCertificateRequest = useSelector(utilsCertificateRequestSelectors.parsedCertificateRequest);
     const isFetchingCSRDetails = useSelector(utilsCertificateRequestSelectors.isFetchingDetail);
     const isFetchingDetail = useSelector(utilsCertificateSelectors.isFetchingDetail);
-    const [_asn1, setAsn1] = useState<string | undefined>(undefined);
 
     const health = useSelector(utilsActuatorSelectors.health);
 
@@ -36,7 +35,6 @@ export default function Asn1Dialog({ content, isCSR }: Props) {
 
     const onClose = useCallback(() => {
         resetParsedData();
-        setAsn1(undefined);
         dispatch(userInterfaceActions.hideGlobalModal());
     }, [resetParsedData, dispatch]);
 
@@ -53,7 +51,6 @@ export default function Asn1Dialog({ content, isCSR }: Props) {
     useEffect(() => {
         if (parsedCertificate && !isCSR) {
             const asn1String = transformParseCertificateResponseDtoToAsn1String(parsedCertificate);
-            setAsn1(asn1String);
             if (asn1String) {
                 dispatch(
                     userInterfaceActions.showGlobalModal({
@@ -72,7 +69,6 @@ export default function Asn1Dialog({ content, isCSR }: Props) {
     useEffect(() => {
         if (parsedCertificateRequest && isCSR) {
             const asn1String = transformParseRequestResponseDtoToCertificateResponseDetailModelToAsn1String(parsedCertificateRequest);
-            setAsn1(asn1String);
             if (asn1String) {
                 dispatch(
                     userInterfaceActions.showGlobalModal({

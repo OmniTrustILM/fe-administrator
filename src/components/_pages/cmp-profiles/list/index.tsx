@@ -76,10 +76,6 @@ export default function AdministratorsList() {
         setEditingCmpProfileId(undefined);
     }, []);
 
-    const _onAddClick = useCallback(() => {
-        handleOpenAddModal();
-    }, [handleOpenAddModal]);
-
     const onEnableClick = useCallback(() => {
         dispatch(actions.bulkEnableCmpProfiles({ uuids: checkedRows }));
     }, [checkedRows, dispatch]);

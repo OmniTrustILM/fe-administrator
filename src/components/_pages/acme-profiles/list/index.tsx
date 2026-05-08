@@ -72,10 +72,6 @@ export default function AdministratorsList() {
         setEditingAcmeProfileId(undefined);
     }, []);
 
-    const _onAddClick = useCallback(() => {
-        handleOpenAddModal();
-    }, [handleOpenAddModal]);
-
     const onEnableClick = useCallback(() => {
         dispatch(actions.bulkEnableAcmeProfiles({ uuids: checkedRows }));
     }, [checkedRows, dispatch]);

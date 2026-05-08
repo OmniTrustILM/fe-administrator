@@ -753,7 +753,6 @@ describe('connectors epics', () => {
     });
 
     test('callbackConnector with v1 connector emits callbackSuccess (skipped when connector not in state)', async () => {
-        const _data = { result: 'ok-v1' } as any;
         const action = slice.actions.callbackConnector({
             callbackId: 'cb-1',
             callbackConnector: { uuid: 'c-1', functionGroup: 'FG', kind: 'kind', requestAttributeCallback: { mappings: [] } } as any,
@@ -762,7 +761,7 @@ describe('connectors epics', () => {
         const callbackMock = vi.fn();
         const callbackV2Mock = vi.fn(() => of({}));
 
-        const _emitted = await runEpic(
+        await runEpic(
             17,
             action,
             {

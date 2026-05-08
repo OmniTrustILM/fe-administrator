@@ -10,7 +10,7 @@ import { actions as notificationsActions, selectors as notificationsSelectors } 
 import { PlatformEnum, Resource } from 'types/openapi';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import Container from 'components/Container';
 import Label from 'components/Label';
 import { getEditAndDeleteWidgetButtons, createWidgetDetailHeaders } from 'utils/widget';
@@ -23,8 +23,6 @@ const NotificationInstanceDetails = () => {
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const notificationInstance = useSelector(notificationsSelectors.notificationInstanceDetail);
     const mappingAttributes = useSelector(notificationsSelectors.mappingAttributes);
-
-    const _navigate = useNavigate();
 
     const customAttributes = useSelector(customAttributesSelectors.customAttributes);
     const isFetchingNotificationInstanceDetail = useSelector(notificationsSelectors.isFetchingNotificationInstanceDetail);

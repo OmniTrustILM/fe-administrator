@@ -418,13 +418,6 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
         [keyHistory],
     );
 
-    const _existingUsages = () => {
-        if (!keyItem) return [];
-        return keyItem.usage?.map((usage) => {
-            return { value: usage, label: usage.charAt(0).toUpperCase() + usage.slice(1).toLowerCase() };
-        });
-    };
-
     const additionalInfoEntry = (): any => {
         const returnList = [];
 
