@@ -289,7 +289,7 @@ export default function AttributeViewer({
     const getButtons = useCallback(
         (attribute: AttributeResponseModel, descriptor: CustomAttributeModel, attributeName: string) => {
             const buttons: WidgetButtonProps[] = [];
-            if (editingAttributesNames.some((a) => a === attributeName)) {
+            if (editingAttributesNames.includes(attributeName)) {
                 buttons.push({
                     id: 'cancel',
                     icon: 'times',
@@ -349,7 +349,7 @@ export default function AttributeViewer({
                             a.label || '',
                             a.version || '',
                             getEnumLabel(contentTypeEnum, a.contentType) || a.contentType,
-                            onSubmit && descriptor && editingAttributesNames.some((n) => n === a.name) ? (
+                            onSubmit && descriptor && editingAttributesNames.includes(a.name) ? (
                                 <AttributeEditForm
                                     key="edit-form"
                                     descriptor={descriptor}

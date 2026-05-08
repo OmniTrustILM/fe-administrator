@@ -1,4 +1,3 @@
-import React from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import ContentValueField from './index';
 import type { BaseAttributeContentModel, CustomAttributeModel } from 'types/attributes';

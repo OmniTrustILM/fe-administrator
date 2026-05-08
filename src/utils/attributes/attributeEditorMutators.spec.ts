@@ -45,7 +45,7 @@ describe('attributeEditorMutators', () => {
                 },
             } as any;
             mutator([''], state, {} as any);
-            expect(state.formState.values['__attributes____attr']).toBeUndefined();
+            expect(state.formState.values.__attributes____attr).toBeUndefined();
         });
     });
 });

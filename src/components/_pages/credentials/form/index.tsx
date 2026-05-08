@@ -144,7 +144,7 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
         [credentialProviders, dispatch],
     );
 
-    const onKindChange = useCallback(
+    const _onKindChange = useCallback(
         (value: string) => {
             if (!value || !credentialProvider) return;
             dispatch(connectorActions.clearCallbackData());

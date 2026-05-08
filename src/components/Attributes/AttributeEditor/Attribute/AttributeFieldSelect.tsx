@@ -98,7 +98,7 @@ export function AttributeFieldSelect({
                                         id={`${name}Select`}
                                         value={selectValue as { value: string | number; label: string }[]}
                                         onChange={onSelectChangeMulti(field.onChange)}
-                                        options={selectOptions as { label: string; value: string | number | object }[]}
+                                        options={selectOptions}
                                         placeholder={`Select ${descriptor.properties.label}`}
                                         isDisabled={descriptor.properties.readOnly || busy || showAddCustom}
                                         isMulti={true}
@@ -109,9 +109,9 @@ export function AttributeFieldSelect({
                                     <Select
                                         key={singleSelectKey}
                                         id={`${name}Select`}
-                                        value={selectValue as string | number | { value: string | number; label: string }}
+                                        value={selectValue}
                                         onChange={handleSingleSelectChange(field.onChange)}
-                                        options={selectOptions as { label: string; value: string | number | object }[]}
+                                        options={selectOptions}
                                         placeholder={`Select ${descriptor.properties.label}`}
                                         isDisabled={descriptor.properties.readOnly || busy || showAddCustom}
                                         isMulti={false}
@@ -144,7 +144,7 @@ export function AttributeFieldSelect({
                                     readOnly={descriptor.properties.readOnly}
                                     fieldValue={field.value}
                                     onFieldChange={field.onChange}
-                                    parseValue={(v) => parseListValueByContentType(descriptor.contentType, v as string) ?? v}
+                                    parseValue={(v) => parseListValueByContentType(descriptor.contentType, v) ?? v}
                                 />
                             </>
                         )}

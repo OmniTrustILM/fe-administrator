@@ -34,7 +34,7 @@ interface FormValues {
 
 function ComplianceProfileForm({ complianceProfileId, onCancel, onSuccess }: ComplianceProfileFormProps) {
     const dispatch = useDispatch();
-    const navigate = useNavigate();
+    const _navigate = useNavigate();
 
     const isCreating = useSelector(selectors.isCreating);
     const createComplianceProfileSucceeded = useSelector(selectors.createComplianceProfileSucceeded);

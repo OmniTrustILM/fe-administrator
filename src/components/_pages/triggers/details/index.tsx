@@ -40,7 +40,7 @@ const TriggerDetails = () => {
     const [updateDescriptionEditEnable, setUpdateDescription] = useState<boolean>(false);
     const [updatedDescription, setUpdatedDescription] = useState('');
     const triggerTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.TriggerType));
-    const [highlight, setHighlight] = useState(false);
+    const [_highlight, setHighlight] = useState(false);
     const deviceType = useDeviceType();
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
 

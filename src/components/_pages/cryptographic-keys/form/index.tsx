@@ -55,7 +55,7 @@ interface FormValues {
 
 export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesGlobalModal = false }: CryptographicKeyFormProps) {
     const dispatch = useDispatch();
-    const navigate = useNavigate();
+    const _navigate = useNavigate();
 
     const { id: routeId, tokenId } = useParams();
     const id = keyId || routeId;

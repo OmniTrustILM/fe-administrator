@@ -24,7 +24,7 @@ const NotificationInstanceDetails = () => {
     const notificationInstance = useSelector(notificationsSelectors.notificationInstanceDetail);
     const mappingAttributes = useSelector(notificationsSelectors.mappingAttributes);
 
-    const navigate = useNavigate();
+    const _navigate = useNavigate();
 
     const customAttributes = useSelector(customAttributesSelectors.customAttributes);
     const isFetchingNotificationInstanceDetail = useSelector(notificationsSelectors.isFetchingNotificationInstanceDetail);

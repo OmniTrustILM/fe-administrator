@@ -381,7 +381,7 @@ export function useTransformTriggerObjectToNodesAndEdges(
                                     trigger: {
                                         actionsUuids: allActionsUuids,
                                         rulesUuids: allRulesUuids,
-                                        ignoreTrigger: allActionsUuids.length === 0 ? true : false,
+                                        ignoreTrigger: allActionsUuids.length === 0,
                                         resource: triggerDetails.resource,
                                         type: triggerDetails.type,
                                         description: triggerDetails.description || '',

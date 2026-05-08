@@ -250,7 +250,6 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                 }
                 return { type: SecretType.KeyValue, content } as KeyValueSecretContent;
             }
-            case SecretType.Generic:
             default:
                 return { type: SecretType.Generic, content: values.content ?? '' } as GenericSecretContent;
         }

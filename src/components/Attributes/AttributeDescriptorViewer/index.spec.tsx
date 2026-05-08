@@ -46,12 +46,12 @@ const dataDescriptor = (overrides: any = {}) => {
             list: false,
             multiSelect: false,
             visible: true,
-            ...(propOverrides ?? {}),
+            ...propOverrides,
         },
         constraints: constraints ?? [],
         content: content ?? [],
         ...rest,
-    } as any;
+    };
 };
 
 const infoDescriptor = (overrides: any = {}) => {
@@ -60,10 +60,10 @@ const infoDescriptor = (overrides: any = {}) => {
         type: AttributeType.Info,
         name: 'info1',
         contentType: AttributeContentType.String,
-        properties: { label: 'Info Label', visible: true, group: '__', ...(propOverrides ?? {}) },
+        properties: { label: 'Info Label', visible: true, group: '__', ...propOverrides },
         content: content ?? [],
         ...rest,
-    } as any;
+    };
 };
 
 test.describe('AttributeDescriptorViewer', () => {

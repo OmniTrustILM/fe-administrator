@@ -237,7 +237,7 @@ export const slice = createSlice({
             state.isUpdating = false;
             state.raProfile = {
                 ...action.payload.raProfile,
-                attributes: state.raProfile?.attributes!,
+                attributes: state.raProfile!.attributes,
                 customAttributes: state.raProfile?.customAttributes,
             };
         },

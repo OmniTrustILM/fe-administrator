@@ -325,7 +325,6 @@ export default function ConnectorDetail() {
                 return <Badge color="danger">{status}</Badge>;
             case HealthStatus.Degraded:
                 return <Badge color="warning">{status}</Badge>;
-            case HealthStatus.Unknown:
             default:
                 return <Badge color="transparent">{status}</Badge>;
         }

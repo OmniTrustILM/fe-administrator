@@ -56,7 +56,7 @@ export default function ApprovalProfilesList() {
         setEditingApprovalProfileId(undefined);
     }, []);
 
-    const onAddClick = useCallback(() => {
+    const _onAddClick = useCallback(() => {
         handleOpenAddModal();
     }, [handleOpenAddModal]);
 

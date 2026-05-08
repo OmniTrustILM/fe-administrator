@@ -334,7 +334,7 @@ const NotificationInstanceForm = ({ notificationInstanceId, onCancel, onSuccess 
             return true;
         }
 
-        const attributeValues = (allFormValues as any)[`__attributes__notification__`] || {};
+        const attributeValues = (allFormValues as any).__attributes__notification__ || {};
 
         const isAttributeValueEmpty = (fieldValue: unknown): boolean => {
             if (fieldValue === null || fieldValue === undefined) return true;

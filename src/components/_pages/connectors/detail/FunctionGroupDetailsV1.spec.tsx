@@ -1,5 +1,4 @@
 import { test, expect } from '../../../../../playwright/ct-test';
-import React from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import { createMockStore } from 'utils/test-helpers';

@@ -9,7 +9,7 @@ function base64Encode(s: string): string {
     if (typeof Buffer === 'undefined') {
         const bytes = new TextEncoder().encode(s);
         let binary = '';
-        for (const byte of bytes) binary += String.fromCharCode(byte);
+        for (const byte of bytes) binary += String.fromCodePoint(byte);
         return btoa(binary);
     }
     return Buffer.from(s, 'utf8').toString('base64');
@@ -46,7 +46,7 @@ test.describe('CodeBlock component', () => {
                 code: base64Encode('print(1)'),
                 language: ProgrammingLanguageEnum.Python,
             },
-        } as CodeBlockAttributeContentModel;
+        };
         const store = createMockStore();
         await mount(withProviders(<CodeBlockForTest content={content} />, { store }));
         await expect(page.getByTestId('code-block')).toBeVisible();
@@ -60,7 +60,7 @@ test.describe('CodeBlock component', () => {
                 code: base64Encode('const a = 1;'),
                 language: ProgrammingLanguageEnum.Javascript,
             },
-        } as CodeBlockAttributeContentModel;
+        };
         const store = createMockStore();
         await mount(withProviders(<CodeBlockForTest content={content} />, { store }));
         await page.getByTestId('code-block-open-btn').click();
@@ -77,7 +77,7 @@ test.describe('CodeBlock component', () => {
                 code: undefined as any,
                 language: ProgrammingLanguageEnum.Json,
             },
-        } as CodeBlockAttributeContentModel;
+        };
         const store = createMockStore();
         await mount(withProviders(<CodeBlockForTest content={content} />, { store }));
         await expect(page.getByTestId('code-block')).toBeVisible();
@@ -94,7 +94,7 @@ test.describe('CodeBlock component', () => {
                 code: base64Encode(rawCode),
                 language: 'unknown-lang' as ProgrammingLanguageEnum,
             },
-        } as CodeBlockAttributeContentModel;
+        };
         const store = createMockStore();
         await mount(withProviders(<CodeBlockForTest content={content} />, { store }));
         await page.getByTestId('code-block-open-btn').click();

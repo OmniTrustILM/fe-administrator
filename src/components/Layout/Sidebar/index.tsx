@@ -429,11 +429,11 @@ export default function Sidebar({ allowedResources }: Props) {
             const isChildActive = childrenKeys.some((child) => child === activePage || activePage.startsWith(`${child}/`));
             const isActive = openMenuItems.includes(mapping._key);
             return (
-                <li key={mapping.header} className={cn('flex justify-center', { 'flex-col': menuSize != 'small' })}>
+                <li key={mapping.header} className={cn('flex justify-center', { 'flex-col': menuSize !== 'small' })}>
                     <Button
                         variant="transparent"
                         className={cn('!px-4 !py-2 border-none justify-between h-[38px]', {
-                            'flex w-full items-center': menuSize != 'small',
+                            'flex w-full items-center': menuSize !== 'small',
                         })}
                         onClick={() => {
                             if (menuSize === 'small') {
@@ -448,7 +448,7 @@ export default function Sidebar({ allowedResources }: Props) {
                             {mapping.icon}
                             <span className={cn('text-sm', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
                         </div>
-                        {menuSize != 'small' && <ChevronDown strokeWidth={1.5} size={16} className={cn({ isActive: 'rotate-180' })} />}
+                        {menuSize !== 'small' && <ChevronDown strokeWidth={1.5} size={16} className={cn({ isActive: 'rotate-180' })} />}
                     </Button>
                     <ul
                         className={cn(

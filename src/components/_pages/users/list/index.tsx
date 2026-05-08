@@ -65,7 +65,7 @@ export default function UsersList() {
         setEditingUserId(undefined);
     }, []);
 
-    const onAddClick = useCallback(() => {
+    const _onAddClick = useCallback(() => {
         handleOpenAddModal();
     }, [handleOpenAddModal]);
 

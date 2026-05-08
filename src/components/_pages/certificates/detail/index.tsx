@@ -171,7 +171,7 @@ export default function CertificateDetail() {
     const dispatch = useDispatch();
     const { id } = useParams();
 
-    const copyToClipboard = useCopyToClipboard();
+    const _copyToClipboard = useCopyToClipboard();
     const certificate = useSelector(selectors.certificateDetail);
     const certificateRelations = useSelector(selectors.certificateRelations);
     const certificateChain = useSelector(selectors.certificateChain);

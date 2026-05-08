@@ -1,4 +1,3 @@
-import React from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import ContentDescriptorField from './index';
 import type { AttributeContentType } from 'types/openapi';

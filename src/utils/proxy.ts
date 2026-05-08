@@ -35,7 +35,6 @@ export function getProxyStatusColor(status: ProxyStatus): string {
             return 'var(--status-warning-color)';
         case ProxyStatus.Provisioning:
             return 'var(--status-gray-color)';
-        case ProxyStatus.Initialized:
         default:
             return 'var(--status-gray-color)';
     }

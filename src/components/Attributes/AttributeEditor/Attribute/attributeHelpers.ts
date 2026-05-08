@@ -23,11 +23,6 @@ export function parseListValueByContentType(
         }
         case AttributeContentType.Boolean:
             return str === 'true' || str === '1';
-        case AttributeContentType.String:
-        case AttributeContentType.Text:
-        case AttributeContentType.Date:
-        case AttributeContentType.Time:
-        case AttributeContentType.Datetime:
         default:
             return str;
     }
@@ -149,7 +144,7 @@ export function getUpdatedOptionsForEditSelect(
 ): { label: string; value: any }[] | undefined {
     if (valuesRecieved?.length > 0) {
         const updatedOptions = options?.filter((option) => {
-            return !valuesRecieved.some((value) => JSON.stringify(value.value) == JSON.stringify(option.value));
+            return !valuesRecieved.some((value) => JSON.stringify(value.value) === JSON.stringify(option.value));
         });
         return updatedOptions;
     }

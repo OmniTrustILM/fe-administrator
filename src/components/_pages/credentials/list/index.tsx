@@ -62,7 +62,7 @@ function CredentialList() {
         setEditingCredentialId(undefined);
     }, []);
 
-    const onAddClick = useCallback(() => {
+    const _onAddClick = useCallback(() => {
         handleOpenAddModal();
     }, [handleOpenAddModal]);
 

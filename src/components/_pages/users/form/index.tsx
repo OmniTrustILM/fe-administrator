@@ -299,7 +299,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
         [user, certFileContent, dispatch, editMode, userRoles, resourceCustomAttributes],
     );
 
-    const loadNextCertificates = useCallback(() => {
+    const _loadNextCertificates = useCallback(() => {
         if (loadedCerts.length === 0) return;
 
         dispatch(
@@ -448,7 +448,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
             ),
         [editMode, control],
     );
-    const title = useMemo(() => (editMode ? 'Edit user' : 'Create user'), [editMode]);
+    const _title = useMemo(() => (editMode ? 'Edit user' : 'Create user'), [editMode]);
 
     const renderCustomAttributesEditor = useCallback(() => {
         if (isBusy) return <></>;

@@ -72,7 +72,7 @@ export default function AdministratorsList() {
         setEditingAcmeProfileId(undefined);
     }, []);
 
-    const onAddClick = useCallback(() => {
+    const _onAddClick = useCallback(() => {
         handleOpenAddModal();
     }, [handleOpenAddModal]);
 

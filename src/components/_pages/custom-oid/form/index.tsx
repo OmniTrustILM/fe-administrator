@@ -67,7 +67,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
 
     const inProgressTitle = useMemo(() => (editMode ? 'Saving...' : 'Creating...'), [editMode]);
 
-    const title = useMemo(() => (editMode ? 'Edit Custom OID' : 'Create Custom OID'), [editMode]);
+    const _title = useMemo(() => (editMode ? 'Edit Custom OID' : 'Create Custom OID'), [editMode]);
 
     const oidCategoryEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.OidCategory));
 

@@ -52,7 +52,7 @@ describe('authSettings slice', () => {
         );
         expect(next.isUpdatingSettings).toBe(false);
         expect(next.authenticationSettings?.disableLocalhostUser).toBe(true);
-        expect(next.authenticationSettings?.oauth2Providers?.['prov2']).toEqual({ name: 'prov2' });
+        expect(next.authenticationSettings?.oauth2Providers?.prov2).toEqual({ name: 'prov2' });
 
         next = reducer({ ...next, isUpdatingSettings: true }, actions.updateAuthenticationSettingsFailure({ error: 'err' }));
         expect(next.isUpdatingSettings).toBe(false);

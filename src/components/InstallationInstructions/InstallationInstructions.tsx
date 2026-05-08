@@ -1,4 +1,3 @@
-import React from 'react';
 import cn from 'classnames';
 import { Copy } from 'lucide-react';
 

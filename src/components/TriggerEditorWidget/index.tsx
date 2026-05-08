@@ -45,7 +45,7 @@ export default function TriggerEditorWidget({ resource, event, selectedTriggers,
                     label: trigger.name,
                     value: trigger.uuid,
                 }))
-                .filter((trigger) => !selectedTriggers.find((selectedTrigger) => selectedTrigger === trigger.value)),
+                .filter((trigger) => !selectedTriggers.includes(trigger.value)),
         [triggers, selectedTriggers, event],
     );
 
@@ -72,7 +72,7 @@ export default function TriggerEditorWidget({ resource, event, selectedTriggers,
             const newTriggers = newValues.map((el) => triggers.find((innerEl) => innerEl.uuid === el.value));
             const allTriggers = [
                 ...previousTriggers,
-                ...(newTriggers.filter((newValue) => !previousTriggers.find((trigger) => trigger === newValue?.uuid)) as TriggerDto[]).map(
+                ...(newTriggers.filter((newValue) => !previousTriggers.includes(newValue?.uuid as string)) as TriggerDto[]).map(
                     (el) => el?.uuid,
                 ),
             ];
@@ -91,7 +91,7 @@ export default function TriggerEditorWidget({ resource, event, selectedTriggers,
     );
     const onMoveTriggerUp = useCallback(
         (trigger: TriggerDto) => {
-            const index = selectedTriggers.findIndex((selectedTrigger) => selectedTrigger === trigger.uuid);
+            const index = selectedTriggers.indexOf(trigger.uuid);
             if (index === 0) return;
             const newSelectedTriggers = [...selectedTriggers];
             const temp = newSelectedTriggers[index];
@@ -104,7 +104,7 @@ export default function TriggerEditorWidget({ resource, event, selectedTriggers,
 
     const onMoveTriggerDown = useCallback(
         (trigger: TriggerDto) => {
-            const index = selectedTriggers.findIndex((selectedTrigger) => selectedTrigger === trigger.uuid);
+            const index = selectedTriggers.indexOf(trigger.uuid);
             if (index === selectedTriggers.length - 1) return;
             const newSelectedTriggers = [...selectedTriggers];
             const temp = newSelectedTriggers[index];
@@ -149,12 +149,8 @@ export default function TriggerEditorWidget({ resource, event, selectedTriggers,
 
     const triggerTableData: TableDataRow[] = useMemo(() => {
         const triggerDataListOrderedAsPerSelectedTriggers = triggers
-            .filter((trigger) => selectedTriggers.find((selectedTrigger) => selectedTrigger === trigger.uuid))
-            .sort(
-                (a, b) =>
-                    selectedTriggers.findIndex((selectedTrigger) => selectedTrigger === a.uuid) -
-                    selectedTriggers.findIndex((selectedTrigger) => selectedTrigger === b.uuid),
-            );
+            .filter((trigger) => selectedTriggers.includes(trigger.uuid))
+            .sort((a, b) => selectedTriggers.indexOf(a.uuid) - selectedTriggers.indexOf(b.uuid));
 
         const ignoreTriggerIndexTransition = triggerDataListOrderedAsPerSelectedTriggers.findIndex((el) => !el.ignoreTrigger) - 1;
 

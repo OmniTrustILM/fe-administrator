@@ -18,7 +18,7 @@ import ProgressButton from '../../../ProgressButton';
 import Button from 'components/Button';
 import Container from 'components/Container';
 
-type FormValues = {};
+type FormValues = Record<string, never>;
 
 type Props = Readonly<{
     onCancel: () => void;

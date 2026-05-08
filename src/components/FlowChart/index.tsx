@@ -81,8 +81,8 @@ export const getLayoutedElements = (nodes: CustomNode[], edges: Edge[], directio
                         acc[node.data.group] = acc[node.data.group] || [];
                         acc[node.data.group].push(node);
                     } else {
-                        acc['nonGrouped'] = acc['nonGrouped'] || [];
-                        acc['nonGrouped'].push(node);
+                        acc.nonGrouped = acc.nonGrouped || [];
+                        acc.nonGrouped.push(node);
                     }
                     return acc;
                 },

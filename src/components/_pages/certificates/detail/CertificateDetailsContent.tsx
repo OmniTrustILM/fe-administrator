@@ -374,7 +374,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
             certDetail.unshift({
                 id: 'trustedCa',
                 columns: [
-                    certificate?.subjectType == CertificateSubjectType.SelfSignedEndEntity ? 'Trusted Self-Signed' : 'Trusted CA',
+                    certificate?.subjectType === CertificateSubjectType.SelfSignedEndEntity ? 'Trusted Self-Signed' : 'Trusted CA',
                     <Switch
                         key="trustedCa-switch"
                         id="trustedCa"

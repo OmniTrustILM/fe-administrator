@@ -85,7 +85,7 @@ function TokenProfileList() {
         setEditingTokenId(undefined);
     }, []);
 
-    const onAddClick = useCallback(() => {
+    const _onAddClick = useCallback(() => {
         handleOpenAddModal();
     }, [handleOpenAddModal]);
 

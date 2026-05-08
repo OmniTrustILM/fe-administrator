@@ -133,10 +133,10 @@ function createDeps(overrides: Partial<Clients> = {}) {
 
     return {
         apiClients: {
-            customAttributes: { ...defaults.customAttributes, ...(overrides.customAttributes ?? {}) },
-            vaults: { ...defaults.vaults, ...(overrides.vaults ?? {}) },
-            vaultProfiles: { ...defaults.vaultProfiles, ...(overrides.vaultProfiles ?? {}) },
-            secrets: { ...defaults.secrets, ...(overrides.secrets ?? {}) },
+            customAttributes: { ...defaults.customAttributes, ...overrides.customAttributes },
+            vaults: { ...defaults.vaults, ...overrides.vaults },
+            vaultProfiles: { ...defaults.vaultProfiles, ...overrides.vaultProfiles },
+            secrets: { ...defaults.secrets, ...overrides.secrets },
         },
     };
 }

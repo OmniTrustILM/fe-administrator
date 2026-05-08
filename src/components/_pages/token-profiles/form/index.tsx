@@ -53,7 +53,7 @@ export default function TokenProfileForm({
     usesGlobalModal = false,
 }: TokenProfileFormProps) {
     const dispatch = useDispatch();
-    const navigate = useNavigate();
+    const _navigate = useNavigate();
 
     const { id: routeId, tokenId: routeTokenId } = useParams();
     const id = tokenProfileId || routeId;

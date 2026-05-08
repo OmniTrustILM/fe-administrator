@@ -12,7 +12,7 @@ import NotificationInstanceForm from '../notification-instance-form';
 
 const NotificationInstanceList = () => {
     const dispatch = useDispatch();
-    const navigate = useNavigate();
+    const _navigate = useNavigate();
 
     const notificationInstances = useSelector(notificationsSelectors.notificationInstances);
     const isFetchingNotificationInstances = useSelector(notificationsSelectors.isFetchingNotificationInstances);

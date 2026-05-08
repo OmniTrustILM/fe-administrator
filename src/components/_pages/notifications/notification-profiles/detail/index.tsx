@@ -194,8 +194,6 @@ export default function NotificationProfileDetail() {
                                           return `../../../groups/detail/${recipient.uuid}`;
                                       case RecipientType.Role:
                                           return `../../../roles/detail/${recipient.uuid}`;
-                                      case RecipientType.None:
-                                      case RecipientType.Owner:
                                       default:
                                           return '';
                                   }

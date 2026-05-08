@@ -13,7 +13,7 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 
 import { actions, selectors } from 'ducks/locations';
 import { actions as raActions, selectors as raSelectors } from 'ducks/ra-profiles';
-import React, { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';

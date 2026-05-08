@@ -48,7 +48,7 @@ export default function TokenProfileDetail() {
 
     const keyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyUsage));
     const [keyUsages, setKeyUsages] = useState<KeyUsage[]>([]);
-    const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
+    const _resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const isBusy = useMemo(
         () => isFetchingProfile || isDeleting || isEnabling || isDisabling || isUpdatingKeyUsage,
         [isFetchingProfile, isDeleting, isEnabling, isDisabling, isUpdatingKeyUsage],
@@ -99,7 +99,7 @@ export default function TokenProfileDetail() {
         setConfirmDelete(false);
     }, [dispatch, tokenProfile]);
 
-    const existingUsages = () => {
+    const _existingUsages = () => {
         if (!tokenProfile) return [];
         return tokenProfile?.usages.map((usage) => {
             return { value: usage, label: usage.charAt(0).toUpperCase() + usage.slice(1).toLowerCase() };

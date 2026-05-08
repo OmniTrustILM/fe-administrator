@@ -25,7 +25,7 @@ export default function Asn1Dialog({ content, isCSR }: Props) {
     const parsedCertificateRequest = useSelector(utilsCertificateRequestSelectors.parsedCertificateRequest);
     const isFetchingCSRDetails = useSelector(utilsCertificateRequestSelectors.isFetchingDetail);
     const isFetchingDetail = useSelector(utilsCertificateSelectors.isFetchingDetail);
-    const [asn1, setAsn1] = useState<string | undefined>(undefined);
+    const [_asn1, setAsn1] = useState<string | undefined>(undefined);
 
     const health = useSelector(utilsActuatorSelectors.health);
 

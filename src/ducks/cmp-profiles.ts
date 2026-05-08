@@ -125,7 +125,7 @@ export const slice = createSlice({
 
             state.cmpProfile = action.payload.cmpProfile;
 
-            const cmpProfileIndex = state.cmpProfiles.findIndex((cmpProfile) => cmpProfile.uuid === action.payload.cmpProfile.uuid);
+            const _cmpProfileIndex = state.cmpProfiles.findIndex((cmpProfile) => cmpProfile.uuid === action.payload.cmpProfile.uuid);
         },
 
         getCmpProfileFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {

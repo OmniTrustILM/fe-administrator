@@ -596,7 +596,7 @@ export const slice = createSlice({
             state.isBulkUpdatingKeyUsage = true;
         },
 
-        bulkUpdateKeyUsageSuccess: (state, action: PayloadAction<{}>) => {
+        bulkUpdateKeyUsageSuccess: (state, action: PayloadAction<Record<string, never>>) => {
             state.isBulkUpdatingKeyUsage = false;
         },
 
