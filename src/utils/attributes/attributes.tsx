@@ -253,6 +253,25 @@ export function collectFormAttributes(
                 content = getAttributeFormValue(descriptor.contentType, descriptor.content, attributes[attribute]);
             }
 
+            if (descriptor.contentType === AttributeContentType.Resource) {
+                // The resource picker leaves a stub entry in the form value when the operator
+                // clears a previously-selected resource. Whatever shape the picker produces —
+                // primitive empty, object with empty data, single-pick scalar, react-select
+                // null — it normalises to a content shape whose `data` is empty, which fails
+                // polymorphic deserialisation on the backend with "missing type id property
+                // 'resource'". Strip the stub so a cleared selection serialises as either
+                // content: [] (list / multiSelect) or no attribute at all (single-pick).
+                if (Array.isArray(content)) {
+                    content = content.filter(
+                        (item: { data: unknown }) => item.data !== null && item.data !== undefined && item.data !== '',
+                    );
+                } else if (content?.data === null || content?.data === undefined || content?.data === '') {
+                    content = undefined;
+                }
+            }
+
+            if (content === undefined) continue;
+
             if (content.data !== undefined || Array.isArray(content)) {
                 const contentArray = Array.isArray(content) ? content : [content];
                 const existing = existingAttributes?.find((a) => a.name === attributeName);
