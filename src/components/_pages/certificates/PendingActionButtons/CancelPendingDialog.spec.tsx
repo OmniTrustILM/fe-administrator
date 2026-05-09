@@ -11,10 +11,10 @@ test.describe('CancelPendingDialog', () => {
             />,
         );
         await page.evaluate(() => {
-            (window as any).__lastDispatchedAction = undefined;
+            (globalThis as any).__lastDispatchedAction = undefined;
         });
         await page.getByRole('button', { name: /cancel operation/i }).click();
-        const dispatched = await page.evaluate(() => (window as any).__lastDispatchedAction);
+        const dispatched = await page.evaluate(() => (globalThis as any).__lastDispatchedAction);
         expect(dispatched.type).toContain('cancelPendingCertificateOperation');
         expect(dispatched.payload).toMatchObject({ uuid: 'cert-1', reason: undefined });
     });
@@ -29,10 +29,10 @@ test.describe('CancelPendingDialog', () => {
         );
         await page.getByLabel(/reason/i).fill('  no longer needed  ');
         await page.evaluate(() => {
-            (window as any).__lastDispatchedAction = undefined;
+            (globalThis as any).__lastDispatchedAction = undefined;
         });
         await page.getByRole('button', { name: /cancel operation/i }).click();
-        const dispatched = await page.evaluate(() => (window as any).__lastDispatchedAction);
+        const dispatched = await page.evaluate(() => (globalThis as any).__lastDispatchedAction);
         expect(dispatched.payload.reason).toBe('no longer needed');
     });
 });

@@ -519,11 +519,8 @@ const certificatesTestInitialState: CertificatesTestState = {
     cancelingPendingCertificateUuids: [],
 };
 
-function certificatesTestReducer(
-    state: CertificatesTestState = certificatesTestInitialState,
-    _action: UnknownAction,
-): CertificatesTestState {
-    return state;
+function certificatesTestReducer(state: CertificatesTestState | undefined, _action: UnknownAction): CertificatesTestState {
+    return state ?? certificatesTestInitialState;
 }
 
 export type UtilsCertificateTestState = {
@@ -534,11 +531,8 @@ const utilsCertificateTestInitialState: UtilsCertificateTestState = {
     parsedCertificate: undefined,
 };
 
-function utilsCertificateTestReducer(
-    state: UtilsCertificateTestState = utilsCertificateTestInitialState,
-    _action: UnknownAction,
-): UtilsCertificateTestState {
-    return state;
+function utilsCertificateTestReducer(state: UtilsCertificateTestState | undefined, _action: UnknownAction): UtilsCertificateTestState {
+    return state ?? utilsCertificateTestInitialState;
 }
 
 export type UtilsActuatorTestState = {
@@ -549,11 +543,8 @@ const utilsActuatorTestInitialState: UtilsActuatorTestState = {
     health: undefined,
 };
 
-function utilsActuatorTestReducer(
-    state: UtilsActuatorTestState = utilsActuatorTestInitialState,
-    _action: UnknownAction,
-): UtilsActuatorTestState {
-    return state;
+function utilsActuatorTestReducer(state: UtilsActuatorTestState | undefined, _action: UnknownAction): UtilsActuatorTestState {
+    return state ?? utilsActuatorTestInitialState;
 }
 
 export const testReducers = combineReducers({

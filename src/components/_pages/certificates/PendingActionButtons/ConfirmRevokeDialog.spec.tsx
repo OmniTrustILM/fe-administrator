@@ -6,7 +6,7 @@ test.describe('ConfirmRevokeDialog', () => {
         const cert = { uuid: 'cert-1', raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any };
         await mount(<ConfirmRevokeDialogWithStore isOpen onClose={() => {}} certificate={cert} />);
         await page.getByRole('button', { name: /^confirm$/i }).click();
-        const dispatched = await page.evaluate(() => (window as any).__lastDispatchedAction);
+        const dispatched = await page.evaluate(() => (globalThis as any).__lastDispatchedAction);
         expect(dispatched.type).toContain('manuallyConfirmRevoke');
         expect(dispatched.payload).toMatchObject({ uuid: 'cert-1', raProfileUuid: 'ra-1', authorityUuid: 'auth-1' });
     });
@@ -23,11 +23,11 @@ test.describe('ConfirmRevokeDialog', () => {
             />,
         );
         await page.evaluate(() => {
-            (window as any).__lastDispatchedAction = undefined;
+            (globalThis as any).__lastDispatchedAction = undefined;
         });
         await page.getByRole('button', { name: /^cancel$/i }).click();
         await page.waitForTimeout(50);
-        const dispatched = await page.evaluate(() => (window as any).__lastDispatchedAction);
+        const dispatched = await page.evaluate(() => (globalThis as any).__lastDispatchedAction);
         expect(dispatched).toBeUndefined();
         expect(closed).toBe(true);
     });
