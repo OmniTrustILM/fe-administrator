@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { actions as certificatesActions } from 'ducks/certificates';
 import Dialog from 'components/Dialog';
+import TextInput from 'components/TextInput';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 
 type Props = Readonly<{
@@ -34,22 +35,11 @@ export default function CancelPendingDialog({ isOpen, onClose, certificate }: Pr
             isOpen={isOpen}
             toggle={onClose}
             caption="Cancel pending operation"
-            body={
-                <div>
-                    <label htmlFor="cancel-pending-reason" className="block mb-2">
-                        Reason (optional)
-                    </label>
-                    <textarea
-                        id="cancel-pending-reason"
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        rows={3}
-                        className="w-full"
-                    />
-                </div>
-            }
+            icon="destroy"
+            size="md"
+            body={<TextInput type="textarea" id="cancel-pending-reason" label="Reason (optional)" value={reason} onChange={setReason} />}
             buttons={[
-                { key: 'keep', body: 'Keep pending', color: 'secondary', onClick: onClose },
+                { key: 'keep', body: 'Keep pending', color: 'secondary', variant: 'outline', onClick: onClose },
                 { key: 'cancel', body: 'Cancel operation', color: 'danger', onClick: onConfirm },
             ]}
         />

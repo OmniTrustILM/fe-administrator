@@ -29,9 +29,11 @@ export default function ConfirmRevokeDialog({ isOpen, onClose, certificate }: Pr
             isOpen={isOpen}
             toggle={onClose}
             caption="Confirm revocation"
+            icon="check"
+            size="md"
             body={<p>Mark this certificate as revoked. The pending revocation request will be finalised.</p>}
             buttons={[
-                { key: 'cancel', body: 'Cancel', color: 'secondary', onClick: onClose },
+                { key: 'cancel', body: 'Cancel', color: 'secondary', variant: 'outline', onClick: onClose },
                 { key: 'confirm', body: 'Confirm', color: 'danger', onClick: onConfirm },
             ]}
         />

@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { CertificateState } from 'types/openapi';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { actions as certificatesActions, selectors as certificatesSelectors } from 'ducks/certificates';
+import Button from 'components/Button';
+import Dialog from 'components/Dialog';
 import { iconRegistry } from 'utils/icons';
 import CertificateUploadDialog from '../CertificateUploadDialog';
 import ConfirmRevokeDialog from './ConfirmRevokeDialog';
@@ -34,8 +37,7 @@ export default function PendingActionButtons({ certificate, compact = false }: P
     const Upload = iconRegistry['upload'];
     const CheckCircle = iconRegistry['check-circle'];
     const XCircle = iconRegistry['cross-circle'];
-    const iconSize = compact ? 16 : 20;
-    const containerCls = compact ? 'inline-flex items-center gap-1 ml-2' : 'inline-flex items-center gap-2 ml-2';
+    const buttonClass = compact ? '!p-1 -my-1' : undefined;
 
     const onUpload = (data: { fileContent: string; customAttributes?: any }) => {
         if (!certificate.raProfile?.authorityInstanceUuid) return;
@@ -55,52 +57,77 @@ export default function PendingActionButtons({ certificate, compact = false }: P
 
     return (
         <>
-            <span className={containerCls}>
+            <span className="inline-flex items-center gap-1 ml-2 align-middle">
                 {certificate.state === CertificateState.PendingIssue && (
-                    <button
-                        type="button"
-                        aria-label="Finalise issue (upload certificate)"
+                    <Button
+                        variant="transparent"
+                        className={buttonClass}
                         title="Finalise issue (upload certificate)"
-                        onClick={() => {
+                        data-testid="finalize-issue-button"
+                        onClick={(e) => {
+                            e.stopPropagation();
                             if (!isFinalizingThis) setShowFinalize(true);
                         }}
                         disabled={isFinalizingThis}
                     >
-                        <Upload size={iconSize} />
-                    </button>
+                        <Upload size={16} />
+                        <span className="sr-only">Finalise issue (upload certificate)</span>
+                    </Button>
                 )}
                 {certificate.state === CertificateState.PendingRevoke && (
-                    <button
-                        type="button"
-                        aria-label="Confirm revocation"
+                    <Button
+                        variant="transparent"
+                        className={buttonClass}
                         title="Confirm revocation"
-                        onClick={() => {
+                        data-testid="confirm-revoke-button"
+                        onClick={(e) => {
+                            e.stopPropagation();
                             if (!isConfirmingThis) setShowConfirmRevoke(true);
                         }}
                         disabled={isConfirmingThis}
                     >
-                        <CheckCircle size={iconSize} />
-                    </button>
+                        <CheckCircle size={16} />
+                        <span className="sr-only">Confirm revocation</span>
+                    </Button>
                 )}
-                <button
-                    type="button"
-                    aria-label="Cancel pending operation"
+                <Button
+                    variant="transparent"
+                    className={buttonClass}
                     title="Cancel pending operation"
-                    onClick={() => {
+                    data-testid="cancel-pending-button"
+                    onClick={(e) => {
+                        e.stopPropagation();
                         if (!isCancelingThis) setShowCancel(true);
                     }}
                     disabled={isCancelingThis}
                 >
-                    <XCircle size={iconSize} />
-                </button>
+                    <XCircle size={16} />
+                    <span className="sr-only">Cancel pending operation</span>
+                </Button>
             </span>
 
-            {showFinalize && (
-                <CertificateUploadDialog onCancel={() => setShowFinalize(false)} onUpload={onUpload} okButtonTitle="Finalise issue" />
+            {createPortal(
+                <div onClickCapture={(e) => e.stopPropagation()} onKeyDownCapture={(e) => e.stopPropagation()}>
+                    <Dialog
+                        isOpen={showFinalize}
+                        caption="Finalise Issue"
+                        body={
+                            <CertificateUploadDialog
+                                onCancel={() => setShowFinalize(false)}
+                                onUpload={onUpload}
+                                okButtonTitle="Finalise issue"
+                            />
+                        }
+                        toggle={() => setShowFinalize(false)}
+                        buttons={[]}
+                        size="xl"
+                        icon="upload"
+                    />
+                    <ConfirmRevokeDialog isOpen={showConfirmRevoke} onClose={() => setShowConfirmRevoke(false)} certificate={certificate} />
+                    <CancelPendingDialog isOpen={showCancel} onClose={() => setShowCancel(false)} certificate={certificate} />
+                </div>,
+                document.body,
             )}
-
-            <ConfirmRevokeDialog isOpen={showConfirmRevoke} onClose={() => setShowConfirmRevoke(false)} certificate={certificate} />
-            <CancelPendingDialog isOpen={showCancel} onClose={() => setShowCancel(false)} certificate={certificate} />
         </>
     );
 }
