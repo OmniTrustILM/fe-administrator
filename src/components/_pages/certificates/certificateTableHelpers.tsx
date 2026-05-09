@@ -195,7 +195,16 @@ export function buildCertificateDetailBaseRows(
         });
     }
     rows.push(
-        { id: 'certState', columns: ['State', <CertificateStatus key="state" status={certificate.state} />] },
+        {
+            id: 'certState',
+            columns: [
+                'State',
+                <React.Fragment key="state">
+                    <CertificateStatus status={certificate.state} />
+                    <PendingActionButtons certificate={certificate} />
+                </React.Fragment>,
+            ],
+        },
         {
             id: 'validationStatus',
             columns: [
