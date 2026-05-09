@@ -7,6 +7,7 @@ import { CertificateType, type CertificateValidationResultDto, CertificateValida
 import type { CertificateListResponseModel, CertificateDetailResponseModel } from 'types/certificate';
 import type { TableDataRow } from 'components/CustomTable';
 import CertificateStatus from './CertificateStatus';
+import PendingActionButtons from './PendingActionButtons';
 
 export interface BuildCertificateRowColumnsOpts {
     isLinkDisabled: boolean;
@@ -76,7 +77,10 @@ export function buildCertificateRowColumns(
     );
 
     return [
-        <CertificateStatus key="state" status={certificate.state} asIcon={true} />,
+        <React.Fragment key="state">
+            <CertificateStatus status={certificate.state} asIcon={true} />
+            <PendingActionButtons certificate={certificate} compact />
+        </React.Fragment>,
         <CertificateStatus key="validationStatus" status={certificate.validationStatus} asIcon={true} />,
         certificate.complianceStatus ? <CertificateStatus key="compliance" status={certificate.complianceStatus} asIcon={true} /> : '',
         certificate.privateKeyAvailability ? <KeyRound key="key" size={16} aria-hidden="true" strokeWidth={1.5} /> : '',
