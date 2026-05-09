@@ -1036,6 +1036,10 @@ const isFetchingCertificateChainDownloadContent = createSelector(state, (state) 
 const isIncludeArchived = createSelector(state, (state) => state.isIncludeArchived);
 const isArchiving = createSelector(state, (state) => state.isArchiving);
 
+const finalizingIssueCertificateUuids = createSelector(state, (state) => state.finalizingIssueCertificateUuids);
+const confirmingRevokeCertificateUuids = createSelector(state, (state) => state.confirmingRevokeCertificateUuids);
+const cancelingPendingCertificateUuids = createSelector(state, (state) => state.cancelingPendingCertificateUuids);
+
 export const selectors = {
     state,
     deleteErrorMessage,
@@ -1083,6 +1087,9 @@ export const selectors = {
     certificateChain,
     isIncludeArchived,
     isArchiving,
+    finalizingIssueCertificateUuids,
+    confirmingRevokeCertificateUuids,
+    cancelingPendingCertificateUuids,
 };
 
 export const actions = slice.actions;
