@@ -702,6 +702,13 @@ describe('certificates slice', () => {
         next = reducer({ ...next, isBulkUnarchiving: true }, actions.bulkUnarchiveCertificateFailure({ error: 'err' }));
         expect(next.isBulkUnarchiving).toBe(false);
     });
+
+    test('initialState contains empty per-UUID arrays for the three pending-operation actions', () => {
+        const next = reducer(undefined, { type: 'noop' });
+        expect(next.finalizingIssueCertificateUuids).toEqual([]);
+        expect(next.confirmingRevokeCertificateUuids).toEqual([]);
+        expect(next.cancelingPendingCertificateUuids).toEqual([]);
+    });
 });
 
 describe('certificates selectors', () => {

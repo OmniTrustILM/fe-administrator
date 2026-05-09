@@ -68,6 +68,10 @@ export type State = {
     isRenewing: boolean;
     isRekeying: boolean;
 
+    finalizingIssueCertificateUuids: string[];
+    confirmingRevokeCertificateUuids: string[];
+    cancelingPendingCertificateUuids: string[];
+
     isDeleting: boolean;
     isBulkDeleting: boolean;
 
@@ -125,6 +129,10 @@ export const initialState: State = {
     isRevoking: false,
     isRenewing: false,
     isRekeying: false,
+
+    finalizingIssueCertificateUuids: [],
+    confirmingRevokeCertificateUuids: [],
+    cancelingPendingCertificateUuids: [],
 
     isDeleting: false,
     isBulkDeleting: false,
