@@ -396,6 +396,44 @@ const manuallyConfirmRevoke: AppEpic = (action$, state, deps) => {
     );
 };
 
+const cancelPendingCertificateOperation: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.cancelPendingCertificateOperation.match),
+        switchMap((action) =>
+            deps.apiClients.clientOperations
+                .cancelPendingCertificateOperation({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                    certificateUuid: action.payload.uuid,
+                    cancelPendingCertificateRequestDto: { reason: action.payload.reason },
+                })
+                .pipe(
+                    mergeMap((certificate) =>
+                        of(
+                            slice.actions.cancelPendingCertificateOperationSuccess({
+                                uuid: action.payload.uuid,
+                                certificate: transformCertificateDetailResponseDtoToModel(certificate),
+                            }),
+                            alertActions.success('Pending operation cancelled'),
+                            slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
+                        ),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.cancelPendingCertificateOperationFailure({
+                                uuid: action.payload.uuid,
+                                error: extractError(err, 'Failed to cancel pending operation'),
+                            }),
+                            slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to cancel pending operation' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
 const getCertificateHistory: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getCertificateHistory.match),
@@ -1308,6 +1346,7 @@ const epics = [
     rekeyCertificate,
     manuallyIssueCertificate,
     manuallyConfirmRevoke,
+    cancelPendingCertificateOperation,
     getCertificateHistory,
     listCertificateLocations,
     deleteCertificate,
