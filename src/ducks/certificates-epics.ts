@@ -361,6 +361,41 @@ const manuallyIssueCertificate: AppEpic = (action$, state, deps) => {
     );
 };
 
+const manuallyConfirmRevoke: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.manuallyConfirmRevoke.match),
+        switchMap((action) =>
+            deps.apiClients.clientOperations
+                .manuallyConfirmRevoke({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                    certificateUuid: action.payload.uuid,
+                })
+                .pipe(
+                    mergeMap(() =>
+                        of(
+                            slice.actions.manuallyConfirmRevokeSuccess({ uuid: action.payload.uuid }),
+                            alertActions.success('Pending revocation confirmed'),
+                            slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
+                            slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
+                        ),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.manuallyConfirmRevokeFailure({
+                                uuid: action.payload.uuid,
+                                error: extractError(err, 'Failed to confirm revocation'),
+                            }),
+                            slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to confirm revocation' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
 const getCertificateHistory: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getCertificateHistory.match),
@@ -1272,6 +1307,7 @@ const epics = [
     renewCertificate,
     rekeyCertificate,
     manuallyIssueCertificate,
+    manuallyConfirmRevoke,
     getCertificateHistory,
     listCertificateLocations,
     deleteCertificate,
