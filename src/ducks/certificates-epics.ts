@@ -323,6 +323,44 @@ const rekeyCertificate: AppEpic = (action$, state, deps) => {
     );
 };
 
+const manuallyIssueCertificate: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.manuallyIssueCertificate.match),
+        switchMap((action) =>
+            deps.apiClients.clientOperations
+                .manuallyIssueCertificate({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                    certificateUuid: action.payload.uuid,
+                    uploadCertificateRequestDto: action.payload.uploadRequest,
+                })
+                .pipe(
+                    mergeMap((certificate) =>
+                        of(
+                            slice.actions.manuallyIssueCertificateSuccess({
+                                uuid: action.payload.uuid,
+                                certificate: transformCertificateDetailResponseDtoToModel(certificate),
+                            }),
+                            alertActions.success('Certificate issued and pending operation finalised'),
+                            slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
+                        ),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.manuallyIssueCertificateFailure({
+                                uuid: action.payload.uuid,
+                                error: extractError(err, 'Failed to finalise certificate issuance'),
+                            }),
+                            slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to finalise certificate issuance' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
 const getCertificateHistory: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getCertificateHistory.match),
@@ -1233,6 +1271,7 @@ const epics = [
     revokeCertificate,
     renewCertificate,
     rekeyCertificate,
+    manuallyIssueCertificate,
     getCertificateHistory,
     listCertificateLocations,
     deleteCertificate,
