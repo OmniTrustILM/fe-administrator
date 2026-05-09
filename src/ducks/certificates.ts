@@ -374,6 +374,36 @@ export const slice = createSlice({
             state.confirmingRevokeCertificateUuids = state.confirmingRevokeCertificateUuids.filter((id) => id !== action.payload.uuid);
         },
 
+        cancelPendingCertificateOperation: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileUuid: string;
+                uuid: string;
+                reason: string | undefined;
+            }>,
+        ) => {
+            if (!state.cancelingPendingCertificateUuids.includes(action.payload.uuid)) {
+                state.cancelingPendingCertificateUuids.push(action.payload.uuid);
+            }
+        },
+
+        cancelPendingCertificateOperationSuccess: (
+            state,
+            action: PayloadAction<{ uuid: string; certificate: CertificateDetailResponseModel }>,
+        ) => {
+            state.cancelingPendingCertificateUuids = state.cancelingPendingCertificateUuids.filter((id) => id !== action.payload.uuid);
+            state.certificateDetail = action.payload.certificate;
+            const idx = state.certificates.findIndex((c) => c.uuid === action.payload.uuid);
+            if (idx >= 0) {
+                state.certificates[idx] = action.payload.certificate as unknown as CertificateListResponseModel;
+            }
+        },
+
+        cancelPendingCertificateOperationFailure: (state, action: PayloadAction<{ uuid: string; error: string | undefined }>) => {
+            state.cancelingPendingCertificateUuids = state.cancelingPendingCertificateUuids.filter((id) => id !== action.payload.uuid);
+        },
+
         renewCertificate: (
             state,
             action: PayloadAction<{

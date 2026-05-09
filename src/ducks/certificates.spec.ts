@@ -752,6 +752,34 @@ describe('certificates slice', () => {
         expect(next.confirmingRevokeCertificateUuids).toEqual([]);
     });
 
+    test('cancelPendingCertificateOperation / success / failure manage cancelingPendingCertificateUuids and update detail on success', () => {
+        const initial = reducer(undefined, { type: 'noop' });
+        let next = reducer(
+            initial,
+            actions.cancelPendingCertificateOperation({
+                authorityUuid: 'a',
+                raProfileUuid: 'r',
+                uuid: 'cert-1',
+                reason: 'no-longer-needed',
+            }),
+        );
+        expect(next.cancelingPendingCertificateUuids).toEqual(['cert-1']);
+
+        const successDetail = { uuid: 'cert-1', state: 'failed' } as any;
+        next = reducer(next, actions.cancelPendingCertificateOperationSuccess({ uuid: 'cert-1', certificate: successDetail }));
+        expect(next.cancelingPendingCertificateUuids).toEqual([]);
+        expect(next.certificateDetail).toEqual(successDetail);
+
+        next = reducer(
+            reducer(
+                initial,
+                actions.cancelPendingCertificateOperation({ authorityUuid: 'a', raProfileUuid: 'r', uuid: 'cert-2', reason: undefined }),
+            ),
+            actions.cancelPendingCertificateOperationFailure({ uuid: 'cert-2', error: 'oops' }),
+        );
+        expect(next.cancelingPendingCertificateUuids).toEqual([]);
+    });
+
     test('initialState contains empty per-UUID arrays for the three pending-operation actions', () => {
         const next = reducer(undefined, { type: 'noop' });
         expect(next.finalizingIssueCertificateUuids).toEqual([]);
