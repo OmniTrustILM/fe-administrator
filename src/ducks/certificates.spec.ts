@@ -735,6 +735,23 @@ describe('certificates slice', () => {
         expect(two.finalizingIssueCertificateUuids).toEqual(['cert-2']);
     });
 
+    test('manuallyConfirmRevoke / success / failure manage confirmingRevokeCertificateUuids without hardcoding cert state', () => {
+        const initial = reducer(undefined, { type: 'noop' });
+        let next = reducer(initial, actions.manuallyConfirmRevoke({ authorityUuid: 'a', raProfileUuid: 'r', uuid: 'cert-1' }));
+        expect(next.confirmingRevokeCertificateUuids).toEqual(['cert-1']);
+
+        next = reducer(next, actions.manuallyConfirmRevokeSuccess({ uuid: 'cert-1' }));
+        expect(next.confirmingRevokeCertificateUuids).toEqual([]);
+        // No state transition is encoded here; getCertificateDetail in the epic owns truth.
+        expect(next.certificateDetail).toBeUndefined();
+
+        next = reducer(
+            reducer(initial, actions.manuallyConfirmRevoke({ authorityUuid: 'a', raProfileUuid: 'r', uuid: 'cert-2' })),
+            actions.manuallyConfirmRevokeFailure({ uuid: 'cert-2', error: 'nope' }),
+        );
+        expect(next.confirmingRevokeCertificateUuids).toEqual([]);
+    });
+
     test('initialState contains empty per-UUID arrays for the three pending-operation actions', () => {
         const next = reducer(undefined, { type: 'noop' });
         expect(next.finalizingIssueCertificateUuids).toEqual([]);

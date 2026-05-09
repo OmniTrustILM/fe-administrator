@@ -352,6 +352,28 @@ export const slice = createSlice({
             state.finalizingIssueCertificateUuids = state.finalizingIssueCertificateUuids.filter((id) => id !== action.payload.uuid);
         },
 
+        manuallyConfirmRevoke: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileUuid: string;
+                uuid: string;
+            }>,
+        ) => {
+            if (!state.confirmingRevokeCertificateUuids.includes(action.payload.uuid)) {
+                state.confirmingRevokeCertificateUuids.push(action.payload.uuid);
+            }
+        },
+
+        manuallyConfirmRevokeSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.confirmingRevokeCertificateUuids = state.confirmingRevokeCertificateUuids.filter((id) => id !== action.payload.uuid);
+            // No state mutation: the epic dispatches getCertificateDetail to pull server truth.
+        },
+
+        manuallyConfirmRevokeFailure: (state, action: PayloadAction<{ uuid: string; error: string | undefined }>) => {
+            state.confirmingRevokeCertificateUuids = state.confirmingRevokeCertificateUuids.filter((id) => id !== action.payload.uuid);
+        },
+
         renewCertificate: (
             state,
             action: PayloadAction<{
