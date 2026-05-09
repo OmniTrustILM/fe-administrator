@@ -325,6 +325,33 @@ export const slice = createSlice({
             state.isRevoking = false;
         },
 
+        manuallyIssueCertificate: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileUuid: string;
+                uuid: string;
+                uploadRequest: CertificateUploadModel;
+            }>,
+        ) => {
+            if (!state.finalizingIssueCertificateUuids.includes(action.payload.uuid)) {
+                state.finalizingIssueCertificateUuids.push(action.payload.uuid);
+            }
+        },
+
+        manuallyIssueCertificateSuccess: (state, action: PayloadAction<{ uuid: string; certificate: CertificateDetailResponseModel }>) => {
+            state.finalizingIssueCertificateUuids = state.finalizingIssueCertificateUuids.filter((id) => id !== action.payload.uuid);
+            state.certificateDetail = action.payload.certificate;
+            const idx = state.certificates.findIndex((c) => c.uuid === action.payload.uuid);
+            if (idx >= 0) {
+                state.certificates[idx] = action.payload.certificate as unknown as CertificateListResponseModel;
+            }
+        },
+
+        manuallyIssueCertificateFailure: (state, action: PayloadAction<{ uuid: string; error: string | undefined }>) => {
+            state.finalizingIssueCertificateUuids = state.finalizingIssueCertificateUuids.filter((id) => id !== action.payload.uuid);
+        },
+
         renewCertificate: (
             state,
             action: PayloadAction<{

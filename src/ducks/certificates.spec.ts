@@ -703,6 +703,38 @@ describe('certificates slice', () => {
         expect(next.isBulkUnarchiving).toBe(false);
     });
 
+    test('manuallyIssueCertificate / success / failure manage finalizingIssueCertificateUuids', () => {
+        const initial = reducer(undefined, { type: 'noop' });
+        let next = reducer(
+            initial,
+            actions.manuallyIssueCertificate({
+                authorityUuid: 'auth-1',
+                raProfileUuid: 'ra-1',
+                uuid: 'cert-1',
+                uploadRequest: { certificate: 'BASE64', customAttributes: [] } as any,
+            }),
+        );
+        expect(next.finalizingIssueCertificateUuids).toEqual(['cert-1']);
+
+        const successDetail = { uuid: 'cert-1', state: 'issued' } as any;
+        next = reducer(next, actions.manuallyIssueCertificateSuccess({ uuid: 'cert-1', certificate: successDetail }));
+        expect(next.finalizingIssueCertificateUuids).toEqual([]);
+        expect(next.certificateDetail).toEqual(successDetail);
+
+        // Concurrent in-flight: dispatching for cert-2 keeps cert-1's slot if still in flight
+        let two = reducer(
+            initial,
+            actions.manuallyIssueCertificate({ authorityUuid: 'a', raProfileUuid: 'r', uuid: 'cert-1', uploadRequest: {} as any }),
+        );
+        two = reducer(
+            two,
+            actions.manuallyIssueCertificate({ authorityUuid: 'a', raProfileUuid: 'r', uuid: 'cert-2', uploadRequest: {} as any }),
+        );
+        expect([...two.finalizingIssueCertificateUuids].sort()).toEqual(['cert-1', 'cert-2']);
+        two = reducer(two, actions.manuallyIssueCertificateFailure({ uuid: 'cert-1', error: 'boom' }));
+        expect(two.finalizingIssueCertificateUuids).toEqual(['cert-2']);
+    });
+
     test('initialState contains empty per-UUID arrays for the three pending-operation actions', () => {
         const next = reducer(undefined, { type: 'noop' });
         expect(next.finalizingIssueCertificateUuids).toEqual([]);
