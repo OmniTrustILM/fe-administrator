@@ -719,7 +719,8 @@ describe('certificates slice', () => {
         const successDetail = { uuid: 'cert-1', state: 'issued' } as any;
         next = reducer(next, actions.manuallyIssueCertificateSuccess({ uuid: 'cert-1', certificate: successDetail }));
         expect(next.finalizingIssueCertificateUuids).toEqual([]);
-        expect(next.certificateDetail).toEqual(successDetail);
+        // No state transition is encoded here; getCertificateDetail in the epic owns truth.
+        expect(next.certificateDetail).toBeUndefined();
 
         // Concurrent in-flight: dispatching for cert-2 keeps cert-1's slot if still in flight
         let two = reducer(
@@ -730,7 +731,7 @@ describe('certificates slice', () => {
             two,
             actions.manuallyIssueCertificate({ authorityUuid: 'a', raProfileUuid: 'r', uuid: 'cert-2', uploadRequest: {} as any }),
         );
-        expect([...two.finalizingIssueCertificateUuids].sort()).toEqual(['cert-1', 'cert-2']);
+        expect([...two.finalizingIssueCertificateUuids].sort((a, b) => a.localeCompare(b))).toEqual(['cert-1', 'cert-2']);
         two = reducer(two, actions.manuallyIssueCertificateFailure({ uuid: 'cert-1', error: 'boom' }));
         expect(two.finalizingIssueCertificateUuids).toEqual(['cert-2']);
     });
@@ -752,7 +753,7 @@ describe('certificates slice', () => {
         expect(next.confirmingRevokeCertificateUuids).toEqual([]);
     });
 
-    test('cancelPendingCertificateOperation / success / failure manage cancelingPendingCertificateUuids and update detail on success', () => {
+    test('cancelPendingCertificateOperation / success / failure manage cancelingPendingCertificateUuids without hardcoding cert state', () => {
         const initial = reducer(undefined, { type: 'noop' });
         let next = reducer(
             initial,
@@ -768,7 +769,8 @@ describe('certificates slice', () => {
         const successDetail = { uuid: 'cert-1', state: 'failed' } as any;
         next = reducer(next, actions.cancelPendingCertificateOperationSuccess({ uuid: 'cert-1', certificate: successDetail }));
         expect(next.cancelingPendingCertificateUuids).toEqual([]);
-        expect(next.certificateDetail).toEqual(successDetail);
+        // No state transition is encoded here; getCertificateDetail in the epic owns truth.
+        expect(next.certificateDetail).toBeUndefined();
 
         next = reducer(
             reducer(

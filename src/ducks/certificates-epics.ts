@@ -248,6 +248,7 @@ const revokeCertificate: AppEpic = (action$, state, deps) => {
                         of(
                             slice.actions.revokeCertificateSuccess({ uuid: action.payload.uuid }),
                             alertActions.success('Revoke certificate operation successfully initiated'),
+                            slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
                             slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
                         ),
                     ),
@@ -255,6 +256,7 @@ const revokeCertificate: AppEpic = (action$, state, deps) => {
                     catchError((err) =>
                         of(
                             slice.actions.revokeCertificateFailure({ error: extractError(err, 'Failed to revoke certificate') }),
+                            slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
                             appRedirectActions.fetchError({ error: err, message: 'Failed to revoke certificate' }),
                         ),
                     ),
@@ -326,7 +328,7 @@ const rekeyCertificate: AppEpic = (action$, state, deps) => {
 const manuallyIssueCertificate: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.manuallyIssueCertificate.match),
-        switchMap((action) =>
+        mergeMap((action) =>
             deps.apiClients.clientOperations
                 .manuallyIssueCertificate({
                     authorityUuid: action.payload.authorityUuid,
@@ -342,6 +344,7 @@ const manuallyIssueCertificate: AppEpic = (action$, state, deps) => {
                                 certificate: transformCertificateDetailResponseDtoToModel(certificate),
                             }),
                             alertActions.success('Certificate issued and pending operation finalised'),
+                            slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
                             slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
                         ),
                     ),
@@ -364,7 +367,7 @@ const manuallyIssueCertificate: AppEpic = (action$, state, deps) => {
 const manuallyConfirmRevoke: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.manuallyConfirmRevoke.match),
-        switchMap((action) =>
+        mergeMap((action) =>
             deps.apiClients.clientOperations
                 .manuallyConfirmRevoke({
                     authorityUuid: action.payload.authorityUuid,
@@ -399,7 +402,7 @@ const manuallyConfirmRevoke: AppEpic = (action$, state, deps) => {
 const cancelPendingCertificateOperation: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.cancelPendingCertificateOperation.match),
-        switchMap((action) =>
+        mergeMap((action) =>
             deps.apiClients.clientOperations
                 .cancelPendingCertificateOperation({
                     authorityUuid: action.payload.authorityUuid,
@@ -415,6 +418,7 @@ const cancelPendingCertificateOperation: AppEpic = (action$, state, deps) => {
                                 certificate: transformCertificateDetailResponseDtoToModel(certificate),
                             }),
                             alertActions.success('Pending operation cancelled'),
+                            slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
                             slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
                         ),
                     ),

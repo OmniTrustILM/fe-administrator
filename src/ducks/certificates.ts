@@ -207,6 +207,13 @@ export const slice = createSlice({
         getCertificateDetailSuccess: (state, action: PayloadAction<{ certificate: CertificateDetailResponseModel }>) => {
             state.isFetchingDetail = false;
             state.certificateDetail = action.payload.certificate;
+            const idx = state.certificates.findIndex((c) => c.uuid === action.payload.certificate.uuid);
+            if (idx >= 0) {
+                // CertificateDetailResponseModel is structurally a superset of CertificateListResponseModel
+                // (every list field is also on the detail model), so it is safe to use the detail object
+                // for the list row. The cast is needed because TypeScript treats them as nominally distinct.
+                state.certificates[idx] = action.payload.certificate as unknown as CertificateListResponseModel;
+            }
         },
 
         getCertificateDetailFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -341,11 +348,7 @@ export const slice = createSlice({
 
         manuallyIssueCertificateSuccess: (state, action: PayloadAction<{ uuid: string; certificate: CertificateDetailResponseModel }>) => {
             state.finalizingIssueCertificateUuids = state.finalizingIssueCertificateUuids.filter((id) => id !== action.payload.uuid);
-            state.certificateDetail = action.payload.certificate;
-            const idx = state.certificates.findIndex((c) => c.uuid === action.payload.uuid);
-            if (idx >= 0) {
-                state.certificates[idx] = action.payload.certificate as unknown as CertificateListResponseModel;
-            }
+            // No state mutation beyond clearing the loading flag: the epic dispatches getCertificateDetail to pull server truth.
         },
 
         manuallyIssueCertificateFailure: (state, action: PayloadAction<{ uuid: string; error: string | undefined }>) => {
@@ -393,11 +396,7 @@ export const slice = createSlice({
             action: PayloadAction<{ uuid: string; certificate: CertificateDetailResponseModel }>,
         ) => {
             state.cancelingPendingCertificateUuids = state.cancelingPendingCertificateUuids.filter((id) => id !== action.payload.uuid);
-            state.certificateDetail = action.payload.certificate;
-            const idx = state.certificates.findIndex((c) => c.uuid === action.payload.uuid);
-            if (idx >= 0) {
-                state.certificates[idx] = action.payload.certificate as unknown as CertificateListResponseModel;
-            }
+            // No state mutation beyond clearing the loading flag: the epic dispatches getCertificateDetail to pull server truth.
         },
 
         cancelPendingCertificateOperationFailure: (state, action: PayloadAction<{ uuid: string; error: string | undefined }>) => {
