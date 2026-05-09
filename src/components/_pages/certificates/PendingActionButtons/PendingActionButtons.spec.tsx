@@ -28,4 +28,34 @@ test.describe('PendingActionButtons', () => {
         );
         await expect(c.locator('button')).toHaveCount(0);
     });
+
+    test('PENDING_ISSUE renders Finalise and Cancel buttons (no Confirm Revoke)', async ({ mount, page }) => {
+        await mount(
+            <PendingActionButtonsWithStore
+                certificate={{
+                    uuid: 'cert-1',
+                    state: CertificateState.PendingIssue,
+                    raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any,
+                }}
+            />,
+        );
+        await expect(page.getByRole('button', { name: /finalise issue/i })).toBeVisible();
+        await expect(page.getByRole('button', { name: /cancel pending operation/i })).toBeVisible();
+        await expect(page.getByRole('button', { name: /confirm revocation/i })).toHaveCount(0);
+    });
+
+    test('PENDING_REVOKE renders Confirm Revoke and Cancel buttons (no Finalise)', async ({ mount, page }) => {
+        await mount(
+            <PendingActionButtonsWithStore
+                certificate={{
+                    uuid: 'cert-1',
+                    state: CertificateState.PendingRevoke,
+                    raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any,
+                }}
+            />,
+        );
+        await expect(page.getByRole('button', { name: /confirm revocation/i })).toBeVisible();
+        await expect(page.getByRole('button', { name: /cancel pending operation/i })).toBeVisible();
+        await expect(page.getByRole('button', { name: /finalise issue/i })).toHaveCount(0);
+    });
 });
