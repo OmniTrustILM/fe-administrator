@@ -13,7 +13,12 @@ import {
 } from './attributes';
 import { AttributeContentType, AttributeType, AttributeVersion, ProgrammingLanguageEnum } from 'types/openapi';
 
-const base64Encode = (s: string) => btoa(unescape(encodeURIComponent(s)));
+const base64Encode = (s: string) => {
+    const bytes = new TextEncoder().encode(s);
+    let binary = '';
+    for (const b of bytes) binary += String.fromCodePoint(b);
+    return btoa(binary);
+};
 
 describe('attributes utils', () => {
     describe('attributeFieldNameTransform', () => {
@@ -171,24 +176,24 @@ describe('attributes utils', () => {
 
     describe('getAttributeFormValue', () => {
         test('truncates Integer numeric values from object data', () => {
-            const result = getAttributeFormValue(AttributeContentType.Integer, undefined, { data: '12.9' }) as any;
+            const result = getAttributeFormValue(AttributeContentType.Integer, undefined, { data: '12.9' });
             expect(result).toEqual({ data: 12 });
         });
 
         test('keeps original value when Integer parsing fails', () => {
-            const result = getAttributeFormValue(AttributeContentType.Integer, undefined, { value: 'NaN-value' }) as any;
+            const result = getAttributeFormValue(AttributeContentType.Integer, undefined, { value: 'NaN-value' });
             expect(result).toEqual({ data: 'NaN-value' });
         });
 
         test('omits empty reference while normalizing content item', () => {
-            const result = getAttributeFormValue(AttributeContentType.String, undefined, { data: 'abc', reference: '' }) as any;
+            const result = getAttributeFormValue(AttributeContentType.String, undefined, { data: 'abc', reference: '' });
             expect(result).toEqual({ data: 'abc' });
         });
 
         test('normalizes nested value object containing data and reference', () => {
             const result = getAttributeFormValue(AttributeContentType.Float, undefined, {
                 value: { data: '3.50', reference: 'Threshold' },
-            }) as any;
+            });
             expect(result).toEqual({ data: 3.5, reference: 'Threshold' });
         });
     });
@@ -627,6 +632,127 @@ describe('attributes utils', () => {
             const result = collectFormAttributes('id1', descriptors, values);
             expect(result).toEqual([]);
         });
+
+        test('drops empty resource picker stubs so cleared selection serialises as empty content', () => {
+            // Regression: when the operator clears a previously-selected resource (e.g. removes
+            // the CA certificate on an authority), the picker leaves a stub entry in the form
+            // value array. Serialising it produces { data: "" } which fails polymorphic
+            // deserialisation on the backend with "missing type id property 'resource'".
+            // The stub must be dropped so the request carries content: [] instead.
+            const descriptors = [
+                {
+                    type: AttributeType.Data,
+                    name: 'caCertificates',
+                    uuid: 'u-resource',
+                    contentType: AttributeContentType.Resource,
+                    content: [],
+                    properties: { required: false, label: 'CA', readOnly: false, visible: true, list: true },
+                },
+            ] as any[];
+            // Every shape the picker is observed to leave behind when the operator clears a
+            // selection — primitives, react-select-style { value }, and content-style { data }.
+            const stubVariants: Array<unknown[]> = [
+                [''],
+                [null],
+                [undefined],
+                ['', null, undefined],
+                [{ data: '' }],
+                [{ data: null }],
+                [{ data: undefined }],
+                [{ data: '', reference: '' }],
+                [{ value: '' }],
+                [{ value: null }],
+                [{ value: undefined }],
+                [{ value: { data: '' } }],
+            ];
+            for (const value of stubVariants) {
+                const values = { __attributes__id1__: { caCertificates: value } };
+                const result = collectFormAttributes('id1', descriptors, values);
+                expect(result).toHaveLength(1);
+                expect(result[0].name).toBe('caCertificates');
+                expect(result[0].content).toEqual([]);
+            }
+        });
+
+        test('drops single-pick resource attribute when its form value is an empty stub', () => {
+            // Single-pick resource picker (multiSelect=false) holds a single object as the form
+            // value. When the operator clears the selection the value is { data: '' } (or null).
+            // The backend rejects { data: '' } with "missing type id property 'resource'" on
+            // polymorphic deserialisation, so the entire attribute must be dropped from the
+            // request rather than serialised as content: [{ data: '' }].
+            const descriptors = [
+                {
+                    type: AttributeType.Data,
+                    name: 'caCertificates',
+                    uuid: 'u-resource',
+                    contentType: AttributeContentType.Resource,
+                    content: [],
+                    properties: { required: false, label: 'CA', readOnly: false, visible: true, list: true, multiSelect: false },
+                },
+            ] as any[];
+            const stubVariants: unknown[] = [
+                '',
+                null,
+                undefined,
+                { data: '' },
+                { data: null },
+                { data: '', reference: '' },
+                { value: '' },
+                { value: null },
+            ];
+            for (const value of stubVariants) {
+                const values = { __attributes__id1__: { caCertificates: value } };
+                const result = collectFormAttributes('id1', descriptors, values);
+                expect(result).toEqual([]);
+            }
+        });
+
+        test('keeps valid resource picker selections', () => {
+            const descriptors = [
+                {
+                    type: AttributeType.Data,
+                    name: 'caCertificates',
+                    uuid: 'u-resource',
+                    contentType: AttributeContentType.Resource,
+                    content: [],
+                    properties: { required: false, label: 'CA', readOnly: false, visible: true, list: true },
+                },
+            ] as any[];
+            const selectedResource = {
+                data: { uuid: 'cert-uuid-1', name: 'AAA Certificate Services', resource: 'certificates' },
+                reference: 'AAA Certificate Services',
+            };
+            const values = { __attributes__id1__: { caCertificates: [selectedResource] } };
+
+            const result = collectFormAttributes('id1', descriptors, values);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].content).toHaveLength(1);
+            expect(result[0].content[0].data).toMatchObject({ uuid: 'cert-uuid-1', resource: 'certificates' });
+        });
+
+        test('does not drop empty entries for non-resource list attributes', () => {
+            // Defensive: the stub-filter is scoped to RESOURCE so primitive list types preserve
+            // whatever the form sends today (no behaviour change for STRING / TEXT / etc.).
+            const descriptors = [
+                {
+                    type: AttributeType.Data,
+                    name: 'tags',
+                    uuid: 'u-string-list',
+                    contentType: AttributeContentType.String,
+                    content: [],
+                    properties: { required: false, label: 'Tags', readOnly: false, visible: true, list: true },
+                },
+            ] as any[];
+            const values = { __attributes__id1__: { tags: ['', 'real-tag'] } };
+
+            const result = collectFormAttributes('id1', descriptors, values);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].content).toHaveLength(2);
+            expect(result[0].content[0].data).toBe('');
+            expect(result[0].content[1].data).toBe('real-tag');
+        });
     });
 
     describe('mapAttributeContentToOptionValue', () => {
@@ -662,7 +788,7 @@ describe('attributes utils', () => {
             } as any;
             const result = mapAttributeContentToOptionValue(content, descriptor);
             expect(typeof result.label).toBe('string');
-            expect((result.label as string).length).toBeGreaterThan(0);
+            expect(result.label.length).toBeGreaterThan(0);
         });
 
         test('formats Datetime label from content data', () => {
@@ -674,7 +800,7 @@ describe('attributes utils', () => {
             } as any;
             const result = mapAttributeContentToOptionValue(content, descriptor);
             expect(typeof result.label).toBe('string');
-            expect((result.label as string).length).toBeGreaterThan(0);
+            expect(result.label.length).toBeGreaterThan(0);
         });
     });
 

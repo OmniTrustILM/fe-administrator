@@ -13,7 +13,7 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 
 import { actions, selectors } from 'ducks/locations';
 import { actions as raActions, selectors as raSelectors } from 'ducks/ra-profiles';
-import React, { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
@@ -331,7 +331,7 @@ export default function LocationDetail() {
         dispatch(customAttributesActions.listSecondaryResourceCustomAttributes(Resource.Certificates));
 
         if (!id || !entityId) return;
-        dispatch(actions.getLocationDetail({ entityUuid: entityId!, uuid: id! }));
+        dispatch(actions.getLocationDetail({ entityUuid: entityId, uuid: id }));
     }, [dispatch, entityId, id]);
 
     useEffect(() => {
@@ -539,7 +539,7 @@ export default function LocationDetail() {
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <StatusBadge enabled={location.enabled} />],
+                          columns: ['Status', <StatusBadge key="status" enabled={location.enabled} />],
                       },
                       {
                           id: 'entityUuid',
@@ -622,9 +622,17 @@ export default function LocationDetail() {
                                   </Button>
                               </Link>
                           </>,
-                          <CertificateStatusBadge status={cert.state} />,
-                          <CertificateStatusBadge status={cert.validationStatus} />,
-                          cert.withKey ? <Badge color="success">Yes</Badge> : <Badge color="danger">No</Badge>,
+                          <CertificateStatusBadge key="state" status={cert.state} />,
+                          <CertificateStatusBadge key="vstate" status={cert.validationStatus} />,
+                          cert.withKey ? (
+                              <Badge key="withKey" color="success">
+                                  Yes
+                              </Badge>
+                          ) : (
+                              <Badge key="withKey" color="danger">
+                                  No
+                              </Badge>
+                          ),
 
                           !cert.metadata || cert.metadata.length === 0 ? (
                               ''
@@ -638,7 +646,12 @@ export default function LocationDetail() {
                               ''
                           ) : (
                               <div style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: '20em', overflow: 'hidden' }}>
-                                  {cert.csrAttributes.map((atr) => getAttributeContent(atr.contentType, atr.content) ?? '').join(', ')}
+                                  {cert.csrAttributes
+                                      .map((atr) => {
+                                          const content = getAttributeContent(atr.contentType, atr.content);
+                                          return typeof content === 'string' ? content : '';
+                                      })
+                                      .join(', ')}
                               </div>
                           ),
                       ],

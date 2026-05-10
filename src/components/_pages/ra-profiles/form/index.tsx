@@ -185,9 +185,10 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     const onSubmit = useCallback(
         (values: FormValues) => {
             if (editMode) {
+                if (!id) return;
                 dispatch(
                     raProfilesActions.updateRaProfile({
-                        profileUuid: id!,
+                        profileUuid: id,
                         authorityInstanceUuid: values.authority,
                         redirect: `../../../raprofiles/detail/${values.authority}/${id}`,
                         raProfileEditRequest: {
@@ -288,7 +289,8 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                             value={field.value || ''}
                                             onChange={(value) => {
                                                 field.onChange(value);
-                                                onAuthorityChange(typeof value === 'string' ? value : value?.toString() || '');
+                                                const next = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+                                                onAuthorityChange(next);
                                             }}
                                             options={optionsForAuthorities}
                                             placeholder="Select to change RA Profile if needed"

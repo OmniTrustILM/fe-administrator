@@ -534,13 +534,13 @@ const isUpdatingComplienceInternalRule = createSelector(state, (state) => state.
 const isDeletingComplienceInternalRule = createSelector(state, (state) => state.isDeletingComplienceInternalRule);
 // Parameterized selectors for keyed compliance results
 const isFetchingComplianceCheckResultBy = (rootState: AppState, resource: Resource, objectUuid: string): boolean => {
-    const s = rootState[slice.name] as State;
+    const s = rootState[slice.name];
     const key = `${resource}:${objectUuid}`;
     return !!s.isFetchingComplianceCheckResultByKey[key];
 };
 
 const complianceCheckResultBy = (rootState: AppState, resource: Resource, objectUuid: string): ComplianceCheckResultDto | undefined => {
-    const s = rootState[slice.name] as State;
+    const s = rootState[slice.name];
     const key = `${resource}:${objectUuid}`;
     return s.complianceCheckResultByKey[key];
 };

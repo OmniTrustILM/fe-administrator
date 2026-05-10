@@ -30,11 +30,11 @@ import { collectFormAttributes } from 'utils/attributes/attributes';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
-type AuthorityFormProps = Readonly<{
+type AuthorityFormProps = {
     authorityId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}>;
+};
 
 interface FormValues {
     name: string;
@@ -42,7 +42,7 @@ interface FormValues {
     storeKind: string;
 }
 
-export default function AuthorityForm({ authorityId, onCancel, onSuccess }: AuthorityFormProps) {
+export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Readonly<AuthorityFormProps>) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
@@ -384,7 +384,16 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Auth
                                     )}
                                 />
 
-                                {!editMode ? (
+                                {editMode ? (
+                                    <TextInput
+                                        id="authorityProvider"
+                                        type="text"
+                                        label="Authority Provider"
+                                        value={authority?.connectorName || ''}
+                                        disabled
+                                        onChange={() => {}}
+                                    />
+                                ) : (
                                     <div>
                                         <Controller
                                             name="authorityProvider"
@@ -414,15 +423,6 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Auth
                                             )}
                                         />
                                     </div>
-                                ) : (
-                                    <TextInput
-                                        id="authorityProvider"
-                                        type="text"
-                                        label="Authority Provider"
-                                        value={authority?.connectorName || ''}
-                                        disabled
-                                        onChange={() => {}}
-                                    />
                                 )}
 
                                 {!editMode && optionsForKinds?.length ? (

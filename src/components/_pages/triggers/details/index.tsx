@@ -37,10 +37,9 @@ const TriggerDetails = () => {
     const rules = useSelector(rulesSelectors.rules);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [confirmIgnoreTrigger, setConfirmIgnoreTrigger] = useState(false);
-    const [updateDescriptionEditEnable, setUpdateDescription] = useState<boolean>(false);
+    const [updateDescriptionEditEnable, setUpdateDescriptionEditEnable] = useState<boolean>(false);
     const [updatedDescription, setUpdatedDescription] = useState('');
     const triggerTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.TriggerType));
-    const [highlight, setHighlight] = useState(false);
     const deviceType = useDeviceType();
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
 
@@ -58,14 +57,6 @@ const TriggerDetails = () => {
         if (!triggerDetails?.description || triggerDetails.uuid !== id) return;
         setUpdatedDescription(triggerDetails.description);
     }, [triggerDetails, id]);
-
-    const triggerHighlight = useCallback(() => {
-        setHighlight(true);
-        const timer = setTimeout(() => {
-            setHighlight(false);
-        }, 2000);
-        return () => clearTimeout(timer);
-    }, []);
 
     const getFreshDetails = useCallback(() => {
         if (!id) return;
@@ -145,7 +136,7 @@ const TriggerDetails = () => {
                 }),
             );
         }
-        setUpdateDescription(false);
+        setUpdateDescriptionEditEnable(false);
     }, [dispatch, id, triggerDetails, updatedDescription, updateDescriptionEditEnable]);
 
     const onUpdateActionsConfirmed = useCallback(
@@ -276,7 +267,6 @@ const TriggerDetails = () => {
                                           setConfirmIgnoreTrigger(true);
                                       } else {
                                           dispatch(alertActions.info('Please add actions from the actions table'));
-                                          triggerHighlight();
                                       }
                                   }}
                               />,
@@ -301,6 +291,7 @@ const TriggerDetails = () => {
                               'Description',
                               updateDescriptionEditEnable ? (
                                   <TextInput
+                                      key="desc-input"
                                       value={updatedDescription}
                                       onChange={(value) => setUpdatedDescription(value)}
                                       placeholder="Enter Description"
@@ -308,7 +299,7 @@ const TriggerDetails = () => {
                               ) : (
                                   (triggerDetails.description ?? '')
                               ),
-                              <div>
+                              <div key="desc-actions">
                                   {updateDescriptionEditEnable ? (
                                       <div className="flex gap-2">
                                           <Button
@@ -330,7 +321,7 @@ const TriggerDetails = () => {
                                               title="Cancel"
                                               disabled={isUpdatingTrigger}
                                               onClick={() => {
-                                                  setUpdateDescription(false);
+                                                  setUpdateDescriptionEditEnable(false);
                                                   setUpdatedDescription(triggerDetails?.description || '');
                                               }}
                                           >
@@ -343,7 +334,7 @@ const TriggerDetails = () => {
                                           color="secondary"
                                           title="Update Description"
                                           onClick={() => {
-                                              setUpdateDescription(true);
+                                              setUpdateDescriptionEditEnable(true);
                                           }}
                                       >
                                           <EditIcon size={16} />
@@ -365,7 +356,6 @@ const TriggerDetails = () => {
             eventNameEnum,
             dispatch,
             isFetchingTriggerDetail,
-            triggerHighlight,
         ],
     );
 
@@ -395,9 +385,12 @@ const TriggerDetails = () => {
                   return {
                       id: action.uuid,
                       columns: [
-                          <Link to={`../../actions/detail/${action.uuid}`}>{action.name}</Link>,
+                          <Link key="name" to={`../../actions/detail/${action.uuid}`}>
+                              {action.name}
+                          </Link>,
                           action.description || '',
                           <Button
+                              key="delete"
                               variant="transparent"
                               color="danger"
                               title={
@@ -445,9 +438,12 @@ const TriggerDetails = () => {
                       return {
                           id: rule.uuid,
                           columns: [
-                              <Link to={`../../rules/detail/${rule.uuid}`}>{rule.name}</Link>,
+                              <Link key="name" to={`../../rules/detail/${rule.uuid}`}>
+                                  {rule.name}
+                              </Link>,
                               rule.description || '',
                               <Button
+                                  key="delete"
                                   variant="transparent"
                                   color="danger"
                                   title="Delete Rule"

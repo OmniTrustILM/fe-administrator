@@ -8,7 +8,6 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router';
 import Button from 'components/Button';
 import Container from 'components/Container';
 import { validateAlphaNumericWithSpecialChars, validateLength, validateRequired } from 'utils/validators';
@@ -34,7 +33,6 @@ interface FormValues {
 
 function ComplianceProfileForm({ complianceProfileId, onCancel, onSuccess }: ComplianceProfileFormProps) {
     const dispatch = useDispatch();
-    const navigate = useNavigate();
 
     const isCreating = useSelector(selectors.isCreating);
     const createComplianceProfileSucceeded = useSelector(selectors.createComplianceProfileSucceeded);

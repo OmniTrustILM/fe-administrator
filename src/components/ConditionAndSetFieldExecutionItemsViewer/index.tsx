@@ -50,7 +50,7 @@ const ConditionAndSetFieldExecutionItemsViewer = ({ resource, formType }: Condit
 
     useEffect(() => {
         if (!hasEffectRun && editMode && id) {
-            if (formType == 'conditionItems') {
+            if (formType === 'conditionItems') {
                 if (conditionDetails?.uuid !== id) return;
                 const currentConditions = conditionDetails?.items ?? [];
 

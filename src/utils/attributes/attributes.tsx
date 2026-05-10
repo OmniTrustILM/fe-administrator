@@ -81,7 +81,7 @@ export const getAttributeContent = (contentType: AttributeContentType, content: 
         return <CodeBlock content={content[0] as CodeBlockAttributeContentModel} />;
     }
 
-    const mapping = (content: BaseAttributeContentModel): string | React.ReactNode | undefined => {
+    const mapping = (content: BaseAttributeContentModel): string | undefined => {
         switch (contentType) {
             case AttributeContentType.Boolean:
                 return content.data ? 'true' : 'false';
@@ -90,16 +90,16 @@ export const getAttributeContent = (contentType: AttributeContentType, content: 
             case AttributeContentType.File:
                 return content.reference;
             case AttributeContentType.Time:
-                return content.data.toString();
+                return String(content.data);
             case AttributeContentType.Date:
-                return content.data.toString();
+                return String(content.data);
             case AttributeContentType.Datetime:
-                return getFormattedDateTime(content.data.toString());
+                return getFormattedDateTime(String(content.data));
             case AttributeContentType.Float:
             case AttributeContentType.Integer:
             case AttributeContentType.String:
             case AttributeContentType.Text:
-                return content.data.toString();
+                return String(content.data);
             case AttributeContentType.Secret:
                 return '*****';
         }
@@ -118,7 +118,7 @@ export const getAttributeContent = (contentType: AttributeContentType, content: 
         }
     };
 
-    return content.map((content) => mapping(content) ?? checkFileNameAndMimeType(content)).join(', ');
+    return content.map((content) => mapping(content) ?? checkFileNameAndMimeType(content) ?? '').join(', ');
 };
 
 export const getAttributeFormValue = (
@@ -200,6 +200,97 @@ export const getCodeBlockLanguage = (
     return ProgrammingLanguageEnum.Javascript;
 };
 
+const resolveAttributeVersion = (descriptor: DataAttributeModel | CustomAttributeModel): AttributeVersion => {
+    const schemaVersion = (descriptor as any).schemaVersion;
+    if (schemaVersion === AttributeVersion.V2 || schemaVersion === AttributeVersion.V3) {
+        return schemaVersion;
+    }
+
+    const version = (descriptor as any).version;
+    if (version === AttributeVersion.V3 || version === '3' || version === 3) {
+        return AttributeVersion.V3;
+    }
+
+    return AttributeVersion.V2;
+};
+
+const resolveFinalAttributeVersion = (
+    existingVersion: AttributeVersion | undefined,
+    attributeVersion: AttributeVersion,
+): AttributeVersion => {
+    if (existingVersion === AttributeVersion.V3 || existingVersion === AttributeVersion.V2) {
+        return existingVersion;
+    }
+    if (attributeVersion === AttributeVersion.V3) {
+        return AttributeVersion.V3;
+    }
+    return AttributeVersion.V2;
+};
+
+const buildAttributeRequestModel = (
+    attributeName: string,
+    contentArray: any[],
+    descriptor: DataAttributeModel | CustomAttributeModel,
+    version: AttributeVersion,
+): AttributeRequestModel => {
+    if (version === AttributeVersion.V3) {
+        const finalContent = contentArray.map((item: { data: unknown }) => ({
+            ...item,
+            contentType: descriptor.contentType,
+        })) as BaseAttributeContentDtoV3[];
+        const attr: AttributeRequestModelV3 = {
+            name: attributeName,
+            content: finalContent,
+            contentType: descriptor.contentType,
+            uuid: descriptor.uuid,
+            version,
+        };
+        return attr;
+    }
+    const finalContent = contentArray as BaseAttributeContentDtoV2[];
+    const attr: AttributeRequestModelV2 = {
+        name: attributeName,
+        content: finalContent,
+        contentType: descriptor.contentType,
+        uuid: descriptor.uuid,
+        version,
+    };
+    return attr;
+};
+
+// The resource picker leaves a stub entry in the form value when the operator
+// clears a previously-selected resource. Whatever shape the picker produces —
+// primitive empty, object with empty data, single-pick scalar, react-select
+// null — it normalises to a content shape whose `data` is empty, which fails
+// polymorphic deserialisation on the backend with "missing type id property
+// 'resource'". Strip the stub so a cleared selection serialises as either
+// content: [] (list / multiSelect) or no attribute at all (single-pick).
+function stripEmptyResourceContent(content: any): any {
+    if (Array.isArray(content)) {
+        return content.filter((item: { data: unknown }) => item.data !== null && item.data !== undefined && item.data !== '');
+    }
+    if (content?.data === null || content?.data === undefined || content?.data === '') {
+        return undefined;
+    }
+    return content;
+}
+
+function shouldSkipAttribute(
+    attribute: string,
+    attributes: Record<string, unknown>,
+    deletedAttributes: string[],
+    descriptors: AttributeDescriptorModel[],
+): { skip: true } | { skip: false; descriptor: AttributeDescriptorModel; attributeName: string } {
+    if (!Object.hasOwn(attributes, attribute)) return { skip: true };
+    const attributeName = attribute.split(':')[0];
+    if (deletedAttributes.includes(attributeName)) return { skip: true };
+    const descriptor = descriptors.find((d) => d.name === attributeName);
+    if (!descriptor) return { skip: true };
+    if (attributes[attribute] === undefined || attributes[attribute] === null) return { skip: true };
+    if (!isDataAttributeModel(descriptor) && !isCustomAttributeModel(descriptor)) return { skip: true };
+    return { skip: false, descriptor, attributeName };
+}
+
 export function collectFormAttributes(
     id: string,
     descriptors: AttributeDescriptorModel[] | undefined,
@@ -212,86 +303,30 @@ export function collectFormAttributes(
     const deletedAttributes = values[`deletedAttributes_${id}`] || [];
 
     const attrs: AttributeRequestModel[] = [];
-    const resolveAttributeVersion = (descriptor: DataAttributeModel | CustomAttributeModel): AttributeVersion => {
-        const schemaVersion = (descriptor as any).schemaVersion;
-        if (schemaVersion === AttributeVersion.V2 || schemaVersion === AttributeVersion.V3) {
-            return schemaVersion;
-        }
-
-        const version = (descriptor as any).version;
-        if (version === AttributeVersion.V3 || version === '3' || version === 3) {
-            return AttributeVersion.V3;
-        }
-
-        return AttributeVersion.V2;
-    };
 
     for (const attribute in attributes) {
-        if (!Object.hasOwn(attributes, attribute)) continue;
+        const guard = shouldSkipAttribute(attribute, attributes, deletedAttributes, descriptors);
+        if (guard.skip) continue;
+        const { descriptor, attributeName } = guard;
 
-        const info = attribute.split(':');
+        const rawValue = attributes[attribute];
+        let content = Array.isArray(rawValue)
+            ? rawValue.map((i: any) => getAttributeFormValue(descriptor.contentType, descriptor.content, i))
+            : getAttributeFormValue(descriptor.contentType, descriptor.content, rawValue);
 
-        const attributeName = info[0];
-
-        // Skip if this attribute was deleted
-        if (deletedAttributes.includes(attributeName)) {
-            continue;
+        if (descriptor.contentType === AttributeContentType.Resource) {
+            content = stripEmptyResourceContent(content);
         }
 
-        const descriptor = descriptors?.find((d) => d.name === attributeName);
-        if (!descriptor) continue;
-        if (attributes[attribute] === undefined || attributes[attribute] === null) continue;
+        if (content === undefined) continue;
+        if (!Array.isArray(content) && content.data === undefined) continue;
 
-        let content: any;
+        const contentArray = Array.isArray(content) ? content : [content];
+        const existing = existingAttributes?.find((a) => a.name === attributeName);
+        const existingVersion = (existing as { version?: AttributeVersion })?.version;
+        const version = resolveFinalAttributeVersion(existingVersion, resolveAttributeVersion(descriptor));
 
-        if (isDataAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) {
-            const attributeVersion = resolveAttributeVersion(descriptor);
-
-            if (Array.isArray(attributes[attribute])) {
-                content = attributes[attribute].map((i: any) => getAttributeFormValue(descriptor.contentType, descriptor.content, i));
-            } else {
-                content = getAttributeFormValue(descriptor.contentType, descriptor.content, attributes[attribute]);
-            }
-
-            if (content.data !== undefined || Array.isArray(content)) {
-                const contentArray = Array.isArray(content) ? content : [content];
-                const existing = existingAttributes?.find((a) => a.name === attributeName);
-                const existingVersion = (existing as { version?: AttributeVersion })?.version;
-                let version: AttributeVersion;
-                if (existingVersion === AttributeVersion.V3 || existingVersion === AttributeVersion.V2) {
-                    version = existingVersion;
-                } else if (attributeVersion === AttributeVersion.V3) {
-                    version = AttributeVersion.V3;
-                } else {
-                    version = AttributeVersion.V2;
-                }
-
-                if (version === AttributeVersion.V3) {
-                    const finalContent = contentArray.map((item: { data: unknown }) => ({
-                        ...item,
-                        contentType: descriptor.contentType,
-                    })) as BaseAttributeContentDtoV3[];
-                    const attr: AttributeRequestModelV3 = {
-                        name: attributeName,
-                        content: finalContent,
-                        contentType: descriptor.contentType,
-                        uuid: descriptor.uuid,
-                        version,
-                    };
-                    attrs.push(attr);
-                } else {
-                    const finalContent = contentArray as BaseAttributeContentDtoV2[];
-                    const attr: AttributeRequestModelV2 = {
-                        name: attributeName,
-                        content: finalContent,
-                        contentType: descriptor.contentType,
-                        uuid: descriptor.uuid,
-                        version,
-                    };
-                    attrs.push(attr);
-                }
-            }
-        }
+        attrs.push(buildAttributeRequestModel(attributeName, contentArray, descriptor, version));
     }
     return attrs;
 }
@@ -400,13 +435,13 @@ export const testAttributeSetFunction = (
     }
 
     if (descriptor.contentType === AttributeContentType.Codeblock && formAttributeValue !== undefined) {
-        if ((formAttributeValue as CodeBlockAttributeContentDataModel).code !== undefined) {
+        if ((formAttributeValue as CodeBlockAttributeContentDataModel).code === undefined) {
             formAttributeValue = {
-                code: base64ToUtf8((formAttributeValue as CodeBlockAttributeContentDataModel).code),
                 language: (formAttributeValue as CodeBlockAttributeContentDataModel).language,
             };
         } else {
             formAttributeValue = {
+                code: base64ToUtf8((formAttributeValue as CodeBlockAttributeContentDataModel).code),
                 language: (formAttributeValue as CodeBlockAttributeContentDataModel).language,
             };
         }

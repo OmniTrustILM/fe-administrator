@@ -8,12 +8,12 @@ const options = [
 
 export default function SelectHSSelectTestWrapper() {
     useLayoutEffect(() => {
-        (window as any).HSSelect = {
+        (globalThis as any).HSSelect = {
             getInstance: () => null,
             autoInit: () => {},
         };
         return () => {
-            delete (window as any).HSSelect;
+            delete (globalThis as any).HSSelect;
         };
     }, []);
 

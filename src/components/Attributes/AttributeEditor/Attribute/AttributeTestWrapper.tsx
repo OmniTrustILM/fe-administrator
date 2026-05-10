@@ -6,17 +6,17 @@ import GlobalModal from 'components/GlobalModal';
 import { Attribute } from './index';
 import type { DataAttributeModel, InfoAttributeModel, CustomAttributeModel } from 'types/attributes';
 
-export type AttributeTestWrapperProps = Readonly<{
+export type AttributeTestWrapperProps = {
     name: string;
     descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel | undefined;
     options?: { label: string; value: any }[];
     busy?: boolean;
-    userInteractedRef?: React.MutableRefObject<boolean>;
+    userInteractedRef?: React.RefObject<boolean>;
     deleteButton?: React.ReactNode;
     defaultValues?: Record<string, unknown>;
     /** Preloaded store state (e.g. userInterface.initiateAttributeCallback) */
     preloadedState?: Record<string, unknown>;
-}>;
+};
 
 export function AttributeTestWrapper({
     name,
@@ -27,7 +27,7 @@ export function AttributeTestWrapper({
     deleteButton,
     defaultValues = {},
     preloadedState,
-}: AttributeTestWrapperProps) {
+}: Readonly<AttributeTestWrapperProps>) {
     const store = createMockStore(preloadedState);
     const methods = ReactHookForm.useForm({
         defaultValues: {

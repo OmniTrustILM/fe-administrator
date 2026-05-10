@@ -116,10 +116,13 @@ function SchedulerJobsList() {
             schedulerJobs.map((schedulerJob) => ({
                 id: schedulerJob.uuid,
                 columns: [
-                    <Link to={`./detail/${schedulerJob.uuid}`}>{schedulerJob.jobName}</Link>,
+                    <Link key="name" to={`./detail/${schedulerJob.uuid}`}>
+                        {schedulerJob.jobName}
+                    </Link>,
                     schedulerJob.jobType,
                     schedulerJob.cronExpression,
                     <Badge
+                        key="status"
                         color={(() => {
                             if (schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Failed) return 'danger';
                             return schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Succeeded ? 'success' : 'primary';
@@ -127,9 +130,9 @@ function SchedulerJobsList() {
                     >
                         {getEnumLabel(schedulerJobExecutionStatusEnum, schedulerJob.lastExecutionStatus)}
                     </Badge>,
-                    <BooleanBadge value={schedulerJob.system} />,
-                    <BooleanBadge value={schedulerJob.oneTime} />,
-                    <BooleanBadge value={schedulerJob.enabled} />,
+                    <BooleanBadge key="system" value={schedulerJob.system} />,
+                    <BooleanBadge key="oneTime" value={schedulerJob.oneTime} />,
+                    <BooleanBadge key="enabled" value={schedulerJob.enabled} />,
                 ],
             })),
         [schedulerJobs, schedulerJobExecutionStatusEnum],

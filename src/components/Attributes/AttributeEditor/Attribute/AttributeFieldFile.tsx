@@ -6,14 +6,14 @@ import cn from 'classnames';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import { buildAttributeValidators } from './attributeHelpers';
 
-type AttributeFieldFileProps = Readonly<{
+type AttributeFieldFileProps = {
     name: string;
     descriptor: DataAttributeModel | CustomAttributeModel;
     deleteButton?: React.ReactNode;
     onFileDrop: (e: React.DragEvent<HTMLInputElement>) => void;
     onFileDragOver: (e: React.DragEvent<HTMLInputElement>) => void;
     onFileChanged: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}>;
+};
 
 export function AttributeFieldFile({
     name,
@@ -22,7 +22,7 @@ export function AttributeFieldFile({
     onFileDrop,
     onFileDragOver,
     onFileChanged,
-}: AttributeFieldFileProps): React.ReactNode {
+}: Readonly<AttributeFieldFileProps>): React.ReactNode {
     const { control } = useFormContext<Record<string, any>>();
 
     return (
@@ -34,9 +34,8 @@ export function AttributeFieldFile({
             )}
 
             {descriptor.properties.visible && (
-                <div
+                <section
                     id={`${name}-dragAndDrop`}
-                    role="region"
                     aria-label="File drop zone"
                     className="border-2 border-dashed border-gray-200 rounded-lg p-4 dark:border-neutral-700"
                     style={{ display: 'flex', flexWrap: 'wrap' }}
@@ -132,7 +131,7 @@ export function AttributeFieldFile({
                         Select or Drag &amp; Drop file to Drop Zone.
                     </div>
                     {deleteButton}
-                </div>
+                </section>
             )}
         </>
     );

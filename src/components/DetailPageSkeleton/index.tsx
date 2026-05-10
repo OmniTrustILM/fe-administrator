@@ -7,14 +7,14 @@ const cardClass =
 
 type SkeletonLayout = 'simple' | 'tabs' | 'split';
 
-type Props = Readonly<{
+type Props = {
     layout?: SkeletonLayout;
     tabCount?: number;
     rowCount?: number;
     buttonsCount?: number;
     tabWidgetButtonsCount?: number;
     showBreadcrumb?: boolean;
-}>;
+};
 
 function BreadcrumbSkeleton() {
     return (
@@ -31,7 +31,7 @@ function BreadcrumbSkeleton() {
     );
 }
 
-function WidgetHeaderSkeleton({ buttonsCount = 0 }: { buttonsCount?: number }) {
+function WidgetHeaderSkeleton({ buttonsCount = 0 }: Readonly<{ buttonsCount?: number }>) {
     return (
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
             <div className={`${barClass} h-5 w-36`} />
@@ -53,7 +53,7 @@ export default function DetailPageSkeleton({
     buttonsCount = 2,
     tabWidgetButtonsCount = 0,
     showBreadcrumb = true,
-}: Props) {
+}: Readonly<Props>) {
     if (layout === 'simple') {
         return (
             <div data-testid="detail-page-skeleton">

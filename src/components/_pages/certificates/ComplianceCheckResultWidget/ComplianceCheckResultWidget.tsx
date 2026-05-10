@@ -6,7 +6,7 @@ import type { AppState } from 'ducks';
 import { dateFormatter } from 'utils/dateUtil';
 import { selectors as complianceProfilesSelectors, actions as complianceProfilesActions } from 'ducks/compliance-profiles';
 import type { LockWidgetNameEnum } from 'types/user-interface';
-import type { ComplianceRuleStatus, ComplianceStatus, Resource } from 'types/openapi';
+import type { ComplianceStatus, Resource } from 'types/openapi';
 import { useCallback, useEffect, useMemo } from 'react';
 import Button from 'components/Button';
 import { Info } from 'lucide-react';
@@ -58,7 +58,7 @@ export default function ComplianceCheckResultWidget({ widgetLockName, objectUuid
             columns: [
                 rule.name || '',
                 rule.description || '',
-                <CertificateStatus key={rule.uuid} status={(rule.status as ComplianceRuleStatus) || ''} />,
+                <CertificateStatus key={rule.uuid} status={rule.status || ''} />,
                 rule.connectorName || '',
                 rule.kind || '',
                 rule.attributes?.length ? (

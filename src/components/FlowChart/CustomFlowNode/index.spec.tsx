@@ -799,7 +799,7 @@ test.describe('CustomFlowNode', () => {
             />,
         );
         await component.getByRole('button', { name: /Expand/i }).click();
-        const scrollContainer = component.locator('.max-h-\\[150px\\]').first();
+        const scrollContainer = component.locator(String.raw`.max-h-\[150px\]`).first();
         await scrollContainer.dispatchEvent('wheel', { deltaY: 25 });
         await expect(component.getByText('Scrollable')).toBeVisible();
     });

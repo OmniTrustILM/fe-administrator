@@ -8,11 +8,11 @@ import { selectors } from 'ducks/auth';
 
 import logo from '../../../resources/images/ot-logo-white.svg';
 
-type Props = Readonly<{
+type Props = {
     sidebarToggle: () => void;
-}>;
+};
 
-function Header({ sidebarToggle }: Props) {
+function Header({ sidebarToggle }: Readonly<Props>) {
     const profile = useSelector(selectors.profile);
     const navigate = useNavigate();
 
@@ -77,7 +77,7 @@ function Header({ sidebarToggle }: Props) {
                             {
                                 title: 'Log out',
                                 onClick: () => {
-                                    window.location.href = (window as any).__ENV__.LOGOUT_URL;
+                                    globalThis.location.href = (globalThis as any).__ENV__.LOGOUT_URL;
                                 },
                             },
                         ]}

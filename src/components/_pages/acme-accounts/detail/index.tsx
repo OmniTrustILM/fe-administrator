@@ -137,15 +137,20 @@ export default function AcmeAccountDetail() {
             },
             {
                 id: 'internalState',
-                columns: ['Internal State', <StatusBadge enabled={acmeAccount.enabled} />],
+                columns: ['Internal State', <StatusBadge key="enabled" enabled={acmeAccount.enabled} />],
             },
             {
                 id: 'accountStatus',
-                columns: ['Account Status', <Badge color={accountStatus[1]}>{accountStatus[0]}</Badge>],
+                columns: [
+                    'Account Status',
+                    <Badge key="status" color={accountStatus[1]}>
+                        {accountStatus[0]}
+                    </Badge>,
+                ],
             },
             {
                 id: 'Terms of Service Agreed',
-                columns: ['Terms of Service Agreed', <StatusCircle status={acmeAccount.termsOfServiceAgreed} />],
+                columns: ['Terms of Service Agreed', <StatusCircle key="terms" status={acmeAccount.termsOfServiceAgreed} />],
             },
             {
                 id: 'contacts',

@@ -27,7 +27,7 @@ const ExecutionDetails = () => {
     const isFetchingDetails = useSelector(rulesSelectors.isFetchingExecutionDetails);
     const isUpdatingDetails = useSelector(rulesSelectors.isUpdatingExecution);
     const [confirmDelete, setConfirmDelete] = useState(false);
-    const [updateDescriptionEditEnable, setUpdateDescription] = useState<boolean>(false);
+    const [updateDescriptionEditEnable, setUpdateDescriptionEditEnable] = useState<boolean>(false);
     const [updatedDescription, setUpdatedDescription] = useState('');
 
     const isBusy = useMemo(() => isFetchingDetails || isUpdatingDetails, [isFetchingDetails, isUpdatingDetails]);
@@ -82,7 +82,7 @@ const ExecutionDetails = () => {
                 }),
             );
         }
-        setUpdateDescription(false);
+        setUpdateDescriptionEditEnable(false);
     }, [dispatch, id, executionDetails, updatedDescription, updateDescriptionEditEnable]);
 
     const buttons = useMemo(() => createDeleteButton(() => setConfirmDelete(true)), []);
@@ -115,6 +115,7 @@ const ExecutionDetails = () => {
                               'Description',
                               updateDescriptionEditEnable ? (
                                   <TextInput
+                                      key="desc-input"
                                       onChange={(value) => setUpdatedDescription(value)}
                                       value={updatedDescription}
                                       placeholder="Enter Description"
@@ -122,7 +123,7 @@ const ExecutionDetails = () => {
                               ) : (
                                   executionDetails.description || ''
                               ),
-                              <div>
+                              <div key="desc-actions">
                                   {updateDescriptionEditEnable ? (
                                       <div className="flex gap-2">
                                           <Button
@@ -143,7 +144,7 @@ const ExecutionDetails = () => {
                                               color="danger"
                                               title="Cancel"
                                               onClick={() => {
-                                                  setUpdateDescription(false);
+                                                  setUpdateDescriptionEditEnable(false);
                                                   setUpdatedDescription(executionDetails?.description || '');
                                               }}
                                               disabled={isUpdatingDetails}
@@ -157,7 +158,7 @@ const ExecutionDetails = () => {
                                           color="secondary"
                                           title="Update Description"
                                           onClick={() => {
-                                              setUpdateDescription(true);
+                                              setUpdateDescriptionEditEnable(true);
                                           }}
                                           disabled={isUpdatingDetails}
                                       >
@@ -172,7 +173,7 @@ const ExecutionDetails = () => {
             executionDetails,
             executionTypeEnum,
             resourceEnum,
-            setUpdateDescription,
+            setUpdateDescriptionEditEnable,
             updateDescriptionEditEnable,
             onUpdateDescriptionConfirmed,
             isUpdatingDetails,

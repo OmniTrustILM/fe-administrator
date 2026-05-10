@@ -23,11 +23,6 @@ export function parseListValueByContentType(
         }
         case AttributeContentType.Boolean:
             return str === 'true' || str === '1';
-        case AttributeContentType.String:
-        case AttributeContentType.Text:
-        case AttributeContentType.Date:
-        case AttributeContentType.Time:
-        case AttributeContentType.Datetime:
         default:
             return str;
     }
@@ -52,7 +47,7 @@ export function getSelectValueFromField(fieldValue: unknown, multiSelect: boolea
                 return { value: v.value, label: v.label || String(v.value) };
             }
             return typeof v === 'object'
-                ? { value: v, label: String((v as any).reference ?? (v as any).data ?? JSON.stringify(v)) }
+                ? { value: v, label: String(v.reference ?? v.data ?? JSON.stringify(v)) }
                 : { value: v, label: String(v) };
         });
     }
@@ -112,7 +107,8 @@ function addDataAttributeConstraintValidators(descriptor: DataAttributeModel, va
     const rangeData = rangeValidator.data as RangeAttributeConstraintData;
     const { from, to } = rangeData;
     if (from && to) {
-        const pattern = new RegExp(`^(?:${from === 1 ? '[1-9]\\d{0,' + (to.toString().length - 1) + '}' : from}|${to})$`);
+        const fromAlt = from === 1 ? String.raw`[1-9]\d{0,${to.toString().length - 1}}` : String(from);
+        const pattern = new RegExp(`^(?:${fromAlt}|${to})$`);
         validators.push(validatePattern(pattern, rangeValidator.errorMessage));
     }
 }
@@ -148,7 +144,7 @@ export function getUpdatedOptionsForEditSelect(
 ): { label: string; value: any }[] | undefined {
     if (valuesRecieved?.length > 0) {
         const updatedOptions = options?.filter((option) => {
-            return !valuesRecieved.some((value) => JSON.stringify(value.value) == JSON.stringify(option.value));
+            return !valuesRecieved.some((value) => JSON.stringify(value.value) === JSON.stringify(option.value));
         });
         return updatedOptions;
     }

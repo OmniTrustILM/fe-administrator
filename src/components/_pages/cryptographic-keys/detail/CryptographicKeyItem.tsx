@@ -314,7 +314,7 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
                           id: 'Usages',
                           columns: [
                               'Key Usages',
-                              <Container className="flex-row" gap={1}>
+                              <Container key="usages" className="flex-row" gap={1}>
                                   {keyItem.usage?.map((usage) => (
                                       <Badge key={usage} color="secondary">
                                           {usage}
@@ -325,7 +325,7 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
                       },
                       {
                           id: 'enabled',
-                          columns: ['Enabled', <StatusBadge key="enabled" enabled={keyItem!.enabled} />],
+                          columns: ['Enabled', <StatusBadge key="enabled" enabled={keyItem.enabled} />],
                       },
                       {
                           id: 'state',
@@ -391,18 +391,23 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
                 ? keyHistory.map((history) => ({
                       id: history.uuid,
                       columns: [
-                          <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(history.created)}</span>,
+                          <span key="created" style={{ whiteSpace: 'nowrap' }}>
+                              {dateFormatter(history.created)}
+                          </span>,
 
                           history.createdBy,
 
                           history.event,
 
-                          <KeyStatus status={history.status} />,
+                          <KeyStatus key="status" status={history.status} />,
 
-                          <div style={{ wordBreak: 'break-all' }}>{history.message}</div>,
+                          <div key="message" style={{ wordBreak: 'break-all' }}>
+                              {history.message}
+                          </div>,
 
                           history.additionalInformation ? (
                               <Button
+                                  key="info"
                                   variant="transparent"
                                   onClick={() => setCurrentInfoId(history.uuid)}
                                   title="Show Additional Information"
@@ -418,13 +423,6 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
         [keyHistory],
     );
 
-    const existingUsages = () => {
-        if (!keyItem) return [];
-        return keyItem.usage?.map((usage) => {
-            return { value: usage, label: usage.charAt(0).toUpperCase() + usage.slice(1).toLowerCase() };
-        });
-    };
-
     const additionalInfoEntry = (): any => {
         const returnList = [];
 
@@ -432,7 +430,7 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
 
         const currentHistory = keyHistory?.filter((history) => history.uuid === currentInfoId);
 
-        for (const [key, value] of Object.entries(currentHistory![0]?.additionalInformation ?? {})) {
+        for (const [key, value] of Object.entries(currentHistory?.[0]?.additionalInformation ?? {})) {
             returnList.push(
                 <tr>
                     <td style={{ padding: '0.25em' }}>{key}</td>

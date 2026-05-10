@@ -15,13 +15,13 @@ export interface WidgetButtonProps {
     className?: string;
 }
 
-type Props = Readonly<{
+type Props = {
     buttons: WidgetButtonProps[];
     justify?: 'start' | 'end' | 'center';
     className?: string;
-}>;
+};
 
-function WidgetButtons({ buttons, justify = 'center', className }: Props) {
+function WidgetButtons({ buttons, justify = 'center', className }: Readonly<Props>) {
     return (
         <div
             className={cn(

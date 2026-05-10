@@ -157,12 +157,13 @@ const getConnectorAllAttributesDescriptors: AppEpic = (action$, state, deps) => 
         filter(slice.actions.getConnectorAllAttributesDescriptors.match),
         switchMap((action) =>
             deps.apiClients.connectors.getAttributesAll({ uuid: action.payload.uuid }).pipe(
-                map(
-                    (descColl) =>
+                mergeMap((descColl) =>
+                    of(
                         slice.actions.getConnectorAllAttributesDescriptorsSuccess({
                             attributeDescriptorCollection: transformAttributeDescriptorCollectionDtoToModel(descColl),
                         }),
-                    userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ConnectorAttributes),
+                        userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ConnectorAttributes),
+                    ),
                 ),
 
                 catchError((error) =>

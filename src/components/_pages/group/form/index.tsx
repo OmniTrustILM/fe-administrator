@@ -129,7 +129,6 @@ export default function GroupForm({ groupId, onCancel, onSuccess }: GroupFormPro
         reset,
     } = methods;
 
-    const title = useMemo(() => (editMode ? 'Edit Group' : 'Add Group'), [editMode]);
     const renderCustomAttributesEditor = useMemo(() => {
         if (isBusy) return <></>;
         return (

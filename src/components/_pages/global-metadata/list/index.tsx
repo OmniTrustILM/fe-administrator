@@ -106,7 +106,9 @@ export default function GlobalMetadataList() {
             globalMetadata.map((metadata) => ({
                 id: metadata.uuid,
                 columns: [
-                    <Link to={`./detail/${metadata.uuid}`}>{metadata.name}</Link>,
+                    <Link key="name" to={`./detail/${metadata.uuid}`}>
+                        {metadata.name}
+                    </Link>,
                     metadata.version || '',
                     getEnumLabel(attributeContentTypeEnum, metadata.contentType),
                     metadata.description,

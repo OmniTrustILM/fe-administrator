@@ -5,7 +5,7 @@ test.describe('Tooltip', () => {
     test('should render tooltip with children', async ({ mount }) => {
         const component = await mount(
             <Tooltip content="Tooltip text">
-                <button>Hover me</button>
+                <button type="button">Hover me</button>
             </Tooltip>,
         );
 
@@ -15,7 +15,7 @@ test.describe('Tooltip', () => {
     test('should render tooltip content', async ({ mount }) => {
         const component = await mount(
             <Tooltip content="Tooltip text">
-                <button>Hover me</button>
+                <button type="button">Hover me</button>
             </Tooltip>,
         );
 
@@ -37,7 +37,7 @@ test.describe('Tooltip', () => {
     test('should render with React node content', async ({ mount }) => {
         const component = await mount(
             <Tooltip content={<span>React node content</span>}>
-                <button>Hover</button>
+                <button type="button">Hover</button>
             </Tooltip>,
         );
 
@@ -48,7 +48,7 @@ test.describe('Tooltip', () => {
     test('should render children when disabled is true', async ({ mount }) => {
         const component = await mount(
             <Tooltip content="Tooltip text" disabled={true}>
-                <button>Button</button>
+                <button type="button">Button</button>
             </Tooltip>,
         );
 
@@ -62,7 +62,7 @@ test.describe('Tooltip', () => {
     test('should support custom className', async ({ mount }) => {
         const component = await mount(
             <Tooltip content="Tooltip" className="custom-tooltip">
-                <button>Button</button>
+                <button type="button">Button</button>
             </Tooltip>,
         );
 
@@ -76,7 +76,7 @@ test.describe('Tooltip', () => {
     test('should support triggerClassName', async ({ mount }) => {
         const component = await mount(
             <Tooltip content="Tooltip" triggerClassName="custom-trigger">
-                <button>Button</button>
+                <button type="button">Button</button>
             </Tooltip>,
         );
 
@@ -86,7 +86,7 @@ test.describe('Tooltip', () => {
     test('should support contentClassName', async ({ mount }) => {
         const component = await mount(
             <Tooltip content="Tooltip" contentClassName="custom-content">
-                <button>Button</button>
+                <button type="button">Button</button>
             </Tooltip>,
         );
 

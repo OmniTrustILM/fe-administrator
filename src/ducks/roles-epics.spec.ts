@@ -52,7 +52,7 @@ describe('roles epics', () => {
             actions.bulkDeleteFailure({ error: 'Failed to delete 1 role' }),
         ]);
         expect(emitted[2].type).toBe(appRedirectActions.fetchError.type);
-        expect((emitted[2] as any).payload).toEqual({ error: undefined, message: 'Failed to delete 1 role' });
+        expect(emitted[2].payload).toEqual({ error: undefined, message: 'Failed to delete 1 role' });
     });
 
     test('bulkDelete multiple failures uses plural message', async () => {
@@ -68,7 +68,7 @@ describe('roles epics', () => {
             actions.bulkDeleteSuccess({ uuids: [] }),
             actions.bulkDeleteFailure({ error: 'Failed to delete 2 roles' }),
         ]);
-        expect((emitted[2] as any).payload).toEqual({ error: undefined, message: 'Failed to delete 2 roles' });
+        expect(emitted[2].payload).toEqual({ error: undefined, message: 'Failed to delete 2 roles' });
     });
 
     test('bulkDelete sync throw emits bulkDeleteFailure and fetchError', async () => {

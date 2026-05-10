@@ -79,7 +79,7 @@ export default defineConfig({
                 outputFile: './monocart-report/index.html',
                 sourcePath: (filePath: string) => {
                     const fp = filePath.replaceAll('\\', '/');
-                    const m = fp.match(/(^|\/)(src\/.*)$/);
+                    const m = /(^|\/)(src\/.*)$/.exec(fp);
                     if (m) return m[2];
                     const cwd = process.cwd().replaceAll('\\', '/');
                     if (fp.startsWith(cwd + '/')) return fp.slice(cwd.length + 1);

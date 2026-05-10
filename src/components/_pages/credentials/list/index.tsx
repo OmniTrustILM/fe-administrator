@@ -62,10 +62,6 @@ function CredentialList() {
         setEditingCredentialId(undefined);
     }, []);
 
-    const onAddClick = useCallback(() => {
-        handleOpenAddModal();
-    }, [handleOpenAddModal]);
-
     const onDeleteConfirmed = useCallback(() => {
         setConfirmDelete(false);
         dispatch(actions.clearDeleteErrorMessages());
@@ -131,12 +127,18 @@ function CredentialList() {
             credentials.map((credential) => ({
                 id: credential.uuid,
                 columns: [
-                    <Link to={`./detail/${credential.uuid}`}>{credential.name}</Link>,
+                    <Link key="name" to={`./detail/${credential.uuid}`}>
+                        {credential.name}
+                    </Link>,
 
-                    <Badge color="primary">{credential.kind}</Badge>,
+                    <Badge key="kind" color="primary">
+                        {credential.kind}
+                    </Badge>,
 
                     credential.connectorName ? (
-                        <Link to={`../connectors/detail/${credential.connectorUuid}`}>{credential.connectorName ?? 'Unassigned'}</Link>
+                        <Link key="connector" to={`../connectors/detail/${credential.connectorUuid}`}>
+                            {credential.connectorName ?? 'Unassigned'}
+                        </Link>
                     ) : (
                         (credential.connectorName ?? 'Unassigned')
                     ),

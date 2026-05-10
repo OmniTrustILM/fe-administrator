@@ -297,7 +297,16 @@ export default function EntityForm({ entityId, onCancel, onSuccess }: EntityForm
                             )}
                         />
 
-                        {!editMode ? (
+                        {editMode ? (
+                            <TextInput
+                                id="entityProvider"
+                                type="text"
+                                label="Entity Provider"
+                                value={entity?.connectorName || ''}
+                                disabled={true}
+                                onChange={() => {}}
+                            />
+                        ) : (
                             <div>
                                 <Controller
                                     name="entityProvider"
@@ -335,15 +344,6 @@ export default function EntityForm({ entityId, onCancel, onSuccess }: EntityForm
                                     )}
                                 />
                             </div>
-                        ) : (
-                            <TextInput
-                                id="entityProvider"
-                                type="text"
-                                label="Entity Provider"
-                                value={entity?.connectorName || ''}
-                                disabled={true}
-                                onChange={() => {}}
-                            />
                         )}
 
                         {!editMode && optionsForKinds?.length ? (

@@ -13,50 +13,42 @@ import type {
     CryptographicKeyVerifyResponseModel,
 } from 'types/cryptographic-operations';
 
+function spreadCopy<TIn extends object, TOut>(input: TIn): TOut {
+    return { ...input } as unknown as TOut;
+}
+
 export function transformCryptographicKeySignDataResponseDtoToModel(
     keyResponse: CryptographicKeySignResponseDto,
 ): CryptographicKeySignResponseModel {
-    return {
-        ...keyResponse,
-    };
+    return spreadCopy(keyResponse);
 }
 
 export function transformCryptographicKeyVerifyDataResponseDtoToModel(
     keyResponse: CryptographicKeyVerifyResponseDto,
 ): CryptographicKeyVerifyResponseModel {
-    return {
-        ...keyResponse,
-    };
+    return spreadCopy(keyResponse);
 }
 
 export function transformCryptographicKeyRandomDataResponseDtoToModel(
     keyResponse: CryptographicKeyRandomDataResponseDto,
 ): CryptographicKeyRandomDataResponseModel {
-    return {
-        ...keyResponse,
-    };
+    return spreadCopy(keyResponse);
 }
 
 export function transformCryptographicKeyRandomDataRequestModelToDto(
     randomDataRequest: CryptographicKeyRandomDataRequestModel,
 ): CryptographicKeyRandomDataRequestDto {
-    return {
-        ...randomDataRequest,
-    };
+    return spreadCopy(randomDataRequest);
 }
 
 export function transformCryptographicKeySignRequestModelToDto(
     signRequest: CryptographicKeySignDataRequestModel,
 ): CryptographicKeySignDataRequestDto {
-    return {
-        ...signRequest,
-    };
+    return spreadCopy(signRequest);
 }
 
 export function transformCryptographicKeyVerifyRequestModelToDto(
     verifyRequest: CryptographicKeyVerifyDataRequestModel,
 ): CryptographicKeyVerifyDataRequestDto {
-    return {
-        ...verifyRequest,
-    };
+    return spreadCopy(verifyRequest);
 }

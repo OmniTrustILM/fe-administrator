@@ -30,11 +30,11 @@ export interface BulkDeleteTspProfilesRequest {
     requestBody: Array<string>;
 }
 
-export interface BulkEnableTspProfilesRequest {
+export interface BulkDisableTspProfilesRequest {
     requestBody: Array<string>;
 }
 
-export interface BulkDisableTspProfilesRequest {
+export interface BulkEnableTspProfilesRequest {
     requestBody: Array<string>;
 }
 
@@ -46,11 +46,11 @@ export interface DeleteTspProfileRequest {
     uuid: string;
 }
 
-export interface EnableTspProfileRequest {
+export interface DisableTspProfileRequest {
     uuid: string;
 }
 
-export interface DisableTspProfileRequest {
+export interface EnableTspProfileRequest {
     uuid: string;
 }
 
@@ -85,10 +85,46 @@ export class TSPProfileManagementApi extends BaseAPI {
     ): Observable<Array<BulkActionMessageDto> | AjaxResponse<Array<BulkActionMessageDto>>> {
         throwIfNullOrUndefined(requestBody, 'requestBody', 'bulkDeleteTspProfiles');
 
-        const headers: HttpHeaders = { 'Content-Type': 'application/json' };
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
 
         return this.request<Array<BulkActionMessageDto>>(
-            { url: '/v1/tspProfiles', method: 'DELETE', headers, body: requestBody },
+            {
+                url: '/v1/tspProfiles',
+                method: 'DELETE',
+                headers,
+                body: requestBody,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Disable multiple TSP Profiles
+     */
+    bulkDisableTspProfiles({ requestBody }: BulkDisableTspProfilesRequest): Observable<Array<BulkActionMessageDto>>;
+    bulkDisableTspProfiles(
+        { requestBody }: BulkDisableTspProfilesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BulkActionMessageDto>>>;
+    bulkDisableTspProfiles(
+        { requestBody }: BulkDisableTspProfilesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BulkActionMessageDto> | AjaxResponse<Array<BulkActionMessageDto>>> {
+        throwIfNullOrUndefined(requestBody, 'requestBody', 'bulkDisableTspProfiles');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<Array<BulkActionMessageDto>>(
+            {
+                url: '/v1/tspProfiles/disable',
+                method: 'PATCH',
+                headers,
+                body: requestBody,
+            },
             opts?.responseOpts,
         );
     }
@@ -96,27 +132,30 @@ export class TSPProfileManagementApi extends BaseAPI {
     /**
      * Enable multiple TSP Profiles
      */
-    bulkEnableTspProfiles({ requestBody }: BulkEnableTspProfilesRequest): Observable<void>;
-    bulkEnableTspProfiles({ requestBody }: BulkEnableTspProfilesRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>>;
-    bulkEnableTspProfiles({ requestBody }: BulkEnableTspProfilesRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>> {
+    bulkEnableTspProfiles({ requestBody }: BulkEnableTspProfilesRequest): Observable<Array<BulkActionMessageDto>>;
+    bulkEnableTspProfiles(
+        { requestBody }: BulkEnableTspProfilesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BulkActionMessageDto>>>;
+    bulkEnableTspProfiles(
+        { requestBody }: BulkEnableTspProfilesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BulkActionMessageDto> | AjaxResponse<Array<BulkActionMessageDto>>> {
         throwIfNullOrUndefined(requestBody, 'requestBody', 'bulkEnableTspProfiles');
 
-        const headers: HttpHeaders = { 'Content-Type': 'application/json' };
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
 
-        return this.request<void>({ url: '/v1/tspProfiles/enable', method: 'PATCH', headers, body: requestBody }, opts?.responseOpts);
-    }
-
-    /**
-     * Disable multiple TSP Profiles
-     */
-    bulkDisableTspProfiles({ requestBody }: BulkDisableTspProfilesRequest): Observable<void>;
-    bulkDisableTspProfiles({ requestBody }: BulkDisableTspProfilesRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>>;
-    bulkDisableTspProfiles({ requestBody }: BulkDisableTspProfilesRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>> {
-        throwIfNullOrUndefined(requestBody, 'requestBody', 'bulkDisableTspProfiles');
-
-        const headers: HttpHeaders = { 'Content-Type': 'application/json' };
-
-        return this.request<void>({ url: '/v1/tspProfiles/disable', method: 'PATCH', headers, body: requestBody }, opts?.responseOpts);
+        return this.request<Array<BulkActionMessageDto>>(
+            {
+                url: '/v1/tspProfiles/enable',
+                method: 'PATCH',
+                headers,
+                body: requestBody,
+            },
+            opts?.responseOpts,
+        );
     }
 
     /**
@@ -130,10 +169,17 @@ export class TSPProfileManagementApi extends BaseAPI {
     ): Observable<TspProfileDto | AjaxResponse<TspProfileDto>> {
         throwIfNullOrUndefined(tspProfileRequestDto, 'tspProfileRequestDto', 'createTspProfile');
 
-        const headers: HttpHeaders = { 'Content-Type': 'application/json' };
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
 
         return this.request<TspProfileDto>(
-            { url: '/v1/tspProfiles', method: 'POST', headers, body: tspProfileRequestDto },
+            {
+                url: '/v1/tspProfiles',
+                method: 'POST',
+                headers,
+                body: tspProfileRequestDto,
+            },
             opts?.responseOpts,
         );
     }
@@ -147,21 +193,10 @@ export class TSPProfileManagementApi extends BaseAPI {
         throwIfNullOrUndefined(uuid, 'uuid', 'deleteTspProfile');
 
         return this.request<void>(
-            { url: '/v1/tspProfiles/{uuid}'.replace('{uuid}', encodeURI(uuid)), method: 'DELETE' },
-            opts?.responseOpts,
-        );
-    }
-
-    /**
-     * Enable TSP Profile
-     */
-    enableTspProfile({ uuid }: EnableTspProfileRequest): Observable<void>;
-    enableTspProfile({ uuid }: EnableTspProfileRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>>;
-    enableTspProfile({ uuid }: EnableTspProfileRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>> {
-        throwIfNullOrUndefined(uuid, 'uuid', 'enableTspProfile');
-
-        return this.request<void>(
-            { url: '/v1/tspProfiles/{uuid}/enable'.replace('{uuid}', encodeURI(uuid)), method: 'PATCH' },
+            {
+                url: '/v1/tspProfiles/{uuid}'.replace('{uuid}', encodeURI(uuid)),
+                method: 'DELETE',
+            },
             opts?.responseOpts,
         );
     }
@@ -175,7 +210,27 @@ export class TSPProfileManagementApi extends BaseAPI {
         throwIfNullOrUndefined(uuid, 'uuid', 'disableTspProfile');
 
         return this.request<void>(
-            { url: '/v1/tspProfiles/{uuid}/disable'.replace('{uuid}', encodeURI(uuid)), method: 'PATCH' },
+            {
+                url: '/v1/tspProfiles/{uuid}/disable'.replace('{uuid}', encodeURI(uuid)),
+                method: 'PATCH',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Enable TSP Profile
+     */
+    enableTspProfile({ uuid }: EnableTspProfileRequest): Observable<void>;
+    enableTspProfile({ uuid }: EnableTspProfileRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>>;
+    enableTspProfile({ uuid }: EnableTspProfileRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'enableTspProfile');
+
+        return this.request<void>(
+            {
+                url: '/v1/tspProfiles/{uuid}/enable'.replace('{uuid}', encodeURI(uuid)),
+                method: 'PATCH',
+            },
             opts?.responseOpts,
         );
     }
@@ -189,7 +244,10 @@ export class TSPProfileManagementApi extends BaseAPI {
         throwIfNullOrUndefined(uuid, 'uuid', 'getTspProfile');
 
         return this.request<TspProfileDto>(
-            { url: '/v1/tspProfiles/{uuid}'.replace('{uuid}', encodeURI(uuid)), method: 'GET' },
+            {
+                url: '/v1/tspProfiles/{uuid}'.replace('{uuid}', encodeURI(uuid)),
+                method: 'GET',
+            },
             opts?.responseOpts,
         );
     }
@@ -202,7 +260,13 @@ export class TSPProfileManagementApi extends BaseAPI {
     listTspProfileSearchableFields(
         opts?: OperationOpts,
     ): Observable<Array<SearchFieldDataByGroupDto> | AjaxResponse<Array<SearchFieldDataByGroupDto>>> {
-        return this.request<Array<SearchFieldDataByGroupDto>>({ url: '/v1/tspProfiles/search', method: 'GET' }, opts?.responseOpts);
+        return this.request<Array<SearchFieldDataByGroupDto>>(
+            {
+                url: '/v1/tspProfiles/search',
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
     }
 
     /**
@@ -219,10 +283,17 @@ export class TSPProfileManagementApi extends BaseAPI {
     ): Observable<PaginationResponseDtoTspProfileListDto | AjaxResponse<PaginationResponseDtoTspProfileListDto>> {
         throwIfNullOrUndefined(searchRequestDto, 'searchRequestDto', 'listTspProfiles');
 
-        const headers: HttpHeaders = { 'Content-Type': 'application/json' };
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
 
         return this.request<PaginationResponseDtoTspProfileListDto>(
-            { url: '/v1/tspProfiles/list', method: 'POST', headers, body: searchRequestDto },
+            {
+                url: '/v1/tspProfiles/list',
+                method: 'POST',
+                headers,
+                body: searchRequestDto,
+            },
             opts?.responseOpts,
         );
     }
@@ -242,10 +313,17 @@ export class TSPProfileManagementApi extends BaseAPI {
         throwIfNullOrUndefined(uuid, 'uuid', 'updateTspProfile');
         throwIfNullOrUndefined(tspProfileRequestDto, 'tspProfileRequestDto', 'updateTspProfile');
 
-        const headers: HttpHeaders = { 'Content-Type': 'application/json' };
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
 
         return this.request<TspProfileDto>(
-            { url: '/v1/tspProfiles/{uuid}'.replace('{uuid}', encodeURI(uuid)), method: 'PUT', headers, body: tspProfileRequestDto },
+            {
+                url: '/v1/tspProfiles/{uuid}'.replace('{uuid}', encodeURI(uuid)),
+                method: 'PUT',
+                headers,
+                body: tspProfileRequestDto,
+            },
             opts?.responseOpts,
         );
     }

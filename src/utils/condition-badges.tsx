@@ -7,16 +7,21 @@ import { getFormattedDate, getFormattedDateTime } from 'utils/dateUtil';
 
 type RenderVariant = 'badge' | 'small';
 
+type RenderConditionItemsOptions = {
+    className: string;
+    variant?: RenderVariant;
+    style?: React.CSSProperties;
+};
+
 export const renderConditionItems = (
     conditionItems: ConditionItemDto[],
     availableFilters: SearchFieldListModel[],
     platformEnums: Record<string, Record<string, { label: string }>>,
     searchGroupEnum: Record<string, EnumItemDto>,
     filterConditionOperatorEnum: Record<string, EnumItemDto>,
-    className: string,
-    variant: RenderVariant = 'badge',
-    style?: React.CSSProperties,
+    options: RenderConditionItemsOptions,
 ) => {
+    const { className, variant = 'badge', style } = options;
     const formatSingleValue = (
         v: any,
         field: SearchFieldModel | undefined,

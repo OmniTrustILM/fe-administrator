@@ -37,7 +37,6 @@ import { slice as notificationsSlice } from './notifications';
 import { slice as notificationProfilesSlice } from './notification-profiles';
 import { slice as pagingSlice } from './paging';
 import { slice as raProfilesSlice } from './ra-profiles';
-// import { reducers } from "./reducers";
 import { slice as resourceSlice } from './resource';
 import { slice as rolesSlice } from './roles';
 import { slice as rulesSlice } from './rules';

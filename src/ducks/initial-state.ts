@@ -3,7 +3,6 @@ import { slice as acmeProfilesSlice, initialState as initialAcmeProfilesState } 
 import { slice as cmpProfilesSlice, initialState as initialCmpProfilesState } from './cmp-profiles';
 import { initialState as initialScepProfilesState, slice as scepProfilesSlice } from './scep-profiles';
 
-// import { slice as alertsSlice, initialState as initialAlertsState } from "./alerts";
 import { alertsSlice, initialState as initialAlertsState } from './alert-slice';
 import { slice as appRedirectSlice, initialState as initialAppRedirectState } from './app-redirect';
 import { slice as auditLogsSlice, initialState as initialAuditLogsState } from './auditLogs';

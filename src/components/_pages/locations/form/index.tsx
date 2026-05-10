@@ -237,8 +237,6 @@ export default function LocationForm({ locationId, entityId: propEntityId, onCan
         [entities],
     );
 
-    const title = useMemo(() => (editMode ? `Edit Location: ${location?.name}` : 'Add Location'), [editMode, location]);
-
     const renderCustomAttributesEditor = useMemo(() => {
         if (isBusy) return <></>;
         return (

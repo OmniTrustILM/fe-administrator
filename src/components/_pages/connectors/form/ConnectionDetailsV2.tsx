@@ -36,7 +36,7 @@ const v2InterfacesHeaders: TableHeader[] = [
 
 export default function ConnectionDetailsV2({ connectInfo, errorMessage }: Props) {
     const v2ConnectInfo = useMemo(
-        () => (connectInfo || []).filter((info: any) => Array.isArray((info as any).interfaces) || (info as any).connector),
+        () => (connectInfo || []).filter((info: any) => Array.isArray(info.interfaces) || info.connector),
         [connectInfo],
     );
 

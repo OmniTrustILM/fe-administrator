@@ -19,7 +19,7 @@ const entityMap: Record<string, string> = {
 const renderItems = (...args: Parameters<typeof renderExecutionItems>) => {
     const elements = renderExecutionItems(...args);
     const html = renderToStaticMarkup(elements as any);
-    return html.replace(/&(?:#x27|amp|nbsp);/g, (match) => entityMap[match] ?? match);
+    return html.replaceAll(/&(?:#x27|amp|nbsp);/g, (match) => entityMap[match] ?? match);
 };
 
 const buildAvailableFilters = (searchFieldData: any[]): SearchFieldListModel[] => [

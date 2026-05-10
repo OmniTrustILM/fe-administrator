@@ -25,8 +25,7 @@ test.describe('condition-badges', () => {
             platformEnums,
             searchGroupEnum as any,
             filterConditionOperatorEnum as any,
-            'test-class',
-            'badge',
+            { className: 'test-class', variant: 'badge' },
         );
 
         const component = await mount(<div>{result}</div>);
@@ -47,15 +46,10 @@ test.describe('condition-badges', () => {
             },
         ];
 
-        const result = renderConditionItems(
-            conditionItems,
-            [],
-            {},
-            searchGroupEnum as any,
-            filterConditionOperatorEnum as any,
-            'text-class',
-            'small',
-        );
+        const result = renderConditionItems(conditionItems, [], {}, searchGroupEnum as any, filterConditionOperatorEnum as any, {
+            className: 'text-class',
+            variant: 'small',
+        });
 
         const component = await mount(<div>{result}</div>);
 
@@ -75,22 +69,20 @@ test.describe('condition-badges', () => {
             },
         ];
 
-        const result = renderConditionItems(
-            conditionItems,
-            [],
-            {},
-            searchGroupEnum as any,
-            filterConditionOperatorEnum as any,
-            'cls',
-            'badge',
-        );
+        const result = renderConditionItems(conditionItems, [], {}, searchGroupEnum as any, filterConditionOperatorEnum as any, {
+            className: 'cls',
+            variant: 'badge',
+        });
 
         const component = await mount(<div>{result}</div>);
         await expect(component.getByText(/'a' OR 'b'/)).toBeVisible();
     });
 
     test('renderConditionItems returns empty when conditionItems empty', () => {
-        const result = renderConditionItems([], [], {}, searchGroupEnum as any, filterConditionOperatorEnum as any, 'c', 'badge');
+        const result = renderConditionItems([], [], {}, searchGroupEnum as any, filterConditionOperatorEnum as any, {
+            className: 'c',
+            variant: 'badge',
+        });
 
         expect(result).toHaveLength(0);
     });

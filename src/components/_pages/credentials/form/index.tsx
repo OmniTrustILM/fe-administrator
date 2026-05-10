@@ -124,8 +124,8 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
 
             dispatch(
                 actions.getCredentialProviderAttributesDescriptors({
-                    uuid: credential!.connectorUuid,
-                    kind: credential!.kind,
+                    uuid: credential.connectorUuid,
+                    kind: credential.kind,
                 }),
             );
         }
@@ -142,16 +142,6 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
             setCredentialProvider(provider);
         },
         [credentialProviders, dispatch],
-    );
-
-    const onKindChange = useCallback(
-        (value: string) => {
-            if (!value || !credentialProvider) return;
-            dispatch(connectorActions.clearCallbackData());
-            setGroupAttributesCallbackAttributes([]);
-            dispatch(actions.getCredentialProviderAttributesDescriptors({ uuid: credentialProvider.uuid, kind: value }));
-        },
-        [dispatch, credentialProvider],
     );
 
     const combinedAttributeValues = useMemo(
@@ -352,7 +342,16 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
                             )}
                         />
 
-                        {!editMode ? (
+                        {editMode ? (
+                            <TextInput
+                                id="credentialProvider"
+                                type="text"
+                                label="Credential Provider"
+                                value={credential?.connectorName || ''}
+                                disabled={true}
+                                onChange={() => {}}
+                            />
+                        ) : (
                             <div>
                                 <Controller
                                     name="credentialProvider"
@@ -383,15 +382,6 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
                                     )}
                                 />
                             </div>
-                        ) : (
-                            <TextInput
-                                id="credentialProvider"
-                                type="text"
-                                label="Credential Provider"
-                                value={credential?.connectorName || ''}
-                                disabled={true}
-                                onChange={() => {}}
-                            />
                         )}
 
                         {!editMode && optionsForKinds?.length ? (

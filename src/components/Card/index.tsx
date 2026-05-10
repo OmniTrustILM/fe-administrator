@@ -1,14 +1,14 @@
 import Spinner from 'components/Spinner';
 
-type Props = Readonly<{
+type Props = {
     children: React.ReactNode;
     isLoading?: boolean;
     title?: string;
     subtitle?: string;
     content?: string;
-}>;
+};
 
-function Card({ title, subtitle, content, children, isLoading }: Props) {
+function Card({ title, subtitle, content, children, isLoading }: Readonly<Props>) {
     if (isLoading) {
         return (
             <div className="flex flex-col bg-white border border-gray-200 shadow-2xs rounded-xl p-4 md:p-5 dark:bg-neutral-900 dark:border-neutral-700 dark:shadow-neutral-700/70">

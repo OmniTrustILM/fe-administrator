@@ -2,111 +2,96 @@ import type { AttributeDescriptorModel, AttributeRequestModel, AttributeResponse
 import type { RaProfileSimplifiedModel } from './certificate';
 import type {
     ComplianceGroupDto,
-    ComplianceGroupRequestDto,
-    ComplianceGroupsListResponseDto,
-    ComplianceGroupsResponseDto,
     ComplianceProfileDto,
-    ComplianceProfileListDto as ComplianceProfileListDtoOpenApi,
-    ComplianceProfileRequestDto as ComplianceProfileRequestDtoOpenApi,
+    ComplianceProfileRequestDto,
     ComplianceProfileRuleDto,
-    ComplianceProviderSummaryDto,
     ComplianceRuleAdditionRequestDto,
     ComplianceRuleAvailabilityStatus,
-    ComplianceRuleDeletionRequestDto,
     ComplianceRuleDto,
     ComplianceRuleListDto,
     ComplianceRulesListResponseDto,
     ComplianceRulesResponseDto,
+    ComplianceGroupsListResponseDto,
+    ComplianceGroupsResponseDto,
 } from './openapi';
 
-export type ComplianceProfileListRuleDto = ComplianceProviderSummaryDto;
-export type ComplianceProfileListRuleModel = ComplianceProfileListRuleDto;
+export type {
+    ComplianceProviderSummaryDto as ComplianceProfileListRuleDto,
+    ComplianceProviderSummaryDto as ComplianceProfileListRuleModel,
+    ComplianceProfileListDto,
+    ComplianceProfileListDto as ComplianceProfileListModel,
+    ComplianceRuleDto as ComplianceProfileResponseRuleRuleDto,
+    ComplianceRuleDto as ComplianceProfileResponseRuleDto,
+    ComplianceGroupDto as ComplianceProfileResponseGroupGroupDto,
+    ComplianceGroupDto as ComplianceProfileResponseGroupGroupModel,
+    ComplianceGroupDto as ComplianceProfileResponseGroupDto,
+    ComplianceProfileDto as ComplianceProfileResponseDto,
+    ComplianceRuleDto as ComplianceProfileRequestRuleRuleDto,
+    ComplianceRuleDto as ComplianceProfileRequestRuleDto,
+    ComplianceProfileRequestDto,
+    ComplianceRuleAdditionRequestDto as ComplianceProfileRuleAddRequestDto,
+    ComplianceProfileRuleDto as ComplianceProfileRuleAddResponseDto,
+    ComplianceGroupRequestDto as ComplianceProfileGroupRequestDto,
+    ComplianceGroupRequestDto as ComplianceProfileGroupRequestModel,
+    ComplianceRuleDeletionRequestDto as ComplianceProfileRuleDeleteRequestDto,
+    ComplianceRuleDeletionRequestDto as ComplianceProfileRuleDeleteRequestModel,
+    ComplianceRulesResponseDto as ComplianceProfileRuleListResponseRuleDto,
+    ComplianceRulesListResponseDto as ComplianceProfileRuleListResponseDto,
+    ComplianceGroupsResponseDto as ComplianceProfileGroupListResponseGroupDto,
+    ComplianceGroupsResponseDto as ComplianceProfileGroupListResponseGroupModel,
+    ComplianceGroupsListResponseDto as ComplianceProfileGroupListResponseDto,
+} from './openapi';
 
-export type ComplianceProfileListDto = ComplianceProfileListDtoOpenApi;
-export type ComplianceProfileListModel = ComplianceProfileListDto;
-//---
-export type ComplianceProfileResponseRuleRuleDto = ComplianceRuleDto;
-export type ComplianceProfileResponseRuleRuleModel = Omit<ComplianceProfileResponseRuleRuleDto, 'attributes'> & {
+export type ComplianceProfileResponseRuleRuleModel = Omit<ComplianceRuleDto, 'attributes'> & {
     attributes?: Array<AttributeResponseModel>;
 };
 
-export type ComplianceProfileResponseRuleDto = ComplianceRuleDto;
-export type ComplianceProfileResponseRuleModel = Omit<ComplianceProfileResponseRuleDto, 'rules'> & {
+export type ComplianceProfileResponseRuleModel = Omit<ComplianceRuleDto, 'rules'> & {
     rules?: Array<ComplianceProfileResponseRuleRuleModel>;
 };
-//-
-export type ComplianceProfileResponseGroupGroupDto = ComplianceGroupDto;
-export type ComplianceProfileResponseGroupGroupModel = ComplianceProfileResponseGroupGroupDto;
 
-export type ComplianceProfileResponseGroupDto = ComplianceGroupDto;
-export type ComplianceProfileResponseGroupModel = Omit<ComplianceProfileResponseGroupDto, 'groups'> & {
-    groups?: Array<ComplianceProfileResponseGroupGroupModel>;
+export type ComplianceProfileResponseGroupModel = Omit<ComplianceGroupDto, 'groups'> & {
+    groups?: Array<ComplianceGroupDto>;
 };
-//-
-export type ComplianceProfileResponseDto = ComplianceProfileDto;
-export type ComplianceProfileResponseModel = Omit<ComplianceProfileResponseDto, 'rules | groups | raProfiles | customAttributes'> & {
+
+export type ComplianceProfileResponseModel = Omit<ComplianceProfileDto, 'rules | groups | raProfiles | customAttributes'> & {
     rules: Array<ComplianceProfileResponseRuleModel>;
     groups: Array<ComplianceProfileResponseGroupModel>;
     raProfiles?: Array<RaProfileSimplifiedModel>;
     customAttributes?: Array<AttributeResponseModel>;
 };
-//---
 
-export type ComplianceProfileRequestRuleRuleDto = ComplianceRuleDto;
-export type ComplianceProfileRequestRuleRuleModel = Omit<ComplianceProfileRequestRuleRuleDto, 'attributes'> & {
+export type ComplianceProfileRequestRuleRuleModel = Omit<ComplianceRuleDto, 'attributes'> & {
     attributes?: Array<AttributeRequestModel>;
 };
 
-export type ComplianceProfileRequestRuleDto = ComplianceRuleDto;
-export type ComplianceProfileRequestRuleModel = Omit<ComplianceProfileRequestRuleDto, 'rules'> & {
+export type ComplianceProfileRequestRuleModel = Omit<ComplianceRuleDto, 'rules'> & {
     rules?: Array<ComplianceProfileRequestRuleRuleModel>;
 };
 
-export type ComplianceProfileRequestDto = ComplianceProfileRequestDtoOpenApi;
 export type ComplianceProfileRequestModel = Omit<ComplianceProfileRequestDto, 'rules | customAttributes'> & {
     rules?: Array<ComplianceProfileRequestRuleModel>;
     customAttributes?: Array<AttributeRequestModel>;
 };
-//---
 
-export type ComplianceProfileRuleAddRequestDto = ComplianceRuleAdditionRequestDto;
-export type ComplianceProfileRuleAddRequestModel = Omit<ComplianceProfileRuleAddRequestDto, 'attributes'> & {
+export type ComplianceProfileRuleAddRequestModel = Omit<ComplianceRuleAdditionRequestDto, 'attributes'> & {
     attributes?: Array<AttributeRequestModel>;
 };
 
-export type ComplianceProfileRuleAddResponseDto = ComplianceProfileRuleDto;
-export type ComplianceProfileRuleAddResponseModel = Omit<ComplianceProfileRuleAddResponseDto, 'attributes'> & {
+export type ComplianceProfileRuleAddResponseModel = Omit<ComplianceProfileRuleDto, 'attributes'> & {
     attributes: Array<AttributeResponseModel>;
 };
-//---
 
-export type ComplianceProfileGroupRequestDto = ComplianceGroupRequestDto;
-export type ComplianceProfileGroupRequestModel = ComplianceProfileGroupRequestDto;
-
-export type ComplianceProfileRuleDeleteRequestDto = ComplianceRuleDeletionRequestDto;
-export type ComplianceProfileRuleDeleteRequestModel = ComplianceProfileRuleDeleteRequestDto;
-
-// export type ComplianceProfileRaProfileRequestDto = RaProfileAssociationRequestDto;
-// export type ComplianceProfileRaProfileRequestModel = ComplianceProfileRaProfileRequestDto;
-
-//---
-export type ComplianceProfileRuleListResponseRuleDto = ComplianceRulesResponseDto;
-export type ComplianceProfileRuleListResponseRuleModel = Omit<ComplianceProfileRuleListResponseRuleDto, 'attributes'> & {
+export type ComplianceProfileRuleListResponseRuleModel = Omit<ComplianceRulesResponseDto, 'attributes'> & {
     attributes?: Array<AttributeDescriptorModel>;
 };
 
-export type ComplianceProfileRuleListResponseDto = ComplianceRulesListResponseDto;
-export type ComplianceProfileRuleListResponseModel = Omit<ComplianceProfileRuleListResponseDto, 'rules'> & {
+export type ComplianceProfileRuleListResponseModel = Omit<ComplianceRulesListResponseDto, 'rules'> & {
     rules: Array<ComplianceProfileRuleListResponseRuleModel>;
 };
 
-//---
-export type ComplianceProfileGroupListResponseGroupDto = ComplianceGroupsResponseDto;
-export type ComplianceProfileGroupListResponseGroupModel = ComplianceProfileGroupListResponseGroupDto;
-
-export type ComplianceProfileGroupListResponseDto = ComplianceGroupsListResponseDto;
-export type ComplianceProfileGroupListResponseModel = Omit<ComplianceProfileGroupListResponseDto, 'groups'> & {
-    groups: Array<ComplianceProfileGroupListResponseGroupModel>;
+export type ComplianceProfileGroupListResponseModel = Omit<ComplianceGroupsListResponseDto, 'groups'> & {
+    groups: Array<ComplianceGroupsResponseDto>;
 };
 
 export type TRuleGroupType = ComplianceRuleListDto & {

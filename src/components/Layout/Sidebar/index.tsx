@@ -48,7 +48,11 @@ type MenuItemMapping = {
       }
 );
 
-function SidebarSubmenuItem({ child, index, totalCount }: { child: { name: string; link: string }; index: number; totalCount: number }) {
+function SidebarSubmenuItem({
+    child,
+    index,
+    totalCount,
+}: Readonly<{ child: { name: string; link: string }; index: number; totalCount: number }>) {
     return (
         <li className={cn({ 'mb-2': index === totalCount - 1 })}>
             <NavLink
@@ -381,7 +385,7 @@ function getAllowedMenuItems(allowedResources?: Resource[]): MenuItemMapping[] {
         if (
             mapping.requiredResources === undefined ||
             mapping.requiredResources.length === 0 ||
-            mapping.requiredResources.find((resource) => allowedResources.includes(resource))
+            mapping.requiredResources.some((resource) => allowedResources.includes(resource))
         ) {
             allowedLinks.push(mapping);
         }
@@ -390,10 +394,10 @@ function getAllowedMenuItems(allowedResources?: Resource[]): MenuItemMapping[] {
     return allowedLinks;
 }
 
-type Props = Readonly<{
+type Props = {
     allowedResources?: Resource[];
-}>;
-export default function Sidebar({ allowedResources }: Props) {
+};
+export default function Sidebar({ allowedResources }: Readonly<Props>) {
     const [defaultMenuSize, setDefaultMenuSize] = useLocalStorage<'small' | 'large'>('menu-size', 'small');
     const [menuSize, setMenuSize] = useState<'small' | 'large' | 'flying'>(defaultMenuSize);
     const location = useLocation();
@@ -435,11 +439,11 @@ export default function Sidebar({ allowedResources }: Props) {
             const isChildActive = childrenKeys.some((child) => child === activePage || activePage.startsWith(`${child}/`));
             const isActive = openMenuItems.includes(mapping._key);
             return (
-                <li key={mapping.header} className={cn('flex justify-center', { 'flex-col': menuSize != 'small' })}>
+                <li key={mapping.header} className={cn('flex justify-center', { 'flex-col': menuSize !== 'small' })}>
                     <Button
                         variant="transparent"
                         className={cn('!px-4 !py-2 border-none justify-between h-[38px]', {
-                            'flex w-full items-center': menuSize != 'small',
+                            'flex w-full items-center': menuSize !== 'small',
                         })}
                         onClick={() => {
                             if (menuSize === 'small') {
@@ -454,7 +458,7 @@ export default function Sidebar({ allowedResources }: Props) {
                             {mapping.icon}
                             <span className={cn('text-sm', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
                         </div>
-                        {menuSize != 'small' && <ChevronDown strokeWidth={1.5} size={16} className={cn({ isActive: 'rotate-180' })} />}
+                        {menuSize !== 'small' && <ChevronDown strokeWidth={1.5} size={16} className={cn({ isActive: 'rotate-180' })} />}
                     </Button>
                     <ul
                         className={cn(

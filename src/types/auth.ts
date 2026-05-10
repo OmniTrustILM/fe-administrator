@@ -1,39 +1,41 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
 import type {
-    AuthActionDto as AuthActionDtoApi,
-    AuthResourceDto as AuthResourceDtoApi,
+    AuthActionDto,
+    AuthResourceDto,
     RoleDto,
     UpdateUserRequestDto,
-    UserCertificateDto as UserCertificateDtoOpenApi,
-    UserDetailDto as UserDetailDtoOpenApi,
-    UserProfileDetailDto as UserProfileDetailDtoOpenApi,
+    UserCertificateDto,
+    UserDetailDto,
+    UserProfileDetailDto,
 } from './openapi';
 
-export type AuthActionDto = AuthActionDtoApi;
-export type AuthActionModel = AuthActionDto;
+export type {
+    AuthActionDto,
+    AuthActionDto as AuthActionModel,
+    AuthResourceDto,
+    UserCertificateDto,
+    UserCertificateDto as UserCertificateModel,
+    RoleDto as RoleResponseDto,
+    RoleDto as RoleResponseModel,
+    UserDetailDto,
+    UserProfileDetailDto,
+    UpdateUserRequestDto as UserUpdateRequestDto,
+} from './openapi';
 
-export type AuthResourceDto = AuthResourceDtoApi;
-export type AuthResourceModel = Omit<AuthResourceDto, 'actions'> & { actions: Array<AuthActionModel> };
+export type AuthResourceModel = Omit<AuthResourceDto, 'actions'> & { actions: Array<AuthActionDto> };
 
-export type UserCertificateDto = UserCertificateDtoOpenApi;
-export type UserCertificateModel = UserCertificateDto;
-
-export type RoleResponseDto = RoleDto;
-export type RoleResponseModel = RoleResponseDto;
-
-export type UserDetailDto = UserDetailDtoOpenApi;
 export type UserDetailModel = Omit<UserDetailDto, 'certificate' | 'roles' | 'customAttributes'> & {
-    certificate?: UserCertificateModel;
-    roles: Array<RoleResponseModel>;
+    certificate?: UserCertificateDto;
+    roles: Array<RoleDto>;
     customAttributes?: Array<AttributeResponseModel>;
 };
 
-export type UserProfileDetailDto = UserProfileDetailDtoOpenApi;
 export type UserProfileDetailModel = Omit<UserProfileDetailDto, 'certificate' | 'roles' | 'customAttributes'> & {
-    certificate?: UserCertificateModel;
-    roles: Array<RoleResponseModel>;
+    certificate?: UserCertificateDto;
+    roles: Array<RoleDto>;
     customAttributes?: Array<AttributeResponseModel>;
 };
 
-export type UserUpdateRequestDto = UpdateUserRequestDto;
-export type UserUpdateRequestModel = Omit<UserUpdateRequestDto, 'customAttributes'> & { customAttributes?: Array<AttributeRequestModel> };
+export type UserUpdateRequestModel = Omit<UpdateUserRequestDto, 'customAttributes'> & {
+    customAttributes?: Array<AttributeRequestModel>;
+};

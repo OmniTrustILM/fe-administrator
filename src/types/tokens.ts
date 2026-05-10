@@ -1,30 +1,25 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
 import type { MetadataModel } from './locations';
-import type {
-    TokenInstanceDetailDto,
-    TokenInstanceDto,
-    TokenInstanceRequestDto,
-    TokenInstanceStatusComponent,
-    TokenInstanceStatusDetailDto,
+import type { TokenInstanceDetailDto, TokenInstanceRequestDto, TokenInstanceStatusComponent } from './openapi';
+
+export type {
+    TokenInstanceRequestDto as TokenRequestDto,
+    TokenInstanceDto as TokenResponseDto,
+    TokenInstanceDto as TokenResponseModel,
+    TokenInstanceStatusDetailDto as TokenInstanceStatusResponseDto,
+    TokenInstanceStatusDetailDto as TokenInstanceStatusResponseModel,
+    TokenInstanceDetailDto as TokenDetailResponseDto,
 } from './openapi';
 
-export type TokenRequestDto = TokenInstanceRequestDto;
-export type TokenRequestModel = Omit<TokenRequestDto, 'attributes | customAttributes'> & {
+export type TokenRequestModel = Omit<TokenInstanceRequestDto, 'attributes | customAttributes'> & {
     attributes: Array<AttributeRequestModel>;
     customAttributes: Array<AttributeRequestModel>;
 };
 
-export type TokenResponseDto = TokenInstanceDto;
-export type TokenResponseModel = TokenResponseDto;
-
-export type TokenInstanceStatusResponseDto = TokenInstanceStatusDetailDto;
-export type TokenInstanceStatusResponseModel = TokenInstanceStatusResponseDto;
-
 export type TokenInstanceStatusComponentResponseDto = { [key: string]: TokenInstanceStatusComponent };
-export type TokenInstanceStatusComponentResponseModel = TokenInstanceStatusComponentResponseDto;
+export type TokenInstanceStatusComponentResponseModel = { [key: string]: TokenInstanceStatusComponent };
 
-export type TokenDetailResponseDto = TokenInstanceDetailDto;
-export type TokenDetailResponseModel = Omit<TokenDetailResponseDto, 'attributes | customAttributes | metadata'> & {
+export type TokenDetailResponseModel = Omit<TokenInstanceDetailDto, 'attributes | customAttributes | metadata'> & {
     attributes: Array<AttributeResponseModel>;
     customAttributes?: Array<AttributeResponseModel>;
     metadata?: Array<MetadataModel>;

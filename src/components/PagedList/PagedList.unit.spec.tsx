@@ -29,12 +29,13 @@ vi.mock('components/FilterWidget', () => ({
 vi.mock('components/Widget', () => ({
     default: ({ widgetButtons, refreshAction, hideWidgetButtons, children }: any) => (
         <div>
-            <button data-testid="refresh" onClick={refreshAction}>
+            <button type="button" data-testid="refresh" onClick={refreshAction}>
                 refresh
             </button>
             {!hideWidgetButtons &&
                 (widgetButtons || []).map((button: any, index: number) => (
                     <button
+                        type="button"
                         key={`${button.icon}-${index}`}
                         data-testid={`widget-btn-${button.icon}-${index}`}
                         disabled={button.disabled}
@@ -61,13 +62,13 @@ vi.mock('components/CustomTable', () => ({
             <div data-testid="table-pagination-disabled">{disablePaginationControls ? 'true' : 'false'}</div>
             <div data-testid="table-selection-disabled">{disableSelectionControls ? 'true' : 'false'}</div>
             <div data-testid="table-search-disabled">{disableSearchControls ? 'true' : 'false'}</div>
-            <button data-testid="table-page-change" onClick={() => onPageChanged?.(3)}>
+            <button type="button" data-testid="table-page-change" onClick={() => onPageChanged?.(3)}>
                 page
             </button>
-            <button data-testid="table-size-change" onClick={() => onPageSizeChanged?.(50)}>
+            <button type="button" data-testid="table-size-change" onClick={() => onPageSizeChanged?.(50)}>
                 size
             </button>
-            <button data-testid="table-check-change" onClick={() => onCheckedRowsChanged?.(['row-1'])}>
+            <button type="button" data-testid="table-check-change" onClick={() => onCheckedRowsChanged?.(['row-1'])}>
                 check
             </button>
         </div>
@@ -80,13 +81,13 @@ vi.mock('components/Dialog', () => ({
             <div data-testid="dialog">
                 <div>{caption}</div>
                 <div>{body}</div>
-                <button data-testid="dialog-toggle" onClick={toggle}>
+                <button type="button" data-testid="dialog-toggle" onClick={toggle}>
                     toggle
                 </button>
-                <button data-testid="dialog-cancel" onClick={() => buttons?.[0]?.onClick()}>
+                <button type="button" data-testid="dialog-cancel" onClick={() => buttons?.[0]?.onClick()}>
                     cancel
                 </button>
-                <button data-testid="dialog-confirm" onClick={() => buttons?.[1]?.onClick()}>
+                <button type="button" data-testid="dialog-confirm" onClick={() => buttons?.[1]?.onClick()}>
                     confirm
                 </button>
             </div>

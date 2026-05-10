@@ -43,6 +43,7 @@ export * from './ScheduledJobsManagementApi';
 export * from './SecretManagementApi';
 export * from './SettingsApi';
 export * from './StatisticsDashboardApi';
+export * from './TSPProfileManagementApi';
 export * from './TimeQualityConfigurationManagementApi';
 export * from './TSPProfileManagementApi';
 export * from './TokenInstanceManagementApi';

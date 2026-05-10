@@ -34,8 +34,8 @@ const CertificateDownloadForm = () => {
     const isFetchingCertificateChainDownloadContent = useSelector(selectors.isFetchingCertificateChainDownloadContent);
     const isFetchingCertificateDownloadContent = useSelector(selectors.isFetchingCertificateDownloadContent);
 
-    const [chainDownloadSwitch, setTriggerChainDownload] = useState<ChainDownloadSwitchState>({ isDownloadTriggered: false });
-    const [certificateDownloadSwitch, setCertificateDownload] = useState<ChainDownloadSwitchState>({ isDownloadTriggered: false });
+    const [chainDownloadSwitch, setChainDownloadSwitch] = useState<ChainDownloadSwitchState>({ isDownloadTriggered: false });
+    const [certificateDownloadSwitch, setCertificateDownloadSwitch] = useState<ChainDownloadSwitchState>({ isDownloadTriggered: false });
     const [isDownloadFormCertificateChain, setIsDownloadFormCertificateChain] = useState<boolean>(false);
 
     const fileNameToDownload = certificate?.commonName + '_' + certificate?.serialNumber;
@@ -91,7 +91,7 @@ const CertificateDownloadForm = () => {
                     encoding: certificateEncoding,
                 }),
             );
-            setTriggerChainDownload({
+            setChainDownloadSwitch({
                 isDownloadTriggered: true,
                 certificateEncoding: certificateEncoding,
                 certificateFormat: certificateFormat,
@@ -110,7 +110,7 @@ const CertificateDownloadForm = () => {
                     encoding: certificateEncoding,
                 }),
             );
-            setCertificateDownload({
+            setCertificateDownloadSwitch({
                 isDownloadTriggered: true,
                 certificateEncoding: certificateEncoding,
                 certificateFormat: certificateFormat,
@@ -140,7 +140,7 @@ const CertificateDownloadForm = () => {
 
         downloadFile(Buffer.from(certificateChainDownloadContent.content ?? '', 'base64'), fileNameToDownload + '_chain' + extensionFormat);
 
-        setTriggerChainDownload({ isDownloadTriggered: false });
+        setChainDownloadSwitch({ isDownloadTriggered: false });
     }, [certificateChainDownloadContent, chainDownloadSwitch, fileNameToDownload, certificateChainFormatEncodingMap, dispatch]);
 
     useEffect(() => {
@@ -152,7 +152,7 @@ const CertificateDownloadForm = () => {
         )
             return;
         if (certificateDownloadSwitch.isCopyTriggered) {
-            setCertificateDownload({ isDownloadTriggered: false });
+            setCertificateDownloadSwitch({ isDownloadTriggered: false });
             return;
         }
 
@@ -167,7 +167,7 @@ const CertificateDownloadForm = () => {
 
         downloadFile(Buffer.from(certificateDownloadContent.content ?? '', 'base64'), fileNameToDownload + extensionFormat);
 
-        setCertificateDownload({ isDownloadTriggered: false });
+        setCertificateDownloadSwitch({ isDownloadTriggered: false });
     }, [certificateDownloadContent, certificateDownloadSwitch, fileNameToDownload, certificateFormatEncodingMap, dispatch]);
 
     return (

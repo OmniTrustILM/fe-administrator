@@ -72,10 +72,6 @@ export default function AdministratorsList() {
         setEditingAcmeProfileId(undefined);
     }, []);
 
-    const onAddClick = useCallback(() => {
-        handleOpenAddModal();
-    }, [handleOpenAddModal]);
-
     const onEnableClick = useCallback(() => {
         dispatch(actions.bulkEnableAcmeProfiles({ uuids: checkedRows }));
     }, [checkedRows, dispatch]);
@@ -188,14 +184,19 @@ export default function AdministratorsList() {
                 id: acmeProfile.uuid,
 
                 columns: [
-                    <span style={{ whiteSpace: 'nowrap' }}>
+                    <span key="name" style={{ whiteSpace: 'nowrap' }}>
                         <Link to={`./detail/${acmeProfile.uuid}`}>{acmeProfile.name}</Link>
                     </span>,
 
-                    <span style={{ whiteSpace: 'nowrap' }}>{acmeProfile.description || ''}</span>,
+                    <span key="desc" style={{ whiteSpace: 'nowrap' }}>
+                        {acmeProfile.description || ''}
+                    </span>,
 
                     acmeProfile.raProfile ? (
-                        <Link to={`../raprofiles/detail/${acmeProfile?.raProfile.authorityInstanceUuid}/${acmeProfile?.raProfile.uuid}`}>
+                        <Link
+                            key="raprofile"
+                            to={`../raprofiles/detail/${acmeProfile?.raProfile.authorityInstanceUuid}/${acmeProfile?.raProfile.uuid}`}
+                        >
                             {acmeProfile.raProfile.name ?? 'Unassigned'}
                         </Link>
                     ) : (
@@ -204,7 +205,7 @@ export default function AdministratorsList() {
 
                     acmeProfile.directoryUrl || '',
 
-                    <StatusBadge enabled={acmeProfile.enabled} />,
+                    <StatusBadge key="enabled" enabled={acmeProfile.enabled} />,
                 ],
             })),
         [acmeProfiles],

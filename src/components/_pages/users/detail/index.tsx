@@ -18,10 +18,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import Badge from 'components/Badge';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from '../../../../types/openapi';
+import { Resource } from '../../../../types/openapi';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders } from 'utils/widget';
-import { selectors as enumSelectors } from 'ducks/enums';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
 
@@ -39,7 +38,6 @@ export default function UserDetail() {
     const updateUserSucceeded = useSelector(selectors.updateUserSucceeded);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const isUpdatingContent = useSelector(customAttributesSelectors.isUpdatingContent);
-    const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const certificate = useSelector(certSelectors.certificateDetail);
     const isFetchingCertificateDetail = useSelector(certSelectors.isFetchingDetail);
     const profile = useSelector(authSelectors.profile);
@@ -205,12 +203,14 @@ export default function UserDetail() {
                           id: 'systemUser',
                           columns: [
                               'System user',
-                              <Badge color={user.systemUser ? 'danger' : 'success'}>{user.systemUser ? 'Yes' : 'No'}</Badge>,
+                              <Badge key="systemUser" color={user.systemUser ? 'danger' : 'success'}>
+                                  {user.systemUser ? 'Yes' : 'No'}
+                              </Badge>,
                           ],
                       },
                       {
                           id: 'enabled',
-                          columns: ['Status', <StatusBadge enabled={user.enabled} />],
+                          columns: ['Status', <StatusBadge key="enabled" enabled={user.enabled} />],
                       },
                       {
                           id: 'roles',

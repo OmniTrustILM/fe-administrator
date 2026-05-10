@@ -250,7 +250,6 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                 }
                 return { type: SecretType.KeyValue, content } as KeyValueSecretContent;
             }
-            case SecretType.Generic:
             default:
                 return { type: SecretType.Generic, content: values.content ?? '' } as GenericSecretContent;
         }
@@ -707,7 +706,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                                                 onChange={field.onChange}
                                                 onBlur={() => {
                                                     field.onBlur();
-                                                    const raw = field.value as string | undefined;
+                                                    const raw = field.value;
                                                     if (!raw) return;
                                                     try {
                                                         const parsed = JSON.parse(raw);

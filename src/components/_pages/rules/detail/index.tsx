@@ -32,7 +32,7 @@ const RuleDetails = () => {
     const conditionTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ConditionType));
 
     const [confirmDelete, setConfirmDelete] = useState(false);
-    const [updateDescriptionEditEnable, setUpdateDescription] = useState<boolean>(false);
+    const [updateDescriptionEditEnable, setUpdateDescriptionEditEnable] = useState<boolean>(false);
     const [updatedDescription, setUpdatedDescription] = useState('');
 
     useEffect(() => {
@@ -83,7 +83,7 @@ const RuleDetails = () => {
                 }),
             );
         }
-        setUpdateDescription(false);
+        setUpdateDescriptionEditEnable(false);
     }, [dispatch, id, ruleDetails, updatedDescription, updateDescriptionEditEnable]);
 
     const onUpdateConditionsConfirmed = useCallback(
@@ -155,6 +155,7 @@ const RuleDetails = () => {
                               'Description',
                               updateDescriptionEditEnable ? (
                                   <TextInput
+                                      key="desc-input"
                                       value={updatedDescription}
                                       onChange={(value) => setUpdatedDescription(value)}
                                       placeholder="Enter Description"
@@ -162,7 +163,7 @@ const RuleDetails = () => {
                               ) : (
                                   ruleDetails.description || ''
                               ),
-                              <div>
+                              <div key="desc-actions">
                                   {updateDescriptionEditEnable ? (
                                       <div className="flex gap-2">
                                           <Button
@@ -184,7 +185,7 @@ const RuleDetails = () => {
                                               title="Cancel"
                                               disabled={isUpdatingRule}
                                               onClick={() => {
-                                                  setUpdateDescription(false);
+                                                  setUpdateDescriptionEditEnable(false);
                                                   setUpdatedDescription(ruleDetails?.description || '');
                                               }}
                                           >
@@ -197,7 +198,7 @@ const RuleDetails = () => {
                                           color="secondary"
                                           title="Update Description"
                                           onClick={() => {
-                                              setUpdateDescription(true);
+                                              setUpdateDescriptionEditEnable(true);
                                           }}
                                       >
                                           <EditIcon size={16} />
@@ -247,10 +248,13 @@ const RuleDetails = () => {
                   return {
                       id: condition.uuid,
                       columns: [
-                          <Link to={`../../conditions/detail/${condition.uuid}`}>{condition.name}</Link>,
+                          <Link key="name" to={`../../conditions/detail/${condition.uuid}`}>
+                              {condition.name}
+                          </Link>,
                           getEnumLabel(conditionTypeEnum, condition.type),
                           condition.description || '',
                           <Button
+                              key="delete"
                               variant="transparent"
                               color="danger"
                               title={

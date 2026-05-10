@@ -1,4 +1,3 @@
-import React from 'react';
 import { test, expect } from '../../../../../playwright/ct-test';
 import { AttributeFieldSelectTestWrapper } from './AttributeFieldSelectTestWrapper';
 import type { DataAttributeModel } from 'types/attributes';

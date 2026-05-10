@@ -33,7 +33,7 @@ export const ProxyDetail = () => {
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
 
     const [confirmDelete, setConfirmDelete] = useState(false);
-    const [updateDescriptionEditEnable, setUpdateDescription] = useState<boolean>(false);
+    const [updateDescriptionEditEnable, setUpdateDescriptionEditEnable] = useState<boolean>(false);
     const [updatedDescription, setUpdatedDescription] = useState('');
     const [showInstallationInstructions, setShowInstallationInstructions] = useState(false);
 
@@ -93,7 +93,7 @@ export const ProxyDetail = () => {
                 }),
             );
         }
-        setUpdateDescription(false);
+        setUpdateDescriptionEditEnable(false);
     }, [dispatch, id, proxyDetails, updatedDescription, updateDescriptionEditEnable]);
 
     const buttons: WidgetButtonProps[] = useMemo(
@@ -136,7 +136,7 @@ export const ProxyDetail = () => {
             },
             {
                 id: 'status',
-                columns: ['Status', <ProxyStatusBadge status={proxyDetails.status} />, ''],
+                columns: ['Status', <ProxyStatusBadge key="status" status={proxyDetails.status} />, ''],
             },
             {
                 id: 'description',
@@ -144,6 +144,7 @@ export const ProxyDetail = () => {
                     'Description',
                     updateDescriptionEditEnable ? (
                         <TextInput
+                            key="desc-input"
                             onChange={(value) => setUpdatedDescription(value)}
                             value={updatedDescription}
                             placeholder="Enter Description"
@@ -151,7 +152,7 @@ export const ProxyDetail = () => {
                     ) : (
                         proxyDetails.description || ''
                     ),
-                    <div>
+                    <div key="desc-actions">
                         {updateDescriptionEditEnable ? (
                             <div className="flex gap-2">
                                 <Button
@@ -168,7 +169,7 @@ export const ProxyDetail = () => {
                                     color="danger"
                                     title="Cancel"
                                     onClick={() => {
-                                        setUpdateDescription(false);
+                                        setUpdateDescriptionEditEnable(false);
                                         setUpdatedDescription(proxyDetails?.description || '');
                                     }}
                                     disabled={isUpdatingProxy}
@@ -182,7 +183,7 @@ export const ProxyDetail = () => {
                                 color="secondary"
                                 title="Update Description"
                                 onClick={() => {
-                                    setUpdateDescription(true);
+                                    setUpdateDescriptionEditEnable(true);
                                 }}
                                 disabled={isUpdatingProxy}
                             >
@@ -203,7 +204,7 @@ export const ProxyDetail = () => {
         ];
     }, [
         proxyDetails,
-        setUpdateDescription,
+        setUpdateDescriptionEditEnable,
         updateDescriptionEditEnable,
         onUpdateDescriptionConfirmed,
         isUpdatingProxy,

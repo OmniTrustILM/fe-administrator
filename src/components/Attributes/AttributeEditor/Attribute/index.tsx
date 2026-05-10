@@ -18,14 +18,14 @@ import { AttributeFieldSelect } from './AttributeFieldSelect';
 import { AttributeFieldFile } from './AttributeFieldFile';
 import { AttributeFieldInput } from './AttributeFieldInput';
 
-type Props = Readonly<{
+type Props = {
     name: string;
     descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel | undefined;
     options?: { label: string; value: any }[];
     busy?: boolean;
-    userInteractedRef?: React.MutableRefObject<boolean>;
+    userInteractedRef?: React.RefObject<boolean>;
     deleteButton?: React.ReactNode;
-}>;
+};
 
 export function Attribute({
     name,
@@ -34,9 +34,9 @@ export function Attribute({
     busy = false,
     userInteractedRef: userInteractionRef,
     deleteButton,
-}: Props): React.ReactNode {
+}: Readonly<Props>): React.ReactNode {
     const { setValue } = useFormContext<Record<string, any>>();
-    const [addNewAttributeValue, setIsAddNewAttributeValue] = useState<AddNewAttributeType | undefined>();
+    const [addNewAttributeValue, setAddNewAttributeValue] = useState<AddNewAttributeType | undefined>();
     const attributeCallbackValue = useSelector(userInterfaceSelectors.selectAttributeCallbackValue);
     const initiateAttributeCallback = useSelector(userInterfaceSelectors.selectInitiateAttributeCallback);
     const dispatch = useDispatch();
@@ -44,7 +44,7 @@ export function Attribute({
     useEffect(() => {
         if (descriptor?.name) {
             const addNew = AddNewAttributeList.find((a) => a.contentType === descriptor.contentType);
-            setIsAddNewAttributeValue(addNew);
+            setAddNewAttributeValue(addNew);
         }
     }, [descriptor]);
 
@@ -179,9 +179,13 @@ export function Attribute({
         return <AttributeFieldInput name={name} descriptor={descriptor} busy={busy} deleteButton={deleteButton} />;
     }
 
-    const infoDescriptor = descriptor as InfoAttributeModel;
-    const rawContent = getAttributeContent(infoDescriptor.contentType, infoDescriptor.content);
-    const content = typeof rawContent === 'string' ? rawContent : String(rawContent ?? '');
+    const rawContent = getAttributeContent(descriptor.contentType, descriptor.content);
+    let content = '';
+    if (typeof rawContent === 'string') {
+        content = rawContent;
+    } else if (rawContent != null) {
+        content = JSON.stringify(rawContent);
+    }
 
-    return <AttributeInfo name={infoDescriptor.name} label={infoDescriptor.properties.label} content={content} />;
+    return <AttributeInfo name={descriptor.name} label={descriptor.properties.label} content={content} />;
 }

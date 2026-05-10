@@ -206,7 +206,7 @@ export default function AvailableRulesAndGroups({ profile, setSelectedEntityDeta
     //get filtered by resource type
     useEffect(() => {
         const filtered = getAvailableRulesAndGroupsWithoutAlreadyAssigned().filter((ruleOrGroup) =>
-            selectedAvailableResourceType !== 'All' ? ruleOrGroup.resource === selectedAvailableResourceType : true,
+            selectedAvailableResourceType === 'All' ? true : ruleOrGroup.resource === selectedAvailableResourceType,
         );
         setFilteredAvailableRulesAndGroupsList(filtered);
     }, [getAvailableRulesAndGroupsWithoutAlreadyAssigned, selectedAvailableResourceType]);

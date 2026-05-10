@@ -183,8 +183,8 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
     return state;
 }
 
-function enumsTestReducer(state: EnumsTestState = enumsTestInitialState, _action: UnknownAction): EnumsTestState {
-    return state;
+function enumsTestReducer(state: EnumsTestState | undefined, _action: UnknownAction): EnumsTestState {
+    return state ?? enumsTestInitialState;
 }
 
 export type InfoTestState = {
@@ -197,7 +197,8 @@ const infoTestInitialState: InfoTestState = {
     isFetching: false,
 };
 
-function infoTestReducer(state: InfoTestState = infoTestInitialState, action: UnknownAction): InfoTestState {
+function infoTestReducer(state: InfoTestState | undefined, action: UnknownAction): InfoTestState {
+    state ??= infoTestInitialState;
     switch (action.type) {
         case 'info/getPlatformInfo':
             return { platformInfo: undefined, isFetching: true };
@@ -220,11 +221,8 @@ const notificationsTestInitialState: NotificationsTestState = {
     isFetchingOverview: false,
 };
 
-function notificationsTestReducer(
-    state: NotificationsTestState = notificationsTestInitialState,
-    _action: UnknownAction,
-): NotificationsTestState {
-    return state;
+function notificationsTestReducer(state: NotificationsTestState | undefined, _action: UnknownAction): NotificationsTestState {
+    return state ?? notificationsTestInitialState;
 }
 
 export type AuthTestState = {
@@ -245,13 +243,14 @@ const authTestInitialState: AuthTestState = {
     },
 };
 
-function authTestReducer(state: AuthTestState = authTestInitialState, _action: UnknownAction): AuthTestState {
-    return state;
+function authTestReducer(state: AuthTestState | undefined, _action: UnknownAction): AuthTestState {
+    return state ?? authTestInitialState;
 }
 
 export type CustomAttributesTestState = {
     resourceCustomAttributes: any[];
     resourceCustomAttributesContents: Array<{ resource: string; resourceUuid: string; customAttributes: any[] }>;
+    secondaryResourceCustomAttributes: any[];
     isFetchingResourceCustomAttributes: boolean;
     isUpdatingContent: boolean;
 };
@@ -259,6 +258,7 @@ export type CustomAttributesTestState = {
 const customAttributesTestInitialState: CustomAttributesTestState = {
     resourceCustomAttributes: [],
     resourceCustomAttributesContents: [],
+    secondaryResourceCustomAttributes: [],
     isFetchingResourceCustomAttributes: false,
     isUpdatingContent: false,
 };
@@ -363,8 +363,8 @@ const secretsTestInitialState: SecretsTestState = {
     isFetchingSyncVaultProfileAttributes: false,
 };
 
-function secretsTestReducer(state: SecretsTestState = secretsTestInitialState, _action: UnknownAction): SecretsTestState {
-    return state;
+function secretsTestReducer(state: SecretsTestState | undefined, _action: UnknownAction): SecretsTestState {
+    return state ?? secretsTestInitialState;
 }
 
 export type VaultProfilesTestState = {
@@ -375,11 +375,8 @@ const vaultProfilesTestInitialState: VaultProfilesTestState = {
     vaultProfiles: [],
 };
 
-function vaultProfilesTestReducer(
-    state: VaultProfilesTestState = vaultProfilesTestInitialState,
-    _action: UnknownAction,
-): VaultProfilesTestState {
-    return state;
+function vaultProfilesTestReducer(state: VaultProfilesTestState | undefined, _action: UnknownAction): VaultProfilesTestState {
+    return state ?? vaultProfilesTestInitialState;
 }
 
 export type TablePaginationTestState = {
@@ -480,7 +477,7 @@ const pagingsTestInitialState: PagingsTestState = { pagings: [] };
 
 function updatePaging(state: PagingsTestState, entity: number, fn: (p: PagingObject) => PagingObject): PagingsTestState {
     const idx = state.pagings.findIndex((p) => p.entity === entity);
-    const existing = idx !== -1 ? state.pagings[idx].paging : EMPTY_PAGING_OBJ;
+    const existing = idx === -1 ? EMPTY_PAGING_OBJ : state.pagings[idx].paging;
     const next: PagingEntry = { entity, paging: fn(existing) };
     if (idx !== -1) {
         return { pagings: [...state.pagings.slice(0, idx), next, ...state.pagings.slice(idx + 1)] };
@@ -505,6 +502,46 @@ function pagingsTestReducer(state: PagingsTestState = pagingsTestInitialState, a
     return state;
 }
 
+export type CertificatesTestState = {
+    finalizingIssueCertificateUuids: string[];
+    confirmingRevokeCertificateUuids: string[];
+    cancelingPendingCertificateUuids: string[];
+};
+
+const certificatesTestInitialState: CertificatesTestState = {
+    finalizingIssueCertificateUuids: [],
+    confirmingRevokeCertificateUuids: [],
+    cancelingPendingCertificateUuids: [],
+};
+
+function certificatesTestReducer(state: CertificatesTestState | undefined, _action: UnknownAction): CertificatesTestState {
+    return state ?? certificatesTestInitialState;
+}
+
+export type UtilsCertificateTestState = {
+    parsedCertificate: any;
+};
+
+const utilsCertificateTestInitialState: UtilsCertificateTestState = {
+    parsedCertificate: undefined,
+};
+
+function utilsCertificateTestReducer(state: UtilsCertificateTestState | undefined, _action: UnknownAction): UtilsCertificateTestState {
+    return state ?? utilsCertificateTestInitialState;
+}
+
+export type UtilsActuatorTestState = {
+    health: any;
+};
+
+const utilsActuatorTestInitialState: UtilsActuatorTestState = {
+    health: undefined,
+};
+
+function utilsActuatorTestReducer(state: UtilsActuatorTestState | undefined, _action: UnknownAction): UtilsActuatorTestState {
+    return state ?? utilsActuatorTestInitialState;
+}
+
 export const testReducers = combineReducers({
     userInterface: userInterfaceTestReducer,
     enums: enumsTestReducer,
@@ -519,6 +556,9 @@ export const testReducers = combineReducers({
     tablePagination: tablePaginationTestReducer,
     alerts: alertsTestReducer,
     pagings: pagingsTestReducer,
+    certificates: certificatesTestReducer,
+    utilsCertificate: utilsCertificateTestReducer,
+    utilsActuator: utilsActuatorTestReducer,
 });
 
 export const testInitialState = {
@@ -535,4 +575,7 @@ export const testInitialState = {
     tablePagination: tablePaginationTestInitialState,
     alerts: alertsTestInitialState,
     pagings: pagingsTestInitialState,
+    certificates: certificatesTestInitialState,
+    utilsCertificate: utilsCertificateTestInitialState,
+    utilsActuator: utilsActuatorTestInitialState,
 };

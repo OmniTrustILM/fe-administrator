@@ -162,8 +162,8 @@ export default function CustomAttributeDetail() {
                           id: 'resources',
                           columns: [
                               'Resources',
-                              customAttribute.resources?.map((r, i) => (
-                                  <Badge key={i} style={{ margin: '1px' }} color="secondary">
+                              customAttribute.resources?.map((r) => (
+                                  <Badge key={r} style={{ margin: '1px' }} color="secondary">
                                       {getEnumLabel(resourceEnum, r)}
                                   </Badge>
                               )) ?? '',
@@ -188,9 +188,9 @@ export default function CustomAttributeDetail() {
                           id: 'protectionLevel',
                           columns: [
                               'Protection Level',
-                              customAttribute.protectionLevel != null
-                                  ? getEnumLabel(protectionLevelEnum, customAttribute.protectionLevel)
-                                  : '—',
+                              customAttribute.protectionLevel == null
+                                  ? '—'
+                                  : getEnumLabel(protectionLevelEnum, customAttribute.protectionLevel),
                           ],
                       },
                       {

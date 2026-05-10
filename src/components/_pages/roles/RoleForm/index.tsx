@@ -142,8 +142,6 @@ function RoleForm({ roleId, onCancel, onSuccess }: RoleFormProps) {
 
     const inProgressTitle = useMemo(() => (editMode ? 'Saving...' : 'Creating...'), [editMode]);
 
-    const title = useMemo(() => (editMode ? 'Edit Role' : 'Add Role'), [editMode]);
-
     const renderCustomAttributesEditor = useMemo(() => {
         if (isBusy) return <></>;
         return (

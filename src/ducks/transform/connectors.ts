@@ -82,7 +82,7 @@ export function transformConnectorResponseDtoToModel(connector: ConnectorRespons
     };
 }
 
-export function transformConnectorRequestModelToDto(connector: ConnectorRequestModel): ConnectorRequestDto {
+function mapConnectorRequestPayload<T extends ConnectorRequestModel | ConnectorUpdateRequestModel>(connector: T) {
     return {
         ...connector,
         authAttributes: connector.authAttributes?.map(transformAttributeRequestModelToDto),
@@ -90,10 +90,10 @@ export function transformConnectorRequestModelToDto(connector: ConnectorRequestM
     };
 }
 
+export function transformConnectorRequestModelToDto(connector: ConnectorRequestModel): ConnectorRequestDto {
+    return mapConnectorRequestPayload(connector);
+}
+
 export function transformConnectorUpdateRequestModelToDto(connector: ConnectorUpdateRequestModel): ConnectorUpdateRequestDto {
-    return {
-        ...connector,
-        authAttributes: connector.authAttributes?.map(transformAttributeRequestModelToDto),
-        customAttributes: connector.customAttributes?.map(transformAttributeRequestModelToDto),
-    };
+    return mapConnectorRequestPayload(connector);
 }

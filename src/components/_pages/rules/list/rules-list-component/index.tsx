@@ -96,7 +96,9 @@ const RulesList = () => {
                 return {
                     id: rule.uuid,
                     columns: [
-                        <Link to={`../rules/detail/${rule.uuid}`}>{rule.name}</Link>,
+                        <Link key="name" to={`../rules/detail/${rule.uuid}`}>
+                            {rule.name}
+                        </Link>,
                         getEnumLabel(resourceTypeEnum, rule.resource),
                         rule.description || '',
                     ],

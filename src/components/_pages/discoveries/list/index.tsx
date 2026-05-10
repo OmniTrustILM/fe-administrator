@@ -91,18 +91,30 @@ function DiscoveryList() {
             discoveries.map((discovery) => ({
                 id: discovery.uuid,
                 columns: [
-                    <Link to={`./detail/${discovery.uuid}`}>{discovery.name}</Link>,
+                    <Link key="name" to={`./detail/${discovery.uuid}`}>
+                        {discovery.name}
+                    </Link>,
                     discovery.connectorName ? (
-                        <Link to={`../connectors/detail/${discovery.connectorUuid}`}>{discovery.connectorName ?? 'Unassigned'}</Link>
+                        <Link key="connector" to={`../connectors/detail/${discovery.connectorUuid}`}>
+                            {discovery.connectorName ?? 'Unassigned'}
+                        </Link>
                     ) : (
                         (discovery.connectorName ?? 'Unassigned')
                     ),
-                    <Badge color="secondary">{discovery.kind}</Badge>,
-                    discovery.startTime ? <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(discovery.startTime)}</span> : '',
+                    <Badge key="kind" color="secondary">
+                        {discovery.kind}
+                    </Badge>,
+                    discovery.startTime ? (
+                        <span key="startTime" style={{ whiteSpace: 'nowrap' }}>
+                            {dateFormatter(discovery.startTime)}
+                        </span>
+                    ) : (
+                        ''
+                    ),
                     <span key={`duration${discovery.uuid}`} style={{ whiteSpace: 'nowrap' }}>
                         {durationFormatter(discovery.startTime, discovery.endTime)}
                     </span>,
-                    <DiscoveryStatus status={discovery.status} />,
+                    <DiscoveryStatus key="status" status={discovery.status} />,
                     discovery.totalCertificatesDiscovered?.toString() || '0',
                 ],
             })),

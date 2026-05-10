@@ -15,12 +15,12 @@ function StartTimePicker({
     atMinute,
     onHourChange,
     onMinuteChange,
-}: {
+}: Readonly<{
     atHour: number;
     atMinute: number;
     onHourChange: (v: number) => void;
     onMinuteChange: (v: number) => void;
-}) {
+}>) {
     return (
         <div className="flex items-center gap-2 mt-1 justify-center">
             <Label className="!mb-0 text-gray-500 whitespace-nowrap">Start time</Label>
@@ -31,12 +31,12 @@ function StartTimePicker({
     );
 }
 
-type Props = Readonly<{
+type Props = {
     value: string;
     onChange: (value: string) => void;
-}>;
+};
 
-export default function CronBuilder({ value, onChange }: Props) {
+export default function CronBuilder({ value, onChange }: Readonly<Props>) {
     const [state, setState] = useState<CronState>(() => parseCron(value));
     const lastEmittedRef = useRef<string>(value);
 

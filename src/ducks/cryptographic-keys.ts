@@ -10,7 +10,7 @@ import type {
     CryptographicKeyHistoryModel,
     CryptographicKeyItemBulkCompromiseRequestModel,
     CryptographicKeyItemDetailResponseModel,
-    CryptographicKeyItemEditRequestModel,
+    CryptographicKeyItemEditRequestDto,
     CryptographicKeyKeyUsageBulkUpdateRequestModel,
     CryptographicKeyKeyUsageUpdateRequestModel,
     CryptographicKeyPairResponseModel,
@@ -272,7 +272,7 @@ export const slice = createSlice({
             action: PayloadAction<{
                 uuid: string;
                 keyItemUuid: string;
-                cryptographicKeyItemEditRequest: CryptographicKeyItemEditRequestModel;
+                cryptographicKeyItemEditRequest: CryptographicKeyItemEditRequestDto;
                 redirect?: string;
             }>,
         ) => {
@@ -596,7 +596,7 @@ export const slice = createSlice({
             state.isBulkUpdatingKeyUsage = true;
         },
 
-        bulkUpdateKeyUsageSuccess: (state, action: PayloadAction<{}>) => {
+        bulkUpdateKeyUsageSuccess: (state, action: PayloadAction<Record<string, never>>) => {
             state.isBulkUpdatingKeyUsage = false;
         },
 

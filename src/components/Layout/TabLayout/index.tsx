@@ -3,7 +3,7 @@ import { useMemo, useState, useEffect } from 'react';
 import Widget from 'components/Widget';
 import TabLayoutSkeleton from './TabLayoutSkeleton';
 
-type Props = Readonly<{
+type Props = {
     tabs: {
         title: string | React.ReactNode;
         hidden?: boolean;
@@ -16,7 +16,7 @@ type Props = Readonly<{
     noBorder?: boolean;
     onTabChange?: (tab: number) => void;
     isLoading?: boolean;
-}>;
+};
 
 export default function TabLayout({
     tabs,
@@ -25,7 +25,7 @@ export default function TabLayout({
     noBorder = false,
     onTabChange,
     isLoading = false,
-}: Props) {
+}: Readonly<Props>) {
     const [activeTab, setActiveTab] = useState(selectedTab ?? 0);
 
     const memoizedTabs = useMemo(() => {
@@ -61,7 +61,7 @@ export default function TabLayout({
             <hr className="my-4 border-gray-200" />
             {memoizedTabs.map((t, i) =>
                 onlyActiveTabContent === false || currentTab === i ? (
-                    <div key={i} className={currentTab === i ? '' : 'hidden'}>
+                    <div key={typeof t.title === 'string' ? t.title : `tab-content-${i}`} className={currentTab === i ? '' : 'hidden'}>
                         {t.content}
                     </div>
                 ) : null,

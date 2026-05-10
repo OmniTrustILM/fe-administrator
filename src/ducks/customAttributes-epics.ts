@@ -1,5 +1,5 @@
 import type { AppEpic, AppState } from 'ducks';
-import type { AnyAction } from '@reduxjs/toolkit';
+import type { UnknownAction } from '@reduxjs/toolkit';
 import { of, forkJoin, type Observable } from 'rxjs';
 import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 
@@ -167,7 +167,7 @@ const handleVaultsContentUpdate = (
     payload: ContentActionPayload,
     state: AppState,
     deps: any,
-): Observable<AnyAction> => {
+): Observable<UnknownAction> => {
     const currentVault = state.vaults.vault;
     const currentAttributes = getVaultCurrentAttributes(state, payload.resourceUuid);
     const currentCustomAttributes = getVaultCurrentCustomAttributes(state, payload.resourceUuid);
@@ -227,7 +227,7 @@ const handleVaultProfilesContentUpdate = (
     payload: ContentActionPayload,
     state: AppState,
     deps: any,
-): Observable<AnyAction> => {
+): Observable<UnknownAction> => {
     const currentVaultProfile = state.vaultProfiles.vaultProfile;
     const currentAttributes = getVaultProfileCurrentAttributes(state, payload.resourceUuid);
     const currentCustomAttributes = getVaultProfileCurrentCustomAttributes(state, payload.resourceUuid);
@@ -277,7 +277,7 @@ const handleVaultProfilesContentUpdate = (
         );
 };
 
-const handleGenericContentUpdate = (operation: ContentOperation, payload: ContentActionPayload, deps: any): Observable<AnyAction> => {
+const handleGenericContentUpdate = (operation: ContentOperation, payload: ContentActionPayload, deps: any): Observable<UnknownAction> => {
     const request = {
         resourceName: payload.resource,
         objectUuid: payload.resourceUuid,
@@ -303,7 +303,7 @@ const handleSecretsContentUpdate = (
     payload: ContentActionPayload,
     state: AppState,
     deps: any,
-): Observable<AnyAction> => {
+): Observable<UnknownAction> => {
     const currentSecret = state.secrets.secret;
 
     if (currentSecret?.uuid !== payload.resourceUuid) {
@@ -366,7 +366,7 @@ const handleCustomAttributeContentUpdate = (
     payload: ContentActionPayload,
     state: AppState,
     deps: any,
-): Observable<AnyAction> => {
+): Observable<UnknownAction> => {
     if (payload.resource === Resource.Vaults) {
         return handleVaultsContentUpdate(operation, payload, state, deps);
     }

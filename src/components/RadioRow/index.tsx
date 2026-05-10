@@ -1,13 +1,13 @@
 import cn from 'classnames';
 
-type Props = Readonly<{
+type Props = {
     checked: boolean;
     onSelect: () => void;
     children: React.ReactNode;
     maxWidth?: number;
-}>;
+};
 
-export default function RadioRow({ checked, onSelect, children, maxWidth }: Props) {
+export default function RadioRow({ checked, onSelect, children, maxWidth }: Readonly<Props>) {
     return (
         <div style={{ maxWidth: maxWidth ?? '100%' }} className="mx-auto w-full">
             <label

@@ -8,15 +8,15 @@ import ProgressButton from 'components/ProgressButton';
 import { actions as alertActions } from 'ducks/alerts';
 import { selectors as cbomSelectors } from 'ducks/cbom';
 
-type Props = Readonly<{
+type Props = {
     onCancel: () => void;
     onUpload: (data: { content: any }) => void;
     okButtonTitle?: string;
-}>;
+};
 
-type FormValues = {};
+type FormValues = Record<string, never>;
 
-export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = 'Upload' }: Props) {
+export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = 'Upload' }: Readonly<Props>) {
     const dispatch = useDispatch();
     const [fileContent, setFileContent] = useState<string>('');
 
@@ -52,7 +52,7 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
             // base64 -> string
             const decoded = atob(base64Content);
             setFileContent(decoded);
-        } catch (err) {
+        } catch {
             // fallback: keep raw
             setFileContent(base64Content);
         }
@@ -64,7 +64,7 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
         try {
             parsed = JSON.parse(fileContent);
             if (!validateCbomContent(parsed)) return;
-        } catch (e) {
+        } catch {
             // try YAML
             try {
                 const yaml = await import('js-yaml');
@@ -72,7 +72,7 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
                     parsed = yaml.load(fileContent);
                     if (!validateCbomContent(parsed)) return;
                     onUpload({ content: parsed });
-                } catch (err) {
+                } catch {
                     dispatch(alertActions.error('Failed to parse CBOM file (not valid JSON or YAML)'));
                 }
             } catch {

@@ -44,7 +44,7 @@ const DropDownListForm = ({ onSubmit, onClose, dropDownOptionsList, isBusy = fal
                         name={dropDownOptionsListItem.formValue}
                         control={control}
                         rules={{ required: true }}
-                        render={({ field }: { field: any }) => {
+                        render={({ field }) => {
                             return (
                                 <Select
                                     id={dropDownOptionsListItem.formValue}

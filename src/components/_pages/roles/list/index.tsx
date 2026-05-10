@@ -177,7 +177,7 @@ export default function RolesList() {
                 id: role.uuid,
 
                 columns: [
-                    <span style={{ whiteSpace: 'nowrap' }}>
+                    <span key="name" style={{ whiteSpace: 'nowrap' }}>
                         <Link to={`./detail/${role.uuid}`}>{role.name}</Link>
                     </span>,
 

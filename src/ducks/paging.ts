@@ -40,12 +40,12 @@ export const initialState: State = {
 
 const updatePagingState = (state: WritableDraft<State>, entity: EntityType, callback: (pagingObject: PagingObject) => void) => {
     const index = state.pagings.findIndex((f) => f.entity === entity);
-    const paging = index !== -1 ? state.pagings[index] : { entity, paging: { ...EMPTY_PAGING } };
+    const paging = index === -1 ? { entity, paging: { ...EMPTY_PAGING } } : state.pagings[index];
 
     callback(paging.paging);
 
     state.pagings =
-        index !== -1 ? [...state.pagings.slice(0, index), paging, ...state.pagings.slice(index + 1)] : [...state.pagings, paging];
+        index === -1 ? [...state.pagings, paging] : [...state.pagings.slice(0, index), paging, ...state.pagings.slice(index + 1)];
 };
 
 export const slice = createSlice({

@@ -11,10 +11,8 @@
  * Do not edit the class manually.
  */
 
-import type { SimplifiedSigningProfileDto } from './';
-
 /**
- * TSP Profile list item
+ * TSP (Timestamping Protocol) profile details for listing
  * @export
  * @interface TspProfileListDto
  */
@@ -32,21 +30,15 @@ export interface TspProfileListDto {
      */
     name: string;
     /**
-     * Description
+     * Description of the TSP Profile
      * @type {string}
      * @memberof TspProfileListDto
      */
     description?: string;
     /**
-     * Whether the TSP Profile is enabled
+     * Enabled flag of the TSP Profile
      * @type {boolean}
      * @memberof TspProfileListDto
      */
     enabled: boolean;
-    /**
-     * Default signing profile
-     * @type {SimplifiedSigningProfileDto}
-     * @memberof TspProfileListDto
-     */
-    defaultSigningProfile?: SimplifiedSigningProfileDto;
 }

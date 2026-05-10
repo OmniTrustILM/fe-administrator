@@ -94,7 +94,7 @@ export const defaultAvailableFilters: SearchFieldListModel[] = [
     },
 ];
 
-export type FilterWidgetTestWrapperProps = Readonly<{
+export type FilterWidgetTestWrapperProps = {
     title?: string;
     entity?: EntityType;
     availableFilters?: SearchFieldListModel[];
@@ -104,7 +104,7 @@ export type FilterWidgetTestWrapperProps = Readonly<{
     busyBadges?: boolean;
     extraFilterComponent?: React.ReactNode;
     filterGridCols?: 2 | 4;
-}>;
+};
 
 export default function FilterWidgetTestWrapper({
     title = 'Filters',
@@ -116,7 +116,7 @@ export default function FilterWidgetTestWrapper({
     busyBadges,
     extraFilterComponent,
     filterGridCols = 4,
-}: FilterWidgetTestWrapperProps) {
+}: Readonly<FilterWidgetTestWrapperProps>) {
     const getAvailableFiltersApi = useMemo(() => () => of(availableFilters), [availableFilters]);
 
     const preloadedState = useMemo(

@@ -33,6 +33,49 @@ import type { RaProfileResponseModel } from 'types/ra-profiles';
 import type { UserResponseModel } from 'types/users';
 import { downloadFileZip } from 'utils/download';
 
+/**
+ * Project a CertificateDetailResponseModel into a CertificateListResponseModel-shaped row.
+ * Avoids storing detail-only fields (certificateContent, metadata, locations, …) in the
+ * list cache and preserves any list-only fields already present on the row.
+ */
+function pickListFieldsFromDetail(
+    detail: CertificateDetailResponseModel,
+    existing: CertificateListResponseModel,
+): CertificateListResponseModel {
+    return {
+        ...existing,
+        uuid: detail.uuid,
+        commonName: detail.commonName,
+        serialNumber: detail.serialNumber,
+        issuerCommonName: detail.issuerCommonName,
+        issuerDn: detail.issuerDn,
+        issuerSerialNumber: detail.issuerSerialNumber,
+        issuerCertificateUuid: detail.issuerCertificateUuid,
+        subjectDn: detail.subjectDn,
+        notBefore: detail.notBefore,
+        notAfter: detail.notAfter,
+        publicKeyAlgorithm: detail.publicKeyAlgorithm,
+        signatureAlgorithm: detail.signatureAlgorithm,
+        keySize: detail.keySize,
+        state: detail.state,
+        validationStatus: detail.validationStatus,
+        complianceStatus: detail.complianceStatus,
+        fingerprint: detail.fingerprint,
+        certificateType: detail.certificateType,
+        privateKeyAvailability: detail.privateKeyAvailability,
+        archived: detail.archived,
+        trustedCa: detail.trustedCa,
+        hybridCertificate: detail.hybridCertificate,
+        altKeySize: detail.altKeySize,
+        altPublicKeyAlgorithm: detail.altPublicKeyAlgorithm,
+        altSignatureAlgorithm: detail.altSignatureAlgorithm,
+        raProfile: detail.raProfile,
+        groups: detail.groups,
+        owner: detail.owner,
+        ownerUuid: detail.ownerUuid,
+    };
+}
+
 export type State = {
     deleteErrorMessage: string;
 
@@ -67,6 +110,10 @@ export type State = {
     isRevoking: boolean;
     isRenewing: boolean;
     isRekeying: boolean;
+
+    finalizingIssueCertificateUuids: string[];
+    confirmingRevokeCertificateUuids: string[];
+    cancelingPendingCertificateUuids: string[];
 
     isDeleting: boolean;
     isBulkDeleting: boolean;
@@ -125,6 +172,10 @@ export const initialState: State = {
     isRevoking: false,
     isRenewing: false,
     isRekeying: false,
+
+    finalizingIssueCertificateUuids: [],
+    confirmingRevokeCertificateUuids: [],
+    cancelingPendingCertificateUuids: [],
 
     isDeleting: false,
     isBulkDeleting: false,
@@ -199,6 +250,10 @@ export const slice = createSlice({
         getCertificateDetailSuccess: (state, action: PayloadAction<{ certificate: CertificateDetailResponseModel }>) => {
             state.isFetchingDetail = false;
             state.certificateDetail = action.payload.certificate;
+            const idx = state.certificates.findIndex((c) => c.uuid === action.payload.certificate.uuid);
+            if (idx >= 0) {
+                state.certificates[idx] = pickListFieldsFromDetail(action.payload.certificate, state.certificates[idx]);
+            }
         },
 
         getCertificateDetailFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -315,6 +370,77 @@ export const slice = createSlice({
 
         revokeCertificateFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isRevoking = false;
+        },
+
+        manuallyIssueCertificate: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileUuid: string;
+                uuid: string;
+                uploadRequest: CertificateUploadModel;
+            }>,
+        ) => {
+            if (!state.finalizingIssueCertificateUuids.includes(action.payload.uuid)) {
+                state.finalizingIssueCertificateUuids.push(action.payload.uuid);
+            }
+        },
+
+        manuallyIssueCertificateSuccess: (state, action: PayloadAction<{ uuid: string; certificate: CertificateDetailResponseModel }>) => {
+            state.finalizingIssueCertificateUuids = state.finalizingIssueCertificateUuids.filter((id) => id !== action.payload.uuid);
+            // No state mutation beyond clearing the loading flag: the epic dispatches getCertificateDetail to pull server truth.
+        },
+
+        manuallyIssueCertificateFailure: (state, action: PayloadAction<{ uuid: string; error: string | undefined }>) => {
+            state.finalizingIssueCertificateUuids = state.finalizingIssueCertificateUuids.filter((id) => id !== action.payload.uuid);
+        },
+
+        manuallyConfirmRevoke: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileUuid: string;
+                uuid: string;
+            }>,
+        ) => {
+            if (!state.confirmingRevokeCertificateUuids.includes(action.payload.uuid)) {
+                state.confirmingRevokeCertificateUuids.push(action.payload.uuid);
+            }
+        },
+
+        manuallyConfirmRevokeSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.confirmingRevokeCertificateUuids = state.confirmingRevokeCertificateUuids.filter((id) => id !== action.payload.uuid);
+            // No state mutation: the epic dispatches getCertificateDetail to pull server truth.
+        },
+
+        manuallyConfirmRevokeFailure: (state, action: PayloadAction<{ uuid: string; error: string | undefined }>) => {
+            state.confirmingRevokeCertificateUuids = state.confirmingRevokeCertificateUuids.filter((id) => id !== action.payload.uuid);
+        },
+
+        cancelPendingCertificateOperation: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileUuid: string;
+                uuid: string;
+                reason: string | undefined;
+            }>,
+        ) => {
+            if (!state.cancelingPendingCertificateUuids.includes(action.payload.uuid)) {
+                state.cancelingPendingCertificateUuids.push(action.payload.uuid);
+            }
+        },
+
+        cancelPendingCertificateOperationSuccess: (
+            state,
+            action: PayloadAction<{ uuid: string; certificate: CertificateDetailResponseModel }>,
+        ) => {
+            state.cancelingPendingCertificateUuids = state.cancelingPendingCertificateUuids.filter((id) => id !== action.payload.uuid);
+            // No state mutation beyond clearing the loading flag: the epic dispatches getCertificateDetail to pull server truth.
+        },
+
+        cancelPendingCertificateOperationFailure: (state, action: PayloadAction<{ uuid: string; error: string | undefined }>) => {
+            state.cancelingPendingCertificateUuids = state.cancelingPendingCertificateUuids.filter((id) => id !== action.payload.uuid);
         },
 
         renewCertificate: (
@@ -949,6 +1075,10 @@ const isFetchingCertificateChainDownloadContent = createSelector(state, (state) 
 const isIncludeArchived = createSelector(state, (state) => state.isIncludeArchived);
 const isArchiving = createSelector(state, (state) => state.isArchiving);
 
+const finalizingIssueCertificateUuids = createSelector(state, (state) => state.finalizingIssueCertificateUuids);
+const confirmingRevokeCertificateUuids = createSelector(state, (state) => state.confirmingRevokeCertificateUuids);
+const cancelingPendingCertificateUuids = createSelector(state, (state) => state.cancelingPendingCertificateUuids);
+
 export const selectors = {
     state,
     deleteErrorMessage,
@@ -996,6 +1126,9 @@ export const selectors = {
     certificateChain,
     isIncludeArchived,
     isArchiving,
+    finalizingIssueCertificateUuids,
+    confirmingRevokeCertificateUuids,
+    cancelingPendingCertificateUuids,
 };
 
 export const actions = slice.actions;

@@ -6,7 +6,7 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { actions, selectors } from 'ducks/certificates';
 import { EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
 import { selectors as pagingSelectors } from 'ducks/paging';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router';
 
@@ -111,7 +111,7 @@ export default function CertificateList({
             if (data.fileContent) {
                 try {
                     dispatch(actions.uploadCertificate({ certificate: data.fileContent, customAttributes: data.customAttributes ?? [] }));
-                } catch (error) {}
+                } catch {}
             }
 
             setUpload(false);

@@ -56,25 +56,6 @@ import {
     type TimeAttributeContentV3,
 } from 'types/openapi';
 
-// Union types for backward compatibility (when version is unknown)
-type BooleanAttributeContent = BooleanAttributeContentV2 | BooleanAttributeContentV3;
-type CodeBlockAttributeContent = CodeBlockAttributeContentV2 | CodeBlockAttributeContentV3;
-type CredentialAttributeContent = CredentialAttributeContentV2;
-type DateAttributeContent = DateAttributeContentV2 | DateAttributeContentV3;
-type DateTimeAttributeContent = DateTimeAttributeContentV2 | DateTimeAttributeContentV3;
-type FileAttributeContent = FileAttributeContentV2 | FileAttributeContentV3;
-type FloatAttributeContent = FloatAttributeContentV2 | FloatAttributeContentV3;
-type GroupAttribute = GroupAttributeV2 | GroupAttributeV3;
-type InfoAttribute = InfoAttributeV2 | InfoAttributeV3;
-type IntegerAttributeContent = IntegerAttributeContentV2 | IntegerAttributeContentV3;
-type MetadataAttribute = MetadataAttributeV2 | MetadataAttributeV3;
-type ObjectAttributeContent = ObjectAttributeContentV2 | ObjectAttributeContentV3;
-type SecretAttributeContent = SecretAttributeContentV2;
-type StringAttributeContent = StringAttributeContentV2 | StringAttributeContentV3;
-type TextAttributeContent = TextAttributeContentV2 | TextAttributeContentV3;
-type TimeAttributeContent = TimeAttributeContentV2 | TimeAttributeContentV3;
-type BaseAttributeContent = BaseAttributeContentDtoV2 | BaseAttributeContentDtoV3;
-
 // Version-specific types: use V2 types for v2 attributes, V3 types for v3 attributes
 export type BooleanAttributeContentDtoV2 = BooleanAttributeContentV2;
 export type BooleanAttributeContentDtoV3 = BooleanAttributeContentV3;
@@ -101,161 +82,163 @@ export type TimeAttributeContentDtoV3 = TimeAttributeContentV3;
 
 export type { BaseAttributeContentDtoV2, BaseAttributeContentDtoV3 } from 'types/openapi';
 
-export type BooleanAttributeContentDto = BooleanAttributeContent;
-export type BooleanAttributeContentModel = BooleanAttributeContentDto;
+// Backward-compat unions (when version is unknown). Both Dto and Model are the
+// same shape — Model is exported as an alias of Dto via `as` to avoid creating
+// a second redundant alias declaration.
+export type BooleanAttributeContentDto = BooleanAttributeContentV2 | BooleanAttributeContentV3;
+export type { BooleanAttributeContentDto as BooleanAttributeContentModel };
 
 export type CredentialAttributeContentDataDto = CredentialAttributeContentData;
-export type CredentialAttributeContentDataModel = Omit<CredentialAttributeContentDataDto, 'attributes'> & {
+export type CredentialAttributeContentDataModel = Omit<CredentialAttributeContentData, 'attributes'> & {
     attributes: Array<DataAttributeModel>;
 };
 
-export type CredentialAttributeContentDto = CredentialAttributeContent;
-export type CredentialAttributeContentModel = Omit<CredentialAttributeContentDto, 'data'> & { data: CredentialAttributeContentDataModel };
-
-export type DateAttributeContentDto = DateAttributeContent;
-export type DateAttributeContentModel = DateAttributeContentDto;
-
-export type DateTimeAttributeContentDto = DateTimeAttributeContent;
-export type DateTimeAttributeContentModel = DateTimeAttributeContentDto;
-
-export type FileAttributeContentDataDto = FileAttributeContentData;
-export type FileAttributeContentDataModel = FileAttributeContentDataDto;
-
-export type FileAttributeContentDto = FileAttributeContent;
-export type FileAttributeContentModel = Omit<FileAttributeContentDto, 'data'> & { data: FileAttributeContentDataModel };
-
-export type CodeBlockAttributeContentDataDto = CodeBlockAttributeContentData;
-export type CodeBlockAttributeContentDataModel = CodeBlockAttributeContentDataDto;
-
-export type CodeBlockAttributeContentDto = CodeBlockAttributeContent;
-export type CodeBlockAttributeContentModel = Omit<CodeBlockAttributeContentDto, 'data'> & {
-    data: CodeBlockAttributeContentDataModel;
+export type CredentialAttributeContentDto = CredentialAttributeContentV2;
+export type CredentialAttributeContentModel = Omit<CredentialAttributeContentV2, 'data'> & {
+    data: CredentialAttributeContentDataModel;
 };
 
-export type FloatAttributeContentDto = FloatAttributeContent;
-export type FloatAttributeContentModel = FloatAttributeContentDto;
+export type DateAttributeContentDto = DateAttributeContentV2 | DateAttributeContentV3;
+export type { DateAttributeContentDto as DateAttributeContentModel };
 
-export type IntegerAttributeContentDto = IntegerAttributeContent;
-export type IntegerAttributeContentModel = IntegerAttributeContentDto;
+export type DateTimeAttributeContentDto = DateTimeAttributeContentV2 | DateTimeAttributeContentV3;
+export type { DateTimeAttributeContentDto as DateTimeAttributeContentModel };
 
-export type ObjectAttributeContentDto = ObjectAttributeContent;
-export type ObjectAttributeContentModel = ObjectAttributeContentDto;
+export type FileAttributeContentDataDto = FileAttributeContentData;
+export type { FileAttributeContentDataDto as FileAttributeContentDataModel };
+
+export type FileAttributeContentDto = FileAttributeContentV2 | FileAttributeContentV3;
+export type FileAttributeContentModel = Omit<FileAttributeContentDto, 'data'> & { data: FileAttributeContentData };
+
+export type CodeBlockAttributeContentDataDto = CodeBlockAttributeContentData;
+export type { CodeBlockAttributeContentDataDto as CodeBlockAttributeContentDataModel };
+
+export type CodeBlockAttributeContentDto = CodeBlockAttributeContentV2 | CodeBlockAttributeContentV3;
+export type CodeBlockAttributeContentModel = Omit<CodeBlockAttributeContentDto, 'data'> & {
+    data: CodeBlockAttributeContentData;
+};
+
+export type FloatAttributeContentDto = FloatAttributeContentV2 | FloatAttributeContentV3;
+export type { FloatAttributeContentDto as FloatAttributeContentModel };
+
+export type IntegerAttributeContentDto = IntegerAttributeContentV2 | IntegerAttributeContentV3;
+export type { IntegerAttributeContentDto as IntegerAttributeContentModel };
+
+export type ObjectAttributeContentDto = ObjectAttributeContentV2 | ObjectAttributeContentV3;
+export type { ObjectAttributeContentDto as ObjectAttributeContentModel };
 
 export type SecretAttributeContentDataDto = SecretAttributeContentData;
-export type SecretAttributeContentDataModel = SecretAttributeContentDataDto;
+export type { SecretAttributeContentDataDto as SecretAttributeContentDataModel };
 
-export type SecretAttributeContentDto = SecretAttributeContent;
-export type SecretAttributeContentModel = Omit<SecretAttributeContentDto, 'data'> & { data: SecretAttributeContentDataModel };
+export type SecretAttributeContentDto = SecretAttributeContentV2;
+export type SecretAttributeContentModel = Omit<SecretAttributeContentV2, 'data'> & { data: SecretAttributeContentData };
 
-export type StringAttributeContentDto = StringAttributeContent;
-export type StringAttributeContentModel = StringAttributeContentDto;
+export type StringAttributeContentDto = StringAttributeContentV2 | StringAttributeContentV3;
+export type { StringAttributeContentDto as StringAttributeContentModel };
 
-export type TextAttributeContentDto = TextAttributeContent;
-export type TextAttributeContentModel = TextAttributeContentDto;
+export type TextAttributeContentDto = TextAttributeContentV2 | TextAttributeContentV3;
+export type { TextAttributeContentDto as TextAttributeContentModel };
 
-export type TimeAttributeContentDto = TimeAttributeContent;
-export type TimeAttributeContentModel = TimeAttributeContentDto;
+export type TimeAttributeContentDto = TimeAttributeContentV2 | TimeAttributeContentV3;
+export type { TimeAttributeContentDto as TimeAttributeContentModel };
 
-export type BaseAttributeContentDto = BaseAttributeContent;
+export type BaseAttributeContentDto = BaseAttributeContentDtoV2 | BaseAttributeContentDtoV3;
 export type BaseAttributeContentModel =
-    | BooleanAttributeContentModel
+    | BooleanAttributeContentDto
     | CredentialAttributeContentModel
-    | DateAttributeContentModel
-    | DateTimeAttributeContentModel
+    | DateAttributeContentDto
+    | DateTimeAttributeContentDto
     | FileAttributeContentModel
-    | FloatAttributeContentModel
-    | IntegerAttributeContentModel
-    | ObjectAttributeContentModel
+    | FloatAttributeContentDto
+    | IntegerAttributeContentDto
+    | ObjectAttributeContentDto
     | SecretAttributeContentModel
-    | StringAttributeContentModel
-    | TextAttributeContentModel
-    | TimeAttributeContentModel
+    | StringAttributeContentDto
+    | TextAttributeContentDto
+    | TimeAttributeContentDto
     | CodeBlockAttributeContentModel;
 
 export type AttributeRequestDto = RequestAttribute;
-export type AttributeRequestModelV2 = Omit<AttributeRequestDto, 'content'> & { content: Array<BaseAttributeContentDtoV2> };
-export type AttributeRequestModelV3 = Omit<AttributeRequestDto, 'content'> & { content: Array<BaseAttributeContentDtoV3> };
+export type AttributeRequestModelV2 = Omit<RequestAttribute, 'content'> & { content: Array<BaseAttributeContentDtoV2> };
+export type AttributeRequestModelV3 = Omit<RequestAttribute, 'content'> & { content: Array<BaseAttributeContentDtoV3> };
 export type AttributeRequestModel = AttributeRequestModelV2 | AttributeRequestModelV3;
 
 export type MappingAttributeDto = AttributeMappingDto;
-export type AttributeMappingModel = MappingAttributeDto;
+export type { MappingAttributeDto as AttributeMappingModel };
 
 export type AttributeResponseDto = ResponseAttribute;
-export type AttributeResponseModelV2 = Omit<AttributeResponseDto, 'content'> & { content?: Array<BaseAttributeContentDtoV2> };
-export type AttributeResponseModelV3 = Omit<AttributeResponseDto, 'content'> & { content?: Array<BaseAttributeContentDtoV3> };
+export type AttributeResponseModelV2 = Omit<ResponseAttribute, 'content'> & { content?: Array<BaseAttributeContentDtoV2> };
+export type AttributeResponseModelV3 = Omit<ResponseAttribute, 'content'> & { content?: Array<BaseAttributeContentDtoV3> };
 export type AttributeResponseModel = AttributeResponseModelV2 | AttributeResponseModelV3;
 
 export type DataAttributePropertiesDto = DataAttributeProperties;
-export type DataAttributePropertiesModel = DataAttributePropertiesDto;
+export type { DataAttributePropertiesDto as DataAttributePropertiesModel };
 
 export type DateTimeAttributeConstraintDataDto = DateTimeAttributeConstraintData;
-export type DateTimeAttributeConstraintDataModel = DateTimeAttributeConstraintDataDto;
+export type { DateTimeAttributeConstraintDataDto as DateTimeAttributeConstraintDataModel };
 
 export type DateTimeAttributeConstraintDto = DateTimeAttributeConstraint;
-export type DateTimeAttributeConstraintModel = Omit<DateTimeAttributeConstraintDto, 'data'> & {
-    data?: DateTimeAttributeConstraintDataModel;
+export type DateTimeAttributeConstraintModel = Omit<DateTimeAttributeConstraint, 'data'> & {
+    data?: DateTimeAttributeConstraintData;
 };
 
 export type RangeAttributeConstraintDataDto = RangeAttributeConstraintData;
-export type RangeAttributeConstraintDataModel = RangeAttributeConstraintDataDto;
+export type { RangeAttributeConstraintDataDto as RangeAttributeConstraintDataModel };
 
 export type RangeAttributeConstraintDto = RangeAttributeConstraint;
-export type RangeAttributeConstraintModel = Omit<RangeAttributeConstraintDto, 'data'> & { data?: RangeAttributeConstraintDataModel };
+export type RangeAttributeConstraintModel = Omit<RangeAttributeConstraint, 'data'> & { data?: RangeAttributeConstraintData };
 
 export type RegexpAttributeConstraintDto = RegexpAttributeConstraint;
-export type RegexpAttributeConstraintModel = RegexpAttributeConstraintDto;
+export type { RegexpAttributeConstraintDto as RegexpAttributeConstraintModel };
 
 export type BaseAttributeConstraintDto = BaseAttributeConstraint;
-export type BaseAttributeConstraintModel =
-    | DateTimeAttributeConstraintModel
-    | RangeAttributeConstraintModel
-    | RegexpAttributeConstraintModel;
+export type BaseAttributeConstraintModel = DateTimeAttributeConstraintModel | RangeAttributeConstraintModel | RegexpAttributeConstraintDto;
 
 export type AttributeCallbackMappingDto = AttributeCallbackMapping;
-export type AttributeCallbackMappingModel = AttributeCallbackMappingDto;
+export type { AttributeCallbackMappingDto as AttributeCallbackMappingModel };
 
 export type AttributeCallbackDto = AttributeCallback;
-export type AttributeCallbackModel = Omit<AttributeCallbackDto, 'mappings'> & { mappings: Array<AttributeCallbackMappingModel> };
+export type AttributeCallbackModel = Omit<AttributeCallback, 'mappings'> & { mappings: Array<AttributeCallbackMapping> };
 
 export type DataAttributeDto = DataAttribute;
-export type DataAttributeModel = Omit<DataAttributeDto, 'content | properties | constraints | attributeCallback'> & {
+export type DataAttributeModel = Omit<DataAttribute, 'content | properties | constraints | attributeCallback'> & {
     content?: Array<BaseAttributeContentModel>;
-    properties: DataAttributePropertiesModel;
+    properties: DataAttributeProperties;
     constraints?: Array<BaseAttributeConstraintModel>;
     attributeCallback?: AttributeCallbackModel;
 };
 
-export type GroupAttributeDto = GroupAttribute;
+export type GroupAttributeDto = GroupAttributeV2 | GroupAttributeV3;
 export type GroupAttributeModel = Omit<GroupAttributeDto, 'content | attributeCallback'> & {
     content?: Array<AttributeDescriptorModel>;
     attributeCallback?: AttributeCallbackModel;
 };
 
 export type InfoAttributePropertiesDto = InfoAttributeProperties;
-export type InfoAttributePropertiesModel = InfoAttributePropertiesDto;
+export type { InfoAttributePropertiesDto as InfoAttributePropertiesModel };
 
-export type InfoAttributeDto = InfoAttribute;
+export type InfoAttributeDto = InfoAttributeV2 | InfoAttributeV3;
 export type InfoAttributeModel = Omit<InfoAttributeDto, 'content | properties'> & {
     content: Array<BaseAttributeContentModel>;
-    properties: InfoAttributePropertiesModel;
+    properties: InfoAttributeProperties;
 };
 
 export type CustomAttributePropertiesDto = CustomAttributeProperties;
-export type CustomAttributePropertiesModel = CustomAttributePropertiesDto;
+export type { CustomAttributePropertiesDto as CustomAttributePropertiesModel };
 
 export type CustomAttributeDto = CustomAttribute;
-export type CustomAttributeModel = Omit<CustomAttributeDto, 'content | properties'> & {
+export type CustomAttributeModel = Omit<CustomAttribute, 'content | properties'> & {
     content?: Array<BaseAttributeContentModel>;
-    properties: CustomAttributePropertiesModel;
+    properties: CustomAttributeProperties;
 };
 
 export type MetadataAttributePropertiesDto = MetadataAttributeProperties;
-export type MetadataAttributePropertiesModel = MetadataAttributePropertiesDto;
+export type { MetadataAttributePropertiesDto as MetadataAttributePropertiesModel };
 
-export type MetadataAttributeDto = MetadataAttribute;
+export type MetadataAttributeDto = MetadataAttributeV2 | MetadataAttributeV3;
 export type MetadataAttributeModel = Omit<MetadataAttributeDto, 'content | properties'> & {
     content: Array<BaseAttributeContentModel>;
-    properties: MetadataAttributePropertiesModel;
+    properties: MetadataAttributeProperties;
 };
 
 export type AttributeDescriptorDto = BaseAttributeDto;

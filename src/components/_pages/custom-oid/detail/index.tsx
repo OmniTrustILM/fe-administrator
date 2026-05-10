@@ -87,7 +87,7 @@ export default function CustomOIDDetail() {
                       createTableDataRow('OID', oid.oid),
                       createTableDataRow('Display Name', oid.displayName),
                       createTableDataRow('Description', oid.description),
-                      createTableDataRow('Category', oidCategoryEnum[oid.category as OidCategory]?.label),
+                      createTableDataRow('Category', oidCategoryEnum[oid.category]?.label),
                   ]
                 : [],
         [oid, oidCategoryEnum],

@@ -28,17 +28,14 @@ export enum ATTRIBUTE_VIEWER_TYPE {
     ATTRIBUTE_EDIT,
 }
 
-function AttributeEditForm({
-    descriptor,
-    initialContent,
-    onSubmit,
-    onCancel,
-}: {
+type AttributeEditFormProps = {
     descriptor: CustomAttributeModel;
     initialContent?: BaseAttributeContentModel[];
     onSubmit: (uuid: string, content: BaseAttributeContentModel[]) => void;
     onCancel: () => void;
-}) {
+};
+
+function AttributeEditForm({ descriptor, initialContent, onSubmit, onCancel }: Readonly<AttributeEditFormProps>) {
     const methods = ReactHookForm.useForm<any>({
         defaultValues: {},
     });
@@ -58,7 +55,7 @@ function AttributeEditForm({
     );
 }
 
-export type Props = Readonly<{
+export type Props = {
     attributes?: AttributeResponseModel[];
     descriptors?: AttributeDescriptorModel[] | CustomAttributeModel[];
     metadata?: MetadataModel[];
@@ -66,7 +63,7 @@ export type Props = Readonly<{
     hasHeader?: boolean;
     onSubmit?: (attributeUuid: string, content: BaseAttributeContentModel[]) => void;
     onRemove?: (attributeUuid: string) => void;
-}>;
+};
 
 export default function AttributeViewer({
     attributes = [],
@@ -76,7 +73,7 @@ export default function AttributeViewer({
     viewerType = ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE,
     onSubmit,
     onRemove,
-}: Props) {
+}: Readonly<Props>) {
     const getContent = getAttributeContent;
     const [editingAttributesNames, setEditingAttributesNames] = useState<string[]>([]);
     const contentTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.AttributeContentType));
@@ -160,7 +157,7 @@ export default function AttributeViewer({
             viewerType === ATTRIBUTE_VIEWER_TYPE.METADATA_FLAT ||
             viewerType === ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT
         ) {
-            if (!result.find((r) => r.id === 'actions')) {
+            if (!result.some((r) => r.id === 'actions')) {
                 result.push({
                     id: 'actions',
                     content: 'Actions',
@@ -184,7 +181,7 @@ export default function AttributeViewer({
             const createData = (so: NameAndUuidDto) => ({
                 id: so.uuid,
                 columns: [
-                    <Link onClick={() => dispatch(userInterfaceActions.resetState())} to={`/${resource}/detail/${so.uuid}`}>
+                    <Link key="link" onClick={() => dispatch(userInterfaceActions.resetState())} to={`/${resource}/detail/${so.uuid}`}>
                         {so.name}
                     </Link>,
                     so.uuid,
@@ -276,6 +273,7 @@ export default function AttributeViewer({
             ],
             detailColumns: [
                 <CustomTable
+                    key="metadata-table"
                     headers={tableHeaders(ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE)}
                     data={attribute.items.map((attributeItem) => getAttributesTableData(attributeItem, attribute.sourceObjectType))}
                     hasHeader={true}
@@ -288,7 +286,7 @@ export default function AttributeViewer({
     const getButtons = useCallback(
         (attribute: AttributeResponseModel, descriptor: CustomAttributeModel, attributeName: string) => {
             const buttons: WidgetButtonProps[] = [];
-            if (editingAttributesNames.find((a) => a === attributeName)) {
+            if (editingAttributesNames.includes(attributeName)) {
                 buttons.push({
                     id: 'cancel',
                     icon: 'times',
@@ -339,7 +337,7 @@ export default function AttributeViewer({
                 return [];
             }
             return attributes
-                .filter((a) => descriptors.find((d) => d.name === a.name))
+                .filter((a) => descriptors.some((d) => d.name === a.name))
                 .map((a) => {
                     const descriptor = descriptors.find((d) => d.name === a.name);
                     return {
@@ -348,8 +346,9 @@ export default function AttributeViewer({
                             a.label || '',
                             a.version || '',
                             getEnumLabel(contentTypeEnum, a.contentType) || a.contentType,
-                            onSubmit && descriptor && editingAttributesNames.find((n) => n === a.name) ? (
+                            onSubmit && descriptor && editingAttributesNames.includes(a.name) ? (
                                 <AttributeEditForm
+                                    key="edit-form"
                                     descriptor={descriptor}
                                     initialContent={a.content}
                                     onSubmit={(uuid, content) => {
@@ -363,7 +362,7 @@ export default function AttributeViewer({
                             ) : (
                                 getContent(a.contentType, a.content)
                             ),
-                            <WidgetButtons buttons={getButtons(a, descriptor!, a.name)} />,
+                            <WidgetButtons key="widget-buttons" buttons={getButtons(a, descriptor!, a.name)} />,
                         ],
                     };
                 });

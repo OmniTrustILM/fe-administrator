@@ -81,7 +81,7 @@ interface ObjectValueOptions {
     value: any;
 }
 
-type Props = Readonly<{
+type Props = {
     title: string;
     entity: EntityType;
     getAvailableFiltersApi: (apiClients: ApiClients) => Observable<Array<SearchFieldListModel>>;
@@ -90,19 +90,19 @@ type Props = Readonly<{
     busyBadges?: boolean;
     extraFilterComponent?: React.ReactNode;
     filterGridCols?: 2 | 4;
-}>;
+};
 
 export function FilterWidgetSkeleton({
     title = '',
     filterGridCols = 4,
     dataTestId,
     hasExtraFilter = false,
-}: {
+}: Readonly<{
     title?: string;
     filterGridCols?: 2 | 4;
     dataTestId?: string;
     hasExtraFilter?: boolean;
-}) {
+}>) {
     const colCount = filterGridCols === 2 ? 2 : 4;
     return (
         <Widget title={title} titleSize="large" dataTestId={dataTestId}>
@@ -141,7 +141,7 @@ export default function FilterWidget({
     busyBadges,
     extraFilterComponent,
     filterGridCols = 4,
-}: Props) {
+}: Readonly<Props>) {
     const dispatch = useDispatch();
 
     const searchGroupEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.FilterFieldSource));

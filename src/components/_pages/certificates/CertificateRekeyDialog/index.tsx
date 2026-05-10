@@ -47,12 +47,12 @@ interface FormValues {
     altKey?: CryptographicKeyPairResponseModel;
 }
 
-type props = Readonly<{
+type props = {
     onCancel: () => void;
     certificate?: CertificateDetailResponseModel;
-}>;
+};
 
-export default function CertificateRekeyDialog({ onCancel, certificate }: props) {
+export default function CertificateRekeyDialog({ onCancel, certificate }: Readonly<props>) {
     const dispatch = useDispatch();
 
     const isFetchingCsrAttributes = useSelector(certificateSelectors.isFetchingIssuanceAttributes);
@@ -115,7 +115,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: props)
                     raProfileUuid: certificate.raProfile.uuid,
                     authorityUuid: certificate.raProfile.authorityInstanceUuid,
                     rekey: {
-                        request: fileContent ? fileContent : undefined,
+                        request: fileContent || undefined,
                         format: CertificateRequestFormat.Pkcs10,
                         signatureAttributes: collectFormAttributes('signatureAttributes', signatureAttributeDescriptors, allValues),
                         keyUuid: values.key?.uuid || '',
@@ -258,8 +258,9 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: props)
         return watchedUploadCsr
             ? []
             : [
-                  ...(watchedKey?.uuid !== certificate?.key?.uuid
-                      ? [
+                  ...(watchedKey?.uuid === certificate?.key?.uuid
+                      ? []
+                      : [
                             {
                                 title: 'Signature Attributes',
                                 content: (
@@ -271,8 +272,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: props)
                                     />
                                 ),
                             },
-                        ]
-                      : []),
+                        ]),
                   ...(watchedIncludeAltKey && watchedAltKey?.uuid !== certificate?.altKey?.uuid
                       ? [
                             {

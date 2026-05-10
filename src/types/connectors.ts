@@ -1,45 +1,50 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
 import type {
-    BulkActionMessageDto,
-    CallbackRequest,
     ConnectDto,
     ConnectorDto,
     ConnectorInterfaceDto,
-    ConnectorRequestDto as ConnectorRequestDtoOpenApi,
-    ConnectorUpdateRequestDto as ConnectorUpdateRequestDtoOpenApi,
-    ConnectRequestDto as ConnectRequestDtoOpenApi,
-    EndpointDto as EndpointDtoOpenApi,
-    FunctionGroupDto as FunctionGroupDtoOpenApi,
-    HealthDto as HealthDtoOpenApi,
-    RequestAttributeCallback,
-    ResourceCallbackRequest,
+    ConnectorRequestDto,
+    ConnectorUpdateRequestDto,
     ConnectorVersion,
+    ConnectRequestDto,
+    EndpointDto,
+    FunctionGroupDto,
+    HealthDto,
     ProxyDto as ProxyResponseDto,
+    RequestAttributeCallback,
 } from './openapi';
 
-export type BulkActionDto = BulkActionMessageDto;
-export type BulkActionModel = BulkActionDto;
+export type {
+    BulkActionMessageDto as BulkActionDto,
+    BulkActionMessageDto as BulkActionModel,
+    EndpointDto,
+    EndpointDto as EndpointModel,
+    FunctionGroupDto,
+    ConnectorRequestDto,
+    ConnectorUpdateRequestDto,
+    ConnectorDto as ConnectorResponseDto,
+    HealthDto,
+    ConnectRequestDto,
+    ConnectDto as ConnectResponseDto,
+    RequestAttributeCallback as CallbackAttributeDto,
+    RequestAttributeCallback as CallbackAttributeModel,
+    CallbackRequest as CallbackConnectorDto,
+    ResourceCallbackRequest as CallbackResourceDto,
+} from './openapi';
 
-export type EndpointDto = EndpointDtoOpenApi;
-export type EndpointModel = EndpointDto;
+export type FunctionGroupModel = Omit<FunctionGroupDto, 'endPoints'> & { endPoints: Array<EndpointDto> };
 
-export type FunctionGroupDto = FunctionGroupDtoOpenApi;
-export type FunctionGroupModel = Omit<FunctionGroupDto, 'endPoints'> & { endPoints: Array<EndpointModel> };
-
-export type ConnectorRequestDto = ConnectorRequestDtoOpenApi;
 export type ConnectorRequestModel = Omit<ConnectorRequestDto, 'authAttributes | customAttributes'> & {
     authAttributes?: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type ConnectorUpdateRequestDto = ConnectorUpdateRequestDtoOpenApi;
 export type ConnectorUpdateRequestModel = Omit<ConnectorUpdateRequestDto, 'authAttributes | customAttributes'> & {
     authAttributes?: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type ConnectorResponseDto = ConnectorDto;
-export type ConnectorResponseModel = Omit<ConnectorResponseDto, 'functionGroups | authAttributes | customAttributes'> & {
+export type ConnectorResponseModel = Omit<ConnectorDto, 'functionGroups | authAttributes | customAttributes'> & {
     functionGroups: Array<FunctionGroupModel>;
     authAttributes?: Array<AttributeResponseModel>;
     customAttributes?: Array<AttributeResponseModel>;
@@ -48,24 +53,16 @@ export type ConnectorResponseModel = Omit<ConnectorResponseDto, 'functionGroups 
     proxy?: ProxyResponseDto;
 };
 
-export type HealthDto = HealthDtoOpenApi;
 export type HealthModel = Omit<HealthDto, 'parts'> & { parts?: { [key: string]: HealthModel } };
 
-export type ConnectRequestDto = ConnectRequestDtoOpenApi;
 export type ConnectRequestModel = Omit<ConnectRequestDto, 'authAttributes'> & { authAttributes?: Array<AttributeRequestModel> };
 
-export type ConnectResponseDto = ConnectDto;
-export type ConnectResponseModel = Omit<ConnectResponseDto, 'functionGroup'> & { functionGroup: FunctionGroupModel };
+export type ConnectResponseModel = Omit<ConnectDto, 'functionGroup'> & { functionGroup: FunctionGroupModel };
 
-export type CallbackAttributeDto = RequestAttributeCallback;
-export type CallbackAttributeModel = CallbackAttributeDto;
-
-export type CallbackConnectorDto = CallbackRequest;
-export type CallbackConnectorModel = Omit<CallbackConnectorDto, 'requestAttributeCallback'> & {
-    requestAttributeCallback: CallbackAttributeModel;
+export type CallbackConnectorModel = Omit<import('./openapi').CallbackRequest, 'requestAttributeCallback'> & {
+    requestAttributeCallback: RequestAttributeCallback;
 };
 
-export type CallbackResourceDto = ResourceCallbackRequest;
-export type CallbackResourceModel = Omit<CallbackResourceDto, 'requestAttributeCallback'> & {
-    requestAttributeCallback: CallbackAttributeModel;
+export type CallbackResourceModel = Omit<import('./openapi').ResourceCallbackRequest, 'requestAttributeCallback'> & {
+    requestAttributeCallback: RequestAttributeCallback;
 };

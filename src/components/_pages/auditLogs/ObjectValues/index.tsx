@@ -1,17 +1,17 @@
-type Props = Readonly<{
+type Props = {
     className?: string;
     obj: any;
-}>;
+};
 
-function ObjectValues({ className, obj }: Props) {
+function ObjectValues({ className, obj }: Readonly<Props>) {
     if (!obj) return null;
 
     if (typeof obj !== 'object') return obj;
 
     return (
         <ul className={className}>
-            {Object.entries(obj).map(([key, value], index) => (
-                <li key={`value-${index}`}>
+            {Object.entries(obj).map(([key, value]) => (
+                <li key={key}>
                     {key}: <ObjectValues obj={value}></ObjectValues>
                 </li>
             ))}

@@ -2,23 +2,23 @@ import cn from 'classnames';
 import { Link } from 'react-router';
 import type React from 'react';
 
-type Props = Readonly<{
+type Props = {
     items: {
         label: string;
         href?: string;
     }[];
     title?: string;
     rightContent?: React.ReactNode;
-}>;
+};
 
-function Breadcrumb({ items, title: titleProp, rightContent }: Props) {
+function Breadcrumb({ items, title: titleProp, rightContent }: Readonly<Props>) {
     const title = titleProp || items.at(-1)?.label || '';
     return (
         <div className="mb-4 md:mb-8">
             <ol className="flex items-center whitespace-nowrap">
                 {items.map((item, index) => (
                     <li
-                        key={index}
+                        key={item.label}
                         className={cn('inline-flex items-center text-sm', {
                             'text-gray-700 dark:text-neutral-600': index < items.length - 1,
                         })}

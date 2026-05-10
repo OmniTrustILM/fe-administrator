@@ -24,7 +24,7 @@ test.describe('EditableTableCell', () => {
             <EditableTableCell
                 value="Original"
                 onSave={(v) => {
-                    saved = v as string;
+                    saved = v;
                 }}
             />,
         );
@@ -62,7 +62,7 @@ test.describe('EditableTableCell', () => {
 
     test('should submit on Enter key in input', async ({ mount, page }) => {
         let saved: string | null = null;
-        await mount(<EditableTableCell value="" onSave={(v) => (saved = v as string)} />);
+        await mount(<EditableTableCell value="" onSave={(v) => (saved = v)} />);
         await page.getByTestId('editable-cell-edit-btn').click();
         await page.getByRole('textbox').fill('Entered');
         await page.getByRole('textbox').press('Enter');

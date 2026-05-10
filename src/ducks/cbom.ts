@@ -221,7 +221,7 @@ export const slice = createSlice({
     },
 });
 
-const featureSelector = (reduxStore: any): State => reduxStore?.['cbom'];
+const featureSelector = (reduxStore: any): State => reduxStore?.cbom;
 
 export const selectCbomsData = createSelector(featureSelector, (state) => state.cbomsData);
 export const selectCbomList = createSelector(featureSelector, (state) => state.cbomsData?.items || []);

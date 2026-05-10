@@ -43,7 +43,7 @@ const ExecutionsList = () => {
         getFreshListActionGroups();
     }, [getFreshListActionGroups]);
 
-    const { resourceOptionsWithRuleEvaluator, isFetchingResourcesList } = useRuleEvaluatorResourceOptions();
+    const { resourceOptionsWithRuleEvaluator } = useRuleEvaluatorResourceOptions();
 
     const executionsDataHeaders: TableHeader[] = useMemo(
         () => [
@@ -84,7 +84,9 @@ const ExecutionsList = () => {
                 return {
                     id: execution.uuid,
                     columns: [
-                        <Link to={`../executions/detail/${execution.uuid}`}>{execution.name}</Link>,
+                        <Link key="name" to={`../executions/detail/${execution.uuid}`}>
+                            {execution.name}
+                        </Link>,
                         getEnumLabel(executionTypeEnum, execution.type),
                         getEnumLabel(resourceTypeEnum, execution.resource),
                         execution.description || '',

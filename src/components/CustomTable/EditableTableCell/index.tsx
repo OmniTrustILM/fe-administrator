@@ -143,11 +143,10 @@ const EditableTableCell = <TValue,>({
 
     return isEditing ? (
         // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- focus trap for blur; Escape cancels
-        <div
+        <fieldset
             data-testid="editable-cell-editing"
             data-editable-cell-opened={isEditing}
-            ref={blurListenerWrapperRef}
-            role="group"
+            ref={blurListenerWrapperRef as React.Ref<HTMLFieldSetElement>}
             aria-label="Edit cell"
             onBlur={handleBlur}
             tabIndex={-1}
@@ -158,6 +157,7 @@ const EditableTableCell = <TValue,>({
                 e.stopPropagation();
                 e.preventDefault();
             }}
+            style={{ border: 0, padding: 0, margin: 0 }}
         >
             <EditableTableCellInner
                 value={value}
@@ -172,7 +172,7 @@ const EditableTableCell = <TValue,>({
                 handleCancel={handleCancel}
                 handleBlur={handleBlur}
             />
-        </div>
+        </fieldset>
     ) : (
         <div data-testid="editable-cell-display">
             {typeof renderValue === 'function' ? renderValue(value) : (value as React.ReactNode)}

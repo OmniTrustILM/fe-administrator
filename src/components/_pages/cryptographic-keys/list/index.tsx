@@ -219,16 +219,20 @@ function CryptographicKeyList() {
                 return {
                     id: cryptographicKey.uuid,
                     columns: [
-                        <KeyStatusCircle status={cryptographicKey.enabled} />,
-                        <KeyStateCircle state={cryptographicKey.state} />,
-                        <span style={{ whiteSpace: 'nowrap' }}>
+                        <KeyStatusCircle key="status" status={cryptographicKey.enabled} />,
+                        <KeyStateCircle key="state" state={cryptographicKey.state} />,
+                        <span key="name" style={{ whiteSpace: 'nowrap' }}>
                             <Link to={`./detail/${cryptographicKey.keyWrapperUuid}/${cryptographicKey.uuid}`}>{cryptographicKey.name}</Link>
                         </span>,
-                        <Badge color="secondary">{getEnumLabel(keyTypeEnum, cryptographicKey.type)}</Badge>,
+                        <Badge key="type" color="secondary">
+                            {getEnumLabel(keyTypeEnum, cryptographicKey.type)}
+                        </Badge>,
                         cryptographicKey.keyAlgorithm,
                         cryptographicKey.length?.toString() || 'unknown',
                         cryptographicKey.format || 'unknown',
-                        <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(cryptographicKey.creationTime) || ''}</span>,
+                        <span key="created" style={{ whiteSpace: 'nowrap' }}>
+                            {dateFormatter(cryptographicKey.creationTime) || ''}
+                        </span>,
                         cryptographicKey?.groups?.length
                             ? cryptographicKey?.groups.map((group, i) => (
                                   <Fragment key={group.uuid}>

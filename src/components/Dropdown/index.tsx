@@ -9,7 +9,7 @@ export interface DropdownItem {
     color?: ButtonColor;
 }
 
-type Props = Readonly<{
+type Props = {
     title: React.ReactNode;
     items?: DropdownItem[];
     disabled?: boolean;
@@ -19,13 +19,22 @@ type Props = Readonly<{
     hideArrow?: boolean;
     menu?: React.ReactNode;
     buttonRef?: React.RefObject<HTMLButtonElement | null>;
-}>;
+};
 
-function Dropdown({ title, items, disabled = false, btnStyle, className, menuClassName, hideArrow = false, menu, buttonRef }: Props) {
+function Dropdown({
+    title,
+    items,
+    disabled = false,
+    btnStyle,
+    className,
+    menuClassName,
+    hideArrow = false,
+    menu,
+    buttonRef,
+}: Readonly<Props>) {
     useEffect(() => {
-        if (typeof window !== 'undefined' && (window as any).HSStaticMethods) {
-            (window as any).HSStaticMethods.autoInit();
-        }
+        const hsMethods = (globalThis as any).HSStaticMethods;
+        if (hsMethods) hsMethods.autoInit();
     }, [disabled]);
 
     return (
@@ -85,7 +94,7 @@ function Dropdown({ title, items, disabled = false, btnStyle, className, menuCla
                         items.length > 0 &&
                         items.map((item, index) => (
                             <button
-                                key={index}
+                                key={typeof item.title === 'string' ? item.title : `dropdown-item-${index}`}
                                 type="button"
                                 className="flex items-center gap-x-3.5 py-2 px-3 w-full text-left rounded-lg text-sm text-gray-800 hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-300 dark:focus:bg-neutral-700 cursor-pointer"
                                 onClick={() => item.onClick()}

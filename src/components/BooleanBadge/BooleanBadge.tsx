@@ -6,15 +6,13 @@ interface Props {
     dataTestId?: string;
 }
 
-const BooleanBadge = ({ value, invertColor, dataTestId }: Props) =>
-    value ? (
-        <Badge color={invertColor ? 'danger' : 'success'} dataTestId={dataTestId || 'boolean-badge'}>
-            Yes
-        </Badge>
-    ) : (
-        <Badge color={invertColor ? 'success' : 'danger'} dataTestId={dataTestId || 'boolean-badge'}>
-            No
+const BooleanBadge = ({ value, invertColor, dataTestId }: Props) => {
+    const color = value === !invertColor ? 'success' : 'danger';
+    return (
+        <Badge color={color} dataTestId={dataTestId || 'boolean-badge'}>
+            {value ? 'Yes' : 'No'}
         </Badge>
     );
+};
 
 export default BooleanBadge;

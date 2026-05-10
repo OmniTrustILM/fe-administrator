@@ -7,6 +7,7 @@ import { CertificateType, type CertificateValidationResultDto, CertificateValida
 import type { CertificateListResponseModel, CertificateDetailResponseModel } from 'types/certificate';
 import type { TableDataRow } from 'components/CustomTable';
 import CertificateStatus from './CertificateStatus';
+import PendingActionButtons from './PendingActionButtons';
 
 export interface BuildCertificateRowColumnsOpts {
     isLinkDisabled: boolean;
@@ -19,64 +20,84 @@ export interface BuildCertificateRowColumnsOpts {
     getEnumLabel: (e: any, key: string) => string;
 }
 
+function buildCommonNameCell(certificate: CertificateListResponseModel, opts: BuildCertificateRowColumnsOpts) {
+    const { selectCertsOnly, isLinkDisabled, dispatch, currentFilters } = opts;
+    const label = certificate.commonName || '(empty)';
+    if (selectCertsOnly || isLinkDisabled) return label;
+    return (
+        <Link
+            onClick={() =>
+                dispatch(filterActions.setPreservedFilters({ entity: EntityType.CERTIFICATE, preservedFilters: currentFilters }))
+            }
+            to={`./detail/${certificate.uuid}`}
+        >
+            {label}
+        </Link>
+    );
+}
+
+function buildGroupsCell(certificate: CertificateListResponseModel, isLinkDisabled: boolean) {
+    const groups = certificate?.groups ?? [];
+    if (groups.length === 0) return 'Unassigned';
+    return groups.map((group, i) => (
+        <React.Fragment key={group.uuid}>
+            {isLinkDisabled ? group.name : <Link to={`../../groups/detail/${group.uuid}`}>{group.name}</Link>}
+            {i === groups.length - 1 ? '' : ', '}
+        </React.Fragment>
+    ));
+}
+
+function buildRaProfileCell(certificate: CertificateListResponseModel, isLinkDisabled: boolean) {
+    if (!certificate.raProfile) return 'Unassigned';
+    const name = certificate.raProfile.name ?? 'Unassigned';
+    if (isLinkDisabled) return name;
+    return <Link to={`../raprofiles/detail/${certificate.raProfile.authorityInstanceUuid}/${certificate.raProfile.uuid}`}>{name}</Link>;
+}
+
+function buildOwnerCell(certificate: CertificateListResponseModel, isLinkDisabled: boolean) {
+    const ownerLabel = certificate.owner ?? 'Unassigned';
+    if (!certificate?.ownerUuid) return ownerLabel;
+    if (isLinkDisabled) return ownerLabel;
+    return <Link to={`../users/detail/${certificate.ownerUuid}`}>{ownerLabel}</Link>;
+}
+
+function buildIssuerCell(certificate: CertificateListResponseModel, isLinkDisabled: boolean) {
+    const cn = certificate.issuerCommonName || '';
+    if (!cn || !certificate?.issuerCertificateUuid) return cn;
+    if (isLinkDisabled) return cn;
+    return <Link to={`./detail/${certificate.issuerCertificateUuid}`}>{cn}</Link>;
+}
+
+function buildCertTypeCell(
+    certificate: CertificateListResponseModel,
+    certificateTypeEnum: any,
+    getEnumLabel: (e: any, k: string) => string,
+) {
+    if (!certificate.certificateType) return '';
+    return (
+        <Badge color={certificate.certificateType === CertificateType.X509 ? 'primary' : 'gray'} size="small">
+            {getEnumLabel(certificateTypeEnum, certificate.certificateType)}
+        </Badge>
+    );
+}
+
 export function buildCertificateRowColumns(
     certificate: CertificateListResponseModel,
     opts: BuildCertificateRowColumnsOpts,
 ): (string | React.ReactNode)[] {
-    const { isLinkDisabled, selectCertsOnly, dispatch, currentFilters, dateFormatter, certificateTypeEnum, getEnumLabel } = opts;
-    const commonNameCell =
-        selectCertsOnly || isLinkDisabled ? (
-            certificate.commonName || '(empty)'
-        ) : (
-            <Link
-                onClick={() =>
-                    dispatch(filterActions.setPreservedFilters({ entity: EntityType.CERTIFICATE, preservedFilters: currentFilters }))
-                }
-                to={`./detail/${certificate.uuid}`}
-            >
-                {certificate.commonName || '(empty)'}
-            </Link>
-        );
-    const groups = certificate?.groups ?? [];
-    const groupsCell = groups.length
-        ? groups.map((group, i) => (
-              <React.Fragment key={group.uuid}>
-                  {isLinkDisabled ? group.name : <Link to={`../../groups/detail/${group.uuid}`}>{group.name}</Link>}
-                  {i !== groups.length - 1 ? ', ' : ''}
-              </React.Fragment>
-          ))
-        : 'Unassigned';
-    const raProfileLinked = isLinkDisabled ? (
-        (certificate.raProfile?.name ?? 'Unassigned')
-    ) : (
-        <Link to={`../raprofiles/detail/${certificate.raProfile?.authorityInstanceUuid}/${certificate.raProfile?.uuid}`}>
-            {certificate.raProfile?.name ?? 'Unassigned'}
-        </Link>
-    );
-    const raProfileCell = certificate.raProfile ? raProfileLinked : (certificate.raProfile ?? 'Unassigned');
-    const ownerLinked = isLinkDisabled ? (
-        (certificate.owner ?? 'Unassigned')
-    ) : (
-        <Link to={`../users/detail/${certificate?.ownerUuid}`}>{certificate.owner ?? 'Unassigned'}</Link>
-    );
-    const ownerCell = certificate?.ownerUuid ? ownerLinked : (certificate.owner ?? 'Unassigned');
-    const issuerLinked = isLinkDisabled ? (
-        certificate.issuerCommonName
-    ) : (
-        <Link to={`./detail/${certificate.issuerCertificateUuid}`}>{certificate.issuerCommonName}</Link>
-    );
-    const issuerCell =
-        certificate.issuerCommonName && certificate?.issuerCertificateUuid ? issuerLinked : certificate.issuerCommonName || '';
-    const certTypeCell = certificate.certificateType ? (
-        <Badge color={certificate.certificateType === CertificateType.X509 ? 'primary' : 'gray'} size="small">
-            {getEnumLabel(certificateTypeEnum, certificate.certificateType)}
-        </Badge>
-    ) : (
-        ''
-    );
+    const { isLinkDisabled, dateFormatter, certificateTypeEnum, getEnumLabel } = opts;
+    const commonNameCell = buildCommonNameCell(certificate, opts);
+    const groupsCell = buildGroupsCell(certificate, isLinkDisabled);
+    const raProfileCell = buildRaProfileCell(certificate, isLinkDisabled);
+    const ownerCell = buildOwnerCell(certificate, isLinkDisabled);
+    const issuerCell = buildIssuerCell(certificate, isLinkDisabled);
+    const certTypeCell = buildCertTypeCell(certificate, certificateTypeEnum, getEnumLabel);
 
     return [
-        <CertificateStatus key="state" status={certificate.state} asIcon={true} />,
+        <React.Fragment key="state">
+            <CertificateStatus status={certificate.state} asIcon={true} />
+            <PendingActionButtons certificate={certificate} compact />
+        </React.Fragment>,
         <CertificateStatus key="validationStatus" status={certificate.validationStatus} asIcon={true} />,
         certificate.complianceStatus ? <CertificateStatus key="compliance" status={certificate.complianceStatus} asIcon={true} /> : '',
         certificate.privateKeyAvailability ? <KeyRound key="key" size={16} aria-hidden="true" strokeWidth={1.5} /> : '',
@@ -191,7 +212,16 @@ export function buildCertificateDetailBaseRows(
         });
     }
     rows.push(
-        { id: 'certState', columns: ['State', <CertificateStatus key="state" status={certificate.state} />] },
+        {
+            id: 'certState',
+            columns: [
+                'State',
+                <React.Fragment key="state">
+                    <CertificateStatus status={certificate.state} />
+                    <PendingActionButtons certificate={certificate} />
+                </React.Fragment>,
+            ],
+        },
         {
             id: 'validationStatus',
             columns: [

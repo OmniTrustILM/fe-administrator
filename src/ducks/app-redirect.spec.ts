@@ -38,16 +38,20 @@ describe('appRedirect slice', () => {
     });
 
     describe('fetchError', () => {
+        const makeAjaxError = (status: number, message: string): AjaxError => {
+            const err = Object.assign(new Error(message), { name: 'AjaxError', status });
+            Object.setPrototypeOf(err, AjaxError.prototype);
+            return err as unknown as AjaxError;
+        };
+
         test('sets unauthorized to true when error is AjaxError with status 401', () => {
-            const ajaxError = new AjaxError('Unauthorized', {} as any, {} as any);
-            Object.defineProperty(ajaxError, 'status', { value: 401 });
+            const ajaxError = makeAjaxError(401, 'Unauthorized');
             const state = reducer(initialState, actions.fetchError({ error: ajaxError, message: 'Unauthorized' }));
             expect(state.unauthorized).toBe(true);
         });
 
         test('does not set unauthorized for AjaxError with non-401 status', () => {
-            const ajaxError = new AjaxError('Forbidden', {} as any, {} as any);
-            Object.defineProperty(ajaxError, 'status', { value: 403 });
+            const ajaxError = makeAjaxError(403, 'Forbidden');
             const state = reducer(initialState, actions.fetchError({ error: ajaxError, message: 'Forbidden' }));
             expect(state.unauthorized).toBe(false);
         });

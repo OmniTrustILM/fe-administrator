@@ -3,13 +3,13 @@ import { useMemo } from 'react';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { dateFormatter } from 'utils/dateUtil';
 
-type Props = Readonly<{
+type Props = {
     certificate?: CertificateDetailResponseModel;
     csr?: boolean;
     isLoading?: boolean;
-}>;
+};
 
-function CertificateAttributes({ certificate, csr = false, isLoading = false }: Props) {
+function CertificateAttributes({ certificate, csr = false, isLoading = false }: Readonly<Props>) {
     const detailHeaders: TableHeader[] = useMemo(
         () => [
             {
@@ -41,14 +41,18 @@ function CertificateAttributes({ certificate, csr = false, isLoading = false }: 
                     id: 'validFrom',
                     columns: [
                         'Valid From',
-                        <span style={{ whiteSpace: 'nowrap' }}>{certificate?.notBefore ? dateFormatter(certificate.notBefore) : ''}</span>,
+                        <span key="value" style={{ whiteSpace: 'nowrap' }}>
+                            {certificate?.notBefore ? dateFormatter(certificate.notBefore) : ''}
+                        </span>,
                     ],
                 },
                 {
                     id: 'validTo',
                     columns: [
                         'Valid To',
-                        <span style={{ whiteSpace: 'nowrap' }}>{certificate?.notAfter ? dateFormatter(certificate.notAfter) : ''}</span>,
+                        <span key="value" style={{ whiteSpace: 'nowrap' }}>
+                            {certificate?.notAfter ? dateFormatter(certificate.notAfter) : ''}
+                        </span>,
                     ],
                 },
                 {

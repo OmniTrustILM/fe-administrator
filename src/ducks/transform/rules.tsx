@@ -156,10 +156,12 @@ export function transformConditionItemModelDto(conditionItemModel: ConditionItem
     };
 }
 
+function cloneConditionItemRequestModel(conditionItemRequestModel: ConditionItemRequestModel): ConditionItemRequestDto {
+    return { ...conditionItemRequestModel };
+}
+
 export function transformConditionItemRequestModelDto(conditionItemRequestModel: ConditionItemRequestModel): ConditionItemRequestDto {
-    return {
-        ...conditionItemRequestModel,
-    };
+    return cloneConditionItemRequestModel(conditionItemRequestModel);
 }
 
 export function transformConditionRequestModelToDto(conditionRequestModel: ConditionRequestModel): ConditionRequestDto {
@@ -196,9 +198,7 @@ export function transformTriggerDetailDtoToModel(triggerDetailDto: TriggerDetail
 }
 
 export function transformConditionItemRequestModelToDto(conditionItemRequestModel: ConditionItemRequestModel): ConditionItemRequestDto {
-    return {
-        ...conditionItemRequestModel,
-    };
+    return cloneConditionItemRequestModel(conditionItemRequestModel);
 }
 
 export function transformUpdateConditionRequestModelToDto(
@@ -292,7 +292,6 @@ export function useTransformTriggerObjectToNodesAndEdges(
     const triggerTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.TriggerType));
     const dispatch = useDispatch();
     const isUpdatingTrigger = useSelector(rulesSelectors.isUpdatingTrigger);
-    // const flowChartNodesState = useSelector(userInterfaceSelectors.flowChartNodes);
     const rulesOptions = useMemo(() => {
         const filteredRules = rules?.filter((rule) => !triggerDetails?.rules.find((triggerRule) => triggerRule.uuid === rule.uuid));
         return filteredRules?.map((rule) => ({
@@ -381,7 +380,7 @@ export function useTransformTriggerObjectToNodesAndEdges(
                                     trigger: {
                                         actionsUuids: allActionsUuids,
                                         rulesUuids: allRulesUuids,
-                                        ignoreTrigger: allActionsUuids.length === 0 ? true : false,
+                                        ignoreTrigger: allActionsUuids.length === 0,
                                         resource: triggerDetails.resource,
                                         type: triggerDetails.type,
                                         description: triggerDetails.description || '',

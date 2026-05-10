@@ -27,16 +27,16 @@ export function useGetLabels(data: DashboardDict) {
 
         for (const i of Object.entries(data)) {
             const certLabel = getStatusText(i[0] as Status);
-            if (certLabel !== 'Unknown') {
-                result.push(certLabel);
-            } else {
+            if (certLabel === 'Unknown') {
                 const secretLabel = getSecretStatusText(i[0] as Parameters<typeof getSecretStatusText>[0]);
-                if (secretLabel !== 'Unknown') {
-                    result.push(secretLabel);
-                } else {
+                if (secretLabel === 'Unknown') {
                     const splitValue = i[0].split('=');
                     result.push(splitValue.at(-1)!);
+                } else {
+                    result.push(secretLabel);
                 }
+            } else {
+                result.push(certLabel);
             }
         }
 

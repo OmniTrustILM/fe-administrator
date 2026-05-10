@@ -1,44 +1,32 @@
 import type { AttributeRequestModel } from './attributes';
-import type {
-    RandomDataRequestDto,
-    RandomDataResponseDto,
-    SignatureRequestData,
-    SignatureResponseData,
-    SignDataRequestDto,
-    SignDataResponseDto,
-    VerifyDataRequestDto,
-    VerifyDataResponseDto,
+import type { RandomDataRequestDto, SignatureRequestData, SignDataRequestDto, VerifyDataRequestDto } from './openapi';
+
+export type {
+    SignDataRequestDto as CryptographicKeySignDataRequestDto,
+    SignatureRequestData as CryptographicKeySignatureRequestDataDto,
+    SignatureRequestData as CryptographicKeySignatureRequestDataModel,
+    SignDataResponseDto as CryptographicKeySignResponseDto,
+    SignDataResponseDto as CryptographicKeySignResponseModel,
+    SignatureResponseData as CryptographicKeySignResponseDataDto,
+    SignatureResponseData as CryptographicKeySignResponseDataModel,
+    VerifyDataRequestDto as CryptographicKeyVerifyDataRequestDto,
+    VerifyDataResponseDto as CryptographicKeyVerifyResponseDto,
+    VerifyDataResponseDto as CryptographicKeyVerifyResponseModel,
+    SignatureResponseData as CryptographicKeyVerificationResponseDataDto,
+    SignatureResponseData as CryptographicKeyVerificationResponseDataModel,
+    RandomDataRequestDto as CryptographicKeyRandomDataRequestDto,
+    RandomDataResponseDto as CryptographicKeyRandomDataResponseDto,
+    RandomDataResponseDto as CryptographicKeyRandomDataResponseModel,
 } from './openapi';
 
-export type CryptographicKeySignDataRequestDto = SignDataRequestDto;
-export type CryptographicKeySignDataRequestModel = Omit<CryptographicKeySignDataRequestDto, 'data'> & {
+export type CryptographicKeySignDataRequestModel = Omit<SignDataRequestDto, 'data'> & {
     data: Array<SignatureRequestData>;
 };
 
-export type CryptographicKeySignatureRequestDataDto = SignatureRequestData;
-export type CryptographicKeySignatureRequestDataModel = CryptographicKeySignatureRequestDataDto;
-
-export type CryptographicKeySignResponseDto = SignDataResponseDto;
-export type CryptographicKeySignResponseModel = CryptographicKeySignResponseDto;
-
-export type CryptographicKeySignResponseDataDto = SignatureResponseData;
-export type CryptographicKeySignResponseDataModel = CryptographicKeySignResponseDataDto;
-
-export type CryptographicKeyVerifyDataRequestDto = VerifyDataRequestDto;
-export type CryptographicKeyVerifyDataRequestModel = Omit<CryptographicKeyVerifyDataRequestDto, 'data'> & {
+export type CryptographicKeyVerifyDataRequestModel = Omit<VerifyDataRequestDto, 'data'> & {
     data: Array<SignatureRequestData>;
 };
 
-export type CryptographicKeyVerifyResponseDto = VerifyDataResponseDto;
-export type CryptographicKeyVerifyResponseModel = CryptographicKeyVerifyResponseDto;
-
-export type CryptographicKeyVerificationResponseDataDto = SignatureResponseData;
-export type CryptographicKeyVerificationResponseDataModel = CryptographicKeyVerificationResponseDataDto;
-
-export type CryptographicKeyRandomDataRequestDto = RandomDataRequestDto;
-export type CryptographicKeyRandomDataRequestModel = Omit<CryptographicKeyRandomDataRequestDto, 'attributes'> & {
+export type CryptographicKeyRandomDataRequestModel = Omit<RandomDataRequestDto, 'attributes'> & {
     attributes?: Array<AttributeRequestModel>;
 };
-
-export type CryptographicKeyRandomDataResponseDto = RandomDataResponseDto;
-export type CryptographicKeyRandomDataResponseModel = CryptographicKeyRandomDataResponseDto;

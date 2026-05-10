@@ -1,6 +1,6 @@
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import { Copy } from 'lucide-react';
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import Button from 'components/Button';
 import type { JwkModel } from 'types/auth-settings';
 import { useCopyToClipboard } from 'utils/common-hooks';

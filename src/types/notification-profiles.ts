@@ -1,18 +1,10 @@
-import type {
-    NotificationProfileDetailDto as NotificationProfileDetailDtoApi,
-    NotificationProfileDto as NotificationProfileDtoApi,
-    NotificationProfileRequestDto as NotificationProfileRequestDtoApi,
-    NotificationProfileUpdateRequestDto as NotificationProfileUpdateRequestDtoApi,
+export type {
+    NotificationProfileDto,
+    NotificationProfileDto as NotificationProfileModel,
+    NotificationProfileDetailDto,
+    NotificationProfileDetailDto as NotificationProfileDetailModel,
+    NotificationProfileRequestDto,
+    NotificationProfileRequestDto as NotificationProfileRequestModel,
+    NotificationProfileUpdateRequestDto,
+    NotificationProfileUpdateRequestDto as NotificationProfileUpdateRequestModel,
 } from 'types/openapi';
-
-export type NotificationProfileDto = NotificationProfileDtoApi;
-export type NotificationProfileModel = NotificationProfileDto;
-
-export type NotificationProfileDetailDto = NotificationProfileDetailDtoApi;
-export type NotificationProfileDetailModel = NotificationProfileDetailDto;
-
-export type NotificationProfileRequestDto = NotificationProfileRequestDtoApi;
-export type NotificationProfileRequestModel = NotificationProfileRequestDto;
-
-export type NotificationProfileUpdateRequestDto = NotificationProfileUpdateRequestDtoApi;
-export type NotificationProfileUpdateRequestModel = NotificationProfileUpdateRequestDto;

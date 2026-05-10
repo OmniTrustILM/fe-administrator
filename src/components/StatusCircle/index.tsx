@@ -1,11 +1,11 @@
 import Badge from 'components/Badge';
 import { Check, HelpCircle, X } from 'lucide-react';
 
-type Props = Readonly<{
+type Props = {
     status?: boolean;
-}>;
+};
 
-function StatusCircle({ status }: Props) {
+function StatusCircle({ status }: Readonly<Props>) {
     switch (status) {
         case true:
             return (

@@ -12,10 +12,9 @@
  */
 
 import type { ResponseAttribute } from './';
-import type { SimplifiedSigningProfileDto } from './';
 
 /**
- * TSP Profile details
+ * TSP (Timestamping Protocol) profile details
  * @export
  * @interface TspProfileDto
  */
@@ -33,29 +32,23 @@ export interface TspProfileDto {
      */
     name: string;
     /**
-     * Description
+     * Description of the TSP Profile
      * @type {string}
      * @memberof TspProfileDto
      */
     description?: string;
     /**
-     * Whether the TSP Profile is enabled
+     * Enabled flag of the TSP Profile
      * @type {boolean}
      * @memberof TspProfileDto
      */
     enabled: boolean;
     /**
-     * TSP signing URL
+     * TSP URL for signing
      * @type {string}
      * @memberof TspProfileDto
      */
     signingUrl?: string;
-    /**
-     * Default signing profile
-     * @type {SimplifiedSigningProfileDto}
-     * @memberof TspProfileDto
-     */
-    defaultSigningProfile?: SimplifiedSigningProfileDto;
     /**
      * List of Custom Attributes
      * @type {Array<ResponseAttribute>}

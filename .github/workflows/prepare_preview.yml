@@ -29,16 +29,21 @@ jobs:
 
       # Package up PR context for downstream workflow_run
       - name: Prepare PR context artifact
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
-          cat > pr-context.json <<'JSON'
-          {
-            "pr_number": "${{ github.event.pull_request.number }}",
-            "head_sha":  "${{ github.event.pull_request.head.sha }}",
-            "head_repo": "${{ github.event.pull_request.head.repo.full_name }}",
-            "head_branch": "${{ github.event.pull_request.head.ref }}",
-            "base_ref": "${{ github.event.pull_request.base.ref }}"
-          }
-          JSON
+          jq -n \
+            --arg pr_number "$PR_NUMBER" \
+            --arg head_sha "$HEAD_SHA" \
+            --arg head_repo "$HEAD_REPO" \
+            --arg head_branch "$HEAD_BRANCH" \
+            --arg base_ref "$BASE_REF" \
+            '{pr_number: $pr_number, head_sha: $head_sha, head_repo: $head_repo, head_branch: $head_branch, base_ref: $base_ref}' \
+            > pr-context.json
           cat pr-context.json
 
       - name: Upload PR context

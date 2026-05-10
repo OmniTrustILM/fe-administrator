@@ -32,6 +32,8 @@ type ValueFieldInputProps = {
     onCancel?: () => void;
 };
 
+type ListValueScalar = string | number | boolean;
+
 function normalizeDateValue(value: string | undefined): string | undefined {
     if (!value) return undefined;
     return value.includes('T') ? value : value.replace(' ', 'T');
@@ -59,15 +61,15 @@ function ListValueField({ descriptor, field, options, inputClassName }: ValueFie
         }
     };
 
-    const formatListLabel = (v: string | number | boolean) =>
+    const formatListLabel = (v: ListValueScalar) =>
         descriptor.contentType === AttributeContentType.Datetime ? getFormattedDateTime(String(v)) : String(v);
 
     const listValue =
         multiSelect && Array.isArray(field.value)
-            ? field.value.map((v: string | number | boolean) => ({ value: v, label: formatListLabel(v) }))
+            ? field.value.map((v: ListValueScalar) => ({ value: v, label: formatListLabel(v) }))
             : field.value;
 
-    let currentValues: (string | number | boolean)[];
+    let currentValues: ListValueScalar[];
     if (multiSelect) {
         currentValues = Array.isArray(field.value) ? field.value : [];
     } else {
@@ -130,7 +132,7 @@ function ListValueField({ descriptor, field, options, inputClassName }: ValueFie
     );
 }
 
-function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, options }: ValueFieldInputProps) {
+function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, options }: Readonly<ValueFieldInputProps>) {
     const inputType = ContentFieldConfiguration[descriptor.contentType].type;
     const displayValue = descriptor.contentType === AttributeContentType.Datetime ? getFormattedDateTime(field.value) : field.value;
     const error = getValueFieldError(fieldState);
@@ -205,15 +207,15 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
     }
 }
 
-type Props = Readonly<{
+type Props = {
     id?: string;
     descriptor: CustomAttributeModel;
     initialContent?: BaseAttributeContentModel[];
     onSubmit: (attributeUuid: string, content: BaseAttributeContentModel[]) => void;
     onCancel?: () => void;
-}>;
+};
 
-export default function ContentValueField({ id, descriptor, initialContent, onSubmit, onCancel }: Props) {
+export default function ContentValueField({ id, descriptor, initialContent, onSubmit, onCancel }: Readonly<Props>) {
     const { control, setValue } = useFormContext();
 
     const options = useMemo(
@@ -248,7 +250,7 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
         }
 
         const firstDescriptorData = descriptor.content && descriptor.content.length > 0 ? descriptor.content[0].data : undefined;
-        const descriptorValue = !descriptor.properties.list ? firstDescriptorData : undefined;
+        const descriptorValue = descriptor.properties.list ? undefined : firstDescriptorData;
 
         const scalarDefault = descriptor.properties.list ? undefined : ContentFieldConfiguration[descriptor.contentType].initial;
         setValue(descriptor.name, initialValue ?? descriptorValue ?? scalarDefault);
@@ -297,7 +299,7 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
 
     const getFieldContent = (input: any) => {
         if (ContentFieldConfiguration[descriptor.contentType].type === 'checkbox') {
-            const booleanValue = input.checked !== undefined ? input.checked : (input.value ?? false);
+            const booleanValue = input.checked === undefined ? (input.value ?? false) : input.checked;
             return [{ data: booleanValue }];
         }
         if (!input.value && input.value !== 0 && input.value !== false) {
@@ -307,12 +309,10 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
             const dataFrom = (v: any) => (v != null && typeof v === 'object' && 'value' in v ? v.value : v);
             if (descriptor.properties.multiSelect) {
                 return (input.value || []).map((v: any) => transformObjectContent(descriptor.contentType, { data: dataFrom(v) }));
+            } else if (Array.isArray(input.value)) {
+                return input.value.map((v: any) => transformObjectContent(descriptor.contentType, { data: dataFrom(v) }));
             } else {
-                if (Array.isArray(input.value)) {
-                    return input.value.map((v: any) => transformObjectContent(descriptor.contentType, { data: dataFrom(v) }));
-                } else {
-                    return [transformObjectContent(descriptor.contentType, { data: dataFrom(input.value) })];
-                }
+                return [transformObjectContent(descriptor.contentType, { data: dataFrom(input.value) })];
             }
         }
         return [transformObjectContent(descriptor.contentType, { data: input.value })];

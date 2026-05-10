@@ -8,7 +8,7 @@ import { inputBaseClassName } from './inputStyles';
 
 export { inputBaseClassName } from './inputStyles';
 
-type Props = Readonly<{
+type Props = {
     value?: string;
     onChange: (value: string) => void;
     onBlur?: () => void;
@@ -23,7 +23,7 @@ type Props = Readonly<{
     required?: boolean;
     buttonRight?: ReactNode;
     dataTestId?: string;
-}>;
+};
 
 function TextInput({
     value,
@@ -40,7 +40,7 @@ function TextInput({
     required = false,
     buttonRight,
     dataTestId,
-}: Props) {
+}: Readonly<Props>) {
     const inputRef = useRef<HTMLInputElement>(null);
     const generatedId = useId();
     const [passwordVisible, setPasswordVisible] = useState(false);

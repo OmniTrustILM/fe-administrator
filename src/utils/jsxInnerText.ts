@@ -1,41 +1,25 @@
 export function jsxInnerText(obj: React.ReactNode): string {
-    let buf = '';
+    if (obj === null || obj === undefined) return '';
 
-    if (obj !== null && obj !== undefined) {
-        const type = typeof obj;
+    if (typeof obj === 'string') return obj;
+    if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
 
-        if (type === 'string' || type === 'number' || type === 'boolean') {
-            buf += obj.toString();
-        } else if (type === 'object') {
-            let children = null;
+    if (typeof obj !== 'object') return '';
 
-            if (Array.isArray(obj)) {
-                children = obj;
-            } else {
-                const props = obj.props;
-
-                if (props) {
-                    children = props.children;
-                }
-            }
-
-            if (children) {
-                if (Array.isArray(children)) {
-                    children.forEach((o) => {
-                        buf += jsxInnerText(o);
-                    });
-                } else {
-                    buf += jsxInnerText(children);
-                }
-            } else {
-                if (props)
-                    Object.getOwnPropertyNames(props).forEach((propName) => {
-                        buf += propName;
-                        buf += jsxInnerText(props[propName]);
-                    });
-            }
-        }
+    if (Array.isArray(obj)) {
+        return obj.map(jsxInnerText).join('');
     }
 
-    return buf;
+    const props = (obj as { props?: Record<string, React.ReactNode> }).props;
+    const children = props?.children;
+
+    if (children) {
+        return Array.isArray(children) ? children.map(jsxInnerText).join('') : jsxInnerText(children);
+    }
+
+    if (!props) return '';
+
+    return Object.getOwnPropertyNames(props)
+        .map((propName) => propName + jsxInnerText(props[propName]))
+        .join('');
 }

@@ -14,7 +14,6 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import type { SearchRequestModel } from 'types/certificate';
 import { type ApiClients, backendClient } from 'src/api';
 import { EntityType } from 'ducks/filters';
-import type { CbomDetailDto } from 'types/openapi';
 
 const toFiniteNumber = (value: unknown): number => {
     const parsed = typeof value === 'number' ? value : Number(value);

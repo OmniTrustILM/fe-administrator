@@ -4,19 +4,17 @@ import { extractError, getLockWidgetObject } from './net';
 import { LockTypeEnum } from 'types/user-interface';
 
 function createMockAjaxError(overrides: { status?: number; response?: any; message?: string } = {}): AjaxError {
-    const response = overrides.response !== undefined ? overrides.response : null;
-    const xhr = {
+    const response = overrides.response === undefined ? null : overrides.response;
+    const err = Object.assign(new Error(overrides.message ?? 'error'), {
+        name: 'AjaxError' as const,
         status: overrides.status ?? 500,
-        responseType: 'json' as XMLHttpRequestResponseType,
-        responseText: '{}',
         response,
-    } as XMLHttpRequest;
-    const request = {} as any;
-    const err = new AjaxError('error', xhr, request);
-    if (overrides.message) {
-        err.message = overrides.message;
-    }
-    return err;
+        responseType: 'json' as XMLHttpRequestResponseType,
+        request: {},
+        xhr: { status: overrides.status ?? 500, responseType: 'json', responseText: '{}', response },
+    });
+    Object.setPrototypeOf(err, AjaxError.prototype);
+    return err as unknown as AjaxError;
 }
 
 describe('net utils', () => {

@@ -22,7 +22,7 @@ export default function HostnameListInput({
     addLabel = 'Add',
     validateValue,
     invalid = false,
-}: Props) {
+}: Readonly<Props>) {
     const [draft, setDraft] = useState('');
     const [draftError, setDraftError] = useState<string | undefined>(undefined);
 

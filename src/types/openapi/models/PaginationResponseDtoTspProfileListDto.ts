@@ -14,21 +14,38 @@
 import type { TspProfileListDto } from './';
 
 /**
- * Paginated list of TSP Profiles
  * @export
  * @interface PaginationResponseDtoTspProfileListDto
  */
 export interface PaginationResponseDtoTspProfileListDto {
     /**
-     * Total number of items
-     * @type {number}
-     * @memberof PaginationResponseDtoTspProfileListDto
-     */
-    totalItems?: number;
-    /**
-     * Page items
+     * Items returned
      * @type {Array<TspProfileListDto>}
      * @memberof PaginationResponseDtoTspProfileListDto
      */
-    items?: Array<TspProfileListDto>;
+    items: Array<TspProfileListDto>;
+    /**
+     * Number of entries per page
+     * @type {number}
+     * @memberof PaginationResponseDtoTspProfileListDto
+     */
+    itemsPerPage: number;
+    /**
+     * Page number for the request
+     * @type {number}
+     * @memberof PaginationResponseDtoTspProfileListDto
+     */
+    pageNumber: number;
+    /**
+     * Number of pages available
+     * @type {number}
+     * @memberof PaginationResponseDtoTspProfileListDto
+     */
+    totalPages: number;
+    /**
+     * Number of items available
+     * @type {number}
+     * @memberof PaginationResponseDtoTspProfileListDto
+     */
+    totalItems: number;
 }

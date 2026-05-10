@@ -1,8 +1,6 @@
-import type { AuditLogDto as AuditLogDtoOpenApi, AuditLogResponseDto } from './openapi';
+import type { AuditLogDto as AuditLogItemModel, AuditLogResponseDto } from './openapi';
 
-export type AuditLogItemDto = AuditLogDtoOpenApi;
-export type AuditLogItemModel = AuditLogItemDto;
-export type AuditLogResponseModel = AuditLogResponseDto;
+export type { AuditLogDto as AuditLogItemDto, AuditLogDto as AuditLogItemModel } from './openapi';
+export type { AuditLogResponseDto as AuditLogResponseModel, AuditLogResponseDto as AuditLogDto } from './openapi';
 
-export type AuditLogDto = AuditLogResponseDto;
-export type AuditLogModel = Omit<AuditLogDto, 'items'> & { items: Array<AuditLogItemModel> };
+export type AuditLogModel = Omit<AuditLogResponseDto, 'items'> & { items: Array<AuditLogItemModel> };

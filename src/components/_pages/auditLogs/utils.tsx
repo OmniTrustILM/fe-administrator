@@ -167,29 +167,31 @@ const renderResource = (
     });
 };
 
+type EnumMap = { [key: string]: EnumItemDto };
+
+type AuditLogEnums = {
+    resource: EnumMap;
+    module: EnumMap;
+    actor: EnumMap;
+    authMethod: EnumMap;
+    operation: EnumMap;
+    operationResult: EnumMap;
+};
+
 export const createAuditLogsList = (
     auditLogs: AuditLogDto[],
-    resourceEnum: {
-        [key: string]: EnumItemDto;
-    },
-    moduleEnum: {
-        [key: string]: EnumItemDto;
-    },
-    actorEnum: {
-        [key: string]: EnumItemDto;
-    },
-    authMethodEnum: {
-        [key: string]: EnumItemDto;
-    },
-    operationEnum: {
-        [key: string]: EnumItemDto;
-    },
-    operationResultEnum: {
-        [key: string]: EnumItemDto;
-    },
+    enums: AuditLogEnums,
     navigate: (path: string) => void,
     onInfoClick: (log: AuditLogDto) => void,
 ) => {
+    const {
+        resource: resourceEnum,
+        module: moduleEnum,
+        actor: actorEnum,
+        authMethod: authMethodEnum,
+        operation: operationEnum,
+        operationResult: operationResultEnum,
+    } = enums;
     if (auditLogs.length === 0) {
         return [];
     }

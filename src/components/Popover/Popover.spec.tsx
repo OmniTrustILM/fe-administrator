@@ -7,7 +7,7 @@ test.describe('Popover', () => {
         const component = await mount(
             <div>
                 <Popover content="Popover content">
-                    <button>Trigger</button>
+                    <button type="button">Trigger</button>
                 </Popover>
             </div>,
         );
@@ -19,7 +19,7 @@ test.describe('Popover', () => {
         const component = await mount(
             <div>
                 <Popover content="Popover content">
-                    <button>Trigger</button>
+                    <button type="button">Trigger</button>
                 </Popover>
             </div>,
         );
@@ -32,7 +32,7 @@ test.describe('Popover', () => {
         const component = await mount(
             <div>
                 <Popover content="Popover content" title="Popover Title">
-                    <button>Trigger</button>
+                    <button type="button">Trigger</button>
                 </Popover>
             </div>,
         );
@@ -45,7 +45,7 @@ test.describe('Popover', () => {
         const component = await mount(
             <div>
                 <Popover content={<div>Custom Content</div>}>
-                    <button>Trigger</button>
+                    <button type="button">Trigger</button>
                 </Popover>
             </div>,
         );
@@ -70,7 +70,7 @@ test.describe('Popover', () => {
         const component = await mount(
             <div>
                 <Popover content="Popover content">
-                    <button>Trigger</button>
+                    <button type="button">Trigger</button>
                 </Popover>
             </div>,
         );
@@ -83,7 +83,7 @@ test.describe('Popover', () => {
         const component = await mount(
             <div>
                 <Popover content="Popover content">
-                    <button>Trigger</button>
+                    <button type="button">Trigger</button>
                 </Popover>
             </div>,
         );
@@ -111,7 +111,7 @@ test.describe('Popover', () => {
         const component = await mount(
             <div>
                 <Popover content="X" width={400}>
-                    <button>Open</button>
+                    <button type="button">Open</button>
                 </Popover>
             </div>,
         );
@@ -123,7 +123,7 @@ test.describe('Popover', () => {
         const component = await mount(
             <div>
                 <Popover content="Y" width={0}>
-                    <button>Open</button>
+                    <button type="button">Open</button>
                 </Popover>
             </div>,
         );
@@ -147,7 +147,7 @@ test.describe('Popover', () => {
         const component = await mount(
             <div>
                 <Popover content="Content">
-                    <button>Open</button>
+                    <button type="button">Open</button>
                 </Popover>
             </div>,
         );

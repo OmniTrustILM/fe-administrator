@@ -303,9 +303,7 @@ export default function ComplianceProfileDetail() {
                                                     platformEnums,
                                                     searchGroupEnum,
                                                     filterConditionOperatorEnum,
-                                                    '',
-                                                    'badge',
-                                                    { margin: '5px' },
+                                                    { className: '', variant: 'badge', style: { margin: '5px' } },
                                                 )}
                                             </>
                                         )}

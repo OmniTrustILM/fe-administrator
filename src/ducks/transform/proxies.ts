@@ -2,11 +2,9 @@ import type {
     ProxyListDto,
     ProxyListModel,
     ProxyRequestDto,
-    ProxyRequestModel,
     ProxyResponseDto,
     ProxyResponseModel,
     ProxyUpdateRequestDto,
-    ProxyUpdateRequestModel,
 } from 'types/proxies';
 
 export function transformProxyResponseDtoToModel(proxy: ProxyResponseDto): ProxyResponseModel {
@@ -17,10 +15,10 @@ export function transformProxyListDtoToModel(proxy: ProxyListDto): ProxyListMode
     return { ...proxy };
 }
 
-export function transformProxyRequestModelToDto(proxy: ProxyRequestModel): ProxyRequestDto {
+export function transformProxyRequestModelToDto(proxy: ProxyRequestDto): ProxyRequestDto {
     return { ...proxy };
 }
 
-export function transformProxyUpdateRequestModelToDto(proxy: ProxyUpdateRequestModel): ProxyUpdateRequestDto {
+export function transformProxyUpdateRequestModelToDto(proxy: ProxyUpdateRequestDto): ProxyUpdateRequestDto {
     return { ...proxy };
 }

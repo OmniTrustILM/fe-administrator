@@ -67,7 +67,6 @@ export default function NotificationProfileForm({
     const isCreating = useSelector(selectors.isCreating);
 
     const notificationProfile = useSelector(selectors.notificationProfile);
-    const recipientTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.RecipientType));
 
     const notificationInstances = useSelector(notificationsSelectors.notificationInstances);
     const isFetchingNotificationInstances = useSelector(notificationsSelectors.isFetchingNotificationInstances);
@@ -145,7 +144,7 @@ export default function NotificationProfileForm({
     const {
         handleSubmit,
         control,
-        formState: { isSubmitting, isValid },
+        formState: { isSubmitting },
     } = methods;
 
     const formValues = useWatch({ control });

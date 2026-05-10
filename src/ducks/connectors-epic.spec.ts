@@ -68,20 +68,20 @@ function createDeps(overrides: Partial<EpicDeps['apiClients']> = {}): EpicDeps {
                 bulkReconnectV2: () => of(null),
                 approveV2: () => of(null),
                 bulkApproveV2: () => of(null),
-                ...(overrides.connectorsV2 || {}),
+                ...overrides.connectorsV2,
             },
             connectors: {
                 listConnectors: () => of([]),
                 getAttributes: () => of([]),
                 getAttributesAll: () => of({}),
                 forceDeleteConnector: () => of(null),
-                ...(overrides.connectors || {}),
+                ...overrides.connectors,
             },
             callback: {
                 callback: () => of({}),
                 callbackV2: () => of({}),
                 resourceCallback: () => of({}),
-                ...(overrides.callback || {}),
+                ...overrides.callback,
             },
         },
     };
@@ -753,7 +753,6 @@ describe('connectors epics', () => {
     });
 
     test('callbackConnector with v1 connector emits callbackSuccess (skipped when connector not in state)', async () => {
-        const data = { result: 'ok-v1' } as any;
         const action = slice.actions.callbackConnector({
             callbackId: 'cb-1',
             callbackConnector: { uuid: 'c-1', functionGroup: 'FG', kind: 'kind', requestAttributeCallback: { mappings: [] } } as any,
@@ -762,7 +761,7 @@ describe('connectors epics', () => {
         const callbackMock = vi.fn();
         const callbackV2Mock = vi.fn(() => of({}));
 
-        const emitted = await runEpic(
+        await runEpic(
             17,
             action,
             {

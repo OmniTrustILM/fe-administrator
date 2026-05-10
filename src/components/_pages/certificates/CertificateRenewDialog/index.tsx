@@ -14,13 +14,13 @@ import Button from 'components/Button';
 import Container from 'components/Container';
 import Switch from 'components/Switch';
 
-type Props = Readonly<{
+type Props = {
     onCancel: () => void;
     allowWithoutFile: boolean;
     onRenew: (data: { fileContent?: string }) => void;
-}>;
+};
 
-export default function CertificateRenewDialog({ onCancel, allowWithoutFile, onRenew }: Props) {
+export default function CertificateRenewDialog({ onCancel, allowWithoutFile, onRenew }: Readonly<Props>) {
     const dispatch = useDispatch();
 
     const [fileContent, setFileContent] = useState<string | undefined>();

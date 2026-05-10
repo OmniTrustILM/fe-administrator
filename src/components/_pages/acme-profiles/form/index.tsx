@@ -39,11 +39,11 @@ import CertificateAssociationsFormWidget from 'components/CertificateAssociation
 import { collectFormAttributes, transformAttributes, mapProfileAttribute } from 'utils/attributes/attributes';
 import { deepEqual } from 'utils/deep-equal';
 
-type AcmeProfileFormProps = Readonly<{
+type AcmeProfileFormProps = {
     acmeProfileId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}>;
+};
 
 interface FormValues {
     name: string;
@@ -64,7 +64,7 @@ interface FormValues {
     deletedAttributes: string[];
 }
 
-export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: AcmeProfileFormProps) {
+export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: Readonly<AcmeProfileFormProps>) {
     const dispatch = useDispatch();
 
     const { id: routeId } = useParams();
@@ -673,7 +673,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                                             value={field.value || ''}
                                             onChange={(value) => {
                                                 field.onChange(value);
-                                                onRaProfileChange(typeof value === 'string' ? value : value?.toString() || '');
+                                                const next = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+                                                onRaProfileChange(next);
                                             }}
                                             options={optionsForRaProfiles || []}
                                             placeholder="Select to change RA Profile if needed"

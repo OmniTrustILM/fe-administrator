@@ -1,10 +1,8 @@
-import type { ScheduledJobDetailDto, ScheduledJobDto, ScheduledJobHistoryDto } from './openapi';
-
-export type SchedulerJobDto = ScheduledJobDto;
-export type SchedulerJobModel = SchedulerJobDto;
-
-export type SchedulerJobDetailDto = ScheduledJobDetailDto;
-export type SchedulerJobDetailModel = SchedulerJobDetailDto;
-
-export type SchedulerJobHistoryDto = ScheduledJobHistoryDto;
-export type SchedulerJobHistoryModel = SchedulerJobHistoryDto;
+export type {
+    ScheduledJobDto as SchedulerJobDto,
+    ScheduledJobDto as SchedulerJobModel,
+    ScheduledJobDetailDto as SchedulerJobDetailDto,
+    ScheduledJobDetailDto as SchedulerJobDetailModel,
+    ScheduledJobHistoryDto as SchedulerJobHistoryDto,
+    ScheduledJobHistoryDto as SchedulerJobHistoryModel,
+} from './openapi';

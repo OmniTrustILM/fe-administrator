@@ -29,13 +29,13 @@ const defaultApprovalSteps: ApprovalStepRequestModel[] = [
     },
 ];
 
-type ApprovalProfileFormProps = Readonly<{
+type ApprovalProfileFormProps = {
     approvalProfileId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}>;
+};
 
-function ApprovalProfileForm({ approvalProfileId, onCancel, onSuccess }: ApprovalProfileFormProps) {
+function ApprovalProfileForm({ approvalProfileId, onCancel, onSuccess }: Readonly<ApprovalProfileFormProps>) {
     const dispatch = useDispatch();
 
     const isCreating = useSelector(profileApprovalSelectors.isCreating);
@@ -167,7 +167,7 @@ function ApprovalProfileForm({ approvalProfileId, onCancel, onSuccess }: Approva
                                 rules={buildValidationRules([validateRequired(), validateNonZeroInteger(), validatePositiveInteger()])}
                                 render={({ field, fieldState }) => (
                                     <TextInput
-                                        value={field.value !== undefined ? field.value.toString() : ''}
+                                        value={field.value === undefined ? '' : field.value.toString()}
                                         onChange={(value) => field.onChange(value ? Number.parseInt(value, 10) : undefined)}
                                         onBlur={field.onBlur}
                                         id="expiry"

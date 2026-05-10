@@ -42,8 +42,6 @@ function RolePermissionsEditor({
 
     const [objectListDialog, setObjectListDialog] = useState<boolean>(false);
 
-    const isBusy = isFetchingObjects;
-
     const getPermissions = useCallback(
         (resource: AuthResourceModel) => {
             if (permissions.allowAllResources) return 'All actions allowed';
@@ -54,10 +52,10 @@ function RolePermissionsEditor({
 
             const actions = perms?.actions
                 .map((actionName) => resource.actions.find((el) => el.name === actionName)?.displayName)
-                .filter((el) => el)
+                .filter(Boolean)
                 .join(', ');
 
-            return actions ? actions : 'No permissions assigned';
+            return actions || 'No permissions assigned';
         },
         [permissions],
     );
@@ -446,7 +444,7 @@ function RolePermissionsEditor({
                 return;
             }
 
-            perms.objects!.push({
+            perms.objects.push({
                 uuid: object.uuid,
                 name: object.name,
                 allow: perms.allowAllActions ? currentResource?.actions.map((a) => a.name) || [] : perms.actions,

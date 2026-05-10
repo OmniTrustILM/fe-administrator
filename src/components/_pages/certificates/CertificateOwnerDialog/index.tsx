@@ -8,14 +8,14 @@ import Button from 'components/Button';
 import type { UserResponseModel } from 'types/users';
 import Container from 'components/Container';
 
-type Props = Readonly<{
+type Props = {
     uuids: string[];
     users: UserResponseModel[];
     onCancel: () => void;
     onUpdate: () => void;
-}>;
+};
 
-export default function CertificateOwnerDialog({ uuids, onCancel, onUpdate, users }: Props) {
+export default function CertificateOwnerDialog({ uuids, onCancel, onUpdate, users }: Readonly<Props>) {
     const dispatch = useDispatch();
 
     const [ownerUuid, setOwnerUuid] = useState<string>();

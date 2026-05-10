@@ -48,7 +48,6 @@ export default function TokenProfileDetail() {
 
     const keyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyUsage));
     const [keyUsages, setKeyUsages] = useState<KeyUsage[]>([]);
-    const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const isBusy = useMemo(
         () => isFetchingProfile || isDeleting || isEnabling || isDisabling || isUpdatingKeyUsage,
         [isFetchingProfile, isDeleting, isEnabling, isDisabling, isUpdatingKeyUsage],
@@ -98,13 +97,6 @@ export default function TokenProfileDetail() {
         );
         setConfirmDelete(false);
     }, [dispatch, tokenProfile]);
-
-    const existingUsages = () => {
-        if (!tokenProfile) return [];
-        return tokenProfile?.usages.map((usage) => {
-            return { value: usage, label: usage.charAt(0).toUpperCase() + usage.slice(1).toLowerCase() };
-        });
-    };
 
     const buttons: WidgetButtonProps[] = useMemo(
         () => [
@@ -172,7 +164,7 @@ export default function TokenProfileDetail() {
                       },
                       {
                           id: 'enabled',
-                          columns: ['Enabled', <StatusBadge enabled={tokenProfile!.enabled} />],
+                          columns: ['Enabled', <StatusBadge key="enabled" enabled={tokenProfile.enabled} />],
                       },
                       {
                           id: 'tokenUuid',
@@ -191,7 +183,10 @@ export default function TokenProfileDetail() {
                       },
                       {
                           id: 'tokenStatus',
-                          columns: ['Token Instance Status', <TokenStatusBadge status={tokenProfile.tokenInstanceStatus} />],
+                          columns: [
+                              'Token Instance Status',
+                              <TokenStatusBadge key="tokenStatus" status={tokenProfile.tokenInstanceStatus} />,
+                          ],
                       },
                       {
                           id: 'Key Usages',

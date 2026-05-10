@@ -14,29 +14,23 @@
 import type { RequestAttribute } from './';
 
 /**
- * TSP Profile create/update request
+ * Request to create or update a TSP (Timestamping Protocol) Profile
  * @export
  * @interface TspProfileRequestDto
  */
 export interface TspProfileRequestDto {
     /**
-     * Object Name
+     * Name of the TSP Profile
      * @type {string}
      * @memberof TspProfileRequestDto
      */
     name: string;
     /**
-     * Description
+     * Description of the TSP Profile
      * @type {string}
      * @memberof TspProfileRequestDto
      */
     description?: string;
-    /**
-     * UUID of the default signing profile
-     * @type {string}
-     * @memberof TspProfileRequestDto
-     */
-    defaultSigningProfileUuid?: string;
     /**
      * List of Custom Attributes
      * @type {Array<RequestAttribute>}

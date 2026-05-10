@@ -10,7 +10,7 @@ import { actions as userInterfaceActions } from 'ducks/user-interface';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import Select from 'components/Select';
 import Button from 'components/Button';
 import Container from 'components/Container';
@@ -53,7 +53,6 @@ export default function TokenProfileForm({
     usesGlobalModal = false,
 }: TokenProfileFormProps) {
     const dispatch = useDispatch();
-    const navigate = useNavigate();
 
     const { id: routeId, tokenId: routeTokenId } = useParams();
     const id = tokenProfileId || routeId;
@@ -345,7 +344,8 @@ export default function TokenProfileForm({
                                             value={field.value || ''}
                                             onChange={(value) => {
                                                 field.onChange(value);
-                                                onTokenChange(typeof value === 'string' ? value : value?.toString() || '');
+                                                const next = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+                                                onTokenChange(next);
                                             }}
                                             options={optionsForTokens}
                                             placeholder="Select to change Token if needed"

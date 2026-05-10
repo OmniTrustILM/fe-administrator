@@ -1,9 +1,9 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { TrustedCertificateRequestModel, TrustedCertificateResponseModel } from 'types/trusted-certificates';
+import type { TrustedCertificateRequestDto, TrustedCertificateResponseDto } from 'types/trusted-certificates';
 
 export type State = {
-    trustedCertificates: TrustedCertificateResponseModel[];
-    trustedCertificate?: TrustedCertificateResponseModel;
+    trustedCertificates: TrustedCertificateResponseDto[];
+    trustedCertificate?: TrustedCertificateResponseDto;
     isFetchingList: boolean;
     isFetchingDetail: boolean;
     isCreating: boolean;
@@ -38,7 +38,7 @@ export const slice = createSlice({
             state.isFetchingList = true;
         },
 
-        listTrustedCertificatesSuccess: (state, action: PayloadAction<{ trustedCertificates: TrustedCertificateResponseModel[] }>) => {
+        listTrustedCertificatesSuccess: (state, action: PayloadAction<{ trustedCertificates: TrustedCertificateResponseDto[] }>) => {
             state.trustedCertificates = action.payload.trustedCertificates;
             state.isFetchingList = false;
         },
@@ -52,7 +52,7 @@ export const slice = createSlice({
             state.isFetchingDetail = true;
         },
 
-        getTrustedCertificateSuccess: (state, action: PayloadAction<{ trustedCertificate: TrustedCertificateResponseModel }>) => {
+        getTrustedCertificateSuccess: (state, action: PayloadAction<{ trustedCertificate: TrustedCertificateResponseDto }>) => {
             state.trustedCertificate = action.payload.trustedCertificate;
             state.isFetchingDetail = false;
         },
@@ -61,11 +61,11 @@ export const slice = createSlice({
             state.isFetchingDetail = false;
         },
 
-        createTrustedCertificate: (state, _action: PayloadAction<{ trustedCertificate: TrustedCertificateRequestModel }>) => {
+        createTrustedCertificate: (state, _action: PayloadAction<{ trustedCertificate: TrustedCertificateRequestDto }>) => {
             state.isCreating = true;
         },
 
-        createTrustedCertificateSuccess: (state, action: PayloadAction<{ trustedCertificate: TrustedCertificateResponseModel }>) => {
+        createTrustedCertificateSuccess: (state, action: PayloadAction<{ trustedCertificate: TrustedCertificateResponseDto }>) => {
             state.isCreating = false;
             state.trustedCertificate = action.payload.trustedCertificate;
         },

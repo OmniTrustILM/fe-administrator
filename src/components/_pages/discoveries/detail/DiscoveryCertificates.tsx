@@ -93,12 +93,22 @@ export default function DiscoveryCertificates({ id, triggerHistorySummary }: Pro
         () =>
             discoveryCertificates?.certificates.map((r) => {
                 const certificateColumns = [
-                    r.inventoryUuid ? <Link to={`../../certificates/detail/${r.inventoryUuid}`}>{r.commonName}</Link> : r.commonName,
-                    <span>{r.serialNumber}</span>,
-                    <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(r.notAfter)}</span>,
-                    <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(r.notBefore)}</span>,
+                    r.inventoryUuid ? (
+                        <Link key="cn" to={`../../certificates/detail/${r.inventoryUuid}`}>
+                            {r.commonName}
+                        </Link>
+                    ) : (
+                        r.commonName
+                    ),
+                    <span key="serial">{r.serialNumber}</span>,
+                    <span key="notafter" style={{ whiteSpace: 'nowrap' }}>
+                        {dateFormatter(r.notAfter)}
+                    </span>,
+                    <span key="notbefore" style={{ whiteSpace: 'nowrap' }}>
+                        {dateFormatter(r.notBefore)}
+                    </span>,
                     r.issuerCommonName,
-                    <span>{r.fingerprint}</span>,
+                    <span key="fingerprint">{r.fingerprint}</span>,
                 ];
 
                 if (newlyDiscovered === true) {

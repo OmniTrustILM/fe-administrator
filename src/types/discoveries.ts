@@ -1,33 +1,28 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
 import type { MetadataModel } from './locations';
-import type {
-    DiscoveryCertificateDto as DiscoveryCertificateDtoOpenApi,
-    DiscoveryCertificateResponseDto,
-    DiscoveryDto,
-    DiscoveryHistoryDetailDto,
-    DiscoveryHistoryDto,
+import type { DiscoveryCertificateDto, DiscoveryCertificateResponseDto, DiscoveryDto, DiscoveryHistoryDetailDto } from './openapi';
+
+export type {
+    DiscoveryHistoryDto as DiscoveryResponseDto,
+    DiscoveryHistoryDto as DiscoveryResponseModel,
+    DiscoveryHistoryDetailDto as DiscoveryResponseDetailDto,
+    DiscoveryDto as DiscoveryRequestDto,
+    DiscoveryCertificateDto,
+    DiscoveryCertificateDto as DiscoveryCertificateModel,
+    DiscoveryCertificateResponseDto as DiscoveryCertificateListDto,
 } from './openapi';
 
-export type DiscoveryResponseDto = DiscoveryHistoryDto;
-export type DiscoveryResponseModel = DiscoveryResponseDto;
-
-export type DiscoveryResponseDetailDto = DiscoveryHistoryDetailDto;
-export type DiscoveryResponseDetailModel = Omit<DiscoveryResponseDetailDto, 'attributes | metadata | customAttributes'> & {
+export type DiscoveryResponseDetailModel = Omit<DiscoveryHistoryDetailDto, 'attributes | metadata | customAttributes'> & {
     attributes: Array<AttributeResponseModel>;
     metadata?: Array<MetadataModel>;
     customAttributes?: Array<AttributeResponseModel>;
 };
 
-export type DiscoveryRequestDto = DiscoveryDto;
-export type DiscoveryRequestModel = Omit<DiscoveryRequestDto, 'attributes | customAttributes'> & {
+export type DiscoveryRequestModel = Omit<DiscoveryDto, 'attributes | customAttributes'> & {
     attributes: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type DiscoveryCertificateDto = DiscoveryCertificateDtoOpenApi;
-export type DiscoveryCertificateModel = DiscoveryCertificateDto;
-
-export type DiscoveryCertificateListDto = DiscoveryCertificateResponseDto;
-export type DiscoveryCertificateListModel = Omit<DiscoveryCertificateListDto, 'certificates'> & {
-    certificates: Array<DiscoveryCertificateModel>;
+export type DiscoveryCertificateListModel = Omit<DiscoveryCertificateResponseDto, 'certificates'> & {
+    certificates: Array<DiscoveryCertificateDto>;
 };

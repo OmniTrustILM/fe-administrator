@@ -146,10 +146,12 @@ export default function AcmeAccountList() {
                     id: acmeAccount.uuid,
 
                     columns: [
-                        <Link to={`./detail/${acmeAccount.acmeProfileUuid}/${acmeAccount.uuid}`}>{acmeAccount.accountId}</Link>,
+                        <Link key="acct" to={`./detail/${acmeAccount.acmeProfileUuid}/${acmeAccount.uuid}`}>
+                            {acmeAccount.accountId}
+                        </Link>,
 
                         acmeAccount.acmeProfileName ? (
-                            <Link to={`../acmeprofiles/detail/${acmeAccount.acmeProfileUuid}`}>
+                            <Link key="profile" to={`../acmeprofiles/detail/${acmeAccount.acmeProfileUuid}`}>
                                 {acmeAccount.acmeProfileName ?? 'Unassigned'}
                             </Link>
                         ) : (
@@ -158,6 +160,7 @@ export default function AcmeAccountList() {
 
                         acmeAccount.raProfile ? (
                             <Link
+                                key="raprofile"
                                 to={`../raprofiles/detail/${acmeAccount?.raProfile.authorityInstanceUuid}/${acmeAccount?.raProfile.uuid}`}
                             >
                                 {acmeAccount.raProfile.name ?? 'Unassigned'}
@@ -166,9 +169,11 @@ export default function AcmeAccountList() {
                             (acmeAccount.raProfile ?? 'Unassigned')
                         ),
 
-                        <StatusBadge enabled={acmeAccount.enabled} />,
+                        <StatusBadge key="enabled" enabled={acmeAccount.enabled} />,
 
-                        <Badge color={accountStatus[1]}>{accountStatus[0]}</Badge>,
+                        <Badge key="status" color={accountStatus[1]}>
+                            {accountStatus[0]}
+                        </Badge>,
 
                         acmeAccount.totalOrders.toString(),
                     ],

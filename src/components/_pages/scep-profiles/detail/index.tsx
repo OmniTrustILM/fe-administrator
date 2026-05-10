@@ -163,7 +163,7 @@ export default function ScepProfileDetail() {
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <StatusBadge enabled={scepProfile.enabled} />],
+                          columns: ['Status', <StatusBadge key="status" enabled={scepProfile.enabled} />],
                       },
                       {
                           id: 'renewThreshold',
@@ -239,9 +239,8 @@ export default function ScepProfileDetail() {
 
     const raProfileDetailData: TableDataRow[] = useMemo(
         () =>
-            !scepProfile?.raProfile
-                ? []
-                : [
+            scepProfile?.raProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', scepProfile.raProfile.uuid],
@@ -263,17 +262,17 @@ export default function ScepProfileDetail() {
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <StatusBadge enabled={scepProfile.raProfile.enabled} />],
+                          columns: ['Status', <StatusBadge key="raStatus" enabled={scepProfile.raProfile.enabled} />],
                       },
-                  ],
+                  ]
+                : [],
         [scepProfile],
     );
 
     const certificateDetailData: TableDataRow[] = useMemo(
         () =>
-            !scepProfile?.caCertificate
-                ? []
-                : [
+            scepProfile?.caCertificate
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', scepProfile.caCertificate.uuid],
@@ -293,9 +292,10 @@ export default function ScepProfileDetail() {
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <CertificateStatus status={scepProfile.caCertificate.state} />],
+                          columns: ['Status', <CertificateStatus key="certStatus" status={scepProfile.caCertificate.state} />],
                       },
-                  ],
+                  ]
+                : [],
         [scepProfile],
     );
 

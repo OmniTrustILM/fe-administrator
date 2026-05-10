@@ -1,11 +1,11 @@
 import Badge from 'components/Badge';
 
-type ResourceBadgesProps<T extends string> = {
+type ResourceBadgesProps<T extends string> = Readonly<{
     resources: T[];
     selected: T | null;
     onSelect: (resource: T) => void;
     getLabel: (resource: T) => string;
-};
+}>;
 
 export function ResourceBadges<T extends string>({ resources, selected, onSelect, getLabel }: ResourceBadgesProps<T>) {
     return (

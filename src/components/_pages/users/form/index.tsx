@@ -231,7 +231,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
     useEffect(() => {
         const fpc = certificates
             .filter((pagedCert) => !['expired', 'revoked', 'invalid'].includes(pagedCert.state))
-            .filter((pagedCert) => loadedCerts.find((loadedCert) => loadedCert.uuid === pagedCert.uuid) === undefined);
+            .filter((pagedCert) => !loadedCerts.some((loadedCert) => loadedCert.uuid === pagedCert.uuid));
 
         if (fpc.length === 0) return;
 
@@ -298,18 +298,6 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
         },
         [user, certFileContent, dispatch, editMode, userRoles, resourceCustomAttributes],
     );
-
-    const loadNextCertificates = useCallback(() => {
-        if (loadedCerts.length === 0) return;
-
-        dispatch(
-            certActions.listCertificates({
-                itemsPerPage: 100,
-                pageNumber: currentPage,
-                filters: [],
-            }),
-        );
-    }, [dispatch, currentPage, loadedCerts]);
 
     const submitTitle = useMemo(() => (editMode ? 'Save' : 'Create'), [editMode]);
 
@@ -418,7 +406,9 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
 
                     role.description || '',
 
-                    <Badge color={role.systemRole ? 'danger' : 'success'}>{role.systemRole ? 'Yes' : 'No'}</Badge>,
+                    <Badge key="systemRole" color={role.systemRole ? 'danger' : 'success'}>
+                        {role.systemRole ? 'Yes' : 'No'}
+                    </Badge>,
                 ],
             })),
 
@@ -448,7 +438,6 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
             ),
         [editMode, control],
     );
-    const title = useMemo(() => (editMode ? 'Edit user' : 'Create user'), [editMode]);
 
     const renderCustomAttributesEditor = useCallback(() => {
         if (isBusy) return <></>;

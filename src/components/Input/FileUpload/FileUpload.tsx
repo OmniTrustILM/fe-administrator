@@ -6,7 +6,7 @@ import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
 import Button from 'components/Button';
 
-type Props = Readonly<{
+type Props = {
     onFileContentLoaded: (fileContent: string) => void;
     onContentChange?: () => void;
     id?: string;
@@ -18,7 +18,7 @@ type Props = Readonly<{
     error?: string;
     contentPlaceholderText?: string;
     dropZoneHintText?: string;
-}>;
+};
 
 export default function FileUpload({
     id = '',
@@ -32,7 +32,7 @@ export default function FileUpload({
     error,
     contentPlaceholderText,
     dropZoneHintText,
-}: Props) {
+}: Readonly<Props>) {
     const [fileContent, setFileContent] = useState('');
     const fileContentRef = useRef('');
     const [fileName, setFileName] = useState('');

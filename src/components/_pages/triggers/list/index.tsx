@@ -40,7 +40,7 @@ const TriggerList = () => {
 
     const triggerResourceOptions = useMemo(() => {
         if (!allResourceEvents?.length) return [];
-        const resourcesSet = new Set(allResourceEvents.map((event) => event.producedResource).filter((el) => el));
+        const resourcesSet = new Set(allResourceEvents.map((event) => event.producedResource).filter(Boolean));
         return [...resourcesSet].map((resource) => ({
             value: resource as Resource,
             label: getEnumLabel(resourceTypeEnum, resource as Resource),
@@ -128,7 +128,9 @@ const TriggerList = () => {
                 return {
                     id: trigger.uuid,
                     columns: [
-                        <Link to={`./detail/${trigger.uuid}`}>{trigger.name}</Link>,
+                        <Link key="name" to={`./detail/${trigger.uuid}`}>
+                            {trigger.name}
+                        </Link>,
                         trigger.ignoreTrigger ? 'Yes' : 'No',
                         getEnumLabel(triggerTypeEnum, trigger.type ?? ''),
                         getEnumLabel(eventNameEnum, trigger.event ?? ''),
