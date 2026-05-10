@@ -196,9 +196,6 @@ const FlowChartContent = ({
     const onNodesChange = useMemo(() => createOnNodesChange(dispatch, flowChartNodesState), [dispatch, flowChartNodesState]);
     const onEdgesChange = useMemo(() => createOnEdgesChange(dispatch, flowChartEdgesState), [dispatch, flowChartEdgesState]);
 
-    // // TODO: Implement onConnect in future if needed
-    // const onConnect = useCallback((connection: Edge | Connection) => setEdges((eds) => addEdge(connection, eds)), [setEdges]);
-
     useEffect(() => {
         if (!flowChartNodes.length) {
             dispatch(userInterfaceActions.clearReactFlowUI());

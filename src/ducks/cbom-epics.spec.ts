@@ -56,7 +56,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[0] as any)(of(slice.actions.listCboms(searchRequest)), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(4), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
 
         expect(emitted).toEqual([
             pagingActions.list(EntityType.CBOM),
@@ -76,7 +76,7 @@ describe('cbom epics', () => {
             of({}) as any,
             deps as any,
         );
-        const emitted = (await firstValueFrom(output$.pipe(take(4), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
 
         expect(emitted[0]).toEqual(pagingActions.list(EntityType.CBOM));
         expect(emitted[1]).toEqual(slice.actions.listCbomsFailure({ error: 'Failed to fetch CBOMs. list failed' }));
@@ -102,7 +102,7 @@ describe('cbom epics', () => {
         const state$ = { value: { cbom: { deletedCbomUuids: ['cbom-deleted'] } } } as any;
 
         const output$ = (cbomEpics[0] as any)(of(slice.actions.listCboms(searchRequest)), state$, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(4), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
         const adjustedResponse = {
             ...response,
             items: [{ uuid: 'cbom-visible-1' }, { uuid: 'cbom-visible-2' }],
@@ -127,7 +127,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[1] as any)(of(slice.actions.getCbomDetail({ uuid })), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted).toEqual([
             slice.actions.getCbomDetailSuccess({ detail }),
@@ -141,7 +141,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[1] as any)(of(slice.actions.getCbomDetail({ uuid: 'u' })), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted[0]).toEqual(slice.actions.getCbomDetailFailure({ error: 'Failed to fetch CBOM detail. detail failed' }));
         expect(emitted[1].type).toBe(userInterfaceActions.insertWidgetLock.type);
@@ -154,7 +154,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[1] as any)(of(slice.actions.getCbomDetail({ uuid: 'u' })), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted[0]).toEqual(
             slice.actions.getCbomDetailFailure({ error: 'Failed to fetch CBOM detail. not found', statusCode: 404 }),
@@ -178,7 +178,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[2] as any)(of(slice.actions.listCbomVersions({ uuid })), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted).toEqual([
             slice.actions.listCbomVersionsSuccess({ versions }),
@@ -192,7 +192,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[2] as any)(of(slice.actions.listCbomVersions({ uuid: 'u' })), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted[0]).toEqual(slice.actions.listCbomVersionsFailure({ error: 'Failed to fetch CBOM versions. versions failed' }));
         expect(emitted[1].type).toBe(userInterfaceActions.insertWidgetLock.type);
@@ -206,7 +206,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[3] as any)(of(slice.actions.getSearchableFields()), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(1), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(1), toArray()));
 
         expect(emitted).toEqual([slice.actions.getSearchableFieldsSuccess({ fields })]);
     });
@@ -218,7 +218,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[3] as any)(of(slice.actions.getSearchableFields()), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted[0]).toEqual(
             slice.actions.getSearchableFieldsFailure({ error: 'Failed to fetch searchable fields. searchable failed' }),
@@ -238,7 +238,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[4] as any)(of(slice.actions.uploadCbom(uploadPayload)), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted).toEqual([
             slice.actions.uploadCbomSuccess({ cbom: created }),
@@ -256,7 +256,7 @@ describe('cbom epics', () => {
             of({}) as any,
             deps as any,
         );
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted[0]).toEqual(slice.actions.uploadCbomFailure({ error: 'Failed to upload CBOM. upload failed' }));
         expect(emitted[1]).toEqual(alertsSlice.actions.error('Failed to upload CBOM. upload failed'));
@@ -272,7 +272,7 @@ describe('cbom epics', () => {
             of({}) as any,
             deps as any,
         );
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted[0]).toEqual(
             slice.actions.uploadCbomFailure({
@@ -296,7 +296,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[4] as any)(of(slice.actions.uploadCbom({ content: {} } as any)), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted[0]).toEqual(
             slice.actions.uploadCbomFailure({
@@ -320,7 +320,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[5] as any)(of(slice.actions.deleteCbom({ uuid })), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted).toEqual([slice.actions.deleteCbomSuccess({ uuid }), alertsSlice.actions.success('CBOM successfully deleted.')]);
     });
@@ -331,7 +331,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[5] as any)(of(slice.actions.deleteCbom({ uuid: 'u' })), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted[0]).toEqual(slice.actions.deleteCbomFailure({ error: 'Failed to delete CBOM. delete failed' }));
         expect(emitted[1]).toEqual(alertsSlice.actions.error('Failed to delete CBOM. delete failed'));
@@ -347,7 +347,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[6] as any)(of(slice.actions.bulkDeleteCbom({ uuids })), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted).toEqual([
             slice.actions.bulkDeleteCbomSuccess({ uuids }),
@@ -361,7 +361,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[6] as any)(of(slice.actions.bulkDeleteCbom({ uuids: ['u1', 'u2'] })), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted[0]).toEqual(slice.actions.bulkDeleteCbomFailure({ error: 'Failed to bulk delete CBOMs. bulk delete failed' }));
         expect(emitted[1]).toEqual(alertsSlice.actions.error('Failed to bulk delete CBOMs. bulk delete failed'));
@@ -373,7 +373,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[7] as any)(of(slice.actions.syncCboms()), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted).toEqual([slice.actions.syncCbomsSuccess(), alertsSlice.actions.success('CBOMs successfully synchronized.')]);
     });
@@ -384,7 +384,7 @@ describe('cbom epics', () => {
         });
 
         const output$ = (cbomEpics[7] as any)(of(slice.actions.syncCboms()), of({}) as any, deps as any);
-        const emitted = (await firstValueFrom(output$.pipe(take(2), toArray()))) as any[];
+        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
         expect(emitted[0]).toEqual(slice.actions.syncCbomsFailure({ error: 'Failed to sync CBOMs. sync failed' }));
         expect(emitted[1]).toEqual(alertsSlice.actions.error('Failed to sync CBOMs. sync failed'));

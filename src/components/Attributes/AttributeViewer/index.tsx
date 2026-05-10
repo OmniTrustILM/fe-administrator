@@ -33,12 +33,12 @@ function AttributeEditForm({
     initialContent,
     onSubmit,
     onCancel,
-}: {
+}: Readonly<{
     descriptor: CustomAttributeModel;
     initialContent?: BaseAttributeContentModel[];
     onSubmit: (uuid: string, content: BaseAttributeContentModel[]) => void;
     onCancel: () => void;
-}) {
+}>) {
     const methods = ReactHookForm.useForm<any>({
         defaultValues: {},
     });
@@ -340,7 +340,7 @@ export default function AttributeViewer({
                 return [];
             }
             return attributes
-                .filter((a) => descriptors.find((d) => d.name === a.name))
+                .filter((a) => descriptors.some((d) => d.name === a.name))
                 .map((a) => {
                     const descriptor = descriptors.find((d) => d.name === a.name);
                     return {

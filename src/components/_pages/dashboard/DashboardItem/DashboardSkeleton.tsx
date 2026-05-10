@@ -4,7 +4,7 @@ const barClass = 'rounded bg-gray-200 dark:bg-neutral-700';
 
 const legendWidths = ['75%', '55%', '85%', '60%', '70%'];
 
-function CountBadgeSkeleton({ withSwitch = false }: { withSwitch?: boolean }) {
+function CountBadgeSkeleton({ withSwitch = false }: Readonly<{ withSwitch?: boolean }>) {
     return (
         <div className={`${cardClass} h-full`} data-testid="count-badge-skeleton">
             <div className={`${barClass} h-5 w-28 mb-4`} />

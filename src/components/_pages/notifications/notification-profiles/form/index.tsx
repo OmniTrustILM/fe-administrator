@@ -144,7 +144,7 @@ export default function NotificationProfileForm({
     const {
         handleSubmit,
         control,
-        formState: { isSubmitting, isValid },
+        formState: { isSubmitting },
     } = methods;
 
     const formValues = useWatch({ control });

@@ -1,4 +1,4 @@
-import type { AnyAction } from '@reduxjs/toolkit';
+import type { UnknownAction } from '@reduxjs/toolkit';
 import type { AppEpic } from 'ducks';
 import { iif, of } from 'rxjs';
 import { catchError, filter, mergeMap, switchMap } from 'rxjs/operators';
@@ -53,7 +53,7 @@ const updatePlatformSettings: AppEpic = (action$, state$, deps) => {
                         slice.actions.updatePlatformSettingsSuccess(action.payload),
                         alertActions.success('Platform settings updated successfully.'),
                         appRedirectActions.redirect({ url: '../settings' }),
-                    ].filter((el) => el) as AnyAction[];
+                    ].filter((el) => el) as UnknownAction[];
                     return of(...actions);
                 }),
                 catchError((err) =>

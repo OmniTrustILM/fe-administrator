@@ -43,7 +43,7 @@ const ExecutionsList = () => {
         getFreshListActionGroups();
     }, [getFreshListActionGroups]);
 
-    const { resourceOptionsWithRuleEvaluator, isFetchingResourcesList } = useRuleEvaluatorResourceOptions();
+    const { resourceOptionsWithRuleEvaluator } = useRuleEvaluatorResourceOptions();
 
     const executionsDataHeaders: TableHeader[] = useMemo(
         () => [

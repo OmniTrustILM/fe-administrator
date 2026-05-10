@@ -63,7 +63,7 @@ describe('entities epics', () => {
             slice.actions.bulkDeleteEntitiesFailure({ error: 'Failed to delete 1 entity' }),
         ]);
         expect(emitted[2].type).toBe(appRedirectActions.fetchError.type);
-        expect((emitted[2] as any).payload).toEqual({ error: undefined, message: 'Failed to delete 1 entity' });
+        expect(emitted[2].payload).toEqual({ error: undefined, message: 'Failed to delete 1 entity' });
     });
 
     test('bulkDeleteEntities multiple failures uses plural message', async () => {
@@ -79,7 +79,7 @@ describe('entities epics', () => {
             slice.actions.bulkDeleteEntitiesSuccess({ uuids: [] }),
             slice.actions.bulkDeleteEntitiesFailure({ error: 'Failed to delete 2 entities' }),
         ]);
-        expect((emitted[2] as any).payload).toEqual({ error: undefined, message: 'Failed to delete 2 entities' });
+        expect(emitted[2].payload).toEqual({ error: undefined, message: 'Failed to delete 2 entities' });
     });
 
     test('bulkDeleteEntities sync throw emits bulkDeleteEntitiesFailure and fetchError', async () => {

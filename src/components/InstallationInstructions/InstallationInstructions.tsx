@@ -27,7 +27,7 @@ export const InstallationInstructions = ({ title, instructions, className, id, '
 
     const renderInstructions = () =>
         instructionsAsArray.map((instruction, index) => (
-            <div key={index} className="font-mono text-xs whitespace-pre" data-testid={`instruction-line-${index}`}>
+            <div key={`${index}-${instruction}`} className="font-mono text-xs whitespace-pre" data-testid={`instruction-line-${index}`}>
                 {instruction || '\u00A0'}
             </div>
         ));

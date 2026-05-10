@@ -33,7 +33,7 @@ import {
     EyeOff,
 } from 'lucide-react';
 
-export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, id }: EntityNodeProps) {
+export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, id }: Readonly<EntityNodeProps>) {
     const [isNodeExpanded, setIsNodeExpanded] = useState(data.expandedByDefault ?? false);
     const [addNodeContentCollapse, setAddNodeContentCollapse] = useState(false);
 
@@ -279,7 +279,6 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                             color="primary"
                                             data-testid="flow-node-toggle-hidden"
                                             onClick={() => {
-                                                // setShowHiddenNodes(!expandedHiddenNodeId);
                                                 toggleHiddenNodes();
                                             }}
                                             className={cn(

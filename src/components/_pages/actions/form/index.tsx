@@ -237,7 +237,6 @@ const ActionsForm = ({ onCancel, onSuccess }: ActionsFormProps = {}) => {
                                 </>
                             )}
                         />
-                        {/* {watchedResource && <ConditionFormFilter formType="conditionItem" resource={watchedResource as Resource} />} */}
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>
                             <Button variant="outline" onClick={handleCancel} disabled={isSubmitting} type="button">

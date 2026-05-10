@@ -31,7 +31,7 @@ function BreadcrumbSkeleton() {
     );
 }
 
-function WidgetHeaderSkeleton({ buttonsCount = 0 }: { buttonsCount?: number }) {
+function WidgetHeaderSkeleton({ buttonsCount = 0 }: Readonly<{ buttonsCount?: number }>) {
     return (
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
             <div className={`${barClass} h-5 w-36`} />

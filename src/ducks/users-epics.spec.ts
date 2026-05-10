@@ -56,7 +56,7 @@ describe('users epics', () => {
             slice.actions.bulkDeleteUsersFailure({ error: 'Failed to delete 1 user' }),
         ]);
         expect(emitted[2].type).toBe(appRedirectActions.fetchError.type);
-        expect((emitted[2] as any).payload).toEqual({ error: undefined, message: 'Failed to delete 1 user' });
+        expect(emitted[2].payload).toEqual({ error: undefined, message: 'Failed to delete 1 user' });
     });
 
     test('bulkDeleteUsers multiple failures uses plural message', async () => {
@@ -72,7 +72,7 @@ describe('users epics', () => {
             slice.actions.bulkDeleteUsersSuccess({ uuids: [] }),
             slice.actions.bulkDeleteUsersFailure({ error: 'Failed to delete 2 users' }),
         ]);
-        expect((emitted[2] as any).payload).toEqual({ error: undefined, message: 'Failed to delete 2 users' });
+        expect(emitted[2].payload).toEqual({ error: undefined, message: 'Failed to delete 2 users' });
     });
 
     test('bulkDeleteUsers sync throw emits bulkDeleteUsersFailure and fetchError', async () => {

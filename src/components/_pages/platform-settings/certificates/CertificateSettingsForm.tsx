@@ -67,7 +67,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
     const {
         handleSubmit,
         control,
-        formState: { isSubmitting, isValid },
+        formState: { isSubmitting },
         reset,
     } = methods;
 

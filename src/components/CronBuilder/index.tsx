@@ -15,12 +15,12 @@ function StartTimePicker({
     atMinute,
     onHourChange,
     onMinuteChange,
-}: {
+}: Readonly<{
     atHour: number;
     atMinute: number;
     onHourChange: (v: number) => void;
     onMinuteChange: (v: number) => void;
-}) {
+}>) {
     return (
         <div className="flex items-center gap-2 mt-1 justify-center">
             <Label className="!mb-0 text-gray-500 whitespace-nowrap">Start time</Label>

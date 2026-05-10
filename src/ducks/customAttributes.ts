@@ -164,7 +164,6 @@ export const slice = createSlice({
 
         updateCustomAttributeSuccess: (state, action: PayloadAction<CustomAttributeDetailResponseModel>) => {
             state.isUpdating = false;
-            // state.customAttribute = action.payload;
             state.updateCustomAttributeSucceeded = true;
         },
 

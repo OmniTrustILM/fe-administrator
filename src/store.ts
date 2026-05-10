@@ -1,5 +1,5 @@
 import { configureStore, type Middleware } from '@reduxjs/toolkit';
-import type { AnyAction } from 'redux';
+import type { UnknownAction } from 'redux';
 import { createEpicMiddleware } from 'redux-observable';
 
 import { backendClient } from './api';
@@ -9,7 +9,7 @@ import { reducers } from './ducks/reducers';
 import { startAlertsTicker } from './ducks/alerts-ticker';
 
 export default function configure() {
-    const epicMiddleware = createEpicMiddleware<AnyAction, AnyAction, AppState>({
+    const epicMiddleware = createEpicMiddleware<UnknownAction, UnknownAction, AppState>({
         dependencies: {
             apiClients: backendClient,
         },

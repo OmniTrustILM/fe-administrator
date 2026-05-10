@@ -115,7 +115,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: props)
                     raProfileUuid: certificate.raProfile.uuid,
                     authorityUuid: certificate.raProfile.authorityInstanceUuid,
                     rekey: {
-                        request: fileContent ? fileContent : undefined,
+                        request: fileContent || undefined,
                         format: CertificateRequestFormat.Pkcs10,
                         signatureAttributes: collectFormAttributes('signatureAttributes', signatureAttributeDescriptors, allValues),
                         keyUuid: values.key?.uuid || '',

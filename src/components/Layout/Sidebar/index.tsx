@@ -48,7 +48,11 @@ type MenuItemMapping = {
       }
 );
 
-function SidebarSubmenuItem({ child, index, totalCount }: { child: { name: string; link: string }; index: number; totalCount: number }) {
+function SidebarSubmenuItem({
+    child,
+    index,
+    totalCount,
+}: Readonly<{ child: { name: string; link: string }; index: number; totalCount: number }>) {
     return (
         <li className={cn({ 'mb-2': index === totalCount - 1 })}>
             <NavLink
@@ -375,7 +379,7 @@ function getAllowedMenuItems(allowedResources?: Resource[]): MenuItemMapping[] {
         if (
             mapping.requiredResources === undefined ||
             mapping.requiredResources.length === 0 ||
-            mapping.requiredResources.find((resource) => allowedResources.includes(resource))
+            mapping.requiredResources.some((resource) => allowedResources.includes(resource))
         ) {
             allowedLinks.push(mapping);
         }

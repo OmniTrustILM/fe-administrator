@@ -15,7 +15,6 @@ test.describe('Widget', () => {
                 { store },
             ),
         );
-        // await page.pause();
         await expect(page.getByTestId('my-widget')).toBeVisible();
         await expect(page.getByRole('heading', { name: 'My Widget' })).toBeVisible();
         await expect(page.getByText('Child content')).toBeVisible();

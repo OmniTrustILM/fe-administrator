@@ -1,5 +1,5 @@
 import type { ApiClients } from '../api';
-import type { AnyAction } from 'redux';
+import type { UnknownAction } from 'redux';
 import { type Epic, combineEpics } from 'redux-observable';
 import acmeAccountsEpics from './acme-accounts-epics';
 import acmeProfilesEpics from './acme-profiles-epics';
@@ -66,7 +66,7 @@ export interface EpicDependencies {
 
 export type AppState = ReturnType<typeof reducers>;
 
-export type AppEpic = Epic<AnyAction, AnyAction, AppState, EpicDependencies>;
+export type AppEpic = Epic<UnknownAction, UnknownAction, AppState, EpicDependencies>;
 
 export const epics = combineEpics(
     ...startupEpics,

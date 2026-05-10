@@ -514,7 +514,6 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
     );
 
     const renderCustomAttributeEditor = useMemo(() => {
-        // if (isBusy) return <></>;
         return (
             <AttributeEditor
                 id="customCmpProfile"

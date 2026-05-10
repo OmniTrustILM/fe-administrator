@@ -97,12 +97,12 @@ export function FilterWidgetSkeleton({
     filterGridCols = 4,
     dataTestId,
     hasExtraFilter = false,
-}: {
+}: Readonly<{
     title?: string;
     filterGridCols?: 2 | 4;
     dataTestId?: string;
     hasExtraFilter?: boolean;
-}) {
+}>) {
     const colCount = filterGridCols === 2 ? 2 : 4;
     return (
         <Widget title={title} titleSize="large" dataTestId={dataTestId}>

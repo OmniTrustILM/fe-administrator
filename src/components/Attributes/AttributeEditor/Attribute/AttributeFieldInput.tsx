@@ -44,7 +44,7 @@ function StandardInputControl({
     field,
     fieldState,
     submitCount,
-}: {
+}: Readonly<{
     name: string;
     descriptor: DataAttributeModel | CustomAttributeModel;
     busy: boolean;
@@ -52,7 +52,7 @@ function StandardInputControl({
     field: FieldStateLike;
     fieldState: FieldStateError;
     submitCount: number;
-}): React.ReactNode {
+}>): React.ReactNode {
     const transformed = transformInputValueForDescriptor(field.value, descriptor);
     const validationVisible = fieldState.isTouched || submitCount > 0;
     const inputClassName = cn(

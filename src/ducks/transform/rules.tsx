@@ -292,7 +292,6 @@ export function useTransformTriggerObjectToNodesAndEdges(
     const triggerTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.TriggerType));
     const dispatch = useDispatch();
     const isUpdatingTrigger = useSelector(rulesSelectors.isUpdatingTrigger);
-    // const flowChartNodesState = useSelector(userInterfaceSelectors.flowChartNodes);
     const rulesOptions = useMemo(() => {
         const filteredRules = rules?.filter((rule) => !triggerDetails?.rules.find((triggerRule) => triggerRule.uuid === rule.uuid));
         return filteredRules?.map((rule) => ({

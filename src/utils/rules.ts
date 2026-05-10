@@ -3,7 +3,6 @@ import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { SearchFilterModel } from 'types/certificate';
 import type { ConditionItemModel } from 'types/rules';
-// import { EntityType, actions as filterActions } from 'ducks/filters';
 import { actions as resourceActions, selectors as resourceSelectors } from 'ducks/resource';
 import { PlatformEnum, Resource } from 'types/openapi';
 import type { ResourceModel } from 'types/resource';

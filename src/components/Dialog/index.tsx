@@ -21,7 +21,7 @@ import {
 import { useLayoutEffect } from 'react';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
-export type ModalIcon =
+export type ModalIconName =
     | 'delete'
     | 'destroy'
     | 'info'
@@ -36,8 +36,8 @@ export type ModalIcon =
     | 'refresh'
     | 'shuffle'
     | 'minus'
-    | 'plug'
-    | Exclude<React.ReactNode, string>;
+    | 'plug';
+export type ModalIcon = ModalIconName | React.ReactElement | null | undefined;
 
 export interface DialogButton {
     key?: string;

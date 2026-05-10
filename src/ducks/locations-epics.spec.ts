@@ -73,7 +73,7 @@ describe('locations epics', () => {
             slice.actions.bulkDeleteLocationsFailure({ error: 'Failed to delete 1 location' }),
         ]);
         expect(emitted[2].type).toBe(appRedirectActions.fetchError.type);
-        expect((emitted[2] as any).payload).toEqual({ error: undefined, message: 'Failed to delete 1 location' });
+        expect(emitted[2].payload).toEqual({ error: undefined, message: 'Failed to delete 1 location' });
     });
 
     test('bulkDeleteLocations multiple failures uses plural message', async () => {
@@ -94,7 +94,7 @@ describe('locations epics', () => {
             slice.actions.bulkDeleteLocationsSuccess({ uuids: [] }),
             slice.actions.bulkDeleteLocationsFailure({ error: 'Failed to delete 2 locations' }),
         ]);
-        expect((emitted[2] as any).payload).toEqual({ error: undefined, message: 'Failed to delete 2 locations' });
+        expect(emitted[2].payload).toEqual({ error: undefined, message: 'Failed to delete 2 locations' });
     });
 
     test('bulkDeleteLocations sync throw emits bulkDeleteLocationsFailure and fetchError', async () => {

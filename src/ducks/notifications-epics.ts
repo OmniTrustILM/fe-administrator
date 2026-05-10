@@ -1,4 +1,4 @@
-import type { AnyAction } from '@reduxjs/toolkit';
+import type { UnknownAction } from '@reduxjs/toolkit';
 import type { AppEpic } from 'ducks';
 import { store } from '../App';
 import { iif, of } from 'rxjs';
@@ -178,7 +178,7 @@ export const listNotificationProviders: AppEpic = (action$, state, deps) => {
             ),
         ),
         catchError((error) => of(appRedirectActions.fetchError({ error: error, message: 'Failed to get Entity Provider list' }))),
-        map((action) => action as AnyAction),
+        map((action) => action as UnknownAction),
     );
 };
 

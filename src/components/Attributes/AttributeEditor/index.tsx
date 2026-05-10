@@ -412,7 +412,7 @@ function AttributeEditorInner({
         const ordered = [
             ...initiallyShownDescriptors,
             ...initiallyHiddenCustomAttributeDescriptors
-                .filter((descriptor) => shownCustomAttributes.find((el) => el.uuid === descriptor.uuid))
+                .filter((descriptor) => shownCustomAttributes.some((el) => el.uuid === descriptor.uuid))
                 .filter((descriptor) => !deletedAttributes.includes(descriptor.name)) // Also filter out deleted ones from shown custom attributes
                 .sort(
                     (a, b) =>
@@ -1090,7 +1090,7 @@ function AttributeEditorInner({
     return <>{attrs}</>;
 }
 
-function AttributeEditorFormBridge({ children }: { children: React.ReactNode }) {
+function AttributeEditorFormBridge({ children }: Readonly<{ children: React.ReactNode }>) {
     return <>{children}</>;
 }
 

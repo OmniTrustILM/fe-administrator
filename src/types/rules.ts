@@ -130,7 +130,6 @@ export type TriggerHistoryObjectTriggerSummaryModel = Omit<TriggerHistoryObjectT
     records: Array<TriggerHistoryRecordModel>;
 };
 export type TriggerHistoryObjectSummaryDto = TriggerHistoryObjectSummaryDtoApi;
-// export type TriggerHistoryObjectSummaryModel = TriggerHistoryObjectSummaryDto;
 export type TriggerHistoryObjectSummaryModel = Omit<TriggerHistoryObjectSummaryDto, 'triggers'> & {
     triggers: Array<TriggerHistoryObjectTriggerSummaryModel>;
 };

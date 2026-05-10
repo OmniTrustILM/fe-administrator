@@ -32,7 +32,7 @@ describe('location transform helpers', () => {
         const input = { connectorUuid: 'c1', sourceObjects: [{ uuid: 's1', name: 'src' }] } as any;
         const result = transformMetadataItemDtoToModel(input);
         expect(result.sourceObjects).toHaveLength(1);
-        expect(result.sourceObjects![0]).toEqual({ uuid: 's1', name: 'src' });
+        expect(result.sourceObjects?.[0]).toEqual({ uuid: 's1', name: 'src' });
     });
 
     test('transformMetadataDtoToModel maps items', () => {

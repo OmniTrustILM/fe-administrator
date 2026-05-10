@@ -22,7 +22,7 @@ function getValueFieldError(fieldState: { error?: { message?: string }; isTouche
     return typeof fieldState.error === 'string' ? fieldState.error : (fieldState.error?.message ?? 'Invalid value');
 }
 
-type ValueFieldInputProps = {
+type ValueFieldInputProps = Readonly<{
     descriptor: CustomAttributeModel;
     id?: string;
     field: { value: any; onChange: (v: any) => void; onBlur: () => void };
@@ -30,7 +30,7 @@ type ValueFieldInputProps = {
     fieldStepValue: number | undefined;
     options: { label: string; value: string }[];
     onCancel?: () => void;
-};
+}>;
 
 function normalizeDateValue(value: string | undefined): string | undefined {
     if (!value) return undefined;

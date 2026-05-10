@@ -20,13 +20,13 @@ function DescriptorInputControl({
     fieldStepValue,
     field,
     fieldState,
-}: {
+}: Readonly<{
     name: string;
     contentType: AttributeContentType;
     fieldStepValue: number | undefined;
     field: { value: any; onChange: (v: any) => void; onBlur: () => void };
     fieldState: { error?: { message?: string } | string; isTouched: boolean };
-}) {
+}>) {
     const inputType = ContentFieldConfiguration[contentType].type;
     const error = getFieldErrorMessage(fieldState);
     const invalid = fieldState.error && fieldState.isTouched;

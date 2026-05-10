@@ -1,7 +1,6 @@
 import cn from 'classnames';
 import type { ReactNode } from 'react';
 
-// export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right' | 'auto';
 export type TooltipPlacement = 'bottom';
 
 type Props = Readonly<{

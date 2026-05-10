@@ -63,7 +63,7 @@ describe('scheduler epics', () => {
             slice.actions.bulkDeleteSchedulerJobsFailure({ error: 'Failed to delete 1 scheduled job' }),
         ]);
         expect(emitted[2].type).toBe(appRedirectActions.fetchError.type);
-        expect((emitted[2] as any).payload).toEqual({ error: undefined, message: 'Failed to delete 1 scheduled job' });
+        expect(emitted[2].payload).toEqual({ error: undefined, message: 'Failed to delete 1 scheduled job' });
     });
 
     test('bulkDeleteSchedulerJobs multiple failures uses plural message', async () => {
@@ -79,7 +79,7 @@ describe('scheduler epics', () => {
             slice.actions.bulkDeleteSchedulerJobsSuccess({ uuids: [] }),
             slice.actions.bulkDeleteSchedulerJobsFailure({ error: 'Failed to delete 2 scheduled jobs' }),
         ]);
-        expect((emitted[2] as any).payload).toEqual({ error: undefined, message: 'Failed to delete 2 scheduled jobs' });
+        expect(emitted[2].payload).toEqual({ error: undefined, message: 'Failed to delete 2 scheduled jobs' });
     });
 
     test('bulkDeleteSchedulerJobs sync throw emits bulkDeleteSchedulerJobsFailure and fetchError', async () => {
