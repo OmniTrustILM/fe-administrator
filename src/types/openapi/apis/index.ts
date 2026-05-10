@@ -45,7 +45,6 @@ export * from './SettingsApi';
 export * from './StatisticsDashboardApi';
 export * from './TSPProfileManagementApi';
 export * from './TimeQualityConfigurationManagementApi';
-export * from './TSPProfileManagementApi';
 export * from './TokenInstanceManagementApi';
 export * from './TokenProfileManagementApi';
 export * from './TrustedCertificateManagementApi';
