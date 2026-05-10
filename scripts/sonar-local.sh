@@ -10,6 +10,7 @@
 #   - Docker running (used for both SonarQube and the sonar-scanner image)
 #   - Node + npm available (the script does NOT install node modules; run
 #     `npm install` first if the workspace is fresh)
+#   - curl and python3 on PATH (used to drive the SonarQube REST API and parse JSON)
 #   - The project's existing sonar-project.properties is honoured as-is
 #
 # IMPORTANT — Limitation of ephemeral SonarQube:
@@ -35,17 +36,19 @@ cleanup() {
 trap cleanup EXIT
 
 if ! docker info >/dev/null 2>&1; then
-    echo "ERROR: Docker is required (used for SonarQube and the sonar-scanner image)."
+    echo "ERROR: Docker is required (used for SonarQube and the sonar-scanner image)." >&2
     exit 1
 fi
 
-if ! command -v npm >/dev/null 2>&1; then
-    echo "ERROR: npm not found on PATH."
-    exit 1
-fi
+for tool in npm curl python3; do
+    if ! command -v "${tool}" >/dev/null 2>&1; then
+        echo "ERROR: ${tool} not found on PATH." >&2
+        exit 1
+    fi
+done
 
-if [ ! -d node_modules ]; then
-    echo "ERROR: node_modules missing. Run 'npm install' first."
+if [[ ! -d node_modules ]]; then
+    echo "ERROR: node_modules missing. Run 'npm install' first." >&2
     exit 1
 fi
 
@@ -60,8 +63,8 @@ for i in $(seq 1 120); do
         echo "SonarQube is ready."
         break
     fi
-    if [ "$i" -eq 120 ]; then
-        echo "ERROR: SonarQube failed to start within 2 minutes."
+    if [[ "$i" -eq 120 ]]; then
+        echo "ERROR: SonarQube failed to start within 2 minutes." >&2
         exit 1
     fi
     sleep 1
@@ -81,7 +84,7 @@ if curl -sf -u admin:Admin12345678! "${SONAR_URL}/api/system/status" >/dev/null 
 elif curl -sf -u admin:admin "${SONAR_URL}/api/system/status" >/dev/null 2>&1; then
     SONAR_CREDS="admin:admin"
 else
-    echo "ERROR: Cannot authenticate to SonarQube."
+    echo "ERROR: Cannot authenticate to SonarQube." >&2
     exit 1
 fi
 
@@ -90,8 +93,8 @@ TOKEN=$(curl -sf -u "${SONAR_CREDS}" -X POST \
     "${SONAR_URL}/api/user_tokens/generate?name=${TOKEN_NAME}" \
     | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
 
-if [ -z "${TOKEN}" ]; then
-    echo "ERROR: Failed to generate SonarQube token."
+if [[ -z "${TOKEN}" ]]; then
+    echo "ERROR: Failed to generate SonarQube token." >&2
     exit 1
 fi
 
@@ -103,15 +106,15 @@ echo "Running Vitest with coverage..."
 # for a local smoke check.
 npm run test:vitest:cov
 
-if [ ! -f coverage-vitest/lcov.info ] && [ ! -f coverage/lcov.info ]; then
-    echo "ERROR: Vitest produced no lcov report at the expected paths."
+if [[ ! -f coverage-vitest/lcov.info && ! -f coverage/lcov.info ]]; then
+    echo "ERROR: Vitest produced no lcov report at the expected paths." >&2
     exit 1
 fi
 
 # Vitest's @vitest/coverage-v8 default output is coverage/lcov.info.
 # Some versions / configs write to coverage-vitest/lcov.info instead. Mirror
 # whatever exists so sonar-project.properties' reportPaths resolve.
-if [ -f coverage/lcov.info ] && [ ! -f coverage-vitest/lcov.info ]; then
+if [[ -f coverage/lcov.info && ! -f coverage-vitest/lcov.info ]]; then
     mkdir -p coverage-vitest
     cp coverage/lcov.info coverage-vitest/lcov.info
 fi
@@ -137,19 +140,19 @@ echo ""
 echo "=== SonarQube Results ==="
 echo "Dashboard: ${SONAR_URL}/dashboard?id=${PROJECT_KEY}"
 
-if [ -n "${TASK_ID:-}" ]; then
+if [[ -n "${TASK_ID:-}" ]]; then
     echo ""
     echo "Waiting for analysis report processing (task ${TASK_ID}, up to 2 minutes)..."
     for i in $(seq 1 60); do
         TASK_STATUS=$(curl -s -u "${SONAR_CREDS}" \
             "${SONAR_URL}/api/ce/task?id=${TASK_ID}" 2>/dev/null \
             | python3 -c "import sys,json; print(json.load(sys.stdin).get('task', {}).get('status', ''))" 2>/dev/null || true)
-        if [ "${TASK_STATUS}" = "SUCCESS" ]; then
+        if [[ "${TASK_STATUS}" == "SUCCESS" ]]; then
             echo "Analysis report processed."
             break
         fi
-        if [ "${TASK_STATUS}" = "FAILED" ] || [ "${TASK_STATUS}" = "CANCELED" ]; then
-            echo "ERROR: Sonar analysis task ${TASK_STATUS}."
+        if [[ "${TASK_STATUS}" == "FAILED" || "${TASK_STATUS}" == "CANCELED" ]]; then
+            echo "ERROR: Sonar analysis task ${TASK_STATUS}." >&2
             exit 1
         fi
         sleep 2
@@ -165,7 +168,7 @@ PROBE=$(curl -s -u "${SONAR_CREDS}" \
 # PR-style focus by intersecting with the git diff.
 BASE_BRANCH="${BASE_BRANCH:-main}"
 CHANGED=$(git diff --name-only "${BASE_BRANCH}...HEAD" 2>/dev/null || true)
-if [ -z "${CHANGED}" ]; then
+if [[ -z "${CHANGED}" ]]; then
     echo ""
     echo "(No changes vs ${BASE_BRANCH}; reporting full project for first-run baseline.)"
     SCOPE_DESC="all project files"

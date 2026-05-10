@@ -5,6 +5,9 @@ test.describe('ConfirmRevokeDialog', () => {
     test('confirm dispatches manuallyConfirmRevoke with the certificate UUIDs', async ({ mount, page }) => {
         const cert = { uuid: 'cert-1', raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any };
         await mount(<ConfirmRevokeDialogWithStore isOpen onClose={() => {}} certificate={cert} />);
+        await page.evaluate(() => {
+            (globalThis as any).__lastDispatchedAction = undefined;
+        });
         await page.getByRole('button', { name: /^confirm$/i }).click();
         const dispatched = await page.evaluate(() => (globalThis as any).__lastDispatchedAction);
         expect(dispatched.type).toContain('manuallyConfirmRevoke');

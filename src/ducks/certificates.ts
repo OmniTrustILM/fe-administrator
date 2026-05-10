@@ -33,6 +33,49 @@ import type { RaProfileResponseModel } from 'types/ra-profiles';
 import type { UserResponseModel } from 'types/users';
 import { downloadFileZip } from 'utils/download';
 
+/**
+ * Project a CertificateDetailResponseModel into a CertificateListResponseModel-shaped row.
+ * Avoids storing detail-only fields (certificateContent, metadata, locations, …) in the
+ * list cache and preserves any list-only fields already present on the row.
+ */
+function pickListFieldsFromDetail(
+    detail: CertificateDetailResponseModel,
+    existing: CertificateListResponseModel,
+): CertificateListResponseModel {
+    return {
+        ...existing,
+        uuid: detail.uuid,
+        commonName: detail.commonName,
+        serialNumber: detail.serialNumber,
+        issuerCommonName: detail.issuerCommonName,
+        issuerDn: detail.issuerDn,
+        issuerSerialNumber: detail.issuerSerialNumber,
+        issuerCertificateUuid: detail.issuerCertificateUuid,
+        subjectDn: detail.subjectDn,
+        notBefore: detail.notBefore,
+        notAfter: detail.notAfter,
+        publicKeyAlgorithm: detail.publicKeyAlgorithm,
+        signatureAlgorithm: detail.signatureAlgorithm,
+        keySize: detail.keySize,
+        state: detail.state,
+        validationStatus: detail.validationStatus,
+        complianceStatus: detail.complianceStatus,
+        fingerprint: detail.fingerprint,
+        certificateType: detail.certificateType,
+        privateKeyAvailability: detail.privateKeyAvailability,
+        archived: detail.archived,
+        trustedCa: detail.trustedCa,
+        hybridCertificate: detail.hybridCertificate,
+        altKeySize: detail.altKeySize,
+        altPublicKeyAlgorithm: detail.altPublicKeyAlgorithm,
+        altSignatureAlgorithm: detail.altSignatureAlgorithm,
+        raProfile: detail.raProfile,
+        groups: detail.groups,
+        owner: detail.owner,
+        ownerUuid: detail.ownerUuid,
+    };
+}
+
 export type State = {
     deleteErrorMessage: string;
 
@@ -209,10 +252,7 @@ export const slice = createSlice({
             state.certificateDetail = action.payload.certificate;
             const idx = state.certificates.findIndex((c) => c.uuid === action.payload.certificate.uuid);
             if (idx >= 0) {
-                // CertificateDetailResponseModel is structurally a superset of CertificateListResponseModel
-                // (every list field is also on the detail model), so it is safe to use the detail object
-                // for the list row. The cast is needed because TypeScript treats them as nominally distinct.
-                state.certificates[idx] = action.payload.certificate as unknown as CertificateListResponseModel;
+                state.certificates[idx] = pickListFieldsFromDetail(action.payload.certificate, state.certificates[idx]);
             }
         },
 
