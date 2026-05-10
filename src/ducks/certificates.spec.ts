@@ -162,6 +162,62 @@ describe('certificates slice', () => {
         expect(next.isRevoking).toBe(false);
     });
 
+    test('manuallyIssueCertificate / success / failure update isManuallyIssuing', () => {
+        let next = reducer(
+            initialState,
+            actions.manuallyIssueCertificate({
+                authorityUuid: 'auth-1',
+                raProfileUuid: 'ra-1',
+                uuid: 'cert-1',
+                request: { certificate: 'BASE64==', customAttributes: [] },
+            }),
+        );
+        expect(next.isManuallyIssuing).toBe(true);
+
+        next = reducer(next, actions.manuallyIssueCertificateSuccess({ uuid: 'cert-1' }));
+        expect(next.isManuallyIssuing).toBe(false);
+
+        next = reducer({ ...next, isManuallyIssuing: true }, actions.manuallyIssueCertificateFailure({ error: 'err' }));
+        expect(next.isManuallyIssuing).toBe(false);
+    });
+
+    test('manuallyConfirmRevoke / success / failure update isManuallyConfirmingRevoke', () => {
+        let next = reducer(
+            initialState,
+            actions.manuallyConfirmRevoke({
+                authorityUuid: 'auth-1',
+                raProfileUuid: 'ra-1',
+                uuid: 'cert-1',
+            }),
+        );
+        expect(next.isManuallyConfirmingRevoke).toBe(true);
+
+        next = reducer(next, actions.manuallyConfirmRevokeSuccess({ uuid: 'cert-1' }));
+        expect(next.isManuallyConfirmingRevoke).toBe(false);
+
+        next = reducer({ ...next, isManuallyConfirmingRevoke: true }, actions.manuallyConfirmRevokeFailure({ error: 'err' }));
+        expect(next.isManuallyConfirmingRevoke).toBe(false);
+    });
+
+    test('cancelPendingCertificateOperation / success / failure update isCancellingPendingOperation', () => {
+        let next = reducer(
+            initialState,
+            actions.cancelPendingCertificateOperation({
+                authorityUuid: 'auth-1',
+                raProfileUuid: 'ra-1',
+                uuid: 'cert-1',
+                request: { reason: 'no longer needed' },
+            }),
+        );
+        expect(next.isCancellingPendingOperation).toBe(true);
+
+        next = reducer(next, actions.cancelPendingCertificateOperationSuccess({ uuid: 'cert-1' }));
+        expect(next.isCancellingPendingOperation).toBe(false);
+
+        next = reducer({ ...next, isCancellingPendingOperation: true }, actions.cancelPendingCertificateOperationFailure({ error: 'err' }));
+        expect(next.isCancellingPendingOperation).toBe(false);
+    });
+
     test('renewCertificate / success / failure update isRenewing', () => {
         let next = reducer(
             initialState,

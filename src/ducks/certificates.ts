@@ -4,6 +4,7 @@ import type {
     CertificateBulkDeleteRequestModel,
     CertificateBulkDeleteResponseModel,
     CertificateBulkObjectModel,
+    CertificateCancelPendingRequestModel,
     CertificateChainResponseModel,
     CertificateComplianceCheckModel,
     CertificateContentResponseModel,
@@ -65,6 +66,9 @@ export type State = {
 
     isIssuing: boolean;
     isRevoking: boolean;
+    isManuallyIssuing: boolean;
+    isManuallyConfirmingRevoke: boolean;
+    isCancellingPendingOperation: boolean;
     isRenewing: boolean;
     isRekeying: boolean;
 
@@ -123,6 +127,9 @@ export const initialState: State = {
 
     isIssuing: false,
     isRevoking: false,
+    isManuallyIssuing: false,
+    isManuallyConfirmingRevoke: false,
+    isCancellingPendingOperation: false,
     isRenewing: false,
     isRekeying: false,
 
@@ -315,6 +322,65 @@ export const slice = createSlice({
 
         revokeCertificateFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isRevoking = false;
+        },
+
+        manuallyIssueCertificate: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileUuid: string;
+                uuid: string;
+                request: CertificateUploadModel;
+            }>,
+        ) => {
+            state.isManuallyIssuing = true;
+        },
+
+        manuallyIssueCertificateSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.isManuallyIssuing = false;
+        },
+
+        manuallyIssueCertificateFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isManuallyIssuing = false;
+        },
+
+        manuallyConfirmRevoke: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileUuid: string;
+                uuid: string;
+            }>,
+        ) => {
+            state.isManuallyConfirmingRevoke = true;
+        },
+
+        manuallyConfirmRevokeSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.isManuallyConfirmingRevoke = false;
+        },
+
+        manuallyConfirmRevokeFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isManuallyConfirmingRevoke = false;
+        },
+
+        cancelPendingCertificateOperation: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileUuid: string;
+                uuid: string;
+                request?: CertificateCancelPendingRequestModel;
+            }>,
+        ) => {
+            state.isCancellingPendingOperation = true;
+        },
+
+        cancelPendingCertificateOperationSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.isCancellingPendingOperation = false;
+        },
+
+        cancelPendingCertificateOperationFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isCancellingPendingOperation = false;
         },
 
         renewCertificate: (
@@ -910,6 +976,9 @@ const isFetchingLocations = createSelector(state, (state) => state.isFetchingLoc
 
 const isIssuing = createSelector(state, (state) => state.isIssuing);
 const isRevoking = createSelector(state, (state) => state.isRevoking);
+const isManuallyIssuing = createSelector(state, (state) => state.isManuallyIssuing);
+const isManuallyConfirmingRevoke = createSelector(state, (state) => state.isManuallyConfirmingRevoke);
+const isCancellingPendingOperation = createSelector(state, (state) => state.isCancellingPendingOperation);
 const isRenewing = createSelector(state, (state) => state.isRenewing);
 const isRekeying = createSelector(state, (state) => state.isRekeying);
 
@@ -973,6 +1042,9 @@ export const selectors = {
     isFetchingCertificateChain,
     isIssuing,
     isRevoking,
+    isManuallyIssuing,
+    isManuallyConfirmingRevoke,
+    isCancellingPendingOperation,
     isRenewing,
     isRekeying,
     isDeleting,

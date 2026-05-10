@@ -11,6 +11,7 @@ import Badge from 'components/Badge';
 import Asn1Dialog from '../Asn1Dialog/Asn1Dialog';
 import CertificateRenewDialog from '../CertificateRenewDialog';
 import CertificateRekeyDialog from '../CertificateRekeyDialog';
+import CertificateUploadDialog from '../CertificateUploadDialog';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
@@ -38,6 +39,9 @@ import Button from 'components/Button';
 import { Trash2 } from 'lucide-react';
 import EditIcon from 'components/icons/EditIcon';
 import { buildCertificateDetailBaseRows } from '../certificateTableHelpers';
+import CertificateStatus from '../CertificateStatus';
+import { iconRegistry } from 'utils/icons';
+import TextArea from 'components/TextArea';
 
 interface SelectChangeValue {
     value: string;
@@ -71,6 +75,10 @@ export default function CertificateDetailsContent({ certificate, validationResul
     const [renew, setRenew] = useState(false);
     const [rekey, setRekey] = useState(false);
     const [revoke, setRevoke] = useState(false);
+    const [manuallyIssue, setManuallyIssue] = useState(false);
+    const [confirmRevoked, setConfirmRevoked] = useState(false);
+    const [cancelPending, setCancelPending] = useState(false);
+    const [cancelPendingReason, setCancelPendingReason] = useState('');
     const [updateGroup, setUpdateGroup] = useState(false);
     const [updateOwner, setUpdateOwner] = useState(false);
     const [updateRaProfile, setUpdateRaProfile] = useState(false);
@@ -174,6 +182,48 @@ export default function CertificateDetailsContent({ certificate, validationResul
         );
         setRevoke(false);
     }, [certificate, dispatch, revokeReason]);
+
+    const onManuallyIssue = useCallback(
+        (data: { fileContent: string }) => {
+            if (!certificate) return;
+            dispatch(
+                actions.manuallyIssueCertificate({
+                    authorityUuid: certificate.raProfile?.authorityInstanceUuid || '',
+                    raProfileUuid: certificate.raProfile?.uuid || '',
+                    uuid: certificate.uuid,
+                    request: { certificate: data.fileContent, customAttributes: [] },
+                }),
+            );
+            setManuallyIssue(false);
+        },
+        [certificate, dispatch],
+    );
+
+    const onConfirmRevoked = useCallback(() => {
+        if (!certificate) return;
+        dispatch(
+            actions.manuallyConfirmRevoke({
+                authorityUuid: certificate.raProfile?.authorityInstanceUuid || '',
+                raProfileUuid: certificate.raProfile?.uuid || '',
+                uuid: certificate.uuid,
+            }),
+        );
+        setConfirmRevoked(false);
+    }, [certificate, dispatch]);
+
+    const onCancelPending = useCallback(() => {
+        if (!certificate) return;
+        dispatch(
+            actions.cancelPendingCertificateOperation({
+                authorityUuid: certificate.raProfile?.authorityInstanceUuid || '',
+                raProfileUuid: certificate.raProfile?.uuid || '',
+                uuid: certificate.uuid,
+                request: cancelPendingReason ? { reason: cancelPendingReason } : undefined,
+            }),
+        );
+        setCancelPending(false);
+        setCancelPendingReason('');
+    }, [certificate, cancelPendingReason, dispatch]);
 
     const onRenew = useCallback(
         (data: { fileContent?: string }) => {
@@ -355,6 +405,58 @@ export default function CertificateDetailsContent({ certificate, validationResul
                   getEnumLabel,
               )
             : [];
+
+        const isPendingIssue = certificate?.state === CertStatus.PendingIssue;
+        const isPendingRevoke = certificate?.state === CertStatus.PendingRevoke;
+
+        if (isPendingIssue || isPendingRevoke) {
+            const stateRowIndex = certDetail.findIndex((r) => r.id === 'certState');
+            if (stateRowIndex >= 0) {
+                const UploadIcon = iconRegistry['upload'];
+                const VerifyIcon = iconRegistry['verify'];
+                const CrossCircleIcon = iconRegistry['cross-circle'];
+                certDetail[stateRowIndex] = {
+                    ...certDetail[stateRowIndex],
+                    columns: [
+                        'State',
+                        <div key="state-with-actions" className="flex items-center gap-2">
+                            <CertificateStatus status={certificate!.state} />
+                            {isPendingIssue && (
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-blue-600 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none focus:outline-hidden"
+                                    title="Manually issue"
+                                    onClick={() => setManuallyIssue(true)}
+                                    disabled={isCertificateArchived}
+                                >
+                                    <UploadIcon size={16} />
+                                </button>
+                            )}
+                            {isPendingRevoke && (
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-blue-600 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none focus:outline-hidden"
+                                    title="Confirm revoked"
+                                    onClick={() => setConfirmRevoked(true)}
+                                    disabled={isCertificateArchived}
+                                >
+                                    <VerifyIcon size={16} />
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-blue-600 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none focus:outline-hidden"
+                                title={isPendingIssue ? 'Cancel issuance' : 'Cancel revocation'}
+                                onClick={() => setCancelPending(true)}
+                                disabled={isCertificateArchived}
+                            >
+                                <CrossCircleIcon size={16} />
+                            </button>
+                        </div>,
+                    ],
+                };
+            }
+        }
 
         if (certificate?.state !== CertStatus.Requested) {
             certDetail.push({
@@ -633,6 +735,9 @@ export default function CertificateDetailsContent({ certificate, validationResul
             : [];
     }, [certificate, dispatch, isCertificateArchived]);
 
+    const VerifyIcon = iconRegistry['verify'];
+    const CrossCircleIcon = iconRegistry['cross-circle'];
+
     return (
         <>
             <Container className="md:grid grid-cols-2 items-start">
@@ -806,6 +911,75 @@ export default function CertificateDetailsContent({ certificate, validationResul
                         body: 'Update',
                         disabled: raProfile === undefined || isUpdatingRaProfile,
                     },
+                ]}
+            />
+
+            <Dialog
+                isOpen={manuallyIssue}
+                caption="Manually Issue Certificate"
+                body={
+                    <CertificateUploadDialog
+                        onCancel={() => setManuallyIssue(false)}
+                        onUpload={onManuallyIssue}
+                        okButtonTitle="Upload & complete issuance"
+                        showCustomAttributes={false}
+                    />
+                }
+                toggle={() => setManuallyIssue(false)}
+                buttons={[]}
+                icon="upload"
+                size="xl"
+            />
+
+            <Dialog
+                isOpen={confirmRevoked}
+                caption="Confirm Revocation"
+                body="Confirm the certificate has been revoked at the certificate authority. The platform will mark it as Revoked."
+                toggle={() => setConfirmRevoked(false)}
+                icon={<VerifyIcon size={26} strokeWidth={1} />}
+                buttons={[
+                    { key: 'cancel', color: 'secondary', variant: 'outline', onClick: () => setConfirmRevoked(false), body: 'Cancel' },
+                    { key: 'confirm-revoked', color: 'primary', onClick: onConfirmRevoked, body: 'Confirm Revoked' },
+                ]}
+            />
+
+            <Dialog
+                isOpen={cancelPending}
+                caption="Cancel Pending Operation"
+                body={
+                    <>
+                        <p>
+                            Aborts the in-flight operation. Once the certificate authority acknowledges, the certificate returns to its
+                            prior state. The cancellation is recorded in the event history.
+                        </p>
+                        <TextArea
+                            label="Reason (optional)"
+                            placeholder="Free-text reason recorded in the event history…"
+                            value={cancelPendingReason}
+                            onChange={setCancelPendingReason}
+                            rows={3}
+                            className="mt-3"
+                        />
+                    </>
+                }
+                toggle={() => {
+                    setCancelPending(false);
+                    setCancelPendingReason('');
+                }}
+                icon={<CrossCircleIcon size={26} strokeWidth={1} />}
+                size="md"
+                buttons={[
+                    {
+                        key: 'keep-operation',
+                        color: 'secondary',
+                        variant: 'outline',
+                        onClick: () => {
+                            setCancelPending(false);
+                            setCancelPendingReason('');
+                        },
+                        body: 'Keep Operation',
+                    },
+                    { key: 'cancel-pending', color: 'danger', onClick: onCancelPending, body: 'Cancel Pending' },
                 ]}
             />
         </>

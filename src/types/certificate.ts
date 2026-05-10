@@ -3,6 +3,7 @@ import type { CertificateGroupResponseModel } from './certificateGroups';
 import type { LocationResponseModel, MetadataModel } from './locations';
 import type {
     BulkOperationResponse,
+    CancelPendingCertificateRequestDto,
     CertificateChainDownloadResponseDto,
     CertificateChainResponseDto,
     CertificateComplianceCheckDto,
@@ -118,6 +119,9 @@ export type CertificateBulkDeleteResponseModel = CertificateBulkDeleteResponseDt
 
 export type CertificateUploadDto = UploadCertificateRequestDto;
 export type CertificateUploadModel = CertificateUploadDto;
+
+export type CertificateCancelPendingRequestDto = CancelPendingCertificateRequestDto;
+export type CertificateCancelPendingRequestModel = CertificateCancelPendingRequestDto;
 
 export type CertificateCheckComplianceDto = CertificateComplianceCheckDto;
 export type CertificateComplianceCheckModel = CertificateComplianceCheckDto;
