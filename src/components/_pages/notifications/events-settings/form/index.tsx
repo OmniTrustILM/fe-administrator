@@ -1,6 +1,5 @@
 import ProgressButton from 'components/ProgressButton';
 import Widget from 'components/Widget';
-import { selectors as enumSelectors } from 'ducks/enums';
 import { actions as settingsActions, selectors as settingsSelectors } from 'ducks/settings';
 
 import { actions as resourceActions, selectors as resourceSelectors } from 'ducks/resource';
@@ -13,7 +12,7 @@ import Button from 'components/Button';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
 import { useAreDefaultValuesSame } from 'utils/common-hooks';
-import { type EventSettingsDto, PlatformEnum, Resource, type ResourceEvent } from 'types/openapi';
+import { type EventSettingsDto, Resource, type ResourceEvent } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import TriggerEditorWidget from 'components/TriggerEditorWidget';
 import Label from 'components/Label';
