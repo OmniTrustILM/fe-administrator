@@ -4,16 +4,23 @@ import TableSkeleton from 'components/CustomTable/TableSkeleton';
 const barClass = 'rounded bg-gray-200 dark:bg-neutral-700';
 const tabWidths = ['w-16', 'w-20', 'w-24', 'w-14', 'w-20'];
 
-type Props = Readonly<{
+type Props = {
     tabCount?: number;
     columnsCount?: number;
     noBorder?: boolean;
     hasPagination?: boolean;
     rowCount?: number;
     buttonsCount?: number;
-}>;
+};
 
-function TabLayoutSkeleton({ tabCount = 2, columnsCount = 4, noBorder = false, hasPagination = true, rowCount, buttonsCount = 0 }: Props) {
+function TabLayoutSkeleton({
+    tabCount = 2,
+    columnsCount = 4,
+    noBorder = false,
+    hasPagination = true,
+    rowCount,
+    buttonsCount = 0,
+}: Readonly<Props>) {
     return (
         <Widget noBorder={noBorder} dataTestId="tab-layout-skeleton">
             {buttonsCount > 0 && (

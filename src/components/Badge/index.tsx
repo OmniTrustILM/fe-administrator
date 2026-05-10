@@ -2,7 +2,7 @@ import cn from 'classnames';
 
 export type BadgeColor = 'gray' | 'secondary' | 'success' | 'primary' | 'danger' | 'warning' | 'info' | 'transparent';
 
-type Props = Readonly<{
+type Props = {
     color?: BadgeColor;
     onClick?: () => void;
     onRemove?: () => void;
@@ -13,9 +13,20 @@ type Props = Readonly<{
     size?: 'small' | 'medium' | 'large';
     dataTestId?: string;
     id?: string;
-}>;
+};
 
-function Badge({ color = 'secondary', onClick, onRemove, children, style, className, title, size = 'small', dataTestId, id }: Props) {
+function Badge({
+    color = 'secondary',
+    onClick,
+    onRemove,
+    children,
+    style,
+    className,
+    title,
+    size = 'small',
+    dataTestId,
+    id,
+}: Readonly<Props>) {
     const colorClasses = {
         gray: 'bg-gray-800 text-white dark:bg-white dark:text-neutral-800',
         secondary: 'bg-gray-500 text-white',

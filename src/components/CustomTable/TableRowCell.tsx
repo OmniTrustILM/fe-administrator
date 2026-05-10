@@ -3,16 +3,16 @@ import cn from 'classnames';
 import Button from 'components/Button';
 import type { TableDataRow, TableHeader } from './types';
 
-export type TableRowCellProps = Readonly<{
+export type TableRowCellProps = {
     column: string | React.ReactNode | React.ReactNode[];
     index: number;
     row: TableDataRow;
     tblHeaders: TableHeader[] | undefined;
     hasDetails?: boolean;
     onDetailClick: (rowId: number | string) => void;
-}>;
+};
 
-export function TableRowCell({ column, index, row, tblHeaders, hasDetails = false, onDetailClick }: TableRowCellProps) {
+export function TableRowCell({ column, index, row, tblHeaders, hasDetails = false, onDetailClick }: Readonly<TableRowCellProps>) {
     const isFirstColumn = index === 0;
     const shouldShowButton = hasDetails && isFirstColumn && row.detailColumns && row.detailColumns.length > 0;
     const align = tblHeaders?.[index]?.align;

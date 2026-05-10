@@ -29,12 +29,22 @@ interface FieldStateError {
     error?: { message?: string } | string;
 }
 
-type AttributeFieldInputProps = Readonly<{
+type AttributeFieldInputProps = {
     name: string;
     descriptor: DataAttributeModel | CustomAttributeModel;
     busy: boolean;
     deleteButton?: React.ReactNode;
-}>;
+};
+
+type StandardInputControlProps = {
+    name: string;
+    descriptor: DataAttributeModel | CustomAttributeModel;
+    busy: boolean;
+    deleteButton?: React.ReactNode;
+    field: FieldStateLike;
+    fieldState: FieldStateError;
+    submitCount: number;
+};
 
 function StandardInputControl({
     name,
@@ -44,15 +54,7 @@ function StandardInputControl({
     field,
     fieldState,
     submitCount,
-}: Readonly<{
-    name: string;
-    descriptor: DataAttributeModel | CustomAttributeModel;
-    busy: boolean;
-    deleteButton?: React.ReactNode;
-    field: FieldStateLike;
-    fieldState: FieldStateError;
-    submitCount: number;
-}>): React.ReactNode {
+}: Readonly<StandardInputControlProps>): React.ReactNode {
     const transformed = transformInputValueForDescriptor(field.value, descriptor);
     const validationVisible = fieldState.isTouched || submitCount > 0;
     const inputClassName = cn(
@@ -141,7 +143,7 @@ function StandardInputControl({
     );
 }
 
-export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: AttributeFieldInputProps): React.ReactNode {
+export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Readonly<AttributeFieldInputProps>): React.ReactNode {
     const { setValue, control, watch } = useFormContext<Record<string, any>>();
     const { submitCount } = useFormState({ control });
     const formValues = watch();

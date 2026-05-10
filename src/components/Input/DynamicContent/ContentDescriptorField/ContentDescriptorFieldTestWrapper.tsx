@@ -2,13 +2,13 @@ import * as ReactHookForm from 'react-hook-form';
 import ContentDescriptorField from './index';
 import type { AttributeContentType } from 'types/openapi';
 
-export type ContentDescriptorFieldTestWrapperProps = Readonly<{
+export type ContentDescriptorFieldTestWrapperProps = {
     isList: boolean;
     contentType: AttributeContentType;
     defaultContent?: unknown[];
     readOnly?: boolean;
     showSubmitButton?: boolean;
-}>;
+};
 
 export function ContentDescriptorFieldTestWrapper({
     isList,
@@ -16,7 +16,7 @@ export function ContentDescriptorFieldTestWrapper({
     defaultContent = [{ data: '' }],
     readOnly = false,
     showSubmitButton = false,
-}: ContentDescriptorFieldTestWrapperProps) {
+}: Readonly<ContentDescriptorFieldTestWrapperProps>) {
     const methods = ReactHookForm.useForm({
         defaultValues: {
             content: defaultContent,

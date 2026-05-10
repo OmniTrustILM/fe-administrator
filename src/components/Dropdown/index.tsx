@@ -9,7 +9,7 @@ export interface DropdownItem {
     color?: ButtonColor;
 }
 
-type Props = Readonly<{
+type Props = {
     title: React.ReactNode;
     items?: DropdownItem[];
     disabled?: boolean;
@@ -19,9 +19,19 @@ type Props = Readonly<{
     hideArrow?: boolean;
     menu?: React.ReactNode;
     buttonRef?: React.RefObject<HTMLButtonElement | null>;
-}>;
+};
 
-function Dropdown({ title, items, disabled = false, btnStyle, className, menuClassName, hideArrow = false, menu, buttonRef }: Props) {
+function Dropdown({
+    title,
+    items,
+    disabled = false,
+    btnStyle,
+    className,
+    menuClassName,
+    hideArrow = false,
+    menu,
+    buttonRef,
+}: Readonly<Props>) {
     useEffect(() => {
         const hsMethods = (globalThis as any).HSStaticMethods;
         if (hsMethods) hsMethods.autoInit();

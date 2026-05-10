@@ -26,7 +26,7 @@ const defaultEnumsPreload = {
     },
 };
 
-export type FilterWidgetRuleActionTestWrapperProps = Readonly<{
+export type FilterWidgetRuleActionTestWrapperProps = {
     title?: string;
     entity?: EntityType;
     availableFilters?: SearchFieldListModel[];
@@ -35,7 +35,7 @@ export type FilterWidgetRuleActionTestWrapperProps = Readonly<{
     disableBadgeRemove?: boolean;
     busyBadges?: boolean;
     platformEnumsOverride?: Record<string, Record<string, { label: string }>>;
-}>;
+};
 
 export function FilterWidgetRuleActionTestWrapper({
     title = 'Filter rule actions',
@@ -46,7 +46,7 @@ export function FilterWidgetRuleActionTestWrapper({
     disableBadgeRemove,
     busyBadges,
     platformEnumsOverride,
-}: FilterWidgetRuleActionTestWrapperProps) {
+}: Readonly<FilterWidgetRuleActionTestWrapperProps>) {
     const getAvailableFiltersApi = useMemo(() => () => of(availableFilters), [availableFilters]);
 
     const preloadedState = useMemo(

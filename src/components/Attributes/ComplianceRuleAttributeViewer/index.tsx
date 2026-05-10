@@ -3,13 +3,13 @@ import { useMemo } from 'react';
 import { type AttributeDescriptorModel, type AttributeResponseModel, isDataAttributeModel } from 'types/attributes';
 import { getAttributeContent } from 'utils/attributes/attributes';
 
-export type Props = Readonly<{
+export type Props = {
     attributes?: AttributeResponseModel[];
     descriptorAttributes?: AttributeDescriptorModel[];
     hasHeader?: boolean;
-}>;
+};
 
-export default function ComplianceRuleAttributeViewer({ attributes, descriptorAttributes, hasHeader = true }: Props) {
+export default function ComplianceRuleAttributeViewer({ attributes, descriptorAttributes, hasHeader = true }: Readonly<Props>) {
     const getContent = getAttributeContent;
 
     const tableHeaders: TableHeader[] = useMemo(

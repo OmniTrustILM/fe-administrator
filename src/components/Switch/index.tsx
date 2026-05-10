@@ -2,7 +2,7 @@ import cn from 'classnames';
 import { X, Check } from 'lucide-react';
 import Label from 'components/Label';
 
-type Props = Readonly<{
+type Props = {
     checked: boolean | undefined;
     onChange: (checked: boolean) => void;
     placeholder?: string;
@@ -13,9 +13,19 @@ type Props = Readonly<{
     className?: string;
     labelClassName?: string;
     dataTestId?: string;
-}>;
+};
 
-function Switch({ checked, onChange, id, label, secondaryLabel, disabled = false, className, labelClassName, dataTestId }: Props) {
+function Switch({
+    checked,
+    onChange,
+    id,
+    label,
+    secondaryLabel,
+    disabled = false,
+    className,
+    labelClassName,
+    dataTestId,
+}: Readonly<Props>) {
     return (
         <div className={cn('flex items-center gap-x-3', className)} data-testid={dataTestId ?? `switch-${id}`}>
             {label && (

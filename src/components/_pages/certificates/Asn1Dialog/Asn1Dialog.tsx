@@ -14,12 +14,12 @@ import { transformParseRequestResponseDtoToCertificateResponseDetailModelToAsn1S
 import { ParseCertificateRequestDtoParseTypeEnum, ParseRequestRequestDtoParseTypeEnum } from '../../../../types/openapi/utils';
 import { actions as userInterfaceActions } from 'ducks/user-interface';
 
-type Props = Readonly<{
+type Props = {
     content: string;
     isCSR?: boolean;
-}>;
+};
 
-export default function Asn1Dialog({ content, isCSR }: Props) {
+export default function Asn1Dialog({ content, isCSR }: Readonly<Props>) {
     const dispatch = useDispatch();
     const parsedCertificate = useSelector(utilsCertificateSelectors.parsedCertificate);
     const parsedCertificateRequest = useSelector(utilsCertificateRequestSelectors.parsedCertificateRequest);

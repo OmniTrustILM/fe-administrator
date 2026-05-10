@@ -1,9 +1,9 @@
-type Props = Readonly<{
+type Props = {
     className?: string;
     obj: any;
-}>;
+};
 
-function ObjectValues({ className, obj }: Props) {
+function ObjectValues({ className, obj }: Readonly<Props>) {
     if (!obj) return null;
 
     if (typeof obj !== 'object') return obj;

@@ -5,7 +5,7 @@ import { createMockStore } from 'utils/test-helpers';
 import Widget from './index';
 import { LockWidgetNameEnum, LockTypeEnum, type WidgetLockModel } from 'types/user-interface';
 
-export type WidgetWithStoreProps = Readonly<{
+export type WidgetWithStoreProps = {
     preloadedState?: Parameters<typeof createMockStore>[0];
     title?: string;
     titleLink?: string;
@@ -13,7 +13,7 @@ export type WidgetWithStoreProps = Readonly<{
     children?: React.ReactNode;
     widgetLockName?: LockWidgetNameEnum;
     refreshAction?: () => void;
-}>;
+};
 
 const defaultPreloadedState: Parameters<typeof createMockStore>[0] = {
     userInterface: {
@@ -51,7 +51,7 @@ function WidgetWithStore({
     children,
     widgetLockName,
     refreshAction,
-}: WidgetWithStoreProps) {
+}: Readonly<WidgetWithStoreProps>) {
     const store = createMockStore(preloadedState ?? defaultPreloadedState);
     return (
         <Provider store={store}>

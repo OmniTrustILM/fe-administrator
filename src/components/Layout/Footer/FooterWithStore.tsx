@@ -4,9 +4,9 @@ import { MemoryRouter } from 'react-router';
 import { createMockStore } from 'utils/test-helpers';
 import Footer from './index';
 
-export type FooterWithStoreProps = Readonly<React.ComponentProps<typeof Footer>>;
+export type FooterWithStoreProps = React.ComponentProps<typeof Footer>;
 
-export default function FooterWithStore(props: FooterWithStoreProps) {
+export default function FooterWithStore(props: Readonly<FooterWithStoreProps>) {
     const store = createMockStore();
     return (
         <Provider store={store}>

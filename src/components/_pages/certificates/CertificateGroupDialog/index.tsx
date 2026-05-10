@@ -10,18 +10,18 @@ import Spinner from 'components/Spinner';
 import Button from 'components/Button';
 import Container from 'components/Container';
 
-type Props = Readonly<{
+type Props = {
     uuids: string[];
     onCancel: () => void;
     onUpdate: () => void;
-}>;
+};
 
 interface SelectChangeValue {
     value: string;
     label: string;
 }
 
-export default function CertificateGroupDialog({ uuids, onCancel, onUpdate }: Props) {
+export default function CertificateGroupDialog({ uuids, onCancel, onUpdate }: Readonly<Props>) {
     const dispatch = useDispatch();
 
     const groups = useSelector(groupsSelectors.certificateGroups);

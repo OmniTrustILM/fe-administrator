@@ -7,7 +7,7 @@ import { AttributeContentType } from 'types/openapi';
 const defaultInputClassName =
     'py-2.5 px-4 block w-full border border-gray-200 rounded-lg text-sm dark:bg-neutral-900 dark:border-neutral-700';
 
-type Props = Readonly<{
+type Props = {
     id: string;
     inputType: string;
     contentType: AttributeContentType;
@@ -16,7 +16,7 @@ type Props = Readonly<{
     onChange: (v: string | number | boolean) => void;
     readOnly: boolean;
     inputClassName?: string;
-}>;
+};
 
 export function AddCustomValueInput({
     id,
@@ -27,7 +27,7 @@ export function AddCustomValueInput({
     onChange,
     readOnly,
     inputClassName = defaultInputClassName,
-}: Props): React.ReactNode {
+}: Readonly<Props>): React.ReactNode {
     if (inputType === 'datetime-local') {
         let dateVal = typeof value === 'string' && value ? value : undefined;
         if (dateVal && !dateVal.includes('T')) dateVal = dateVal.replace(' ', 'T');

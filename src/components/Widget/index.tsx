@@ -19,7 +19,7 @@ interface WidgetInfoCard {
     notesList?: string[];
 }
 
-type Props = Readonly<{
+type Props = {
     id?: string;
     title?: string;
     titleLink?: string;
@@ -40,7 +40,7 @@ type Props = Readonly<{
     dataTestId?: string;
     noBorder?: boolean;
     enableBusyOverlay?: boolean;
-}>;
+};
 
 function Widget({
     id,
@@ -63,7 +63,7 @@ function Widget({
     dataTestId,
     noBorder = false,
     enableBusyOverlay = false,
-}: Props) {
+}: Readonly<Props>) {
     const widgetLocks = useSelector(selectors.selectWidgetLocks) || [];
     const widgetLock = widgetLocks.find(
         (lock) => lock.widgetName === widgetLockName || (Array.isArray(widgetLockName) && widgetLockName.includes(lock.widgetName)),

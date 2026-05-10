@@ -1,12 +1,12 @@
 import cn from 'classnames';
-type Props = Readonly<{
+type Props = {
     active?: boolean;
     color?: 'light' | 'primary';
     size?: 'sm' | 'md' | 'lg' | 'xl';
     dataTestId?: string;
-}>;
+};
 
-function Spinner({ active = true, color = 'primary', size = 'md', dataTestId }: Props) {
+function Spinner({ active = true, color = 'primary', size = 'md', dataTestId }: Readonly<Props>) {
     if (!active) return null;
 
     return (

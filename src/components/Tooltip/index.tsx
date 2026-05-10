@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 export type TooltipPlacement = 'bottom';
 
-type Props = Readonly<{
+type Props = {
     content: string | ReactNode;
     placement?: TooltipPlacement;
     children: ReactNode;
@@ -11,9 +11,17 @@ type Props = Readonly<{
     triggerClassName?: string;
     contentClassName?: string;
     disabled?: boolean;
-}>;
+};
 
-function Tooltip({ content, placement = 'bottom', children, className, triggerClassName, contentClassName, disabled = false }: Props) {
+function Tooltip({
+    content,
+    placement = 'bottom',
+    children,
+    className,
+    triggerClassName,
+    contentClassName,
+    disabled = false,
+}: Readonly<Props>) {
     const getArrowClasses = () => {
         const baseClasses = 'absolute w-0 h-0 border-4';
         if (placement === 'bottom') {

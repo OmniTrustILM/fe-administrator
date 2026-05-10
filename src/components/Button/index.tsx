@@ -4,7 +4,7 @@ import Tooltip from 'components/Tooltip';
 export type ButtonVariant = 'solid' | 'outline' | 'transparent';
 
 export type ButtonColor = 'primary' | 'danger' | 'secondary' | 'warning' | 'lightGray';
-export type Props = Readonly<{
+export type Props = {
     variant?: ButtonVariant;
     color?: ButtonColor;
     onClick?: (event: React.MouseEvent) => void;
@@ -16,7 +16,7 @@ export type Props = Readonly<{
     disabledTooltip?: string;
     type?: 'submit' | 'reset' | 'button';
     'data-testid'?: string;
-}>;
+};
 
 const baseButton =
     'inline-flex items-center gap-x-2 text-sm font-medium rounded-lg disabled:opacity-35 disabled:pointer-events-none focus:outline-hidden border';
@@ -70,7 +70,7 @@ function Button({
     disabledTooltip,
     type = 'button',
     'data-testid': dataTestId,
-}: Props) {
+}: Readonly<Props>) {
     const buttonElement = (
         <button
             type={type}

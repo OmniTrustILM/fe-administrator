@@ -24,13 +24,13 @@ function minimalDescriptor(overrides: Partial<CustomAttributeModel> = {}): Custo
     } as CustomAttributeModel;
 }
 
-type HarnessProps = Readonly<{
+type HarnessProps = {
     resource?: Resource;
     resourceUuid?: string;
     attributes?: any;
     className?: string;
     availableAttributes?: CustomAttributeModel[];
-}>;
+};
 
 /**
  * Creates store and renders CustomAttributeWidget in browser (for CT).
@@ -42,7 +42,7 @@ export default function CustomAttributeWidgetMountHarness({
     attributes,
     className,
     availableAttributes = [minimalDescriptor()],
-}: HarnessProps) {
+}: Readonly<HarnessProps>) {
     const store = createMockStore({
         customAttributes: {
             resourceCustomAttributes: availableAttributes,

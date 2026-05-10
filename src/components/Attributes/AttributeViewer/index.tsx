@@ -28,17 +28,14 @@ export enum ATTRIBUTE_VIEWER_TYPE {
     ATTRIBUTE_EDIT,
 }
 
-function AttributeEditForm({
-    descriptor,
-    initialContent,
-    onSubmit,
-    onCancel,
-}: Readonly<{
+type AttributeEditFormProps = {
     descriptor: CustomAttributeModel;
     initialContent?: BaseAttributeContentModel[];
     onSubmit: (uuid: string, content: BaseAttributeContentModel[]) => void;
     onCancel: () => void;
-}>) {
+};
+
+function AttributeEditForm({ descriptor, initialContent, onSubmit, onCancel }: Readonly<AttributeEditFormProps>) {
     const methods = ReactHookForm.useForm<any>({
         defaultValues: {},
     });
@@ -58,7 +55,7 @@ function AttributeEditForm({
     );
 }
 
-export type Props = Readonly<{
+export type Props = {
     attributes?: AttributeResponseModel[];
     descriptors?: AttributeDescriptorModel[] | CustomAttributeModel[];
     metadata?: MetadataModel[];
@@ -66,7 +63,7 @@ export type Props = Readonly<{
     hasHeader?: boolean;
     onSubmit?: (attributeUuid: string, content: BaseAttributeContentModel[]) => void;
     onRemove?: (attributeUuid: string) => void;
-}>;
+};
 
 export default function AttributeViewer({
     attributes = [],
@@ -76,7 +73,7 @@ export default function AttributeViewer({
     viewerType = ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE,
     onSubmit,
     onRemove,
-}: Props) {
+}: Readonly<Props>) {
     const getContent = getAttributeContent;
     const [editingAttributesNames, setEditingAttributesNames] = useState<string[]>([]);
     const contentTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.AttributeContentType));

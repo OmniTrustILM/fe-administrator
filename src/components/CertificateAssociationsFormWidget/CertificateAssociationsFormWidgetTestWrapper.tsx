@@ -8,13 +8,13 @@ import CertificateAssociationsFormWidget from './CertificateAssociationsFormWidg
 
 type Option = { value: string; label: string };
 
-type WrapperProps = Readonly<{
+type WrapperProps = {
     users?: Array<{ uuid: string; username: string; firstName?: string; lastName?: string }>;
     groups?: Array<{ uuid: string; name: string }>;
     initialUserOptions?: Option[];
     initialGroupOptions?: Option[];
     renderCustomAttributes?: React.ReactNode;
-}>;
+};
 
 type FormData = {
     owner: string;
@@ -45,7 +45,7 @@ export default function CertificateAssociationsFormWidgetTestWrapper({
     initialUserOptions = [],
     initialGroupOptions = [],
     renderCustomAttributes = <div data-testid="custom-attributes-content">Custom attributes content</div>,
-}: WrapperProps) {
+}: Readonly<WrapperProps>) {
     const store = useMemo(() => createCertificateAssociationsStore({ users, groups }), [users, groups]);
     const methods = useForm<FormData>({
         defaultValues: {

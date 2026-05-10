@@ -1,16 +1,16 @@
 import cn from 'classnames';
 import SimpleBar from 'simplebar-react';
 
-type Props = Readonly<{
+type Props = {
     tabs: {
         title: React.ReactNode;
         onClick?: () => void;
     }[];
     selectedTab: number;
     onTabChange: (tab: number) => void;
-}>;
+};
 
-function Tabs({ tabs, selectedTab, onTabChange }: Props) {
+function Tabs({ tabs, selectedTab, onTabChange }: Readonly<Props>) {
     return (
         <SimpleBar forceVisible="x">
             <div className="flex gap-x-1" role="tablist" aria-label="Tabs" aria-orientation="horizontal">

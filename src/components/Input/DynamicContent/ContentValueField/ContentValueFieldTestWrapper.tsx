@@ -2,14 +2,19 @@ import * as ReactHookForm from 'react-hook-form';
 import ContentValueField from './index';
 import type { BaseAttributeContentModel, CustomAttributeModel } from 'types/attributes';
 
-export type ContentValueFieldTestWrapperProps = Readonly<{
+export type ContentValueFieldTestWrapperProps = {
     id?: string;
     descriptor: CustomAttributeModel;
     initialContent?: BaseAttributeContentModel[];
     onSubmit?: (attributeUuid: string, content: BaseAttributeContentModel[]) => void;
-}>;
+};
 
-function ContentValueFieldTestWrapper({ id, descriptor, initialContent, onSubmit = () => {} }: ContentValueFieldTestWrapperProps) {
+function ContentValueFieldTestWrapper({
+    id,
+    descriptor,
+    initialContent,
+    onSubmit = () => {},
+}: Readonly<ContentValueFieldTestWrapperProps>) {
     const methods = ReactHookForm.useForm({
         defaultValues: {
             [descriptor.name]: undefined,
