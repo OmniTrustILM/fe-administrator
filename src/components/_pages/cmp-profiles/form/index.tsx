@@ -612,7 +612,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                                 <>
                                                     <div className="flex flex-wrap gap-4" role="radiogroup" aria-labelledby="variant-label">
                                                         {cmpProfileVariantOptions.map((option, index) => (
-                                                            <label key={index} className="flex items-center cursor-pointer">
+                                                            <label key={option.value} className="flex items-center cursor-pointer">
                                                                 <input
                                                                     id={index === 0 ? 'variant-0' : undefined}
                                                                     type="radio"
@@ -762,7 +762,9 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                                     value={field.value || ''}
                                                     onChange={(value) => {
                                                         field.onChange(value);
-                                                        onRaProfileChange(typeof value === 'string' ? value : value?.toString() || '');
+                                                        const next =
+                                                            typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+                                                        onRaProfileChange(next);
                                                     }}
                                                     options={raProfilesOptions.map((opt) => ({
                                                         value: opt.value.uuid,

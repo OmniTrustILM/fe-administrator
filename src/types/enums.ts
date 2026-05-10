@@ -1,7 +1,6 @@
-import type { EnumItemDto as EnumItemDtoOpenApi } from './openapi';
+import type { EnumItemDto } from './openapi';
 
-export type EnumItemDto = EnumItemDtoOpenApi;
-export type EnumItemModel = EnumItemDto;
+export type { EnumItemDto, EnumItemDto as EnumItemModel } from './openapi';
 
 export type PlatformEnumDto = { [key: string]: { [key: string]: EnumItemDto } };
-export type PlatformEnumModel = { [key: string]: { [key: string]: EnumItemModel } };
+export type PlatformEnumModel = { [key: string]: { [key: string]: EnumItemDto } };

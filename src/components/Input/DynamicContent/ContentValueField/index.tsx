@@ -32,6 +32,8 @@ type ValueFieldInputProps = {
     onCancel?: () => void;
 };
 
+type ListValueScalar = string | number | boolean;
+
 function normalizeDateValue(value: string | undefined): string | undefined {
     if (!value) return undefined;
     return value.includes('T') ? value : value.replace(' ', 'T');
@@ -59,15 +61,15 @@ function ListValueField({ descriptor, field, options, inputClassName }: ValueFie
         }
     };
 
-    const formatListLabel = (v: string | number | boolean) =>
+    const formatListLabel = (v: ListValueScalar) =>
         descriptor.contentType === AttributeContentType.Datetime ? getFormattedDateTime(String(v)) : String(v);
 
     const listValue =
         multiSelect && Array.isArray(field.value)
-            ? field.value.map((v: string | number | boolean) => ({ value: v, label: formatListLabel(v) }))
+            ? field.value.map((v: ListValueScalar) => ({ value: v, label: formatListLabel(v) }))
             : field.value;
 
-    let currentValues: (string | number | boolean)[];
+    let currentValues: ListValueScalar[];
     if (multiSelect) {
         currentValues = Array.isArray(field.value) ? field.value : [];
     } else {
@@ -307,12 +309,10 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
             const dataFrom = (v: any) => (v != null && typeof v === 'object' && 'value' in v ? v.value : v);
             if (descriptor.properties.multiSelect) {
                 return (input.value || []).map((v: any) => transformObjectContent(descriptor.contentType, { data: dataFrom(v) }));
+            } else if (Array.isArray(input.value)) {
+                return input.value.map((v: any) => transformObjectContent(descriptor.contentType, { data: dataFrom(v) }));
             } else {
-                if (Array.isArray(input.value)) {
-                    return input.value.map((v: any) => transformObjectContent(descriptor.contentType, { data: dataFrom(v) }));
-                } else {
-                    return [transformObjectContent(descriptor.contentType, { data: dataFrom(input.value) })];
-                }
+                return [transformObjectContent(descriptor.contentType, { data: dataFrom(input.value) })];
             }
         }
         return [transformObjectContent(descriptor.contentType, { data: input.value })];

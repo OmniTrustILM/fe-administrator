@@ -646,7 +646,12 @@ export default function LocationDetail() {
                               ''
                           ) : (
                               <div style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: '20em', overflow: 'hidden' }}>
-                                  {cert.csrAttributes.map((atr) => getAttributeContent(atr.contentType, atr.content) ?? '').join(', ')}
+                                  {cert.csrAttributes
+                                      .map((atr) => {
+                                          const content = getAttributeContent(atr.contentType, atr.content);
+                                          return typeof content === 'string' ? content : '';
+                                      })
+                                      .join(', ')}
                               </div>
                           ),
                       ],

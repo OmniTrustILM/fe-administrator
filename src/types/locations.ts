@@ -6,29 +6,38 @@ import type {
     IssueToLocationRequestDto,
     LocationDto,
     MetadataResponseDto,
-    NameAndUuidDto as NameAndUuidDtoOpenApi,
+    NameAndUuidDto,
     PushToLocationRequestDto,
     ResponseMetadataDto,
 } from './openapi';
 
-export type LocationAddRequestDto = AddLocationRequestDto;
-export type LocationAddRequestModel = Omit<LocationAddRequestDto, 'attributes | customAttributes'> & {
+export type {
+    AddLocationRequestDto as LocationAddRequestDto,
+    EditLocationRequestDto as LocationEditRequestDto,
+    PushToLocationRequestDto as LocationPushRequestDto,
+    IssueToLocationRequestDto as LocationIssueRequestDto,
+    NameAndUuidDto,
+    NameAndUuidDto as NameAndUuidModel,
+    ResponseMetadataDto as MetadataItemDto,
+    MetadataResponseDto as MetadataDto,
+    CertificateInLocationDto as LocationCertificateDto,
+    LocationDto as LocationResponseDto,
+} from './openapi';
+
+export type LocationAddRequestModel = Omit<AddLocationRequestDto, 'attributes | customAttributes'> & {
     attributes: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type LocationEditRequestDto = EditLocationRequestDto;
-export type LocationEditRequestModel = Omit<LocationEditRequestDto, 'attributes | customAttributes'> & {
+export type LocationEditRequestModel = Omit<EditLocationRequestDto, 'attributes | customAttributes'> & {
     attributes: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type LocationPushRequestDto = PushToLocationRequestDto;
-export type LocationPushRequestModel = Omit<LocationPushRequestDto, 'attributes'> & { attributes: Array<AttributeRequestModel> };
+export type LocationPushRequestModel = Omit<PushToLocationRequestDto, 'attributes'> & { attributes: Array<AttributeRequestModel> };
 
-export type LocationIssueRequestDto = IssueToLocationRequestDto;
 export type LocationIssueRequestModel = Omit<
-    LocationIssueRequestDto,
+    IssueToLocationRequestDto,
     'csrAttributes | issueAttributes | customAttributes | certificateCustomAttributes'
 > & {
     csrAttributes: Array<AttributeRequestModel>;
@@ -37,24 +46,17 @@ export type LocationIssueRequestModel = Omit<
     certificateCustomAttributes?: Array<AttributeRequestModel>;
 };
 
-export type NameAndUuidDto = NameAndUuidDtoOpenApi;
-export type NameAndUuidModel = NameAndUuidDto;
+export type MetadataItemModel = Omit<ResponseMetadataDto, 'sourceObjects'> & { sourceObjects: Array<NameAndUuidDto> };
 
-export type MetadataItemDto = ResponseMetadataDto;
-export type MetadataItemModel = Omit<MetadataItemDto, 'sourceObjects'> & { sourceObjects: Array<NameAndUuidModel> };
+export type MetadataModel = Omit<MetadataResponseDto, 'items'> & { items: Array<MetadataItemModel> };
 
-export type MetadataDto = MetadataResponseDto;
-export type MetadataModel = Omit<MetadataDto, 'items'> & { items: Array<MetadataItemModel> };
-
-export type LocationCertificateDto = CertificateInLocationDto;
-export type LocationCertificateModel = Omit<LocationCertificateDto, 'metadata | pushAttributes | csrAttributes'> & {
+export type LocationCertificateModel = Omit<CertificateInLocationDto, 'metadata | pushAttributes | csrAttributes'> & {
     metadata?: Array<MetadataModel>;
     pushAttributes?: Array<AttributeResponseModel>;
     csrAttributes?: Array<AttributeResponseModel>;
 };
 
-export type LocationResponseDto = LocationDto;
-export type LocationResponseModel = Omit<LocationResponseDto, 'attributes | certificates | metadata | customAttributes'> & {
+export type LocationResponseModel = Omit<LocationDto, 'attributes | certificates | metadata | customAttributes'> & {
     attributes: Array<AttributeResponseModel>;
     certificates: Array<LocationCertificateModel>;
     metadata?: Array<MetadataModel>;

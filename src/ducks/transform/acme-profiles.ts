@@ -25,7 +25,7 @@ export function transformAcmeProfileResponseDtoToModel(acme: AcmeProfileResponse
     };
 }
 
-export function transformAcmeProfileEditRequestModelToDto(acme: AcmeProfileEditRequestModel): AcmeProfileEditRequestDto {
+function mapAcmeRequestPayload<T extends AcmeProfileEditRequestModel | AcmeProfileAddRequestModel>(acme: T) {
     return {
         ...acme,
         issueCertificateAttributes: acme.issueCertificateAttributes.map(transformAttributeRequestModelToDto),
@@ -34,11 +34,10 @@ export function transformAcmeProfileEditRequestModelToDto(acme: AcmeProfileEditR
     };
 }
 
+export function transformAcmeProfileEditRequestModelToDto(acme: AcmeProfileEditRequestModel): AcmeProfileEditRequestDto {
+    return mapAcmeRequestPayload(acme);
+}
+
 export function transformAcmeProfileAddRequestModelToDto(acme: AcmeProfileAddRequestModel): AcmeProfileAddRequestDto {
-    return {
-        ...acme,
-        issueCertificateAttributes: acme.issueCertificateAttributes.map(transformAttributeRequestModelToDto),
-        revokeCertificateAttributes: acme.revokeCertificateAttributes.map(transformAttributeRequestModelToDto),
-        customAttributes: acme.customAttributes?.map(transformAttributeRequestModelToDto),
-    };
+    return mapAcmeRequestPayload(acme);
 }

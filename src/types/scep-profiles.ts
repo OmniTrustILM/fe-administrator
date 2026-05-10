@@ -1,28 +1,28 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
 import type { CertificateListResponseModel } from './certificate';
-import type {
-    ScepProfileDetailDto,
-    ScepProfileDto,
-    ScepProfileEditRequestDto as ScepProfileEditRequestDtoOpenApi,
-    ScepProfileRequestDto,
-} from './openapi';
+import type { ScepProfileDetailDto, ScepProfileEditRequestDto, ScepProfileRequestDto } from './openapi';
 import type { RaProfileSimplifiedModel } from './ra-profiles';
 
-export type ScepProfileAddRequestDto = ScepProfileRequestDto;
-export type ScepProfileAddRequestModel = Omit<ScepProfileAddRequestDto, 'issueCertificateAttributes | customAttributes'> & {
+export type {
+    ScepProfileRequestDto as ScepProfileAddRequestDto,
+    ScepProfileEditRequestDto,
+    ScepProfileDetailDto as ScepProfileResponseDto,
+    ScepProfileDto as ScepProfileListResponseDto,
+    ScepProfileDto as ScepProfileListResponseModel,
+} from './openapi';
+
+export type ScepProfileAddRequestModel = Omit<ScepProfileRequestDto, 'issueCertificateAttributes | customAttributes'> & {
     issueCertificateAttributes: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type ScepProfileEditRequestDto = ScepProfileEditRequestDtoOpenApi;
 export type ScepProfileEditRequestModel = Omit<ScepProfileEditRequestDto, 'issueCertificateAttributes | customAttributes'> & {
     issueCertificateAttributes: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type ScepProfileResponseDto = ScepProfileDetailDto;
 export type ScepProfileResponseModel = Omit<
-    ScepProfileResponseDto,
+    ScepProfileDetailDto,
     'raProfile | issueCertificateAttributes | customAttributes | caCertificate'
 > & {
     raProfile?: RaProfileSimplifiedModel;
@@ -30,6 +30,3 @@ export type ScepProfileResponseModel = Omit<
     customAttributes?: Array<AttributeResponseModel>;
     caCertificate?: CertificateListResponseModel;
 };
-
-export type ScepProfileListResponseDto = ScepProfileDto;
-export type ScepProfileListResponseModel = ScepProfileListResponseDto;

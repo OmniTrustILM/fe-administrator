@@ -13,7 +13,12 @@ import {
 } from './attributes';
 import { AttributeContentType, AttributeType, AttributeVersion, ProgrammingLanguageEnum } from 'types/openapi';
 
-const base64Encode = (s: string) => btoa(unescape(encodeURIComponent(s)));
+const base64Encode = (s: string) => {
+    const bytes = new TextEncoder().encode(s);
+    let binary = '';
+    for (const b of bytes) binary += String.fromCodePoint(b);
+    return btoa(binary);
+};
 
 describe('attributes utils', () => {
     describe('attributeFieldNameTransform', () => {

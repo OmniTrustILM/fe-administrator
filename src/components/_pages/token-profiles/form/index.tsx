@@ -344,7 +344,8 @@ export default function TokenProfileForm({
                                             value={field.value || ''}
                                             onChange={(value) => {
                                                 field.onChange(value);
-                                                onTokenChange(typeof value === 'string' ? value : value?.toString() || '');
+                                                const next = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+                                                onTokenChange(next);
                                             }}
                                             options={optionsForTokens}
                                             placeholder="Select to change Token if needed"

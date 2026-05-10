@@ -79,7 +79,7 @@ describe('alerts-ticker', () => {
     });
 
     it('should not start multiple intervals', () => {
-        const setIntervalSpy = vi.spyOn(global, 'setInterval');
+        const setIntervalSpy = vi.spyOn(globalThis, 'setInterval');
 
         startAlertsTicker(mockStore);
         startAlertsTicker(mockStore);

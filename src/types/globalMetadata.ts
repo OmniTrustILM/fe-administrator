@@ -1,22 +1,12 @@
-import type {
-    AttributeDefinitionDto,
-    ConnectorMetadataResponseDto as ConnectorMetadataResponseDtoOpenApi,
-    GlobalMetadataCreateRequestDto as GlobalMetadataCreateRequestDtoOpenApi,
-    GlobalMetadataDefinitionDetailDto,
-    GlobalMetadataUpdateRequestDto as GlobalMetadataUpdateRequestDtoOpenApi,
+export type {
+    AttributeDefinitionDto as GlobalMetadataResponseDto,
+    AttributeDefinitionDto as GlobalMetadataResponseModel,
+    GlobalMetadataDefinitionDetailDto as GlobalMetadataDetailResponseDto,
+    GlobalMetadataDefinitionDetailDto as GlobalMetadataDetailResponseModel,
+    GlobalMetadataCreateRequestDto,
+    GlobalMetadataCreateRequestDto as GlobalMetadataCreateRequestModel,
+    GlobalMetadataUpdateRequestDto,
+    GlobalMetadataUpdateRequestDto as GlobalMetadataUpdateRequestModel,
+    ConnectorMetadataResponseDto,
+    ConnectorMetadataResponseDto as ConnectorMetadataResponseModel,
 } from './openapi';
-
-export type GlobalMetadataResponseDto = AttributeDefinitionDto;
-export type GlobalMetadataResponseModel = GlobalMetadataResponseDto;
-
-export type GlobalMetadataDetailResponseDto = GlobalMetadataDefinitionDetailDto;
-export type GlobalMetadataDetailResponseModel = GlobalMetadataDetailResponseDto;
-
-export type GlobalMetadataCreateRequestDto = GlobalMetadataCreateRequestDtoOpenApi;
-export type GlobalMetadataCreateRequestModel = GlobalMetadataCreateRequestDto;
-
-export type GlobalMetadataUpdateRequestDto = GlobalMetadataUpdateRequestDtoOpenApi;
-export type GlobalMetadataUpdateRequestModel = GlobalMetadataUpdateRequestDto;
-
-export type ConnectorMetadataResponseDto = ConnectorMetadataResponseDtoOpenApi;
-export type ConnectorMetadataResponseModel = ConnectorMetadataResponseDto;

@@ -1,10 +1,6 @@
-import type {
-    AcmeAccountListResponseDto as AcmeAccountListResponseDtoOpenApi,
-    AcmeAccountResponseDto as AcmeAccountResponseDtoOpenApi,
+export type {
+    AcmeAccountResponseDto,
+    AcmeAccountResponseDto as AcmeAccountResponseModel,
+    AcmeAccountListResponseDto,
+    AcmeAccountListResponseDto as AcmeAccountListResponseModel,
 } from './openapi';
-
-export type AcmeAccountResponseDto = AcmeAccountResponseDtoOpenApi;
-export type AcmeAccountResponseModel = AcmeAccountResponseDto;
-
-export type AcmeAccountListResponseDto = AcmeAccountListResponseDtoOpenApi;
-export type AcmeAccountListResponseModel = AcmeAccountListResponseDto;

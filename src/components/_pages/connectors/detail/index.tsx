@@ -64,7 +64,7 @@ export default function ConnectorDetail() {
 
     const isBusy = isFetchingDetail || isBulkReconnecting || isReconnecting || isAuthorizing;
 
-    const [currentFunctionGroup, setFunctionGroup] = useState<FunctionGroupModel | undefined>();
+    const [currentFunctionGroup, setCurrentFunctionGroup] = useState<FunctionGroupModel | undefined>();
     const [currentFunctionGroupKind, setCurrentFunctionGroupKind] = useState<string>();
     const [currentFunctionGroupKindAttributes, setCurrentFunctionGroupKindAttributes] = useState<AttributeDescriptorModel[] | undefined>();
 
@@ -92,7 +92,7 @@ export default function ConnectorDetail() {
     }, [id, dispatch]);
 
     useEffect(() => {
-        setFunctionGroup(undefined);
+        setCurrentFunctionGroup(undefined);
         getFreshConnectorDetails();
         getFreshConnectorHealth();
         getFreshConnectorAttributesDesc();
@@ -103,12 +103,12 @@ export default function ConnectorDetail() {
 
     useEffect(() => {
         if (!connector || connector.functionGroups.length === 0) {
-            setFunctionGroup(undefined);
+            setCurrentFunctionGroup(undefined);
             setCurrentFunctionGroupKind(undefined);
             return;
         }
 
-        setFunctionGroup(connector.functionGroups[0]);
+        setCurrentFunctionGroup(connector.functionGroups[0]);
 
         if (connector.functionGroups[0].kinds.length > 0) {
             setCurrentFunctionGroupKind(connector.functionGroups[0].kinds[0]);
@@ -168,7 +168,7 @@ export default function ConnectorDetail() {
     const onFunctionGroupChange = useCallback(
         (groupCode: string) => {
             const group = (connector?.functionGroups ?? []).find((group) => group.functionGroupCode === groupCode);
-            if (group) setFunctionGroup(group);
+            if (group) setCurrentFunctionGroup(group);
         },
         [connector],
     );

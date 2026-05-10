@@ -46,18 +46,18 @@ export function transformTokenProfileEditRequestModelToDto(tokenEditReq: TokenPr
     };
 }
 
+function spreadCopy<TIn extends object, TOut>(input: TIn): TOut {
+    return { ...input } as unknown as TOut;
+}
+
 export function transformTokenProfileKeyUsageRequestModelToDto(
     keyUsageRequest: TokenProfileKeyUsageUpdateRequestModel,
 ): TokenProfileKeyUsageUpdateRequestDto {
-    return {
-        ...keyUsageRequest,
-    };
+    return spreadCopy(keyUsageRequest);
 }
 
 export function transformTokenProfileBulkKeyUsageRequestModelToDto(
     keyUsageRequest: TokenProfileKeyUsageBulkUpdateRequestModel,
 ): TokenProfileKeyUsageBulkUpdateRequestDto {
-    return {
-        ...keyUsageRequest,
-    };
+    return spreadCopy(keyUsageRequest);
 }

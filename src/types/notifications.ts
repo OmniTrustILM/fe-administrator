@@ -1,17 +1,16 @@
 import type { AttributeMappingModel, AttributeRequestModel, AttributeResponseModel } from './attributes';
-import type { NotificationDto as NotificationDtoOpenApi, NotificationInstanceDto, NotificationInstanceRequestDto } from './openapi';
+import type { NotificationInstanceDto, NotificationInstanceRequestDto } from './openapi';
 
-export type NotificationDto = NotificationDtoOpenApi;
-export type NotificationModel = NotificationDto;
+export type { NotificationDto, NotificationDto as NotificationModel } from './openapi';
 
-export type InstanceNotificationDto = NotificationInstanceDto;
-export type NotificationInstanceModel = Omit<InstanceNotificationDto, 'attributes' | 'attributeMappings'> & {
+export type { NotificationInstanceDto as InstanceNotificationDto } from './openapi';
+export type NotificationInstanceModel = Omit<NotificationInstanceDto, 'attributes' | 'attributeMappings'> & {
     attributes: Array<AttributeResponseModel>;
     attributeMappings?: Array<AttributeMappingModel>;
 };
 
-export type InstanceNotificationRequestDto = NotificationInstanceRequestDto;
-export type NotificationInstanceRequestModel = Omit<InstanceNotificationRequestDto, 'attributes' | 'attributeMappings'> & {
+export type { NotificationInstanceRequestDto as InstanceNotificationRequestDto } from './openapi';
+export type NotificationInstanceRequestModel = Omit<NotificationInstanceRequestDto, 'attributes' | 'attributeMappings'> & {
     attributes: Array<AttributeRequestModel>;
     attributeMappings?: Array<AttributeMappingModel>;
 };

@@ -53,7 +53,7 @@ const updatePlatformSettings: AppEpic = (action$, state$, deps) => {
                         slice.actions.updatePlatformSettingsSuccess(action.payload),
                         alertActions.success('Platform settings updated successfully.'),
                         appRedirectActions.redirect({ url: '../settings' }),
-                    ].filter((el) => el) as UnknownAction[];
+                    ].filter(Boolean) as UnknownAction[];
                     return of(...actions);
                 }),
                 catchError((err) =>

@@ -77,8 +77,7 @@ function RolePermissionsForm() {
                 resources: [],
             };
 
-            for (let i = 0; i < perms.resources.length; i++) {
-                const outRes = perms.resources[i];
+            for (const outRes of perms.resources) {
                 const inRes = inPerms.resources.find((res) => res.name === outRes.name);
 
                 if (!outRes.objects) continue;

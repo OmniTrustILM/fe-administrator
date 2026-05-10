@@ -78,9 +78,15 @@ function Pagination({ page, totalPages, onPageChange, dataTestId, disabled = fal
                     <span>Previous</span>
                 </button>
                 <div className="flex items-center gap-x-1">
-                    {pageNumbers.map((pageNum, index) =>
-                        pageNum === 'ellipsis' ? (
-                            <div key={`ellipsis-${index}`} className="hs-tooltip inline-block">
+                    {pageNumbers.map((pageNum, index) => {
+                        const prevNumeric = pageNumbers
+                            .slice(0, index)
+                            .reverse()
+                            .find((p) => p !== 'ellipsis') as number | undefined;
+                        const nextNumeric = pageNumbers.slice(index + 1).find((p) => p !== 'ellipsis') as number | undefined;
+                        const ellipsisKey = `ellipsis-between-${prevNumeric ?? 'start'}-${nextNumeric ?? 'end'}`;
+                        return pageNum === 'ellipsis' ? (
+                            <div key={ellipsisKey} className="hs-tooltip inline-block">
                                 <button
                                     type="button"
                                     className="min-h-9.5 min-w-9.5 flex justify-center items-center text-gray-400 p-2 text-sm rounded-lg pointer-events-none dark:text-neutral-500"
@@ -108,8 +114,8 @@ function Pagination({ page, totalPages, onPageChange, dataTestId, disabled = fal
                             >
                                 {pageNum}
                             </button>
-                        ),
-                    )}
+                        );
+                    })}
                 </div>
                 <button
                     type="button"

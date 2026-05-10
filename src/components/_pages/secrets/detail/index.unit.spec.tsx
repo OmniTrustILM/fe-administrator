@@ -36,8 +36,8 @@ vi.mock('components/Container', async () => {
 vi.mock('components/Layout/TabLayout', () => ({
     default: ({ tabs }: any) => (
         <div>
-            {tabs.map((tab: any, index: number) => (
-                <div key={index} data-testid={`tab-${tab.title}`}>
+            {tabs.map((tab: any) => (
+                <div key={tab.title} data-testid={`tab-${tab.title}`}>
                     <h3>{tab.title}</h3>
                     {tab.content}
                 </div>

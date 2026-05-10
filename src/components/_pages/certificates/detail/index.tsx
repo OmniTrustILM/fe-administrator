@@ -1,4 +1,4 @@
-import { Buffer } from 'buffer';
+import { Buffer } from 'node:buffer';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import AttributeEditor from 'components/Attributes/AttributeEditor';
 import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE } from 'components/Attributes/AttributeViewer';
@@ -68,7 +68,7 @@ type LocationPushFormProps = Readonly<{
     selectLocationsHeaders: TableHeader[];
     selectLocationsData: TableDataRow[];
     selectLocationsCheckedRows: string[];
-    setSelectLocationCheckedRows: (rows: string[]) => void;
+    setSelectLocationsCheckedRows: (rows: string[]) => void;
     locationAttributeDescriptors?: AttributeDescriptorModel[];
     groupAttributesCallbackAttributes: AttributeDescriptorModel[];
     setGroupAttributesCallbackAttributes: React.Dispatch<React.SetStateAction<AttributeDescriptorModel[]>>;
@@ -81,7 +81,7 @@ function LocationPushForm({
     selectLocationsHeaders,
     selectLocationsData,
     selectLocationsCheckedRows,
-    setSelectLocationCheckedRows,
+    setSelectLocationsCheckedRows,
     locationAttributeDescriptors,
     groupAttributesCallbackAttributes,
     setGroupAttributesCallbackAttributes,
@@ -122,7 +122,7 @@ function LocationPushForm({
                         data={selectLocationsData}
                         hasCheckboxes={true}
                         multiSelect={false}
-                        onCheckedRowsChanged={(rows) => setSelectLocationCheckedRows(rows as string[])}
+                        onCheckedRowsChanged={(rows) => setSelectLocationsCheckedRows(rows as string[])}
                     />
                 </div>
 
@@ -192,8 +192,8 @@ export default function CertificateDetail() {
 
     const [certificateNodes, setCertificateNodes] = useState<CustomNode[]>([]);
     const [certificateEdges, setCertificateEdges] = useState<Edge[]>([]);
-    const [chainDownloadSwitch, setTriggerChainDownload] = useState<ChainDownloadSwitchState>({ isDownloadTriggered: false });
-    const [certificateDownloadSwitch, setCertificateDownload] = useState<ChainDownloadSwitchState>({ isDownloadTriggered: false });
+    const [chainDownloadSwitch, setChainDownloadSwitch] = useState<ChainDownloadSwitchState>({ isDownloadTriggered: false });
+    const [certificateDownloadSwitch, setCertificateDownloadSwitch] = useState<ChainDownloadSwitchState>({ isDownloadTriggered: false });
 
     const [isFlowTabOpened, setIsFlowTabOpened] = useState<boolean>(false);
     const raProfileSelected = useSelector(raProfilesSelectors.raProfile);
@@ -220,8 +220,8 @@ export default function CertificateDetail() {
     const deviceType = useDeviceType();
     const [currentInfoId, setCurrentInfoId] = useState('');
 
-    const [locationsCheckedRows, setLocationCheckedRows] = useState<string[]>([]);
-    const [selectLocationsCheckedRows, setSelectLocationCheckedRows] = useState<string[]>([]);
+    const [locationsCheckedRows, setLocationsCheckedRows] = useState<string[]>([]);
+    const [selectLocationsCheckedRows, setSelectLocationsCheckedRows] = useState<string[]>([]);
 
     const [locationToEntityMap, setLocationToEntityMap] = useState<{ [key: string]: string }>({});
 
@@ -293,20 +293,20 @@ export default function CertificateDetail() {
         const extensionFormat = chainDownloadSwitch.certificateEncoding === CertificateFormatEncoding.Pem ? '.pem' : '.p7b';
         downloadFile(Buffer.from(certificateChainDownloadContent.content ?? '', 'base64'), fileNameToDownload + '_chain' + extensionFormat);
 
-        setTriggerChainDownload({ isDownloadTriggered: false });
+        setChainDownloadSwitch({ isDownloadTriggered: false });
     }, [certificateChainDownloadContent, chainDownloadSwitch, fileNameToDownload]);
 
     useEffect(() => {
         if (!certificateDownloadContent || !certificateDownloadSwitch.isDownloadTriggered) return;
         if (certificateDownloadSwitch.isCopyTriggered) {
-            setCertificateDownload({ isDownloadTriggered: false });
+            setCertificateDownloadSwitch({ isDownloadTriggered: false });
             return;
         }
 
         const extensionFormat = certificateDownloadSwitch.certificateEncoding === CertificateFormatEncoding.Pem ? '.pem' : '.cer';
         downloadFile(Buffer.from(certificateDownloadContent.content ?? '', 'base64'), fileNameToDownload + extensionFormat);
 
-        setCertificateDownload({ isDownloadTriggered: false });
+        setCertificateDownloadSwitch({ isDownloadTriggered: false });
     }, [certificateDownloadContent, certificateDownloadSwitch, fileNameToDownload]);
 
     useEffect(() => {
@@ -472,7 +472,7 @@ export default function CertificateDetail() {
                 disabled: isCertificateArchived,
                 tooltip: 'Push to location',
                 onClick: () => {
-                    setSelectLocationCheckedRows([]);
+                    setSelectLocationsCheckedRows([]);
                     setAddCertToLocation(true);
                 },
             },
@@ -633,7 +633,7 @@ export default function CertificateDetail() {
                               value?.status ? <CertificateStatus key="status" status={value.status} /> : '',
                               <div key="message" style={{ wordBreak: 'break-all' }}>
                                   {value.message?.split('\n').map((str: string, i) => (
-                                      <div key={i}>
+                                      <div key={`${key}-line-${i}`}>
                                           {str}
                                           <br />
                                       </div>
@@ -1257,7 +1257,7 @@ export default function CertificateDetail() {
                                         headers={locationsHeaders}
                                         data={locationsData}
                                         hasCheckboxes
-                                        onCheckedRowsChanged={(rows) => setLocationCheckedRows(rows as string[])}
+                                        onCheckedRowsChanged={(rows) => setLocationsCheckedRows(rows as string[])}
                                     />
                                 </Widget>
                             ),
@@ -1413,7 +1413,7 @@ export default function CertificateDetail() {
                             selectLocationsHeaders={selectLocationsHeaders}
                             selectLocationsData={selectLocationsData}
                             selectLocationsCheckedRows={selectLocationsCheckedRows}
-                            setSelectLocationCheckedRows={setSelectLocationCheckedRows}
+                            setSelectLocationsCheckedRows={setSelectLocationsCheckedRows}
                             locationAttributeDescriptors={locationAttributeDescriptors}
                             groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                             setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}

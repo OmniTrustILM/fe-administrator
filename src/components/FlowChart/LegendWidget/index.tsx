@@ -36,8 +36,9 @@ const LegendComponent: React.FC<LegendComponentProps> = ({ legends }) => {
         <div className="flex gap-4 justify-end">
             {legends.map((legend, index) => {
                 const IconComponent = iconMap[legend.icon];
+                const legendKey = legend.icon || (typeof legend.label === 'string' ? legend.label : `legend-${index}`);
                 return (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={legendKey} className="flex items-center gap-2">
                         <Button
                             type="button"
                             variant="transparent"

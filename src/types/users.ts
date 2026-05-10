@@ -1,8 +1,7 @@
 import type { AttributeRequestModel } from './attributes';
-import type { AddUserRequestDto, UserDto } from './openapi';
+import type { AddUserRequestDto } from './openapi';
 
-export type UserResponseDto = UserDto;
-export type UserResponseModel = UserResponseDto;
+export type { UserDto as UserResponseDto, UserDto as UserResponseModel } from './openapi';
 
-export type UserAddRequestDto = AddUserRequestDto;
-export type UserAddRequestModel = Omit<UserAddRequestDto, 'customAttributes'> & { customAttributes?: Array<AttributeRequestModel> };
+export type { AddUserRequestDto as UserAddRequestDto } from './openapi';
+export type UserAddRequestModel = Omit<AddUserRequestDto, 'customAttributes'> & { customAttributes?: Array<AttributeRequestModel> };

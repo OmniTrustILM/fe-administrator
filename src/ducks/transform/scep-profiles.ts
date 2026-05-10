@@ -26,7 +26,7 @@ export function transformScepProfileResponseDtoToModel(scep: ScepProfileResponse
     };
 }
 
-export function transformScepProfileEditRequestModelToDto(scep: ScepProfileEditRequestModel): ScepProfileEditRequestDto {
+function mapScepRequestPayload<T extends ScepProfileEditRequestModel | ScepProfileAddRequestModel>(scep: T) {
     return {
         ...scep,
         issueCertificateAttributes: scep.issueCertificateAttributes.map(transformAttributeRequestModelToDto),
@@ -34,10 +34,10 @@ export function transformScepProfileEditRequestModelToDto(scep: ScepProfileEditR
     };
 }
 
+export function transformScepProfileEditRequestModelToDto(scep: ScepProfileEditRequestModel): ScepProfileEditRequestDto {
+    return mapScepRequestPayload(scep);
+}
+
 export function transformScepProfileAddRequestModelToDto(scep: ScepProfileAddRequestModel): ScepProfileAddRequestDto {
-    return {
-        ...scep,
-        issueCertificateAttributes: scep.issueCertificateAttributes.map(transformAttributeRequestModelToDto),
-        customAttributes: scep.customAttributes?.map(transformAttributeRequestModelToDto),
-    };
+    return mapScepRequestPayload(scep);
 }

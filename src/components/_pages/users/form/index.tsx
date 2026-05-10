@@ -231,7 +231,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
     useEffect(() => {
         const fpc = certificates
             .filter((pagedCert) => !['expired', 'revoked', 'invalid'].includes(pagedCert.state))
-            .filter((pagedCert) => loadedCerts.find((loadedCert) => loadedCert.uuid === pagedCert.uuid) === undefined);
+            .filter((pagedCert) => !loadedCerts.some((loadedCert) => loadedCert.uuid === pagedCert.uuid));
 
         if (fpc.length === 0) return;
 

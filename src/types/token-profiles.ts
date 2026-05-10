@@ -1,36 +1,29 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
-import type {
-    AddTokenProfileRequestDto,
-    BulkTokenProfileKeyUsageRequestDto,
-    EditTokenProfileRequestDto,
-    TokenProfileDetailDto,
-    TokenProfileDto,
-    TokenProfileKeyUsageRequestDto,
+import type { AddTokenProfileRequestDto, EditTokenProfileRequestDto, TokenProfileDetailDto } from './openapi';
+
+export type {
+    AddTokenProfileRequestDto as TokenProfileAddRequestDto,
+    EditTokenProfileRequestDto as TokenProfileEditRequestDto,
+    TokenProfileDto as TokenProfileResponseDto,
+    TokenProfileDto as TokenProfileResponseModel,
+    TokenProfileDetailDto as TokenProfileDetailResponseDto,
+    TokenProfileKeyUsageRequestDto as TokenProfileKeyUsageUpdateRequestDto,
+    TokenProfileKeyUsageRequestDto as TokenProfileKeyUsageUpdateRequestModel,
+    BulkTokenProfileKeyUsageRequestDto as TokenProfileKeyUsageBulkUpdateRequestDto,
+    BulkTokenProfileKeyUsageRequestDto as TokenProfileKeyUsageBulkUpdateRequestModel,
 } from './openapi';
 
-export type TokenProfileAddRequestDto = AddTokenProfileRequestDto;
-export type TokenProfileAddRequestModel = Omit<TokenProfileAddRequestDto, 'attributes | customAttributes'> & {
+export type TokenProfileAddRequestModel = Omit<AddTokenProfileRequestDto, 'attributes | customAttributes'> & {
     attributes: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type TokenProfileEditRequestDto = EditTokenProfileRequestDto;
-export type TokenProfileEditRequestModel = Omit<TokenProfileEditRequestDto, 'attributes | customAttributes'> & {
+export type TokenProfileEditRequestModel = Omit<EditTokenProfileRequestDto, 'attributes | customAttributes'> & {
     attributes: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type TokenProfileResponseDto = TokenProfileDto;
-export type TokenProfileResponseModel = TokenProfileResponseDto;
-
-export type TokenProfileDetailResponseDto = TokenProfileDetailDto;
-export type TokenProfileDetailResponseModel = Omit<TokenProfileDetailResponseDto, 'attributes | customAttributes'> & {
+export type TokenProfileDetailResponseModel = Omit<TokenProfileDetailDto, 'attributes | customAttributes'> & {
     attributes: Array<AttributeResponseModel>;
     customAttributes?: Array<AttributeResponseModel>;
 };
-
-export type TokenProfileKeyUsageUpdateRequestDto = TokenProfileKeyUsageRequestDto;
-export type TokenProfileKeyUsageUpdateRequestModel = TokenProfileKeyUsageUpdateRequestDto;
-
-export type TokenProfileKeyUsageBulkUpdateRequestDto = BulkTokenProfileKeyUsageRequestDto;
-export type TokenProfileKeyUsageBulkUpdateRequestModel = TokenProfileKeyUsageBulkUpdateRequestDto;

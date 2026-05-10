@@ -34,29 +34,19 @@ const ConditionsItemsList = ({ conditionItems = [], conditionName, conditionUuid
         <div className="flex gap-2 items-center">
             <h6 className="text-gray-500">{`${conditionName}'s Condition Items`}</h6>
             <div className="flex flex-wrap">
-                {renderConditionItems(
-                    conditionItems,
-                    availableFilters,
-                    platformEnums,
-                    searchGroupEnum,
-                    filterConditionOperatorEnum,
-                    '',
-                    'small',
-                )}
+                {renderConditionItems(conditionItems, availableFilters, platformEnums, searchGroupEnum, filterConditionOperatorEnum, {
+                    className: '',
+                    variant: 'small',
+                })}
             </div>
         </div>
     ) : (
         <div key={conditionUuid} className="flex gap-2 items-center">
             <h6 className="text-gray-500">{`${conditionName}`}</h6>
-            {renderConditionItems(
-                conditionItems,
-                availableFilters,
-                platformEnums,
-                searchGroupEnum,
-                filterConditionOperatorEnum,
-                '',
-                'badge',
-            )}
+            {renderConditionItems(conditionItems, availableFilters, platformEnums, searchGroupEnum, filterConditionOperatorEnum, {
+                className: '',
+                variant: 'badge',
+            })}
         </div>
     );
 };

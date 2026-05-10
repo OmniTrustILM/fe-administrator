@@ -109,12 +109,14 @@ function AuditLogs() {
         () =>
             createAuditLogsList(
                 auditLogs,
-                resourceEnum,
-                moduleEnum,
-                actorEnum,
-                authMethodEnum,
-                operationEnum,
-                operationResultEnum,
+                {
+                    resource: resourceEnum,
+                    module: moduleEnum,
+                    actor: actorEnum,
+                    authMethod: authMethodEnum,
+                    operation: operationEnum,
+                    operationResult: operationResultEnum,
+                },
                 navigate,
                 onInfoClick,
             ),

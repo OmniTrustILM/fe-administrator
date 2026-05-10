@@ -49,19 +49,22 @@ type Props = Readonly<{
     firstBadgeWithSwitch?: boolean;
 }>;
 
+const BADGE_SLOTS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
+const CHART_SLOTS = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta'] as const;
+
 function DashboardSkeleton({ countBadges, charts, firstBadgeWithSwitch = false }: Props) {
     return (
         <div>
             <div className="flex flex-row gap-4 md:gap-8 mb-4 md:mb-8 flex-wrap">
-                {Array.from({ length: countBadges }).map((_, i) => (
-                    <div key={`badge-${i}`} className="flex-1 min-w-[180px]">
+                {BADGE_SLOTS.slice(0, countBadges).map((slot, i) => (
+                    <div key={`badge-${slot}`} className="flex-1 min-w-[180px]">
                         <CountBadgeSkeleton withSwitch={i === 0 && firstBadgeWithSwitch} />
                     </div>
                 ))}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8">
-                {Array.from({ length: charts }).map((_, i) => (
-                    <DonutChartSkeleton key={`chart-${i}`} />
+                {CHART_SLOTS.slice(0, charts).map((slot) => (
+                    <DonutChartSkeleton key={`chart-${slot}`} />
                 ))}
             </div>
         </div>

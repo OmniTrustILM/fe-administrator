@@ -40,7 +40,7 @@ export function useDeviceType(): DeviceType {
 
     useEffect(() => {
         function handleResize() {
-            const { innerWidth } = window;
+            const { innerWidth } = globalThis;
             if (innerWidth <= 768) {
                 setDeviceType(DeviceType.Mobile);
             } else if (innerWidth <= 1024) {

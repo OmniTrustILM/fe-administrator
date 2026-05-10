@@ -1,38 +1,20 @@
-import type {
-    PlatformSettingsDto,
-    PlatformSettingsUpdateDto,
-    UtilsSettingsDto,
-    LoggingSettingsDto,
-    ResourceLoggingSettingsDto as ResourceLoggingSettingsDtoApi,
-    AuditLoggingSettingsDto as AuditLoggingSettingsDtoApi,
-    CertificateSettingsDto as CertificateSettingsDtoApi,
-    EventSettingsDto as EventSettingsDtoApi,
-    EventsSettingsDto as EventsSettingsDtoApi,
+export type {
+    UtilsSettingsDto as SettingsUtilsDto,
+    UtilsSettingsDto as SettingsUtilsModel,
+    CertificateSettingsDto as SettingsCertificatesDto,
+    CertificateSettingsDto as SettingsCertificatesModel,
+    PlatformSettingsDto as SettingsPlatformDto,
+    PlatformSettingsDto as SettingsPlatformModel,
+    PlatformSettingsUpdateDto as SettingsPlatformUpdateDto,
+    PlatformSettingsUpdateDto as SettingsPlatformUpdateModel,
+    LoggingSettingsDto as SettingsLoggingDto,
+    LoggingSettingsDto as SettingsLoggingModel,
+    ResourceLoggingSettingsDto,
+    ResourceLoggingSettingsDto as ResourceLoggingSettingsModel,
+    AuditLoggingSettingsDto,
+    AuditLoggingSettingsDto as AuditLoggingSettingsModel,
+    EventSettingsDto,
+    EventSettingsDto as EventSettingsModel,
+    EventsSettingsDto,
+    EventsSettingsDto as EventsSettingsModel,
 } from './openapi';
-
-export type SettingsUtilsDto = UtilsSettingsDto;
-export type SettingsUtilsModel = SettingsUtilsDto;
-
-export type SettingsCertificatesDto = CertificateSettingsDtoApi;
-export type SettingsCertificatesModel = SettingsCertificatesDto;
-
-export type SettingsPlatformDto = PlatformSettingsDto;
-export type SettingsPlatformModel = SettingsPlatformDto;
-
-export type SettingsPlatformUpdateDto = PlatformSettingsUpdateDto;
-export type SettingsPlatformUpdateModel = SettingsPlatformUpdateDto;
-
-export type SettingsLoggingDto = LoggingSettingsDto;
-export type SettingsLoggingModel = SettingsLoggingDto;
-
-export type ResourceLoggingSettingsDto = ResourceLoggingSettingsDtoApi;
-export type ResourceLoggingSettingsModel = ResourceLoggingSettingsDto;
-
-export type AuditLoggingSettingsDto = AuditLoggingSettingsDtoApi;
-export type AuditLoggingSettingsModel = AuditLoggingSettingsDto;
-
-export type EventSettingsDto = EventSettingsDtoApi;
-export type EventSettingsModel = EventSettingsDto;
-
-export type EventsSettingsDto = EventsSettingsDtoApi;
-export type EventsSettingsModel = EventsSettingsDto;

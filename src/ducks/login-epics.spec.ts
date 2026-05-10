@@ -73,16 +73,16 @@ describe('login epics', () => {
     });
 
     test('getLoginMethods failure emits getLoginMethodsFailure', async () => {
-        const xhr = {
+        const errorObj = Object.assign(new Error('Not Found'), {
+            name: 'AjaxError' as const,
             status: 404,
+            response: { message: 'Not Found' },
             responseType: 'json' as XMLHttpRequestResponseType,
-            responseText: '{}',
-            response: {
-                message: 'Not Found',
-            },
-        } as XMLHttpRequest;
-        const request = {} as any;
-        const error = new AjaxError('Not Found', xhr, request);
+            request: {},
+            xhr: { status: 404, responseType: 'json', responseText: '{}', response: { message: 'Not Found' } },
+        });
+        Object.setPrototypeOf(errorObj, AjaxError.prototype);
+        const error = errorObj as unknown as AjaxError;
         const action$ = of(slice.actions.getLoginMethods({}));
         const state$ = of({} as AppState);
         const deps = createLoginMethodsDeps(throwError(() => error));

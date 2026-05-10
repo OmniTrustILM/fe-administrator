@@ -27,7 +27,7 @@ const ConditionDetails = () => {
     const isUpdatingGroupDetails = useSelector(rulesSelectors.isUpdatingCondition);
 
     const [confirmDelete, setConfirmDelete] = useState(false);
-    const [updateDescriptionEditEnable, setUpdateDescription] = useState<boolean>(false);
+    const [updateDescriptionEditEnable, setUpdateDescriptionEditEnable] = useState<boolean>(false);
     const [updatedDescription, setUpdatedDescription] = useState('');
 
     const isBusy = useMemo(() => isFetchingConditionGroup || isUpdatingGroupDetails, [isFetchingConditionGroup, isUpdatingGroupDetails]);
@@ -65,7 +65,7 @@ const ConditionDetails = () => {
                 }),
             );
         }
-        setUpdateDescription(false);
+        setUpdateDescriptionEditEnable(false);
     }, [dispatch, id, conditionDetails, updatedDescription, updateDescriptionEditEnable]);
 
     const buttons = useMemo(() => createDeleteButton(() => setConfirmDelete(true)), []);
@@ -127,7 +127,7 @@ const ConditionDetails = () => {
                                               color="danger"
                                               title="Cancel"
                                               onClick={() => {
-                                                  setUpdateDescription(false);
+                                                  setUpdateDescriptionEditEnable(false);
                                                   setUpdatedDescription(conditionDetails?.description || '');
                                               }}
                                               disabled={isUpdatingGroupDetails}
@@ -141,7 +141,7 @@ const ConditionDetails = () => {
                                           color="secondary"
                                           title="Update Description"
                                           onClick={() => {
-                                              setUpdateDescription(true);
+                                              setUpdateDescriptionEditEnable(true);
                                           }}
                                           disabled={isUpdatingGroupDetails}
                                       >
@@ -156,7 +156,7 @@ const ConditionDetails = () => {
             conditionDetails,
             conditionTypeEnum,
             resourceTypeEnum,
-            setUpdateDescription,
+            setUpdateDescriptionEditEnable,
             updateDescriptionEditEnable,
             onUpdateDescriptionConfirmed,
             isUpdatingGroupDetails,

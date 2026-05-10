@@ -6,8 +6,8 @@ import { downloadFile, downloadFileZip, formatPEM } from './download';
 const mockCreateObjectURL = vi.fn(() => 'blob:mock-url');
 const mockRevokeObjectURL = vi.fn();
 
-Object.defineProperty(global.URL, 'createObjectURL', { value: mockCreateObjectURL, writable: true });
-Object.defineProperty(global.URL, 'revokeObjectURL', { value: mockRevokeObjectURL, writable: true });
+Object.defineProperty(globalThis.URL, 'createObjectURL', { value: mockCreateObjectURL, writable: true });
+Object.defineProperty(globalThis.URL, 'revokeObjectURL', { value: mockRevokeObjectURL, writable: true });
 
 vi.mock('jszip', () => {
     const generateAsync = vi.fn().mockResolvedValue(new Blob(['zip-data'], { type: 'application/zip' }));

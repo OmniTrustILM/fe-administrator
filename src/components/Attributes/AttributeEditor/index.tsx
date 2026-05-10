@@ -1094,7 +1094,7 @@ function AttributeEditorFormBridge({ children }: Readonly<{ children: React.Reac
     return <>{children}</>;
 }
 
-export default function AttributeEditor(props: Props) {
+export default function AttributeEditor(props: Readonly<Props>) {
     useFormContext<Record<string, any>>();
 
     return (

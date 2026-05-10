@@ -16,7 +16,7 @@ export function transformCredentialResponseDtoToModel(credential: CredentialResp
     };
 }
 
-export function transformCredentialCreateRequestModelToDto(credential: CredentialCreateRequestModel): CredentialCreateRequestDto {
+function mapCredentialRequestPayload<T extends CredentialCreateRequestModel | CredentialEditRequestModel>(credential: T) {
     return {
         ...credential,
         attributes: credential.attributes.map(transformAttributeRequestModelToDto),
@@ -24,10 +24,10 @@ export function transformCredentialCreateRequestModelToDto(credential: Credentia
     };
 }
 
+export function transformCredentialCreateRequestModelToDto(credential: CredentialCreateRequestModel): CredentialCreateRequestDto {
+    return mapCredentialRequestPayload(credential);
+}
+
 export function transformCredentialEditRequestModelToDto(credential: CredentialEditRequestModel): CredentialEditRequestDto {
-    return {
-        ...credential,
-        attributes: credential.attributes.map(transformAttributeRequestModelToDto),
-        customAttributes: credential.customAttributes?.map(transformAttributeRequestModelToDto),
-    };
+    return mapCredentialRequestPayload(credential);
 }

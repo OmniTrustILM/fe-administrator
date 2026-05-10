@@ -8,6 +8,8 @@ declare global {
     interface Window {
         __clipboardSpy?: ClipboardSpy;
     }
+    // eslint-disable-next-line no-var
+    var __clipboardSpy: ClipboardSpy | undefined;
 }
 
 test.describe('InstallationInstructions', () => {
@@ -54,12 +56,12 @@ test.describe('InstallationInstructions', () => {
         const instructions = ['first command', 'second command', 'third command'];
 
         await page.evaluate(() => {
-            window.__clipboardSpy = { lastText: '', calls: 0 };
+            globalThis.__clipboardSpy = { lastText: '', calls: 0 };
             Object.defineProperty(navigator, 'clipboard', {
                 value: {
                     writeText: async (text: string) => {
-                        window.__clipboardSpy!.lastText = text;
-                        window.__clipboardSpy!.calls += 1;
+                        globalThis.__clipboardSpy!.lastText = text;
+                        globalThis.__clipboardSpy!.calls += 1;
                     },
                 },
                 configurable: true,
@@ -72,8 +74,8 @@ test.describe('InstallationInstructions', () => {
 
         await copyButton.click();
 
-        await expect.poll(async () => page.evaluate(() => window.__clipboardSpy?.calls ?? 0)).toBe(1);
-        const clipboardState = await page.evaluate(() => window.__clipboardSpy);
+        await expect.poll(async () => page.evaluate(() => globalThis.__clipboardSpy?.calls ?? 0)).toBe(1);
+        const clipboardState = await page.evaluate(() => globalThis.__clipboardSpy);
         expect(clipboardState!.lastText).toBe('first command\nsecond command\nthird command');
     });
 

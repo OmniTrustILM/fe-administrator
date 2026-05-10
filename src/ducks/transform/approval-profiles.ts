@@ -58,9 +58,3 @@ export function transformProfileApprovalUpdateRequestDtoToModel(
         approvalSteps: profileApprovalUpdateRequest.approvalSteps?.map(transformApprovalStepRequestDtoToModel) || [],
     };
 }
-
-// export function transformCreateProfileApprovalRequestToModel(
-//     createProfileApprovalRequest: CreateProfileApprovalRequest,
-// ): CreateProfileApprovalModel {
-//     return { ...createProfileApprovalRequest };
-// }

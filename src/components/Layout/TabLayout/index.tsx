@@ -61,7 +61,7 @@ export default function TabLayout({
             <hr className="my-4 border-gray-200" />
             {memoizedTabs.map((t, i) =>
                 onlyActiveTabContent === false || currentTab === i ? (
-                    <div key={i} className={currentTab === i ? '' : 'hidden'}>
+                    <div key={typeof t.title === 'string' ? t.title : `tab-content-${i}`} className={currentTab === i ? '' : 'hidden'}>
                         {t.content}
                     </div>
                 ) : null,

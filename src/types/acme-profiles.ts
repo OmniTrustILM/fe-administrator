@@ -1,15 +1,17 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
-import type {
-    AcmeProfileDto,
-    AcmeProfileEditRequestDto as AcmeProfileEditRequestDtoOpenApi,
-    AcmeProfileListDto,
-    AcmeProfileRequestDto,
-} from './openapi';
+import type { AcmeProfileDto, AcmeProfileEditRequestDto, AcmeProfileRequestDto } from './openapi';
 import type { RaProfileSimplifiedModel } from './ra-profiles';
 
-export type AcmeProfileAddRequestDto = AcmeProfileRequestDto;
+export type {
+    AcmeProfileRequestDto as AcmeProfileAddRequestDto,
+    AcmeProfileEditRequestDto,
+    AcmeProfileDto as AcmeProfileResponseDto,
+    AcmeProfileListDto as AcmeProfileListResponseDto,
+    AcmeProfileListDto as AcmeProfileListResponseModel,
+} from './openapi';
+
 export type AcmeProfileAddRequestModel = Omit<
-    AcmeProfileAddRequestDto,
+    AcmeProfileRequestDto,
     'issueCertificateAttributes | revokeCertificateAttributes | customAttributes'
 > & {
     issueCertificateAttributes: Array<AttributeRequestModel>;
@@ -17,7 +19,6 @@ export type AcmeProfileAddRequestModel = Omit<
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type AcmeProfileEditRequestDto = AcmeProfileEditRequestDtoOpenApi;
 export type AcmeProfileEditRequestModel = Omit<
     AcmeProfileEditRequestDto,
     'issueCertificateAttributes | revokeCertificateAttributes | customAttributes'
@@ -27,9 +28,8 @@ export type AcmeProfileEditRequestModel = Omit<
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type AcmeProfileResponseDto = AcmeProfileDto;
 export type AcmeProfileResponseModel = Omit<
-    AcmeProfileResponseDto,
+    AcmeProfileDto,
     'raProfile | issueCertificateAttributes | revokeCertificateAttributes | customAttributes '
 > & {
     raProfile?: RaProfileSimplifiedModel;
@@ -37,6 +37,3 @@ export type AcmeProfileResponseModel = Omit<
     revokeCertificateAttributes?: Array<AttributeResponseModel>;
     customAttributes?: Array<AttributeResponseModel>;
 };
-
-export type AcmeProfileListResponseDto = AcmeProfileListDto;
-export type AcmeProfileListResponseModel = AcmeProfileListResponseDto;

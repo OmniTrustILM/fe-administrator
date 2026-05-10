@@ -81,7 +81,7 @@ export const getAttributeContent = (contentType: AttributeContentType, content: 
         return <CodeBlock content={content[0] as CodeBlockAttributeContentModel} />;
     }
 
-    const mapping = (content: BaseAttributeContentModel): string | React.ReactNode | undefined => {
+    const mapping = (content: BaseAttributeContentModel): string | undefined => {
         switch (contentType) {
             case AttributeContentType.Boolean:
                 return content.data ? 'true' : 'false';
@@ -90,16 +90,16 @@ export const getAttributeContent = (contentType: AttributeContentType, content: 
             case AttributeContentType.File:
                 return content.reference;
             case AttributeContentType.Time:
-                return content.data.toString();
+                return String(content.data);
             case AttributeContentType.Date:
-                return content.data.toString();
+                return String(content.data);
             case AttributeContentType.Datetime:
-                return getFormattedDateTime(content.data.toString());
+                return getFormattedDateTime(String(content.data));
             case AttributeContentType.Float:
             case AttributeContentType.Integer:
             case AttributeContentType.String:
             case AttributeContentType.Text:
-                return content.data.toString();
+                return String(content.data);
             case AttributeContentType.Secret:
                 return '*****';
         }
@@ -118,7 +118,7 @@ export const getAttributeContent = (contentType: AttributeContentType, content: 
         }
     };
 
-    return content.map((content) => mapping(content) ?? checkFileNameAndMimeType(content)).join(', ');
+    return content.map((content) => mapping(content) ?? checkFileNameAndMimeType(content) ?? '').join(', ');
 };
 
 export const getAttributeFormValue = (
@@ -258,6 +258,39 @@ const buildAttributeRequestModel = (
     return attr;
 };
 
+// The resource picker leaves a stub entry in the form value when the operator
+// clears a previously-selected resource. Whatever shape the picker produces —
+// primitive empty, object with empty data, single-pick scalar, react-select
+// null — it normalises to a content shape whose `data` is empty, which fails
+// polymorphic deserialisation on the backend with "missing type id property
+// 'resource'". Strip the stub so a cleared selection serialises as either
+// content: [] (list / multiSelect) or no attribute at all (single-pick).
+function stripEmptyResourceContent(content: any): any {
+    if (Array.isArray(content)) {
+        return content.filter((item: { data: unknown }) => item.data !== null && item.data !== undefined && item.data !== '');
+    }
+    if (content?.data === null || content?.data === undefined || content?.data === '') {
+        return undefined;
+    }
+    return content;
+}
+
+function shouldSkipAttribute(
+    attribute: string,
+    attributes: Record<string, unknown>,
+    deletedAttributes: string[],
+    descriptors: AttributeDescriptorModel[],
+): { skip: true } | { skip: false; descriptor: AttributeDescriptorModel; attributeName: string } {
+    if (!Object.hasOwn(attributes, attribute)) return { skip: true };
+    const attributeName = attribute.split(':')[0];
+    if (deletedAttributes.includes(attributeName)) return { skip: true };
+    const descriptor = descriptors.find((d) => d.name === attributeName);
+    if (!descriptor) return { skip: true };
+    if (attributes[attribute] === undefined || attributes[attribute] === null) return { skip: true };
+    if (!isDataAttributeModel(descriptor) && !isCustomAttributeModel(descriptor)) return { skip: true };
+    return { skip: false, descriptor, attributeName };
+}
+
 export function collectFormAttributes(
     id: string,
     descriptors: AttributeDescriptorModel[] | undefined,
@@ -272,16 +305,9 @@ export function collectFormAttributes(
     const attrs: AttributeRequestModel[] = [];
 
     for (const attribute in attributes) {
-        if (!Object.hasOwn(attributes, attribute)) continue;
-
-        const attributeName = attribute.split(':')[0];
-
-        if (deletedAttributes.includes(attributeName)) continue;
-
-        const descriptor = descriptors?.find((d) => d.name === attributeName);
-        if (!descriptor) continue;
-        if (attributes[attribute] === undefined || attributes[attribute] === null) continue;
-        if (!isDataAttributeModel(descriptor) && !isCustomAttributeModel(descriptor)) continue;
+        const guard = shouldSkipAttribute(attribute, attributes, deletedAttributes, descriptors);
+        if (guard.skip) continue;
+        const { descriptor, attributeName } = guard;
 
         const rawValue = attributes[attribute];
         let content = Array.isArray(rawValue)
@@ -289,18 +315,7 @@ export function collectFormAttributes(
             : getAttributeFormValue(descriptor.contentType, descriptor.content, rawValue);
 
         if (descriptor.contentType === AttributeContentType.Resource) {
-            // The resource picker leaves a stub entry in the form value when the operator
-            // clears a previously-selected resource. Whatever shape the picker produces —
-            // primitive empty, object with empty data, single-pick scalar, react-select
-            // null — it normalises to a content shape whose `data` is empty, which fails
-            // polymorphic deserialisation on the backend with "missing type id property
-            // 'resource'". Strip the stub so a cleared selection serialises as either
-            // content: [] (list / multiSelect) or no attribute at all (single-pick).
-            if (Array.isArray(content)) {
-                content = content.filter((item: { data: unknown }) => item.data !== null && item.data !== undefined && item.data !== '');
-            } else if (content?.data === null || content?.data === undefined || content?.data === '') {
-                content = undefined;
-            }
+            content = stripEmptyResourceContent(content);
         }
 
         if (content === undefined) continue;

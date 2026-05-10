@@ -1,12 +1,14 @@
 import { describe, expect, test } from 'vitest';
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, of, type Observable } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
 import cbomActuatorEpics from './cbomActuator-epics';
 import { actions } from './cbomActuator';
 
 const runHealthEpic = async (url: string | undefined) => {
-    const output$ = (cbomActuatorEpics[0] as any)(of(actions.health(url)), of({}) as any, {} as any);
-    return ((await firstValueFrom(output$.pipe(take(1), toArray()))) as any[])[0];
+    const epic = cbomActuatorEpics[0] as (...args: any[]) => Observable<unknown>;
+    const output$ = epic(of(actions.health(url)), of({}), {});
+    const results = await firstValueFrom(output$.pipe(take(1), toArray()));
+    return results[0];
 };
 
 const withMockedFetch = async (fetchMock: typeof fetch, run: () => Promise<void>) => {

@@ -183,8 +183,8 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
     return state;
 }
 
-function enumsTestReducer(state: EnumsTestState = enumsTestInitialState, _action: UnknownAction): EnumsTestState {
-    return state;
+function enumsTestReducer(state: EnumsTestState | undefined, _action: UnknownAction): EnumsTestState {
+    return state ?? enumsTestInitialState;
 }
 
 export type InfoTestState = {
@@ -197,7 +197,8 @@ const infoTestInitialState: InfoTestState = {
     isFetching: false,
 };
 
-function infoTestReducer(state: InfoTestState = infoTestInitialState, action: UnknownAction): InfoTestState {
+function infoTestReducer(state: InfoTestState | undefined, action: UnknownAction): InfoTestState {
+    state ??= infoTestInitialState;
     switch (action.type) {
         case 'info/getPlatformInfo':
             return { platformInfo: undefined, isFetching: true };
@@ -220,11 +221,8 @@ const notificationsTestInitialState: NotificationsTestState = {
     isFetchingOverview: false,
 };
 
-function notificationsTestReducer(
-    state: NotificationsTestState = notificationsTestInitialState,
-    _action: UnknownAction,
-): NotificationsTestState {
-    return state;
+function notificationsTestReducer(state: NotificationsTestState | undefined, _action: UnknownAction): NotificationsTestState {
+    return state ?? notificationsTestInitialState;
 }
 
 export type AuthTestState = {
@@ -245,8 +243,8 @@ const authTestInitialState: AuthTestState = {
     },
 };
 
-function authTestReducer(state: AuthTestState = authTestInitialState, _action: UnknownAction): AuthTestState {
-    return state;
+function authTestReducer(state: AuthTestState | undefined, _action: UnknownAction): AuthTestState {
+    return state ?? authTestInitialState;
 }
 
 export type CustomAttributesTestState = {
@@ -365,8 +363,8 @@ const secretsTestInitialState: SecretsTestState = {
     isFetchingSyncVaultProfileAttributes: false,
 };
 
-function secretsTestReducer(state: SecretsTestState = secretsTestInitialState, _action: UnknownAction): SecretsTestState {
-    return state;
+function secretsTestReducer(state: SecretsTestState | undefined, _action: UnknownAction): SecretsTestState {
+    return state ?? secretsTestInitialState;
 }
 
 export type VaultProfilesTestState = {
@@ -377,11 +375,8 @@ const vaultProfilesTestInitialState: VaultProfilesTestState = {
     vaultProfiles: [],
 };
 
-function vaultProfilesTestReducer(
-    state: VaultProfilesTestState = vaultProfilesTestInitialState,
-    _action: UnknownAction,
-): VaultProfilesTestState {
-    return state;
+function vaultProfilesTestReducer(state: VaultProfilesTestState | undefined, _action: UnknownAction): VaultProfilesTestState {
+    return state ?? vaultProfilesTestInitialState;
 }
 
 export type TablePaginationTestState = {

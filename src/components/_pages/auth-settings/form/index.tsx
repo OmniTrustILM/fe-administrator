@@ -181,9 +181,10 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
             Object.assign(updateModel, { clientSecret: values.clientSecret || undefined });
 
             if (editMode) {
+                if (!providerName) return;
                 dispatch(
                     actions.updateOAuth2Provider({
-                        providerName: providerName,
+                        providerName,
                         oauth2ProviderSettingsUpdateModel: updateModel,
                     }),
                 );

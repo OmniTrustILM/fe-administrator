@@ -26,7 +26,7 @@ describe('ra-profiles transforms', () => {
     });
 
     test('transformRaProfileCertificateValidationSettingsDtoToModel with undefined input', () => {
-        const result = transformRaProfileCertificateValidationSettingsDtoToModel(undefined);
+        const result = transformRaProfileCertificateValidationSettingsDtoToModel();
         expect(result.usePlatformSettings).toBe(true);
         expect(result.enabled).toBe(false);
     });

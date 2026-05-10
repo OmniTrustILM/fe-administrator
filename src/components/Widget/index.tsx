@@ -183,8 +183,8 @@ function Widget({
 
                             {widgetInfoCard.notesList && (
                                 <ul className="mt-2 space-y-1 list-disc list-inside text-sm text-gray-700 dark:text-neutral-300">
-                                    {widgetInfoCard.notesList.map((note, index) => (
-                                        <li key={index}>{note}</li>
+                                    {widgetInfoCard.notesList.map((note) => (
+                                        <li key={note}>{note}</li>
                                     ))}
                                 </ul>
                             )}

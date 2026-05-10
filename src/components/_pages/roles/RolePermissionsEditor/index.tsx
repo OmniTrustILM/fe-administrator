@@ -52,10 +52,10 @@ function RolePermissionsEditor({
 
             const actions = perms?.actions
                 .map((actionName) => resource.actions.find((el) => el.name === actionName)?.displayName)
-                .filter((el) => el)
+                .filter(Boolean)
                 .join(', ');
 
-            return actions ? actions : 'No permissions assigned';
+            return actions || 'No permissions assigned';
         },
         [permissions],
     );

@@ -29,18 +29,18 @@ import type {
 } from 'types/cryptographic-keys';
 import { transformAttributeRequestModelToDto, transformAttributeResponseDtoToModel } from './attributes';
 
+function spreadCopy<TIn extends object, TOut>(input: TIn): TOut {
+    return { ...input } as unknown as TOut;
+}
+
 export function transformCryptographicKeyResponseDtoToModel(keyResponse: CryptographicKeyResponseDto): CryptographicKeyResponseModel {
-    return {
-        ...keyResponse,
-    };
+    return spreadCopy(keyResponse);
 }
 
 export function transformCryptographicKeyPairResponseDtoToModel(
     keyResponse: CryptographicKeyPairResponseDto,
 ): CryptographicKeyPairResponseModel {
-    return {
-        ...keyResponse,
-    };
+    return spreadCopy(keyResponse);
 }
 
 export function transformCryptographicKeyDetailResponseDtoToModel(
@@ -57,15 +57,11 @@ export function transformCryptographicKeyDetailResponseDtoToModel(
 export function transformCryptographicKeyItemResponseDtoToModel(
     keyResponse: CryptographicKeyItemDetailResponseDto,
 ): CryptographicKeyItemDetailResponseModel {
-    return {
-        ...keyResponse,
-    };
+    return spreadCopy(keyResponse);
 }
 
 export function transformCryptographicKeyItemDtoToModel(keyResponse: CryptographicKeyItemDto): CryptographicKeyItemModel {
-    return {
-        ...keyResponse,
-    };
+    return spreadCopy(keyResponse);
 }
 
 export function transformCryptographicKeyAddRequestModelToDto(keyAddReq: CryptographicKeyAddRequestModel): CryptographicKeyAddRequestDto {
@@ -88,51 +84,39 @@ export function transformCryptographicKeyEditRequestModelToDto(
 export function transformCryptographicKeyItemEditRequestModelToDto(
     keyItemEditReq: CryptographicKeyItemEditRequestDto,
 ): CryptographicKeyItemEditRequestDto {
-    return {
-        ...keyItemEditReq,
-    };
+    return spreadCopy(keyItemEditReq);
 }
 
 export function transformCryptographicKeyKeyUsageRequestModelToDto(
     keyUsageRequest: CryptographicKeyKeyUsageUpdateRequestModel,
 ): CryptographicKeyKeyUsageUpdateRequestDto {
-    return {
-        ...keyUsageRequest,
-    };
+    return spreadCopy(keyUsageRequest);
 }
 
 export function transformCryptographicKeyBulkKeyUsageRequestModelToDto(
     keyUsageRequest: CryptographicKeyKeyUsageBulkUpdateRequestModel,
 ): CryptographicKeyKeyUsageBulkUpdateRequestDto {
-    return {
-        ...keyUsageRequest,
-    };
+    return spreadCopy(keyUsageRequest);
 }
 
 export function transformCryptographicKeyCompromiseModelToDto(
     request: CryptographicKeyCompromiseRequestModel,
 ): CryptographicKeyCompromiseRequestDto {
-    return {
-        ...request,
-    };
+    return spreadCopy(request);
 }
 
 export function transformCryptographicKeyBulkCompromiseModelToDto(
     request: CryptographicKeyBulkCompromiseRequestModel,
 ): CryptographicKeyBulkCompromiseRequestDto {
-    return {
-        ...request,
-    };
+    return spreadCopy(request);
 }
 
 export function transformCryptographicKeyItemBulkCompromiseModelToDto(
     request: CryptographicKeyItemBulkCompromiseRequestModel,
 ): CryptographicKeyItemBulkCompromiseRequestDto {
-    return {
-        ...request,
-    };
+    return spreadCopy(request);
 }
 
 export function transformKeyHistoryDtoToModel(history: CryptographicKeyHistoryDto): CryptographicKeyHistoryModel {
-    return { ...history };
+    return spreadCopy(history);
 }

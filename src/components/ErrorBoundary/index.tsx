@@ -107,7 +107,7 @@ class ErrorBoundary extends Component<Props, State> {
 }
 
 // Wrapper component that resets error boundary on navigation
-function ErrorBoundaryWrapper({ children, fallback }: Omit<Props, 'resetKey'>) {
+function ErrorBoundaryWrapper({ children, fallback }: Readonly<Omit<Props, 'resetKey'>>) {
     const location = useLocation();
 
     // Use full location (pathname + search + hash) as resetKey

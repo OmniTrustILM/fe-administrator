@@ -1,12 +1,10 @@
 export function jsxInnerText(obj: React.ReactNode): string {
     if (obj === null || obj === undefined) return '';
 
-    const type = typeof obj;
-    if (type === 'string' || type === 'number' || type === 'boolean') {
-        return obj.toString();
-    }
+    if (typeof obj === 'string') return obj;
+    if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
 
-    if (type !== 'object') return '';
+    if (typeof obj !== 'object') return '';
 
     if (Array.isArray(obj)) {
         return obj.map(jsxInnerText).join('');

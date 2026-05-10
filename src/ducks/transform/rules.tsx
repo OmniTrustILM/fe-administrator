@@ -156,10 +156,12 @@ export function transformConditionItemModelDto(conditionItemModel: ConditionItem
     };
 }
 
+function cloneConditionItemRequestModel(conditionItemRequestModel: ConditionItemRequestModel): ConditionItemRequestDto {
+    return { ...conditionItemRequestModel };
+}
+
 export function transformConditionItemRequestModelDto(conditionItemRequestModel: ConditionItemRequestModel): ConditionItemRequestDto {
-    return {
-        ...conditionItemRequestModel,
-    };
+    return cloneConditionItemRequestModel(conditionItemRequestModel);
 }
 
 export function transformConditionRequestModelToDto(conditionRequestModel: ConditionRequestModel): ConditionRequestDto {
@@ -196,9 +198,7 @@ export function transformTriggerDetailDtoToModel(triggerDetailDto: TriggerDetail
 }
 
 export function transformConditionItemRequestModelToDto(conditionItemRequestModel: ConditionItemRequestModel): ConditionItemRequestDto {
-    return {
-        ...conditionItemRequestModel,
-    };
+    return cloneConditionItemRequestModel(conditionItemRequestModel);
 }
 
 export function transformUpdateConditionRequestModelToDto(

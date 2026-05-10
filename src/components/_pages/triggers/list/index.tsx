@@ -40,7 +40,7 @@ const TriggerList = () => {
 
     const triggerResourceOptions = useMemo(() => {
         if (!allResourceEvents?.length) return [];
-        const resourcesSet = new Set(allResourceEvents.map((event) => event.producedResource).filter((el) => el));
+        const resourcesSet = new Set(allResourceEvents.map((event) => event.producedResource).filter(Boolean));
         return [...resourcesSet].map((resource) => ({
             value: resource as Resource,
             label: getEnumLabel(resourceTypeEnum, resource as Resource),

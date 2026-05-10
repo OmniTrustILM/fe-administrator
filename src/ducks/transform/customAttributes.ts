@@ -13,29 +13,27 @@ export function transformCustomAttributeResponseDtoToModel(customAttribute: Cust
     return { ...customAttribute };
 }
 
+function cloneCustomAttributePayload<T extends { content?: unknown }>(input: T): T {
+    return {
+        ...input,
+        content: input.content ? structuredClone(input.content) : undefined,
+    };
+}
+
 export function transformCustomAttributeDetailResponseDtoToModel(
     customAttribute: CustomAttributeDetailResponseDto,
 ): CustomAttributeDetailResponseModel {
-    return {
-        ...customAttribute,
-        content: customAttribute.content ? structuredClone(customAttribute.content) : undefined,
-    };
+    return cloneCustomAttributePayload(customAttribute);
 }
 
 export function transformCustomAttributeCreateRequestModelToDto(
     customAttribute: CustomAttributeCreateRequestModel,
 ): CustomAttributeCreateRequestDto {
-    return {
-        ...customAttribute,
-        content: customAttribute.content ? structuredClone(customAttribute.content) : undefined,
-    };
+    return cloneCustomAttributePayload(customAttribute);
 }
 
 export function transformCustomAttributeUpdateRequestModelToDto(
     customAttribute: CustomAttributeUpdateRequestModel,
 ): CustomAttributeUpdateRequestDto {
-    return {
-        ...customAttribute,
-        content: customAttribute.content ? structuredClone(customAttribute.content) : undefined,
-    };
+    return cloneCustomAttributePayload(customAttribute);
 }

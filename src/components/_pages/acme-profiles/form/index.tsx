@@ -673,7 +673,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                                             value={field.value || ''}
                                             onChange={(value) => {
                                                 field.onChange(value);
-                                                onRaProfileChange(typeof value === 'string' ? value : value?.toString() || '');
+                                                const next = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+                                                onRaProfileChange(next);
                                             }}
                                             options={optionsForRaProfiles || []}
                                             placeholder="Select to change RA Profile if needed"

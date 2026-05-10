@@ -37,7 +37,7 @@ const TriggerDetails = () => {
     const rules = useSelector(rulesSelectors.rules);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [confirmIgnoreTrigger, setConfirmIgnoreTrigger] = useState(false);
-    const [updateDescriptionEditEnable, setUpdateDescription] = useState<boolean>(false);
+    const [updateDescriptionEditEnable, setUpdateDescriptionEditEnable] = useState<boolean>(false);
     const [updatedDescription, setUpdatedDescription] = useState('');
     const triggerTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.TriggerType));
     const deviceType = useDeviceType();
@@ -136,7 +136,7 @@ const TriggerDetails = () => {
                 }),
             );
         }
-        setUpdateDescription(false);
+        setUpdateDescriptionEditEnable(false);
     }, [dispatch, id, triggerDetails, updatedDescription, updateDescriptionEditEnable]);
 
     const onUpdateActionsConfirmed = useCallback(
@@ -321,7 +321,7 @@ const TriggerDetails = () => {
                                               title="Cancel"
                                               disabled={isUpdatingTrigger}
                                               onClick={() => {
-                                                  setUpdateDescription(false);
+                                                  setUpdateDescriptionEditEnable(false);
                                                   setUpdatedDescription(triggerDetails?.description || '');
                                               }}
                                           >
@@ -334,7 +334,7 @@ const TriggerDetails = () => {
                                           color="secondary"
                                           title="Update Description"
                                           onClick={() => {
-                                              setUpdateDescription(true);
+                                              setUpdateDescriptionEditEnable(true);
                                           }}
                                       >
                                           <EditIcon size={16} />

@@ -8,7 +8,8 @@ import { actions as connectorActions } from 'ducks/connectors';
 import { selectors as cryptographyOperationSelectors } from 'ducks/cryptographic-operations';
 import { actions as raProfileActions, selectors as raProfileSelectors } from 'ducks/ra-profiles';
 import { actions as tokenProfileActions } from 'ducks/token-profiles';
-import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type * as React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router';
@@ -50,7 +51,10 @@ type CertificateFormValues = {
     altKeyUuid?: string;
 };
 
-const useDescriptorState = () => useState<AttributeDescriptorModel[]>(() => []);
+function useDescriptorState() {
+    const [value, setValue] = useState<AttributeDescriptorModel[]>(() => []);
+    return [value, setValue] as const;
+}
 
 function tabTitle(title: string, descriptors: AttributeDescriptorModel[] | undefined | null) {
     const hasRequired = descriptors?.some((d) => isDataAttributeModel(d) && d.properties.required);
@@ -270,7 +274,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     );
 
     const submitHandler = useCallback(
-        (event: FormEvent<HTMLFormElement>) => {
+        (event: React.SyntheticEvent<HTMLFormElement>) => {
             event.preventDefault();
             handleSubmit(onSubmit)(event);
         },

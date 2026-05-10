@@ -220,8 +220,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
 
     const onSubmit = useCallback(
         (values: FormValues) => {
-            const scepRequest: ScepProfileEditRequestModel | ScepProfileAddRequestModel = {
-                name: values.name,
+            const commonFields = {
                 description: values.description,
                 renewalThreshold: Number.parseInt(values.renewalThreshold, 10),
                 includeCaCertificate: values.includeCaCertificate,
@@ -251,19 +250,24 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                         values,
                     ),
                 },
+                raProfileUuid: values.raProfile || undefined,
             };
-            if (values.raProfile) {
-                scepRequest.raProfileUuid = values.raProfile;
-            }
+
             if (editMode) {
+                if (!id) return;
+                const editRequest: ScepProfileEditRequestModel = commonFields;
                 dispatch(
                     scepProfileActions.updateScepProfile({
-                        uuid: id!,
-                        updateScepRequest: scepRequest,
+                        uuid: id,
+                        updateScepRequest: editRequest,
                     }),
                 );
             } else {
-                dispatch(scepProfileActions.createScepProfile(scepRequest));
+                const addRequest: ScepProfileAddRequestModel = {
+                    name: values.name,
+                    ...commonFields,
+                };
+                dispatch(scepProfileActions.createScepProfile(addRequest));
             }
         },
         [dispatch, editMode, id, raProfileIssuanceAttrDescs, issueGroupAttributesCallbackAttributes, multipleResourceCustomAttributes],
@@ -583,7 +587,8 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                                             onChange={(value) => {
                                                 field.onChange(value);
                                                 // Call onRaProfileChange directly when user changes the value
-                                                onRaProfileChange(typeof value === 'string' ? value : value?.toString() || '');
+                                                const next = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+                                                onRaProfileChange(next);
                                             }}
                                             options={optionsForRaProfiles || []}
                                             placeholder="Select to change RA Profile if needed"

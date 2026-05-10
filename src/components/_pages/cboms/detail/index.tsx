@@ -74,7 +74,7 @@ const toChartRows = (map: Map<string, number>): TableDataRow[] =>
 const toDashboardDict = (rows: TableDataRow[]): DashboardDict =>
     rows.reduce<DashboardDict>((acc, row) => {
         const [label, value] = row.columns;
-        const key = String(label ?? 'Unknown');
+        const key = typeof label === 'string' || typeof label === 'number' ? String(label) : 'Unknown';
         const count = Number(value ?? 0);
         acc[key] = Number.isFinite(count) ? count : 0;
         return acc;
@@ -484,7 +484,8 @@ export default function CbomDetail() {
 
     const handleVersionSelect = useCallback(
         (value: string | number | object | { value: string | number | object; label: string }) => {
-            const objectValue = typeof value === 'object' && value !== null && 'value' in value ? String(value.value) : '';
+            const innerValue = typeof value === 'object' && value !== null && 'value' in value ? value.value : undefined;
+            const objectValue = typeof innerValue === 'string' || typeof innerValue === 'number' ? String(innerValue) : '';
             const selectedValue = typeof value === 'string' || typeof value === 'number' ? String(value) : objectValue;
 
             if (!selectedValue || !id) return;
@@ -562,8 +563,9 @@ export default function CbomDetail() {
     }, [cryptographicComponents, assetSearchQuery, selectedAssetType]);
 
     const handleAssetTypeChange = useCallback((value: string | number | object | { value: string | number | object; label: string }) => {
+        const innerValue = typeof value === 'object' && value !== null && 'value' in value ? value.value : undefined;
         const objectValue =
-            typeof value === 'object' && value !== null && 'value' in value ? String(value.value) : ALL_ASSET_TYPES_OPTION_VALUE;
+            typeof innerValue === 'string' || typeof innerValue === 'number' ? String(innerValue) : ALL_ASSET_TYPES_OPTION_VALUE;
         const selectedValue = typeof value === 'string' || typeof value === 'number' ? String(value) : objectValue;
 
         setSelectedAssetType(selectedValue || ALL_ASSET_TYPES_OPTION_VALUE);

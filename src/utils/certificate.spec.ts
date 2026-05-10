@@ -30,7 +30,7 @@ vi.mock('ducks/enums', () => ({
 }));
 
 const mockCreateObjectURL = vi.fn(() => 'blob:mock-url');
-Object.defineProperty(global.URL, 'createObjectURL', { value: mockCreateObjectURL, writable: true });
+Object.defineProperty(globalThis.URL, 'createObjectURL', { value: mockCreateObjectURL, writable: true });
 
 describe('certificate utils', () => {
     describe('formatPEM', () => {

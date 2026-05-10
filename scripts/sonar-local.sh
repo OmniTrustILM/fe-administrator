@@ -88,6 +88,24 @@ else
     exit 1
 fi
 
+# Pre-create the project so we can bind quality profiles to it before the first
+# scan. /api/projects/create is idempotent enough for our purposes — if the
+# project already exists, the call returns 400 which we tolerate.
+curl -s -o /dev/null -u "${SONAR_CREDS}" -X POST \
+    --data-urlencode "name=${PROJECT_KEY}" \
+    --data-urlencode "project=${PROJECT_KEY}" \
+    "${SONAR_URL}/api/projects/create" || true
+
+# Import the SonarCloud quality profiles checked into sonar/profiles/ so the
+# local scan uses the same rules SonarCloud enforces on PRs.
+echo "Importing SonarCloud quality profiles..."
+if [[ -x "$(dirname "${BASH_SOURCE[0]}")/sonar-import-profiles.sh" ]]; then
+    SONAR_URL="${SONAR_URL}" SONAR_AUTH="${SONAR_CREDS}" PROJECT_KEY="${PROJECT_KEY}" \
+        "$(dirname "${BASH_SOURCE[0]}")/sonar-import-profiles.sh" || true
+else
+    echo "  WARN: sonar-import-profiles.sh not found, skipping profile import."
+fi
+
 TOKEN_NAME="ci-$(date +%s)"
 TOKEN=$(curl -sf -u "${SONAR_CREDS}" -X POST \
     "${SONAR_URL}/api/user_tokens/generate?name=${TOKEN_NAME}" \

@@ -370,9 +370,11 @@ export const validateIso8601Duration = () => (value: unknown) => {
     const trimmed = value.trim();
     if (!trimmed) return undefined;
     if (trimmed === 'P' || trimmed.endsWith('T')) return 'Value must be a valid ISO 8601 duration (e.g., PT1H)';
-    return /^P(\d+D)?(T(\d+H)?(\d+M)?(\d+(?:\.\d+)?S)?)?$/.test(trimmed)
-        ? undefined
-        : 'Value must be a valid ISO 8601 duration (e.g., PT1H)';
+    const datePart = /^P(\d+D)?(T.*)?$/.exec(trimmed);
+    if (!datePart) return 'Value must be a valid ISO 8601 duration (e.g., PT1H)';
+    const timePart = datePart[2];
+    if (!timePart) return undefined;
+    return /^T(\d+H)?(\d+M)?(\d+(?:\.\d+)?S)?$/.test(timePart) ? undefined : 'Value must be a valid ISO 8601 duration (e.g., PT1H)';
 };
 
 const NTP_FQDN_LABEL_REGEX = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
@@ -383,8 +385,8 @@ const NTP_IPV4_REGEX = /^\d{1,3}(?:\.\d{1,3}){3}$/;
 const isValidFqdn = (s: string): boolean => {
     const labels = s.split('.');
     if (labels.length < 2) return false;
-    const tld = labels[labels.length - 1];
-    if (!NTP_FQDN_TLD_REGEX.test(tld)) return false;
+    const tld = labels.at(-1);
+    if (!tld || !NTP_FQDN_TLD_REGEX.test(tld)) return false;
     return labels.slice(0, -1).every((l) => NTP_FQDN_LABEL_REGEX.test(l));
 };
 

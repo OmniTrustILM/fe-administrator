@@ -13,12 +13,20 @@ export function getIso8601StringFromInputString(string: string): string {
     return getIso8601StringFromDuration(getDurationFromInputString(string));
 }
 
-const ISO_8601_DURATION_REGEX = /^P(\d+D)?(T(\d+H)?(\d+M)?(\d+(?:\.\d+)?S)?)?$/;
+const ISO_8601_DATE_PART = /^P(\d+D)?(T.*)?$/;
+const ISO_8601_TIME_PART = /^T(\d+H)?(\d+M)?(\d+(?:\.\d+)?S)?$/;
+
+function isValidIso8601Duration(s: string): boolean {
+    const datePart = ISO_8601_DATE_PART.exec(s);
+    if (!datePart) return false;
+    const timePart = datePart[2];
+    return !timePart || ISO_8601_TIME_PART.test(timePart);
+}
 
 export function getMillisecondsFromIso8601String(string: string | undefined | null): number | undefined {
     if (!string) return undefined;
     const trimmed = string.trim();
-    if (!trimmed || trimmed === 'P' || trimmed.endsWith('T') || !ISO_8601_DURATION_REGEX.test(trimmed)) return undefined;
+    if (!trimmed || trimmed === 'P' || trimmed.endsWith('T') || !isValidIso8601Duration(trimmed)) return undefined;
     const d = getDurationFromIso8601String(trimmed);
     return ((d.days * 24 + d.hours) * 60 + d.minutes) * 60 * 1000 + d.seconds * 1000 + d.milliseconds;
 }

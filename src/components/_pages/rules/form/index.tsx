@@ -17,7 +17,7 @@ import { useRuleEvaluatorResourceOptions } from 'utils/rules';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
-export interface ruleFormValues {
+export interface RuleFormValues {
     name: string;
     resource: string;
     description: string;
@@ -46,7 +46,7 @@ const RulesForm = ({ onCancel, onSuccess }: RulesFormProps = {}) => {
         });
     }, [conditions]);
 
-    const defaultValues: ruleFormValues = useMemo(() => {
+    const defaultValues: RuleFormValues = useMemo(() => {
         return {
             name: '',
             resource: Resource.None,
@@ -55,7 +55,7 @@ const RulesForm = ({ onCancel, onSuccess }: RulesFormProps = {}) => {
         };
     }, []);
 
-    const methods = useForm<ruleFormValues>({
+    const methods = useForm<RuleFormValues>({
         defaultValues,
         mode: 'onChange',
     });
@@ -90,7 +90,7 @@ const RulesForm = ({ onCancel, onSuccess }: RulesFormProps = {}) => {
     const inProgressTitle = 'Creating...';
 
     const onSubmit = useCallback(
-        (values: ruleFormValues) => {
+        (values: RuleFormValues) => {
             if (values.resource === Resource.None) return;
             dispatch(
                 rulesActions.createRule({

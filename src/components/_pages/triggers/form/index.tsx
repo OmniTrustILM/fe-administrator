@@ -68,7 +68,7 @@ const TriggerForm = ({ onCancel, onSuccess }: TriggerFormProps = {}) => {
 
     const resourceOptions = useMemo(() => {
         if (allResourceEvents === undefined) return [];
-        const resourcesSet = new Set(allResourceEvents.map((event) => event.producedResource).filter((el) => el));
+        const resourcesSet = new Set(allResourceEvents.map((event) => event.producedResource).filter(Boolean));
         return [...resourcesSet].map((resource) => ({
             label: getEnumLabel(resourceEnum, resource as Resource),
             value: resource as Resource,

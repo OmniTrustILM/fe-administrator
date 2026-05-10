@@ -20,8 +20,8 @@ export const containerMockModule = () => ({
 export const widgetMockModule = () => ({
     default: ({ title, widgetButtons, children }: any) => (
         <div data-testid={`widget-${title || 'root'}`}>
-            {(widgetButtons || []).map((button: any, index: number) => (
-                <button key={index} title={button.tooltip} onClick={button.onClick}>
+            {(widgetButtons || []).map((button: any) => (
+                <button key={button.tooltip ?? button.icon} title={button.tooltip} onClick={button.onClick}>
                     {button.icon}
                 </button>
             ))}
@@ -37,8 +37,8 @@ export const dialogMockModule = () => ({
                 <div>{caption}</div>
                 <div>{body}</div>
                 <button onClick={toggle}>toggle</button>
-                {(buttons || []).map((button: any, i: number) => (
-                    <button key={i} onClick={button.onClick} disabled={button.disabled}>
+                {(buttons || []).map((button: any) => (
+                    <button key={button.body} onClick={button.onClick} disabled={button.disabled}>
                         {button.body}
                     </button>
                 ))}
@@ -52,7 +52,7 @@ export const customTableMockModule = () => ({
             {(data || []).map((row: any) => (
                 <div key={row.id} data-testid={`row-${row.id}`}>
                     {(row.columns || []).map((column: any, index: number) => (
-                        <div key={index}>{column}</div>
+                        <div key={`${row.id}-col-${index}`}>{column}</div>
                     ))}
                 </div>
             ))}
@@ -63,8 +63,8 @@ export const customTableMockModule = () => ({
 export const widgetButtonsMockModule = () => ({
     default: ({ buttons }: any) => (
         <div>
-            {(buttons || []).map((button: any, index: number) => (
-                <button key={index} title={button.tooltip} onClick={button.onClick}>
+            {(buttons || []).map((button: any) => (
+                <button key={button.tooltip ?? button.icon} title={button.tooltip} onClick={button.onClick}>
                     {button.icon}
                 </button>
             ))}

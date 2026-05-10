@@ -41,13 +41,13 @@ vi.mock('components/PagedList/PagedList', () => ({
                 {(data || []).map((row: any) => (
                     <div key={row.id} data-testid={`row-${row.id}`}>
                         {(row.columns || []).map((column: any, index: number) => (
-                            <span key={index}>{column}</span>
+                            <span key={`${row.id}-col-${index}`}>{column}</span>
                         ))}
                     </div>
                 ))}
             </div>
-            {(additionalButtons || []).map((button: any, index: number) => (
-                <button key={index} title={button.tooltip} onClick={button.onClick} disabled={button.disabled}>
+            {(additionalButtons || []).map((button: any) => (
+                <button key={button.tooltip} title={button.tooltip} onClick={button.onClick} disabled={button.disabled}>
                     {button.icon}
                 </button>
             ))}

@@ -1,12 +1,14 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
-import type {
-    CmpProfileDetailDto as CmpProfileDetailDtoOpenApi,
-    CmpProfileDto as CmpProfileDtoOpenApi,
-    CmpProfileEditRequestDto as CmpProfileEditRequestDtoOpenApi,
-    CmpProfileRequestDto as CmpProfileRequestDtoOpenApi,
+import type { CmpProfileDetailDto, CmpProfileEditRequestDto, CmpProfileRequestDto } from './openapi';
+
+export type {
+    CmpProfileRequestDto,
+    CmpProfileEditRequestDto,
+    CmpProfileDetailDto,
+    CmpProfileDto,
+    CmpProfileDto as CmpProfileModel,
 } from './openapi';
 
-export type CmpProfileRequestDto = CmpProfileRequestDtoOpenApi;
 export type CmpProfileRequestModel = Omit<
     CmpProfileRequestDto,
     'issueCertificateAttributes | revokeCertificateAttributes | customAttributes'
@@ -16,7 +18,6 @@ export type CmpProfileRequestModel = Omit<
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type CmpProfileEditRequestDto = CmpProfileEditRequestDtoOpenApi;
 export type CmpProfileEditRequestModel = Omit<
     CmpProfileEditRequestDto,
     'issueCertificateAttributes | revokeCertificateAttributes | customAttributes'
@@ -26,7 +27,6 @@ export type CmpProfileEditRequestModel = Omit<
     customAttributes?: Array<AttributeRequestModel>;
 };
 
-export type CmpProfileDetailDto = CmpProfileDetailDtoOpenApi;
 export type CmpProfileDetailModel = Omit<
     CmpProfileDetailDto,
     'issueCertificateAttributes | revokeCertificateAttributes | customAttributes'
@@ -35,6 +35,3 @@ export type CmpProfileDetailModel = Omit<
     revokeCertificateAttributes?: Array<AttributeResponseModel>;
     customAttributes?: Array<AttributeResponseModel>;
 };
-
-export type CmpProfileDto = CmpProfileDtoOpenApi;
-export type CmpProfileModel = CmpProfileDto;
