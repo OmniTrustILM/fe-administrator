@@ -17,11 +17,11 @@ import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-hel
 import type { OAuth2ProviderSettingsUpdateDto } from 'types/auth-settings';
 import { isValidJWTBearerProvider, isValidOAuth2FlowProvider } from 'utils/oauth2Providers';
 
-type OAuth2ProviderFormProps = Readonly<{
+type OAuth2ProviderFormProps = {
     providerName?: string;
     onCancel: () => void;
     onSuccess?: () => void;
-}>;
+};
 
 enum AuthenticationScheme {
     JwtBearer = 'JwtBearer',
@@ -62,7 +62,7 @@ interface FormValues {
     sessionMaxInactiveInterval: string;
 }
 
-export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }: OAuth2ProviderFormProps) {
+export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }: Readonly<OAuth2ProviderFormProps>) {
     const editMode = providerName !== undefined;
 
     const dispatch = useDispatch();

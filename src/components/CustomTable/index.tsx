@@ -19,7 +19,7 @@ import TableSkeleton from './TableSkeleton';
 
 export type { TableDataRow, TableHeader } from './types';
 
-type Props = Readonly<{
+type Props = {
     headers: TableHeader[];
     data: TableDataRow[];
     canSearch?: boolean;
@@ -50,7 +50,7 @@ type Props = Readonly<{
     disableSelectionControls?: boolean;
     disableSearchControls?: boolean;
     isLoading?: boolean;
-}>;
+};
 
 const emptyCheckedRows: (string | number)[] = [];
 
@@ -78,7 +78,7 @@ function CustomTable({
     disableSelectionControls = false,
     disableSearchControls = false,
     isLoading = false,
-}: Props) {
+}: Readonly<Props>) {
     const location = useLocation();
     const [tblHeaders, setTblHeaders] = useState<TableHeader[]>();
     const [tblData, setTblData] = useState<TableDataRow[]>(data);

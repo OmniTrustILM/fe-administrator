@@ -30,11 +30,11 @@ import { collectFormAttributes } from 'utils/attributes/attributes';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
-type AuthorityFormProps = Readonly<{
+type AuthorityFormProps = {
     authorityId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}>;
+};
 
 interface FormValues {
     name: string;
@@ -42,7 +42,7 @@ interface FormValues {
     storeKind: string;
 }
 
-export default function AuthorityForm({ authorityId, onCancel, onSuccess }: AuthorityFormProps) {
+export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Readonly<AuthorityFormProps>) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 

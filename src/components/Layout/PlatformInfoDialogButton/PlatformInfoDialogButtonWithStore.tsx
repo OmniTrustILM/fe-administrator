@@ -16,17 +16,17 @@ const defaultPreloadedState = {
     },
 };
 
-export type PlatformInfoDialogButtonWithStoreProps = Readonly<{
+export type PlatformInfoDialogButtonWithStoreProps = {
     preloadedState?: Parameters<typeof createMockStore>[0];
     initiallyOpen?: boolean;
     forceOpen?: boolean;
-}>;
+};
 
 export default function PlatformInfoDialogButtonWithStore({
     preloadedState,
     initiallyOpen = false,
     forceOpen,
-}: PlatformInfoDialogButtonWithStoreProps) {
+}: Readonly<PlatformInfoDialogButtonWithStoreProps>) {
     const store = useMemo(() => createMockStore(preloadedState ?? defaultPreloadedState), [preloadedState]);
 
     return (

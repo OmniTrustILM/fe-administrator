@@ -8,11 +8,11 @@ import { selectors } from 'ducks/auth';
 
 import logo from '../../../resources/images/ot-logo-white.svg';
 
-type Props = Readonly<{
+type Props = {
     sidebarToggle: () => void;
-}>;
+};
 
-function Header({ sidebarToggle }: Props) {
+function Header({ sidebarToggle }: Readonly<Props>) {
     const profile = useSelector(selectors.profile);
     const navigate = useNavigate();
 

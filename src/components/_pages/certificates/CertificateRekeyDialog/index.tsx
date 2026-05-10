@@ -47,12 +47,12 @@ interface FormValues {
     altKey?: CryptographicKeyPairResponseModel;
 }
 
-type props = Readonly<{
+type props = {
     onCancel: () => void;
     certificate?: CertificateDetailResponseModel;
-}>;
+};
 
-export default function CertificateRekeyDialog({ onCancel, certificate }: props) {
+export default function CertificateRekeyDialog({ onCancel, certificate }: Readonly<props>) {
     const dispatch = useDispatch();
 
     const isFetchingCsrAttributes = useSelector(certificateSelectors.isFetchingIssuanceAttributes);

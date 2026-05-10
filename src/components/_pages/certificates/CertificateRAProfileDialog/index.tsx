@@ -10,13 +10,13 @@ import Spinner from 'components/Spinner';
 import Button from 'components/Button';
 import Container from 'components/Container';
 
-type Props = Readonly<{
+type Props = {
     uuids: string[];
     onCancel: () => void;
     onUpdate: () => void;
-}>;
+};
 
-export default function CertificateGroupDialog({ uuids, onCancel, onUpdate }: Props) {
+export default function CertificateGroupDialog({ uuids, onCancel, onUpdate }: Readonly<Props>) {
     const dispatch = useDispatch();
 
     const raProfiles = useSelector(raProfileSelectors.raProfiles);

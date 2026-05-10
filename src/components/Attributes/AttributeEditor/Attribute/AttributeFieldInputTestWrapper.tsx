@@ -3,13 +3,13 @@ import * as ReactHookForm from 'react-hook-form';
 import { AttributeFieldInput } from './AttributeFieldInput';
 import type { DataAttributeModel } from 'types/attributes';
 
-export type AttributeFieldInputTestWrapperProps = Readonly<{
+export type AttributeFieldInputTestWrapperProps = {
     name: string;
     descriptor: DataAttributeModel;
     busy?: boolean;
     deleteButton?: React.ReactNode;
     defaultValues?: Record<string, unknown>;
-}>;
+};
 
 export function AttributeFieldInputTestWrapper({
     name,
@@ -17,7 +17,7 @@ export function AttributeFieldInputTestWrapper({
     busy = false,
     deleteButton,
     defaultValues = {},
-}: AttributeFieldInputTestWrapperProps) {
+}: Readonly<AttributeFieldInputTestWrapperProps>) {
     const methods = ReactHookForm.useForm({
         defaultValues: {
             [name]: undefined,

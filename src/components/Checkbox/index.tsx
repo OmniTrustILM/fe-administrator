@@ -1,7 +1,7 @@
 import cn from 'classnames';
 import Label from 'components/Label';
 
-type Props = Readonly<{
+type Props = {
     checked: boolean;
     onChange: (checked: boolean) => void;
     placeholder?: string;
@@ -9,9 +9,9 @@ type Props = Readonly<{
     label?: string;
     disabled?: boolean;
     dataTestId?: string;
-}>;
+};
 
-function Checkbox({ checked, onChange, id, label, disabled = false, dataTestId }: Props) {
+function Checkbox({ checked, onChange, id, label, disabled = false, dataTestId }: Readonly<Props>) {
     return (
         <div className="flex items-center h-5" data-testid={dataTestId ? `${dataTestId}-wrapper` : undefined}>
             <input

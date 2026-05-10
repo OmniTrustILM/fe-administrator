@@ -10,9 +10,9 @@ import { base64ToUtf8 } from 'utils/common-utils';
 import type { CodeBlockAttributeContentModel } from '../../../types/attributes';
 import type { ProgrammingLanguageEnum } from '../../../types/openapi';
 
-type Props = Readonly<{
+type Props = {
     content: CodeBlockAttributeContentModel;
-}>;
+};
 
 export const getHighLightedCode = (code: string, language: ProgrammingLanguageEnum) => {
     try {
@@ -23,7 +23,7 @@ export const getHighLightedCode = (code: string, language: ProgrammingLanguageEn
     }
 };
 
-export default function CodeBlock({ content }: Props) {
+export default function CodeBlock({ content }: Readonly<Props>) {
     const dispatch = useDispatch();
 
     const handleOpenDialog = () => {

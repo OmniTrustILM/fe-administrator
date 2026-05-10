@@ -22,7 +22,7 @@ function getValueFieldError(fieldState: { error?: { message?: string }; isTouche
     return typeof fieldState.error === 'string' ? fieldState.error : (fieldState.error?.message ?? 'Invalid value');
 }
 
-type ValueFieldInputProps = Readonly<{
+type ValueFieldInputProps = {
     descriptor: CustomAttributeModel;
     id?: string;
     field: { value: any; onChange: (v: any) => void; onBlur: () => void };
@@ -30,7 +30,7 @@ type ValueFieldInputProps = Readonly<{
     fieldStepValue: number | undefined;
     options: { label: string; value: string }[];
     onCancel?: () => void;
-}>;
+};
 
 function normalizeDateValue(value: string | undefined): string | undefined {
     if (!value) return undefined;
@@ -130,7 +130,7 @@ function ListValueField({ descriptor, field, options, inputClassName }: ValueFie
     );
 }
 
-function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, options }: ValueFieldInputProps) {
+function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, options }: Readonly<ValueFieldInputProps>) {
     const inputType = ContentFieldConfiguration[descriptor.contentType].type;
     const displayValue = descriptor.contentType === AttributeContentType.Datetime ? getFormattedDateTime(field.value) : field.value;
     const error = getValueFieldError(fieldState);
@@ -205,15 +205,15 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
     }
 }
 
-type Props = Readonly<{
+type Props = {
     id?: string;
     descriptor: CustomAttributeModel;
     initialContent?: BaseAttributeContentModel[];
     onSubmit: (attributeUuid: string, content: BaseAttributeContentModel[]) => void;
     onCancel?: () => void;
-}>;
+};
 
-export default function ContentValueField({ id, descriptor, initialContent, onSubmit, onCancel }: Props) {
+export default function ContentValueField({ id, descriptor, initialContent, onSubmit, onCancel }: Readonly<Props>) {
     const { control, setValue } = useFormContext();
 
     const options = useMemo(

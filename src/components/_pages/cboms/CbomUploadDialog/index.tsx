@@ -8,15 +8,15 @@ import ProgressButton from 'components/ProgressButton';
 import { actions as alertActions } from 'ducks/alerts';
 import { selectors as cbomSelectors } from 'ducks/cbom';
 
-type Props = Readonly<{
+type Props = {
     onCancel: () => void;
     onUpload: (data: { content: any }) => void;
     okButtonTitle?: string;
-}>;
+};
 
 type FormValues = Record<string, never>;
 
-export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = 'Upload' }: Props) {
+export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = 'Upload' }: Readonly<Props>) {
     const dispatch = useDispatch();
     const [fileContent, setFileContent] = useState<string>('');
 

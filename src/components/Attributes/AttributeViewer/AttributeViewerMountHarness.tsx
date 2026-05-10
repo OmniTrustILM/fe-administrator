@@ -31,7 +31,7 @@ export function createAttributeViewerStore() {
 
 type HarnessProps = Props;
 
-export default function AttributeViewerMountHarness(props: HarnessProps) {
+export default function AttributeViewerMountHarness(props: Readonly<HarnessProps>) {
     const store = createAttributeViewerStore();
     return (
         <Provider store={store}>

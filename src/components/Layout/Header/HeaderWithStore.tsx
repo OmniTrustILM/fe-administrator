@@ -4,9 +4,9 @@ import { MemoryRouter } from 'react-router';
 import { createMockStore } from 'utils/test-helpers';
 import Header from './index';
 
-export type HeaderWithStoreProps = Readonly<React.ComponentProps<typeof Header>>;
+export type HeaderWithStoreProps = React.ComponentProps<typeof Header>;
 
-export default function HeaderWithStore(props: HeaderWithStoreProps) {
+export default function HeaderWithStore(props: Readonly<HeaderWithStoreProps>) {
     const store = createMockStore();
     return (
         <Provider store={store}>

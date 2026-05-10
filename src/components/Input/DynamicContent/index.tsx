@@ -22,12 +22,12 @@ const AllowedAttributeContentType = [
     AttributeContentType.Datetime,
 ];
 
-type Props = Readonly<{
+type Props = {
     editable: boolean;
     isList: boolean;
-}>;
+};
 
-export default function DynamicContent({ editable, isList }: Props) {
+export default function DynamicContent({ editable, isList }: Readonly<Props>) {
     const { control, setValue } = useFormContext();
     const contentTypeValue = useWatch({ control, name: 'contentType' });
     const attributeContentTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.AttributeContentType));

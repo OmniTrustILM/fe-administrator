@@ -20,7 +20,7 @@ import Container from 'components/Container';
 
 type FormValues = Record<string, never>;
 
-type Props = Readonly<{
+type Props = {
     onCancel: () => void;
     onUpload: (data: {
         fileContent: string;
@@ -29,9 +29,14 @@ type Props = Readonly<{
     }) => void;
     okButtonTitle?: string;
     showCustomAttributes?: boolean;
-}>;
+};
 
-export default function CertificateUploadDialog({ onCancel, onUpload, okButtonTitle = 'Upload', showCustomAttributes = true }: Props) {
+export default function CertificateUploadDialog({
+    onCancel,
+    onUpload,
+    okButtonTitle = 'Upload',
+    showCustomAttributes = true,
+}: Readonly<Props>) {
     const dispatch = useDispatch();
 
     const [certificate, setCertificate] = useState<CertificateDetailResponseModel | undefined>();

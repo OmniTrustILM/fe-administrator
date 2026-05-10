@@ -18,15 +18,15 @@ type OptionType = {
     value: string;
 };
 
-type Props = Readonly<{
+type Props = {
     resource?: Resource;
     event?: ResourceEvent;
     selectedTriggers: string[];
     onSelectedTriggersChange: (triggerUuids: string[]) => void;
     noteText?: string;
-}>;
+};
 
-export default function TriggerEditorWidget({ resource, event, selectedTriggers, onSelectedTriggersChange, noteText }: Props) {
+export default function TriggerEditorWidget({ resource, event, selectedTriggers, onSelectedTriggersChange, noteText }: Readonly<Props>) {
     const dispatch = useDispatch();
 
     const triggers = useSelector(rulesSelectors.triggers);

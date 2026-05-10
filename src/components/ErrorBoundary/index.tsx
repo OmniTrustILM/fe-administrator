@@ -3,11 +3,11 @@ import { useLocation } from 'react-router';
 import Button from 'components/Button';
 import Container from 'components/Container';
 
-type Props = Readonly<{
+type Props = {
     children: ReactNode;
     fallback?: ReactNode;
     resetKey?: string | number;
-}>;
+};
 
 interface State {
     hasError: boolean;
@@ -16,7 +16,7 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-    constructor(props: Props) {
+    constructor(props: Readonly<Props>) {
         super(props);
         this.state = {
             hasError: false,
@@ -41,7 +41,7 @@ class ErrorBoundary extends Component<Props, State> {
         });
     }
 
-    componentDidUpdate(prevProps: Props) {
+    componentDidUpdate(prevProps: Readonly<Props>) {
         // Reset error state when resetKey changes (e.g., on navigation)
         if (this.props.resetKey !== prevProps.resetKey && this.state.hasError) {
             this.setState({

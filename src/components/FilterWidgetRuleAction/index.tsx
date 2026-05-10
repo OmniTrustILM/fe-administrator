@@ -112,7 +112,7 @@ function mapActionToExecutionItem(a: ExecutionItemRequestModel, availableFilters
     return { fieldSource: a.fieldSource, fieldIdentifier: a.fieldIdentifier, data };
 }
 
-type Props = Readonly<{
+type Props = {
     title: string;
     entity: EntityType;
     getAvailableFiltersApi: (apiClients: ApiClients) => Observable<Array<SearchFieldListModel>>;
@@ -120,7 +120,7 @@ type Props = Readonly<{
     ExecutionsList?: ExecutionItemModel[];
     disableBadgeRemove?: boolean;
     busyBadges?: boolean;
-}>;
+};
 
 export default function FilterWidgetRuleAction({
     ExecutionsList,
@@ -130,7 +130,7 @@ export default function FilterWidgetRuleAction({
     getAvailableFiltersApi,
     disableBadgeRemove,
     busyBadges,
-}: Props) {
+}: Readonly<Props>) {
     const dispatch = useDispatch();
 
     const searchGroupEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.FilterFieldSource));

@@ -7,11 +7,11 @@ import { useSelector } from 'react-redux';
 import { type AttributeDescriptorModel, isDataAttributeModel, isInfoAttributeModel } from 'types/attributes';
 import { AttributeConstraintType, PlatformEnum } from 'types/openapi';
 
-export type Props = Readonly<{
+export type Props = {
     attributeDescriptors: AttributeDescriptorModel[];
-}>;
+};
 
-export default function AttributeDescriptorViewer({ attributeDescriptors }: Props) {
+export default function AttributeDescriptorViewer({ attributeDescriptors }: Readonly<Props>) {
     const attributeTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.AttributeType));
     const attributeContentTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.AttributeContentType));
     const headers: TableHeader[] = useMemo(

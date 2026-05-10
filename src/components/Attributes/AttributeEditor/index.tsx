@@ -57,7 +57,7 @@ function cloneForCompare<T>(value: T): T {
 const emptyAttributes: AttributeResponseModel[] = [];
 const emptyGroupAttributesCallbackAttributes: AttributeDescriptorModel[] = [];
 
-export type Props = Readonly<{
+export type Props = {
     id: string;
     attributeDescriptors: AttributeDescriptorModel[];
     groupAttributesCallbackAttributes?: AttributeDescriptorModel[];
@@ -69,7 +69,7 @@ export type Props = Readonly<{
     callbackResource?: Resource;
     callbackParentUuid?: string;
     withRemoveAction?: boolean;
-}>;
+};
 
 function AttributeEditorInner({
     id,
@@ -83,7 +83,7 @@ function AttributeEditorInner({
     groupAttributesCallbackAttributes = emptyGroupAttributesCallbackAttributes,
     setGroupAttributesCallbackAttributes = () => emptyGroupAttributesCallbackAttributes,
     withRemoveAction = true,
-}: Props) {
+}: Readonly<Props>) {
     const dispatch = useDispatch();
 
     const { setValue, watch } = useFormContext<Record<string, any>>();

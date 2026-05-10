@@ -388,10 +388,10 @@ function getAllowedMenuItems(allowedResources?: Resource[]): MenuItemMapping[] {
     return allowedLinks;
 }
 
-type Props = Readonly<{
+type Props = {
     allowedResources?: Resource[];
-}>;
-export default function Sidebar({ allowedResources }: Props) {
+};
+export default function Sidebar({ allowedResources }: Readonly<Props>) {
     const [defaultMenuSize, setDefaultMenuSize] = useLocalStorage<'small' | 'large'>('menu-size', 'small');
     const [menuSize, setMenuSize] = useState<'small' | 'large' | 'flying'>(defaultMenuSize);
     const location = useLocation();
