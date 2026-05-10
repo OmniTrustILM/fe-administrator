@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { Buffer } from 'node:buffer';
+import { Buffer } from 'buffer';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Widget from 'components/Widget';
 import Container from 'components/Container';

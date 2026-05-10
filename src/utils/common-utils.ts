@@ -1,4 +1,4 @@
-import { Buffer } from 'node:buffer';
+import { Buffer } from 'buffer';
 type InputType = 'text' | 'number' | 'email' | 'password' | 'date' | 'time' | 'datetime-local' | 'textarea' | 'checkbox' | 'radio' | 'file';
 import { AttributeContentType, FilterFieldType } from 'types/openapi';
 

@@ -1,4 +1,4 @@
-import { Buffer } from 'node:buffer';
+import { Buffer } from 'buffer';
 import { actions as userInterfaceActions } from '../../../../ducks/user-interface';
 
 import { actions as alertActions } from 'ducks/alerts';

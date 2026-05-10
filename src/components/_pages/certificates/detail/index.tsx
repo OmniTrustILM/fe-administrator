@@ -1,4 +1,4 @@
-import { Buffer } from 'node:buffer';
+import { Buffer } from 'buffer';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import AttributeEditor from 'components/Attributes/AttributeEditor';
 import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE } from 'components/Attributes/AttributeViewer';
