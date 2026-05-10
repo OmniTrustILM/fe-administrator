@@ -9,7 +9,7 @@ import { Plus } from 'lucide-react';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import { getSelectValueFromField, buildAttributeValidators, parseListValueByContentType } from './attributeHelpers';
 
-type AttributeFieldSelectProps = Readonly<{
+type AttributeFieldSelectProps = {
     name: string;
     descriptor: DataAttributeModel | CustomAttributeModel;
     options?: { label: string; value: any }[];
@@ -18,7 +18,7 @@ type AttributeFieldSelectProps = Readonly<{
     addNewAttributeValue?: { label: string; value: string; disabled?: boolean };
     onSelectChangeMulti: (fieldOnChange: (v: any) => void) => (newValue: any) => void;
     onSelectChangeSingle: (fieldOnChange: (v: any) => void) => (newValue: any) => void;
-}>;
+};
 
 export function AttributeFieldSelect({
     name,
@@ -29,7 +29,7 @@ export function AttributeFieldSelect({
     addNewAttributeValue,
     onSelectChangeMulti,
     onSelectChangeSingle,
-}: AttributeFieldSelectProps): React.ReactNode {
+}: Readonly<AttributeFieldSelectProps>): React.ReactNode {
     const { control } = useFormContext<Record<string, any>>();
     const [showAddCustom, setShowAddCustom] = useState(false);
     const [singleSelectKey, setSingleSelectKey] = useState(0);

@@ -29,13 +29,13 @@ const defaultApprovalSteps: ApprovalStepRequestModel[] = [
     },
 ];
 
-type ApprovalProfileFormProps = Readonly<{
+type ApprovalProfileFormProps = {
     approvalProfileId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
-}>;
+};
 
-function ApprovalProfileForm({ approvalProfileId, onCancel, onSuccess }: ApprovalProfileFormProps) {
+function ApprovalProfileForm({ approvalProfileId, onCancel, onSuccess }: Readonly<ApprovalProfileFormProps>) {
     const dispatch = useDispatch();
 
     const isCreating = useSelector(profileApprovalSelectors.isCreating);

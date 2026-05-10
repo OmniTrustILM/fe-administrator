@@ -2,14 +2,14 @@ import { type ReactNode, useEffect, useRef } from 'react';
 
 export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right' | 'auto';
 
-type Props = Readonly<{
+type Props = {
     content: string | ReactNode;
     children: ReactNode;
     title?: string;
     width?: number;
-}>;
+};
 
-function Popover({ content, children, title, width = 300 }: Props) {
+function Popover({ content, children, title, width = 300 }: Readonly<Props>) {
     const contentRef = useRef<HTMLDivElement>(null);
     const toggleRef = useRef<HTMLDivElement>(null);
 

@@ -16,7 +16,7 @@ import type { Observable } from 'rxjs';
 import type { SearchFieldListModel, SearchFilterModel, SearchRequestModel } from 'types/certificate';
 import type { LockWidgetNameEnum } from 'types/user-interface';
 
-type Props = Readonly<{
+type Props = {
     entity: EntityType;
     headers: TableHeader[];
     data: TableDataRow[];
@@ -37,7 +37,7 @@ type Props = Readonly<{
     hasDetails?: boolean;
     columnForDetail?: string;
     extraFilterComponent?: React.ReactNode;
-}>;
+};
 
 function PagedList({
     headers,
@@ -60,7 +60,7 @@ function PagedList({
     hasDetails = false,
     columnForDetail,
     extraFilterComponent,
-}: Props) {
+}: Readonly<Props>) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 

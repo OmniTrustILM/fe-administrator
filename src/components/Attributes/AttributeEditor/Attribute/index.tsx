@@ -18,14 +18,14 @@ import { AttributeFieldSelect } from './AttributeFieldSelect';
 import { AttributeFieldFile } from './AttributeFieldFile';
 import { AttributeFieldInput } from './AttributeFieldInput';
 
-type Props = Readonly<{
+type Props = {
     name: string;
     descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel | undefined;
     options?: { label: string; value: any }[];
     busy?: boolean;
     userInteractedRef?: React.RefObject<boolean>;
     deleteButton?: React.ReactNode;
-}>;
+};
 
 export function Attribute({
     name,
@@ -34,7 +34,7 @@ export function Attribute({
     busy = false,
     userInteractedRef: userInteractionRef,
     deleteButton,
-}: Props): React.ReactNode {
+}: Readonly<Props>): React.ReactNode {
     const { setValue } = useFormContext<Record<string, any>>();
     const [addNewAttributeValue, setAddNewAttributeValue] = useState<AddNewAttributeType | undefined>();
     const attributeCallbackValue = useSelector(userInterfaceSelectors.selectAttributeCallbackValue);

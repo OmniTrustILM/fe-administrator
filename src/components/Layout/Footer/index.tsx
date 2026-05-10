@@ -2,11 +2,11 @@ import cn from 'classnames';
 
 import PlatformInfoDialogButton from 'components/Layout/PlatformInfoDialogButton';
 
-type Props = Readonly<{
+type Props = {
     className?: string;
-}>;
+};
 
-function Footer({ className }: Props) {
+function Footer({ className }: Readonly<Props>) {
     return (
         <footer className={cn('py-4 pt-12', className)} data-testid="footer">
             <div className="text-sm font-semibold">

@@ -87,12 +87,12 @@ function DescriptorInputControl({
     );
 }
 
-type Props = Readonly<{
+type Props = {
     isList: boolean;
     contentType: AttributeContentType;
-}>;
+};
 
-export default function ContentDescriptorField({ isList, contentType }: Props) {
+export default function ContentDescriptorField({ isList, contentType }: Readonly<Props>) {
     const { control, setValue, watch } = useFormContext();
     const contentValues = watch('content');
     const readOnly = watch('readOnly');

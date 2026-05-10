@@ -6,7 +6,7 @@ import { inputBaseClassName } from 'components/TextInput/inputStyles';
 import Button from 'components/Button';
 import Container from 'components/Container';
 
-type Props = Readonly<{
+type Props = {
     value?: string;
     onChange: (value: string) => void;
     onBlur?: () => void;
@@ -17,12 +17,12 @@ type Props = Readonly<{
     className?: string;
     required?: boolean;
     timePicker?: boolean;
-}>;
+};
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
-function DatePicker({ value, onChange, onBlur, disabled, id, invalid, error, className, required, timePicker = false }: Props) {
+function DatePicker({ value, onChange, onBlur, disabled, id, invalid, error, className, required, timePicker = false }: Readonly<Props>) {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(value ? new Date(value) : null);
     const [selectedTime, setSelectedTime] = useState<{ hours: number; minutes: number; seconds: number }>(() => {

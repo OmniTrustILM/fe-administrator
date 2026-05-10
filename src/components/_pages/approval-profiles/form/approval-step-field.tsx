@@ -14,11 +14,11 @@ import { validateLength, validateNonZeroInteger, validatePositiveInteger, valida
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { Plus, X } from 'lucide-react';
 
-type Props = Readonly<{
+type Props = {
     approvalSteps: ApprovalStepRequestModel[];
     inProgress: boolean;
     onCancelClick: () => void;
-}>;
+};
 
 type SelectOptionApprover = { label: string; value: string } | null;
 type SelectOptionApproverType = { label: string; value: string };
@@ -28,7 +28,7 @@ const approverTypeOptions = Object.values(ApproverType).map((type) => ({
     label: type,
 }));
 
-export default function ApprovalStepField({ approvalSteps }: Props) {
+export default function ApprovalStepField({ approvalSteps }: Readonly<Props>) {
     const { control, setValue } = useFormContext<ProfileApprovalRequestModel>();
     const [selectedApprovalTypeList, setselectedApprovalTypeList] = useState<SelectOptionApproverType[] | undefined>(undefined);
     const [selectedApproverList, setSelectedApproverList] = useState<SelectOptionApprover[]>([]);

@@ -2,7 +2,7 @@ import cn from 'classnames';
 import Button, { type ButtonColor } from 'components/Button';
 import Spinner from 'components/Spinner';
 
-type Props = Readonly<{
+type Props = {
     disabled?: boolean;
     inProgress: boolean | undefined;
     title: string;
@@ -12,7 +12,7 @@ type Props = Readonly<{
     type?: 'submit' | 'reset' | 'button';
     onClick?: () => void;
     dataTestId?: string;
-}>;
+};
 
 function ProgressButton({
     inProgress,
@@ -23,7 +23,7 @@ function ProgressButton({
     type = 'submit',
     onClick,
     dataTestId,
-}: Props) {
+}: Readonly<Props>) {
     const buttonProps = {
         color,
         disabled: disabled || inProgress,

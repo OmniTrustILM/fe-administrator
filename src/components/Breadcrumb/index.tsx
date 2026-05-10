@@ -2,16 +2,16 @@ import cn from 'classnames';
 import { Link } from 'react-router';
 import type React from 'react';
 
-type Props = Readonly<{
+type Props = {
     items: {
         label: string;
         href?: string;
     }[];
     title?: string;
     rightContent?: React.ReactNode;
-}>;
+};
 
-function Breadcrumb({ items, title: titleProp, rightContent }: Props) {
+function Breadcrumb({ items, title: titleProp, rightContent }: Readonly<Props>) {
     const title = titleProp || items.at(-1)?.label || '';
     return (
         <div className="mb-4 md:mb-8">

@@ -3,12 +3,12 @@ import Select from 'components/Select';
 import { type AttributeDescriptorModel, type CustomAttributeModel, isCustomAttributeModel } from '../../../../types/attributes';
 import Label from 'components/Label';
 
-export type Props = Readonly<{
+export type Props = {
     attributeDescriptors: AttributeDescriptorModel[] | undefined;
     onAdd: (attribute: CustomAttributeModel) => void;
-}>;
+};
 
-export default function CustomAttributeAddSelect({ attributeDescriptors, onAdd }: Props) {
+export default function CustomAttributeAddSelect({ attributeDescriptors, onAdd }: Readonly<Props>) {
     const { options, uuidToAttributeMap } = useMemo(() => {
         const customAttributes = attributeDescriptors?.filter<CustomAttributeModel>((el) => isCustomAttributeModel(el)) || [];
 

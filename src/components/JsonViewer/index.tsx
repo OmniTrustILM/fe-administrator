@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import cn from 'classnames';
 
-type Props = Readonly<{
+type Props = {
     value: string;
     height?: number | string;
     className?: string;
     paddingTop?: number;
-}>;
+};
 
 const STRING_CHAR = String.raw`\\u[\da-fA-F]{4}|\\[^u]|[^\\"]`;
 const JSON_STRING = `"(?:${STRING_CHAR})*"`;
@@ -65,7 +65,7 @@ const highlightJson = (source: string): string => {
     return result;
 };
 
-export default function JsonViewer({ value, height, className, paddingTop }: Props) {
+export default function JsonViewer({ value, height, className, paddingTop }: Readonly<Props>) {
     const normalizedJson = useMemo(() => {
         if (!value) return '';
 

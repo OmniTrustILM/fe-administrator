@@ -3,7 +3,7 @@ import * as ReactHookForm from 'react-hook-form';
 import { AttributeFieldSelect } from './AttributeFieldSelect';
 import type { DataAttributeModel } from 'types/attributes';
 
-export type AttributeFieldSelectTestWrapperProps = Readonly<{
+export type AttributeFieldSelectTestWrapperProps = {
     name: string;
     descriptor: DataAttributeModel;
     options?: { label: string; value: string | number }[];
@@ -11,7 +11,7 @@ export type AttributeFieldSelectTestWrapperProps = Readonly<{
     deleteButton?: React.ReactNode;
     addNewAttributeValue?: { label: string; value: string; disabled?: boolean };
     defaultValues?: Record<string, unknown>;
-}>;
+};
 
 export function AttributeFieldSelectTestWrapper({
     name,
@@ -21,7 +21,7 @@ export function AttributeFieldSelectTestWrapper({
     deleteButton,
     addNewAttributeValue,
     defaultValues = {},
-}: AttributeFieldSelectTestWrapperProps) {
+}: Readonly<AttributeFieldSelectTestWrapperProps>) {
     const methods = ReactHookForm.useForm({
         defaultValues: {
             [name]: undefined,

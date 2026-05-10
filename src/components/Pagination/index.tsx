@@ -1,12 +1,12 @@
-type Props = Readonly<{
+type Props = {
     page: number;
     totalPages: number;
     onPageChange: (page: number) => void;
     dataTestId?: string;
     disabled?: boolean;
-}>;
+};
 
-function Pagination({ page, totalPages, onPageChange, dataTestId, disabled = false }: Props) {
+function Pagination({ page, totalPages, onPageChange, dataTestId, disabled = false }: Readonly<Props>) {
     const getPageNumbers = () => {
         const pages: (number | 'ellipsis')[] = [];
         const maxPagesToShow = 7; // Max page buttons to show
