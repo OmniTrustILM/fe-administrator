@@ -406,7 +406,9 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
 
                     role.description || '',
 
-                    <Badge color={role.systemRole ? 'danger' : 'success'}>{role.systemRole ? 'Yes' : 'No'}</Badge>,
+                    <Badge key="systemRole" color={role.systemRole ? 'danger' : 'success'}>
+                        {role.systemRole ? 'Yes' : 'No'}
+                    </Badge>,
                 ],
             })),
 

@@ -167,7 +167,7 @@ function ApprovalProfileForm({ approvalProfileId, onCancel, onSuccess }: Readonl
                                 rules={buildValidationRules([validateRequired(), validateNonZeroInteger(), validatePositiveInteger()])}
                                 render={({ field, fieldState }) => (
                                     <TextInput
-                                        value={field.value !== undefined ? field.value.toString() : ''}
+                                        value={field.value === undefined ? '' : field.value.toString()}
                                         onChange={(value) => field.onChange(value ? Number.parseInt(value, 10) : undefined)}
                                         onBlur={field.onBlur}
                                         id="expiry"

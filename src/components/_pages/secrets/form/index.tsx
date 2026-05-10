@@ -706,7 +706,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                                                 onChange={field.onChange}
                                                 onBlur={() => {
                                                     field.onBlur();
-                                                    const raw = field.value as string | undefined;
+                                                    const raw = field.value;
                                                     if (!raw) return;
                                                     try {
                                                         const parsed = JSON.parse(raw);

@@ -103,15 +103,17 @@ export default function ApprovalProfilesList() {
                 id: approvalProfile.uuid,
 
                 columns: [
-                    <Link to={`./detail/${approvalProfile.uuid}`}>{approvalProfile.name}</Link>,
+                    <Link key="name" to={`./detail/${approvalProfile.uuid}`}>
+                        {approvalProfile.name}
+                    </Link>,
 
                     approvalProfile.description || '',
 
-                    <>{approvalProfile.version}</>,
+                    String(approvalProfile.version),
 
-                    <>{approvalProfile.numberOfSteps}</>,
+                    String(approvalProfile.numberOfSteps),
 
-                    <>{approvalProfile.associations.toString()}</>,
+                    approvalProfile.associations.toString(),
                 ],
             })),
         [profileApprovalList],

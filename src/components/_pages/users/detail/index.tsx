@@ -203,12 +203,14 @@ export default function UserDetail() {
                           id: 'systemUser',
                           columns: [
                               'System user',
-                              <Badge color={user.systemUser ? 'danger' : 'success'}>{user.systemUser ? 'Yes' : 'No'}</Badge>,
+                              <Badge key="systemUser" color={user.systemUser ? 'danger' : 'success'}>
+                                  {user.systemUser ? 'Yes' : 'No'}
+                              </Badge>,
                           ],
                       },
                       {
                           id: 'enabled',
-                          columns: ['Status', <StatusBadge enabled={user.enabled} />],
+                          columns: ['Status', <StatusBadge key="enabled" enabled={user.enabled} />],
                       },
                       {
                           id: 'roles',

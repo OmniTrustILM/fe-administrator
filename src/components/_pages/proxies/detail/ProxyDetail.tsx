@@ -136,7 +136,7 @@ export const ProxyDetail = () => {
             },
             {
                 id: 'status',
-                columns: ['Status', <ProxyStatusBadge status={proxyDetails.status} />, ''],
+                columns: ['Status', <ProxyStatusBadge key="status" status={proxyDetails.status} />, ''],
             },
             {
                 id: 'description',
@@ -144,6 +144,7 @@ export const ProxyDetail = () => {
                     'Description',
                     updateDescriptionEditEnable ? (
                         <TextInput
+                            key="desc-input"
                             onChange={(value) => setUpdatedDescription(value)}
                             value={updatedDescription}
                             placeholder="Enter Description"
@@ -151,7 +152,7 @@ export const ProxyDetail = () => {
                     ) : (
                         proxyDetails.description || ''
                     ),
-                    <div>
+                    <div key="desc-actions">
                         {updateDescriptionEditEnable ? (
                             <div className="flex gap-2">
                                 <Button

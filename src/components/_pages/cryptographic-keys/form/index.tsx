@@ -292,35 +292,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
     };
 
     const attributeTabs = (tokenProfileUuid: string | undefined) => {
-        if (!editMode) {
-            return [
-                {
-                    title: 'Connector Attributes',
-                    content: cryptographicKeyAttributeDescriptors ? (
-                        <AttributeEditor
-                            id="cryptographicKey"
-                            callbackParentUuid={keyDetail?.tokenProfileUuid || tokenProfileUuid || ''}
-                            callbackResource={Resource.Keys}
-                            attributeDescriptors={cryptographicKeyAttributeDescriptors || []}
-                            groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
-                            setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
-                        />
-                    ) : (
-                        <></>
-                    ),
-                },
-                {
-                    title: 'Custom Attributes',
-                    content: (
-                        <AttributeEditor
-                            id="customCryptographicKey"
-                            attributeDescriptors={resourceCustomAttributes}
-                            attributes={keyDetail?.customAttributes}
-                        />
-                    ),
-                },
-            ];
-        } else {
+        if (editMode) {
             return [
                 {
                     title: 'Custom Attributes',
@@ -334,6 +306,33 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                 },
             ];
         }
+        return [
+            {
+                title: 'Connector Attributes',
+                content: cryptographicKeyAttributeDescriptors ? (
+                    <AttributeEditor
+                        id="cryptographicKey"
+                        callbackParentUuid={keyDetail?.tokenProfileUuid || tokenProfileUuid || ''}
+                        callbackResource={Resource.Keys}
+                        attributeDescriptors={cryptographicKeyAttributeDescriptors || []}
+                        groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
+                        setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
+                    />
+                ) : (
+                    <></>
+                ),
+            },
+            {
+                title: 'Custom Attributes',
+                content: (
+                    <AttributeEditor
+                        id="customCryptographicKey"
+                        attributeDescriptors={resourceCustomAttributes}
+                        attributes={keyDetail?.customAttributes}
+                    />
+                ),
+            },
+        ];
     };
 
     // Reset form values when keyDetail is loaded in edit mode

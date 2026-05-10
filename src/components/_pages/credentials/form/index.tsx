@@ -124,8 +124,8 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
 
             dispatch(
                 actions.getCredentialProviderAttributesDescriptors({
-                    uuid: credential!.connectorUuid,
-                    kind: credential!.kind,
+                    uuid: credential.connectorUuid,
+                    kind: credential.kind,
                 }),
             );
         }
@@ -342,7 +342,16 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
                             )}
                         />
 
-                        {!editMode ? (
+                        {editMode ? (
+                            <TextInput
+                                id="credentialProvider"
+                                type="text"
+                                label="Credential Provider"
+                                value={credential?.connectorName || ''}
+                                disabled={true}
+                                onChange={() => {}}
+                            />
+                        ) : (
                             <div>
                                 <Controller
                                     name="credentialProvider"
@@ -373,15 +382,6 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
                                     )}
                                 />
                             </div>
-                        ) : (
-                            <TextInput
-                                id="credentialProvider"
-                                type="text"
-                                label="Credential Provider"
-                                value={credential?.connectorName || ''}
-                                disabled={true}
-                                onChange={() => {}}
-                            />
                         )}
 
                         {!editMode && optionsForKinds?.length ? (

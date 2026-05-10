@@ -12,15 +12,13 @@ import type {
     CustomAttributeModel,
 } from 'types/attributes';
 import type { CallbackAttributeDto, CallbackAttributeModel, HealthDto, HealthModel } from 'types/connectors';
-import { type AttributeMappingDto, type HealthInfo, type HealthInfoComponent, HealthStatus, type ResponseAttributeV2 } from 'types/openapi';
+import { type AttributeMappingDto, type HealthInfo, HealthStatus } from 'types/openapi';
 
 export function transformAttributeResponseDtoToModel(attribute: AttributeResponseDto): AttributeResponseModel {
     if ('content' in attribute) {
-        const attributeV2 = attribute as ResponseAttributeV2;
-
         return {
-            ...attributeV2,
-            content: attributeV2.content ? structuredClone(attributeV2.content) : undefined,
+            ...attribute,
+            content: attribute.content ? structuredClone(attribute.content) : undefined,
         };
     }
 
@@ -68,7 +66,7 @@ export function transformAttributeDescriptorCollectionDtoToModel(
         result[functionGroup] = {};
 
         for (const kind in collection[functionGroup]) {
-            result[functionGroup]![kind] = collection[functionGroup]![kind].map((attrDesc) =>
+            result[functionGroup][kind] = collection[functionGroup][kind].map((attrDesc) =>
                 transformAttributeDescriptorDtoToModel(attrDesc),
             );
         }
@@ -97,17 +95,16 @@ export function transformHealthInfoToModel(healthInfo: HealthInfo): HealthModel 
 
     if (parts && healthInfo.components) {
         Object.entries(healthInfo.components).forEach(([key, component]) => {
-            const comp = component as HealthInfoComponent;
-            const details = comp.details || {};
+            const details = component.details || {};
             const description =
                 typeof details.description === 'string'
-                    ? (details.description as string)
+                    ? details.description
                     : Object.entries(details)
                           .map(([k, v]) => `${k}: ${String(v)}`)
                           .join(', ');
 
             parts[key] = {
-                status: comp.status ?? HealthStatus.Unknown,
+                status: component.status ?? HealthStatus.Unknown,
                 description: description || undefined,
                 parts: undefined,
             };

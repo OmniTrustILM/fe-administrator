@@ -195,11 +195,21 @@ export default function UserDetail() {
                 ? role.users.map((user) => ({
                       id: user.uuid,
                       columns: [
-                          <span style={{ whiteSpace: 'nowrap' }}>{user.username || ''}</span>,
-                          <span style={{ whiteSpace: 'nowrap' }}>{user.description || ''}</span>,
-                          <span style={{ whiteSpace: 'nowrap' }}>{user.firstName || ''}</span>,
-                          <span style={{ whiteSpace: 'nowrap' }}>{user.lastName || ''}</span>,
-                          <span style={{ whiteSpace: 'nowrap' }}>{user.email || ''}</span>,
+                          <span key="username" style={{ whiteSpace: 'nowrap' }}>
+                              {user.username || ''}
+                          </span>,
+                          <span key="description" style={{ whiteSpace: 'nowrap' }}>
+                              {user.description || ''}
+                          </span>,
+                          <span key="firstName" style={{ whiteSpace: 'nowrap' }}>
+                              {user.firstName || ''}
+                          </span>,
+                          <span key="lastName" style={{ whiteSpace: 'nowrap' }}>
+                              {user.lastName || ''}
+                          </span>,
+                          <span key="email" style={{ whiteSpace: 'nowrap' }}>
+                              {user.email || ''}
+                          </span>,
                       ],
                   }))
                 : [],
@@ -250,8 +260,10 @@ export default function UserDetail() {
                           <Badge key="allowAllActions" color={resource.allowAllActions ? 'success' : 'danger'}>
                               {resource.allowAllActions ? 'Yes' : 'No'}
                           </Badge>,
-                          <span style={{ whiteSpace: 'nowrap' }}>{resource.actions.join(', ')}</span>,
-                          <></>,
+                          <span key="actions" style={{ whiteSpace: 'nowrap' }}>
+                              {resource.actions.join(', ')}
+                          </span>,
+                          '',
                           resource.objects?.length.toString() || '0',
                       ],
                       detailColumns: resource.objects?.length

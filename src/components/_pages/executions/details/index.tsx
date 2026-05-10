@@ -115,6 +115,7 @@ const ExecutionDetails = () => {
                               'Description',
                               updateDescriptionEditEnable ? (
                                   <TextInput
+                                      key="desc-input"
                                       onChange={(value) => setUpdatedDescription(value)}
                                       value={updatedDescription}
                                       placeholder="Enter Description"
@@ -122,7 +123,7 @@ const ExecutionDetails = () => {
                               ) : (
                                   executionDetails.description || ''
                               ),
-                              <div>
+                              <div key="desc-actions">
                                   {updateDescriptionEditEnable ? (
                                       <div className="flex gap-2">
                                           <Button

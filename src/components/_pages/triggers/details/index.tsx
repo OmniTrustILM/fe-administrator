@@ -291,6 +291,7 @@ const TriggerDetails = () => {
                               'Description',
                               updateDescriptionEditEnable ? (
                                   <TextInput
+                                      key="desc-input"
                                       value={updatedDescription}
                                       onChange={(value) => setUpdatedDescription(value)}
                                       placeholder="Enter Description"
@@ -298,7 +299,7 @@ const TriggerDetails = () => {
                               ) : (
                                   (triggerDetails.description ?? '')
                               ),
-                              <div>
+                              <div key="desc-actions">
                                   {updateDescriptionEditEnable ? (
                                       <div className="flex gap-2">
                                           <Button
@@ -384,9 +385,12 @@ const TriggerDetails = () => {
                   return {
                       id: action.uuid,
                       columns: [
-                          <Link to={`../../actions/detail/${action.uuid}`}>{action.name}</Link>,
+                          <Link key="name" to={`../../actions/detail/${action.uuid}`}>
+                              {action.name}
+                          </Link>,
                           action.description || '',
                           <Button
+                              key="delete"
                               variant="transparent"
                               color="danger"
                               title={
@@ -434,9 +438,12 @@ const TriggerDetails = () => {
                       return {
                           id: rule.uuid,
                           columns: [
-                              <Link to={`../../rules/detail/${rule.uuid}`}>{rule.name}</Link>,
+                              <Link key="name" to={`../../rules/detail/${rule.uuid}`}>
+                                  {rule.name}
+                              </Link>,
                               rule.description || '',
                               <Button
+                                  key="delete"
                                   variant="transparent"
                                   color="danger"
                                   title="Delete Rule"

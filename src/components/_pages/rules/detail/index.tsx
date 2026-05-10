@@ -155,6 +155,7 @@ const RuleDetails = () => {
                               'Description',
                               updateDescriptionEditEnable ? (
                                   <TextInput
+                                      key="desc-input"
                                       value={updatedDescription}
                                       onChange={(value) => setUpdatedDescription(value)}
                                       placeholder="Enter Description"
@@ -162,7 +163,7 @@ const RuleDetails = () => {
                               ) : (
                                   ruleDetails.description || ''
                               ),
-                              <div>
+                              <div key="desc-actions">
                                   {updateDescriptionEditEnable ? (
                                       <div className="flex gap-2">
                                           <Button
@@ -247,10 +248,13 @@ const RuleDetails = () => {
                   return {
                       id: condition.uuid,
                       columns: [
-                          <Link to={`../../conditions/detail/${condition.uuid}`}>{condition.name}</Link>,
+                          <Link key="name" to={`../../conditions/detail/${condition.uuid}`}>
+                              {condition.name}
+                          </Link>,
                           getEnumLabel(conditionTypeEnum, condition.type),
                           condition.description || '',
                           <Button
+                              key="delete"
                               variant="transparent"
                               color="danger"
                               title={

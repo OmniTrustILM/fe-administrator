@@ -161,7 +161,7 @@ export default function AdministratorDetail() {
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <StatusBadge enabled={acmeProfile.enabled} />],
+                          columns: ['Status', <StatusBadge key="status" enabled={acmeProfile.enabled} />],
                       },
                       {
                           id: 'websiteUrl',
@@ -186,9 +186,8 @@ export default function AdministratorDetail() {
 
     const raProfileDetailData: TableDataRow[] = useMemo(
         () =>
-            !acmeProfile?.raProfile
-                ? []
-                : [
+            acmeProfile?.raProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', acmeProfile.raProfile.uuid],
@@ -210,9 +209,10 @@ export default function AdministratorDetail() {
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <StatusBadge enabled={acmeProfile.raProfile.enabled} />],
+                          columns: ['Status', <StatusBadge key="raStatus" enabled={acmeProfile.raProfile.enabled} />],
                       },
-                  ],
+                  ]
+                : [],
         [acmeProfile],
     );
 

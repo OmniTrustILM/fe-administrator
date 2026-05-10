@@ -128,7 +128,9 @@ const TriggerList = () => {
                 return {
                     id: trigger.uuid,
                     columns: [
-                        <Link to={`./detail/${trigger.uuid}`}>{trigger.name}</Link>,
+                        <Link key="name" to={`./detail/${trigger.uuid}`}>
+                            {trigger.name}
+                        </Link>,
                         trigger.ignoreTrigger ? 'Yes' : 'No',
                         getEnumLabel(triggerTypeEnum, trigger.type ?? ''),
                         getEnumLabel(eventNameEnum, trigger.event ?? ''),

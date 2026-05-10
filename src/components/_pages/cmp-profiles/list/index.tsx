@@ -197,14 +197,19 @@ export default function AdministratorsList() {
                 id: cmpProfile.uuid,
 
                 columns: [
-                    <span style={{ whiteSpace: 'nowrap' }}>
+                    <span key="name" style={{ whiteSpace: 'nowrap' }}>
                         <Link to={`./detail/${cmpProfile.uuid}`}>{cmpProfile.name}</Link>
                     </span>,
 
-                    <span style={{ whiteSpace: 'nowrap' }}>{cmpProfile.description || ''}</span>,
+                    <span key="desc" style={{ whiteSpace: 'nowrap' }}>
+                        {cmpProfile.description || ''}
+                    </span>,
 
                     cmpProfile.raProfile ? (
-                        <Link to={`../raprofiles/detail/${cmpProfile?.raProfile.authorityInstanceUuid}/${cmpProfile?.raProfile.uuid}`}>
+                        <Link
+                            key="raprofile"
+                            to={`../raprofiles/detail/${cmpProfile?.raProfile.authorityInstanceUuid}/${cmpProfile?.raProfile.uuid}`}
+                        >
                             {cmpProfile.raProfile.name ?? 'Unassigned'}
                         </Link>
                     ) : (
@@ -212,8 +217,10 @@ export default function AdministratorsList() {
                     ),
 
                     cmpProfile.cmpUrl || '',
-                    <Badge color="primary">{getEnumLabel(cmpCmpProfileVariantEnum, cmpProfile.variant)}</Badge>,
-                    <StatusBadge enabled={cmpProfile.enabled} />,
+                    <Badge key="variant" color="primary">
+                        {getEnumLabel(cmpCmpProfileVariantEnum, cmpProfile.variant)}
+                    </Badge>,
+                    <StatusBadge key="enabled" enabled={cmpProfile.enabled} />,
                 ],
             })),
         [cmpProfiles, cmpCmpProfileVariantEnum],

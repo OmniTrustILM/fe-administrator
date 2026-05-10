@@ -64,13 +64,19 @@ function EntityList() {
             entities.map((entity) => ({
                 id: entity.uuid,
                 columns: [
-                    <Link to={`./detail/${entity.uuid}`}>{entity.name}</Link>,
+                    <Link key="name" to={`./detail/${entity.uuid}`}>
+                        {entity.name}
+                    </Link>,
                     entity.connectorName ? (
-                        <Link to={`../connectors/detail/${entity.connectorUuid}`}>{entity.connectorName ?? 'Unassigned'}</Link>
+                        <Link key="connector" to={`../connectors/detail/${entity.connectorUuid}`}>
+                            {entity.connectorName ?? 'Unassigned'}
+                        </Link>
                     ) : (
                         (entity.connectorName ?? 'Unassigned')
                     ),
-                    <Badge color="primary">{entity.kind}</Badge>,
+                    <Badge key="kind" color="primary">
+                        {entity.kind}
+                    </Badge>,
                 ],
             })),
         [entities],

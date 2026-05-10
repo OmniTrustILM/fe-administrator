@@ -420,13 +420,13 @@ export const testAttributeSetFunction = (
     }
 
     if (descriptor.contentType === AttributeContentType.Codeblock && formAttributeValue !== undefined) {
-        if ((formAttributeValue as CodeBlockAttributeContentDataModel).code !== undefined) {
+        if ((formAttributeValue as CodeBlockAttributeContentDataModel).code === undefined) {
             formAttributeValue = {
-                code: base64ToUtf8((formAttributeValue as CodeBlockAttributeContentDataModel).code),
                 language: (formAttributeValue as CodeBlockAttributeContentDataModel).language,
             };
         } else {
             formAttributeValue = {
+                code: base64ToUtf8((formAttributeValue as CodeBlockAttributeContentDataModel).code),
                 language: (formAttributeValue as CodeBlockAttributeContentDataModel).language,
             };
         }

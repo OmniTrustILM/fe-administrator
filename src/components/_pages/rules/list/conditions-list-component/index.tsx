@@ -102,7 +102,9 @@ const ConditionsList = () => {
                 return {
                     id: condition.uuid,
                     columns: [
-                        <Link to={`../conditions/detail/${condition.uuid}`}>{condition.name}</Link>,
+                        <Link key="name" to={`../conditions/detail/${condition.uuid}`}>
+                            {condition.name}
+                        </Link>,
                         getEnumLabel(conditionTypeEnum, condition.type),
                         getEnumLabel(resourceTypeEnum, condition.resource),
                         condition.description || '',

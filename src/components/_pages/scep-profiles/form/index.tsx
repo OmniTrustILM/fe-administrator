@@ -263,7 +263,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                     }),
                 );
             } else {
-                dispatch(scepProfileActions.createScepProfile(scepRequest as ScepProfileAddRequestModel));
+                dispatch(scepProfileActions.createScepProfile(scepRequest));
             }
         },
         [dispatch, editMode, id, raProfileIssuanceAttrDescs, issueGroupAttributesCallbackAttributes, multipleResourceCustomAttributes],

@@ -228,9 +228,11 @@ export default function ApprovalDetails() {
         const data = approvalStep.approvalStepRecipients.map((recipient, i) => ({
             id: recipient.approvalRecipientUuid,
             columns: [
-                <Link to={`../users/detail/${approvalStep.userUuid}`}>{recipient.username}</Link>,
+                <Link key="username" to={`../users/detail/${approvalStep.userUuid}`}>
+                    {recipient.username}
+                </Link>,
                 recipient.closedAt ? dateFormatter(recipient.closedAt) : '',
-                <StatusBadge textStatus={recipient.status} />,
+                <StatusBadge key="status" textStatus={recipient.status} />,
                 recipient.comment || '',
             ],
         }));

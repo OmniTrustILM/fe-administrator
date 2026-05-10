@@ -331,7 +331,16 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
                             )}
                         />
 
-                        {!editMode ? (
+                        {editMode ? (
+                            <TextInput
+                                id="tokenProvider"
+                                type="text"
+                                label="Cryptography Provider"
+                                value={token?.connectorName || ''}
+                                disabled
+                                onChange={() => {}}
+                            />
+                        ) : (
                             <div>
                                 <Controller
                                     name="tokenProvider"
@@ -361,15 +370,6 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
                                     )}
                                 />
                             </div>
-                        ) : (
-                            <TextInput
-                                id="tokenProvider"
-                                type="text"
-                                label="Cryptography Provider"
-                                value={token?.connectorName || ''}
-                                disabled
-                                onChange={() => {}}
-                            />
                         )}
 
                         {!editMode && optionsForKinds?.length ? (

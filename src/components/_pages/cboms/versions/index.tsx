@@ -11,7 +11,7 @@ import WidgetButtons from 'components/WidgetButtons';
 import { backendClient } from 'src/api';
 import { actions as alertActions } from 'ducks/alerts';
 import { actions, selectors } from 'ducks/cbom';
-import type { CbomDetailDto, CbomDto } from 'types/openapi';
+import type { CbomDto } from 'types/openapi';
 import { useCopyToClipboard } from 'utils/common-hooks';
 import { dateFormatter } from 'utils/dateUtil';
 
@@ -43,7 +43,7 @@ export default function CbomVersionsHistory() {
     );
 
     const getVersionJson = useCallback(async (uuid: string): Promise<string> => {
-        const cbomDetail = (await firstValueFrom(backendClient.cbomManagement.getCbomDetail({ uuid }))) as CbomDetailDto;
+        const cbomDetail = await firstValueFrom(backendClient.cbomManagement.getCbomDetail({ uuid }));
         return JSON.stringify(cbomDetail.content ?? {}, null, 2);
     }, []);
 

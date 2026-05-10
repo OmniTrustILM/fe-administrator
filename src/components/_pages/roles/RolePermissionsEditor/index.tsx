@@ -444,7 +444,7 @@ function RolePermissionsEditor({
                 return;
             }
 
-            perms.objects!.push({
+            perms.objects.push({
                 uuid: object.uuid,
                 name: object.name,
                 allow: perms.allowAllActions ? currentResource?.actions.map((a) => a.name) || [] : perms.actions,

@@ -122,15 +122,21 @@ function AuthorityList() {
                 id: authority.uuid,
 
                 columns: [
-                    <Link to={`./detail/${authority.uuid}`}>{authority.name}</Link>,
+                    <Link key="name" to={`./detail/${authority.uuid}`}>
+                        {authority.name}
+                    </Link>,
 
                     authority.connectorName ? (
-                        <Link to={`../connectors/detail/${authority.connectorUuid}`}>{authority.connectorName ?? 'Unassigned'}</Link>
+                        <Link key="connector" to={`../connectors/detail/${authority.connectorUuid}`}>
+                            {authority.connectorName ?? 'Unassigned'}
+                        </Link>
                     ) : (
                         (authority.connectorName ?? 'Unassigned')
                     ),
 
-                    <Badge color="primary">{authority.kind}</Badge>,
+                    <Badge key="kind" color="primary">
+                        {authority.kind}
+                    </Badge>,
                 ],
             })),
         [authorities],

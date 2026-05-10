@@ -258,8 +258,9 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         return watchedUploadCsr
             ? []
             : [
-                  ...(watchedKey?.uuid !== certificate?.key?.uuid
-                      ? [
+                  ...(watchedKey?.uuid === certificate?.key?.uuid
+                      ? []
+                      : [
                             {
                                 title: 'Signature Attributes',
                                 content: (
@@ -271,8 +272,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                     />
                                 ),
                             },
-                        ]
-                      : []),
+                        ]),
                   ...(watchedIncludeAltKey && watchedAltKey?.uuid !== certificate?.altKey?.uuid
                       ? [
                             {

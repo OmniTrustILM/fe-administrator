@@ -52,10 +52,10 @@ export function AddCustomValuePanel({
             let current: any[];
             if (Array.isArray(fieldValue)) {
                 current = fieldValue;
-            } else if (fieldValue != null) {
-                current = [fieldValue];
-            } else {
+            } else if (fieldValue == null) {
                 current = [];
+            } else {
+                current = [fieldValue];
             }
             onFieldChange([...current, parsed]);
         } else {

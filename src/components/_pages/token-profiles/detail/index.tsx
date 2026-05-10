@@ -164,7 +164,7 @@ export default function TokenProfileDetail() {
                       },
                       {
                           id: 'enabled',
-                          columns: ['Enabled', <StatusBadge enabled={tokenProfile!.enabled} />],
+                          columns: ['Enabled', <StatusBadge key="enabled" enabled={tokenProfile.enabled} />],
                       },
                       {
                           id: 'tokenUuid',
@@ -183,7 +183,10 @@ export default function TokenProfileDetail() {
                       },
                       {
                           id: 'tokenStatus',
-                          columns: ['Token Instance Status', <TokenStatusBadge status={tokenProfile.tokenInstanceStatus} />],
+                          columns: [
+                              'Token Instance Status',
+                              <TokenStatusBadge key="tokenStatus" status={tokenProfile.tokenInstanceStatus} />,
+                          ],
                       },
                       {
                           id: 'Key Usages',

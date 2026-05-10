@@ -4,7 +4,7 @@ import { extractError, getLockWidgetObject } from './net';
 import { LockTypeEnum } from 'types/user-interface';
 
 function createMockAjaxError(overrides: { status?: number; response?: any; message?: string } = {}): AjaxError {
-    const response = overrides.response !== undefined ? overrides.response : null;
+    const response = overrides.response === undefined ? null : overrides.response;
     const xhr = {
         status: overrides.status ?? 500,
         responseType: 'json' as XMLHttpRequestResponseType,

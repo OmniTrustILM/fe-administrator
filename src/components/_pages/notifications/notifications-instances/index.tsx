@@ -108,12 +108,16 @@ const NotificationInstanceList = () => {
                 ? notificationInstances.map((notificationInstance) => ({
                       id: notificationInstance.uuid,
                       columns: [
-                          <Link to={`../../../notificationinstances/detail/${notificationInstance.uuid}`}>
+                          <Link key="name" to={`../../../notificationinstances/detail/${notificationInstance.uuid}`}>
                               {notificationInstance.name}
                           </Link>,
                           notificationInstance.description || '',
-                          <Badge color="primary">{notificationInstance.connectorName}</Badge>,
-                          <Badge color="primary">{notificationInstance.kind}</Badge>,
+                          <Badge key="connector" color="primary">
+                              {notificationInstance.connectorName}
+                          </Badge>,
+                          <Badge key="kind" color="primary">
+                              {notificationInstance.kind}
+                          </Badge>,
                       ],
                   }))
                 : [],

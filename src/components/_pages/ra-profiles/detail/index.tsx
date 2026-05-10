@@ -548,7 +548,7 @@ export default function RaProfileDetail() {
             },
             {
                 id: 'enabled',
-                columns: ['Enabled', <StatusBadge enabled={raProfile!.enabled} />],
+                columns: ['Enabled', <StatusBadge key="enabled" enabled={raProfile.enabled} />],
             },
             {
                 id: 'authorityUuid',

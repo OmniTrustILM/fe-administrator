@@ -188,9 +188,9 @@ export default function CustomAttributeDetail() {
                           id: 'protectionLevel',
                           columns: [
                               'Protection Level',
-                              customAttribute.protectionLevel != null
-                                  ? getEnumLabel(protectionLevelEnum, customAttribute.protectionLevel)
-                                  : '—',
+                              customAttribute.protectionLevel == null
+                                  ? '—'
+                                  : getEnumLabel(protectionLevelEnum, customAttribute.protectionLevel),
                           ],
                       },
                       {

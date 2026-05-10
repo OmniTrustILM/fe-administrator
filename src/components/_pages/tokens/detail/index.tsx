@@ -190,7 +190,7 @@ export default function TokenDetail() {
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <TokenStatusBadge status={token.status.status} />],
+                          columns: ['Status', <TokenStatusBadge key="status" status={token.status.status} />],
                       },
                       {
                           id: 'cryptographyProviderUUID',

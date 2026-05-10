@@ -384,7 +384,16 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                                     )}
                                 />
 
-                                {!editMode ? (
+                                {editMode ? (
+                                    <TextInput
+                                        id="authorityProvider"
+                                        type="text"
+                                        label="Authority Provider"
+                                        value={authority?.connectorName || ''}
+                                        disabled
+                                        onChange={() => {}}
+                                    />
+                                ) : (
                                     <div>
                                         <Controller
                                             name="authorityProvider"
@@ -414,15 +423,6 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                                             )}
                                         />
                                     </div>
-                                ) : (
-                                    <TextInput
-                                        id="authorityProvider"
-                                        type="text"
-                                        label="Authority Provider"
-                                        value={authority?.connectorName || ''}
-                                        disabled
-                                        onChange={() => {}}
-                                    />
                                 )}
 
                                 {!editMode && optionsForKinds?.length ? (

@@ -202,14 +202,16 @@ function RaProfileList() {
                 id: raProfile.uuid,
 
                 columns: [
-                    <span style={{ whiteSpace: 'nowrap' }}>
+                    <span key="name" style={{ whiteSpace: 'nowrap' }}>
                         <Link to={`./detail/${raProfile.authorityInstanceUuid || 'unknown'}/${raProfile.uuid}`}>{raProfile.name}</Link>
                     </span>,
 
-                    <span style={{ whiteSpace: 'nowrap' }}>{raProfile.description || ''}</span>,
+                    <span key="desc" style={{ whiteSpace: 'nowrap' }}>
+                        {raProfile.description || ''}
+                    </span>,
 
                     raProfile.authorityInstanceName ? (
-                        <Link to={`../authorities/detail/${raProfile.authorityInstanceUuid}`}>
+                        <Link key="auth" to={`../authorities/detail/${raProfile.authorityInstanceUuid}`}>
                             {raProfile.authorityInstanceName ?? 'Unassigned'}
                         </Link>
                     ) : (
@@ -218,7 +220,7 @@ function RaProfileList() {
 
                     getProtocolsForDisplay(raProfile.enabledProtocols),
 
-                    <StatusBadge enabled={raProfile.enabled} />,
+                    <StatusBadge key="enabled" enabled={raProfile.enabled} />,
                 ],
             })),
         [getProtocolsForDisplay, raProfiles],

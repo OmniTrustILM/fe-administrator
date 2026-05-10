@@ -216,11 +216,11 @@ export default function UsersList() {
                 id: user.uuid,
 
                 columns: [
-                    <span style={{ whiteSpace: 'nowrap' }}>
+                    <span key="username" style={{ whiteSpace: 'nowrap' }}>
                         <Link to={`./detail/${user.uuid}`}>{user.username}</Link>
                     </span>,
 
-                    <Fragment>
+                    <Fragment key="groups">
                         {user?.groups?.length
                             ? user?.groups.map((group, i) => (
                                   <Fragment key={group.uuid}>
@@ -231,17 +231,27 @@ export default function UsersList() {
                             : 'Unassigned'}
                     </Fragment>,
 
-                    <span style={{ whiteSpace: 'nowrap' }}>{user.description || ''}</span>,
+                    <span key="description" style={{ whiteSpace: 'nowrap' }}>
+                        {user.description || ''}
+                    </span>,
 
-                    <span style={{ whiteSpace: 'nowrap' }}>{user.firstName || ''}</span>,
+                    <span key="firstName" style={{ whiteSpace: 'nowrap' }}>
+                        {user.firstName || ''}
+                    </span>,
 
-                    <span style={{ whiteSpace: 'nowrap' }}>{user.lastName || ''}</span>,
+                    <span key="lastName" style={{ whiteSpace: 'nowrap' }}>
+                        {user.lastName || ''}
+                    </span>,
 
-                    <span style={{ whiteSpace: 'nowrap' }}>{user.email || ''}</span>,
+                    <span key="email" style={{ whiteSpace: 'nowrap' }}>
+                        {user.email || ''}
+                    </span>,
 
-                    <Badge color={user.systemUser ? 'danger' : 'success'}>{user.systemUser ? 'Yes' : 'No'}</Badge>,
+                    <Badge key="sysUser" color={user.systemUser ? 'danger' : 'success'}>
+                        {user.systemUser ? 'Yes' : 'No'}
+                    </Badge>,
 
-                    <StatusBadge enabled={user.enabled} />,
+                    <StatusBadge key="enabled" enabled={user.enabled} />,
                 ],
             })),
         [users],

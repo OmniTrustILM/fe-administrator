@@ -248,7 +248,7 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
         }
 
         const firstDescriptorData = descriptor.content && descriptor.content.length > 0 ? descriptor.content[0].data : undefined;
-        const descriptorValue = !descriptor.properties.list ? firstDescriptorData : undefined;
+        const descriptorValue = descriptor.properties.list ? undefined : firstDescriptorData;
 
         const scalarDefault = descriptor.properties.list ? undefined : ContentFieldConfiguration[descriptor.contentType].initial;
         setValue(descriptor.name, initialValue ?? descriptorValue ?? scalarDefault);
@@ -297,7 +297,7 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
 
     const getFieldContent = (input: any) => {
         if (ContentFieldConfiguration[descriptor.contentType].type === 'checkbox') {
-            const booleanValue = input.checked !== undefined ? input.checked : (input.value ?? false);
+            const booleanValue = input.checked === undefined ? (input.value ?? false) : input.checked;
             return [{ data: booleanValue }];
         }
         if (!input.value && input.value !== 0 && input.value !== false) {

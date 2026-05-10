@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
@@ -217,25 +217,27 @@ function TokenProfileList() {
                 id: tokenProfile.uuid,
 
                 columns: [
-                    <span style={{ whiteSpace: 'nowrap' }}>
+                    <span key="name" style={{ whiteSpace: 'nowrap' }}>
                         <Link to={`./detail/${tokenProfile.tokenInstanceUuid || 'unknown'}/${tokenProfile.uuid}`}>{tokenProfile.name}</Link>
                     </span>,
 
-                    <span style={{ whiteSpace: 'nowrap' }}>{tokenProfile.description || ''}</span>,
+                    <span key="desc" style={{ whiteSpace: 'nowrap' }}>
+                        {tokenProfile.description || ''}
+                    </span>,
 
-                    <>{getTokenProfileUsages(tokenProfile)}</>,
+                    <Fragment key="usages">{getTokenProfileUsages(tokenProfile)}</Fragment>,
 
                     tokenProfile.tokenInstanceName ? (
-                        <Link to={`../tokens/detail/${tokenProfile.tokenInstanceUuid}`}>
+                        <Link key="instance" to={`../tokens/detail/${tokenProfile.tokenInstanceUuid}`}>
                             {tokenProfile.tokenInstanceName ?? 'Unassigned'}
                         </Link>
                     ) : (
                         (tokenProfile.tokenInstanceName ?? 'Unassigned')
                     ),
 
-                    <TokenStatusBadge status={tokenProfile.tokenInstanceStatus} />,
+                    <TokenStatusBadge key="tokenStatus" status={tokenProfile.tokenInstanceStatus} />,
 
-                    <StatusBadge enabled={tokenProfile.enabled} />,
+                    <StatusBadge key="enabled" enabled={tokenProfile.enabled} />,
                 ],
             })),
         [tokenProfiles],

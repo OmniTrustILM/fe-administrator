@@ -47,12 +47,12 @@ const PlatformInfoDialogLink = ({ initiallyOpen = false, forceOpen }: PlatformIn
     );
 
     const buildTimeFormatted =
-        typeof __BUILD_TIME__ !== 'undefined'
-            ? new Date(__BUILD_TIME__).toLocaleString(undefined, {
+        typeof __BUILD_TIME__ === 'undefined'
+            ? '—'
+            : new Date(__BUILD_TIME__).toLocaleString(undefined, {
                   dateStyle: 'medium',
                   timeStyle: 'short',
-              })
-            : '—';
+              });
 
     const coreBuildTimeFormatted = platformInfo?.build?.timestamp
         ? new Date(platformInfo?.build?.timestamp).toLocaleString(undefined, {

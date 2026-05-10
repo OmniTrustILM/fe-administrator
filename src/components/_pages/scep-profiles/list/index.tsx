@@ -195,23 +195,30 @@ export default function ScepProfiles() {
                 id: scepProfile.uuid,
 
                 columns: [
-                    <span style={{ whiteSpace: 'nowrap' }}>
+                    <span key="name" style={{ whiteSpace: 'nowrap' }}>
                         <Link to={`./detail/${scepProfile.uuid}`}>{scepProfile.name}</Link>
                     </span>,
 
-                    <span style={{ whiteSpace: 'nowrap' }}>{scepProfile.description || ''}</span>,
+                    <span key="desc" style={{ whiteSpace: 'nowrap' }}>
+                        {scepProfile.description || ''}
+                    </span>,
 
                     scepProfile.raProfile ? (
-                        <Link to={`../raprofiles/detail/${scepProfile?.raProfile.authorityInstanceUuid}/${scepProfile?.raProfile.uuid}`}>
+                        <Link
+                            key="raprofile"
+                            to={`../raprofiles/detail/${scepProfile?.raProfile.authorityInstanceUuid}/${scepProfile?.raProfile.uuid}`}
+                        >
                             {scepProfile.raProfile.name ?? 'Unassigned'}
                         </Link>
                     ) : (
                         (scepProfile.raProfile ?? 'Unassigned')
                     ),
 
-                    <StatusBadge enabled={scepProfile.enabled} />,
-                    <span style={{ whiteSpace: 'nowrap' }}>{scepProfile.scepUrl || ''}</span>,
-                    <StatusBadge enabled={scepProfile.enableIntune} />,
+                    <StatusBadge key="enabled" enabled={scepProfile.enabled} />,
+                    <span key="scepUrl" style={{ whiteSpace: 'nowrap' }}>
+                        {scepProfile.scepUrl || ''}
+                    </span>,
+                    <StatusBadge key="intune" enabled={scepProfile.enableIntune} />,
                 ],
             })),
         [scepProfiles],

@@ -189,10 +189,10 @@ export const slice = createSlice({
             const index = state.resourceCustomAttributesContents.findIndex(
                 (r) => r.resource === action.payload.resource && r.resourceUuid === action.payload.resourceUuid,
             );
-            if (index !== -1) {
-                state.resourceCustomAttributesContents[index].customAttributes = action.payload.customAttributes;
-            } else {
+            if (index === -1) {
                 state.resourceCustomAttributesContents.push(action.payload);
+            } else {
+                state.resourceCustomAttributesContents[index].customAttributes = action.payload.customAttributes;
             }
         },
 
@@ -215,10 +215,10 @@ export const slice = createSlice({
             const index = state.resourceCustomAttributesContents.findIndex(
                 (r) => r.resource === action.payload.resource && r.resourceUuid === action.payload.resourceUuid,
             );
-            if (index !== -1) {
-                state.resourceCustomAttributesContents[index].customAttributes = action.payload.customAttributes;
-            } else {
+            if (index === -1) {
                 state.resourceCustomAttributesContents.push(action.payload);
+            } else {
+                state.resourceCustomAttributesContents[index].customAttributes = action.payload.customAttributes;
             }
         },
 

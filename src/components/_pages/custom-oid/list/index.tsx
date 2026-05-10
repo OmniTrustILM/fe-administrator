@@ -10,7 +10,7 @@ import { Link } from 'react-router';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import type { SearchRequestModel } from 'types/certificate';
 import { selectors as enumSelectors } from 'ducks/enums';
-import { type OidCategory, PlatformEnum } from 'types/openapi';
+import { PlatformEnum } from 'types/openapi';
 import Dialog from 'components/Dialog';
 import CustomOIDForm from 'components/_pages/custom-oid/form';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
@@ -80,7 +80,7 @@ export default function CustomOIDList() {
                 </Link>,
                 oid.displayName || '',
                 oid.description || '',
-                oidCategoryEnum[oid.category as OidCategory].label || '',
+                oidCategoryEnum[oid.category].label || '',
             ],
         }));
     }, [oids, oidCategoryEnum]);

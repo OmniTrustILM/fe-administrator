@@ -123,16 +123,36 @@ function LocationList() {
             locations.map((location) => ({
                 id: location.uuid,
                 columns: [
-                    <Link to={`./detail/${location.entityInstanceUuid}/${location.uuid}`}>{location.name}</Link>,
+                    <Link key="name" to={`./detail/${location.entityInstanceUuid}/${location.uuid}`}>
+                        {location.name}
+                    </Link>,
                     location.description || '',
                     location.entityInstanceName ? (
-                        <Link to={`../entities/detail/${location.entityInstanceUuid}`}>{location.entityInstanceName ?? 'Unassigned'}</Link>
+                        <Link key="entity" to={`../entities/detail/${location.entityInstanceUuid}`}>
+                            {location.entityInstanceName ?? 'Unassigned'}
+                        </Link>
                     ) : (
                         (location.entityInstanceName ?? 'Unassigned')
                     ),
-                    location.supportMultipleEntries ? <Badge color="success">Yes</Badge> : <Badge color="danger">No</Badge>,
-                    location.supportKeyManagement ? <Badge color="success">Yes</Badge> : <Badge color="danger">No</Badge>,
-                    <StatusBadge enabled={location.enabled} />,
+                    location.supportMultipleEntries ? (
+                        <Badge key="multi" color="success">
+                            Yes
+                        </Badge>
+                    ) : (
+                        <Badge key="multi" color="danger">
+                            No
+                        </Badge>
+                    ),
+                    location.supportKeyManagement ? (
+                        <Badge key="km" color="success">
+                            Yes
+                        </Badge>
+                    ) : (
+                        <Badge key="km" color="danger">
+                            No
+                        </Badge>
+                    ),
+                    <StatusBadge key="enabled" enabled={location.enabled} />,
                 ],
             })),
         [locations],

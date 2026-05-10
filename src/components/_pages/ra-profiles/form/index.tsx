@@ -187,7 +187,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
             if (editMode) {
                 dispatch(
                     raProfilesActions.updateRaProfile({
-                        profileUuid: id!,
+                        profileUuid: id,
                         authorityInstanceUuid: values.authority,
                         redirect: `../../../raprofiles/detail/${values.authority}/${id}`,
                         raProfileEditRequest: {

@@ -250,10 +250,13 @@ const RuleDetails = () => {
                   return {
                       id: conditionGroup.uuid,
                       columns: [
-                          <Link to={`../../executions/detail/${conditionGroup.uuid}`}>{conditionGroup.name}</Link>,
+                          <Link key="name" to={`../../executions/detail/${conditionGroup.uuid}`}>
+                              {conditionGroup.name}
+                          </Link>,
                           getEnumLabel(executionTypeEnum, conditionGroup.type) || '',
                           conditionGroup.description || '',
                           <Button
+                              key="delete"
                               variant="transparent"
                               color="danger"
                               title={

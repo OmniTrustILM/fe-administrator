@@ -207,9 +207,9 @@ export const slice = createSlice({
             if (
                 state.connectorAttributes &&
                 Object.hasOwn(state.connectorAttributes, action.payload.functionGroup) &&
-                Object.hasOwn(state.connectorAttributes[action.payload.functionGroup]!, action.payload.kind)
+                Object.hasOwn(state.connectorAttributes[action.payload.functionGroup], action.payload.kind)
             ) {
-                delete state.connectorAttributes![action.payload.functionGroup]![action.payload.kind];
+                delete state.connectorAttributes[action.payload.functionGroup][action.payload.kind];
             }
 
             state.isFetchingAttributes = true;

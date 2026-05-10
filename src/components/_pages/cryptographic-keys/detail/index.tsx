@@ -229,22 +229,22 @@ export default function CryptographicKeyDetail() {
 
     const associationBody = useMemo(
         () =>
-            !cryptographicKey?.associations
-                ? []
-                : cryptographicKey.associations.map((item) => ({
+            cryptographicKey?.associations
+                ? cryptographicKey.associations.map((item) => ({
                       id: item.uuid,
                       columns: [
-                          item.resource !== Resource.Certificates ? (
-                              item.name
-                          ) : (
+                          item.resource === Resource.Certificates ? (
                               <Link to={`/certificates/detail/${item.uuid}`}>{item.name}</Link>
+                          ) : (
+                              item.name
                           ),
 
                           item.uuid,
 
                           item.resource,
                       ],
-                  })),
+                  }))
+                : [],
         [cryptographicKey],
     );
 

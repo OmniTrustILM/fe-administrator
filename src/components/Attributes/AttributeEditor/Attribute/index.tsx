@@ -179,8 +179,7 @@ export function Attribute({
         return <AttributeFieldInput name={name} descriptor={descriptor} busy={busy} deleteButton={deleteButton} />;
     }
 
-    const infoDescriptor = descriptor as InfoAttributeModel;
-    const rawContent = getAttributeContent(infoDescriptor.contentType, infoDescriptor.content);
+    const rawContent = getAttributeContent(descriptor.contentType, descriptor.content);
     let content = '';
     if (typeof rawContent === 'string') {
         content = rawContent;
@@ -188,5 +187,5 @@ export function Attribute({
         content = JSON.stringify(rawContent);
     }
 
-    return <AttributeInfo name={infoDescriptor.name} label={infoDescriptor.properties.label} content={content} />;
+    return <AttributeInfo name={descriptor.name} label={descriptor.properties.label} content={content} />;
 }

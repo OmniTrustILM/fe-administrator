@@ -129,13 +129,15 @@ export default function DiscoveryDetail() {
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <DiscoveryStatus status={discovery.status} />],
+                          columns: ['Status', <DiscoveryStatus key="status" status={discovery.status} />],
                       },
                       {
                           id: 'startTime',
                           columns: [
                               'Discovery Start Time',
-                              <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(discovery.startTime)}</span>,
+                              <span key="startTime" style={{ whiteSpace: 'nowrap' }}>
+                                  {dateFormatter(discovery.startTime)}
+                              </span>,
                           ],
                       },
                       {
@@ -206,7 +208,9 @@ export default function DiscoveryDetail() {
         ? discovery.triggers.map((trigger) => ({
               id: trigger.uuid,
               columns: [
-                  <Link to={`../../triggers/detail/${trigger.uuid}`}>{trigger.name}</Link>,
+                  <Link key="name" to={`../../triggers/detail/${trigger.uuid}`}>
+                      {trigger.name}
+                  </Link>,
                   getEnumLabel(triggerTypeEnum, trigger.type ?? ''),
                   trigger.ignoreTrigger ? 'Yes' : 'No',
                   getEnumLabel(eventNameEnum, trigger.event ?? ''),
@@ -216,9 +220,8 @@ export default function DiscoveryDetail() {
           }))
         : [];
 
-    const triggersSummary: TableDataRow[] = !triggerHistorySummary
-        ? []
-        : [
+    const triggersSummary: TableDataRow[] = triggerHistorySummary
+        ? [
               {
                   id: 'objectsEvaluated',
                   columns: ['Number of Objects Evaluated', triggerHistorySummary?.objectsEvaluated.toString() || '0'],
@@ -231,7 +234,8 @@ export default function DiscoveryDetail() {
                   id: 'objectsIgnored',
                   columns: ['Number of Objects Ignored', triggerHistorySummary?.objectsIgnored.toString() || '0'],
               },
-          ];
+          ]
+        : [];
 
     return (
         <div>

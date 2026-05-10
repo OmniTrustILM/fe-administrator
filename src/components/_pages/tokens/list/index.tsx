@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
@@ -169,19 +169,25 @@ function TokenList() {
                 id: token.uuid,
 
                 columns: [
-                    <Link to={`./detail/${token.uuid}`}>{token.name}</Link>,
+                    <Link key="name" to={`./detail/${token.uuid}`}>
+                        {token.name}
+                    </Link>,
 
                     token.connectorName ? (
-                        <Link to={`../connectors/detail/${token.connectorUuid}`}>{token.connectorName ?? 'Unassigned'}</Link>
+                        <Link key="connector" to={`../connectors/detail/${token.connectorUuid}`}>
+                            {token.connectorName ?? 'Unassigned'}
+                        </Link>
                     ) : (
                         (token.connectorName ?? 'Unassigned')
                     ),
 
-                    <Badge color="secondary">{token.kind}</Badge>,
+                    <Badge key="kind" color="secondary">
+                        {token.kind}
+                    </Badge>,
 
-                    <TokenStatusBadge status={token.status} />,
+                    <TokenStatusBadge key="status" status={token.status} />,
 
-                    <>{token.tokenProfiles}</>,
+                    <Fragment key="tokenProfiles">{token.tokenProfiles}</Fragment>,
                 ],
             })),
         [tokens],

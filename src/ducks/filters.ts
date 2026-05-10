@@ -56,12 +56,12 @@ export const initialState: State = {
 
 const updateFilterState = (state: WritableDraft<State>, entity: EntityType, callback: (filterObject: FilterObject) => void) => {
     const index = state.filters.findIndex((f) => f.entity === entity);
-    const filter = index !== -1 ? state.filters[index] : { entity, filter: { ...EMPTY_FILTER } };
+    const filter = index === -1 ? { entity, filter: { ...EMPTY_FILTER } } : state.filters[index];
 
     callback(filter.filter);
 
     state.filters =
-        index !== -1 ? [...state.filters.slice(0, index), filter, ...state.filters.slice(index + 1)] : [...state.filters, filter];
+        index === -1 ? [...state.filters, filter] : [...state.filters.slice(0, index), filter, ...state.filters.slice(index + 1)];
 };
 
 export const slice = createSlice({

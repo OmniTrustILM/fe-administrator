@@ -121,7 +121,13 @@ export default function GroupList() {
             groups.map((group) => ({
                 id: group.uuid,
 
-                columns: [<Link to={`./detail/${group.uuid}`}>{group.name}</Link>, group.description || '', group.email || ''],
+                columns: [
+                    <Link key="name" to={`./detail/${group.uuid}`}>
+                        {group.name}
+                    </Link>,
+                    group.description || '',
+                    group.email || '',
+                ],
             })),
         [groups],
     );

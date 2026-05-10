@@ -811,7 +811,7 @@ const bulkDeleteGroup: AppEpic = (action$, state, deps) => {
                     mergeMap(() =>
                         of(
                             slice.actions.bulkDeleteGroupSuccess({
-                                uuids: action.payload.certificateUuids!,
+                                uuids: action.payload.certificateUuids,
                             }),
                             alertActions.success('Delete operation for selected certificates groups completed.'),
                             slice.actions.listCertificates({}),
@@ -889,7 +889,7 @@ const bulkDeleteRaProfile: AppEpic = (action$, state, deps) => {
                     mergeMap(() =>
                         of(
                             slice.actions.bulkDeleteRaProfileSuccess({
-                                uuids: action.payload.certificateUuids!,
+                                uuids: action.payload.certificateUuids,
                             }),
                             alertActions.success('Delete operation for selected Certificates RA profiles completed.'),
                         ),
@@ -950,7 +950,7 @@ const bulkDeleteOwner: AppEpic = (action$, state, deps) => {
                     mergeMap(() =>
                         of(
                             slice.actions.bulkDeleteOwnerSuccess({
-                                uuids: action.payload.certificateUuids!,
+                                uuids: action.payload.certificateUuids,
                             }),
                             alertActions.success('Delete operation for selected certificates owners completed.'),
                         ),

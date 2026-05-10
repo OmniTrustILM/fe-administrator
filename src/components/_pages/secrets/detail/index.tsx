@@ -511,7 +511,7 @@ function SecretDetail() {
                         ? secret.groups.map((g, i) => (
                               <Fragment key={g.uuid}>
                                   <Link to={`/${Resource.Groups.toLowerCase()}/detail/${g.uuid}`}>{g.name}</Link>
-                                  {i !== (secret.groups?.length ?? 0) - 1 ? ', ' : ''}
+                                  {i === (secret.groups?.length ?? 0) - 1 ? '' : ', '}
                               </Fragment>
                           ))
                         : 'Unassigned',

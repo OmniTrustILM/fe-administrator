@@ -160,11 +160,16 @@ export default function AdministratorDetail() {
                       },
                       {
                           id: 'variant',
-                          columns: ['Variant', <Badge color="primary">{getEnumLabel(cmpCmpProfileVariantEnum, cmpProfile.variant)}</Badge>],
+                          columns: [
+                              'Variant',
+                              <Badge key="variant" color="primary">
+                                  {getEnumLabel(cmpCmpProfileVariantEnum, cmpProfile.variant)}
+                              </Badge>,
+                          ],
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <StatusBadge enabled={cmpProfile.enabled} />],
+                          columns: ['Status', <StatusBadge key="status" enabled={cmpProfile.enabled} />],
                       },
                       {
                           id: 'cmpUrl',
@@ -177,9 +182,8 @@ export default function AdministratorDetail() {
 
     const raProfileDetailData: TableDataRow[] = useMemo(
         () =>
-            !cmpProfile?.raProfile
-                ? []
-                : [
+            cmpProfile?.raProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', cmpProfile.raProfile.uuid],
@@ -201,22 +205,23 @@ export default function AdministratorDetail() {
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <StatusBadge enabled={cmpProfile.raProfile.enabled} />],
+                          columns: ['Status', <StatusBadge key="raStatus" enabled={cmpProfile.raProfile.enabled} />],
                       },
-                  ],
+                  ]
+                : [],
         [cmpProfile],
     );
 
     const requestConfigurationData: TableDataRow[] = useMemo(
         () =>
-            !cmpProfile?.requestProtectionMethod
-                ? []
-                : [
+            cmpProfile?.requestProtectionMethod
+                ? [
                       {
                           id: 'requestProtectionMethod',
                           columns: ['Request Protection Method', getEnumLabel(protectionMethodEnum, cmpProfile?.requestProtectionMethod)],
                       },
-                  ],
+                  ]
+                : [],
         [cmpProfile, protectionMethodEnum],
     );
 

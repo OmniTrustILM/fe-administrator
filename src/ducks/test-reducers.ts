@@ -482,7 +482,7 @@ const pagingsTestInitialState: PagingsTestState = { pagings: [] };
 
 function updatePaging(state: PagingsTestState, entity: number, fn: (p: PagingObject) => PagingObject): PagingsTestState {
     const idx = state.pagings.findIndex((p) => p.entity === entity);
-    const existing = idx !== -1 ? state.pagings[idx].paging : EMPTY_PAGING_OBJ;
+    const existing = idx === -1 ? EMPTY_PAGING_OBJ : state.pagings[idx].paging;
     const next: PagingEntry = { entity, paging: fn(existing) };
     if (idx !== -1) {
         return { pagings: [...state.pagings.slice(0, idx), next, ...state.pagings.slice(idx + 1)] };

@@ -331,7 +331,7 @@ export default function LocationDetail() {
         dispatch(customAttributesActions.listSecondaryResourceCustomAttributes(Resource.Certificates));
 
         if (!id || !entityId) return;
-        dispatch(actions.getLocationDetail({ entityUuid: entityId!, uuid: id! }));
+        dispatch(actions.getLocationDetail({ entityUuid: entityId, uuid: id }));
     }, [dispatch, entityId, id]);
 
     useEffect(() => {
@@ -539,7 +539,7 @@ export default function LocationDetail() {
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <StatusBadge enabled={location.enabled} />],
+                          columns: ['Status', <StatusBadge key="status" enabled={location.enabled} />],
                       },
                       {
                           id: 'entityUuid',
@@ -622,9 +622,17 @@ export default function LocationDetail() {
                                   </Button>
                               </Link>
                           </>,
-                          <CertificateStatusBadge status={cert.state} />,
-                          <CertificateStatusBadge status={cert.validationStatus} />,
-                          cert.withKey ? <Badge color="success">Yes</Badge> : <Badge color="danger">No</Badge>,
+                          <CertificateStatusBadge key="state" status={cert.state} />,
+                          <CertificateStatusBadge key="vstate" status={cert.validationStatus} />,
+                          cert.withKey ? (
+                              <Badge key="withKey" color="success">
+                                  Yes
+                              </Badge>
+                          ) : (
+                              <Badge key="withKey" color="danger">
+                                  No
+                              </Badge>
+                          ),
 
                           !cert.metadata || cert.metadata.length === 0 ? (
                               ''

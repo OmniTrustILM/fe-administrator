@@ -146,7 +146,7 @@ export default function CustomAttributesList() {
                         {customAttribute.name}
                     </Link>,
                     customAttribute.version || '',
-                    <StatusBadge enabled={customAttribute.enabled} />,
+                    <StatusBadge key="enabled" enabled={customAttribute.enabled} />,
                     getEnumLabel(attributeContentTypeEnum, customAttribute.contentType),
                     customAttribute.description,
                     <>

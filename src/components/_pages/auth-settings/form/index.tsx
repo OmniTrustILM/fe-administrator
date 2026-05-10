@@ -183,7 +183,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
             if (editMode) {
                 dispatch(
                     actions.updateOAuth2Provider({
-                        providerName: providerName!,
+                        providerName: providerName,
                         oauth2ProviderSettingsUpdateModel: updateModel,
                     }),
                 );

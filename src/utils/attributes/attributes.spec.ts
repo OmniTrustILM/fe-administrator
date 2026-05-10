@@ -171,24 +171,24 @@ describe('attributes utils', () => {
 
     describe('getAttributeFormValue', () => {
         test('truncates Integer numeric values from object data', () => {
-            const result = getAttributeFormValue(AttributeContentType.Integer, undefined, { data: '12.9' }) as any;
+            const result = getAttributeFormValue(AttributeContentType.Integer, undefined, { data: '12.9' });
             expect(result).toEqual({ data: 12 });
         });
 
         test('keeps original value when Integer parsing fails', () => {
-            const result = getAttributeFormValue(AttributeContentType.Integer, undefined, { value: 'NaN-value' }) as any;
+            const result = getAttributeFormValue(AttributeContentType.Integer, undefined, { value: 'NaN-value' });
             expect(result).toEqual({ data: 'NaN-value' });
         });
 
         test('omits empty reference while normalizing content item', () => {
-            const result = getAttributeFormValue(AttributeContentType.String, undefined, { data: 'abc', reference: '' }) as any;
+            const result = getAttributeFormValue(AttributeContentType.String, undefined, { data: 'abc', reference: '' });
             expect(result).toEqual({ data: 'abc' });
         });
 
         test('normalizes nested value object containing data and reference', () => {
             const result = getAttributeFormValue(AttributeContentType.Float, undefined, {
                 value: { data: '3.50', reference: 'Threshold' },
-            }) as any;
+            });
             expect(result).toEqual({ data: 3.5, reference: 'Threshold' });
         });
     });
@@ -783,7 +783,7 @@ describe('attributes utils', () => {
             } as any;
             const result = mapAttributeContentToOptionValue(content, descriptor);
             expect(typeof result.label).toBe('string');
-            expect((result.label as string).length).toBeGreaterThan(0);
+            expect(result.label.length).toBeGreaterThan(0);
         });
 
         test('formats Datetime label from content data', () => {
@@ -795,7 +795,7 @@ describe('attributes utils', () => {
             } as any;
             const result = mapAttributeContentToOptionValue(content, descriptor);
             expect(typeof result.label).toBe('string');
-            expect((result.label as string).length).toBeGreaterThan(0);
+            expect(result.label.length).toBeGreaterThan(0);
         });
     });
 

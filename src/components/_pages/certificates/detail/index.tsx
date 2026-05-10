@@ -524,18 +524,23 @@ export default function CertificateDetail() {
                 ? eventHistory.map((history) => ({
                       id: history.uuid,
                       columns: [
-                          <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(history.created)}</span>,
+                          <span key="created" style={{ whiteSpace: 'nowrap' }}>
+                              {dateFormatter(history.created)}
+                          </span>,
 
                           history.createdBy,
 
                           history.event,
 
-                          <CertificateStatus status={history.status} />,
+                          <CertificateStatus key="status" status={history.status} />,
 
-                          <div style={{ wordBreak: 'break-all' }}>{history.message}</div>,
+                          <div key="message" style={{ wordBreak: 'break-all' }}>
+                              {history.message}
+                          </div>,
 
                           history.additionalInformation ? (
                               <Button
+                                  key="info"
                                   variant="transparent"
                                   onClick={() => setCurrentInfoId(history.uuid)}
                                   title="Show Additional Information"
@@ -625,8 +630,8 @@ export default function CertificateDetail() {
                           id: key,
                           columns: [
                               getEnumLabel(certificateValidationCheck, key),
-                              value?.status ? <CertificateStatus status={value.status} /> : '',
-                              <div style={{ wordBreak: 'break-all' }}>
+                              value?.status ? <CertificateStatus key="status" status={value.status} /> : '',
+                              <div key="message" style={{ wordBreak: 'break-all' }}>
                                   {value.message?.split('\n').map((str: string, i) => (
                                       <div key={i}>
                                           {str}
@@ -708,10 +713,22 @@ export default function CertificateDetail() {
                 <Badge key={`${c.uuid}-type`} color="success">
                     {capitalize(c.relationType)}
                 </Badge>,
-                <CertificateStatus status={c.state} />,
+                <CertificateStatus key={`${c.uuid}-status`} status={c.state} />,
                 c.serialNumber || '',
-                c.notBefore ? <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(c.notBefore)}</span> : '',
-                c.notAfter ? <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(c.notAfter)}</span> : '',
+                c.notBefore ? (
+                    <span key={`${c.uuid}-notbefore`} style={{ whiteSpace: 'nowrap' }}>
+                        {dateFormatter(c.notBefore)}
+                    </span>
+                ) : (
+                    ''
+                ),
+                c.notAfter ? (
+                    <span key={`${c.uuid}-notafter`} style={{ whiteSpace: 'nowrap' }}>
+                        {dateFormatter(c.notAfter)}
+                    </span>
+                ) : (
+                    ''
+                ),
             ],
         }));
     }, [relatedCertificates]);
@@ -910,19 +927,39 @@ export default function CertificateDetail() {
                       id: location.uuid,
 
                       columns: [
-                          <Link to={`../../locations/detail/${location.entityInstanceUuid}/${location.uuid}`}>{location.name}</Link>,
+                          <Link key="link" to={`../../locations/detail/${location.entityInstanceUuid}/${location.uuid}`}>
+                              {location.name}
+                          </Link>,
 
                           location.description || '',
 
-                          <Badge color="primary">{location.entityInstanceName}</Badge>,
+                          <Badge key="entity" color="primary">
+                              {location.entityInstanceName}
+                          </Badge>,
 
-                          location.supportMultipleEntries ? <Badge color="success">Yes</Badge> : <Badge color="danger">No</Badge>,
+                          location.supportMultipleEntries ? (
+                              <Badge key="multi" color="success">
+                                  Yes
+                              </Badge>
+                          ) : (
+                              <Badge key="multi" color="danger">
+                                  No
+                              </Badge>
+                          ),
 
-                          location.supportKeyManagement ? <Badge color="success">Yes</Badge> : <Badge color="danger">No</Badge>,
+                          location.supportKeyManagement ? (
+                              <Badge key="km" color="success">
+                                  Yes
+                              </Badge>
+                          ) : (
+                              <Badge key="km" color="danger">
+                                  No
+                              </Badge>
+                          ),
 
-                          certificate?.state ? <CertificateStatus status={certificate?.state} /> : '',
+                          certificate?.state ? <CertificateStatus key="state" status={certificate?.state} /> : '',
 
-                          certificate?.validationStatus ? <CertificateStatus status={certificate?.validationStatus} /> : '',
+                          certificate?.validationStatus ? <CertificateStatus key="vstate" status={certificate?.validationStatus} /> : '',
                       ],
                   }))
                 : [],
@@ -990,13 +1027,31 @@ export default function CertificateDetail() {
 
                                   location.description || '',
 
-                                  <Badge color="primary">{location.entityInstanceName}</Badge>,
+                                  <Badge key="entity" color="primary">
+                                      {location.entityInstanceName}
+                                  </Badge>,
 
-                                  location.supportMultipleEntries ? <Badge color="success">Yes</Badge> : <Badge color="danger">No</Badge>,
+                                  location.supportMultipleEntries ? (
+                                      <Badge key="multi" color="success">
+                                          Yes
+                                      </Badge>
+                                  ) : (
+                                      <Badge key="multi" color="danger">
+                                          No
+                                      </Badge>
+                                  ),
 
-                                  location.supportKeyManagement ? <Badge color="success">Yes</Badge> : <Badge color="danger">No</Badge>,
+                                  location.supportKeyManagement ? (
+                                      <Badge key="km" color="success">
+                                          Yes
+                                      </Badge>
+                                  ) : (
+                                      <Badge key="km" color="danger">
+                                          No
+                                      </Badge>
+                                  ),
 
-                                  <StatusBadge enabled={location.enabled} />,
+                                  <StatusBadge key="enabled" enabled={location.enabled} />,
                               ],
                           };
                       })
@@ -1053,9 +1108,13 @@ export default function CertificateDetail() {
         return data.map((approval) => ({
             id: approval.approvalUuid,
             columns: [
-                <Link to={`../../../approvals/detail/${approval.approvalUuid}`}>{approval.approvalUuid}</Link>,
-                <Link to={`../../../approvalprofiles/detail/${approval.approvalProfileUuid}`}>{approval.approvalProfileName}</Link>,
-                <StatusBadge textStatus={approval.status} /> || '',
+                <Link key="uuid" to={`../../../approvals/detail/${approval.approvalUuid}`}>
+                    {approval.approvalUuid}
+                </Link>,
+                <Link key="profile" to={`../../../approvalprofiles/detail/${approval.approvalProfileUuid}`}>
+                    {approval.approvalProfileName}
+                </Link>,
+                <StatusBadge key="status" textStatus={approval.status} /> || '',
                 approval.creatorUsername || '',
                 approval.resource || '',
                 approval.resourceAction || '',
