@@ -12,7 +12,6 @@ interface Props {
     dataTestId?: string;
 }
 
-// TODO: Add a refresh button
 const WidgetLock = ({
     size = 'normal',
     lockTitle = 'There was some problem',

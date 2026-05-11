@@ -382,7 +382,6 @@ export default function CertificateDetail() {
     }, [getFreshCertificateDetail, id]);
 
     const getFreshCertificateValidations = useCallback(() => {
-        // TODO: Add toast for no certificate
         if (!certificate) return;
         if (certificate.state === CertStatus.Requested) return;
         dispatch(actions.getCertificateValidationResult({ uuid: certificate.uuid }));

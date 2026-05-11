@@ -182,7 +182,6 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
         return <IconComponent size={24} className={getStatusClasses()} />;
     };
 
-    // TODO: use only for certificates not for rules
     const getStatusClasses = () => {
         switch (data?.certificateNodeData?.certificateNodeValidationStatus) {
             case CertificateValidationStatus.Valid:
@@ -213,7 +212,6 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
         return 'text-indigo-300 border-indigo-300';
     };
 
-    // TODO: use only for certificates not for rules
     const getExpandButtonStatusClasses = () => {
         switch (data?.certificateNodeData?.certificateNodeValidationStatus) {
             case CertificateValidationStatus.Valid:
