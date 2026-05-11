@@ -20,21 +20,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 
-import {
-    type ApiKeySecretContent,
-    type BasicAuthSecretContent,
-    type GenericSecretContent,
-    type JwtTokenSecretContent,
-    type KeyStoreSecretContent,
-    KeyStoreType,
-    type KeyValueSecretContent,
-    PlatformEnum,
-    type PrivateKeySecretContent,
-    Resource,
-    type SecretDetailDto,
-    type SecretKeySecretContent,
-    SecretType,
-} from 'types/openapi';
+import { KeyStoreType, PlatformEnum, Resource, type SecretDetailDto, SecretType } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
@@ -225,22 +211,22 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                     type: SecretType.BasicAuth,
                     username: values.username ?? '',
                     password: values.password ?? '',
-                } as BasicAuthSecretContent;
+                };
             case SecretType.ApiKey:
-                return { type: SecretType.ApiKey, content: values.content ?? '' } as ApiKeySecretContent;
+                return { type: SecretType.ApiKey, content: values.content ?? '' };
             case SecretType.JwtToken:
-                return { type: SecretType.JwtToken, content: values.content ?? '' } as JwtTokenSecretContent;
+                return { type: SecretType.JwtToken, content: values.content ?? '' };
             case SecretType.SecretKey:
-                return { type: SecretType.SecretKey, content: values.content ?? '' } as SecretKeySecretContent;
+                return { type: SecretType.SecretKey, content: values.content ?? '' };
             case SecretType.PrivateKey:
-                return { type: SecretType.PrivateKey, content: values.content ?? '' } as PrivateKeySecretContent;
+                return { type: SecretType.PrivateKey, content: values.content ?? '' };
             case SecretType.KeyStore:
                 return {
                     type: SecretType.KeyStore,
                     keyStoreType: values.keyStoreType ?? KeyStoreType.Pkcs12,
                     content: values.keyStoreContent ?? '',
                     password: values.keyStorePassword ?? '',
-                } as KeyStoreSecretContent;
+                };
             case SecretType.KeyValue: {
                 let content: { [key: string]: unknown } = {};
                 try {
@@ -248,10 +234,10 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                 } catch {
                     content = {};
                 }
-                return { type: SecretType.KeyValue, content } as KeyValueSecretContent;
+                return { type: SecretType.KeyValue, content };
             }
             default:
-                return { type: SecretType.Generic, content: values.content ?? '' } as GenericSecretContent;
+                return { type: SecretType.Generic, content: values.content ?? '' };
         }
     }, []);
 

@@ -17,7 +17,7 @@ export function runCommonSliceTests<TState extends Record<string, any>>(opts: Co
     const { reducer, actions, initialState, dirtyOverrides, deleteErrorOverrides, deleteErrorAssertions } = opts;
 
     test('resetState restores initialState', () => {
-        const dirty = { ...initialState, ...dirtyOverrides } as TState;
+        const dirty = { ...initialState, ...dirtyOverrides };
         expect(reducer(dirty, actions.resetState())).toEqual(initialState);
     });
 
@@ -28,7 +28,7 @@ export function runCommonSliceTests<TState extends Record<string, any>>(opts: Co
 
     if (actions.clearDeleteErrorMessages && deleteErrorOverrides && deleteErrorAssertions) {
         test('clearDeleteErrorMessages clears error fields', () => {
-            const state = { ...initialState, ...deleteErrorOverrides } as TState;
+            const state = { ...initialState, ...deleteErrorOverrides };
             const next = reducer(state, actions.clearDeleteErrorMessages!());
             deleteErrorAssertions(next);
         });

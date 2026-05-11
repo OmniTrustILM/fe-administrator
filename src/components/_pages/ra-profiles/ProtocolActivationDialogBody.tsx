@@ -254,7 +254,7 @@ export default function ProtocolActivationDialogBody({ protocol, raProfileUuid, 
                                     id="profilesSelect"
                                     options={optionsForProfiles}
                                     value={field.value}
-                                    onChange={(value) => field.onChange(value as string | undefined)}
+                                    onChange={(value) => field.onChange(value)}
                                     placeholder={`Select ${protocol} profile to be activated`}
                                     className={cn({
                                         'border-red-500': fieldState.error && fieldState.isTouched,

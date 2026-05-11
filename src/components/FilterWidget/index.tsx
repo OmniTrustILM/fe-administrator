@@ -227,12 +227,12 @@ export default function FilterWidget({
 
         if (checkIfFieldAttributeTypeIsDate(field)) {
             if (field.attributeContentType === AttributeContentType.Date) {
-                const dateVal = getFormattedDate(currentFilters[selectedFilter].value as unknown as string);
+                const dateVal = getFormattedDate(currentFilters[selectedFilter].value);
                 setFilterValue(deepCopy(dateVal));
                 return;
             }
             if (field.attributeContentType === AttributeContentType.Datetime) {
-                const dateTimeVal = getFormattedDateTime(currentFilters[selectedFilter].value as unknown as string);
+                const dateTimeVal = getFormattedDateTime(currentFilters[selectedFilter].value);
                 setFilterValue(deepCopy(dateTimeVal));
                 return;
             }
@@ -245,17 +245,17 @@ export default function FilterWidget({
             field.type === FilterFieldType.Datetime
         ) {
             if (checkIfFieldOperatorIsInterval(currentFilters[selectedFilter].condition)) {
-                const duration = getDurationStringFromIso8601String(currentFilters[selectedFilter].value as unknown as string);
+                const duration = getDurationStringFromIso8601String(currentFilters[selectedFilter].value);
                 setFilterValue(deepCopy(duration));
                 return;
             }
             if (field.type === FilterFieldType.Datetime) {
-                const dateTimeVal = getFormattedDateTime(currentFilters[selectedFilter].value as unknown as string);
+                const dateTimeVal = getFormattedDateTime(currentFilters[selectedFilter].value);
                 setFilterValue(deepCopy(dateTimeVal));
                 return;
             }
             if (field.type === FilterFieldType.Date) {
-                const dateVal = getFormattedDate(currentFilters[selectedFilter].value as unknown as string);
+                const dateVal = getFormattedDate(currentFilters[selectedFilter].value);
                 setFilterValue(deepCopy(dateVal));
                 return;
             }
@@ -273,7 +273,7 @@ export default function FilterWidget({
             const value = currentFilters[selectedFilter].value;
             const computeLabel = () => {
                 if (field.platformEnum) return platformEnums[field.platformEnum][(value ?? '') as string].label;
-                if (checkIfFieldAttributeTypeIsDate(field)) return getFormattedDateTime(value as unknown as string);
+                if (checkIfFieldAttributeTypeIsDate(field)) return getFormattedDateTime(value);
                 return value;
             };
             setFilterValue({ label: computeLabel(), value });
@@ -487,7 +487,7 @@ export default function FilterWidget({
             if (currentField?.attributeContentType && checkIfFieldAttributeTypeIsDate(currentField)) {
                 inputType = getFormTypeFromAttributeContentType(currentField.attributeContentType) as TextInputType;
             } else if (currentField?.type) {
-                inputType = getFormTypeFromFilterFieldType(currentField.type) as TextInputType;
+                inputType = getFormTypeFromFilterFieldType(currentField.type);
             }
             return (
                 <>
@@ -615,17 +615,17 @@ export default function FilterWidget({
             if (f.value == null || f.value === '') return '';
             if (typeof f.value === 'number') return f.value;
             if (field?.type && checkIfFieldTypeIsDate(field.type) && checkIfFieldOperatorIsInterval(f.condition)) {
-                return getDurationStringFromIso8601String(f.value as unknown as string);
+                return getDurationStringFromIso8601String(f.value);
             }
             if (field?.platformEnum) return platformEnums[field.platformEnum][f.value as unknown as string]?.label;
             if (
                 field?.attributeContentType === AttributeContentType.Date ||
                 (field?.type === FilterFieldType.Date && field?.attributeContentType !== AttributeContentType.Datetime)
             ) {
-                return getFormattedDate(f.value as unknown as string);
+                return getFormattedDate(f.value);
             }
             if (field?.attributeContentType === AttributeContentType.Datetime || field?.type === FilterFieldType.Datetime) {
-                return getFormattedDateTime(f.value as unknown as string);
+                return getFormattedDateTime(f.value);
             }
             return f.value;
         }

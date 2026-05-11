@@ -66,7 +66,7 @@ export default function ComplianceCheckResultWidget({ widgetLockName, objectUuid
                         variant="transparent"
                         title="Attributes"
                         onClick={() => {
-                            setSelectedAttributesInfo((rule.attributes || []) as AttributeResponseModel[]);
+                            setSelectedAttributesInfo(rule.attributes || []);
                         }}
                     >
                         <Info size={16} style={{ color: 'auto' }} />

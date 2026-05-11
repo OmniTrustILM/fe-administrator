@@ -78,7 +78,7 @@ function ApprovalProfileForm({ approvalProfileId, onCancel, onSuccess }: Readonl
         [profileApprovalDetail, editMode],
     );
 
-    const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues as unknown as Record<string, unknown>);
+    const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues);
 
     const methods = useForm<ProfileApprovalRequestModel>({
         defaultValues,

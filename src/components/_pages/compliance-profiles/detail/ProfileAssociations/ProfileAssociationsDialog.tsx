@@ -137,7 +137,7 @@ export default function ProfileAssociationsDialog({ isOpen, onClose, profile, as
                                         id="resource-select"
                                         data-testid="resource-select"
                                         options={optionsForResources}
-                                        value={field.value ? (field.value as string) : ''}
+                                        value={field.value ? field.value : ''}
                                         onChange={(value) => {
                                             const resource = value as Resource | undefined;
                                             field.onChange(resource);
@@ -171,7 +171,7 @@ export default function ProfileAssociationsDialog({ isOpen, onClose, profile, as
                                         value: opt.value.uuid,
                                         label: opt.label,
                                     }));
-                                    const fieldValue = field.value as { uuid: string; name: string } | undefined;
+                                    const fieldValue = field.value;
                                     const onProfileSelect = (value: unknown) => {
                                         const uuid = value as string | undefined;
                                         const option = options.find((opt) => opt.value.uuid === uuid);

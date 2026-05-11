@@ -86,7 +86,7 @@ const AssociateApprovalProfileDialogBody = ({ raProfile, visible, onClose, avail
                                 id="approvalProfileSelect"
                                 options={optionsForApprovalProfiles}
                                 value={field.value}
-                                onChange={(value) => field.onChange(value as string | undefined)}
+                                onChange={(value) => field.onChange(value)}
                                 placeholder="Select Approval profile to be associated"
                                 className={cn({
                                     'border-red-500': fieldState.error && fieldState.isTouched,

@@ -41,7 +41,7 @@ export default function CertificateField({ certificates }: Props) {
                         required
                         options={optionsForCertificates || []}
                         value={field.value}
-                        onChange={(value) => field.onChange(value as string | undefined)}
+                        onChange={(value) => field.onChange(value)}
                         placeholder="Select to change CA Certificate if needed"
                         isClearable={true}
                         error={getFieldErrorMessage(fieldState)}

@@ -117,22 +117,14 @@ const JwkSetKeysTable = ({ jwkSetKeys }: Props) => {
     const data: TableDataRow[] = useMemo(
         () =>
             jwkSetKeys
-                ? jwkSetKeys.map(
-                      (key) =>
-                          ({
-                              id: key.kid,
-                              columns: [key.kid, key.keyType, key.algorithm, renderCopyKeyButton(key.publicKey)],
-                              detailColumns: [
-                                  <></>,
-                                  <CustomTable
-                                      key="details"
-                                      hasHeader={false}
-                                      headers={detailHeaders}
-                                      data={createDetailDataForTable(key)}
-                                  />,
-                              ],
-                          }) as TableDataRow,
-                  )
+                ? jwkSetKeys.map((key) => ({
+                      id: key.kid,
+                      columns: [key.kid, key.keyType, key.algorithm, renderCopyKeyButton(key.publicKey)],
+                      detailColumns: [
+                          <></>,
+                          <CustomTable key="details" hasHeader={false} headers={detailHeaders} data={createDetailDataForTable(key)} />,
+                      ],
+                  }))
                 : [],
         [jwkSetKeys, createDetailDataForTable, detailHeaders, renderCopyKeyButton],
     );

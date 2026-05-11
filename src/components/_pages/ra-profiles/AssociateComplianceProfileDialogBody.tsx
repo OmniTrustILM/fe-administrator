@@ -99,7 +99,7 @@ export default function AssociateComplianceProfileDialogBody({ raProfile, availa
                                     id="associate-compliance-profile-select"
                                     options={optionsForComplianceProfiles}
                                     value={field.value}
-                                    onChange={(value) => field.onChange(value as string | undefined)}
+                                    onChange={(value) => field.onChange(value)}
                                     placeholder="Select Compliance profile to be associated"
                                     className={cn({
                                         'border-red-500': fieldState.error && fieldState.isTouched,

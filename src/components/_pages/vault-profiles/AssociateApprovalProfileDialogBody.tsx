@@ -115,7 +115,7 @@ export default function AssociateApprovalProfileDialogBody({
                                         id="associate-approval-profile-select"
                                         options={optionsForApprovalProfiles}
                                         value={field.value || ''}
-                                        onChange={(value) => field.onChange(value as string | undefined)}
+                                        onChange={(value) => field.onChange(value)}
                                         placeholder="Select Approval profile to be associated"
                                         className={cn({
                                             'border-red-500': !!fieldError,

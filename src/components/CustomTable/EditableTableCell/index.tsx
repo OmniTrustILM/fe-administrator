@@ -134,7 +134,7 @@ const EditableTableCell = <TValue,>({
 
     const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(
         (event) => {
-            if (blurListenerWrapperRef.current && !blurListenerWrapperRef.current.contains(event.relatedTarget as Node)) {
+            if (blurListenerWrapperRef.current && !blurListenerWrapperRef.current.contains(event.relatedTarget)) {
                 handleCancel();
             }
         },

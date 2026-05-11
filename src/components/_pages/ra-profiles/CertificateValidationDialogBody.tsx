@@ -89,7 +89,7 @@ export default function CertificateValidationDialogBody({ raProfile, platformSet
     );
 
     const watchedValues = useWatch({ control });
-    const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues as unknown as Record<string, unknown>);
+    const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues);
     const certificateValidationHeaders: TableHeader[] = useMemo(
         () => [
             {
@@ -235,7 +235,7 @@ export default function CertificateValidationDialogBody({ raProfile, platformSet
                         <ProgressButton
                             title={'Save'}
                             inProgressTitle={'Saving...'}
-                            disabled={formState.isSubmitting || isBusy || areDefaultValuesSame(watchedValues as Record<string, unknown>)}
+                            disabled={formState.isSubmitting || isBusy || areDefaultValuesSame(watchedValues)}
                             inProgress={formState.isSubmitting || isBusy}
                             type="submit"
                         />

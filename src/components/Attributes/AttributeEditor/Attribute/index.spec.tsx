@@ -20,7 +20,7 @@ function dataDescriptor(overrides: Partial<DataAttributeModel> = {}): DataAttrib
         contentType: AttributeContentType.String,
         properties: defaultProperties as any,
         ...overrides,
-    } as DataAttributeModel;
+    };
 }
 
 function customDescriptor(overrides: Partial<CustomAttributeModel> = {}): CustomAttributeModel {
@@ -31,7 +31,7 @@ function customDescriptor(overrides: Partial<CustomAttributeModel> = {}): Custom
         contentType: AttributeContentType.String,
         properties: { ...defaultProperties, label: 'Custom' } as any,
         ...overrides,
-    } as CustomAttributeModel;
+    };
 }
 
 function infoDescriptor(overrides: Partial<InfoAttributeModel> = {}): InfoAttributeModel {
@@ -43,7 +43,7 @@ function infoDescriptor(overrides: Partial<InfoAttributeModel> = {}): InfoAttrib
         content: [{ data: 'Info content' }] as any,
         properties: { label: 'Info Label' } as any,
         ...overrides,
-    } as InfoAttributeModel;
+    };
 }
 
 test.describe('Attribute', () => {

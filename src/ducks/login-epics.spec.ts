@@ -11,7 +11,7 @@ describe('login epics', () => {
 
     beforeEach(() => {
         delete (globalThis as any).location;
-        globalThis.location = { ...originalLocation, assign: vi.fn(), origin: 'http://localhost' } as unknown as Location;
+        globalThis.location = { ...originalLocation, assign: vi.fn(), origin: 'http://localhost' };
     });
 
     afterEach(() => {
@@ -77,7 +77,7 @@ describe('login epics', () => {
             name: 'AjaxError' as const,
             status: 404,
             response: { message: 'Not Found' },
-            responseType: 'json' as XMLHttpRequestResponseType,
+            responseType: 'json',
             request: {},
             xhr: { status: 404, responseType: 'json', responseText: '{}', response: { message: 'Not Found' } },
         });

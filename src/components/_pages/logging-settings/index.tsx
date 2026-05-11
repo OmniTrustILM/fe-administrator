@@ -150,7 +150,7 @@ const LoggingSetting = () => {
                 })) || [],
             output: loggingSettings.auditLogs.output,
             verbose: loggingSettings.auditLogs.verbose,
-        } as Omit<AuditFormValues, 'output'> & { output: AuditLoggingSettingsDtoOutputEnum };
+        };
     }, [loggingSettings, moduleEnum, resourceEnum]);
 
     type AuditFormValuesForHook = Omit<AuditFormValues, 'output'> & { output: AuditLoggingSettingsDtoOutputEnum };
@@ -352,7 +352,7 @@ const LoggingSetting = () => {
                                 label="Audit Logs Output Destination"
                                 options={auditLogsOutputOptions.map((item) => ({ value: item.value, label: item.label }))}
                                 value={field.value || ''}
-                                onChange={(value: string | number) => field.onChange(value as AuditLoggingSettingsDtoOutputEnum)}
+                                onChange={(value: string | number) => field.onChange(value)}
                                 placeholder="Select Output"
                             />
                         )}

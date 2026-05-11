@@ -9,7 +9,7 @@ function createMockAjaxError(overrides: { status?: number; response?: any; messa
         name: 'AjaxError' as const,
         status: overrides.status ?? 500,
         response,
-        responseType: 'json' as XMLHttpRequestResponseType,
+        responseType: 'json',
         request: {},
         xhr: { status: overrides.status ?? 500, responseType: 'json', responseText: '{}', response },
     });

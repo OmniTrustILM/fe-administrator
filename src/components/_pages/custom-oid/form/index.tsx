@@ -132,7 +132,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                 }),
             };
             if (editMode) {
-                dispatch(actions.updateOID({ oid: oidId!, data: newOID as CustomOidEntryUpdateRequestDto }));
+                dispatch(actions.updateOID({ oid: oidId!, data: newOID }));
             } else {
                 dispatch(
                     actions.createOID({

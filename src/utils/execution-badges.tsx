@@ -19,7 +19,7 @@ const formatSingleValue = (
     platformEnums: Record<string, Record<string, { label: string }>>,
 ): string => {
     if (field?.platformEnum) return platformEnums[field.platformEnum][v as string]?.label ?? String(v);
-    if (typeof v === 'object' && v !== null && 'name' in v) return String((v as { name: unknown }).name);
+    if (typeof v === 'object' && v !== null && 'name' in v) return String(v.name);
     if (field?.attributeContentType === AttributeContentType.Date) return getFormattedDate(v as string);
     if (field?.attributeContentType === AttributeContentType.Datetime) return getFormattedDateTime(v as string);
     return String(v);

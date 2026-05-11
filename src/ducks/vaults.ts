@@ -91,7 +91,7 @@ export const slice = createSlice({
             action: PayloadAction<{ connectorUuid: string; attributes: AttributeDescriptorModel[] }>,
         ) => {
             if (state.vaultInstanceAttributesConnectorUuid === action.payload.connectorUuid) {
-                state.vaultInstanceAttributeDescriptors = action.payload.attributes as typeof state.vaultInstanceAttributeDescriptors;
+                state.vaultInstanceAttributeDescriptors = action.payload.attributes;
                 state.vaultInstanceAttributesConnectorUuid = action.payload.connectorUuid;
             }
             state.isFetchingVaultInstanceAttributes = false;

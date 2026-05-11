@@ -232,7 +232,7 @@ const RulesForm = ({ onCancel, onSuccess }: RulesFormProps = {}) => {
                                 inProgressTitle={inProgressTitle}
                                 inProgress={isSubmitting}
                                 disabled={
-                                    areDefaultValuesSame(formValues as unknown as Record<string, unknown>) ||
+                                    areDefaultValuesSame(formValues) ||
                                     formValues.resource === Resource.None ||
                                     isSubmitting ||
                                     !isValid ||

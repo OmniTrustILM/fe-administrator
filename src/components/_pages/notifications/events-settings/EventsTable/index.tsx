@@ -295,7 +295,7 @@ const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
         reset(defaultValues);
     }, [defaultValues, reset]);
 
-    const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues as unknown as Record<string, unknown>);
+    const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues);
 
     return (
         <>
@@ -405,7 +405,7 @@ const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
                                     <ProgressButton
                                         title={editedEvent ? 'Save' : textContent.confirmDialogButtonText}
                                         inProgress={isSubmitting}
-                                        disabled={isBusy || isSubmitting || !isValid || areDefaultValuesSame(formValues as FormValues)}
+                                        disabled={isBusy || isSubmitting || !isValid || areDefaultValuesSame(formValues)}
                                         type="submit"
                                     />
                                 </Container>

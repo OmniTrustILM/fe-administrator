@@ -19,8 +19,8 @@ export function deepEqual<T>(a: T, b: T): boolean {
     }
 
     // Compare objects
-    const keysA = Object.keys(a as object);
-    const keysB = Object.keys(b as object);
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
 
     if (keysA.length !== keysB.length) return false;
 

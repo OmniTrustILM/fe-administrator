@@ -111,7 +111,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
         wasUpdating.current = isUpdating;
     }, [isUpdating, onSuccess]);
 
-    const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues as unknown as Record<string, unknown>);
+    const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues);
 
     return (
         <FormProvider {...methods}>
@@ -173,7 +173,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                         title={'Save'}
                         inProgressTitle={'Saving...'}
                         inProgress={isSubmitting || isBusy}
-                        disabled={isSubmitting || isBusy || areDefaultValuesSame(formValues as FormValues)}
+                        disabled={isSubmitting || isBusy || areDefaultValuesSame(formValues)}
                         type="submit"
                     />
                 </Container>
