@@ -29,7 +29,7 @@ test.describe('PendingActionButtons', () => {
         await expect(c.locator('button')).toHaveCount(0);
     });
 
-    test('PENDING_ISSUE renders Finalise and Cancel buttons (no Confirm Revoke)', async ({ mount, page }) => {
+    test('PENDING_ISSUE renders Finalize and Cancel buttons (no Confirm Revoke)', async ({ mount, page }) => {
         await mount(
             <PendingActionButtonsWithStore
                 certificate={{
@@ -39,12 +39,12 @@ test.describe('PendingActionButtons', () => {
                 }}
             />,
         );
-        await expect(page.getByRole('button', { name: /finalise issue/i })).toBeVisible();
+        await expect(page.getByRole('button', { name: /finalize issue/i })).toBeVisible();
         await expect(page.getByRole('button', { name: /cancel pending operation/i })).toBeVisible();
         await expect(page.getByRole('button', { name: /confirm revocation/i })).toHaveCount(0);
     });
 
-    test('PENDING_REVOKE renders Confirm Revoke and Cancel buttons (no Finalise)', async ({ mount, page }) => {
+    test('PENDING_REVOKE renders Confirm Revoke and Cancel buttons (no Finalize)', async ({ mount, page }) => {
         await mount(
             <PendingActionButtonsWithStore
                 certificate={{
@@ -56,10 +56,10 @@ test.describe('PendingActionButtons', () => {
         );
         await expect(page.getByRole('button', { name: /confirm revocation/i })).toBeVisible();
         await expect(page.getByRole('button', { name: /cancel pending operation/i })).toBeVisible();
-        await expect(page.getByRole('button', { name: /finalise issue/i })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /finalize issue/i })).toHaveCount(0);
     });
 
-    test('clicking Finalise opens the upload dialog', async ({ mount, page }) => {
+    test('clicking Finalize opens the upload dialog', async ({ mount, page }) => {
         await mount(
             <PendingActionButtonsWithStore
                 certificate={{
@@ -69,8 +69,8 @@ test.describe('PendingActionButtons', () => {
                 }}
             />,
         );
-        await page.getByRole('button', { name: /finalise issue/i }).click();
-        // The CertificateUploadDialog renders a "Cancel" button + a Finalise OK button.
+        await page.getByRole('button', { name: /finalize issue/i }).click();
+        // The CertificateUploadDialog renders a "Cancel" button + a Finalize OK button.
         await expect(page.getByRole('button', { name: /^cancel$/i })).toBeVisible();
     });
 
@@ -113,7 +113,7 @@ test.describe('PendingActionButtons', () => {
                 }}
             />,
         );
-        const btn = page.getByRole('button', { name: /finalise issue/i });
+        const btn = page.getByRole('button', { name: /finalize issue/i });
         await expect(btn).toBeDisabled();
     });
 
@@ -128,7 +128,7 @@ test.describe('PendingActionButtons', () => {
                 }}
             />,
         );
-        const btn = page.getByRole('button', { name: /finalise issue/i });
+        const btn = page.getByRole('button', { name: /finalize issue/i });
         await expect(btn).toBeEnabled();
     });
 
