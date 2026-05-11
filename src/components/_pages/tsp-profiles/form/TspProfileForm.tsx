@@ -162,8 +162,8 @@ export const TspProfileForm = () => {
                                         <TextInput
                                             {...field}
                                             id="name"
-                                            type="text"
                                             label="Name"
+                                            type="text"
                                             required
                                             invalid={fieldState.error && fieldState.isTouched}
                                             error={getFieldErrorMessage(fieldState)}
@@ -179,8 +179,8 @@ export const TspProfileForm = () => {
                                         <TextInput
                                             {...field}
                                             id="description"
-                                            type="text"
                                             label="Description"
+                                            type="text"
                                             invalid={fieldState.error && fieldState.isTouched}
                                             error={getFieldErrorMessage(fieldState)}
                                         />
@@ -203,8 +203,8 @@ export const TspProfileForm = () => {
                             </Button>
                             <ProgressButton
                                 title={editMode ? 'Update' : 'Create'}
-                                inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
                                 inProgress={isSubmitting || isCreating || isUpdating}
+                                inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
                                 disabled={!isDirty || isSubmitting || !isValid}
                                 type="submit"
                             />

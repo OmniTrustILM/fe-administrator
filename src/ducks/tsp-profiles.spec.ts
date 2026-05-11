@@ -7,6 +7,11 @@ describe('tspProfiles slice', () => {
         expect(reducer(undefined, { type: 'unknown' })).toEqual(initialState);
     });
 
+    test('setCheckedRows updates checkedRows', () => {
+        const next = reducer(initialState, actions.setCheckedRows({ checkedRows: ['p-1', 'p-2'] }));
+        expect(next.checkedRows).toEqual(['p-1', 'p-2']);
+    });
+
     test('resetState restores initial values', () => {
         const dirty = {
             ...initialState,
@@ -20,11 +25,6 @@ describe('tspProfiles slice', () => {
 
         expect(next).toEqual(initialState);
         expect((next as any).tempKey).toBeUndefined();
-    });
-
-    test('setCheckedRows updates checkedRows', () => {
-        const next = reducer(initialState, actions.setCheckedRows({ checkedRows: ['p-1', 'p-2'] }));
-        expect(next.checkedRows).toEqual(['p-1', 'p-2']);
     });
 
     test('clearDeleteErrorMessages clears error fields', () => {
@@ -298,20 +298,20 @@ describe('tspProfiles selectors', () => {
 
         const state = { tspProfiles: featureState } as any;
 
+        expect(selectors.searchableFields(state)).toEqual(fields);
         expect(selectors.tspProfile(state)).toEqual(profile);
         expect(selectors.tspProfiles(state)).toEqual(profiles);
-        expect(selectors.searchableFields(state)).toEqual(fields);
-        expect(selectors.checkedRows(state)).toEqual(['p-1']);
         expect(selectors.deleteErrorMessage(state)).toBe('del err');
-        expect(selectors.bulkDeleteErrorMessages(state)).toEqual(bulkErrors);
+        expect(selectors.checkedRows(state)).toEqual(['p-1']);
         expect(selectors.isFetchingList(state)).toBe(true);
         expect(selectors.isFetchingDetail(state)).toBe(true);
         expect(selectors.isFetchingSearchableFields(state)).toBe(true);
         expect(selectors.isCreating(state)).toBe(true);
-        expect(selectors.isDeleting(state)).toBe(true);
         expect(selectors.isUpdating(state)).toBe(true);
+        expect(selectors.isDeleting(state)).toBe(true);
         expect(selectors.isEnabling(state)).toBe(true);
         expect(selectors.isDisabling(state)).toBe(true);
+        expect(selectors.bulkDeleteErrorMessages(state)).toEqual(bulkErrors);
         expect(selectors.isBulkDeleting(state)).toBe(true);
         expect(selectors.isBulkEnabling(state)).toBe(true);
         expect(selectors.isBulkDisabling(state)).toBe(true);

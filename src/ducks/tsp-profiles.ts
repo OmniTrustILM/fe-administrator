@@ -61,13 +61,13 @@ export const slice = createSlice({
             Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
         },
 
-        setCheckedRows: (state, action: PayloadAction<{ checkedRows: string[] }>) => {
-            state.checkedRows = action.payload.checkedRows;
-        },
-
         clearDeleteErrorMessages: (state, action: PayloadAction<void>) => {
             state.deleteErrorMessage = '';
             state.bulkDeleteErrorMessages = [];
+        },
+
+        setCheckedRows: (state, action: PayloadAction<{ checkedRows: string[] }>) => {
+            state.checkedRows = action.payload.checkedRows;
         },
 
         listTspProfiles: (state, action: PayloadAction<SearchRequestModel | undefined>) => {
@@ -276,17 +276,17 @@ const state = (reduxStore: any): State => reduxStore?.[slice.name];
 
 const tspProfile = createSelector(state, (state) => state.tspProfile);
 const tspProfiles = createSelector(state, (state) => state.tspProfiles);
-const searchableFields = createSelector(state, (state) => state.searchableFields);
 const checkedRows = createSelector(state, (state) => state.checkedRows);
 const deleteErrorMessage = createSelector(state, (state) => state.deleteErrorMessage);
 const bulkDeleteErrorMessages = createSelector(state, (state) => state.bulkDeleteErrorMessages);
+const searchableFields = createSelector(state, (state) => state.searchableFields);
 
+const isFetchingSearchableFields = createSelector(state, (state) => state.isFetchingSearchableFields);
 const isFetchingList = createSelector(state, (state) => state.isFetchingList);
 const isFetchingDetail = createSelector(state, (state) => state.isFetchingDetail);
-const isFetchingSearchableFields = createSelector(state, (state) => state.isFetchingSearchableFields);
 const isCreating = createSelector(state, (state) => state.isCreating);
-const isDeleting = createSelector(state, (state) => state.isDeleting);
 const isUpdating = createSelector(state, (state) => state.isUpdating);
+const isDeleting = createSelector(state, (state) => state.isDeleting);
 const isEnabling = createSelector(state, (state) => state.isEnabling);
 const isDisabling = createSelector(state, (state) => state.isDisabling);
 const isBulkDeleting = createSelector(state, (state) => state.isBulkDeleting);
