@@ -736,7 +736,7 @@ function CustomTable({
                         />
                     )}
 
-                    {!!tblData?.length && (
+                    {(paginationData ? paginationData.totalItems > 0 : !!tblData?.length) && (
                         <div className="text-sm">
                             {paginationData ? (
                                 <div>
