@@ -38,7 +38,7 @@ describe('jsxInnerText', () => {
     });
 
     test('extracts text from array of strings', () => {
-        expect(jsxInnerText(['A', 'B'] as unknown as React.ReactNode)).toBe('AB');
+        expect(jsxInnerText(['A', 'B'])).toBe('AB');
     });
 
     test('extracts text from element with string child', () => {

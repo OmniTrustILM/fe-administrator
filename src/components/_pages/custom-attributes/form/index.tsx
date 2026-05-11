@@ -14,7 +14,7 @@ import Button from 'components/Button';
 import Container from 'components/Container';
 import Checkbox from 'components/Checkbox';
 import TextInput from 'components/TextInput';
-import type { CustomAttributeCreateRequestModel, CustomAttributeUpdateRequestModel } from 'types/customAttributes';
+import type { CustomAttributeCreateRequestModel } from 'types/customAttributes';
 import { AttributeContentType, PlatformEnum, ProtectionLevel } from 'types/openapi';
 import { validateAlphaNumericWithSpecialChars, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
@@ -101,7 +101,7 @@ export default function CustomAttributeForm({ customAttributeId, onCancel, onSuc
         () => (editMode ? defaultValuesUpdate : defaultValuesCreate),
         [editMode, defaultValuesUpdate, defaultValuesCreate],
     );
-    const areDefaultValuesSame = useAreDefaultValuesSame(defaultValuesToCompare as unknown as Record<string, unknown>);
+    const areDefaultValuesSame = useAreDefaultValuesSame(defaultValuesToCompare);
 
     const onSubmit = useCallback(
         (values: FormValues) => {
@@ -110,7 +110,7 @@ export default function CustomAttributeForm({ customAttributeId, onCancel, onSuc
                 dispatch(
                     actions.updateCustomAttribute({
                         uuid: id!,
-                        customAttributeUpdateRequest: valuesToSubmit as CustomAttributeUpdateRequestModel,
+                        customAttributeUpdateRequest: valuesToSubmit,
                     }),
                 );
             } else {
@@ -330,7 +330,7 @@ export default function CustomAttributeForm({ customAttributeId, onCancel, onSuc
                                 title={editMode ? 'Update' : 'Create'}
                                 inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
                                 inProgress={isSubmitting}
-                                disabled={isSubmitting || !isValid || areDefaultValuesSame(formValues as FormValues)}
+                                disabled={isSubmitting || !isValid || areDefaultValuesSame(formValues)}
                                 type="submit"
                             />
                         </Container>

@@ -247,7 +247,7 @@ const ActionsForm = ({ onCancel, onSuccess }: ActionsFormProps = {}) => {
                                 inProgressTitle={inProgressTitle}
                                 inProgress={isSubmitting}
                                 disabled={
-                                    areDefaultValuesSame(formValues as ActionFormValues) ||
+                                    areDefaultValuesSame(formValues) ||
                                     isSubmitting ||
                                     !isValid ||
                                     isBusy ||

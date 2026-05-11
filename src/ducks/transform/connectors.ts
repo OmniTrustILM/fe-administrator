@@ -44,7 +44,7 @@ export function transformConnectorDetailV2ToModel(connector: ConnectorDetailDtoV
         authAttributes: connector.authAttributes?.map((attr) => transformAttributeResponseDtoToModel(attr)),
         customAttributes: connector.customAttributes?.map(transformAttributeResponseDtoToModel),
         proxy: connector.proxy,
-    } as ConnectorResponseModel;
+    };
 }
 
 export function transformConnectorDtoV2ToModel(connector: ConnectorDtoV2): ConnectorResponseModel {

@@ -63,7 +63,7 @@ export const slice = createSlice({
 
         getVaultProfileAttributesSuccess: (state, action: PayloadAction<{ vaultUuid: string; attributes: AttributeDescriptorModel[] }>) => {
             if (state.vaultProfileAttributesVaultUuid === action.payload.vaultUuid) {
-                state.vaultProfileAttributeDescriptors = action.payload.attributes as typeof state.vaultProfileAttributeDescriptors;
+                state.vaultProfileAttributeDescriptors = action.payload.attributes;
                 state.vaultProfileAttributesVaultUuid = action.payload.vaultUuid;
                 state.isFetchingVaultProfileAttributes = false;
             }

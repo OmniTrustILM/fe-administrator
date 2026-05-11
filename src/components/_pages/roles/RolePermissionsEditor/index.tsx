@@ -305,16 +305,13 @@ function RolePermissionsEditor({
                 align: 'left',
             },
 
-            ...(currentResource?.actions.map(
-                (action) =>
-                    ({
-                        id: action.name,
-                        content: action.displayName.toUpperCase(),
-                        sortable: false,
-                        align: 'center',
-                        width: '5em',
-                    }) as TableHeader,
-            ) || []),
+            ...(currentResource?.actions.map((action) => ({
+                id: action.name,
+                content: action.displayName.toUpperCase(),
+                sortable: false,
+                align: 'center',
+                width: '5em',
+            })) || []),
         ],
         [currentResource],
     );

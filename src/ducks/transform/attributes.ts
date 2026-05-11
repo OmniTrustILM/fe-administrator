@@ -25,7 +25,7 @@ export function transformAttributeResponseDtoToModel(attribute: AttributeRespons
     return {
         ...attribute,
         content: undefined,
-    } as AttributeResponseModel;
+    };
 }
 
 export function transformAttributeRequestModelToDto(attributeRequest: AttributeRequestModel): AttributeRequestDto {

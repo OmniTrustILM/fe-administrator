@@ -8,7 +8,7 @@ describe('loginRedirect', () => {
     beforeEach(() => {
         // Mock window.location.assign
         delete (globalThis as any).location;
-        globalThis.location = { ...originalLocation, assign: mockAssign } as Location;
+        globalThis.location = { ...originalLocation, assign: mockAssign };
     });
 
     afterEach(() => {

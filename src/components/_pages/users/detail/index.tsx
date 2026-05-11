@@ -57,7 +57,6 @@ export default function UserDetail() {
     }, [getFreshUserDetails, id]);
 
     const getFreshCertificateDetails = useCallback(() => {
-        // TODO: Add Toast to notify user
         if (!user?.certificate?.uuid || user.uuid !== id) return;
         dispatch(certActions.getCertificateDetail({ uuid: user.certificate.uuid }));
     }, [user, dispatch, id]);

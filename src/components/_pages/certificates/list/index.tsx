@@ -124,7 +124,6 @@ export default function CertificateList({
             <Dropdown
                 title={<ArrowDownToLine size={16} />}
                 btnStyle="transparent"
-                // maxWidth={100}
                 disabled={checkedRows.length === 0}
                 items={[
                     {

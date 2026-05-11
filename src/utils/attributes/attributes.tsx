@@ -368,12 +368,10 @@ export const mapAttributeContentToOptionValue = (
 ) => {
     const datetimeLabel =
         descriptor.contentType === AttributeContentType.Datetime
-            ? getFormattedDateTime(content?.data as unknown as string)?.toString()
+            ? getFormattedDateTime(content?.data)?.toString()
             : (content?.data as unknown as string)?.toString();
     const nonReferenceLabel =
-        descriptor.contentType === AttributeContentType.Date
-            ? getFormattedDate(content?.data as unknown as string)?.toString()
-            : datetimeLabel;
+        descriptor.contentType === AttributeContentType.Date ? getFormattedDate(content?.data)?.toString() : datetimeLabel;
     return {
         label: content.reference ? content.reference : nonReferenceLabel,
         value: content,

@@ -413,7 +413,7 @@ export default function FilterWidgetRuleAction({
                 setFilterValue(currentFieldThis.multiValue ? [resolved] : resolved);
             }
         } else {
-            setFilterValue(getFormattedDateByType(currentActionData as unknown as string, currentFieldThis.attributeContentType));
+            setFilterValue(getFormattedDateByType(currentActionData, currentFieldThis.attributeContentType));
         }
     }, []);
     useEffect(() => {
@@ -562,7 +562,7 @@ export default function FilterWidgetRuleAction({
                 setFilterValue(undefined);
                 return;
             }
-            if (typeof singleValue === 'object' && Object.hasOwn(singleValue as object, 'value')) {
+            if (typeof singleValue === 'object' && Object.hasOwn(singleValue, 'value')) {
                 setFilterValue(normalizeSelectValue((singleValue as { value: string | number; label: string }).value));
                 return;
             }

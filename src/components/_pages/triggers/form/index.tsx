@@ -400,7 +400,7 @@ const TriggerForm = ({ onCancel, onSuccess }: TriggerFormProps = {}) => {
                                 inProgressTitle={inProgressTitle}
                                 inProgress={isSubmitting}
                                 disabled={
-                                    areDefaultValuesSame(formValues as TriggerFormValues) ||
+                                    areDefaultValuesSame(formValues) ||
                                     formValues.resource === Resource.None ||
                                     isSubmitting ||
                                     !isValid ||

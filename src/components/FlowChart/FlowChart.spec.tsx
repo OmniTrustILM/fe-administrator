@@ -10,7 +10,7 @@ function buildNode(id: string, overrides: Partial<CustomNode> = {}): CustomNode 
         position: { x: 0, y: 0 },
         data: {
             customNodeCardTitle: `Node ${id}`,
-            ...(overrides.data as CustomNode['data']),
+            ...(overrides.data ?? {}),
         },
         ...overrides,
     } as CustomNode;

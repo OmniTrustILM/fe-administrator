@@ -35,7 +35,7 @@ const DATA_DESCRIPTOR: AttributeDescriptorModel = {
     uuid: 'desc-uuid-1',
     contentType: AttributeContentType.String,
     properties: { label: 'Sync Field', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
-} as AttributeDescriptorModel;
+};
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 

@@ -182,7 +182,6 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
         return <IconComponent size={24} className={getStatusClasses()} />;
     };
 
-    // TODO: use only for certificates not for rules
     const getStatusClasses = () => {
         switch (data?.certificateNodeData?.certificateNodeValidationStatus) {
             case CertificateValidationStatus.Valid:
@@ -213,7 +212,6 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
         return 'text-indigo-300 border-indigo-300';
     };
 
-    // TODO: use only for certificates not for rules
     const getExpandButtonStatusClasses = () => {
         switch (data?.certificateNodeData?.certificateNodeValidationStatus) {
             case CertificateValidationStatus.Valid:
@@ -290,20 +288,15 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                                 getExpandButtonStatusClasses(),
                                             )}
                                         >
-                                            {/* <span className="mx-auto">{status}</span> */}
                                             {expandedHiddenNodeId === id ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </Button>
                                     </span>
                                 ) : null}
-                                {/* 
-                                {/* TODO: Make this button to be collapsible and expandable to the right side, show attachable items to that
-                            specific node */}
                                 {data.addButtonContent && (
                                     <Button
                                         color="primary"
                                         data-testid="flow-node-add"
                                         className="mt-1 !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px] !bg-indigo-300 !border-none hover:!bg-[#3754a5ec] active:!bg-[#3754a5d8]"
-                                        // onClick={data.addButtonContent}
                                         title="Add connections to this node"
                                         onClick={() => setAddNodeContentCollapse(!addNodeContentCollapse)}
                                     >
@@ -469,7 +462,6 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                 </div>
             </div>
 
-            {/* <Collapse isOpen={addNodeContentCollapse}>hiiiiiiii</Collapse> */}
             <Handle hidden={data.handleHide === 'source'} className="opacity-0" type="source" position={Position.Bottom} id="a" />
         </>
     );

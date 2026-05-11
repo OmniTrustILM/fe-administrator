@@ -24,7 +24,7 @@ function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>)
 }
 
 export function createMockStore(preloadedState?: Partial<ReturnType<typeof testReducers>>, mockApiClients?: ApiClients) {
-    const baseState = testInitialState as ReturnType<typeof testReducers>;
+    const baseState = testInitialState;
 
     const finalState = preloadedState ? (deepMerge(baseState as any, preloadedState) as ReturnType<typeof testReducers>) : baseState;
 

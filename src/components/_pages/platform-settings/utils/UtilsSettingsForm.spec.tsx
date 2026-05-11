@@ -14,11 +14,11 @@ test.describe('UtilsSettingsForm - CBOM repository URL validation', () => {
 
     test('getCbomRepositoryHealthWarning returns warning for reachable check failure', async () => {
         const originalFetch = globalThis.fetch;
-        globalThis.fetch = (async (..._args: Parameters<typeof fetch>) =>
+        globalThis.fetch = async (..._args: Parameters<typeof fetch>) =>
             ({
                 status: 503,
                 json: async () => ({ status: 'DOWN' }),
-            }) as Response) as typeof fetch;
+            }) as Response;
 
         try {
             await expect(getCbomRepositoryHealthWarning('https://cbom.example.com')).resolves.toBe(CBOM_REPOSITORY_HEALTH_WARNING_MESSAGE);
@@ -29,11 +29,11 @@ test.describe('UtilsSettingsForm - CBOM repository URL validation', () => {
 
     test('getCbomRepositoryHealthWarning returns undefined when health endpoint is UP', async () => {
         const originalFetch = globalThis.fetch;
-        globalThis.fetch = (async (..._args: Parameters<typeof fetch>) =>
+        globalThis.fetch = async (..._args: Parameters<typeof fetch>) =>
             ({
                 status: 200,
                 json: async () => ({ status: 'UP' }),
-            }) as Response) as typeof fetch;
+            }) as Response;
 
         try {
             await expect(getCbomRepositoryHealthWarning('https://cbom.example.com')).resolves.toBeUndefined();

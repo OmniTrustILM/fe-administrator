@@ -70,7 +70,7 @@ const getOptionValueString = (val: OptionValue): string => {
             return uuid;
         }
         if ('data' in val && val.data !== undefined) {
-            const d = (val as { data: unknown }).data;
+            const d = val.data;
             if (typeof d === 'string' || typeof d === 'number' || typeof d === 'boolean') {
                 return String(d);
             }
@@ -185,9 +185,9 @@ function Select({
         if (isMulti) {
             return undefined; // Multi-select doesn't need this
         }
-        const singleValue = value as SingleSelectProps['value'];
+        const singleValue = value;
         if (singleValue && typeof singleValue === 'object' && 'value' in singleValue) {
-            return (singleValue as { value: string | number | object; label: string }).value;
+            return singleValue.value;
         }
         return singleValue as string | number | object | undefined;
     }, [isMulti, value]);
@@ -419,7 +419,7 @@ function Select({
                             ? undefined
                             : (() => {
                                   if (getValueFromProp == null) return '';
-                                  return getOptionValueString(getValueFromProp as OptionValue);
+                                  return getOptionValueString(getValueFromProp);
                               })()
                     }
                     data-hs-select={JSON.stringify({

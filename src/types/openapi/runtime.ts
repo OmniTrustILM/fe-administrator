@@ -153,7 +153,6 @@ export type HttpQuery = Partial<{ [key: string]: string | number | null | boolea
 export type HttpBody = Json | FormData;
 
 export interface RequestOpts extends AjaxConfig {
-    // TODO: replace custom 'query' prop with 'queryParams'
     query?: HttpQuery; // additional prop
     // the following props have improved types over AjaxRequest
     method: HttpMethod;
