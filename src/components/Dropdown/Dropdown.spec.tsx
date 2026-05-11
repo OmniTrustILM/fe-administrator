@@ -1,5 +1,6 @@
 import { test, expect } from '../../../playwright/ct-test';
 import Dropdown from './index';
+import { DropdownCloseFromInsideMenuHarness } from './Dropdown.harness';
 
 test.describe('Dropdown', () => {
     test('renders trigger button with title', async ({ mount }) => {
@@ -61,5 +62,14 @@ test.describe('Dropdown', () => {
     test('btnStyle="transparent" applies transparent class', async ({ mount }) => {
         const component = await mount(<Dropdown title="Dropdown" items={[]} btnStyle="transparent" />);
         await expect(component.getByRole('button', { name: 'Dropdown' })).toHaveClass(/bg-transparent/);
+    });
+
+    test('onOpenChange(false) from inside the menu closes the dropdown', async ({ mount, page }) => {
+        await mount(<DropdownCloseFromInsideMenuHarness />);
+        const trigger = page.getByRole('button', { name: 'Dropdown' });
+        await trigger.click();
+        await expect(page.locator('button[data-state="open"]')).toBeVisible();
+        await page.getByTestId('close-from-inside').click();
+        await expect(page.locator('button[data-state="open"]')).toHaveCount(0);
     });
 });

@@ -19,6 +19,8 @@ type Props = {
     hideArrow?: boolean;
     menu?: React.ReactNode;
     buttonRef?: React.RefObject<HTMLButtonElement | null>;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 };
 
 function Dropdown({
@@ -31,9 +33,11 @@ function Dropdown({
     hideArrow = false,
     menu,
     buttonRef,
+    open,
+    onOpenChange,
 }: Readonly<Props>) {
     return (
-        <DropdownMenu.Root>
+        <DropdownMenu.Root open={open} onOpenChange={onOpenChange}>
             <div className={cn('relative inline-flex z-10', className)}>
                 <DropdownMenu.Trigger
                     type="button"
