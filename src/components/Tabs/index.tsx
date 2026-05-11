@@ -14,13 +14,19 @@ type Props = {
 function Tabs({ tabs, selectedTab, onTabChange }: Readonly<Props>) {
     return (
         <SimpleBar forceVisible="x">
+            {/* onValueChange covers keyboard activation; onClick on Trigger covers mouse clicks
+                because Radix's internal mousedown→onValueChange path is unreliable in headless
+                chromium on Linux CI. The two paths overlap harmlessly on platforms where both fire. */}
             <RadixTabs.Root value={String(selectedTab)} onValueChange={(v) => onTabChange(Number(v))} orientation="horizontal">
                 <RadixTabs.List className="flex gap-x-1" aria-label="Tabs">
                     {tabs.map((tab, index) => (
                         <RadixTabs.Trigger
                             key={typeof tab.title === 'string' ? tab.title : `tab-${index}`}
                             value={String(index)}
-                            onClick={() => tab.onClick?.()}
+                            onClick={() => {
+                                onTabChange(index);
+                                tab.onClick?.();
+                            }}
                             className={cn(
                                 'data-[state=active]:bg-gray-200 data-[state=active]:text-gray-800 data-[state=active]:hover:text-gray-800',
                                 'dark:data-[state=active]:bg-neutral-700 dark:data-[state=active]:text-white',
