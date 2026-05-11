@@ -1,3 +1,4 @@
+import * as RadixTabs from '@radix-ui/react-tabs';
 import cn from 'classnames';
 import SimpleBar from 'simplebar-react';
 
@@ -13,31 +14,26 @@ type Props = {
 function Tabs({ tabs, selectedTab, onTabChange }: Readonly<Props>) {
     return (
         <SimpleBar forceVisible="x">
-            <div className="flex gap-x-1" role="tablist" aria-label="Tabs" aria-orientation="horizontal">
-                {tabs.map((tab, index) => (
-                    <button
-                        key={typeof tab.title === 'string' ? tab.title : `tab-${index}`}
-                        type="button"
-                        className={cn(
-                            'hs-tab-active:bg-gray-200 hs-tab-active:text-gray-800 hs-tab-active:hover:text-gray-800 dark:hs-tab-active:bg-neutral-700 dark:hs-tab-active:text-white py-3 px-4 inline-flex items-center gap-x-2 bg-transparent text-sm font-medium text-center text-gray-500 rounded-lg focus:outline-hidden disabled:opacity-50 disabled:pointer-events-none dark:text-neutral-500 dark:hover:text-neutral-400 dark:focus:text-neutral-400 whitespace-nowrap',
-                            {
-                                active: selectedTab === index,
-                            },
-                        )}
-                        id={`pills-on-gray-color-item-${index}`}
-                        aria-selected="false"
-                        data-hs-tab={`#pills-on-gray-color-${index}`}
-                        aria-controls={`pills-on-gray-color-${index}`}
-                        role="tab"
-                        onClick={() => {
-                            onTabChange(index);
-                            tab.onClick?.();
-                        }}
-                    >
-                        {tab.title}
-                    </button>
-                ))}
-            </div>
+            <RadixTabs.Root value={String(selectedTab)} onValueChange={(v) => onTabChange(Number(v))} orientation="horizontal">
+                <RadixTabs.List className="flex gap-x-1" aria-label="Tabs">
+                    {tabs.map((tab, index) => (
+                        <RadixTabs.Trigger
+                            key={typeof tab.title === 'string' ? tab.title : `tab-${index}`}
+                            value={String(index)}
+                            onClick={() => tab.onClick?.()}
+                            className={cn(
+                                'data-[state=active]:bg-gray-200 data-[state=active]:text-gray-800 data-[state=active]:hover:text-gray-800',
+                                'dark:data-[state=active]:bg-neutral-700 dark:data-[state=active]:text-white',
+                                'py-3 px-4 inline-flex items-center gap-x-2 bg-transparent text-sm font-medium text-center text-gray-500 rounded-lg',
+                                'focus:outline-hidden disabled:opacity-50 disabled:pointer-events-none',
+                                'dark:text-neutral-500 dark:hover:text-neutral-400 dark:focus:text-neutral-400 whitespace-nowrap',
+                            )}
+                        >
+                            {tab.title}
+                        </RadixTabs.Trigger>
+                    ))}
+                </RadixTabs.List>
+            </RadixTabs.Root>
         </SimpleBar>
     );
 }
