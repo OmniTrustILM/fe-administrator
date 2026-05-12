@@ -38,6 +38,8 @@ import Button from 'components/Button';
 import { Trash2 } from 'lucide-react';
 import EditIcon from 'components/icons/EditIcon';
 import { buildCertificateDetailBaseRows } from '../certificateTableHelpers';
+import PendingActionDialogs from '../PendingActionButtons/PendingActionDialogs';
+import type { PendingAction } from '../PendingActionButtons/types';
 
 interface SelectChangeValue {
     value: string;
@@ -74,6 +76,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
     const [updateGroup, setUpdateGroup] = useState(false);
     const [updateOwner, setUpdateOwner] = useState(false);
     const [updateRaProfile, setUpdateRaProfile] = useState(false);
+    const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
     const [groups, setGroups] = useState<SelectChangeValue[]>([]);
     const [ownerUuid, setOwnerUuid] = useState<string>();
@@ -353,6 +356,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                   certificateKeyUsageEnum,
                   dateFormatter,
                   getEnumLabel,
+                  setPendingAction,
               )
             : [];
 
@@ -808,6 +812,8 @@ export default function CertificateDetailsContent({ certificate, validationResul
                     },
                 ]}
             />
+
+            <PendingActionDialogs action={pendingAction} onClose={() => setPendingAction(null)} />
         </>
     );
 }

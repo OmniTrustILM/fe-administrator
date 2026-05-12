@@ -44,7 +44,9 @@ test.describe('PlatformInfoDialogButton', () => {
         const store = createMockStore(preloadedState as any);
         await mount(withProviders(<PlatformInfoDialogLink forceOpen={true} />, { store }));
 
-        await expect(page.getByTestId('platform-info-dialog').getByRole('button', { name: 'Close' })).toBeVisible();
+        await expect(
+            page.getByTestId('platform-info-dialog').locator('.modal-footer').getByRole('button', { name: 'Close' }),
+        ).toBeVisible();
     });
 
     test('clicking Version Info button opens dialog', async ({ mount, page }) => {

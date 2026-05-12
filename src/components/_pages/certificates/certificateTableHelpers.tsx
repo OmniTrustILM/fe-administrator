@@ -8,6 +8,7 @@ import type { CertificateListResponseModel, CertificateDetailResponseModel } fro
 import type { TableDataRow } from 'components/CustomTable';
 import CertificateStatus from './CertificateStatus';
 import PendingActionButtons from './PendingActionButtons';
+import type { PendingAction } from './PendingActionButtons/types';
 
 export interface BuildCertificateRowColumnsOpts {
     isLinkDisabled: boolean;
@@ -18,6 +19,7 @@ export interface BuildCertificateRowColumnsOpts {
     /** Enum map from platform enum selector (e.g. EnumItemDto / EnumItemModel) */
     certificateTypeEnum: any;
     getEnumLabel: (e: any, key: string) => string;
+    onPendingAction: (action: PendingAction) => void;
 }
 
 function buildCommonNameCell(certificate: CertificateListResponseModel, opts: BuildCertificateRowColumnsOpts) {
@@ -85,7 +87,7 @@ export function buildCertificateRowColumns(
     certificate: CertificateListResponseModel,
     opts: BuildCertificateRowColumnsOpts,
 ): (string | React.ReactNode)[] {
-    const { isLinkDisabled, dateFormatter, certificateTypeEnum, getEnumLabel } = opts;
+    const { isLinkDisabled, dateFormatter, certificateTypeEnum, getEnumLabel, onPendingAction } = opts;
     const commonNameCell = buildCommonNameCell(certificate, opts);
     const groupsCell = buildGroupsCell(certificate, isLinkDisabled);
     const raProfileCell = buildRaProfileCell(certificate, isLinkDisabled);
@@ -96,7 +98,7 @@ export function buildCertificateRowColumns(
     return [
         <React.Fragment key="state">
             <CertificateStatus status={certificate.state} asIcon={true} />
-            <PendingActionButtons certificate={certificate} compact />
+            <PendingActionButtons certificate={certificate} compact onAction={onPendingAction} />
         </React.Fragment>,
         <CertificateStatus key="validationStatus" status={certificate.validationStatus} asIcon={true} />,
         certificate.complianceStatus ? <CertificateStatus key="compliance" status={certificate.complianceStatus} asIcon={true} /> : '',
@@ -139,6 +141,7 @@ export function buildCertificateDetailBaseRows(
     certificateKeyUsageEnum: any,
     dateFormatter: (d: Date) => string,
     getEnumLabel: (e: any, key: string) => string,
+    onPendingAction: (action: PendingAction) => void,
 ): TableDataRow[] {
     const rows: TableDataRow[] = [
         {
@@ -218,7 +221,7 @@ export function buildCertificateDetailBaseRows(
                 'State',
                 <React.Fragment key="state">
                     <CertificateStatus status={certificate.state} />
-                    <PendingActionButtons certificate={certificate} />
+                    <PendingActionButtons certificate={certificate} onAction={onPendingAction} />
                 </React.Fragment>,
             ],
         },

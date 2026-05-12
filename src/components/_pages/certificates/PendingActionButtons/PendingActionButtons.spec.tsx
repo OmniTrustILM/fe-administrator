@@ -238,7 +238,7 @@ test.describe('PendingActionButtons', () => {
                 }}
             />,
         );
-        await page.getByRole('button', { name: /finalise issue/i }).click();
+        await page.getByTestId('finalize-issue-button').click();
         await expect(page.getByRole('button', { name: /^cancel$/i })).toBeVisible();
         await page.getByRole('button', { name: /^cancel$/i }).click();
         await expect(page.getByRole('button', { name: /^cancel$/i })).toHaveCount(0);
@@ -254,7 +254,7 @@ test.describe('PendingActionButtons', () => {
                 }}
             />,
         );
-        await page.getByRole('button', { name: /finalise issue/i }).click();
+        await page.getByTestId('finalize-issue-button').click();
         await expect(page.getByRole('button', { name: /^cancel$/i })).toBeVisible();
         await page.getByRole('button', { name: /^close$/i }).click();
         await expect(page.getByRole('button', { name: /^cancel$/i })).toHaveCount(0);

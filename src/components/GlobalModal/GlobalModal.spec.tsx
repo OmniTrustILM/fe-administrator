@@ -75,7 +75,7 @@ test.describe('GlobalModal', () => {
         const dispatch = (a: unknown) => dispatched.push(a);
         const props = getGlobalModalDialogProps(baseGlobalModal({ isOpen: true, showCloseButton: true }), dispatch as any);
         await mount(<Dialog {...props} />);
-        await page.getByRole('button', { name: 'Close' }).click();
+        await page.locator('.modal-footer').getByRole('button', { name: 'Close' }).click();
         expect(dispatched).toContainEqual(actions.resetState());
     });
 
