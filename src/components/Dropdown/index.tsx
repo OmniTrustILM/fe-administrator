@@ -21,6 +21,7 @@ type Props = {
     buttonRef?: React.RefObject<HTMLButtonElement | null>;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
+    ariaLabel?: string;
 };
 
 function Dropdown({
@@ -35,12 +36,14 @@ function Dropdown({
     buttonRef,
     open,
     onOpenChange,
+    ariaLabel,
 }: Readonly<Props>) {
     return (
         <DropdownMenu.Root open={open} onOpenChange={onOpenChange}>
             <div className={cn('relative inline-flex z-10', className)}>
                 <DropdownMenu.Trigger
                     type="button"
+                    aria-label={ariaLabel}
                     className={cn(
                         'group p-2 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg',
                         'focus:outline-hidden disabled:opacity-50 disabled:pointer-events-none',
@@ -76,7 +79,7 @@ function Dropdown({
                 <DropdownMenu.Portal>
                     <DropdownMenu.Content
                         className={cn(
-                            'min-w-60 bg-white shadow-md rounded-lg mt-2',
+                            'min-w-60 z-[100] bg-white shadow-md rounded-lg mt-2',
                             'dark:bg-neutral-800 dark:border dark:border-neutral-700 dark:divide-neutral-700',
                             menuClassName,
                         )}

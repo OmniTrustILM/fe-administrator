@@ -1,6 +1,6 @@
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 import cn from 'classnames';
-import type { ReactNode } from 'react';
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 
 export type TooltipPlacement = 'bottom';
 
@@ -30,13 +30,19 @@ function Tooltip({
             </span>
         );
     }
+    const triggerChild = isValidElement(children) ? (
+        cloneElement(children as ReactElement<{ className?: string }>, {
+            className: cn((children.props as { className?: string }).className, triggerClassName),
+        })
+    ) : (
+        <span className={cn(triggerClassName)}>{children}</span>
+    );
+
     return (
         <RadixTooltip.Provider delayDuration={400}>
             <RadixTooltip.Root>
                 <span className={cn('relative inline-block', className)}>
-                    <RadixTooltip.Trigger asChild>
-                        <span className={cn(triggerClassName)}>{children}</span>
-                    </RadixTooltip.Trigger>
+                    <RadixTooltip.Trigger asChild>{triggerChild}</RadixTooltip.Trigger>
                     <RadixTooltip.Portal>
                         <RadixTooltip.Content
                             side={placement}
