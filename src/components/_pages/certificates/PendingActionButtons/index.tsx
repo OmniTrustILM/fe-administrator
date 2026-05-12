@@ -116,6 +116,7 @@ export default function PendingActionButtons({ certificate, compact = false }: P
                                 onCancel={() => setShowFinalize(false)}
                                 onUpload={onUpload}
                                 okButtonTitle="Finalize issue"
+                                showCustomAttributes={false}
                             />
                         }
                         toggle={() => setShowFinalize(false)}

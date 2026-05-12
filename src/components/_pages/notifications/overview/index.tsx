@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { actions, selectors } from 'ducks/notifications';
@@ -14,7 +14,7 @@ import Widget from 'components/Widget';
 function NotificationsOverview() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const dropdownRef = useRef<HTMLButtonElement>(null);
+    const [open, setOpen] = useState(false);
     const overviewNotifications = useSelector(selectors.overviewNotifications);
 
     const isFetchingOverview = useSelector(selectors.isFetchingOverview);
@@ -47,7 +47,7 @@ function NotificationsOverview() {
                                                   (prev, curr) => prev + '/' + curr,
                                               )}`,
                                           );
-                                          dropdownRef.current?.click();
+                                          setOpen(false);
                                       }}
                                   >
                                       <ArrowRight size={10} strokeWidth={3} />
@@ -86,7 +86,7 @@ function NotificationsOverview() {
                 >
                     <div className="max-h-[360px] overflow-y-auto pt-2">{notificationsList}</div>
                     <div className="sticky bottom-0 bg-white pt-2 border-t border-gray-200">
-                        <Link to="/notifications" className="w-full" onClick={() => dropdownRef.current?.click()}>
+                        <Link to="/notifications" className="w-full" onClick={() => setOpen(false)}>
                             <Button color="secondary" className="w-full justify-center">
                                 View all notifications
                             </Button>
@@ -95,7 +95,8 @@ function NotificationsOverview() {
                 </Widget>
             }
             hideArrow
-            buttonRef={dropdownRef}
+            open={open}
+            onOpenChange={setOpen}
         />
     );
 }

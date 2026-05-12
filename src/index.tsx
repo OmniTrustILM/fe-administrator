@@ -3,6 +3,11 @@ import * as FloatingUIDOM from '@floating-ui/dom';
 
 import HSSelect from 'preline/dist/select.mjs';
 (globalThis as any).HSSelect = HSSelect;
+// Preline lazily creates $hsSelectCollection only when its first HSSelect instance is
+// constructed. The Select component's effect calls HSSelect.getInstance() before its own
+// scheduled autoInit fires, so without a pre-existing array it would crash on
+// window.$hsSelectCollection.find(...). Pre-seed it.
+(globalThis as any).$hsSelectCollection ??= [];
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';

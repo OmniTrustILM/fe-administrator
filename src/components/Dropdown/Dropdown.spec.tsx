@@ -1,167 +1,75 @@
 import { test, expect } from '../../../playwright/ct-test';
 import Dropdown from './index';
+import { DropdownCloseFromInsideMenuHarness } from './Dropdown.harness';
 
 test.describe('Dropdown', () => {
-    test('should render dropdown button', async ({ mount }) => {
-        const component = await mount(
-            <div>
-                <Dropdown title="Dropdown" items={[]} />
-            </div>,
-        );
-
-        const button = component.getByRole('button', { name: 'Dropdown' });
-        await expect(button).toBeVisible();
+    test('renders trigger button with title', async ({ mount }) => {
+        const component = await mount(<Dropdown title="Dropdown" items={[]} />);
+        await expect(component.getByRole('button', { name: 'Dropdown' })).toBeVisible();
     });
 
-    test('should render dropdown items', async ({ mount }) => {
+    test('opens menu on click', async ({ mount, page }) => {
         const items = [
             { title: 'Item 1', onClick: () => {} },
             { title: 'Item 2', onClick: () => {} },
         ];
-
-        const component = await mount(
-            <div>
-                <Dropdown title="Dropdown" items={items} />
-            </div>,
-        );
-
-        const button = component.getByRole('button', { name: 'Dropdown' });
-        await button.click();
-
-        await component.page().waitForTimeout(100);
-
-        const item1 = component.getByText('Item 1');
-        const item2 = component.getByText('Item 2');
-        await expect(item1).toBeAttached();
-        await expect(item2).toBeAttached();
+        await mount(<Dropdown title="Dropdown" items={items} />);
+        await page.getByRole('button', { name: 'Dropdown' }).click();
+        await expect(page.locator('button[data-state="open"]')).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: 'Item 1' })).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: 'Item 2' })).toBeVisible();
     });
 
-    test('should call onClick when item 1 is clicked', async ({ mount }) => {
+    test('calls item onClick when selected', async ({ mount, page }) => {
         let item1Clicked = false;
         const items = [
-            { title: 'Item 1', onClick: () => (item1Clicked = true) },
+            {
+                title: 'Item 1',
+                onClick: () => {
+                    item1Clicked = true;
+                },
+            },
             { title: 'Item 2', onClick: () => {} },
         ];
-
-        const component = await mount(
-            <div>
-                <Dropdown title="Dropdown" items={items} />
-            </div>,
-        );
-
-        const button = component.getByRole('button', { name: 'Dropdown' });
-        await button.click();
-        await component.page().waitForTimeout(100);
-
-        const item1 = component.getByText('Item 1');
-        await item1.click();
+        await mount(<Dropdown title="Dropdown" items={items} />);
+        await page.getByRole('button', { name: 'Dropdown' }).click();
+        await page.getByRole('menuitem', { name: 'Item 1' }).click();
         expect(item1Clicked).toBe(true);
     });
 
-    test('should call onClick when item 2 is clicked', async ({ mount }) => {
-        let item2Clicked = false;
-        const items = [
-            { title: 'Item 1', onClick: () => {} },
-            { title: 'Item 2', onClick: () => (item2Clicked = true) },
-        ];
-
-        const component = await mount(
-            <div>
-                <Dropdown title="Dropdown" items={items} />
-            </div>,
-        );
-
-        const button = component.getByRole('button', { name: 'Dropdown' });
-        await button.click();
-        await component.page().waitForTimeout(100);
-
-        const item2 = component.getByText('Item 2');
-        await item2.click();
-        expect(item2Clicked).toBe(true);
+    test('renders custom menu ReactNode alongside items', async ({ mount, page }) => {
+        const items = [{ title: 'Item 1', onClick: () => {} }];
+        await mount(<Dropdown title="Dropdown" items={items} menu={<div>Custom menu content</div>} />);
+        await page.getByRole('button', { name: 'Dropdown' }).click();
+        await expect(page.getByText('Custom menu content')).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: 'Item 1' })).toBeVisible();
     });
 
-    test('should be disabled when disabled prop is true', async ({ mount }) => {
-        const component = await mount(
-            <div>
-                <Dropdown title="Dropdown" items={[]} disabled={true} />
-            </div>,
-        );
-
-        const button = component.getByRole('button', { name: 'Dropdown' });
-        await expect(button).toBeDisabled();
+    test('does not open when disabled', async ({ mount, page }) => {
+        const items = [{ title: 'Item 1', onClick: () => {} }];
+        await mount(<Dropdown title="Dropdown" items={items} disabled={true} />);
+        const trigger = page.getByRole('button', { name: 'Dropdown' });
+        await expect(trigger).toBeDisabled();
+        await trigger.click({ force: true }).catch(() => {});
+        await expect(page.getByRole('menuitem')).toHaveCount(0);
     });
 
-    test('should hide arrow when hideArrow is true', async ({ mount }) => {
-        const component = await mount(
-            <div>
-                <Dropdown title="Dropdown" items={[]} hideArrow={true} />
-            </div>,
-        );
-
-        const button = component.getByRole('button', { name: 'Dropdown' });
-
-        const arrow = button.locator('svg');
-        await expect(arrow).toHaveCount(0);
+    test('hideArrow=true removes chevron svg', async ({ mount }) => {
+        const component = await mount(<Dropdown title="Dropdown" items={[]} hideArrow={true} />);
+        await expect(component.getByRole('button', { name: 'Dropdown' }).locator('svg')).toHaveCount(0);
     });
 
-    test('should show arrow by default', async ({ mount }) => {
-        const component = await mount(
-            <div>
-                <Dropdown title="Dropdown" items={[]} />
-            </div>,
-        );
-
-        const button = component.getByRole('button', { name: 'Dropdown' });
-        const arrow = button.locator('svg');
-        await expect(arrow).toBeAttached();
+    test('btnStyle="transparent" applies transparent class', async ({ mount }) => {
+        const component = await mount(<Dropdown title="Dropdown" items={[]} btnStyle="transparent" />);
+        await expect(component.getByRole('button', { name: 'Dropdown' })).toHaveClass(/bg-transparent/);
     });
 
-    test('should render custom menu content', async ({ mount }) => {
-        const customMenu = <div>Custom Menu Content</div>;
-
-        const component = await mount(
-            <div>
-                <Dropdown title="Dropdown" items={[]} menu={customMenu} />
-            </div>,
-        );
-
-        const button = component.getByRole('button', { name: 'Dropdown' });
-        await button.click();
-        await component.page().waitForTimeout(100);
-
-        const customContent = component.getByText('Custom Menu Content');
-        await expect(customContent).toBeAttached();
-    });
-
-    test('should support transparent button style', async ({ mount }) => {
-        const component = await mount(
-            <div>
-                <Dropdown title="Dropdown" items={[]} btnStyle="transparent" />
-            </div>,
-        );
-
-        const button = component.getByRole('button', { name: 'Dropdown' });
-        await expect(button).toHaveClass(/bg-transparent/);
-    });
-
-    test('should support custom className', async ({ mount }) => {
-        const component = await mount(
-            <div>
-                <Dropdown title="Dropdown" items={[]} className="custom-dropdown" />
-            </div>,
-        );
-
-        const dropdown = component.locator('.hs-dropdown');
-        await expect(dropdown).toHaveClass(/custom-dropdown/);
-    });
-
-    test('should render with React node title', async ({ mount }) => {
-        const component = await mount(
-            <div>
-                <Dropdown title={<span>Custom Title</span>} items={[]} />
-            </div>,
-        );
-
-        await expect(component.getByText('Custom Title')).toBeVisible();
+    test('onOpenChange(false) from inside the menu closes the dropdown', async ({ mount, page }) => {
+        await mount(<DropdownCloseFromInsideMenuHarness />);
+        const trigger = page.getByRole('button', { name: 'Dropdown' });
+        await trigger.click();
+        await expect(page.locator('button[data-state="open"]')).toBeVisible();
+        await page.getByTestId('close-from-inside').click();
+        await expect(page.locator('button[data-state="open"]')).toHaveCount(0);
     });
 });

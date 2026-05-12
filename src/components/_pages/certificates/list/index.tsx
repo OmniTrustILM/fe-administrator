@@ -122,7 +122,8 @@ export default function CertificateList({
     const downloadDropDown = useMemo(
         () => (
             <Dropdown
-                title={<ArrowDownToLine size={16} />}
+                title={<ArrowDownToLine size={16} aria-hidden="true" />}
+                ariaLabel="Download certificates"
                 btnStyle="transparent"
                 disabled={checkedRows.length === 0}
                 items={[

@@ -74,6 +74,22 @@ test.describe('PendingActionButtons', () => {
         await expect(page.getByRole('button', { name: /^cancel$/i })).toBeVisible();
     });
 
+    test('Finalize Issue dialog does not show the Custom Attributes section', async ({ mount, page }) => {
+        await mount(
+            <PendingActionButtonsWithStore
+                certificate={{
+                    uuid: 'cert-1',
+                    state: CertificateState.PendingIssue,
+                    raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any,
+                }}
+            />,
+        );
+        await page.getByRole('button', { name: /finalize issue/i }).click();
+        await expect(page.getByRole('button', { name: /^cancel$/i })).toBeVisible();
+        await expect(page.getByRole('tab', { name: /custom attributes/i })).toHaveCount(0);
+        await expect(page.getByText(/custom attributes/i)).toHaveCount(0);
+    });
+
     test('clicking Confirm Revoke opens the confirm dialog', async ({ mount, page }) => {
         await mount(
             <PendingActionButtonsWithStore
