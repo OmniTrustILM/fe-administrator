@@ -38,8 +38,15 @@ export default function PendingActionDialogs({ action, onClose }: Props) {
             {action?.kind === 'finalize' && (
                 <Dialog
                     isOpen
-                    caption="Finalise Issue"
-                    body={<CertificateUploadDialog onCancel={onClose} onUpload={onUpload} okButtonTitle="Finalise issue" />}
+                    caption="Finalize Issue"
+                    body={
+                        <CertificateUploadDialog
+                            onCancel={onClose}
+                            onUpload={onUpload}
+                            showCustomAttributes={false}
+                            okButtonTitle="Finalize issue"
+                        />
+                    }
                     toggle={onClose}
                     buttons={[]}
                     size="xl"

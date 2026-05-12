@@ -1,15 +1,23 @@
 import { actions, selectors } from 'ducks/app-redirect';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 
 export default function AppRedirect() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const { pathname } = useLocation();
 
     const unauthorized = useSelector(selectors.unauthorized);
     const goBack = useSelector(selectors.goBack);
     const redirectUrl = useSelector(selectors.redirectUrl);
+
+    // Preline components (Select, Popover, Pagination tooltips, Dialog overlay, ...) require
+    // HSStaticMethods.autoInit() to be called after they mount. Run it on every route change
+    // to cover newly rendered Preline-backed UI on each page.
+    useEffect(() => {
+        (globalThis as any).HSStaticMethods?.autoInit();
+    }, [pathname]);
 
     useEffect(() => {
         if (!goBack) return;

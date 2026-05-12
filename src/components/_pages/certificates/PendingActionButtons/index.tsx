@@ -38,7 +38,7 @@ export default function PendingActionButtons({ certificate, compact = false, onA
                 <Button
                     variant="transparent"
                     className={buttonClass}
-                    title="Finalise issue (upload certificate)"
+                    title="Finalize issue (upload certificate)"
                     data-testid="finalize-issue-button"
                     onClick={(e) => {
                         e.stopPropagation();
@@ -47,7 +47,7 @@ export default function PendingActionButtons({ certificate, compact = false, onA
                     disabled={isFinalizingThis}
                 >
                     <Upload size={16} />
-                    <span className="sr-only">Finalise issue (upload certificate)</span>
+                    <span className="sr-only">Finalize issue (upload certificate)</span>
                 </Button>
             )}
             {certificate.state === CertificateState.PendingRevoke && (
