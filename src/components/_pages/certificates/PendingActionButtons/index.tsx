@@ -62,7 +62,7 @@ export default function PendingActionButtons({ certificate, compact = false }: P
                     <Button
                         variant="transparent"
                         className={buttonClass}
-                        title="Finalise issue (upload certificate)"
+                        title="Finalize issue (upload certificate)"
                         data-testid="finalize-issue-button"
                         onClick={(e) => {
                             e.stopPropagation();
@@ -71,7 +71,7 @@ export default function PendingActionButtons({ certificate, compact = false }: P
                         disabled={isFinalizingThis}
                     >
                         <Upload size={16} />
-                        <span className="sr-only">Finalise issue (upload certificate)</span>
+                        <span className="sr-only">Finalize issue (upload certificate)</span>
                     </Button>
                 )}
                 {certificate.state === CertificateState.PendingRevoke && (
@@ -110,12 +110,12 @@ export default function PendingActionButtons({ certificate, compact = false }: P
                 <div onClickCapture={(e) => e.stopPropagation()} onKeyDownCapture={(e) => e.stopPropagation()}>
                     <Dialog
                         isOpen={showFinalize}
-                        caption="Finalise Issue"
+                        caption="Finalize Issue"
                         body={
                             <CertificateUploadDialog
                                 onCancel={() => setShowFinalize(false)}
                                 onUpload={onUpload}
-                                okButtonTitle="Finalise issue"
+                                okButtonTitle="Finalize issue"
                             />
                         }
                         toggle={() => setShowFinalize(false)}
