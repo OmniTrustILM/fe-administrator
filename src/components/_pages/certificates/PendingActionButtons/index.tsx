@@ -107,7 +107,8 @@ export default function PendingActionButtons({ certificate, compact = false }: P
             </span>
 
             {createPortal(
-                <div onClickCapture={(e) => e.stopPropagation()} onKeyDownCapture={(e) => e.stopPropagation()}>
+                // biome-ignore lint/a11y/noStaticElementInteractions: event firewall for React-tree bubbling from portal'd dialog content; not a control
+                <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                     <Dialog
                         isOpen={showFinalize}
                         caption="Finalise Issue"

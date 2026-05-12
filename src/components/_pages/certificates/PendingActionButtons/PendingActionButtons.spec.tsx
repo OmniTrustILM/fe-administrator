@@ -132,6 +132,38 @@ test.describe('PendingActionButtons', () => {
         await expect(btn).toBeEnabled();
     });
 
+    test('clicking Cancel inside the cancel-pending dialog dismisses the dialog', async ({ mount, page }) => {
+        await mount(
+            <PendingActionButtonsWithStore
+                certificate={{
+                    uuid: 'cert-1',
+                    state: CertificateState.PendingIssue,
+                    raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any,
+                }}
+            />,
+        );
+        await page.getByRole('button', { name: /cancel pending operation/i }).click();
+        await expect(page.getByText(/reason \(optional\)/i)).toBeVisible();
+        await page.getByRole('button', { name: /keep pending/i }).click();
+        await expect(page.getByText(/reason \(optional\)/i)).toHaveCount(0);
+    });
+
+    test('clicking Confirm inside the confirm-revoke dialog dismisses the dialog', async ({ mount, page }) => {
+        await mount(
+            <PendingActionButtonsWithStore
+                certificate={{
+                    uuid: 'cert-1',
+                    state: CertificateState.PendingRevoke,
+                    raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any,
+                }}
+            />,
+        );
+        await page.getByRole('button', { name: /confirm revocation/i }).click();
+        await expect(page.getByText(/mark this certificate as revoked/i)).toBeVisible();
+        await page.getByRole('button', { name: /^confirm$/i }).click();
+        await expect(page.getByText(/mark this certificate as revoked/i)).toHaveCount(0);
+    });
+
     test('renders nothing when raProfile.authorityInstanceUuid is undefined', async ({ mount }) => {
         const c = await mount(
             <PendingActionButtonsWithStore
