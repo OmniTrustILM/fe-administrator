@@ -1,6 +1,16 @@
 import { test, expect } from '../../../../playwright/ct-test';
 import FileUpload from './FileUpload';
 
+const mountEditableFileUpload = async (mount: any) => {
+    const calls: string[] = [];
+    const component = await mount(
+        <div>
+            <FileUpload onFileContentLoaded={(c) => calls.push(c)} showContent={true} editable={true} />
+        </div>,
+    );
+    return { component, calls };
+};
+
 test.describe('FileUpload', () => {
     test('should render file upload component', async ({ mount }) => {
         const component = await mount(
@@ -71,13 +81,7 @@ test.describe('FileUpload', () => {
     test('should call onFileContentLoaded with base64 content on change (so submit buttons activate on paste, not blur)', async ({
         mount,
     }) => {
-        const calls: string[] = [];
-        const component = await mount(
-            <div>
-                <FileUpload onFileContentLoaded={(c) => calls.push(c)} showContent={true} editable={true} />
-            </div>,
-        );
-
+        const { component, calls } = await mountEditableFileUpload(mount);
         const textarea = component.locator('textarea');
         await textarea.fill('hello');
         expect(calls.length).toBeGreaterThanOrEqual(1);
@@ -85,13 +89,7 @@ test.describe('FileUpload', () => {
     });
 
     test('should also call onFileContentLoaded on blur (regression guard for existing flow)', async ({ mount }) => {
-        const calls: string[] = [];
-        const component = await mount(
-            <div>
-                <FileUpload onFileContentLoaded={(c) => calls.push(c)} showContent={true} editable={true} />
-            </div>,
-        );
-
+        const { component, calls } = await mountEditableFileUpload(mount);
         const textarea = component.locator('textarea');
         await textarea.fill('hello');
         const callsAfterFill = calls.length;
@@ -101,13 +99,7 @@ test.describe('FileUpload', () => {
     });
 
     test('should not call onFileContentLoaded on change when content is empty', async ({ mount }) => {
-        const calls: string[] = [];
-        const component = await mount(
-            <div>
-                <FileUpload onFileContentLoaded={(c) => calls.push(c)} showContent={true} editable={true} />
-            </div>,
-        );
-
+        const { component, calls } = await mountEditableFileUpload(mount);
         const textarea = component.locator('textarea');
         await textarea.fill('hello');
         await textarea.fill('');
@@ -116,13 +108,7 @@ test.describe('FileUpload', () => {
     });
 
     test('should not call onFileContentLoaded on blur when textarea is empty', async ({ mount }) => {
-        const calls: string[] = [];
-        const component = await mount(
-            <div>
-                <FileUpload onFileContentLoaded={(c) => calls.push(c)} showContent={true} editable={true} />
-            </div>,
-        );
-
+        const { component, calls } = await mountEditableFileUpload(mount);
         await component.locator('textarea').blur();
         expect(calls).toHaveLength(0);
     });
