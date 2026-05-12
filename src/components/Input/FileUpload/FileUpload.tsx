@@ -91,8 +91,11 @@ export default function FileUpload({
             fileContentRef.current = fileContentLatest;
             setFileContent(fileContentLatest);
             onContentChange?.();
+            if (fileContentLatest) {
+                onFileContentLoaded(btoa(fileContentLatest));
+            }
         },
-        [onContentChange],
+        [onContentChange, onFileContentLoaded],
     );
 
     const onFileInputTextBlurred = useCallback(() => {

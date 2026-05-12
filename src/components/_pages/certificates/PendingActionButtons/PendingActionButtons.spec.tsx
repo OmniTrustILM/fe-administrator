@@ -132,7 +132,7 @@ test.describe('PendingActionButtons', () => {
         await expect(btn).toBeEnabled();
     });
 
-    test('clicking Cancel inside the cancel-pending dialog dismisses the dialog', async ({ mount, page }) => {
+    test("clicking 'Keep pending' inside the cancel-pending dialog dismisses the dialog", async ({ mount, page }) => {
         await mount(
             <PendingActionButtonsWithStore
                 certificate={{
@@ -162,6 +162,102 @@ test.describe('PendingActionButtons', () => {
         await expect(page.getByText(/mark this certificate as revoked/i)).toBeVisible();
         await page.getByRole('button', { name: /^confirm$/i }).click();
         await expect(page.getByText(/mark this certificate as revoked/i)).toHaveCount(0);
+    });
+
+    test("clicking 'Cancel operation' inside the cancel-pending dialog dismisses the dialog", async ({ mount, page }) => {
+        await mount(
+            <PendingActionButtonsWithStore
+                certificate={{
+                    uuid: 'cert-1',
+                    state: CertificateState.PendingIssue,
+                    raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any,
+                }}
+            />,
+        );
+        await page.getByRole('button', { name: /cancel pending operation/i }).click();
+        await expect(page.getByText(/reason \(optional\)/i)).toBeVisible();
+        await page.getByRole('button', { name: /cancel operation/i }).click();
+        await expect(page.getByText(/reason \(optional\)/i)).toHaveCount(0);
+    });
+
+    test('clicking close (×) dismisses the cancel-pending dialog', async ({ mount, page }) => {
+        await mount(
+            <PendingActionButtonsWithStore
+                certificate={{
+                    uuid: 'cert-1',
+                    state: CertificateState.PendingIssue,
+                    raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any,
+                }}
+            />,
+        );
+        await page.getByRole('button', { name: /cancel pending operation/i }).click();
+        await expect(page.getByText(/reason \(optional\)/i)).toBeVisible();
+        await page.getByRole('button', { name: /^close$/i }).click();
+        await expect(page.getByText(/reason \(optional\)/i)).toHaveCount(0);
+    });
+
+    test('clicking Cancel inside the confirm-revoke dialog dismisses the dialog', async ({ mount, page }) => {
+        await mount(
+            <PendingActionButtonsWithStore
+                certificate={{
+                    uuid: 'cert-1',
+                    state: CertificateState.PendingRevoke,
+                    raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any,
+                }}
+            />,
+        );
+        await page.getByRole('button', { name: /confirm revocation/i }).click();
+        await expect(page.getByText(/mark this certificate as revoked/i)).toBeVisible();
+        await page.getByRole('button', { name: /^cancel$/i }).click();
+        await expect(page.getByText(/mark this certificate as revoked/i)).toHaveCount(0);
+    });
+
+    test('clicking close (×) dismisses the confirm-revoke dialog', async ({ mount, page }) => {
+        await mount(
+            <PendingActionButtonsWithStore
+                certificate={{
+                    uuid: 'cert-1',
+                    state: CertificateState.PendingRevoke,
+                    raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any,
+                }}
+            />,
+        );
+        await page.getByRole('button', { name: /confirm revocation/i }).click();
+        await expect(page.getByText(/mark this certificate as revoked/i)).toBeVisible();
+        await page.getByRole('button', { name: /^close$/i }).click();
+        await expect(page.getByText(/mark this certificate as revoked/i)).toHaveCount(0);
+    });
+
+    test('clicking Cancel inside the finalise-issue dialog dismisses the dialog', async ({ mount, page }) => {
+        await mount(
+            <PendingActionButtonsWithStore
+                certificate={{
+                    uuid: 'cert-1',
+                    state: CertificateState.PendingIssue,
+                    raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any,
+                }}
+            />,
+        );
+        await page.getByRole('button', { name: /finalise issue/i }).click();
+        await expect(page.getByRole('button', { name: /^cancel$/i })).toBeVisible();
+        await page.getByRole('button', { name: /^cancel$/i }).click();
+        await expect(page.getByRole('button', { name: /^cancel$/i })).toHaveCount(0);
+    });
+
+    test('clicking close (×) dismisses the finalise-issue dialog', async ({ mount, page }) => {
+        await mount(
+            <PendingActionButtonsWithStore
+                certificate={{
+                    uuid: 'cert-1',
+                    state: CertificateState.PendingIssue,
+                    raProfile: { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' } as any,
+                }}
+            />,
+        );
+        await page.getByRole('button', { name: /finalise issue/i }).click();
+        await expect(page.getByRole('button', { name: /^cancel$/i })).toBeVisible();
+        await page.getByRole('button', { name: /^close$/i }).click();
+        await expect(page.getByRole('button', { name: /^cancel$/i })).toHaveCount(0);
     });
 
     test('renders nothing when raProfile.authorityInstanceUuid is undefined', async ({ mount }) => {

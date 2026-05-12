@@ -206,6 +206,7 @@ export default function Dialog({
                 <div className="w-full flex flex-col bg-white border border-gray-200 shadow-2xs rounded-xl pointer-events-auto dark:bg-neutral-800 dark:border-neutral-700 dark:shadow-neutral-700/70 p-4 md:p-8 !pb-0 relative overflow-visible">
                     <Button variant="transparent" onClick={toggle} title="Close" className="absolute right-2 top-2">
                         <X size={16} />
+                        <span className="sr-only">Close</span>
                     </Button>
                     <div
                         className={cn('flex flex-col justify-center dark:border-neutral-700', {
