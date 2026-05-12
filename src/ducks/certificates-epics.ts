@@ -343,7 +343,7 @@ const manuallyIssueCertificate: AppEpic = (action$, state, deps) => {
                                 uuid: action.payload.uuid,
                                 certificate: transformCertificateDetailResponseDtoToModel(certificate),
                             }),
-                            alertActions.success('Certificate issued and pending operation finalised'),
+                            alertActions.success('Certificate issued and pending operation finalized'),
                             slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
                             slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
                         ),
@@ -353,10 +353,10 @@ const manuallyIssueCertificate: AppEpic = (action$, state, deps) => {
                         of(
                             slice.actions.manuallyIssueCertificateFailure({
                                 uuid: action.payload.uuid,
-                                error: extractError(err, 'Failed to finalise certificate issuance'),
+                                error: extractError(err, 'Failed to finalize certificate issuance'),
                             }),
                             slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
-                            appRedirectActions.fetchError({ error: err, message: 'Failed to finalise certificate issuance' }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to finalize certificate issuance' }),
                         ),
                     ),
                 ),
