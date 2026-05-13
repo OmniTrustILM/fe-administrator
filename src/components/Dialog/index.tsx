@@ -186,7 +186,7 @@ export default function Dialog({
                         sizeClasses[size],
                         'bg-white border border-gray-200 shadow-2xs rounded-xl',
                         'dark:bg-neutral-800 dark:border-neutral-700 dark:shadow-neutral-700/70',
-                        'flex flex-col p-4 md:p-8 !pb-0 overflow-visible',
+                        'flex flex-col p-4 md:p-8 !pb-0 overflow-hidden max-h-[calc(100vh-56px)]',
                     )}
                 >
                     <RadixDialog.Close asChild>
@@ -205,7 +205,7 @@ export default function Dialog({
                         {titleNode}
                     </div>
                     <div
-                        className={cn('pt-4 text-gray-500 dark:text-white overflow-visible', {
+                        className={cn('pt-4 text-gray-500 dark:text-white overflow-y-auto min-h-0', {
                             'pb-4': !!buttons?.length,
                             'text-center': icon === 'delete' || icon === 'destroy',
                         })}
