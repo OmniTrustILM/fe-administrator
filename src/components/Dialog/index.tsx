@@ -1,3 +1,5 @@
+import * as RadixDialog from '@radix-ui/react-dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import cn from 'classnames';
 import Button, { type ButtonColor, type ButtonVariant } from 'components/Button';
 import {
@@ -18,7 +20,6 @@ import {
     Plug,
     ShieldCheck,
 } from 'lucide-react';
-import { useLayoutEffect } from 'react';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 export type ModalIconName =
@@ -60,6 +61,14 @@ type Props = {
     noBorder?: boolean;
 };
 
+const sizeClasses: Record<ModalSize, string> = {
+    sm: 'sm:max-w-sm',
+    md: 'sm:max-w-lg',
+    lg: 'sm:max-w-xl',
+    xl: 'sm:max-w-4xl',
+    xxl: 'sm:max-w-6xl',
+};
+
 export default function Dialog({
     isOpen,
     toggle,
@@ -71,42 +80,16 @@ export default function Dialog({
     icon,
     noBorder = false,
 }: Readonly<Props>) {
-    const sizeClasses = {
-        sm: 'sm:max-w-sm',
-        md: 'sm:max-w-lg',
-        lg: 'sm:max-w-xl',
-        xl: 'sm:max-w-4xl',
-        xxl: 'sm:max-w-6xl',
-    };
-
-    // Lock body scroll when modal is open
-    useLayoutEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-
-        return () => {
-            document.body.style.overflow = '';
-        };
-    }, [isOpen]);
-
-    if (!isOpen) return null;
-
     const renderIcon = () => {
         if (!icon) return null;
-        const iconColor = {
+        const iconColor: Record<string, string> = {
             delete: '#991B1B',
             destroy: '#991B1B',
             warning: '#991B1B',
             check: '#115E59',
         };
-        let iconElement = null;
-        const buttonProps = {
-            size: 26,
-            strokeWidth: 1,
-        };
+        let iconElement: React.ReactNode = null;
+        const buttonProps = { size: 26, strokeWidth: 1 };
         switch (icon) {
             case 'delete':
                 iconElement = <Trash2 {...buttonProps} />;
@@ -166,7 +149,7 @@ export default function Dialog({
                         '!bg-[#CCFBF1] after:!bg-[#CCFBF1] after:!opacity-30': icon === 'check',
                     },
                 )}
-                style={{ color: iconColor[icon as keyof typeof iconColor] || '#6B7280' }}
+                style={{ color: iconColor[icon as string] || '#6B7280' }}
             >
                 {iconElement}
             </div>
@@ -175,39 +158,49 @@ export default function Dialog({
 
     const hideBorders = icon === 'delete' || icon === 'destroy' || noBorder;
 
+    const titleNode =
+        caption == null || caption === '' ? (
+            <VisuallyHidden asChild>
+                <RadixDialog.Title>Dialog</RadixDialog.Title>
+            </VisuallyHidden>
+        ) : (
+            <RadixDialog.Title asChild>
+                <h3 className="font-bold text-[var(--dark-gray-color)] dark:text-white text-2xl">{caption}</h3>
+            </RadixDialog.Title>
+        );
+
     return (
-        <div
-            id="hs-scale-animation-modal"
-            className={cn(
-                'hs-overlay size-full fixed top-0 start-0 z-[80] overflow-x-hidden overflow-y-auto',
-                {
-                    hidden: !isOpen,
-                    'pointer-events-auto': isOpen,
-                    'pointer-events-none': !isOpen,
-                },
-                isOpen &&
-                    'after:content-[""] after:fixed after:inset-0 after:bg-black/50 after:transition-opacity after:duration-200 after:-z-[1]',
-            )}
-            role="dialog"
-            tabIndex={-1}
-            aria-labelledby="hs-scale-animation-modal-label"
-            data-testid={dataTestId}
+        <RadixDialog.Root
+            open={isOpen}
+            onOpenChange={(open) => {
+                if (!open) toggle?.();
+            }}
         >
-            <div
-                className={cn(
-                    'hs-overlay-animation-target ease-in-out transition-all duration-200 m-3 sm:mx-auto min-h-[calc(100%-56px)] flex items-center',
-                    sizeClasses[size || 'sm'],
-                    {
-                        'scale-100 opacity-100': isOpen,
-                        'scale-95 opacity-0': !isOpen,
-                    },
-                )}
-            >
-                <div className="w-full flex flex-col bg-white border border-gray-200 shadow-2xs rounded-xl pointer-events-auto dark:bg-neutral-800 dark:border-neutral-700 dark:shadow-neutral-700/70 p-4 md:p-8 !pb-0 relative overflow-visible">
-                    <Button variant="transparent" onClick={toggle} title="Close" className="absolute right-2 top-2">
-                        <X size={16} />
-                        <span className="sr-only">Close</span>
-                    </Button>
+            <RadixDialog.Portal>
+                <RadixDialog.Overlay className="fixed inset-0 z-[80] bg-black/50" />
+                <RadixDialog.Content
+                    data-testid={dataTestId}
+                    aria-describedby={undefined}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Escape') {
+                            event.preventDefault();
+                            toggle?.();
+                        }
+                    }}
+                    className={cn(
+                        'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[80] w-full',
+                        sizeClasses[size],
+                        'bg-white border border-gray-200 shadow-2xs rounded-xl',
+                        'dark:bg-neutral-800 dark:border-neutral-700 dark:shadow-neutral-700/70',
+                        'flex flex-col p-4 md:p-8 !pb-0 overflow-visible',
+                    )}
+                >
+                    <RadixDialog.Close asChild>
+                        <Button variant="transparent" title="Close" className="absolute right-2 top-2">
+                            <X size={16} />
+                            <span className="sr-only">Close</span>
+                        </Button>
+                    </RadixDialog.Close>
                     <div
                         className={cn('flex flex-col justify-center dark:border-neutral-700', {
                             'border-b border-gray-200 pb-4': !hideBorders,
@@ -215,12 +208,7 @@ export default function Dialog({
                         })}
                     >
                         {renderIcon()}
-                        <h3
-                            id="hs-scale-animation-modal-label"
-                            className="font-bold text-[var(--dark-gray-color)] dark:text-white text-2xl"
-                        >
-                            {caption}
-                        </h3>
+                        {titleNode}
                     </div>
                     <div
                         className={cn('pt-4 text-gray-500 dark:text-white overflow-visible', {
@@ -231,14 +219,13 @@ export default function Dialog({
                         {body}
                     </div>
                     {buttons && buttons.length > 0 && (
-                        <div className={cn('flex justify-end items-center gap-4 py-4 mt-2 dark:border-neutral-700 modal-footer')}>
+                        <div className="flex justify-end items-center gap-4 py-4 mt-2 dark:border-neutral-700 modal-footer">
                             {buttons.map((button, index) => (
                                 <Button
                                     key={button.key ?? index}
                                     color={button.color}
                                     onClick={() => button.onClick()}
                                     disabled={button.disabled || false}
-                                    data-hs-overlay="#hs-scale-animation-modal"
                                     variant={button.variant}
                                 >
                                     {button.body}
@@ -246,8 +233,8 @@ export default function Dialog({
                             ))}
                         </div>
                     )}
-                </div>
-            </div>
-        </div>
+                </RadixDialog.Content>
+            </RadixDialog.Portal>
+        </RadixDialog.Root>
     );
 }
