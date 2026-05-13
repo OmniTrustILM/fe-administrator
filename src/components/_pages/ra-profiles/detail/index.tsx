@@ -1,4 +1,5 @@
 import AttributeViewer from 'components/Attributes/AttributeViewer';
+import Badge from 'components/Badge';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import Dialog from 'components/Dialog';
@@ -9,6 +10,7 @@ import Widget from 'components/Widget';
 import WidgetButtons, { type WidgetButtonProps } from 'components/WidgetButtons';
 
 import { actions as approvalProfileActions } from 'ducks/approval-profiles';
+import { actions as authoritiesActions, selectors as authoritiesSelectors } from 'ducks/authorities';
 import { actions as raProfilesActions, selectors as raProfilesSelectors } from 'ducks/ra-profiles';
 import { actions as settingsActions, selectors as settingsSelectors } from 'ducks/settings';
 import { actions as complianceProfileActions, selectors as complianceProfileSelectors } from 'ducks/compliance-profiles';
@@ -47,6 +49,7 @@ export default function RaProfileDetail() {
     const { id, authorityId } = useParams();
 
     const raProfile = useSelector(raProfilesSelectors.raProfile);
+    const authorities = useSelector(authoritiesSelectors.authorities);
     const acmeDetails = useSelector(raProfilesSelectors.acmeDetails);
     const scepDetails = useSelector(raProfilesSelectors.scepDetails);
     const cmpDetails = useSelector(raProfilesSelectors.cmpDetails);
@@ -192,6 +195,10 @@ export default function RaProfileDetail() {
 
         dispatch(settingsActions.getPlatformSettings());
     }, [dispatch, platformSettings]);
+
+    useEffect(() => {
+        dispatch(authoritiesActions.listAuthorities());
+    }, [dispatch]);
 
     // use effect to clear the ra profile detail when the component is unmounted
     useEffect(() => {
@@ -533,6 +540,10 @@ export default function RaProfileDetail() {
     const detailData: TableDataRow[] = useMemo(() => {
         if (!raProfile) return [];
 
+        const authorityKind = raProfile.authorityInstanceUuid
+            ? authorities.find((authority) => authority.uuid === raProfile.authorityInstanceUuid)?.kind
+            : undefined;
+
         return [
             {
                 id: 'uuid',
@@ -565,8 +576,21 @@ export default function RaProfileDetail() {
                     ),
                 ],
             },
+            {
+                id: 'authorityKind',
+                columns: [
+                    'Authority Kind',
+                    authorityKind ? (
+                        <Badge key="authorityKind" color="primary">
+                            {authorityKind}
+                        </Badge>
+                    ) : (
+                        ''
+                    ),
+                ],
+            },
         ];
-    }, [raProfile]);
+    }, [raProfile, authorities]);
 
     const protocolProfileHeaders: TableHeader[] = useMemo(
         () => [

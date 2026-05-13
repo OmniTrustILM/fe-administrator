@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 
 import Badge from 'components/Badge';
 
+import { actions as authoritiesActions, selectors as authoritiesSelectors } from 'ducks/authorities';
 import { actions, selectors } from 'ducks/ra-profiles';
 
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
@@ -13,6 +14,7 @@ import StatusBadge from 'components/StatusBadge';
 import Widget from 'components/Widget';
 import RaProfileForm from '../form';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
+import { Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 
 function RaProfileList() {
@@ -20,6 +22,7 @@ function RaProfileList() {
 
     const checkedRows = useSelector(selectors.checkedRows);
     const raProfiles = useSelector(selectors.raProfiles);
+    const authorities = useSelector(authoritiesSelectors.authorities);
 
     const isFetching = useSelector(selectors.isFetchingList);
     const isDeleting = useSelector(selectors.isDeleting);
@@ -43,6 +46,7 @@ function RaProfileList() {
     const getFreshData = useCallback(() => {
         dispatch(actions.setCheckedRows({ checkedRows: [] }));
         dispatch(actions.listRaProfiles());
+        dispatch(authoritiesActions.listAuthorities());
     }, [dispatch]);
 
     useEffect(() => {
@@ -84,7 +88,7 @@ function RaProfileList() {
     }, [checkedRows, dispatch]);
 
     const onComplianceCheckConfirmed = useCallback(() => {
-        dispatch(actions.checkCompliance({ uuids: checkedRows }));
+        dispatch(actions.checkCompliance({ resource: Resource.RaProfiles, uuids: checkedRows }));
         setComplianceCheck(false);
     }, [checkedRows, dispatch]);
 
@@ -146,13 +150,13 @@ function RaProfileList() {
                 content: 'Name',
                 sortable: true,
                 sort: 'asc',
-                width: '20%',
+                width: '18%',
             },
             {
                 id: 'description',
                 content: 'Description',
                 sortable: true,
-                width: '38%',
+                width: '30%',
             },
             {
                 id: 'authority',
@@ -160,6 +164,12 @@ function RaProfileList() {
                 content: 'Authority',
                 sortable: true,
                 width: '15%',
+            },
+            {
+                id: 'kind',
+                align: 'center',
+                content: 'Kind',
+                width: '10%',
             },
             {
                 id: 'enabledProtocols',
@@ -196,34 +206,53 @@ function RaProfileList() {
         [],
     );
 
+    const authorityKindByUuid = useMemo(() => {
+        const map = new Map<string, string>();
+        authorities.forEach((authority) => {
+            map.set(authority.uuid, authority.kind);
+        });
+        return map;
+    }, [authorities]);
+
     const profilesTableData: TableDataRow[] = useMemo(
         () =>
-            raProfiles.map((raProfile) => ({
-                id: raProfile.uuid,
+            raProfiles.map((raProfile) => {
+                const kind = raProfile.authorityInstanceUuid ? authorityKindByUuid.get(raProfile.authorityInstanceUuid) : undefined;
+                return {
+                    id: raProfile.uuid,
 
-                columns: [
-                    <span key="name" style={{ whiteSpace: 'nowrap' }}>
-                        <Link to={`./detail/${raProfile.authorityInstanceUuid || 'unknown'}/${raProfile.uuid}`}>{raProfile.name}</Link>
-                    </span>,
+                    columns: [
+                        <span key="name" style={{ whiteSpace: 'nowrap' }}>
+                            <Link to={`./detail/${raProfile.authorityInstanceUuid || 'unknown'}/${raProfile.uuid}`}>{raProfile.name}</Link>
+                        </span>,
 
-                    <span key="desc" style={{ whiteSpace: 'nowrap' }}>
-                        {raProfile.description || ''}
-                    </span>,
+                        <span key="desc" style={{ whiteSpace: 'nowrap' }}>
+                            {raProfile.description || ''}
+                        </span>,
 
-                    raProfile.authorityInstanceName ? (
-                        <Link key="auth" to={`../authorities/detail/${raProfile.authorityInstanceUuid}`}>
-                            {raProfile.authorityInstanceName ?? 'Unassigned'}
-                        </Link>
-                    ) : (
-                        (raProfile.authorityInstanceName ?? 'Unassigned')
-                    ),
+                        raProfile.authorityInstanceName ? (
+                            <Link key="auth" to={`../authorities/detail/${raProfile.authorityInstanceUuid}`}>
+                                {raProfile.authorityInstanceName ?? 'Unassigned'}
+                            </Link>
+                        ) : (
+                            (raProfile.authorityInstanceName ?? 'Unassigned')
+                        ),
 
-                    getProtocolsForDisplay(raProfile.enabledProtocols),
+                        kind ? (
+                            <Badge key="kind" color="primary">
+                                {kind}
+                            </Badge>
+                        ) : (
+                            ''
+                        ),
 
-                    <StatusBadge key="enabled" enabled={raProfile.enabled} />,
-                ],
-            })),
-        [getProtocolsForDisplay, raProfiles],
+                        getProtocolsForDisplay(raProfile.enabledProtocols),
+
+                        <StatusBadge key="enabled" enabled={raProfile.enabled} />,
+                    ],
+                };
+            }),
+        [authorityKindByUuid, getProtocolsForDisplay, raProfiles],
     );
 
     return (
