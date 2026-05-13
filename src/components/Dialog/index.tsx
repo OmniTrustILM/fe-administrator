@@ -181,12 +181,6 @@ export default function Dialog({
                 <RadixDialog.Content
                     data-testid={dataTestId}
                     aria-describedby={undefined}
-                    onKeyDown={(event) => {
-                        if (event.key === 'Escape') {
-                            event.preventDefault();
-                            toggle?.();
-                        }
-                    }}
                     className={cn(
                         'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[80] w-full',
                         sizeClasses[size],

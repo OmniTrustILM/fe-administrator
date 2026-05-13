@@ -61,6 +61,6 @@ test.describe('PlatformInfoDialogButton', () => {
         const store = createMockStore(preloadedState as any);
         await mount(withProviders(<PlatformInfoDialogLink forceOpen={true} />, { store }));
 
-        await expect(page.getByRole('button', { name: 'Version Info' })).toBeVisible();
+        await expect(page.getByTestId('footer-version-info-link')).toBeVisible();
     });
 });

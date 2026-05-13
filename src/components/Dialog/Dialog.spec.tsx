@@ -32,7 +32,8 @@ test.describe('Dialog', () => {
             toggleCount++;
         };
         await mount(<Dialog isOpen={true} caption="Test Dialog" body="Dialog content" toggle={toggle} dataTestId="test-dialog" />);
-        await page.keyboard.press('Escape');
+        await page.waitForTimeout(50);
+        await page.getByRole('dialog').press('Escape');
         expect(toggleCount).toBe(1);
     });
 
