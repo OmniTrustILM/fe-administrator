@@ -1,6 +1,16 @@
 import { test, expect } from '../../../../playwright/ct-test';
 import FileUpload from './FileUpload';
 
+const mountEditableFileUpload = async (mount: any) => {
+    const calls: string[] = [];
+    const component = await mount(
+        <div>
+            <FileUpload onFileContentLoaded={(c) => calls.push(c)} showContent={true} editable={true} />
+        </div>,
+    );
+    return { component, calls };
+};
+
 test.describe('FileUpload', () => {
     test('should render file upload component', async ({ mount }) => {
         const component = await mount(
@@ -68,31 +78,37 @@ test.describe('FileUpload', () => {
         await expect(component.getByText('Select or drag & drop json file')).toBeVisible();
     });
 
-    test('should call onFileContentLoaded with base64 content on blur, not on every keystroke', async ({ mount }) => {
-        const calls: string[] = [];
-        const component = await mount(
-            <div>
-                <FileUpload onFileContentLoaded={(c) => calls.push(c)} showContent={true} editable={true} />
-            </div>,
-        );
-
+    test('should call onFileContentLoaded with base64 content on change (so submit buttons activate on paste, not blur)', async ({
+        mount,
+    }) => {
+        const { component, calls } = await mountEditableFileUpload(mount);
         const textarea = component.locator('textarea');
         await textarea.fill('hello');
-        expect(calls).toHaveLength(0);
+        expect(calls.length).toBeGreaterThanOrEqual(1);
+        expect(calls[calls.length - 1]).toBe(btoa('hello'));
+    });
 
+    test('should also call onFileContentLoaded on blur (regression guard for existing flow)', async ({ mount }) => {
+        const { component, calls } = await mountEditableFileUpload(mount);
+        const textarea = component.locator('textarea');
+        await textarea.fill('hello');
+        const callsAfterFill = calls.length;
         await textarea.blur();
-        expect(calls).toHaveLength(1);
-        expect(calls[0]).toBe(btoa('hello'));
+        expect(calls.length).toBe(callsAfterFill + 1);
+        expect(calls[calls.length - 1]).toBe(btoa('hello'));
+    });
+
+    test('should not call onFileContentLoaded on change when content is empty', async ({ mount }) => {
+        const { component, calls } = await mountEditableFileUpload(mount);
+        const textarea = component.locator('textarea');
+        await textarea.fill('hello');
+        await textarea.fill('');
+        // The empty change should not fire (last fired call must still be the 'hello' one).
+        expect(calls.every((c) => c === btoa('hello'))).toBe(true);
     });
 
     test('should not call onFileContentLoaded on blur when textarea is empty', async ({ mount }) => {
-        const calls: string[] = [];
-        const component = await mount(
-            <div>
-                <FileUpload onFileContentLoaded={(c) => calls.push(c)} showContent={true} editable={true} />
-            </div>,
-        );
-
+        const { component, calls } = await mountEditableFileUpload(mount);
         await component.locator('textarea').blur();
         expect(calls).toHaveLength(0);
     });

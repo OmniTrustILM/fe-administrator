@@ -29,6 +29,8 @@ import CertificateUploadDialog from '../CertificateUploadDialog';
 import { ArrowDownToLine } from 'lucide-react';
 import Switch from 'components/Switch';
 import { buildCertificateRowColumns } from '../certificateTableHelpers';
+import PendingActionDialogs from '../PendingActionButtons/PendingActionDialogs';
+import type { PendingAction } from '../PendingActionButtons/types';
 
 type Props = Readonly<{
     selectCertsOnly?: boolean;
@@ -77,6 +79,7 @@ export default function CertificateList({
     const [updateOwner, setUpdateOwner] = useState<boolean>(false);
     const [updateRaProfile, setUpdateRaProfile] = useState<boolean>(false);
     const [appliedFilters, setAppliedFilters] = useState<SearchRequestModel>();
+    const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
     const isBusy =
         isIssuing ||
@@ -326,6 +329,7 @@ export default function CertificateList({
                     dateFormatter,
                     certificateTypeEnum,
                     getEnumLabel,
+                    onPendingAction: setPendingAction,
                 }),
             })),
         [certificates, selectCertsOnly, isLinkDisabled, certificateTypeEnum, dispatch, currentFilters],
@@ -435,6 +439,8 @@ export default function CertificateList({
                 size="md"
                 icon="shield-check"
             />
+
+            <PendingActionDialogs action={pendingAction} onClose={() => setPendingAction(null)} />
         </>
     );
 }
