@@ -43,8 +43,8 @@ test.describe('Dialog', () => {
             toggleCount++;
         };
         await mount(<Dialog isOpen={true} caption="Test Dialog" body="Dialog content" toggle={toggle} dataTestId="test-dialog" />);
-        await page.waitForTimeout(50);
-        await page.mouse.click(5, 5);
+        await expect(page.getByTestId('dialog-overlay')).toBeVisible();
+        await page.getByTestId('dialog-overlay').click({ position: { x: 5, y: 5 } });
         expect(toggleCount).toBe(1);
     });
 

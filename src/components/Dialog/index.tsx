@@ -177,10 +177,9 @@ export default function Dialog({
             }}
         >
             <RadixDialog.Portal>
-                <RadixDialog.Overlay className="fixed inset-0 z-[80] bg-black/50" />
+                <RadixDialog.Overlay data-testid="dialog-overlay" className="fixed inset-0 z-[80] bg-black/50" />
                 <RadixDialog.Content
                     data-testid={dataTestId}
-                    aria-describedby={undefined}
                     className={cn(
                         'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[80] w-full',
                         sizeClasses[size],
@@ -204,14 +203,16 @@ export default function Dialog({
                         {renderIcon()}
                         {titleNode}
                     </div>
-                    <div
-                        className={cn('pt-4 text-gray-500 dark:text-white overflow-y-auto min-h-0', {
-                            'pb-4': !!buttons?.length,
-                            'text-center': icon === 'delete' || icon === 'destroy',
-                        })}
-                    >
-                        {body}
-                    </div>
+                    <RadixDialog.Description asChild>
+                        <div
+                            className={cn('pt-4 text-gray-500 dark:text-white overflow-y-auto min-h-0', {
+                                'pb-4': !!buttons?.length,
+                                'text-center': icon === 'delete' || icon === 'destroy',
+                            })}
+                        >
+                            {body}
+                        </div>
+                    </RadixDialog.Description>
                     {buttons && buttons.length > 0 && (
                         <div className="flex justify-end items-center gap-4 py-4 mt-2 dark:border-neutral-700 modal-footer">
                             {buttons.map((button, index) => (
