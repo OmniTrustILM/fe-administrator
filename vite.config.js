@@ -40,7 +40,6 @@ export default defineConfig(async ({ mode }) => {
                                 name: 'editor-vendor',
                                 test: /[\\/]node_modules[\\/](highlight\.js|marked|react-simple-code-editor|html-react-parser|dompurify)[\\/]/,
                             },
-                            { name: 'preline-vendor', test: /[\\/]node_modules[\\/](preline|@preline|@floating-ui)[\\/]/ },
                             { name: 'cron-vendor', test: /[\\/]node_modules[\\/](cron-parser|cronstrue|cron-expression-validator)[\\/]/ },
                             { name: 'form-vendor', test: /[\\/]node_modules[\\/](react-hook-form|regexp-tree)[\\/]/ },
                             { name: 'vendor', test: /[\\/]node_modules[\\/]/ },
