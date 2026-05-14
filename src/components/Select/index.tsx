@@ -477,7 +477,7 @@ function Select({
                                         return (
                                             // biome-ignore lint/a11y/useFocusableInteractive: non-tabbable option is correct for active-descendant listbox pattern
                                             // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation handled by onKeyDown on Popover.Content (onListKeyDown); aria-activedescendant points here from the focused trigger or search input
-                                            <div
+                                            <div // NOSONAR(S1082): active-descendant listbox pattern — options never receive focus; keyboard handled on Popover.Content via onListKeyDown
                                                 key={getOptionValueString(opt.value)}
                                                 id={getOptionDomId(opt.value)}
                                                 role="option"
