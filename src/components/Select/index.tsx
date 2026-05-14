@@ -406,7 +406,10 @@ function Select({
         <div data-testid={dataTestId ?? `select-${id}`}>
             {label && <Label htmlFor={id} title={label} required={required} />}
             <div className={cn('relative', className)} style={minWidth ? { minWidth: `${minWidth}px` } : undefined}>
-                <Popover.Root open={open} onOpenChange={(o) => !triggerDisabled && setOpen(o)} modal>
+                {/* modal=true wraps Popover.Content in react-remove-scroll, which lets the dropdown scroll
+                    when nested inside a Radix Dialog (whose outer scroll-lock otherwise cancels wheel events
+                    on portaled children). */}
+                <Popover.Root modal open={open} onOpenChange={(o) => !triggerDisabled && setOpen(o)}>
                     <Popover.Trigger asChild>
                         <button
                             ref={triggerRef}
