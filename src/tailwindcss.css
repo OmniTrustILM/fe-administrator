@@ -76,11 +76,6 @@
 /* stylelint-disable-next-line at-rule-no-unknown */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Preline UI */
-/* stylelint-disable-next-line at-rule-no-unknown */
-@source "../node_modules/preline/dist/*.js";
-@import '../node_modules/preline/variants.css';
-
 /* Plugins */
 /* stylelint-disable-next-line at-rule-no-unknown */
 @plugin "@tailwindcss/forms";
@@ -94,7 +89,7 @@ table a {
     font-weight: 600;
 }
 
-table .preline-badge {
+table .table-badge {
     font-size: 10px;
 }
 

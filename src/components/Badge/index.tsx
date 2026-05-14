@@ -46,7 +46,7 @@ function Badge({
     };
 
     const sharedClassName = cn(
-        'preline-badge inline-flex items-center justify-center gap-x-1.5 rounded-md font-medium min-w-[24px]',
+        'table-badge inline-flex items-center justify-center gap-x-1.5 rounded-md font-medium min-w-[24px]',
         colorClasses[color],
         {
             'cursor-pointer': !!onClick,
