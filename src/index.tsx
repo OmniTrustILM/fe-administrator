@@ -1,23 +1,9 @@
-import * as FloatingUIDOM from '@floating-ui/dom';
-(globalThis as any).FloatingUIDOM = FloatingUIDOM;
-
-import HSSelect from 'preline/dist/select.mjs';
-(globalThis as any).HSSelect = HSSelect;
-// Preline lazily creates $hsSelectCollection only when its first HSSelect instance is
-// constructed. The Select component's effect calls HSSelect.getInstance() before its own
-// scheduled autoInit fires, so without a pre-existing array it would crash on
-// window.$hsSelectCollection.find(...). Pre-seed it.
-(globalThis as any).$hsSelectCollection ??= [];
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import 'reactflow/dist/style.css';
 import reportWebVitals from './reportWebVitals';
-import 'preline';
 import './tailwindcss.css';
 import App from './App';
-import '@preline/tooltip';
-import '@preline/toggle-password';
 
 const container = document.getElementById('root')!;
 const root = createRoot(container);
