@@ -19,7 +19,6 @@ export const CHEVRON_CLASSES = 'absolute top-1/2 end-3 -translate-y-1/2 shrink-0
 export const CONTENT_CLASSES =
     'z-[100] max-h-72 space-y-0.5 bg-white border border-gray-200 rounded-lg overflow-hidden overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-track]:bg-neutral-700 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500 dark:bg-neutral-900 dark:border-neutral-700';
 
-export const CONTENT_FIXED_WIDTH_CLASSES = 'w-[var(--select-dropdown-width)]';
 export const CONTENT_FLUID_WIDTH_CLASSES = 'w-[var(--radix-popover-trigger-width)]';
 
 export const SEARCH_WRAPPER_CLASSES = 'bg-white p-2 sticky top-0 dark:bg-neutral-900 z-10';

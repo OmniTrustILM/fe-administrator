@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { Check, ChevronsUpDown, X } from 'lucide-react';
 import cn from 'classnames';
@@ -13,7 +13,6 @@ import {
     PLACEHOLDER_CLASSES,
     CHEVRON_CLASSES,
     CONTENT_CLASSES,
-    CONTENT_FIXED_WIDTH_CLASSES,
     CONTENT_FLUID_WIDTH_CLASSES,
     SEARCH_WRAPPER_CLASSES,
     SEARCH_INPUT_CLASSES,
@@ -171,9 +170,7 @@ function Select({
     colorizeVersionLabel = false,
     showOptionDescriptionInDropdown = false,
 }: Props) {
-    const nativeSelectRef = useRef<HTMLSelectElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
-    const listboxRef = useRef<HTMLDivElement>(null);
 
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -233,8 +230,8 @@ function Select({
     // Auto-focus search when opening.
     useEffect(() => {
         if (open && hasSearch) {
-            const id = requestAnimationFrame(() => searchInputRef.current?.focus());
-            return () => cancelAnimationFrame(id);
+            const frameId = requestAnimationFrame(() => searchInputRef.current?.focus());
+            return () => cancelAnimationFrame(frameId);
         }
     }, [open, hasSearch]);
 
@@ -337,8 +334,8 @@ function Select({
                             <span className={CHIP_LABEL_CLASSES} title={v.label}>
                                 {v.label}
                             </span>
-                            <span
-                                role="button"
+                            <button
+                                type="button"
                                 tabIndex={-1}
                                 className={CHIP_REMOVE_CLASSES}
                                 aria-label={`Remove ${v.label}`}
@@ -347,16 +344,9 @@ function Select({
                                     toggleMulti(v.value, v.label);
                                 }}
                                 onPointerDown={(e) => e.stopPropagation()}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        toggleMulti(v.value, v.label);
-                                    }
-                                }}
                             >
                                 <X size={12} />
-                            </span>
+                            </button>
                         </div>
                     ))}
                 </div>
@@ -409,13 +399,7 @@ function Select({
     return (
         <div data-testid={dataTestId ?? `select-${id}`}>
             {label && <Label htmlFor={id} title={label} required={required} />}
-            <div
-                className={cn('relative', className)}
-                style={{
-                    ...(minWidth ? { minWidth: `${minWidth}px` } : {}),
-                    ...(dropdownWidth ? ({ '--select-dropdown-width': `${dropdownWidth}px` } as CSSProperties) : {}),
-                }}
-            >
+            <div className={cn('relative', className)} style={minWidth ? { minWidth: `${minWidth}px` } : undefined}>
                 <Popover.Root open={open} onOpenChange={(o) => !triggerDisabled && setOpen(o)}>
                     <Popover.Trigger asChild>
                         <button
@@ -438,7 +422,8 @@ function Select({
                             align="start"
                             sideOffset={8}
                             collisionPadding={8}
-                            className={cn(CONTENT_CLASSES, dropdownWidth ? CONTENT_FIXED_WIDTH_CLASSES : CONTENT_FLUID_WIDTH_CLASSES)}
+                            className={cn(CONTENT_CLASSES, !dropdownWidth && CONTENT_FLUID_WIDTH_CLASSES)}
+                            style={dropdownWidth ? { width: `${dropdownWidth}px` } : undefined}
                             onOpenAutoFocus={(e) => {
                                 if (hasSearch) {
                                     e.preventDefault();
@@ -457,14 +442,20 @@ function Select({
                                         placeholder="Search..."
                                         value={searchTerm}
                                         onChange={(e) => {
-                                            setSearchTerm(e.target.value);
-                                            setHighlightedIndex(0);
+                                            const next = e.target.value;
+                                            setSearchTerm(next);
+                                            const needle = next.toLowerCase();
+                                            const filtered = next
+                                                ? options.filter((opt) => opt.label.toLowerCase().includes(needle))
+                                                : options;
+                                            const firstEnabled = filtered.findIndex((o) => !o.disabled);
+                                            setHighlightedIndex(firstEnabled);
                                         }}
                                         data-testid={dataTestId ? `${dataTestId}-search` : `select-${id}-search`}
                                     />
                                 </div>
                             )}
-                            <div ref={listboxRef} role="listbox" aria-multiselectable={isMulti} className={LISTBOX_CLASSES} tabIndex={-1}>
+                            <div role="listbox" aria-multiselectable={isMulti} className={LISTBOX_CLASSES} tabIndex={-1}>
                                 {visibleOptions.length === 0 ? (
                                     <div className={NO_OPTIONS_CLASSES}>No options</div>
                                 ) : (
@@ -472,8 +463,8 @@ function Select({
                                         const selected = isOptionSelected(opt);
                                         const highlighted = idx === highlightedIndex;
                                         return (
-                                            // biome-ignore lint/a11y/useFocusableInteractive: listbox uses active-descendant pattern; keyboard handled on parent
-                                            // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation handled by onKeyDown on the Popover.Content (onListKeyDown)
+                                            // biome-ignore lint/a11y/useFocusableInteractive: non-tabbable option is correct for keyboard-controlled listbox
+                                            // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation handled by onKeyDown on Popover.Content (onListKeyDown); aria-activedescendant wiring is a future enhancement
                                             <div
                                                 key={getOptionValueString(opt.value)}
                                                 role="option"
@@ -501,7 +492,6 @@ function Select({
 
                 {/* Hidden native <select> mirrors the value for tests that read [data-testid={dataTestId}-input].value */}
                 <select
-                    ref={nativeSelectRef}
                     multiple={isMulti}
                     aria-hidden
                     tabIndex={-1}
