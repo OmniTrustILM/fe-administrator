@@ -30,5 +30,4 @@ if (typeof window !== 'undefined') {
 }
 
 import 'reactflow/dist/style.css';
-import 'preline/dist/preline.js';
 import '../src/tailwindcss.css';

@@ -24,6 +24,7 @@ import { ResourceBadges } from 'components/_pages/compliance-profiles/detail/Com
 import { LockWidgetNameEnum } from 'types/user-interface';
 import type { TRuleGroupType } from 'types/complianceProfiles';
 import Badge from 'components/Badge';
+import Tooltip from 'components/Tooltip';
 
 type Props = Readonly<{
     profile: ComplianceProfileDtoV2 | undefined;
@@ -76,23 +77,26 @@ export default function AssignedRulesAndGroup({ profile, setSelectedEntityDetail
                     id: ruleOrGroup.uuid,
                     columns: [
                         <div key={ruleOrGroup.uuid}>
-                            <Badge
-                                data-testid="status-badge"
-                                id={`status-${ruleOrGroup.uuid.replaceAll('-', '_')}`}
-                                color={statusColor}
-                                style={{ background: statusColor }}
-                            >
-                                {capitalize(ruleOrGroup.availabilityStatus as ComplianceRuleAvailabilityStatus)}
-                            </Badge>
-                            {ruleOrGroup.updatedReason && (
-                                <div className="hs-tooltip inline-block">
-                                    <div
-                                        className="hs-tooltip-content hs-tooltip-shown:opacity-100 hs-tooltip-shown:visible opacity-0 invisible transition-opacity inline-block absolute invisible z-10 py-1 px-2 bg-gray-900 text-xs font-medium text-white rounded shadow-sm dark:bg-neutral-700"
-                                        role="tooltip"
+                            {ruleOrGroup.updatedReason ? (
+                                <Tooltip content={truncateText(capitalize(ruleOrGroup.updatedReason), 100)}>
+                                    <Badge
+                                        data-testid="status-badge"
+                                        id={`status-${ruleOrGroup.uuid.replaceAll('-', '_')}`}
+                                        color={statusColor}
+                                        style={{ background: statusColor }}
                                     >
-                                        {truncateText(capitalize(ruleOrGroup.updatedReason), 100)}
-                                    </div>
-                                </div>
+                                        {capitalize(ruleOrGroup.availabilityStatus as ComplianceRuleAvailabilityStatus)}
+                                    </Badge>
+                                </Tooltip>
+                            ) : (
+                                <Badge
+                                    data-testid="status-badge"
+                                    id={`status-${ruleOrGroup.uuid.replaceAll('-', '_')}`}
+                                    color={statusColor}
+                                    style={{ background: statusColor }}
+                                >
+                                    {capitalize(ruleOrGroup.availabilityStatus as ComplianceRuleAvailabilityStatus)}
+                                </Badge>
                             )}
                         </div>,
                         getTypeTableColumn(ruleOrGroup, setSelectedEntityDetails, setIsEntityDetailMenuOpen),

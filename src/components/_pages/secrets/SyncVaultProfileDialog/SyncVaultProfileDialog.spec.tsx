@@ -47,7 +47,7 @@ function mountDialog(
     return mount(<SyncVaultProfileDialogTestWrapper {...{ secret: SECRET, vaultProfiles: VAULT_PROFILES, ...props }} />);
 }
 
-/** Opens the vault profile HSSelect dropdown by clicking the toggle button. */
+/** Opens the vault profile Select dropdown by clicking the trigger button. */
 async function openDropdown(page: Page): Promise<void> {
     await page.getByTestId('vault-profile-select').locator('button[aria-expanded]').click();
 }
