@@ -406,7 +406,7 @@ function Select({
         <div data-testid={dataTestId ?? `select-${id}`}>
             {label && <Label htmlFor={id} title={label} required={required} />}
             <div className={cn('relative', className)} style={minWidth ? { minWidth: `${minWidth}px` } : undefined}>
-                <Popover.Root open={open} onOpenChange={(o) => !triggerDisabled && setOpen(o)}>
+                <Popover.Root open={open} onOpenChange={(o) => !triggerDisabled && setOpen(o)} modal>
                     <Popover.Trigger asChild>
                         <button
                             ref={triggerRef}

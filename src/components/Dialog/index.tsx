@@ -205,7 +205,7 @@ export default function Dialog({
                     </div>
                     <RadixDialog.Description asChild>
                         <div
-                            className={cn('pt-4 text-gray-500 dark:text-white overflow-y-auto min-h-0', {
+                            className={cn('pt-4 -mx-1 px-1 text-gray-500 dark:text-white overflow-x-clip overflow-y-auto min-h-0', {
                                 'pb-4': !!buttons?.length,
                                 'text-center': icon === 'delete' || icon === 'destroy',
                             })}
