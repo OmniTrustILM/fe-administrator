@@ -10,7 +10,7 @@ test.describe('MultipleValueTextInput', () => {
             </div>,
         );
 
-        const select = component.locator('select[data-hs-select]');
+        const select = component.getByTestId('select-multiple-value-input-input');
         const input = component.locator('input[type="text"]');
         await expect(select).toBeAttached();
         await expect(input).toBeVisible();
@@ -19,12 +19,17 @@ test.describe('MultipleValueTextInput', () => {
     test('should display placeholder for Select', async ({ mount }) => {
         const component = await mount(
             <div>
-                <MultipleValueTextInput selectedValues={[]} onValuesChange={() => {}} placeholder="Select or add values" />
+                <MultipleValueTextInput
+                    selectedValues={[]}
+                    onValuesChange={() => {}}
+                    placeholder="Select or add values"
+                    initialOptions={[{ label: 'Opt', value: 'opt' }]}
+                />
             </div>,
         );
 
-        const select = component.locator('select[data-hs-select]');
-        await expect(select).toBeAttached();
+        const trigger = component.getByTestId('select-multiple-value-input-trigger');
+        await expect(trigger).toContainText('Select or add values');
     });
 
     test('should display addPlaceholder for input', async ({ mount }) => {
@@ -123,8 +128,9 @@ test.describe('MultipleValueTextInput', () => {
             </div>,
         );
 
-        const select = component.locator('select[data-hs-select]');
-        await expect(select).toHaveAttribute('id', 'test-input');
+        const trigger = component.getByTestId('select-test-input-trigger');
+        await expect(trigger).toBeVisible();
+        await expect(trigger).toHaveAttribute('id', 'test-input');
     });
 
     test('should display initial options in Select', async ({ mount }) => {
@@ -139,7 +145,7 @@ test.describe('MultipleValueTextInput', () => {
             </div>,
         );
 
-        const select = component.locator('select[data-hs-select]');
+        const select = component.getByTestId('select-multiple-value-input-input');
         await expect(select).toBeAttached();
     });
 
@@ -204,7 +210,7 @@ test.describe('MultipleValueTextInput', () => {
                 <MultipleValueTextInput selectedValues={['existing1', 'existing2']} onValuesChange={() => {}} />
             </div>,
         );
-        const select = component.locator('select[data-hs-select]');
+        const select = component.getByTestId('select-multiple-value-input-input');
         await expect(select).toBeAttached();
         await expect(component.locator('input[type="text"]')).toHaveAttribute('placeholder', 'Add value');
     });
@@ -215,8 +221,8 @@ test.describe('MultipleValueTextInput', () => {
                 <MultipleValueTextInput selectedValues={[]} onValuesChange={() => {}} />
             </div>,
         );
-        const select = component.locator('select[data-hs-select]');
-        await expect(select).toHaveAttribute('id', 'multiple-value-input');
+        const trigger = component.getByTestId('select-multiple-value-input-trigger');
+        await expect(trigger).toHaveAttribute('id', 'multiple-value-input');
     });
 
     test('should not add value when Enter is pressed with empty input', async ({ mount }) => {
@@ -319,14 +325,10 @@ test.describe('MultipleValueTextInput', () => {
                 <MultipleValueTextInput selectedValues={values} onValuesChange={(v) => (values = v)} initialOptions={initialOptions} />
             </div>,
         );
-        const selectContainer = component.getByTestId('select-multiple-value-input');
-        await selectContainer.click();
-        await page.waitForTimeout(200);
-        const option = page.getByText('Choice 1').first();
-        if (await option.isVisible().catch(() => false)) {
-            await option.click();
-            await expect.poll(() => values, { timeout: 2000 }).toContain('choice1');
-        }
+        await component.getByTestId('select-multiple-value-input-trigger').click();
+        const option = page.getByRole('option', { name: 'Choice 1' });
+        await option.click();
+        await expect.poll(() => values, { timeout: 2000 }).toContain('choice1');
     });
 
     test('should sync internal options when initialOptions change via wrapper', async ({ mount }) => {
@@ -337,7 +339,7 @@ test.describe('MultipleValueTextInput', () => {
         await component.getByTestId('switch-options').click();
         await input.fill('b1');
         await input.press('Enter');
-        const select = component.locator('select[data-hs-select]');
+        const select = component.getByTestId('select-multiple-value-input-input');
         await expect(select).toBeAttached();
     });
 });

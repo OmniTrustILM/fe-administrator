@@ -24,30 +24,10 @@ import {
 import { FilterFieldSource } from 'types/openapi';
 import type { ExecutionItemModel } from 'types/rules';
 
-/** Sync native select value and dispatch input+change so React state updates (Preline may not fire it on option click). */
-async function syncNativeSelect(page: import('@playwright/test').Page, selectId: 'group' | 'field', value: string) {
-    await page.evaluate(
-        ([id, v]) => {
-            const sel = document.querySelector(`#${id}`) as HTMLSelectElement | null;
-            if (sel) {
-                (sel as HTMLSelectElement & { value: string }).value = v;
-                sel.dispatchEvent(new Event('input', { bubbles: true }));
-                sel.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-        },
-        [selectId, value],
-    );
-}
-
 /** Open group select and choose option by label (e.g. 'Meta'). */
 async function selectFieldSource(page: import('@playwright/test').Page, optionLabel: string) {
-    await page.getByTestId('select-group').click();
-    const dropdown = page
-        .locator('.hs-select-dropdown')
-        .filter({ has: page.locator('.hs-select-option-row').filter({ hasText: optionLabel }) });
-    await dropdown.waitFor({ state: 'visible', timeout: 5000 });
-    await dropdown.locator('.hs-select-option-row').filter({ hasText: optionLabel }).click();
-    await syncNativeSelect(page, 'group', optionLabel.toLowerCase());
+    await page.getByTestId('select-group-trigger').click();
+    await page.getByRole('option', { name: optionLabel, exact: true }).click();
 }
 
 async function selectFieldSourceMeta(page: import('@playwright/test').Page) {
@@ -56,13 +36,8 @@ async function selectFieldSourceMeta(page: import('@playwright/test').Page) {
 
 /** Open field select and choose option by label. */
 async function selectFieldOption(page: import('@playwright/test').Page, optionLabel: string) {
-    await page.getByTestId('select-field').click();
-    const dropdown = page
-        .locator('.hs-select-dropdown')
-        .filter({ has: page.locator('.hs-select-option-row').filter({ hasText: optionLabel }) });
-    await dropdown.waitFor({ state: 'visible', timeout: 5000 });
-    await dropdown.locator('.hs-select-option-row').filter({ hasText: optionLabel }).click();
-    await syncNativeSelect(page, 'field', optionLabel.toLowerCase());
+    await page.getByTestId('select-field-trigger').click();
+    await page.getByRole('option', { name: optionLabel, exact: true }).click();
 }
 
 /** Focus then fill the filter value input. */
@@ -72,26 +47,13 @@ async function fillFilterValue(page: import('@playwright/test').Page, text: stri
     await input.fill(text);
 }
 
-/** Sync native #value select and dispatch events. */
-async function syncNativeValueSelect(page: import('@playwright/test').Page, value: string) {
-    await page.evaluate((v) => {
-        const sel = document.querySelector('#value') as HTMLSelectElement | null;
-        if (!sel) return;
-        sel.value = v;
-        sel.dispatchEvent(new Event('input', { bubbles: true }));
-        sel.dispatchEvent(new Event('change', { bubbles: true }));
-    }, value);
-}
-
-/** Open value select dropdown, pick an option by label, and sync the native select. */
-async function selectValueOption(page: import('@playwright/test').Page, optionLabel: string, nativeValue?: string) {
-    await page.getByTestId('select-value').click();
-    const valueListbox = page.getByRole('listbox').filter({ has: page.getByText(optionLabel, { exact: true }) });
-    await valueListbox.waitFor({ state: 'visible', timeout: 5000 });
-    await valueListbox.locator('.hs-select-option-row').filter({ hasText: optionLabel }).click();
-    if (nativeValue !== undefined) {
-        await syncNativeValueSelect(page, nativeValue);
-    }
+/**
+ * Open value select dropdown and pick an option by label.
+ * `nativeValue` is unused in the Radix-based Select but kept for call-site compatibility.
+ */
+async function selectValueOption(page: import('@playwright/test').Page, optionLabel: string, _nativeValue?: string) {
+    await page.getByTestId('select-value-trigger').click();
+    await page.getByRole('option', { name: optionLabel, exact: true }).click();
 }
 
 /** Click a badge by its label text, then assert Update mode and expected select values. */
@@ -103,13 +65,15 @@ async function clickBadgeAndVerifyEditMode(
 ) {
     await page.getByText(`'${badgeLabel}'`).click();
     await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeVisible();
-    await expect(page.locator('#group')).toHaveValue(expectedGroup);
-    await expect(page.locator('#field')).toHaveValue(expectedField);
+    await expect(page.getByTestId('select-group-input')).toHaveValue(expectedGroup);
+    await expect(page.getByTestId('select-field-input')).toHaveValue(expectedField);
 }
 
-/** Get selected option values from the native #value select element. */
+/** Get selected option values from the hidden native value <select> mirror. */
 async function getSelectedNativeValues(page: import('@playwright/test').Page): Promise<string[]> {
-    return page.locator('#value').evaluate((el: HTMLSelectElement) => Array.from(el.selectedOptions).map((opt) => opt.value));
+    return page
+        .getByTestId('select-value-input')
+        .evaluate((el: HTMLSelectElement) => Array.from(el.selectedOptions).map((opt) => opt.value));
 }
 
 /** Add a string action via UI: select a Meta source, pick a field, fill value, click Add. */
@@ -219,11 +183,9 @@ test.describe('FilterWidgetRuleAction', () => {
         await selectFieldSourceMeta(page);
         await selectFieldOption(page, 'Enabled');
         await expect(page.getByTestId('select-value')).toBeVisible();
-        await page.getByTestId('select-value').click();
-        const valueListbox = page.getByRole('listbox').filter({ has: page.getByText('True', { exact: true }) });
-        await valueListbox.waitFor({ state: 'visible', timeout: 5000 });
-        await expect(valueListbox.locator('.hs-select-option-row').filter({ hasText: 'True' })).toBeVisible();
-        await expect(valueListbox.locator('.hs-select-option-row').filter({ hasText: 'False' })).toBeVisible();
+        await page.getByTestId('select-value-trigger').click();
+        await expect(page.getByRole('option', { name: 'True', exact: true })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'False', exact: true })).toBeVisible();
     });
 
     test('List field shows object value selector', async ({ mount, page }) => {
@@ -310,18 +272,16 @@ test.describe('FilterWidgetRuleAction', () => {
     test('clicking existing select execution item hydrates selected option', async ({ mount, page }) => {
         await mountWithExecution(mount, { source: FilterFieldSource.Meta, fieldIdentifier: 'kind', data: 'k2' });
         await clickBadgeAndVerifyEditMode(page, 'Kind', 'meta', 'kind');
-        await expect(page.locator('#value')).toHaveValue('k2');
+        await expect(page.getByTestId('select-value-input')).toHaveValue('k2');
     });
 
     test('edit mode keeps current selected option in value dropdown', async ({ mount, page }) => {
         await mountWithExecution(mount, { source: FilterFieldSource.Meta, fieldIdentifier: 'kind', data: 'k2' });
         await page.getByText("'Kind'").click();
-        await expect(page.locator('#value')).toHaveValue('k2');
+        await expect(page.getByTestId('select-value-input')).toHaveValue('k2');
 
-        await page.getByTestId('select-value').click();
-        const valueListbox = page.getByRole('listbox').filter({ has: page.getByText('Kind Two', { exact: true }) });
-        await valueListbox.waitFor({ state: 'visible', timeout: 5000 });
-        await expect(valueListbox.locator('.hs-select-option-row').filter({ hasText: 'Kind Two' })).toBeVisible();
+        await page.getByTestId('select-value-trigger').click();
+        await expect(page.getByRole('option', { name: 'Kind Two', exact: true })).toBeVisible();
     });
 
     test('clicking existing select execution item hydrates from object data', async ({ mount, page }) => {
@@ -331,7 +291,7 @@ test.describe('FilterWidgetRuleAction', () => {
             data: { uuid: 'k1', name: 'Kind One' },
         });
         await clickBadgeAndVerifyEditMode(page, 'Kind', 'meta', 'kind');
-        await expect(page.locator('#value')).toHaveValue('k1');
+        await expect(page.getByTestId('select-value-input')).toHaveValue('k1');
     });
 
     test('multi value field hydrates on first click even when execution data has a single string', async ({ mount, page }) => {
@@ -343,8 +303,8 @@ test.describe('FilterWidgetRuleAction', () => {
         });
 
         await clickBadgeAndExpectUpdate(page, 'Groups');
-        await expect(page.locator('#group')).toHaveValue('property');
-        await expect(page.locator('#field')).toHaveValue('groups');
+        await expect(page.getByTestId('select-group-input')).toHaveValue('property');
+        await expect(page.getByTestId('select-field-input')).toHaveValue('groups');
 
         const selectedValues = await getSelectedNativeValues(page);
         expect(selectedValues).toContain('g1');
@@ -358,13 +318,13 @@ test.describe('FilterWidgetRuleAction', () => {
             data: { name: 'Option One' },
         });
         await clickBadgeAndVerifyEditMode(page, 'Custom Attr', 'custom', 'customAttr');
-        await expect(page.locator('#value')).toHaveValue('r1');
+        await expect(page.getByTestId('select-value-input')).toHaveValue('r1');
     });
 
     test('boolean execution item hydrates value when backend sends string', async ({ mount, page }) => {
         await mountWithExecution(mount, { source: FilterFieldSource.Meta, fieldIdentifier: 'enabled', data: 'FALSE' });
         await clickBadgeAndVerifyEditMode(page, 'Enabled', 'meta', 'enabled');
-        await expect(page.locator('#value')).toHaveValue('false');
+        await expect(page.getByTestId('select-value-input')).toHaveValue('false');
     });
 
     test('boolean selector allows selecting false and persists boolean false on Add', async ({ mount, page }) => {
@@ -448,7 +408,7 @@ test.describe('FilterWidgetRuleAction', () => {
             data: 'beta',
         });
         await page.getByText("'Mode'").click();
-        await expect(page.locator('#value')).toHaveValue('beta');
+        await expect(page.getByTestId('select-value-input')).toHaveValue('beta');
     });
 
     test('object execution data with nested value.data.uuid hydrates single select value', async ({ mount, page }) => {
@@ -459,7 +419,7 @@ test.describe('FilterWidgetRuleAction', () => {
             data: { value: { data: { uuid: 'cx2', name: 'Complex Two' } } },
         });
         await clickBadgeAndVerifyEditMode(page, 'Complex Attr', 'custom', 'complexAttr');
-        await expect(page.locator('#value')).toHaveValue('cx2');
+        await expect(page.getByTestId('select-value-input')).toHaveValue('cx2');
     });
 
     test('clearing Field Source clears Field and Value', async ({ mount, page }) => {
@@ -527,7 +487,7 @@ test.describe('FilterWidgetRuleAction', () => {
             data: [{ uuid: 'k1', name: 'Kind One' }],
         });
         await clickBadgeAndExpectUpdate(page, 'Kind');
-        await expect(page.locator('#value')).toHaveValue('k1');
+        await expect(page.getByTestId('select-value-input')).toHaveValue('k1');
     });
 
     test('badge displays platformEnum label when field has platformEnum', async ({ mount, page }) => {
@@ -557,7 +517,7 @@ test.describe('FilterWidgetRuleAction', () => {
             ExecutionsList: [{ fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'kind', data: 'k1' }],
         });
         await clickBadgeAndExpectUpdate(page, 'Kind');
-        await expect(page.locator('#value')).toHaveValue('k1');
+        await expect(page.getByTestId('select-value-input')).toHaveValue('k1');
 
         await selectValueOption(page, 'Kind Two', 'k2');
         await page.getByRole('button', { name: 'Update', exact: true }).click();
@@ -646,7 +606,7 @@ test.describe('FilterWidgetRuleAction', () => {
         test(`boolean execution item hydrates true when backend sends ${typeof data} true`, async ({ mount, page }) => {
             await mountWithExecution(mount, { source: FilterFieldSource.Meta, fieldIdentifier: 'enabled', data });
             await clickBadgeAndVerifyEditMode(page, 'Enabled', 'meta', 'enabled');
-            await expect(page.locator('#value')).toHaveValue('true');
+            await expect(page.getByTestId('select-value-input')).toHaveValue('true');
         });
     }
 

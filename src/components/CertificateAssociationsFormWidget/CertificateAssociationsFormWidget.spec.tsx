@@ -32,17 +32,17 @@ test.describe('CertificateAssociationsFormWidget', () => {
             />,
         );
 
-        await expect(page.locator('select#owner option[value="user-1"]')).toHaveCount(1);
-        await expect(page.locator('select#groups option[value="group-1"]')).toHaveCount(1);
+        await expect(page.getByTestId('select-owner-input').locator('option[value="user-1"]')).toHaveCount(1);
+        await expect(page.getByTestId('select-groups-input').locator('option[value="group-1"]')).toHaveCount(1);
     });
 
     test('does not add dynamic options when users and groups are empty', async ({ mount, page }) => {
         await mount(<CertificateAssociationsFormWidgetTestWrapper />);
 
-        await expect(page.locator('select#owner option')).toHaveCount(1);
-        await expect(page.locator('select#groups option')).toHaveCount(1);
-        await expect(page.locator('select#owner option[value="user-1"]')).toHaveCount(0);
-        await expect(page.locator('select#groups option[value="group-1"]')).toHaveCount(0);
+        await expect(page.getByTestId('select-owner-input').locator('option')).toHaveCount(1);
+        await expect(page.getByTestId('select-groups-input').locator('option')).toHaveCount(1);
+        await expect(page.getByTestId('select-owner-input').locator('option[value="user-1"]')).toHaveCount(0);
+        await expect(page.getByTestId('select-groups-input').locator('option[value="group-1"]')).toHaveCount(0);
     });
 
     test('updates owner and groups form values on select change', async ({ mount, page }) => {
@@ -67,20 +67,13 @@ test.describe('CertificateAssociationsFormWidget', () => {
             />,
         );
 
-        await page.locator('select#owner').evaluate((element) => {
-            const select = element as HTMLSelectElement;
-            select.value = 'user-1';
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-        });
+        await page.getByTestId('select-owner-trigger').click();
+        await page.getByRole('option', { name: 'John Smith (jsmith)' }).click();
         await expect(page.getByTestId('owner-value')).toHaveText('user-1');
 
-        await page.locator('select#groups').evaluate((element) => {
-            const select = element as HTMLSelectElement;
-            Array.from(select.options).forEach((opt) => {
-                opt.selected = opt.value === 'group-1' || opt.value === 'group-2';
-            });
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-        });
+        await page.getByTestId('select-groups-trigger').click();
+        await page.getByRole('option', { name: 'Admins' }).click();
+        await page.getByRole('option', { name: 'Operators' }).click();
         await expect(page.getByTestId('groups-value')).toContainText('"group-1"');
         await expect(page.getByTestId('groups-value')).toContainText('"group-2"');
     });

@@ -17,8 +17,8 @@ test.describe('CustomAttributeWidget', () => {
     test('selecting attribute shows description and content editor', async ({ mount, page }) => {
         const component = await mount(<CustomAttributeWidgetMountHarness attributes={[]} />);
 
-        await component.getByTestId('select-selectCustomAttribute').click();
-        await page.locator('.hs-select-option-row', { hasText: 'Test Attribute' }).click();
+        await component.getByTestId('select-selectCustomAttribute-trigger').click();
+        await page.getByRole('option', { name: 'Test Attribute' }).click();
 
         await expect(component.getByText('Test description')).toBeVisible();
         await expect(component.getByTestId('cancel-custom-value')).toBeVisible();
@@ -28,8 +28,8 @@ test.describe('CustomAttributeWidget', () => {
     test('onSubmit resets selection and hides editor', async ({ mount, page }) => {
         const component = await mount(<CustomAttributeWidgetMountHarness attributes={[]} />);
 
-        await component.getByTestId('select-selectCustomAttribute').click();
-        await page.locator('.hs-select-option-row', { hasText: 'Test Attribute' }).click();
+        await component.getByTestId('select-selectCustomAttribute-trigger').click();
+        await page.getByRole('option', { name: 'Test Attribute' }).click();
         await expect(component.getByText('Test description')).toBeVisible();
 
         const input = page.locator('#testAttr');
@@ -44,8 +44,8 @@ test.describe('CustomAttributeWidget', () => {
     test('onCancel resets selection and hides editor', async ({ mount, page }) => {
         const component = await mount(<CustomAttributeWidgetMountHarness attributes={[]} />);
 
-        await component.getByTestId('select-selectCustomAttribute').click();
-        await page.locator('.hs-select-option-row', { hasText: 'Test Attribute' }).click();
+        await component.getByTestId('select-selectCustomAttribute-trigger').click();
+        await page.getByRole('option', { name: 'Test Attribute' }).click();
         await expect(component.getByText('Test description')).toBeVisible();
         await component.getByTestId('cancel-custom-value').click();
         await expect(component.getByText('Test description')).not.toBeVisible();

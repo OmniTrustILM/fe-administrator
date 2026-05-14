@@ -117,9 +117,9 @@ test.describe('AttributeFieldSelect', () => {
 
         await expect(page.getByTestId('label-testSelectSelect')).toHaveText('Status');
         await expect(page.getByTestId('select-testSelectSelect')).toBeVisible();
-        await page.getByTestId('select-testSelectSelect').click();
-        await expect(page.locator('.hs-select-option-row[data-value="active"]')).toBeVisible();
-        await expect(page.locator('.hs-select-option-row[data-value="inactive"]')).toBeVisible();
+        await page.getByTestId('select-testSelectSelect-trigger').click();
+        await expect(page.getByRole('option', { name: 'Active', exact: true })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Inactive', exact: true })).toBeVisible();
     });
 
     test('renders single Select when multiSelect is false', async ({ mount, page }) => {
@@ -157,9 +157,9 @@ test.describe('AttributeFieldSelect', () => {
         );
 
         await expect(page.getByTestId('select-testSelectSelect')).toBeVisible();
-        await page.getByTestId('select-testSelectSelect').click();
-        await expect(page.locator('.hs-select-option-row', { hasText: 'Option A' })).toBeVisible();
-        await expect(page.locator('.hs-select-option-row', { hasText: 'Add new' })).toBeVisible();
+        await page.getByTestId('select-testSelectSelect-trigger').click();
+        await expect(page.getByRole('option', { name: 'Option A' })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Add new' })).toBeVisible();
     });
 
     test('selecting __add_new__ when field is empty resets Select to placeholder', async ({ mount, page }) => {
@@ -235,15 +235,12 @@ test.describe('AttributeFieldSelect', () => {
             />,
         );
 
+        await page.getByTestId('select-testSelectSelect-trigger').click();
+        await page.getByRole('option', { name: 'Option A' }).click();
+        await page.getByRole('option', { name: '+ Add new' }).click();
+
+        // __add_new__ should be stripped; only 'a' remains
         const select = page.getByTestId('select-testSelectSelect-input');
-
-        await select.evaluate((el: HTMLSelectElement) => {
-            Array.from(el.options).forEach((opt) => {
-                opt.selected = opt.value === 'a' || opt.value === '__add_new__';
-            });
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-
         await expect(select).toHaveValues(['a']);
     });
 
@@ -287,14 +284,11 @@ test.describe('AttributeFieldSelect', () => {
 
         await mount(<AttributeFieldSelectTestWrapper name="testSelect" descriptor={descriptor} options={options} />);
 
-        const select = page.getByTestId('select-testSelectSelect-input');
-        await select.evaluate((el: HTMLSelectElement) => {
-            Array.from(el.options).forEach((opt) => {
-                opt.selected = opt.value === 'a' || opt.value === 'b';
-            });
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-        });
+        await page.getByTestId('select-testSelectSelect-trigger').click();
+        await page.getByRole('option', { name: 'Option A' }).click();
+        await page.getByRole('option', { name: 'Option B' }).click();
 
+        const select = page.getByTestId('select-testSelectSelect-input');
         await expect(select).toHaveValues(['a', 'b']);
         await expect(page.getByTestId('select-testSelectSelect-clear')).toBeAttached();
     });
@@ -312,9 +306,9 @@ test.describe('AttributeFieldSelect', () => {
             />,
         );
 
-        await page.getByTestId('select-testSelectSelect').click();
-        await expect(page.locator('.hs-select-option-row', { hasText: 'Known' })).toBeVisible();
-        await expect(page.locator('.hs-select-option-row', { hasText: 'extra' })).toBeVisible();
+        await page.getByTestId('select-testSelectSelect-trigger').click();
+        await expect(page.getByRole('option', { name: 'Known' })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'extra' })).toBeVisible();
     });
 
     test('extensible list multi-select adds extra options for current values not in options', async ({ mount, page }) => {

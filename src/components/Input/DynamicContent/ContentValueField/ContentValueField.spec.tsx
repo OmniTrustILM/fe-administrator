@@ -99,12 +99,21 @@ async function setTimeValue(page: Page, value: string) {
 }
 
 async function triggerSelectChange(page: Page, selectId: string, selectedValues: string[]) {
-    await page.locator(`select#${selectId}`).evaluate((el: HTMLSelectElement, values: string[]) => {
-        Array.from(el.options).forEach((o) => {
-            o.selected = values.includes(o.value);
-        });
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-    }, selectedValues);
+    const trigger = page.getByTestId(`select-${selectId}-trigger`);
+    await trigger.click();
+    // Iterate options; clicking toggles selection for multi, replaces for single.
+    for (const value of selectedValues) {
+        await page.locator(`[role="option"][data-value="${value}"]`).click();
+    }
+    // Close the popover by pressing Escape (mostly relevant for multi-select where it stays open).
+    await page.keyboard.press('Escape');
+}
+
+async function clearMultiSelect(page: Page, selectId: string) {
+    const clearBtn = page.getByTestId(`select-${selectId}-clear`);
+    if ((await clearBtn.count()) > 0) {
+        await clearBtn.click();
+    }
 }
 
 test.describe('ContentValueField', () => {
@@ -436,7 +445,7 @@ test.describe('ContentValueField', () => {
         await mount(<ContentValueFieldTestWrapper descriptor={descriptor} />);
         await triggerSelectChange(page, 'multiList', ['opt1']);
         await expect(page.getByTestId('save-custom-value')).toBeEnabled();
-        await triggerSelectChange(page, 'multiList', []);
+        await clearMultiSelect(page, 'multiList');
         await expect(page.getByTestId('save-custom-value')).toBeDisabled();
     });
 

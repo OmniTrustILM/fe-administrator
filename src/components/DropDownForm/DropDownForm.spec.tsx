@@ -98,8 +98,8 @@ test.describe('DropDownForm', () => {
                 <DropDownForm dropDownOptionsList={dropDownOptionsList} onSubmit={(values) => (submitted = values)} onClose={() => {}} />
             </div>,
         );
-        await component.getByText('Select Field 1').click();
-        await component.locator('.hs-select-option-row').filter({ hasText: 'Option 1' }).click();
+        await component.getByTestId('select-field1-trigger').click();
+        await component.page().getByRole('option', { name: 'Option 1', exact: true }).click();
         await component.getByRole('button', { name: 'Submit' }).click();
         expect(submitted).not.toBeNull();
         expect(submitted?.field1).toBe('1');

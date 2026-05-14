@@ -2,41 +2,21 @@ import { test, expect } from '../../../playwright/ct-test';
 import FilterWidgetTestWrapper from './FilterWidgetTestWrapper';
 import { FilterConditionOperator, FilterFieldSource } from 'types/openapi';
 
-async function syncNativeSelect(page: import('@playwright/test').Page, selectId: 'group' | 'field' | 'conditions', value: string) {
-    await page.evaluate(
-        ([id, v]) => {
-            const sel = document.querySelector(`#${id}`) as HTMLSelectElement | null;
-            if (!sel) return;
-            (sel as HTMLSelectElement & { value: string }).value = v;
-            sel.dispatchEvent(new Event('input', { bubbles: true }));
-            sel.dispatchEvent(new Event('change', { bubbles: true }));
-        },
-        [selectId, value],
-    );
-}
-
-async function chooseSelectOption(page: import('@playwright/test').Page, testId: string, optionLabel: string) {
-    await page.getByTestId(testId).click();
-    const dropdown = page
-        .locator('.hs-select-dropdown')
-        .filter({ has: page.locator('.hs-select-option-row').filter({ hasText: optionLabel }) });
-    await dropdown.waitFor({ state: 'visible', timeout: 5000 });
-    await dropdown.locator('.hs-select-option-row').filter({ hasText: optionLabel }).click();
+async function chooseSelectOption(page: import('@playwright/test').Page, triggerTestId: string, optionLabel: string) {
+    await page.getByTestId(triggerTestId).click();
+    await page.getByRole('option', { name: optionLabel, exact: true }).click();
 }
 
 async function chooseGroupMeta(page: import('@playwright/test').Page) {
-    await chooseSelectOption(page, 'select-group', 'Meta');
-    await syncNativeSelect(page, 'group', FilterFieldSource.Meta);
+    await chooseSelectOption(page, 'select-group-trigger', 'Meta');
 }
 
-async function chooseField(page: import('@playwright/test').Page, label: string, value: string) {
-    await chooseSelectOption(page, 'select-field', label);
-    await syncNativeSelect(page, 'field', value);
+async function chooseField(page: import('@playwright/test').Page, label: string, _value: string) {
+    await chooseSelectOption(page, 'select-field-trigger', label);
 }
 
-async function chooseCondition(page: import('@playwright/test').Page, label: string, value: string) {
-    await chooseSelectOption(page, 'select-conditions', label);
-    await syncNativeSelect(page, 'conditions', value);
+async function chooseCondition(page: import('@playwright/test').Page, label: string, _value: string) {
+    await chooseSelectOption(page, 'select-conditions-trigger', label);
 }
 
 async function fillEditableInput(page: import('@playwright/test').Page, placeholder: string, value: string) {
@@ -186,7 +166,7 @@ test.describe('FilterWidget', () => {
         await mount(<FilterWidgetTestWrapper />);
         await configureMetaFilter(page, 'Severity', 'severity', 'Equals', FilterConditionOperator.Equals);
         await expect(page.getByTestId('select-valueSelect')).toBeVisible();
-        await chooseSelectOption(page, 'select-valueSelect', 'High');
+        await chooseSelectOption(page, 'select-valueSelect-trigger', 'High');
         await page.getByRole('button', { name: 'Add', exact: true }).click();
         await expect(page.getByText("'Severity'")).toBeVisible();
     });
@@ -195,7 +175,7 @@ test.describe('FilterWidget', () => {
         await mount(<FilterWidgetTestWrapper />);
         await configureMetaFilter(page, 'Enabled', 'enabled', 'Equals', FilterConditionOperator.Equals);
         await expect(page.getByTestId('select-valueSelect')).toBeVisible();
-        await chooseSelectOption(page, 'select-valueSelect', 'True');
+        await chooseSelectOption(page, 'select-valueSelect-trigger', 'True');
         await page.getByRole('button', { name: 'Add', exact: true }).click();
         await expect(page.getByText("'Enabled'")).toBeVisible();
     });

@@ -89,7 +89,7 @@ test.describe('AttributeEditor', () => {
         ];
         await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
         await expect(page.getByText('Show custom attribute')).toBeVisible({ timeout: 10000 });
-        await expect(page.getByPlaceholder('Show...')).toBeVisible();
+        await expect(page.getByTestId('select-selectAddCustomAttribute-trigger')).toContainText('Show...');
     });
 
     test('renders only add selector when all descriptors are initially hidden custom', async ({ mount, page }) => {

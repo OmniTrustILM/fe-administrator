@@ -406,7 +406,7 @@ test.describe('CustomTable', () => {
             ),
         );
         await expect(page.getByTestId('custom-table')).toBeVisible();
-        await expect(page.locator('select#newRowWidgetSelect')).toBeAttached();
+        await expect(page.getByTestId('select-newRowWidgetSelect-trigger')).toBeAttached();
     });
 
     test('should show pagination with internal state when no paginationData', async ({ mount }) => {
@@ -696,7 +696,7 @@ test.describe('CustomTable', () => {
         await expect(component.locator('[data-testid="select-pageSize-input"]')).toBeDisabled();
     });
 
-    test('should call onPageSizeChanged with a numeric value when page size select is changed', async ({ mount }) => {
+    test('should call onPageSizeChanged with a numeric value when page size select is changed', async ({ mount, page }) => {
         let calledWith: number | undefined;
         const paginationData = {
             page: 1,
@@ -721,10 +721,8 @@ test.describe('CustomTable', () => {
             ),
         );
 
-        await component.locator('[data-testid="select-pageSize-input"]').evaluate((el: HTMLSelectElement) => {
-            el.value = '20';
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-        });
+        await component.getByTestId('select-pageSize-trigger').click();
+        await page.getByRole('option', { name: '20', exact: true }).click();
         expect(calledWith).toBe(20);
     });
 
