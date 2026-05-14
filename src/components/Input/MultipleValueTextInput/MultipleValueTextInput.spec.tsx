@@ -130,7 +130,8 @@ test.describe('MultipleValueTextInput', () => {
 
         const trigger = component.getByTestId('select-test-input-trigger');
         await expect(trigger).toBeVisible();
-        await expect(trigger).toHaveAttribute('id', 'test-input');
+        const nativeMirror = component.getByTestId('select-test-input-input');
+        await expect(nativeMirror).toHaveAttribute('id', 'test-input');
     });
 
     test('should display initial options in Select', async ({ mount }) => {
@@ -221,8 +222,8 @@ test.describe('MultipleValueTextInput', () => {
                 <MultipleValueTextInput selectedValues={[]} onValuesChange={() => {}} />
             </div>,
         );
-        const trigger = component.getByTestId('select-multiple-value-input-trigger');
-        await expect(trigger).toHaveAttribute('id', 'multiple-value-input');
+        const nativeMirror = component.getByTestId('select-multiple-value-input-input');
+        await expect(nativeMirror).toHaveAttribute('id', 'multiple-value-input');
     });
 
     test('should not add value when Enter is pressed with empty input', async ({ mount }) => {

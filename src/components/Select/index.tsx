@@ -171,6 +171,7 @@ function Select({
     showOptionDescriptionInDropdown = false,
 }: Props) {
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
 
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -396,6 +397,11 @@ function Select({
         ? cn(effectiveClearable && hasValue ? WRAPPER_CLEARABLE_CLASSES : WRAPPER_CLASSES, triggerDisabled && TRIGGER_DISABLED_CLASSES)
         : cn(effectiveClearable && hasValue ? TRIGGER_CLEARABLE_CLASSES : TRIGGER_CLASSES, triggerDisabled && TRIGGER_DISABLED_CLASSES);
 
+    const listboxId = `${id}-listbox`;
+    const getOptionDomId = (val: OptionValue) => `${id}-option-${getOptionValueString(val)}`;
+    const activeOption = highlightedIndex >= 0 && highlightedIndex < visibleOptions.length ? visibleOptions[highlightedIndex] : undefined;
+    const activeDescendantId = activeOption ? getOptionDomId(activeOption.value) : undefined;
+
     return (
         <div data-testid={dataTestId ?? `select-${id}`}>
             {label && <Label htmlFor={id} title={label} required={required} />}
@@ -403,11 +409,12 @@ function Select({
                 <Popover.Root open={open} onOpenChange={(o) => !triggerDisabled && setOpen(o)}>
                     <Popover.Trigger asChild>
                         <button
+                            ref={triggerRef}
                             type="button"
-                            id={id}
                             disabled={triggerDisabled}
                             aria-haspopup="listbox"
                             aria-expanded={open}
+                            aria-controls={open ? listboxId : undefined}
                             className={triggerClass}
                             data-testid={dataTestId ? `${dataTestId}-trigger` : `select-${id}-trigger`}
                         >
@@ -431,6 +438,7 @@ function Select({
                                 }
                             }}
                             onKeyDown={onListKeyDown}
+                            aria-activedescendant={!hasSearch ? activeDescendantId : undefined}
                             data-testid={dataTestId ? `${dataTestId}-content` : `select-${id}-content`}
                         >
                             {hasSearch && (
@@ -441,6 +449,10 @@ function Select({
                                         className={SEARCH_INPUT_CLASSES}
                                         placeholder="Search..."
                                         value={searchTerm}
+                                        role="combobox"
+                                        aria-controls={listboxId}
+                                        aria-expanded={open}
+                                        aria-activedescendant={activeDescendantId}
                                         onChange={(e) => {
                                             const next = e.target.value;
                                             setSearchTerm(next);
@@ -455,7 +467,7 @@ function Select({
                                     />
                                 </div>
                             )}
-                            <div role="listbox" aria-multiselectable={isMulti} className={LISTBOX_CLASSES} tabIndex={-1}>
+                            <div id={listboxId} role="listbox" aria-multiselectable={isMulti} className={LISTBOX_CLASSES} tabIndex={-1}>
                                 {visibleOptions.length === 0 ? (
                                     <div className={NO_OPTIONS_CLASSES}>No options</div>
                                 ) : (
@@ -463,10 +475,11 @@ function Select({
                                         const selected = isOptionSelected(opt);
                                         const highlighted = idx === highlightedIndex;
                                         return (
-                                            // biome-ignore lint/a11y/useFocusableInteractive: non-tabbable option is correct for keyboard-controlled listbox
-                                            // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation handled by onKeyDown on Popover.Content (onListKeyDown); aria-activedescendant wiring is a future enhancement
+                                            // biome-ignore lint/a11y/useFocusableInteractive: non-tabbable option is correct for active-descendant listbox pattern
+                                            // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation handled by onKeyDown on Popover.Content (onListKeyDown); aria-activedescendant points here from the focused trigger or search input
                                             <div
                                                 key={getOptionValueString(opt.value)}
+                                                id={getOptionDomId(opt.value)}
                                                 role="option"
                                                 aria-selected={selected}
                                                 aria-disabled={opt.disabled || undefined}
@@ -490,8 +503,9 @@ function Select({
                     </Popover.Portal>
                 </Popover.Root>
 
-                {/* Hidden native <select> mirrors the value for tests that read [data-testid={dataTestId}-input].value */}
+                {/* Hidden native <select> mirrors the value for tests that read [data-testid={dataTestId}-input].value or address it via `select#<id>`. */}
                 <select
+                    id={id}
                     multiple={isMulti}
                     aria-hidden
                     tabIndex={-1}
@@ -506,6 +520,10 @@ function Select({
                     }
                     onChange={() => {
                         /* controlled by the popover; native onChange is unused */
+                    }}
+                    onFocus={() => {
+                        // Label `htmlFor={id}` points here for API compatibility; forward focus to the visible trigger.
+                        triggerRef.current?.focus();
                     }}
                     disabled={triggerDisabled}
                 >
