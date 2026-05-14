@@ -222,7 +222,8 @@ function CustomTable({
                 },
             ];
 
-            const caption = typeof row.columns[0] === 'string' ? row.columns[0] : jsxInnerText(row.columns[0] as React.ReactNode);
+            const caption =
+                row.detailTitle ?? (typeof row.columns[0] === 'string' ? row.columns[0] : jsxInnerText(row.columns[0] as React.ReactNode));
 
             dispatch(
                 userInterfaceActions.showGlobalModal({

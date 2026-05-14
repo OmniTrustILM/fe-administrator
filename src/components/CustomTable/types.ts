@@ -15,6 +15,7 @@ export interface TableDataRow {
     id: number | string;
     columns: (string | React.ReactNode | React.ReactNode[])[];
     detailColumns?: (string | React.ReactNode | React.ReactNode[])[];
+    detailTitle?: string;
     options?: {
         useAccentBottomBorder?: boolean;
         rowClassName?: string;

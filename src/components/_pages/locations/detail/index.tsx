@@ -607,6 +607,7 @@ export default function LocationDetail() {
             location
                 ? location.certificates.map((cert) => ({
                       id: cert.certificateUuid,
+                      detailTitle: cert.commonName || 'empty',
                       columns: [
                           <>
                               {cert.commonName || 'empty'}
@@ -657,16 +658,14 @@ export default function LocationDetail() {
                       ],
 
                       detailColumns: [
-                          cert.metadata?.length ? (
-                              <AttributeViewer viewerType={ATTRIBUTE_VIEWER_TYPE.METADATA_FLAT} metadata={cert.metadata} />
-                          ) : (
-                              <></>
-                          ),
-                          cert.csrAttributes?.length ? (
-                              <AttributeViewer viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE} attributes={cert.csrAttributes} />
-                          ) : (
-                              <></>
-                          ),
+                          <div key="cert-detail" className="flex flex-col gap-6">
+                              {cert.metadata?.length ? (
+                                  <AttributeViewer viewerType={ATTRIBUTE_VIEWER_TYPE.METADATA_FLAT} metadata={cert.metadata} />
+                              ) : null}
+                              {cert.csrAttributes?.length ? (
+                                  <AttributeViewer viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE} attributes={cert.csrAttributes} />
+                              ) : null}
+                          </div>,
                       ],
                   }))
                 : [],
