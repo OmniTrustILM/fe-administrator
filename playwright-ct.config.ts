@@ -13,7 +13,13 @@ export default defineConfig({
     testDir: './src',
     testMatch: '**/*.spec.tsx',
     testIgnore: ['**/*.unit.spec.ts', '**/*.unit.spec.tsx', '**/*.vitest.spec.ts', '**/*.vitest.spec.tsx'],
+    timeout: 30 * 1000,
+    fullyParallel: true,
+    forbidOnly: !!process.env.CI,
+    retries: process.env.CI ? 2 : 0,
+    workers: process.env.CI ? 2 : undefined,
     use: {
+        trace: 'on-first-retry',
         ctPort: 3100,
         ctViteConfig: {
             define: {
@@ -72,6 +78,8 @@ export default defineConfig({
     ],
     reporter: [
         ['list'],
+        ['html', { outputFolder: 'playwright-report', open: 'never' }],
+        ['junit', { outputFile: 'playwright-report/junit.xml' }],
         [
             'monocart-reporter',
             {

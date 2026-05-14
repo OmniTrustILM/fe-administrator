@@ -28,7 +28,7 @@ jobs:
         run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Run Playwright tests
         # Run only the project matching this browser
-        run: npx playwright test -c playwright.config.ts --project=${{ matrix.browser }}
+        run: npx playwright test -c playwright-ct.config.ts --project=${{ matrix.browser }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}
         with:
