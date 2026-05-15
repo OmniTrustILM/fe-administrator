@@ -245,6 +245,9 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
     const watchedIncludeAltKey = useWatch({ control, name: 'includeAltKey' });
 
     const isRekeyAllowed = useCallback(() => {
+        if (watchedUploadCsr) {
+            return !!fileContent;
+        }
         const currentKey = watchedKey;
         const currentAltKey = watchedAltKey;
         const areValuesSame =
@@ -252,7 +255,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
             !isObjectSame(currentAltKey as unknown as Record<string, unknown>, defaultValues.altKey as unknown as Record<string, unknown>);
 
         return areValuesSame;
-    }, [watchedKey, watchedAltKey, defaultValues]);
+    }, [watchedUploadCsr, fileContent, watchedKey, watchedAltKey, defaultValues]);
 
     const getSignatureAttributesTabs = useCallback(() => {
         return watchedUploadCsr
