@@ -3,7 +3,7 @@ import { actions as utilsActuatorActions, selectors as utilsActuatorSelectors } 
 import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from 'components/Button';
-import { transformParseCertificateResponseDtoToAsn1String } from '../../../../ducks/transform/utilsCertificate';
+import { transformParseCertificateResponseDtoToAsn1String } from 'ducks/transform/utilsCertificate';
 import { actions as utilsCertificateActions, selectors as utilsCertificateSelectors } from '../../../../ducks/utilsCertificate';
 import {
     actions as utilsCertificateRequestActions,
@@ -11,7 +11,7 @@ import {
 } from '../../../../ducks/utilsCertificateRequest';
 
 import { transformParseRequestResponseDtoToCertificateResponseDetailModelToAsn1String } from 'ducks/transform/utilsCertificateRequest';
-import { ParseCertificateRequestDtoParseTypeEnum, ParseRequestRequestDtoParseTypeEnum } from '../../../../types/openapi/utils';
+import { ParseCertificateRequestDtoParseTypeEnum, ParseRequestRequestDtoParseTypeEnum } from 'types/openapi/utils';
 import { actions as userInterfaceActions } from 'ducks/user-interface';
 
 type Props = {
@@ -57,7 +57,7 @@ export default function Asn1Dialog({ content, isCSR }: Readonly<Props>) {
                         isOpen: true,
                         size: 'xl',
                         title: 'ASN.1 Structure',
-                        content: <pre className="text-sm overflow-x-auto text-[var(--dark-gray-color)]">{asn1String}</pre>,
+                        content: <pre className="text-sm whitespace-pre-wrap text-[var(--dark-gray-color)]">{asn1String}</pre>,
                         showCloseButton: true,
                         cancelButtonCallback: onClose,
                     }),
@@ -75,7 +75,7 @@ export default function Asn1Dialog({ content, isCSR }: Readonly<Props>) {
                         isOpen: true,
                         size: 'xl',
                         title: 'ASN.1 Structure',
-                        content: <pre className="text-sm overflow-x-auto text-[var(--dark-gray-color)]">{asn1String}</pre>,
+                        content: <pre className="text-sm whitespace-pre-wrap text-[var(--dark-gray-color)]">{asn1String}</pre>,
                         showCloseButton: true,
                         cancelButtonCallback: onClose,
                     }),
