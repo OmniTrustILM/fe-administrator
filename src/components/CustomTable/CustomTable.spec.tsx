@@ -275,6 +275,28 @@ test.describe('CustomTable', () => {
         await expect(component.locator('table')).toBeVisible();
     });
 
+    test('should use detailTitle as modal caption instead of jsxInnerText of first column', async ({ mount }) => {
+        const store = createMockStore();
+        const dataWithDetails: TableDataRow[] = [
+            {
+                id: 1,
+                columns: [
+                    <span key="col">
+                        Complex <b>JSX</b>
+                    </span>,
+                    'detail@example.com',
+                ],
+                detailColumns: ['Detail content'],
+                detailTitle: 'Clean Title',
+            },
+        ];
+        const component = await mount(
+            withProviders(<CustomTable headers={mockHeaders} data={dataWithDetails} hasDetails={true} />, { store }),
+        );
+        await component.getByRole('button', { name: /Complex JSX/ }).click();
+        expect(store.getState().userInterface.globalModal.title).toBe('Clean Title');
+    });
+
     test('should sort by date when header has sortType date', async ({ mount }) => {
         const dateHeaders: TableHeader[] = [{ id: 'date', content: 'Date', sortable: true, sortType: 'date' }];
         const dateData: TableDataRow[] = [
