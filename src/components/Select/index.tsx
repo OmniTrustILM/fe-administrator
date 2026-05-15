@@ -176,6 +176,11 @@ function Select({
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
+    // Only switch the popover into modal mode when the trigger lives inside a Radix Dialog.
+    // Dialog's react-remove-scroll otherwise cancels wheel events on the portaled dropdown
+    // (so you can't scroll the option list). Outside a Dialog we keep modal=false so sibling
+    // controls (e.g. an "Add" button next to a multi-select) stay clickable while open.
+    const [modal, setModal] = useState(false);
 
     // De-duplicate options by their string-keyed value.
     const options = useMemo(() => {
@@ -406,10 +411,15 @@ function Select({
         <div data-testid={dataTestId ?? `select-${id}`}>
             {label && <Label htmlFor={id} title={label} required={required} />}
             <div className={cn('relative', className)} style={minWidth ? { minWidth: `${minWidth}px` } : undefined}>
-                {/* modal=true wraps Popover.Content in react-remove-scroll, which lets the dropdown scroll
-                    when nested inside a Radix Dialog (whose outer scroll-lock otherwise cancels wheel events
-                    on portaled children). */}
-                <Popover.Root modal open={open} onOpenChange={(o) => !triggerDisabled && setOpen(o)}>
+                <Popover.Root
+                    modal={modal}
+                    open={open}
+                    onOpenChange={(o) => {
+                        if (triggerDisabled) return;
+                        if (o) setModal(triggerRef.current?.closest('[role="dialog"]') != null);
+                        setOpen(o);
+                    }}
+                >
                     <Popover.Trigger asChild>
                         <button
                             ref={triggerRef}
