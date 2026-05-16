@@ -113,6 +113,7 @@ test.describe('certificateTableHelpers', () => {
                 undefined,
                 false,
                 {},
+                {},
                 (d: Date) => d.toISOString().slice(0, 10),
                 (_e: any, k: string) => k,
             );
@@ -131,7 +132,7 @@ test.describe('certificateTableHelpers', () => {
         });
 
         test('each row has two columns (label, value)', () => {
-            const rows = buildCertificateDetailBaseRows(minimalCertificate, undefined, false, {}, mockDateFormatter, mockGetEnumLabel);
+            const rows = buildCertificateDetailBaseRows(minimalCertificate, undefined, false, {}, {}, mockDateFormatter, mockGetEnumLabel);
 
             rows.forEach((row) => {
                 expect(row.columns).toHaveLength(2);
@@ -148,13 +149,72 @@ test.describe('certificateTableHelpers', () => {
                 altKeySize: 2048,
             } as CertificateDetailResponseModel;
 
-            const rows = buildCertificateDetailBaseRows(hybridCert, undefined, false, {}, mockDateFormatter, mockGetEnumLabel);
+            const rows = buildCertificateDetailBaseRows(hybridCert, undefined, false, {}, {}, mockDateFormatter, mockGetEnumLabel);
 
             const ids = rows.map((r) => r.id);
             expect(ids).toContain('altKey');
             expect(ids).toContain('altPublicKeyAlgorithm');
             expect(ids).toContain('altSignatureAlgorithm');
             expect(ids).toContain('altKeySize');
+        });
+
+        test('adds qcStatements rows when certificate has qcStatements', () => {
+            const certWithQc = {
+                ...minimalCertificate,
+                qcStatements: {
+                    qcCompliance: true,
+                    qcSscd: false,
+                    qcType: ['esign', 'eseal'],
+                    qcCcLegislation: ['EU'],
+                },
+            } as CertificateDetailResponseModel;
+
+            const rows = buildCertificateDetailBaseRows(certWithQc, undefined, false, {}, {}, mockDateFormatter, mockGetEnumLabel);
+
+            const ids = rows.map((r) => r.id);
+            expect(ids).toContain('qcCompliance');
+            expect(ids).toContain('qcSscd');
+            expect(ids).toContain('qcType');
+            expect(ids).toContain('qcCcLegislation');
+        });
+
+        test('omits qcStatements rows when certificate has no qcStatements', () => {
+            const rows = buildCertificateDetailBaseRows(minimalCertificate, undefined, false, {}, {}, mockDateFormatter, mockGetEnumLabel);
+
+            const ids = rows.map((r) => r.id);
+            expect(ids).not.toContain('qcCompliance');
+            expect(ids).not.toContain('qcSscd');
+            expect(ids).not.toContain('qcType');
+            expect(ids).not.toContain('qcCcLegislation');
+        });
+
+        test('omits qcType row when qcType array is empty', () => {
+            const certWithQc = {
+                ...minimalCertificate,
+                qcStatements: { qcCompliance: false, qcSscd: false, qcType: [], qcCcLegislation: [] },
+            } as CertificateDetailResponseModel;
+
+            const rows = buildCertificateDetailBaseRows(certWithQc, undefined, false, {}, {}, mockDateFormatter, mockGetEnumLabel);
+
+            const ids = rows.map((r) => r.id);
+            expect(ids).toContain('qcCompliance');
+            expect(ids).toContain('qcSscd');
+            expect(ids).not.toContain('qcType');
+            expect(ids).not.toContain('qcCcLegislation');
+        });
+
+        test('uses getEnumLabel for qcType values', () => {
+            const certWithQc = {
+                ...minimalCertificate,
+                qcStatements: { qcCompliance: true, qcSscd: true, qcType: ['esign'], qcCcLegislation: [] },
+            } as CertificateDetailResponseModel;
+            const qcTypeEnum = { esign: { label: 'Electronic Signature' } };
+            const getLabel = (_e: any, k: string) => `label-${k}`;
+
+            const rows = buildCertificateDetailBaseRows(certWithQc, undefined, false, {}, qcTypeEnum, mockDateFormatter, getLabel);
+
+            const qcTypeRow = rows.find((r) => r.id === 'qcType');
+            expect(qcTypeRow).toBeDefined();
         });
     });
 });

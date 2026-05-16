@@ -62,6 +62,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
     const users = useSelector(userSelectors.users);
     const certificateRevocationReason = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateRevocationReason));
     const certificateKeyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateKeyUsage));
+    const qcTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.QcType));
     const certificateProtocol = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateProtocol));
     const isArchiving = useSelector(selectors.isArchiving);
     const isUpdatingTrustedStatus = useSelector(selectors.isUpdatingTrustedStatus);
@@ -354,6 +355,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                   validationResult,
                   isCertificateArchived,
                   certificateKeyUsageEnum,
+                  qcTypeEnum,
                   dateFormatter,
                   getEnumLabel,
                   setPendingAction,
