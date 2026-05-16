@@ -16,9 +16,8 @@
  * @export
  * @enum {string}
  */
-export enum OidCategory {
-    RdnAttributeType = 'rdnAttributeType',
-    ExtendedKeyUsage = 'extendedKeyUsage',
-    QcStatement = 'qcStatement',
-    Generic = 'generic',
+export enum QcType {
+    Esign = 'esign',
+    Eseal = 'eseal',
+    Web = 'web',
 }

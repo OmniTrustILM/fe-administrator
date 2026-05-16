@@ -151,6 +151,7 @@ models/CertificateInLocationDto.ts
 models/CertificateKeyUsage.ts
 models/CertificateProtocol.ts
 models/CertificateProtocolDto.ts
+models/CertificateQcStatementsDto.ts
 models/CertificateRelationType.ts
 models/CertificateRelationsDto.ts
 models/CertificateRequestDto.ts
@@ -416,6 +417,7 @@ models/ProxyRequestDto.ts
 models/ProxyStatus.ts
 models/ProxyUpdateRequestDto.ts
 models/PushToLocationRequestDto.ts
+models/QcType.ts
 models/RaProfileAcmeDetailResponseDto.ts
 models/RaProfileAssociationRequestDto.ts
 models/RaProfileCertificateValidationSettingsDto.ts

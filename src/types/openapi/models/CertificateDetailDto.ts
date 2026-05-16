@@ -16,6 +16,7 @@ import type {
     CertificateDto,
     CertificateKeyUsage,
     CertificateProtocolDto,
+    CertificateQcStatementsDto,
     CertificateRequestDto,
     CertificateState,
     CertificateSubjectType,
@@ -311,4 +312,10 @@ export interface CertificateDetailDto {
      * @memberof CertificateDetailDto
      */
     protocolInfo?: CertificateProtocolDto;
+    /**
+     * Parsed ETSI QCStatements extension (RFC 3739 / ETSI EN 319 412-5). Absent when the extension is not present in the certificate.
+     * @type {CertificateQcStatementsDto}
+     * @memberof CertificateDetailDto
+     */
+    qcStatements?: CertificateQcStatementsDto;
 }

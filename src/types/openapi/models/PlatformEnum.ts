@@ -82,4 +82,5 @@ export enum PlatformEnum {
     SecretType = 'SecretType',
     KeyStoreType = 'KeyStoreType',
     SecretState = 'SecretState',
+    QcType = 'QcType',
 }
