@@ -15,7 +15,7 @@ COPY index.html vite.config.js tsconfig.json ./
 RUN npm run build
 
 # production environment
-FROM nginxinc/nginx-unprivileged:1.30.0-alpine
+FROM nginxinc/nginx-unprivileged:1.31.0-alpine
 
 WORKDIR /usr/share/nginx/html
 
