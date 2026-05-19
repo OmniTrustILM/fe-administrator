@@ -37,7 +37,7 @@ test.describe('Dialog', () => {
         expect(toggleCount).toBe(1);
     });
 
-    test('calls toggle when overlay is clicked', async ({ mount, page }) => {
+    test('does not call toggle when overlay is clicked', async ({ mount, page }) => {
         let toggleCount = 0;
         const toggle = () => {
             toggleCount++;
@@ -45,7 +45,7 @@ test.describe('Dialog', () => {
         await mount(<Dialog isOpen={true} caption="Test Dialog" body="Dialog content" toggle={toggle} dataTestId="test-dialog" />);
         await expect(page.getByTestId('dialog-overlay')).toBeVisible();
         await page.getByTestId('dialog-overlay').click({ position: { x: 5, y: 5 } });
-        expect(toggleCount).toBe(1);
+        expect(toggleCount).toBe(0);
     });
 
     test('calls button onClick handlers', async ({ mount, page }) => {

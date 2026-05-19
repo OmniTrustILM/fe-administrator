@@ -180,6 +180,8 @@ export default function Dialog({
                 <RadixDialog.Overlay data-testid="dialog-overlay" className="fixed inset-0 z-[80] bg-black/50" />
                 <RadixDialog.Content
                     data-testid={dataTestId}
+                    onPointerDownOutside={(event) => event.preventDefault()}
+                    onInteractOutside={(event) => event.preventDefault()}
                     className={cn(
                         'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[80] w-full',
                         sizeClasses[size],
