@@ -29,7 +29,7 @@ export interface BulkActionMessageDto {
      */
     name: string;
     /**
-     * Message describing the associations of the Objects which is preventing the bulk operation
+     * Message describing the associations of the objects that are preventing the bulk operation
      * @type {string}
      * @memberof BulkActionMessageDto
      */

@@ -262,6 +262,7 @@ export * from './FileAttributeContentV3';
 export * from './FilterConditionOperator';
 export * from './FilterFieldSource';
 export * from './FilterFieldType';
+export * from './FingerprintDto';
 export * from './FloatAttributeContentV2';
 export * from './FloatAttributeContentV3';
 export * from './FunctionGroupCode';

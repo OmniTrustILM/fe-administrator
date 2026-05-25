@@ -36,6 +36,7 @@ import type {
     CertificateValidationResultDto,
     ClientCertificateRequestDto,
     ErrorMessageDto,
+    FingerprintDto,
     LocationDto,
     MultipleCertificateObjectUpdateDto,
     RemoveCertificateDto,
@@ -148,6 +149,10 @@ export interface UpdateCertificateObjectsRequest {
 }
 
 export interface UploadRequest {
+    uploadCertificateRequestDto: UploadCertificateRequestDto;
+}
+
+export interface UploadAsyncRequest {
     uploadCertificateRequestDto: UploadCertificateRequestDto;
 }
 
@@ -811,6 +816,32 @@ export class CertificateInventoryApi extends BaseAPI {
         return this.request<UuidDto>(
             {
                 url: '/v1/certificates/upload',
+                method: 'POST',
+                headers,
+                body: uploadCertificateRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Upload a new Certificate
+     */
+    uploadAsync({ uploadCertificateRequestDto }: UploadAsyncRequest): Observable<FingerprintDto>;
+    uploadAsync({ uploadCertificateRequestDto }: UploadAsyncRequest, opts?: OperationOpts): Observable<AjaxResponse<FingerprintDto>>;
+    uploadAsync(
+        { uploadCertificateRequestDto }: UploadAsyncRequest,
+        opts?: OperationOpts,
+    ): Observable<FingerprintDto | AjaxResponse<FingerprintDto>> {
+        throwIfNullOrUndefined(uploadCertificateRequestDto, 'uploadCertificateRequestDto', 'uploadAsync');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<FingerprintDto>(
+            {
+                url: '/v1/certificates/upload/async',
                 method: 'POST',
                 headers,
                 body: uploadCertificateRequestDto,

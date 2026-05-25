@@ -511,14 +511,12 @@ describe('certificates slice', () => {
         expect(next.deleteErrorMessage).toBe('Unknown error');
     });
 
-    test('uploadCertificate / success / failure update isUploading and push to list', () => {
+    test('uploadCertificate / success / failure update isUploading', () => {
         let next = reducer(initialState, actions.uploadCertificate({} as any));
         expect(next.isUploading).toBe(true);
 
-        const cert = { uuid: 'cert-new', commonName: 'New Cert' } as any;
-        next = reducer(next, actions.uploadCertificateSuccess({ uuid: 'cert-new', certificate: cert }));
+        next = reducer(next, actions.uploadCertificateSuccess());
         expect(next.isUploading).toBe(false);
-        expect(next.certificates).toContainEqual(cert);
 
         next = reducer({ ...next, isUploading: true }, actions.uploadCertificateFailure({ error: 'err' }));
         expect(next.isUploading).toBe(false);

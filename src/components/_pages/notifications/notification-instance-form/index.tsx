@@ -146,11 +146,12 @@ const NotificationInstanceForm = ({ notificationInstanceId, onCancel, onSuccess 
         defaultValues,
     });
 
-    const { control, handleSubmit, setValue, formState, reset } = methods;
+    const { control, handleSubmit, setValue, formState, reset, getValues } = methods;
 
     useEffect(() => {
-        reset(defaultValues);
-    }, [defaultValues, reset]);
+        const { __attributes__notification__: attrs } = getValues() as unknown as Record<string, unknown>;
+        reset({ ...defaultValues, ...(attrs ? { __attributes__notification__: attrs } : {}) });
+    }, [defaultValues, reset, getValues]);
 
     const allFormValues = useWatch({ control });
 

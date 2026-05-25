@@ -322,6 +322,7 @@ models/FileAttributeContentV3.ts
 models/FilterConditionOperator.ts
 models/FilterFieldSource.ts
 models/FilterFieldType.ts
+models/FingerprintDto.ts
 models/FloatAttributeContentV2.ts
 models/FloatAttributeContentV3.ts
 models/FunctionGroupCode.ts

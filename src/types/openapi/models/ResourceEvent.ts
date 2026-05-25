@@ -22,6 +22,7 @@ export enum ResourceEvent {
     CertificateDiscovered = 'certificate_discovered',
     CertificateExpiring = 'certificate_expiring',
     CertificateNotCompliant = 'certificate_not_compliant',
+    CertificateUploaded = 'certificate_uploaded',
     DiscoveryFinished = 'discovery_finished',
     ApprovalRequested = 'approval_requested',
     ApprovalClosed = 'approval_closed',

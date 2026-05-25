@@ -30,6 +30,7 @@ vi.mock('./transform/certificates', () => ({
     transformDownloadCertificateResponseDtoToModel: (req: unknown) => req,
     transformCertificateResponseDtoToModel: (req: unknown) => req,
     transformCertificateListResponseDtoToModel: (req: unknown) => req,
+    transformCertificateUploadModelToDto: (req: unknown) => req,
 }));
 
 import { actions as certificatesActions } from './certificates';
@@ -40,6 +41,7 @@ const REVOKE_EPIC_INDEX = 10;
 const MANUALLY_ISSUE_EPIC_INDEX = 13;
 const MANUALLY_CONFIRM_REVOKE_EPIC_INDEX = 14;
 const CANCEL_PENDING_EPIC_INDEX = 15;
+const UPLOAD_EPIC_INDEX = 33;
 
 type ClientOpsOverrides = {
     revokeCertificate?: (args: any) => any;
@@ -84,6 +86,25 @@ async function runEpic(
     };
 
     const output$ = epics[epicIndex](of(action), of({}) as any, deps as any);
+    return firstValueFrom(output$.pipe(take(takeCount), toArray()));
+}
+
+async function runUploadEpic(
+    action: UnknownAction,
+    certificatesOverrides: { uploadAsync?: (args: any) => any } = {},
+    takeCount = 2,
+): Promise<UnknownAction[]> {
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => any)[];
+    const deps = {
+        apiClients: {
+            certificates: {
+                uploadAsync: () => of({ fingerprint: 'fp-1' }),
+                ...certificatesOverrides,
+            },
+        },
+    };
+    const state$ = { value: { certificates: { isIncludeArchived: false } } };
+    const output$ = epics[UPLOAD_EPIC_INDEX](of(action), state$ as any, deps as any);
     return firstValueFrom(output$.pipe(take(takeCount), toArray()));
 }
 
@@ -221,5 +242,28 @@ describe('certificates epics', () => {
         expect(emitted[0].type).toBe(certificatesActions.cancelPendingCertificateOperationFailure.type);
         expect(emitted[1].type).toBe(certificatesActions.getCertificateDetail.type);
         expect(emitted[2].type).toBe(appRedirectActions.fetchError.type);
+    });
+
+    test('uploadCertificate success emits Success, alert, and listCertificates', async () => {
+        const emitted = await runUploadEpic(
+            certificatesActions.uploadCertificate({ certificate: 'BASE64', customAttributes: [] } as any),
+            {},
+            3,
+        );
+        expect(emitted[0].type).toBe(certificatesActions.uploadCertificateSuccess.type);
+        expect(emitted[1].type).toBe(alertActions.success.type);
+        expect(emitted[2].type).toBe(certificatesActions.listCertificates.type);
+        expect((emitted[2] as any).payload.includeArchived).toBe(false);
+    });
+
+    test('uploadCertificate failure emits Failure with extracted error and fetchError', async () => {
+        const emitted = await runUploadEpic(
+            certificatesActions.uploadCertificate({ certificate: 'BASE64', customAttributes: [] } as any),
+            { uploadAsync: () => throwError(() => new Error('boom')) },
+            2,
+        );
+        expect(emitted[0].type).toBe(certificatesActions.uploadCertificateFailure.type);
+        expect((emitted[0] as any).payload.error).toContain('boom');
+        expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
     });
 });

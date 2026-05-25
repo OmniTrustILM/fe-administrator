@@ -807,9 +807,8 @@ export const slice = createSlice({
             state.isUploading = true;
         },
 
-        uploadCertificateSuccess: (state, action: PayloadAction<{ uuid: string; certificate: CertificateDetailResponseModel }>) => {
+        uploadCertificateSuccess: (state) => {
             state.isUploading = false;
-            state.certificates.push(action.payload.certificate);
         },
 
         uploadCertificateFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
