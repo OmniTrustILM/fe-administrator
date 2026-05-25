@@ -116,6 +116,7 @@ export function AttributeFieldSelect({
                                         isDisabled={descriptor.properties.readOnly || busy || showAddCustom}
                                         isMulti={false}
                                         isClearable={!descriptor.properties.required}
+                                        isSearchable
                                         className={invalidClass}
                                     />
                                 )}

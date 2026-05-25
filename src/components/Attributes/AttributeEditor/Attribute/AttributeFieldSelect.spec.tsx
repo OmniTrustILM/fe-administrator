@@ -293,6 +293,25 @@ test.describe('AttributeFieldSelect', () => {
         await expect(page.getByTestId('select-testSelectSelect-clear')).toBeAttached();
     });
 
+    test('single-select renders a search box that filters options by label', async ({ mount, page }) => {
+        const descriptor = minimalDescriptor({
+            properties: { ...defaultProperties, multiSelect: false, label: 'CA Certificate' },
+        } as any);
+        const options = [
+            { label: 'Acme Root CA', value: 'acme' },
+            { label: 'Globex Intermediate CA', value: 'globex' },
+            { label: 'Initech Signing CA', value: 'initech' },
+        ];
+        await mount(<AttributeFieldSelectTestWrapper name="testSelect" descriptor={descriptor} options={options} />);
+
+        await page.getByTestId('select-testSelectSelect-trigger').click();
+        await page.getByTestId('select-testSelectSelect-search').fill('globex');
+
+        await expect(page.getByRole('option', { name: 'Globex Intermediate CA' })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Acme Root CA' })).toHaveCount(0);
+        await expect(page.getByRole('option', { name: 'Initech Signing CA' })).toHaveCount(0);
+    });
+
     test('extensible list adds extra option for current value not in options', async ({ mount, page }) => {
         const descriptor = minimalDescriptor({
             properties: { ...defaultProperties, list: true, extensibleList: true, label: 'Extensible' },
