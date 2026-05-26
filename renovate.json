@@ -15,6 +15,10 @@
         {
             "matchUpdateTypes": ["major"],
             "dependencyDashboardApproval": true
+        },
+        {
+            "matchPackageNames": ["tailwindcss", "@tailwindcss/vite"],
+            "enabled": false
         }
     ],
     "lockFileMaintenance": {
