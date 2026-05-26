@@ -2,14 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { getStepValue } from 'utils/common-utils';
 import { getFormattedDateTime } from 'utils/dateUtil';
-import type { BaseAttributeContentModel, CustomAttributeModel } from '../../../../types/attributes';
-import { AttributeContentType } from '../../../../types/openapi';
-import { composeValidators, validateRequired } from '../../../../utils/validators';
+import type { BaseAttributeContentModel, CustomAttributeModel } from 'types/attributes';
+import { AttributeContentType } from 'types/openapi';
+import { composeValidators, validateRequired } from 'utils/validators';
 import { ContentFieldConfiguration } from '../index';
 import Select from 'components/Select';
 import TextInput from 'components/TextInput';
 import DatePicker from 'components/DatePicker';
-import Container from 'components/Container';
 import cn from 'classnames';
 import Switch from 'components/Switch';
 import { AddCustomValuePanel } from '../AddCustomValuePanel';
@@ -29,7 +28,6 @@ type ValueFieldInputProps = {
     fieldState: { isTouched: boolean; invalid: boolean; error?: { message?: string } };
     fieldStepValue: number | undefined;
     options: { label: string; value: string }[];
-    onCancel?: () => void;
 };
 
 type ListValueScalar = string | number | boolean;
@@ -39,9 +37,11 @@ function normalizeDateValue(value: string | undefined): string | undefined {
     return value.includes('T') ? value : value.replace(' ', 'T');
 }
 
-function ListValueField({ descriptor, field, options, inputClassName }: ValueFieldInputProps & { inputClassName: string }) {
+type ListValueFieldProps = Pick<ValueFieldInputProps, 'descriptor' | 'field' | 'options'> & { inputClassName: string };
+
+function ListValueField({ descriptor, field, options, inputClassName }: ListValueFieldProps) {
     const [showAddCustom, setShowAddCustom] = useState(false);
-    const isExtensible = descriptor.properties.extensibleList === true;
+    const isExtensible = descriptor.properties.extensibleList;
     const multiSelect = descriptor.properties.multiSelect;
 
     useEffect(() => {
@@ -80,28 +80,23 @@ function ListValueField({ descriptor, field, options, inputClassName }: ValueFie
         .filter((v: string | number | boolean) => !seen.has(String(v)))
         .map((v: string | number | boolean) => ({ label: formatListLabel(v), value: v }));
     const extendedOptions = [...options, ...extra];
-    const { value: _omitValue, ...selectFieldProps } = field;
 
     return (
         <div className="flex flex-col gap-2 w-full">
-            <Container className="flex-row" gap={2}>
-                <div className="grow">
-                    <Select
-                        {...({
-                            ...selectFieldProps,
-                            value: listValue,
-                            onChange: handleListChange,
-                            id: descriptor.name,
-                            options: extendedOptions,
-                            isMulti: multiSelect,
-                            disabled: descriptor.properties.readOnly || showAddCustom,
-                            isClearable: !descriptor.properties.required,
-                            dropdownScope: 'window',
-                            className: 'grow',
-                        } as React.ComponentProps<typeof Select>)}
-                    />
-                </div>
-            </Container>
+            <Select
+                {...({
+                    ...field,
+                    value: listValue,
+                    onChange: handleListChange,
+                    id: descriptor.name,
+                    options: extendedOptions,
+                    isMulti: multiSelect,
+                    disabled: descriptor.properties.readOnly || showAddCustom,
+                    isClearable: !descriptor.properties.required,
+                    dropdownScope: 'window',
+                    className: 'grow',
+                } as React.ComponentProps<typeof Select>)}
+            />
             {isExtensible && !descriptor.properties.readOnly && (
                 <>
                     {!showAddCustom && (
@@ -136,31 +131,22 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
     const inputType = ContentFieldConfiguration[descriptor.contentType].type;
     const displayValue = descriptor.contentType === AttributeContentType.Datetime ? getFormattedDateTime(field.value) : field.value;
     const error = getValueFieldError(fieldState);
-    const invalid = fieldState.isTouched && !!fieldState.invalid;
+    const invalid = fieldState.isTouched && fieldState.invalid;
+    const inputId = id || descriptor.name;
     const inputClassName = cn(
         'py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600',
         { 'border-red-500 focus:border-red-500 focus:ring-red-500': invalid },
     );
 
     if (descriptor.properties.list) {
-        return (
-            <ListValueField
-                descriptor={descriptor}
-                id={id}
-                field={field}
-                fieldState={fieldState}
-                fieldStepValue={fieldStepValue}
-                options={options}
-                inputClassName={inputClassName}
-            />
-        );
+        return <ListValueField descriptor={descriptor} field={field} options={options} inputClassName={inputClassName} />;
     }
 
     switch (inputType) {
         case 'datetime-local':
             return (
                 <DatePicker
-                    id={descriptor.name}
+                    id={inputId}
                     value={normalizeDateValue(field.value)}
                     onChange={(value) => field.onChange(value)}
                     onBlur={field.onBlur}
@@ -177,7 +163,7 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
                     {...field}
                     disabled={descriptor.properties.readOnly}
                     type={inputType}
-                    id={descriptor.name}
+                    id={inputId}
                     step={fieldStepValue}
                     value={displayValue || ''}
                     className={inputClassName}
@@ -186,7 +172,7 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
         case 'checkbox':
             return (
                 <Switch
-                    id={id || descriptor.name || 'checkbox'}
+                    id={inputId}
                     checked={field.value}
                     onChange={(checked) => field.onChange(checked)}
                     disabled={descriptor.properties.readOnly}
@@ -195,7 +181,7 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
         default:
             return (
                 <TextInput
-                    id={descriptor.name}
+                    id={inputId}
                     type={inputType as 'text' | 'textarea' | 'number' | 'email' | 'password' | 'date' | 'time'}
                     disabled={descriptor.properties.readOnly}
                     value={displayValue || ''}
@@ -234,7 +220,7 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
                     value: a.data.toString(),
                 };
             }),
-        [descriptor],
+        [descriptor.content, descriptor.contentType],
     );
 
     useEffect(() => {
@@ -256,10 +242,7 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
         setValue(descriptor.name, initialValue ?? descriptorValue ?? scalarDefault);
     }, [descriptor, setValue, initialContent]);
 
-    const fieldStepValue = useMemo(() => {
-        const stepValue = getStepValue(descriptor.contentType);
-        return stepValue;
-    }, [descriptor]);
+    const fieldStepValue = useMemo(() => getStepValue(descriptor.contentType), [descriptor.contentType]);
 
     const beforeOnSubmit = useCallback(
         (attributeUuid: string, content: BaseAttributeContentModel[] | undefined) => {
@@ -287,7 +270,7 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
 
             onSubmit(attributeUuid, updatedContent);
         },
-        [onSubmit, descriptor],
+        [onSubmit, descriptor.contentType],
     );
 
     const transformObjectContent = (contentType: AttributeContentType, value: BaseAttributeContentModel) => {
@@ -299,8 +282,7 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
 
     const getFieldContent = (input: any) => {
         if (ContentFieldConfiguration[descriptor.contentType].type === 'checkbox') {
-            const booleanValue = input.checked === undefined ? (input.value ?? false) : input.checked;
-            return [{ data: booleanValue }];
+            return [{ data: input.value ?? false }];
         }
         if (!input.value && input.value !== 0 && input.value !== false) {
             return undefined;
@@ -327,7 +309,7 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
             result.push(validateRequired());
         }
         return result.length === 0 ? undefined : composeValidators(...result);
-    }, [descriptor]);
+    }, [descriptor.contentType, descriptor.properties.required]);
 
     if (!ContentFieldConfiguration[descriptor.contentType].type) {
         return null;
@@ -360,20 +342,22 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
 
                 return (
                     <>
-                        <div className={cn({ grow: inputType !== 'checkbox' })}>{inputComponent}</div>
-                        <Container className="flex-row justify-end mt-4" gap={2}>
-                            <Button type="button" variant="outline" onClick={() => onCancel?.()} data-testid="cancel-custom-value">
-                                Cancel
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={() => beforeOnSubmit(descriptor.uuid, inputContent)}
-                                disabled={!inputContent || fieldState.invalid}
-                                data-testid="save-custom-value"
-                            >
-                                Save
-                            </Button>
-                        </Container>
+                        <div className="flex flex-row items-center gap-2 w-full">
+                            <div className={cn({ grow: inputType !== 'checkbox' })}>{inputComponent}</div>
+                            <div className="flex flex-row gap-2 ml-auto">
+                                <Button type="button" variant="outline" onClick={() => onCancel?.()} data-testid="cancel-custom-value">
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={() => beforeOnSubmit(descriptor.uuid, inputContent)}
+                                    disabled={!inputContent || fieldState.invalid}
+                                    data-testid="save-custom-value"
+                                >
+                                    Save
+                                </Button>
+                            </div>
+                        </div>
                         {feedbackComponent}
                     </>
                 );
