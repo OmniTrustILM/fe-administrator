@@ -153,7 +153,6 @@ export default function CustomAttributeWidget({ resource, resourceUuid, attribut
                                 {selectedAttribute && (
                                     <div>
                                         <ContentValueField
-                                            id={resourceUuid}
                                             descriptor={selectedAttribute}
                                             onSubmit={(uuid, content) => {
                                                 reset({ selectCustomAttribute: '' });

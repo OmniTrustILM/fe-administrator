@@ -43,13 +43,7 @@ function AttributeEditForm({ descriptor, initialContent, onSubmit, onCancel }: R
     return (
         <ReactHookForm.FormProvider {...methods}>
             <form onSubmit={(e) => e.preventDefault()}>
-                <ContentValueField
-                    id={descriptor.name}
-                    descriptor={descriptor}
-                    initialContent={initialContent}
-                    onSubmit={onSubmit}
-                    onCancel={onCancel}
-                />
+                <ContentValueField descriptor={descriptor} initialContent={initialContent} onSubmit={onSubmit} onCancel={onCancel} />
             </form>
         </ReactHookForm.FormProvider>
     );

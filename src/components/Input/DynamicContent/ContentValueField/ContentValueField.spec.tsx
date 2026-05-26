@@ -339,10 +339,9 @@ test.describe('ContentValueField', () => {
         await expect(page.getByTestId('select-refAttr')).toBeVisible();
     });
 
-    test('id prop passed to ValueFieldInput for checkbox', async ({ mount, page }) => {
+    test('checkbox input is rendered with descriptor name as id', async ({ mount, page }) => {
         await mount(
             <ContentValueFieldTestWrapper
-                id="custom-id"
                 descriptor={buildDescriptor({
                     contentType: AttributeContentType.Boolean,
                     name: 'boolAttr',

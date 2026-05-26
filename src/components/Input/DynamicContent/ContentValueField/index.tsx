@@ -23,7 +23,6 @@ function getValueFieldError(fieldState: { error?: { message?: string }; isTouche
 
 type ValueFieldInputProps = {
     descriptor: CustomAttributeModel;
-    id?: string;
     field: { value: any; onChange: (v: any) => void; onBlur: () => void };
     fieldState: { isTouched: boolean; invalid: boolean; error?: { message?: string } };
     fieldStepValue: number | undefined;
@@ -127,12 +126,11 @@ function ListValueField({ descriptor, field, options, inputClassName }: ListValu
     );
 }
 
-function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, options }: Readonly<ValueFieldInputProps>) {
+function ValueFieldInput({ descriptor, field, fieldState, fieldStepValue, options }: Readonly<ValueFieldInputProps>) {
     const inputType = ContentFieldConfiguration[descriptor.contentType].type;
     const displayValue = descriptor.contentType === AttributeContentType.Datetime ? getFormattedDateTime(field.value) : field.value;
     const error = getValueFieldError(fieldState);
     const invalid = fieldState.isTouched && fieldState.invalid;
-    const inputId = id || descriptor.name;
     const inputClassName = cn(
         'py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600',
         { 'border-red-500 focus:border-red-500 focus:ring-red-500': invalid },
@@ -146,7 +144,7 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
         case 'datetime-local':
             return (
                 <DatePicker
-                    id={inputId}
+                    id={descriptor.name}
                     value={normalizeDateValue(field.value)}
                     onChange={(value) => field.onChange(value)}
                     onBlur={field.onBlur}
@@ -163,7 +161,7 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
                     {...field}
                     disabled={descriptor.properties.readOnly}
                     type={inputType}
-                    id={inputId}
+                    id={descriptor.name}
                     step={fieldStepValue}
                     value={displayValue || ''}
                     className={inputClassName}
@@ -172,7 +170,7 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
         case 'checkbox':
             return (
                 <Switch
-                    id={inputId}
+                    id={descriptor.name}
                     checked={field.value}
                     onChange={(checked) => field.onChange(checked)}
                     disabled={descriptor.properties.readOnly}
@@ -181,7 +179,7 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
         default:
             return (
                 <TextInput
-                    id={inputId}
+                    id={descriptor.name}
                     type={inputType as 'text' | 'textarea' | 'number' | 'email' | 'password' | 'date' | 'time'}
                     disabled={descriptor.properties.readOnly}
                     value={displayValue || ''}
@@ -194,14 +192,13 @@ function ValueFieldInput({ descriptor, id, field, fieldState, fieldStepValue, op
 }
 
 type Props = {
-    id?: string;
     descriptor: CustomAttributeModel;
     initialContent?: BaseAttributeContentModel[];
     onSubmit: (attributeUuid: string, content: BaseAttributeContentModel[]) => void;
     onCancel?: () => void;
 };
 
-export default function ContentValueField({ id, descriptor, initialContent, onSubmit, onCancel }: Readonly<Props>) {
+export default function ContentValueField({ descriptor, initialContent, onSubmit, onCancel }: Readonly<Props>) {
     const { control, setValue } = useFormContext();
 
     const options = useMemo(
@@ -329,7 +326,6 @@ export default function ContentValueField({ id, descriptor, initialContent, onSu
                 const inputComponent = (
                     <ValueFieldInput
                         descriptor={descriptor}
-                        id={id}
                         field={field}
                         fieldState={fieldState}
                         fieldStepValue={fieldStepValue}

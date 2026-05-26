@@ -3,18 +3,12 @@ import ContentValueField from './index';
 import type { BaseAttributeContentModel, CustomAttributeModel } from 'types/attributes';
 
 export type ContentValueFieldTestWrapperProps = {
-    id?: string;
     descriptor: CustomAttributeModel;
     initialContent?: BaseAttributeContentModel[];
     onSubmit?: (attributeUuid: string, content: BaseAttributeContentModel[]) => void;
 };
 
-function ContentValueFieldTestWrapper({
-    id,
-    descriptor,
-    initialContent,
-    onSubmit = () => {},
-}: Readonly<ContentValueFieldTestWrapperProps>) {
+function ContentValueFieldTestWrapper({ descriptor, initialContent, onSubmit = () => {} }: Readonly<ContentValueFieldTestWrapperProps>) {
     const methods = ReactHookForm.useForm({
         defaultValues: {
             [descriptor.name]: undefined,
@@ -23,7 +17,7 @@ function ContentValueFieldTestWrapper({
     });
     return (
         <ReactHookForm.FormProvider {...methods}>
-            <ContentValueField id={id} descriptor={descriptor} initialContent={initialContent} onSubmit={onSubmit} />
+            <ContentValueField descriptor={descriptor} initialContent={initialContent} onSubmit={onSubmit} />
         </ReactHookForm.FormProvider>
     );
 }
