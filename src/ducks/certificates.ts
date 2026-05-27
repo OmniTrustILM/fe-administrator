@@ -286,11 +286,17 @@ export const slice = createSlice({
             state.isAssociating = false;
         },
 
-        deassociateCertificate: (state, action: PayloadAction<{ uuid: string; certificateUuid: string }>) => {
+        deassociateCertificate: (
+            state,
+            action: PayloadAction<{ uuid: string; certificateUuid: string; relation: 'predecessor' | 'successor' }>,
+        ) => {
             state.isDeassociating = true;
         },
 
-        deassociateCertificateSuccess: (state, action: PayloadAction<{ uuid: string; certificateUuid: string }>) => {
+        deassociateCertificateSuccess: (
+            state,
+            action: PayloadAction<{ uuid: string; certificateUuid: string; relation: 'predecessor' | 'successor' }>,
+        ) => {
             state.isDeassociating = false;
         },
 

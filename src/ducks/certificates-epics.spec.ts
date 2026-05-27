@@ -37,6 +37,7 @@ import { actions as certificatesActions } from './certificates';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 
+const DEASSOCIATE_EPIC_INDEX = 4;
 const REVOKE_EPIC_INDEX = 10;
 const MANUALLY_ISSUE_EPIC_INDEX = 13;
 const MANUALLY_CONFIRM_REVOKE_EPIC_INDEX = 14;
@@ -108,7 +109,60 @@ async function runUploadEpic(
     return firstValueFrom(output$.pipe(take(takeCount), toArray()));
 }
 
+async function runDeassociateEpic(
+    action: UnknownAction,
+    removeCertificateAssociation: (args: any) => any = () => of(undefined),
+    takeCount = 1,
+): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => any)[];
+    const calls: any[] = [];
+    const deps = {
+        apiClients: {
+            certificates: {
+                removeCertificateAssociation: (args: any) => {
+                    calls.push(args);
+                    return removeCertificateAssociation(args);
+                },
+            },
+        },
+    };
+    const output$ = epics[DEASSOCIATE_EPIC_INDEX](of(action), of({}) as any, deps as any);
+    const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
+    return { emitted, calls };
+}
+
 describe('certificates epics', () => {
+    test('deassociateCertificate predecessor relation calls API without swapping uuids and emits Success', async () => {
+        const { emitted, calls } = await runDeassociateEpic(
+            certificatesActions.deassociateCertificate({ uuid: 'current-cert', certificateUuid: 'related-cert', relation: 'predecessor' }),
+        );
+        // current cert is the successor, related cert is the predecessor → no swap
+        expect(calls[0]).toEqual({ uuid: 'current-cert', certificateUuid: 'related-cert' });
+        expect(emitted[0].type).toBe(certificatesActions.deassociateCertificateSuccess.type);
+        expect((emitted[0] as any).payload.uuid).toBe('current-cert');
+    });
+
+    test('deassociateCertificate successor relation swaps uuids so the API can find the relation row', async () => {
+        const { emitted, calls } = await runDeassociateEpic(
+            certificatesActions.deassociateCertificate({ uuid: 'current-cert', certificateUuid: 'related-cert', relation: 'successor' }),
+        );
+        // current cert is the predecessor, related cert is the successor → swap so {uuid}=successor, {certificateUuid}=predecessor
+        expect(calls[0]).toEqual({ uuid: 'related-cert', certificateUuid: 'current-cert' });
+        expect(emitted[0].type).toBe(certificatesActions.deassociateCertificateSuccess.type);
+        expect((emitted[0] as any).payload.uuid).toBe('current-cert');
+    });
+
+    test('deassociateCertificate failure emits Failure with extracted error and fetchError', async () => {
+        const { emitted } = await runDeassociateEpic(
+            certificatesActions.deassociateCertificate({ uuid: 'current-cert', certificateUuid: 'related-cert', relation: 'successor' }),
+            () => throwError(() => new Error('boom')),
+            2,
+        );
+        expect(emitted[0].type).toBe(certificatesActions.deassociateCertificateFailure.type);
+        expect((emitted[0] as any).payload.error).toContain('boom');
+        expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+    });
+
     test('revokeCertificate success emits Success, alert, getCertificateDetail, getCertificateHistory', async () => {
         const emitted = await runEpic(
             REVOKE_EPIC_INDEX,

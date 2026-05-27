@@ -736,10 +736,15 @@ export default function CertificateDetail() {
     const onDeleteRelatedCertificate = useCallback(() => {
         if (relatedCertificateCheckedRows.length === 0 || !id) return;
 
-        dispatch(actions.deassociateCertificate({ uuid: id, certificateUuid: relatedCertificateCheckedRows[0] }));
+        const relatedCertificateUuid = relatedCertificateCheckedRows[0];
+        const relation = relatedCertificates.find((c) => c.uuid === relatedCertificateUuid)?.relation;
+
+        if (!relation) return;
+
+        dispatch(actions.deassociateCertificate({ uuid: id, certificateUuid: relatedCertificateUuid, relation }));
         setConfirmDeleteRelatedCertificate(false);
         setRelatedCertificateCheckedRows([]);
-    }, [relatedCertificateCheckedRows, id, dispatch]);
+    }, [relatedCertificateCheckedRows, id, dispatch, relatedCertificates]);
 
     const cloneCertificateFilters = useCallback((filters: typeof currentFilters) => {
         return filters.map((filter) => ({

@@ -128,9 +128,16 @@ const handleAssociateCertificateSuccess: AppEpic = (action$, state, deps) => {
 const deassociateCertificate: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.deassociateCertificate.match),
-        switchMap((action) =>
-            deps.apiClients.certificates
-                .removeCertificateAssociation({ uuid: action.payload.uuid, certificateUuid: action.payload.certificateUuid })
+        switchMap((action) => {
+            // The relation is stored as (successorCertificateUuid, predecessorCertificateUuid) and the DELETE
+            // endpoint expects {uuid} = successor and {certificateUuid} = predecessor. action.payload.uuid is the
+            // certificate currently open in the UI; when the related certificate is its successor we must swap the
+            // two UUIDs, otherwise the API cannot find the relation row and returns 404.
+            const { uuid, certificateUuid, relation } = action.payload;
+            const [successorUuid, predecessorUuid] = relation === 'successor' ? [certificateUuid, uuid] : [uuid, certificateUuid];
+
+            return deps.apiClients.certificates
+                .removeCertificateAssociation({ uuid: successorUuid, certificateUuid: predecessorUuid })
                 .pipe(
                     mergeMap(() => of(slice.actions.deassociateCertificateSuccess(action.payload))),
                     catchError((err) =>
@@ -141,8 +148,8 @@ const deassociateCertificate: AppEpic = (action$, state, deps) => {
                             appRedirectActions.fetchError({ error: err, message: 'Failed to deassociate certificate' }),
                         ),
                     ),
-                ),
-        ),
+                );
+        }),
     );
 };
 
