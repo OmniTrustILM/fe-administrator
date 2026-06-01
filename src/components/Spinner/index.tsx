@@ -11,7 +11,7 @@ function Spinner({ active = true, color = 'primary', size = 'md', dataTestId }: 
 
     return (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-            <div
+            <output
                 data-testid={dataTestId || 'spinner'}
                 className={cn(
                     'animate-spin inline-block border-3 border-current border-t-transparent text-blue-600 rounded-full dark:text-blue-500',
@@ -24,11 +24,10 @@ function Spinner({ active = true, color = 'primary', size = 'md', dataTestId }: 
                         'text-white': color === 'light',
                     },
                 )}
-                role="status"
                 aria-label="loading"
             >
                 <span className="sr-only">Loading...</span>
-            </div>
+            </output>
         </div>
     );
 }

@@ -8,7 +8,8 @@ async function loadProxyConfig() {
     try {
         const { default: customProxyConfig } = await import('./src/setupProxy.js');
         return customProxyConfig.server.proxy;
-    } catch (_error) {
+    } catch {
+        // No custom proxy config present (src/setupProxy.js is optional) — fall back to no proxy.
         return {};
     }
 }

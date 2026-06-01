@@ -2,10 +2,12 @@ import { test, expect } from '@playwright/experimental-ct-react';
 import { CertificateState } from 'types/openapi';
 import PendingActionButtonsWithStore from './PendingActionButtonsWithStore';
 
-const buildCert = (state: CertificateState, raProfile: any = { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' }) => ({
+const defaultRaProfile = { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' };
+
+const buildCert = (state: CertificateState, raProfile: any = defaultRaProfile) => ({
     uuid: 'cert-1',
     state,
-    raProfile: raProfile as any,
+    raProfile,
 });
 
 const mountPendingButtons = (mount: any, state: CertificateState, preloadedState?: any) =>

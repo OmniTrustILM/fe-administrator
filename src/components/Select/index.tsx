@@ -370,7 +370,7 @@ function Select({
             return <span className={PLACEHOLDER_CLASSES}>{hasOptions ? placeholder : 'No options'}</span>;
         }
         const matched = options.find((o) => valuesMatch(o.value, singleRawValue));
-        const labelText = matched?.label ?? String(singleRawValue);
+        const labelText = matched?.label ?? getOptionValueString(singleRawValue);
         if (colorizeVersionLabel) {
             return <span>{renderColorizedVersionLabel(labelText)}</span>;
         }
@@ -405,14 +405,22 @@ function Select({
         return valuesMatch(opt.value, singleRawValue);
     };
 
-    const triggerClass = isMulti
-        ? cn(effectiveClearable && hasValue ? WRAPPER_CLEARABLE_CLASSES : WRAPPER_CLASSES, triggerDisabled && TRIGGER_DISABLED_CLASSES)
-        : cn(effectiveClearable && hasValue ? TRIGGER_CLEARABLE_CLASSES : TRIGGER_CLASSES, triggerDisabled && TRIGGER_DISABLED_CLASSES);
+    const clearableActive = effectiveClearable && hasValue;
+    const multiBaseClass = clearableActive ? WRAPPER_CLEARABLE_CLASSES : WRAPPER_CLASSES;
+    const singleBaseClass = clearableActive ? TRIGGER_CLEARABLE_CLASSES : TRIGGER_CLASSES;
+    const triggerClass = cn(isMulti ? multiBaseClass : singleBaseClass, triggerDisabled && TRIGGER_DISABLED_CLASSES);
 
     const listboxId = `${id}-listbox`;
     const getOptionDomId = (val: OptionValue) => `${id}-option-${getOptionValueString(val)}`;
     const activeOption = highlightedIndex >= 0 && highlightedIndex < visibleOptions.length ? visibleOptions[highlightedIndex] : undefined;
     const activeDescendantId = activeOption ? getOptionDomId(activeOption.value) : undefined;
+
+    // Value mirrored onto the hidden native <select>.
+    const nativeSelectValue = (() => {
+        if (isMulti) return (multiValues ?? []).map((v) => getOptionValueString(v.value));
+        if (singleRawValue == null) return '';
+        return getOptionValueString(singleRawValue);
+    })();
 
     return (
         <div data-testid={dataTestId ?? `select-${id}`}>
@@ -458,7 +466,7 @@ function Select({
                                 }
                             }}
                             onKeyDown={onListKeyDown}
-                            aria-activedescendant={!hasSearch ? activeDescendantId : undefined}
+                            aria-activedescendant={hasSearch ? undefined : activeDescendantId}
                             data-testid={dataTestId ? `${dataTestId}-content` : `select-${id}-content`}
                         >
                             {hasSearch && (
@@ -487,7 +495,13 @@ function Select({
                                     />
                                 </div>
                             )}
-                            <div id={listboxId} role="listbox" aria-multiselectable={isMulti} className={LISTBOX_CLASSES} tabIndex={-1}>
+                            <div // NOSONAR(S6819): custom combobox listbox built on Radix Popover — a native <select> cannot host this aria-activedescendant pattern
+                                id={listboxId}
+                                role="listbox"
+                                aria-multiselectable={isMulti}
+                                className={LISTBOX_CLASSES}
+                                tabIndex={-1}
+                            >
                                 {visibleOptions.length === 0 ? (
                                     <div className={NO_OPTIONS_CLASSES}>No options</div>
                                 ) : (
@@ -531,13 +545,7 @@ function Select({
                     tabIndex={-1}
                     className="sr-only"
                     data-testid={dataTestId ? `${dataTestId}-input` : `select-${id}-input`}
-                    value={
-                        isMulti
-                            ? (multiValues ?? []).map((v) => getOptionValueString(v.value))
-                            : singleRawValue == null
-                              ? ''
-                              : getOptionValueString(singleRawValue)
-                    }
+                    value={nativeSelectValue}
                     onChange={() => {
                         /* controlled by the popover; native onChange is unused */
                     }}

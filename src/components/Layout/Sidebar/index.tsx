@@ -501,13 +501,9 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
     return (
         <>
             {menuSize === 'flying' && (
-                <div
-                    role="region"
+                <section
                     aria-label="Sidebar menu"
-                    className={cn(
-                        'fixed top-[var(--header-height)] left-0 h-[calc(100vh-var(--header-height))] bg-white shadow-lg w-[260px] z-50',
-                        {},
-                    )}
+                    className="fixed top-[var(--header-height)] left-0 h-[calc(100vh-var(--header-height))] bg-white shadow-lg w-[260px] z-50"
                     onMouseLeave={() => {
                         setMenuSize('small');
                         setOpenMenuItems([]);
@@ -525,7 +521,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                             <ul className="list-none m-0 flex flex-col gap-y-1">{allowedMenuItems.map((item) => renderMenuItem(item))}</ul>
                         </nav>
                     </SimpleBar>
-                </div>
+                </section>
             )}
             <SimpleBar
                 forceVisible="y"

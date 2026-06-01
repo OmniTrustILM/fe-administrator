@@ -49,7 +49,8 @@ test.describe('Spinner', () => {
 
         const spinner = component.getByRole('status', { name: 'loading' });
         await expect(spinner).toHaveAttribute('aria-label', 'loading');
-        await expect(spinner).toHaveAttribute('role', 'status');
+        // role="status" is now the implicit role of the semantic <output> element.
+        await expect(spinner).toHaveJSProperty('tagName', 'OUTPUT');
     });
 
     test('should have sr-only loading text', async ({ mount }) => {

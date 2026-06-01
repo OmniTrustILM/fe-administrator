@@ -157,7 +157,7 @@ test.describe('Select', () => {
         const trigger = page.getByTestId('sel-trigger');
         await expect(trigger).toContainText('Version 1');
         await expect(trigger).toContainText('(Latest)');
-        await expect(trigger.locator('span.text-\\[var\\(--primary-blue-color\\)\\]')).toBeVisible();
+        await expect(trigger.locator(String.raw`span.text-\[var\(--primary-blue-color\)\]`)).toBeVisible();
     });
 
     test('showOptionDescriptionInDropdown renders second line in option', async ({ mount, page }) => {
@@ -176,7 +176,7 @@ test.describe('Select', () => {
         await page.getByTestId('sel-trigger').click();
         const addNew = page.getByRole('option', { name: '+ Add new' });
         await expect(addNew).toBeVisible();
-        await expect(addNew.locator('span.text-blue-600, span.dark\\:text-blue-400')).toHaveCount(1);
+        await expect(addNew.locator(String.raw`span.text-blue-600, span.dark\:text-blue-400`)).toHaveCount(1);
     });
 
     test('object-valued options match selected via value matchers', async ({ mount, page }) => {

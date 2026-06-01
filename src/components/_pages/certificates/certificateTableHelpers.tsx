@@ -195,8 +195,7 @@ export function buildCertificateDetailBaseRows(
     certificate: CertificateDetailResponseModel,
     validationResult: CertificateValidationResultDto | undefined,
     isCertificateArchived: boolean,
-    certificateKeyUsageEnum: any,
-    qcTypeEnum: any,
+    enums: { certificateKeyUsage: any; qcType: any },
     dateFormatter: (d: Date) => string,
     getEnumLabel: (e: any, key: string) => string,
     onPendingAction: (action: PendingAction) => void,
@@ -318,7 +317,7 @@ export function buildCertificateDetailBaseRows(
                 'Key Usage',
                 certificate?.keyUsage?.map((name) => (
                     <div key={name} style={{ margin: '1px' }}>
-                        <Badge>{getEnumLabel(certificateKeyUsageEnum, name)}</Badge>
+                        <Badge>{getEnumLabel(enums.certificateKeyUsage, name)}</Badge>
                         &nbsp;
                     </div>
                 )) || '',
@@ -355,7 +354,7 @@ export function buildCertificateDetailBaseRows(
     );
 
     if (certificate.qcStatements) {
-        rows.push(...buildQcStatementRows(certificate.qcStatements, qcTypeEnum, getEnumLabel));
+        rows.push(...buildQcStatementRows(certificate.qcStatements, enums.qcType, getEnumLabel));
     }
 
     return rows;

@@ -299,7 +299,7 @@ test.describe('CustomFlowNode', () => {
             />,
         );
         await component.getByRole('button', { name: /Expand/i }).click();
-        const copyButton = component.locator('span[role="button"].cursor-pointer').first();
+        const copyButton = component.locator('button:has(svg.lucide-copy)').first();
         await expect(copyButton).toBeVisible();
     });
 

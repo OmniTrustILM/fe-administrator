@@ -396,7 +396,8 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                                     <div className="flex items-center gap-2 break-all whitespace-normal">
                                                         {property?.propertyValue && <span>{property.propertyValue}</span>}
                                                         {property?.copyable && property?.propertyValue && (
-                                                            <span
+                                                            <button
+                                                                type="button"
                                                                 onClick={() => {
                                                                     if (typeof property.propertyValue === 'string') {
                                                                         copyToClipboard(
@@ -406,24 +407,10 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                                                         );
                                                                     }
                                                                 }}
-                                                                className="cursor-pointer"
-                                                                role="button"
-                                                                tabIndex={0}
-                                                                onKeyDown={(event) => {
-                                                                    if (event.key === 'Enter' || event.key === ' ') {
-                                                                        event.preventDefault();
-                                                                        if (typeof property.propertyValue === 'string') {
-                                                                            copyToClipboard(
-                                                                                property.propertyValue,
-                                                                                `${property.propertyName} copied to clipboard`,
-                                                                                `Failed to copy ${property.propertyName} to clipboard`,
-                                                                            );
-                                                                        }
-                                                                    }
-                                                                }}
+                                                                className="cursor-pointer inline-flex items-center appearance-none border-0 bg-transparent p-0 text-inherit"
                                                             >
                                                                 <Copy size={14} />
-                                                            </span>
+                                                            </button>
                                                         )}
                                                         {property?.propertyContent && <>{property.propertyContent}</>}
                                                     </div>

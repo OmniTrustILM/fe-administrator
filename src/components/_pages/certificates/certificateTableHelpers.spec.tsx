@@ -112,8 +112,7 @@ test.describe('certificateTableHelpers', () => {
                 minimalCertificate,
                 undefined,
                 false,
-                {},
-                {},
+                { certificateKeyUsage: {}, qcType: {} },
                 (d: Date) => d.toISOString().slice(0, 10),
                 (_e: any, k: string) => k,
             );
@@ -132,7 +131,14 @@ test.describe('certificateTableHelpers', () => {
         });
 
         test('each row has two columns (label, value)', () => {
-            const rows = buildCertificateDetailBaseRows(minimalCertificate, undefined, false, {}, {}, mockDateFormatter, mockGetEnumLabel);
+            const rows = buildCertificateDetailBaseRows(
+                minimalCertificate,
+                undefined,
+                false,
+                { certificateKeyUsage: {}, qcType: {} },
+                mockDateFormatter,
+                mockGetEnumLabel,
+            );
 
             rows.forEach((row) => {
                 expect(row.columns).toHaveLength(2);
@@ -149,7 +155,14 @@ test.describe('certificateTableHelpers', () => {
                 altKeySize: 2048,
             } as CertificateDetailResponseModel;
 
-            const rows = buildCertificateDetailBaseRows(hybridCert, undefined, false, {}, {}, mockDateFormatter, mockGetEnumLabel);
+            const rows = buildCertificateDetailBaseRows(
+                hybridCert,
+                undefined,
+                false,
+                { certificateKeyUsage: {}, qcType: {} },
+                mockDateFormatter,
+                mockGetEnumLabel,
+            );
 
             const ids = rows.map((r) => r.id);
             expect(ids).toContain('altKey');
@@ -169,7 +182,14 @@ test.describe('certificateTableHelpers', () => {
                 },
             } as CertificateDetailResponseModel;
 
-            const rows = buildCertificateDetailBaseRows(certWithQc, undefined, false, {}, {}, mockDateFormatter, mockGetEnumLabel);
+            const rows = buildCertificateDetailBaseRows(
+                certWithQc,
+                undefined,
+                false,
+                { certificateKeyUsage: {}, qcType: {} },
+                mockDateFormatter,
+                mockGetEnumLabel,
+            );
 
             const ids = rows.map((r) => r.id);
             expect(ids).toContain('qcCompliance');
@@ -179,7 +199,14 @@ test.describe('certificateTableHelpers', () => {
         });
 
         test('omits qcStatements rows when certificate has no qcStatements', () => {
-            const rows = buildCertificateDetailBaseRows(minimalCertificate, undefined, false, {}, {}, mockDateFormatter, mockGetEnumLabel);
+            const rows = buildCertificateDetailBaseRows(
+                minimalCertificate,
+                undefined,
+                false,
+                { certificateKeyUsage: {}, qcType: {} },
+                mockDateFormatter,
+                mockGetEnumLabel,
+            );
 
             const ids = rows.map((r) => r.id);
             expect(ids).not.toContain('qcCompliance');
@@ -194,7 +221,14 @@ test.describe('certificateTableHelpers', () => {
                 qcStatements: { qcCompliance: false, qcSscd: false, qcType: [], qcCcLegislation: [] },
             } as CertificateDetailResponseModel;
 
-            const rows = buildCertificateDetailBaseRows(certWithQc, undefined, false, {}, {}, mockDateFormatter, mockGetEnumLabel);
+            const rows = buildCertificateDetailBaseRows(
+                certWithQc,
+                undefined,
+                false,
+                { certificateKeyUsage: {}, qcType: {} },
+                mockDateFormatter,
+                mockGetEnumLabel,
+            );
 
             const ids = rows.map((r) => r.id);
             expect(ids).toContain('qcCompliance');
@@ -211,7 +245,14 @@ test.describe('certificateTableHelpers', () => {
             const qcTypeEnum = { esign: { label: 'Electronic Signature' } };
             const getLabel = (_e: any, k: string) => `label-${k}`;
 
-            const rows = buildCertificateDetailBaseRows(certWithQc, undefined, false, {}, qcTypeEnum, mockDateFormatter, getLabel);
+            const rows = buildCertificateDetailBaseRows(
+                certWithQc,
+                undefined,
+                false,
+                { certificateKeyUsage: {}, qcType: qcTypeEnum },
+                mockDateFormatter,
+                getLabel,
+            );
 
             const qcTypeRow = rows.find((r) => r.id === 'qcType');
             expect(qcTypeRow).toBeDefined();

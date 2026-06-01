@@ -109,7 +109,7 @@ export default function FileUpload({
         dropZoneHintText || `Select or drag & drop ${fileType} file to drop zone or paste file content in the text area.`;
 
     return (
-        <div role="region" aria-label="File upload area" onDrop={onFileDrop} onDragOver={onFileDragOver}>
+        <section aria-label="File upload area" onDrop={onFileDrop} onDragOver={onFileDragOver}>
             {showFileInfo && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
@@ -166,6 +166,6 @@ export default function FileUpload({
                 </Label>
                 <input id={`${id}__fileUpload__file`} type="file" className="hidden" onChange={onFileChanged} />
             </div>
-        </div>
+        </section>
     );
 }

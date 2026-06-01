@@ -85,7 +85,7 @@ test.describe('FileUpload', () => {
         const textarea = component.locator('textarea');
         await textarea.fill('hello');
         expect(calls.length).toBeGreaterThanOrEqual(1);
-        expect(calls[calls.length - 1]).toBe(btoa('hello'));
+        expect(calls.at(-1)).toBe(btoa('hello'));
     });
 
     test('should also call onFileContentLoaded on blur (regression guard for existing flow)', async ({ mount }) => {
@@ -95,7 +95,7 @@ test.describe('FileUpload', () => {
         const callsAfterFill = calls.length;
         await textarea.blur();
         expect(calls.length).toBe(callsAfterFill + 1);
-        expect(calls[calls.length - 1]).toBe(btoa('hello'));
+        expect(calls.at(-1)).toBe(btoa('hello'));
     });
 
     test('should not call onFileContentLoaded on change when content is empty', async ({ mount }) => {
