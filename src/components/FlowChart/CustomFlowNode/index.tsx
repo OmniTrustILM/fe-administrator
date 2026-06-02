@@ -408,6 +408,8 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                                                     }
                                                                 }}
                                                                 className="cursor-pointer inline-flex items-center appearance-none border-0 bg-transparent p-0 text-inherit"
+                                                                aria-label={`Copy ${property.propertyName}`}
+                                                                title={`Copy ${property.propertyName}`}
                                                             >
                                                                 <Copy size={14} />
                                                             </button>

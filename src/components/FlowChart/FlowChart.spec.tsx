@@ -8,11 +8,11 @@ function buildNode(id: string, overrides: Partial<CustomNode> = {}): CustomNode 
         id,
         type: 'customFlowNode',
         position: { x: 0, y: 0 },
+        ...overrides,
         data: {
             customNodeCardTitle: `Node ${id}`,
             ...overrides.data,
         },
-        ...overrides,
     } as CustomNode;
 }
 
