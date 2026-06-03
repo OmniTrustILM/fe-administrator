@@ -6191,6 +6191,10 @@
     "color.transparent": {
       "type": "color",
       "value": "#00000000"
+    },
+    "color.neutral-500": {
+      "type": "color",
+      "value": "#737373"
     }
   }
 }
