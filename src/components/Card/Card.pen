@@ -1,0 +1,787 @@
+{
+  "version": "2.13",
+  "children": [
+    {
+      "type": "frame",
+      "id": "xFBzc",
+      "x": 0,
+      "y": 0,
+      "clip": true,
+      "width": 1000,
+      "height": 620,
+      "fill": "$color.gray-100",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "gap": 32,
+      "padding": [
+        44,
+        40,
+        36,
+        40
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "z79fct",
+          "name": "Title Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "children": [
+            {
+              "type": "text",
+              "id": "Ymo6u",
+              "name": "Page Title",
+              "fill": "$color.gray-900",
+              "content": "Light",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "eF182",
+              "name": "Page Subtitle",
+              "fill": "$color.gray-700",
+              "content": "Card design system — variants and states",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "yau6v",
+          "name": "Cards Grid",
+          "width": "fill_container",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "C7s1Ts",
+              "name": "Empty Wrapper",
+              "layout": "vertical",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Uqfyb",
+                  "name": "Empty Card",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "#ffffff",
+                  "cornerRadius": 12,
+                  "stroke": "#e8e8e8",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "outer",
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000014",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 20
+                },
+                {
+                  "type": "text",
+                  "id": "DzbGe",
+                  "name": "Empty Label",
+                  "fill": "$color.gray-700",
+                  "content": "Empty",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PQDwr",
+              "name": "Title Wrapper",
+              "layout": "vertical",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "t2Hnd",
+                  "name": "Title Card",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "#ffffff",
+                  "cornerRadius": 12,
+                  "stroke": "#e8e8e8",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "outer",
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000014",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "WJFa8",
+                      "name": "Card Title",
+                      "fill": "$color.gray-800",
+                      "content": "Card title",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "dVLRC",
+                  "name": "Title Label",
+                  "fill": "$color.gray-700",
+                  "content": "Title",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cNg7z",
+              "name": "TitleSub Wrapper",
+              "layout": "vertical",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "d7YH2",
+                  "name": "TitleSub Card",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "#ffffff",
+                  "cornerRadius": 12,
+                  "stroke": "#e8e8e8",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "outer",
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000014",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "C0VbFm",
+                      "name": "Subtitle Text",
+                      "fill": "$color.gray-500",
+                      "content": "CATEGORY",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "OGDaB",
+                      "name": "Title Text",
+                      "fill": "$color.gray-800",
+                      "content": "Card title",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "WbcbW",
+                  "name": "TitleSub Label",
+                  "fill": "$color.gray-700",
+                  "content": "Title + Subtitle",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "IHiSY",
+              "name": "FullContent Wrapper",
+              "layout": "vertical",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "GDrDn",
+                  "name": "FullContent Card",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "#ffffff",
+                  "cornerRadius": 12,
+                  "stroke": "#e8e8e8",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "outer",
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000014",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "kgtXr",
+                      "name": "Subtitle Text",
+                      "fill": "$color.gray-500",
+                      "content": "CATEGORY",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "O5Bw9",
+                      "name": "Title Text",
+                      "fill": "$color.gray-800",
+                      "content": "Card title",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "bjIIK",
+                      "name": "Body Text",
+                      "fill": "$color.gray-500",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "This is the card body content with some descriptive text.",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "vsGo6",
+                  "name": "FullContent Label",
+                  "fill": "$color.gray-700",
+                  "content": "Full content",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "E0O8u",
+              "name": "Loading Wrapper",
+              "layout": "vertical",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "RrX61",
+                  "name": "Loading Card",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "#ffffff",
+                  "cornerRadius": 12,
+                  "stroke": "#e8e8e8",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "outer",
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000014",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 20,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "hDF8H",
+                      "name": "Spinner",
+                      "innerRadius": 0.7,
+                      "width": 24,
+                      "height": 24,
+                      "stroke": "$color.blue-500",
+                      "strokeWidth": 2.5
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "FKIfW",
+                  "name": "Loading Label",
+                  "fill": "$color.gray-700",
+                  "content": "Loading",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "xeOoJ",
+      "x": 1040,
+      "y": 0,
+      "clip": true,
+      "width": 1000,
+      "height": 620,
+      "fill": "#0d0d0d",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "gap": 32,
+      "padding": [
+        44,
+        40,
+        36,
+        40
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "XklbU",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "children": [
+            {
+              "type": "text",
+              "id": "FrCDW",
+              "fill": "$color.white",
+              "content": "Dark",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "L31xi",
+              "fill": "$color.neutral-300",
+              "content": "Card design system — variants and states",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "tvhKG",
+          "width": "fill_container",
+          "height": "fill_container",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "p3A6i7",
+              "layout": "vertical",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "dlF99",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "$color.neutral-900",
+                  "cornerRadius": 12,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000040",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  }
+                },
+                {
+                  "type": "text",
+                  "id": "P81Z5",
+                  "fill": "$color.neutral-300",
+                  "content": "Empty",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "EbBgU",
+              "layout": "vertical",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "uCpif",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "$color.neutral-900",
+                  "cornerRadius": 12,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000040",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "kbNMV",
+                      "fill": "$color.white",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Card title",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "KKkpF",
+                  "fill": "$color.neutral-300",
+                  "content": "Title",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "O1Bzj",
+              "layout": "vertical",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "e9m7yG",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "$color.neutral-900",
+                  "cornerRadius": 12,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000040",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "yeKWJ",
+                      "fill": "$color.neutral-500",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "CATEGORY",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ZRFC2",
+                      "fill": "$color.white",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Card title",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "wzria",
+                  "fill": "$color.neutral-300",
+                  "content": "Title + Subtitle",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "FYmdm",
+              "layout": "vertical",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "EWLx6",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "$color.neutral-900",
+                  "cornerRadius": 12,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000040",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "x8xHW",
+                      "fill": "$color.neutral-500",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "CATEGORY",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "GHh9w",
+                      "fill": "$color.white",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Card title",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "dLIKp",
+                      "fill": "$color.neutral-400",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "This is the card body content with some descriptive text.",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "cynQ9",
+                  "fill": "$color.neutral-300",
+                  "content": "Full content",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "G1MmY",
+              "layout": "vertical",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "mOzek",
+                  "width": 160,
+                  "height": 160,
+                  "fill": "$color.neutral-900",
+                  "cornerRadius": 12,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000040",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "EMRAs",
+                      "innerRadius": 0.7,
+                      "sweepAngle": 270,
+                      "fill": "#00000000",
+                      "width": 24,
+                      "height": 24,
+                      "stroke": "$color.blue-500",
+                      "strokeWidth": 2.5,
+                      "strokeLinecap": "round"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "J2K8A",
+                  "fill": "$color.neutral-300",
+                  "content": "Loading",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color.blue-500": {
+      "type": "color",
+      "value": "#0085e6"
+    },
+    "color.gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.gray-400": {
+      "type": "color",
+      "value": "#c7c7c7"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-700": {
+      "type": "color",
+      "value": "#8c8c8c"
+    },
+    "color.gray-800": {
+      "type": "color",
+      "value": "#666666"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.neutral-400": {
+      "type": "color",
+      "value": "#a3a3a3"
+    },
+    "color.neutral-500": {
+      "type": "color",
+      "value": "#737373"
+    },
+    "color.neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "color.neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    },
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    }
+  }
+}
