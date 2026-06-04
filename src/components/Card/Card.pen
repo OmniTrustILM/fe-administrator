@@ -71,9 +71,9 @@
                   "name": "Empty Card",
                   "width": 160,
                   "height": 160,
-                  "fill": "#ffffff",
+                  "fill": "$color.white",
                   "cornerRadius": 12,
-                  "stroke": "#e8e8e8",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "outer",
                   "effect": {
@@ -116,9 +116,9 @@
                   "name": "Title Card",
                   "width": 160,
                   "height": 160,
-                  "fill": "#ffffff",
+                  "fill": "$color.white",
                   "cornerRadius": 12,
-                  "stroke": "#e8e8e8",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "outer",
                   "effect": {
@@ -173,9 +173,9 @@
                   "name": "TitleSub Card",
                   "width": 160,
                   "height": 160,
-                  "fill": "#ffffff",
+                  "fill": "$color.white",
                   "cornerRadius": 12,
-                  "stroke": "#e8e8e8",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "outer",
                   "effect": {
@@ -240,9 +240,9 @@
                   "name": "FullContent Card",
                   "width": 160,
                   "height": 160,
-                  "fill": "#ffffff",
+                  "fill": "$color.white",
                   "cornerRadius": 12,
-                  "stroke": "#e8e8e8",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "outer",
                   "effect": {
@@ -319,9 +319,9 @@
                   "name": "Loading Card",
                   "width": 160,
                   "height": 160,
-                  "fill": "#ffffff",
+                  "fill": "$color.white",
                   "cornerRadius": 12,
-                  "stroke": "#e8e8e8",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "outer",
                   "effect": {
@@ -345,10 +345,13 @@
                       "id": "hDF8H",
                       "name": "Spinner",
                       "innerRadius": 0.7,
+                      "sweepAngle": 270,
+                      "fill": "$color.transparent",
                       "width": 24,
                       "height": 24,
                       "stroke": "$color.blue-500",
-                      "strokeWidth": 2.5
+                      "strokeWidth": 2.5,
+                      "strokeLinecap": "round"
                     }
                   ]
                 },
@@ -376,7 +379,7 @@
       "clip": true,
       "width": 1000,
       "height": 620,
-      "fill": "#0d0d0d",
+      "fill": "$color.neutral-950",
       "cornerRadius": 12,
       "layout": "vertical",
       "gap": 32,
@@ -692,7 +695,7 @@
                       "id": "EMRAs",
                       "innerRadius": 0.7,
                       "sweepAngle": 270,
-                      "fill": "#00000000",
+                      "fill": "$color.transparent",
                       "width": 24,
                       "height": 24,
                       "stroke": "$color.blue-500",
@@ -779,9 +782,17 @@
       "type": "color",
       "value": "#171717"
     },
+    "color.neutral-950": {
+      "type": "color",
+      "value": "#0d0d0d"
+    },
     "color.white": {
       "type": "color",
       "value": "#ffffff"
+    },
+    "color.transparent": {
+      "type": "color",
+      "value": "#00000000"
     }
   }
 }
