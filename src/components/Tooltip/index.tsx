@@ -48,7 +48,7 @@ function Tooltip({
                             side={placement}
                             sideOffset={8}
                             className={cn(
-                                'z-[100] py-1 px-2 bg-[var(--tooltip-background-color)] text-xs font-medium text-white rounded-md shadow-2xs dark:bg-neutral-700 whitespace-nowrap',
+                                'z-[100] py-1 px-2 bg-[var(--tooltip-background-color)] text-xs font-medium text-white rounded-md shadow-2xs dark:bg-neutral-700 max-w-xs break-words',
                                 contentClassName,
                             )}
                         >

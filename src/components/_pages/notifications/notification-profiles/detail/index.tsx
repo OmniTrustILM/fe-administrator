@@ -155,7 +155,7 @@ export default function NotificationProfileDetail() {
                     <span key="recipientType" className="inline-flex items-center gap-1">
                         <Badge color="secondary">{getEnumLabel(recipientTypeEnum, notificationProfile.recipientType)}</Badge>
                         {recipientTypeDescription && (
-                            <Tooltip content={recipientTypeDescription} contentClassName="whitespace-normal max-w-xs">
+                            <Tooltip content={recipientTypeDescription}>
                                 <button type="button" aria-label="Recipient type description" className="flex text-gray-400 cursor-help">
                                     <Info size={16} className="block" data-testid="recipientType-info" />
                                 </button>
