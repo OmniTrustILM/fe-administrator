@@ -96,10 +96,13 @@ export default function ConnectorDetail() {
         getFreshConnectorDetails();
         getFreshConnectorHealth();
         getFreshConnectorAttributesDesc();
-        if (id) {
+    }, [id, getFreshConnectorDetails, getFreshConnectorHealth, getFreshConnectorAttributesDesc]);
+
+    useEffect(() => {
+        if (id && connector?.uuid === id && connector.version === ConnectorVersion.V2) {
             dispatch(actions.getConnectorInfoV2({ uuid: id }));
         }
-    }, [id, getFreshConnectorDetails, getFreshConnectorHealth, getFreshConnectorAttributesDesc, dispatch]);
+    }, [id, connector?.uuid, connector?.version, dispatch]);
 
     useEffect(() => {
         if (!connector || connector.functionGroups.length === 0) {
