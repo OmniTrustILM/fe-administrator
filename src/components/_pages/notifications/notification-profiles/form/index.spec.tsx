@@ -1,20 +1,9 @@
 import { test, expect } from 'playwright/ct-test';
-import { PlatformEnum, RecipientType } from 'types/openapi';
+import {
+    RECIPIENT_TYPE_USER_DESCRIPTION as USER_DESCRIPTION,
+    recipientTypeEnumWithUserDescription as enumsWithDescription,
+} from '../notificationProfileTestFixtures';
 import { NotificationProfileFormTestWrapper } from './NotificationProfileFormTestWrapper';
-
-const USER_DESCRIPTION = 'Selected users will receive the notifications.';
-
-const enumsWithDescription = {
-    [PlatformEnum.RecipientType]: {
-        [RecipientType.None]: { label: 'None' },
-        [RecipientType.Default]: { label: 'Default' },
-        [RecipientType.User]: { label: 'User', description: USER_DESCRIPTION },
-        [RecipientType.Group]: { label: 'Group' },
-        [RecipientType.Role]: { label: 'Role' },
-        [RecipientType.Owner]: { label: 'Owner' },
-        [RecipientType.Mapped]: { label: 'Mapped' },
-    },
-};
 
 test.describe('NotificationProfileForm - Mapped recipient type', () => {
     test('Mapped option appears in the Recipient Type dropdown', async ({ mount, page }) => {

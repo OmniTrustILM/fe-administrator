@@ -3,25 +3,9 @@ import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import type { NotificationProfileDetailModel } from 'types/notification-profiles';
-import { PlatformEnum, RecipientType } from 'types/openapi';
+import { RecipientType } from 'types/openapi';
+import { defaultPlatformEnums, identity } from '../notificationProfileTestFixtures';
 import NotificationProfileDetail from './index';
-
-const identity =
-    <S,>(initial: S) =>
-    (state: S | undefined) =>
-        state ?? initial;
-
-const defaultPlatformEnums = {
-    [PlatformEnum.RecipientType]: {
-        [RecipientType.None]: { label: 'None' },
-        [RecipientType.Default]: { label: 'Default' },
-        [RecipientType.User]: { label: 'User' },
-        [RecipientType.Group]: { label: 'Group' },
-        [RecipientType.Role]: { label: 'Role' },
-        [RecipientType.Owner]: { label: 'Owner' },
-        [RecipientType.Mapped]: { label: 'Mapped' },
-    },
-};
 
 const defaultNotificationProfile: NotificationProfileDetailModel = {
     uuid: 'np-1',

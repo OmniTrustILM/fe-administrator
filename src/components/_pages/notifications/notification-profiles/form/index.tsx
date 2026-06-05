@@ -441,7 +441,9 @@ function RecipientTypeFields() {
                     </Label>
                     {recipientTypeDescription && (
                         <Tooltip content={recipientTypeDescription} contentClassName="whitespace-normal max-w-xs">
-                            <Info size={16} className="block text-gray-400" data-testid="recipientType-info" />
+                            <button type="button" aria-label="Recipient type description" className="flex text-gray-400 cursor-help">
+                                <Info size={16} className="block" data-testid="recipientType-info" />
+                            </button>
                         </Tooltip>
                     )}
                 </div>

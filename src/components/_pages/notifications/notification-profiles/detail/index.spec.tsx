@@ -1,17 +1,11 @@
 import { test, expect } from 'playwright/ct-test';
-import { PlatformEnum, RecipientType } from 'types/openapi';
+import { RecipientType } from 'types/openapi';
 import type { NotificationProfileDetailModel } from 'types/notification-profiles';
+import {
+    RECIPIENT_TYPE_USER_DESCRIPTION as USER_DESCRIPTION,
+    recipientTypeEnumWithUserDescription as enumsWithDescription,
+} from '../notificationProfileTestFixtures';
 import { NotificationProfileDetailTestWrapper } from './NotificationProfileDetailTestWrapper';
-
-const USER_DESCRIPTION = 'Selected users will receive the notifications.';
-
-const enumsWithDescription = {
-    [PlatformEnum.RecipientType]: {
-        [RecipientType.None]: { label: 'None' },
-        [RecipientType.User]: { label: 'User', description: USER_DESCRIPTION },
-        [RecipientType.Owner]: { label: 'Owner' },
-    },
-};
 
 const baseProfile: NotificationProfileDetailModel = {
     uuid: 'np-1',
