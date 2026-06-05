@@ -268,7 +268,7 @@ export default function NotificationProfileForm({
                                         />
                                         {fieldState.error && fieldState.isTouched && (
                                             <p className="mt-1 text-sm text-red-600">
-                                                Notification Instance is required when Recipient Type is Default, None, or Mapped, or when
+                                                Notification Instance is required when Recipient Type is Default, None, or Object, or when
                                                 Send internal notifications is off
                                             </p>
                                         )}
