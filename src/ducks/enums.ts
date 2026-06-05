@@ -33,6 +33,11 @@ const platformEnum = (platformEnum: PlatformEnum) => createSelector(platformEnum
 export const getEnumLabel = (platformEnum: { [key: string]: EnumItemModel } | undefined, enumItemKey: string): string =>
     platformEnum ? (platformEnum[enumItemKey]?.label ?? enumItemKey) : enumItemKey;
 
+export const getEnumDescription = (
+    platformEnum: { [key: string]: EnumItemModel } | undefined,
+    enumItemKey: string | undefined,
+): string | undefined => (platformEnum && enumItemKey ? platformEnum[enumItemKey]?.description : undefined);
+
 export const selectors = {
     state,
     platformEnums,

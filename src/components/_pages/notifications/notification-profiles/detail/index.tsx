@@ -3,7 +3,7 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 
-import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
+import { selectors as enumSelectors, getEnumLabel, getEnumDescription } from 'ducks/enums';
 import { actions, selectors } from 'ducks/notification-profiles';
 import { actions as notificationActions, selectors as notificationSelectors } from 'ducks/notifications';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -13,6 +13,8 @@ import { Link, useParams } from 'react-router';
 import NotificationProfileForm from '../form';
 
 import Badge from 'components/Badge';
+import Tooltip from 'components/Tooltip';
+import { Info } from 'lucide-react';
 import { PlatformEnum, RecipientType } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { getInputStringFromIso8601String } from 'utils/duration';
@@ -150,9 +152,17 @@ export default function NotificationProfileDetail() {
                           id: 'recipientType',
                           columns: [
                               'Recipient Type',
-                              <Badge key="recipientType" color="secondary">
-                                  {getEnumLabel(recipientTypeEnum, notificationProfile.recipientType)}
-                              </Badge>,
+                              <span key="recipientType" className="inline-flex items-center gap-1">
+                                  <Badge color="secondary">{getEnumLabel(recipientTypeEnum, notificationProfile.recipientType)}</Badge>
+                                  {getEnumDescription(recipientTypeEnum, notificationProfile.recipientType) && (
+                                      <Tooltip
+                                          content={getEnumDescription(recipientTypeEnum, notificationProfile.recipientType)}
+                                          contentClassName="whitespace-normal max-w-xs"
+                                      >
+                                          <Info size={16} className="block text-gray-400" data-testid="recipientType-info" />
+                                      </Tooltip>
+                                  )}
+                              </span>,
                           ],
                       },
                       {

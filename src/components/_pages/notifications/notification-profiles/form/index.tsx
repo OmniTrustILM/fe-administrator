@@ -1,7 +1,7 @@
 import ProgressButton from 'components/ProgressButton';
 import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/notification-profiles';
-import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
+import { selectors as enumSelectors, getEnumLabel, getEnumDescription } from 'ducks/enums';
 import { actions as groupAction, selectors as groupSelectors } from 'ducks/certificateGroups';
 import { actions as rolesActions, selectors as rolesSelectors } from 'ducks/roles';
 import { actions as userAction, selectors as userSelectors } from 'ducks/users';
@@ -30,6 +30,8 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import { getInputStringFromIso8601String, getIso8601StringFromInputString } from 'utils/duration';
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
+import Tooltip from 'components/Tooltip';
+import { Info } from 'lucide-react';
 
 type NotificationProfileFormProps = Readonly<{
     notificationProfileId?: string;
@@ -371,6 +373,8 @@ function RecipientTypeFields() {
         [recipientTypeEnum],
     );
 
+    const recipientTypeDescription = getEnumDescription(recipientTypeEnum, watchedRecipientType);
+
     const renderRecipientField = useCallback(() => {
         let props: { options: { value: string; label: string }[]; description: string; placeholder: string } | null = null;
         switch (watchedRecipientType) {
@@ -431,9 +435,16 @@ function RecipientTypeFields() {
     return (
         <>
             <div>
-                <Label htmlFor="recipientType" required>
-                    Recipient Type
-                </Label>
+                <div className="flex items-center gap-1 mb-2">
+                    <Label htmlFor="recipientType" required className="!mb-0">
+                        Recipient Type
+                    </Label>
+                    {recipientTypeDescription && (
+                        <Tooltip content={recipientTypeDescription} contentClassName="whitespace-normal max-w-xs">
+                            <Info size={16} className="block text-gray-400" data-testid="recipientType-info" />
+                        </Tooltip>
+                    )}
+                </div>
                 <p className="text-sm text-gray-500 mb-2">Recipient type of notifications managed by profile.</p>
                 <Controller
                     name="recipientType"

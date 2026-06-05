@@ -1,9 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
+import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
-import { useMemo } from 'react';
+import type { NotificationProfileDetailModel } from 'types/notification-profiles';
 import { PlatformEnum, RecipientType } from 'types/openapi';
-import NotificationProfileForm from './index';
+import NotificationProfileDetail from './index';
 
 const identity =
     <S,>(initial: S) =>
@@ -22,43 +23,49 @@ const defaultPlatformEnums = {
     },
 };
 
-export type NotificationProfileFormTestWrapperProps = {
-    notificationInstances?: { uuid: string; name: string }[];
+const defaultNotificationProfile: NotificationProfileDetailModel = {
+    uuid: 'np-1',
+    name: 'Test Profile',
+    description: 'A test notification profile',
+    version: 1,
+    recipientType: RecipientType.User,
+    internalNotification: false,
+};
+
+export type NotificationProfileDetailTestWrapperProps = {
+    notificationProfile?: NotificationProfileDetailModel;
     platformEnumsOverride?: Record<string, Record<string, { label: string; description?: string }>>;
 };
 
-export function NotificationProfileFormTestWrapper({
-    notificationInstances = [{ uuid: 'ni-1', name: 'Email Instance' }],
+export function NotificationProfileDetailTestWrapper({
+    notificationProfile = defaultNotificationProfile,
     platformEnumsOverride,
-}: Readonly<NotificationProfileFormTestWrapperProps>) {
+}: Readonly<NotificationProfileDetailTestWrapperProps>) {
     const store = useMemo(() => {
         const platformEnums = { ...defaultPlatformEnums, ...platformEnumsOverride };
         return configureStore({
             reducer: {
                 enums: identity({ platformEnums }),
                 notificationProfiles: identity({
-                    notificationProfile: undefined,
+                    notificationProfile,
                     isFetchingDetail: false,
                     isUpdating: false,
-                    isCreating: false,
+                    updateNotificationProfileSucceeded: false,
                 }),
                 notifications: identity({
-                    notificationInstances,
-                    isFetchingNotificationInstances: false,
+                    notificationInstanceDetail: undefined,
+                    isFetchingNotificationInstanceDetail: false,
                 }),
-                users: identity({ users: [{ uuid: 'u-1', username: 'alice' }] }),
-                roles: identity({ roles: [{ uuid: 'r-1', name: 'Admin' }] }),
-                certificateGroups: identity({ certificateGroups: [{ uuid: 'g-1', name: 'Group A' }] }),
                 userInterface: identity({ widgetLocks: [] }),
             },
             middleware: (getDefault) => getDefault({ serializableCheck: false }),
         });
-    }, [notificationInstances, platformEnumsOverride]);
+    }, [notificationProfile, platformEnumsOverride]);
 
     return (
         <Provider store={store}>
-            <MemoryRouter initialEntries={['/notificationprofiles/create']}>
-                <NotificationProfileForm />
+            <MemoryRouter initialEntries={['/notificationprofiles/detail']}>
+                <NotificationProfileDetail />
             </MemoryRouter>
         </Provider>
     );
