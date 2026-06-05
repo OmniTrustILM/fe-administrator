@@ -16,7 +16,7 @@ export const recipientTypeEnumLabels: Record<string, { label: string; descriptio
     [RecipientType.Group]: { label: 'Group' },
     [RecipientType.Role]: { label: 'Role' },
     [RecipientType.Owner]: { label: 'Owner' },
-    [RecipientType.Mapped]: { label: 'Mapped' },
+    [RecipientType.Object]: { label: 'Object' },
 };
 
 export const defaultPlatformEnums = {
