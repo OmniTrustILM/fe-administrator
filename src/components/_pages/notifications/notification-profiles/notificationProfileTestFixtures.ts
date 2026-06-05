@@ -1,3 +1,4 @@
+import type { NotificationProfileDetailModel } from 'types/notification-profiles';
 import { PlatformEnum, RecipientType } from 'types/openapi';
 
 // Identity reducer for building lightweight test stores without real reducer logic.
@@ -29,4 +30,14 @@ export const recipientTypeEnumWithUserDescription = {
         ...recipientTypeEnumLabels,
         [RecipientType.User]: { label: 'User', description: RECIPIENT_TYPE_USER_DESCRIPTION },
     },
+};
+
+// Minimal notification profile used as a base in detail wrapper/spec tests.
+export const defaultNotificationProfileDetail: NotificationProfileDetailModel = {
+    uuid: 'np-1',
+    name: 'Test Profile',
+    description: 'A test notification profile',
+    version: 1,
+    recipientType: RecipientType.User,
+    internalNotification: false,
 };

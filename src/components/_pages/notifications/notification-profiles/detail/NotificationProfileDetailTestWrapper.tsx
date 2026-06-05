@@ -3,18 +3,8 @@ import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import type { NotificationProfileDetailModel } from 'types/notification-profiles';
-import { RecipientType } from 'types/openapi';
-import { defaultPlatformEnums, identity } from '../notificationProfileTestFixtures';
+import { defaultNotificationProfileDetail, defaultPlatformEnums, identity } from '../notificationProfileTestFixtures';
 import NotificationProfileDetail from './index';
-
-const defaultNotificationProfile: NotificationProfileDetailModel = {
-    uuid: 'np-1',
-    name: 'Test Profile',
-    description: 'A test notification profile',
-    version: 1,
-    recipientType: RecipientType.User,
-    internalNotification: false,
-};
 
 export type NotificationProfileDetailTestWrapperProps = {
     notificationProfile?: NotificationProfileDetailModel;
@@ -22,7 +12,7 @@ export type NotificationProfileDetailTestWrapperProps = {
 };
 
 export function NotificationProfileDetailTestWrapper({
-    notificationProfile = defaultNotificationProfile,
+    notificationProfile = defaultNotificationProfileDetail,
     platformEnumsOverride,
 }: Readonly<NotificationProfileDetailTestWrapperProps>) {
     const store = useMemo(() => {
