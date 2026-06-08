@@ -99,7 +99,7 @@ export default function ConnectorDetail() {
     }, [id, getFreshConnectorDetails, getFreshConnectorHealth, getFreshConnectorAttributesDesc]);
 
     useEffect(() => {
-        if (id && connector?.uuid === id && connector.version === ConnectorVersion.V2) {
+        if (id && connector?.uuid === id && connector?.version === ConnectorVersion.V2) {
             dispatch(actions.getConnectorInfoV2({ uuid: id }));
         }
     }, [id, connector?.uuid, connector?.version, dispatch]);
