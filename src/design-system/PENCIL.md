@@ -211,6 +211,8 @@ Always set `name` on every node. Use descriptive, hierarchical names:
 | Checkbox | `src/components/Checkbox/Checkbox.pen` |
 | Card | `src/components/Card/Card.pen` |
 | Switch | `src/components/Switch/Switch.pen` |
+| Breadcrumb | `src/components/Breadcrumb/Breadcrumb.pen` |
+| TextInput | `src/components/TextInput/TextInput.pen` |
 
 Button.pen is the most complete reference — it has 6 pages (Light/Dark × Solid/Outline/Transparent) showing all 5 color variants across 4 states.
 
@@ -234,6 +236,7 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 | Checkbox visual (box style, checkmark) | `Checkbox/Unchecked`, `Checkbox/Checked`, `Checkbox/Label-Unchecked`, `Checkbox/Label-Checked` |
 | Switch visual (track, thumb, colors) | `Switch/Off`, `Switch/On` |
 | Card visual (border, shadow, layout, typography) | `Card` |
+| TextInput visual (border, radius, focus ring, padding) | `TextInput/Field` |
 | New component `.pen` created | Add new reusable components + a new column in the showcase |
 | Color token changed in `tokens.json` | Call `set_variables` on Design.pen with the updated tokens |
 
@@ -263,6 +266,8 @@ These IDs change if components are ever deleted and recreated. Re-read `get_edit
 | Checkbox/Label-Unchecked | `BKQ1x` | Checkbox.pen |
 | Checkbox/Label-Checked | `OcXD9` | Checkbox.pen |
 | Card | `maUy6` | Card.pen |
+| TextInput/Field | `i4ewD` | TextInput.pen |
+| Breadcrumb | `qmcjO` | Breadcrumb.pen |
 
 ---
 
