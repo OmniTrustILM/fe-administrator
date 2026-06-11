@@ -25,11 +25,12 @@ const CopyUrlCell = ({ children: url, label }: Props) => {
 
     return (
         <span className="flex items-center gap-1">
-            <span className="text-sm overflow-hidden text-ellipsis break-all">{url}</span>
+            <span className="text-sm min-w-0 truncate">{url}</span>
             <Button
                 variant="transparent"
                 color="primary"
                 title={`Copy ${label}`}
+                aria-label={`Copy ${label}`}
                 onClick={(e) => {
                     e.stopPropagation();
                     copyToClipboard(url, `${label} was copied to clipboard`, `Failed to copy ${label} to clipboard`);

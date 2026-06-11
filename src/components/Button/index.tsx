@@ -16,6 +16,7 @@ export type Props = {
     disabledTooltip?: string;
     type?: 'submit' | 'reset' | 'button';
     'data-testid'?: string;
+    'aria-label'?: string;
 };
 
 const baseButton =
@@ -70,6 +71,7 @@ function Button({
     disabledTooltip,
     type = 'button',
     'data-testid': dataTestId,
+    'aria-label': ariaLabel,
 }: Readonly<Props>) {
     const buttonElement = (
         <button
@@ -79,6 +81,7 @@ function Button({
             onClick={onClick}
             disabled={disabled}
             data-testid={dataTestId}
+            aria-label={ariaLabel}
         >
             {children}
         </button>

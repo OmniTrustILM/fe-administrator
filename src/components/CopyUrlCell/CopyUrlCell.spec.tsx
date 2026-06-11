@@ -36,9 +36,9 @@ test.describe('CopyUrlCell', () => {
     test('copies the url to the clipboard when the copy button is clicked', async ({ mount, page }) => {
         // Override clipboard.writeText so the assertion works across all browsers without clipboard permissions.
         await page.evaluate(() => {
-            (window as unknown as { __copied: string[] }).__copied = [];
+            (globalThis as unknown as { __copied: string[] }).__copied = [];
             navigator.clipboard.writeText = (text: string) => {
-                (window as unknown as { __copied: string[] }).__copied.push(text);
+                (globalThis as unknown as { __copied: string[] }).__copied.push(text);
                 return Promise.resolve();
             };
         });
@@ -47,7 +47,7 @@ test.describe('CopyUrlCell', () => {
 
         await component.getByRole('button').click();
 
-        const copied = await page.evaluate(() => (window as unknown as { __copied: string[] }).__copied);
+        const copied = await page.evaluate(() => (globalThis as unknown as { __copied: string[] }).__copied);
         expect(copied).toEqual([URL]);
     });
 });
