@@ -79,6 +79,34 @@ const noValue: { [condition in FilterConditionOperator]: boolean } = {
 
 type FieldData = NonNullable<SearchFieldListModel['searchFieldData']>[number];
 
+function buildFieldLabelMap(fields: FieldData[], attributeContentTypeEnum: Parameters<typeof getEnumLabel>[0]): Map<string, string> {
+    const normalize = (label: string) => label.trim().toLowerCase();
+
+    const labelCounts = new Map<string, number>();
+    for (const f of fields) {
+        const key = normalize(f.fieldLabel);
+        labelCounts.set(key, (labelCounts.get(key) ?? 0) + 1);
+    }
+
+    const withType = fields.map((f) => {
+        const isDuplicate = (labelCounts.get(normalize(f.fieldLabel)) ?? 0) > 1;
+        const contentType = f.attributeContentType ? getEnumLabel(attributeContentTypeEnum, f.attributeContentType) : undefined;
+        return { id: f.fieldIdentifier, label: isDuplicate && contentType ? `${f.fieldLabel} (${contentType})` : f.fieldLabel };
+    });
+
+    const displayCounts = new Map<string, number>();
+    for (const o of withType) {
+        const key = normalize(o.label);
+        displayCounts.set(key, (displayCounts.get(key) ?? 0) + 1);
+    }
+
+    const result = new Map<string, string>();
+    for (const o of withType) {
+        result.set(o.id, (displayCounts.get(normalize(o.label)) ?? 0) > 1 ? `${o.label} — ${o.id}` : o.label);
+    }
+    return result;
+}
+
 interface ObjectValueOptions {
     label: string;
     value: any;
@@ -149,6 +177,7 @@ export default function FilterWidget({
 
     const searchGroupEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.FilterFieldSource));
     const FilterConditionOperatorEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.FilterConditionOperator));
+    const attributeContentTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.AttributeContentType));
     const platformEnums = useSelector(enumSelectors.platformEnums);
 
     const availableFilters = useSelector(selectors.availableFilters(entity));
@@ -416,6 +445,22 @@ export default function FilterWidget({
 
     const currentField = useMemo(() => currentFields?.find((f) => f.fieldIdentifier === filterField?.value), [filterField, currentFields]);
 
+    const fieldLabelMapsBySource = useMemo(() => {
+        const maps = new Map<FilterFieldSource, Map<string, string>>();
+        for (const group of availableFilters ?? []) {
+            if (group.searchFieldData) {
+                maps.set(group.filterFieldSource, buildFieldLabelMap(group.searchFieldData, attributeContentTypeEnum));
+            }
+        }
+        return maps;
+    }, [availableFilters, attributeContentTypeEnum]);
+
+    const fieldOptions = useMemo(() => {
+        if (!currentFields) return [];
+        const labelMap = filterGroup ? fieldLabelMapsBySource.get(filterGroup.value) : undefined;
+        return currentFields.map((f) => ({ label: labelMap?.get(f.fieldIdentifier) ?? f.fieldLabel, value: f.fieldIdentifier }));
+    }, [currentFields, filterGroup, fieldLabelMapsBySource]);
+
     const isValidValue = useMemo(() => {
         if (checkIfFieldOperatorIsInterval(filterCondition?.value)) return !validateDuration()(filterValue as unknown as string);
 
@@ -679,12 +724,7 @@ export default function FilterWidget({
                         <Select
                             label="Filter Field"
                             id="field"
-                            options={
-                                currentFields?.map((f) => ({
-                                    label: f.fieldLabel,
-                                    value: f.fieldIdentifier,
-                                })) || []
-                            }
+                            options={fieldOptions}
                             onChange={(e) => {
                                 setFilterField({ label: e as string, value: e as string });
                                 setFilterCondition(undefined);
@@ -741,7 +781,9 @@ export default function FilterWidget({
                         const field = availableFilters
                             .find((a) => a.filterFieldSource === f.fieldSource)
                             ?.searchFieldData?.find((s) => s.fieldIdentifier === f.fieldIdentifier);
-                        const label = field ? field.fieldLabel : f.fieldIdentifier;
+                        const label = field
+                            ? (fieldLabelMapsBySource.get(f.fieldSource)?.get(field.fieldIdentifier) ?? field.fieldLabel)
+                            : f.fieldIdentifier;
                         const value = getFilterBadgeValue(f, field);
                         return (
                             <Badge

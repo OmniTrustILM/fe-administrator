@@ -284,7 +284,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                                 toggleHiddenNodes();
                                             }}
                                             className={cn(
-                                                'mt-1 !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px]',
+                                                'mt-1 justify-center !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px]',
                                                 getExpandButtonStatusClasses(),
                                             )}
                                         >
@@ -296,7 +296,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                     <Button
                                         color="primary"
                                         data-testid="flow-node-add"
-                                        className="mt-1 !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px] !bg-indigo-300 !border-none hover:!bg-[#3754a5ec] active:!bg-[#3754a5d8]"
+                                        className="mt-1 justify-center !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px] !bg-indigo-300 !border-none hover:!bg-[#3754a5ec] active:!bg-[#3754a5d8]"
                                         title="Add connections to this node"
                                         onClick={() => setAddNodeContentCollapse(!addNodeContentCollapse)}
                                     >
@@ -308,7 +308,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                     <Button
                                         color="danger"
                                         data-testid="flow-node-delete"
-                                        className="mt-1 !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px] !bg-[#e37582] !border-none hover:!bg-[#ef4444ec] active:!bg-[#ef4444d8]"
+                                        className="mt-1 justify-center !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px] !bg-[#e37582] !border-none hover:!bg-[#ef4444ec] active:!bg-[#ef4444d8]"
                                         onClick={() => {
                                             if (data.deleteAction) {
                                                 if (data.deleteAction.disableCondition === 'SingleChild') {

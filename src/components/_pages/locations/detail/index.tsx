@@ -139,15 +139,15 @@ const IssueCertificateForm = ({
     setIssueDialog: (open: boolean) => void;
 }) => {
     const dispatch = useDispatch();
-    const methods = useForm<{ raProfile: { value: string; label: string } }>({
+    const methods = useForm<{ raProfile: string }>({
         mode: 'onTouched',
-        defaultValues: { raProfile: undefined as any },
+        defaultValues: { raProfile: '' },
     });
 
     const { handleSubmit, formState, control } = methods;
     const allValues = useWatch({ control });
 
-    const onSubmit = (values: { raProfile: { value: string; label: string } }) => {
+    const onSubmit = (values: { raProfile: string }) => {
         if (!location) return;
 
         const issueAttrs = collectFormAttributes(
@@ -166,7 +166,7 @@ const IssueCertificateForm = ({
                 entityUuid: location.entityInstanceUuid,
                 locationUuid: location.uuid,
                 issueRequest: {
-                    raProfileUuid: values.raProfile.value.split(':#')[0],
+                    raProfileUuid: values.raProfile.split(':#')[0],
                     csrAttributes: csrAttrs,
                     issueAttributes: issueAttrs,
                     certificateCustomAttributes: certificateCustomAttributes,

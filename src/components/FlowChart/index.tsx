@@ -201,21 +201,7 @@ const FlowChartContent = ({
             dispatch(userInterfaceActions.clearReactFlowUI());
             return;
         }
-        let layoutedElements: { nodes: CustomNode[]; edges: Edge[] } | undefined;
-        try {
-            layoutedElements = getLayoutedElements(flowChartNodes, flowChartEdges, flowDirection);
-        } catch (e) {
-            console.log(e);
-            layoutedElements = undefined;
-        }
-
-        if (!layoutedElements) {
-            // Handle the case where getLayoutedElements returns undefined
-            dispatch(userInterfaceActions.clearReactFlowUI());
-            return;
-        }
-
-        const { nodes = [], edges = [] } = layoutedElements;
+        const { nodes, edges } = getLayoutedElements(flowChartNodes, flowChartEdges, flowDirection);
 
         dispatch(
             userInterfaceActions.setReactFlowUI({

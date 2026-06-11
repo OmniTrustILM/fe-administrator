@@ -338,9 +338,9 @@ export default function ContentValueField({ descriptor, initialContent, onSubmit
 
                 return (
                     <>
-                        <div className="flex flex-row items-center gap-2 w-full">
+                        <div className="flex flex-row items-start gap-2 w-full">
                             <div className={cn({ grow: inputType !== 'checkbox' })}>{inputComponent}</div>
-                            <div className="flex flex-row gap-2 ml-auto">
+                            <div className="flex flex-row gap-2 ml-auto mt-[2px]">
                                 <Button type="button" variant="outline" onClick={() => onCancel?.()} data-testid="cancel-custom-value">
                                     Cancel
                                 </Button>

@@ -50,13 +50,13 @@ export type MetadataItemModel = Omit<ResponseMetadataDto, 'sourceObjects'> & { s
 
 export type MetadataModel = Omit<MetadataResponseDto, 'items'> & { items: Array<MetadataItemModel> };
 
-export type LocationCertificateModel = Omit<CertificateInLocationDto, 'metadata | pushAttributes | csrAttributes'> & {
+export type LocationCertificateModel = Omit<CertificateInLocationDto, 'metadata' | 'pushAttributes' | 'csrAttributes'> & {
     metadata?: Array<MetadataModel>;
     pushAttributes?: Array<AttributeResponseModel>;
     csrAttributes?: Array<AttributeResponseModel>;
 };
 
-export type LocationResponseModel = Omit<LocationDto, 'attributes | certificates | metadata | customAttributes'> & {
+export type LocationResponseModel = Omit<LocationDto, 'attributes' | 'certificates' | 'metadata' | 'customAttributes'> & {
     attributes: Array<AttributeResponseModel>;
     certificates: Array<LocationCertificateModel>;
     metadata?: Array<MetadataModel>;
