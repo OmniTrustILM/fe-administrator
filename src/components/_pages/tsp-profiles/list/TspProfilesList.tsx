@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router';
 
 import type { ApiClients } from 'src/api';
+import CopyUrlCell from 'components/CopyUrlCell';
 import type { TableDataRow, TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
 import ForceDeleteErrorTable from 'components/ForceDeleteErrorTable';
@@ -58,13 +59,19 @@ export const TspProfilesList = () => {
                 content: 'Name',
                 sortable: true,
                 sort: 'asc',
-                width: '40%',
+                width: '25%',
             },
             {
                 id: 'description',
                 content: 'Description',
                 sortable: false,
-                width: '45%',
+                width: '30%',
+            },
+            {
+                id: 'signingUrl',
+                content: 'Signing URL',
+                sortable: true,
+                width: 'auto',
             },
             {
                 id: 'status',
@@ -88,6 +95,9 @@ export const TspProfilesList = () => {
                     <span key="description-value" className="text-sm text-gray-600">
                         {profile.description || '—'}
                     </span>,
+                    <CopyUrlCell key="signing-url" label="Signing URL">
+                        {profile.signingUrl}
+                    </CopyUrlCell>,
                     <StatusBadge key="status-badge" enabled={profile.enabled} />,
                 ],
             })),

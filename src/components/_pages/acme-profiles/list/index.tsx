@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 
 import { actions, selectors } from 'ducks/acme-profiles';
 
+import CopyUrlCell from 'components/CopyUrlCell';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import ForceDeleteErrorTable from 'components/ForceDeleteErrorTable';
 import Container from 'components/Container';
@@ -203,7 +204,9 @@ export default function AdministratorsList() {
                         (acmeProfile.raProfile ?? 'Unassigned')
                     ),
 
-                    acmeProfile.directoryUrl || '',
+                    <CopyUrlCell key="directoryUrl" label="Directory URL">
+                        {acmeProfile.directoryUrl}
+                    </CopyUrlCell>,
 
                     <StatusBadge key="enabled" enabled={acmeProfile.enabled} />,
                 ],

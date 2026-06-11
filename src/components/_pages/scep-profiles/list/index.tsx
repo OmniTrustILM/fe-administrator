@@ -6,6 +6,7 @@ import Container from 'components/Container';
 
 import { actions, selectors } from 'ducks/scep-profiles';
 
+import CopyUrlCell from 'components/CopyUrlCell';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import ForceDeleteErrorTable from 'components/ForceDeleteErrorTable';
 import Dialog from 'components/Dialog';
@@ -215,9 +216,9 @@ export default function ScepProfiles() {
                     ),
 
                     <StatusBadge key="enabled" enabled={scepProfile.enabled} />,
-                    <span key="scepUrl" style={{ whiteSpace: 'nowrap' }}>
-                        {scepProfile.scepUrl || ''}
-                    </span>,
+                    <CopyUrlCell key="scepUrl" label="SCEP URL">
+                        {scepProfile.scepUrl}
+                    </CopyUrlCell>,
                     <StatusBadge key="intune" enabled={scepProfile.enableIntune} />,
                 ],
             })),

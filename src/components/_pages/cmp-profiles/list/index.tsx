@@ -6,6 +6,7 @@ import Container from 'components/Container';
 
 import { actions, selectors } from 'ducks/cmp-profiles';
 
+import CopyUrlCell from 'components/CopyUrlCell';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import ForceDeleteErrorTable from 'components/ForceDeleteErrorTable';
 import Dialog from 'components/Dialog';
@@ -216,7 +217,9 @@ export default function AdministratorsList() {
                         (cmpProfile.raProfile ?? 'Unassigned')
                     ),
 
-                    cmpProfile.cmpUrl || '',
+                    <CopyUrlCell key="cmpUrl" label="CMP URL">
+                        {cmpProfile.cmpUrl}
+                    </CopyUrlCell>,
                     <Badge key="variant" color="primary">
                         {getEnumLabel(cmpCmpProfileVariantEnum, cmpProfile.variant)}
                     </Badge>,

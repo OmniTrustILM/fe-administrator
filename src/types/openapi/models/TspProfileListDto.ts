@@ -44,6 +44,12 @@ export interface TspProfileListDto {
      */
     defaultSigningProfile?: SimplifiedSigningProfileDto;
     /**
+     * TSP URL for signing
+     * @type {string}
+     * @memberof TspProfileListDto
+     */
+    signingUrl?: string;
+    /**
      * Enabled flag of the TSP Profile
      * @type {boolean}
      * @memberof TspProfileListDto
