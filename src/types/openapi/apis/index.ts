@@ -42,6 +42,8 @@ export * from './SCEPProfileManagementApi';
 export * from './ScheduledJobsManagementApi';
 export * from './SecretManagementApi';
 export * from './SettingsApi';
+export * from './SigningProfileManagementApi';
+export * from './SigningRecordManagementApi';
 export * from './StatisticsDashboardApi';
 export * from './TSPProfileManagementApi';
 export * from './TimeQualityConfigurationManagementApi';

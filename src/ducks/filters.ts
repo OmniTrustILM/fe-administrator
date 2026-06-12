@@ -26,6 +26,7 @@ export enum EntityType {
     SECRET,
     TIME_QUALITY_CONFIGURATION,
     TSP_PROFILE,
+    SIGNING_PROFILE,
     ACTIONS_SOURCE,
 }
 

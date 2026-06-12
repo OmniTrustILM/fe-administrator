@@ -107,6 +107,9 @@ const TspProfileForm = lazyWithRetry(() =>
 const TspProfilesList = lazyWithRetry(() =>
     import('./_pages/tsp-profiles/list/TspProfilesList').then((m) => ({ default: m.TspProfilesList })),
 );
+const SigningProfilesList = lazyWithRetry(() => import('./_pages/signing-profiles/list/SigningProfilesList'));
+const SigningProfileForm = lazyWithRetry(() => import('./_pages/signing-profiles/form/SigningProfileForm'));
+const SigningProfileDetail = lazyWithRetry(() => import('./_pages/signing-profiles/detail/SigningProfileDetail'));
 
 const GroupDetail = lazyWithRetry(() => import('./_pages/group/detail'));
 const GroupList = lazyWithRetry(() => import('./_pages/group/list'));
@@ -315,6 +318,15 @@ export default function AppRouter() {
                     <Route path={`/${Resource.TspProfiles.toLowerCase()}/add`} element={<TspProfileForm />} />
                     <Route path={`/${Resource.TspProfiles.toLowerCase()}/edit/:id`} element={<TspProfileForm />} />
                     <Route path={`/${Resource.TspProfiles.toLowerCase()}/detail/:id`} element={<TspProfileDetail />} />
+
+                    <Route path={`/${Resource.SigningProfiles.toLowerCase()}`} element={<SigningProfilesList />} />
+                    <Route
+                        path={`/${Resource.SigningProfiles.toLowerCase()}/list`}
+                        element={<Navigate to={`/${Resource.SigningProfiles.toLowerCase()}`} />}
+                    />
+                    <Route path={`/${Resource.SigningProfiles.toLowerCase()}/add`} element={<SigningProfileForm />} />
+                    <Route path={`/${Resource.SigningProfiles.toLowerCase()}/edit/:id`} element={<SigningProfileForm />} />
+                    <Route path={`/${Resource.SigningProfiles.toLowerCase()}/detail/:id`} element={<SigningProfileDetail />} />
 
                     <Route path={`/${Resource.Groups.toLowerCase()}`} element={<GroupList />} />
                     <Route

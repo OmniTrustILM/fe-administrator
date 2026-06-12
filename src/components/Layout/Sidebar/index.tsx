@@ -243,6 +243,12 @@ const menuItemMappings: MenuItemMapping[] = [
                 link: `/${Resource.TspProfiles.toLowerCase()}`,
                 requiredResources: [Resource.TspProfiles],
             },
+            {
+                _key: `/${Resource.SigningProfiles.toLowerCase()}`,
+                name: 'Signing Profiles',
+                link: `/${Resource.SigningProfiles.toLowerCase()}`,
+                requiredResources: [Resource.SigningProfiles],
+            },
         ],
     },
 

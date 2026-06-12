@@ -43,6 +43,8 @@ apis/SCEPProfileManagementApi.ts
 apis/ScheduledJobsManagementApi.ts
 apis/SecretManagementApi.ts
 apis/SettingsApi.ts
+apis/SigningProfileManagementApi.ts
+apis/SigningRecordManagementApi.ts
 apis/StatisticsDashboardApi.ts
 apis/TSPProfileManagementApi.ts
 apis/TimeQualityConfigurationManagementApi.ts
@@ -251,6 +253,8 @@ models/ConnectorSummaryDto.ts
 models/ConnectorUpdateRequestDto.ts
 models/ConnectorUpdateRequestDtoV2.ts
 models/ConnectorVersion.ts
+models/ContentSigningWorkflowDto.ts
+models/ContentSigningWorkflowRequestDto.ts
 models/CoreInfoResponseDto.ts
 models/CredentialAttributeContentData.ts
 models/CredentialAttributeContentV2.ts
@@ -285,6 +289,9 @@ models/DateTimeAttributeConstraintData.ts
 models/DateTimeAttributeContentV2.ts
 models/DateTimeAttributeContentV3.ts
 models/DecryptDataResponseDto.ts
+models/DelegatedSigningDto.ts
+models/DelegatedSigningRequestDto.ts
+models/DigestAlgorithm.ts
 models/DiscoveryCertificateDto.ts
 models/DiscoveryCertificateResponseDto.ts
 models/DiscoveryDto.ts
@@ -368,6 +375,9 @@ models/LocationDto.ts
 models/LocationsResponseDto.ts
 models/LoggingSettingsDto.ts
 models/LoginProviderDto.ts
+models/ManagedSigningRequestSchemeInterface.ts
+models/ManagedSigningSchemeInterface.ts
+models/ManagedSigningType.ts
 models/MetadataAttributeProperties.ts
 models/MetadataAttributeV2.ts
 models/MetadataAttributeV3.ts
@@ -395,6 +405,8 @@ models/ObjectEventHistoryDto.ts
 models/ObjectPermissionsDto.ts
 models/ObjectPermissionsRequestDto.ts
 models/OidCategory.ts
+models/OneTimeKeyManagedSigningDto.ts
+models/OneTimeKeyManagedSigningRequestDto.ts
 models/Operation.ts
 models/OperationResult.ts
 models/PaginationRequestDto.ts
@@ -403,6 +415,8 @@ models/PaginationResponseDtoConnectorDtoV2.ts
 models/PaginationResponseDtoEventHistoryDto.ts
 models/PaginationResponseDtoObjectEventHistoryDto.ts
 models/PaginationResponseDtoSecretDto.ts
+models/PaginationResponseDtoSigningProfileListDto.ts
+models/PaginationResponseDtoSigningRecordListDto.ts
 models/PaginationResponseDtoTimeQualityConfigurationListDto.ts
 models/PaginationResponseDtoTriggerHistoryObjectSummaryDto.ts
 models/PaginationResponseDtoTspProfileListDto.ts
@@ -438,6 +452,8 @@ models/RandomDataRequestDto.ts
 models/RandomDataResponseDto.ts
 models/RangeAttributeConstraint.ts
 models/RangeAttributeConstraintData.ts
+models/RawSigningWorkflowDto.ts
+models/RawSigningWorkflowRequestDto.ts
 models/RdnAttributeTypeOidPropertiesDto.ts
 models/RecipientType.ts
 models/RegexpAttributeConstraint.ts
@@ -505,10 +521,25 @@ models/SignDataRequestDto.ts
 models/SignDataResponseDto.ts
 models/SignatureRequestData.ts
 models/SignatureResponseData.ts
+models/SigningProfileDto.ts
+models/SigningProfileListDto.ts
+models/SigningProfileRequestDto.ts
+models/SigningProtocol.ts
+models/SigningRecordDto.ts
+models/SigningRecordListDto.ts
+models/SigningRecordPersistenceMode.ts
+models/SigningRecordPolicyDto.ts
+models/SigningRecordPolicyRequestDto.ts
+models/SigningScheme.ts
+models/SigningSchemeInterface.ts
+models/SigningSchemeRequestInterface.ts
+models/SigningWorkflowType.ts
 models/SimplifiedComplianceProfileDto.ts
 models/SimplifiedRaProfileDto.ts
 models/SimplifiedSigningProfileDto.ts
 models/SourceRecord.ts
+models/StaticKeyManagedSigningDto.ts
+models/StaticKeyManagedSigningRequestDto.ts
 models/StatisticsDto.ts
 models/StringAttributeContentV2.ts
 models/StringAttributeContentV3.ts
@@ -521,6 +552,8 @@ models/TimeAttributeContentV3.ts
 models/TimeQualityConfigurationDto.ts
 models/TimeQualityConfigurationListDto.ts
 models/TimeQualityConfigurationRequestDto.ts
+models/TimestampingWorkflowDto.ts
+models/TimestampingWorkflowRequestDto.ts
 models/TokenInstanceDetailDto.ts
 models/TokenInstanceDto.ts
 models/TokenInstanceRequestDto.ts
@@ -542,6 +575,7 @@ models/TriggerRequestDto.ts
 models/TriggerType.ts
 models/TrustedCertificateDto.ts
 models/TrustedCertificateRequestDto.ts
+models/TspActivationDetailDto.ts
 models/TspProfileDto.ts
 models/TspProfileListDto.ts
 models/TspProfileRequestDto.ts
@@ -574,6 +608,8 @@ models/VaultProfileUpdateRequestDto.ts
 models/VerificationResponseData.ts
 models/VerifyDataRequestDto.ts
 models/VerifyDataResponseDto.ts
+models/WorkflowInterface.ts
+models/WorkflowRequestInterface.ts
 models/index.ts
 runtime.ts
 servers.ts

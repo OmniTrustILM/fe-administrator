@@ -52,6 +52,7 @@ import {
     TrustedCertificateManagementApi,
     TimeQualityConfigurationManagementApi,
     TSPProfileManagementApi,
+    SigningProfileManagementApi,
 } from 'types/openapi';
 // Deep import: the openapi barrel only re-exports TokenInstanceManagementApi because
 // both modules export overlapping request interfaces that would collide via `export *`.
@@ -125,6 +126,7 @@ export interface ApiClients {
     secrets: SecretManagementApi;
     timeQualityConfigurations: TimeQualityConfigurationManagementApi;
     tspProfiles: TSPProfileManagementApi;
+    signingProfiles: SigningProfileManagementApi;
 }
 
 type ApiClientKey = keyof ApiClients;
@@ -183,6 +185,7 @@ const factories: Partial<{ [K in ApiClientKey]: () => ApiClients[K] }> = {
     secrets: () => new SecretManagementApi(configuration),
     timeQualityConfigurations: () => new TimeQualityConfigurationManagementApi(configuration),
     tspProfiles: () => new TSPProfileManagementApi(configuration),
+    signingProfiles: () => new SigningProfileManagementApi(configuration),
 };
 
 const overrides: Partial<Record<ApiClientKey, unknown>> = Object.create(null);

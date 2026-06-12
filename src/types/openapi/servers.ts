@@ -44,6 +44,6 @@ export class ServerConfiguration<T extends { [key: string]: string }> {
     }
 }
 
-const server1 = new ServerConfiguration<{}>('https://demo.czertainly.online/api', {}, 'CZERTAINLY Demo server');
+const server1 = new ServerConfiguration<{}>('https://demo.otilm.com/api', {}, 'ILM Demo server');
 
 export const servers = [server1];

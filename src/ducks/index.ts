@@ -42,6 +42,7 @@ import rolesEpics from './roles-epics';
 import rulesEpics from './rules-epics';
 import eventHistoryEpics from './event-history-epics';
 import schedulerEpics from './scheduler-epics';
+import signingProfilesEpics from './signing-profiles-epics';
 import settingsEpics from './settings-epics';
 import startupEpics from './startup-epics';
 import dashboardEpics from './statisticsDashboard-epics';
@@ -102,6 +103,7 @@ export const epics = combineEpics(
     ...globalMetadataEpics,
     ...settingsEpics,
     ...schedulerEpics,
+    ...signingProfilesEpics,
     ...profileApprovalEpics,
     ...approvalsEpic,
     ...notificationsEpics,
