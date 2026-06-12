@@ -366,6 +366,11 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                                 <Controller
                                     name="name"
                                     control={control}
+                                    // In edit mode the name is read-only and cannot be changed by the user.
+                                    // Disabling the field excludes it from RHF validation so an existing name that
+                                    // violates the stricter frontend regex (e.g. a CA named "demo.ejbca.org") does not
+                                    // poison `isValid` and permanently disable the Save button.
+                                    disabled={editMode}
                                     rules={buildValidationRules([validateRequired(), validateAlphaNumericWithSpecialChars()])}
                                     render={({ field, fieldState }) => (
                                         <TextInput
