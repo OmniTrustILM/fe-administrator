@@ -52,6 +52,7 @@ import {
     TrustedCertificateManagementApi,
     TimeQualityConfigurationManagementApi,
     TSPProfileManagementApi,
+    TSPProfileBasicCredentialManagementApi,
     SigningProfileManagementApi,
 } from 'types/openapi';
 // Deep import: the openapi barrel only re-exports TokenInstanceManagementApi because
@@ -126,6 +127,7 @@ export interface ApiClients {
     secrets: SecretManagementApi;
     timeQualityConfigurations: TimeQualityConfigurationManagementApi;
     tspProfiles: TSPProfileManagementApi;
+    tspProfileBasicCredentials: TSPProfileBasicCredentialManagementApi;
     signingProfiles: SigningProfileManagementApi;
 }
 
@@ -185,6 +187,7 @@ const factories: Partial<{ [K in ApiClientKey]: () => ApiClients[K] }> = {
     secrets: () => new SecretManagementApi(configuration),
     timeQualityConfigurations: () => new TimeQualityConfigurationManagementApi(configuration),
     tspProfiles: () => new TSPProfileManagementApi(configuration),
+    tspProfileBasicCredentials: () => new TSPProfileBasicCredentialManagementApi(configuration),
     signingProfiles: () => new SigningProfileManagementApi(configuration),
 };
 

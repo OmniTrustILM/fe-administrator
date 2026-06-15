@@ -14,6 +14,7 @@ import { EntityType } from 'ducks/filters';
 import { selectors as pagingSelectors } from 'ducks/paging';
 import { actions, selectors } from 'ducks/tsp-profiles';
 import type { SearchRequestModel } from 'types/certificate';
+import { Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 
 export const TspProfilesList = () => {
@@ -47,6 +48,14 @@ export const TspProfilesList = () => {
         [dispatch],
     );
 
+    const onEnableClick = useCallback(() => {
+        dispatch(actions.bulkEnableTspProfiles({ uuids: checkedRows }));
+    }, [checkedRows, dispatch]);
+
+    const onDisableClick = useCallback(() => {
+        dispatch(actions.bulkDisableTspProfiles({ uuids: checkedRows }));
+    }, [checkedRows, dispatch]);
+
     const onCloseDeleteErrors = useCallback(() => {
         dispatch(actions.clearDeleteErrorMessages());
         setShowDeleteErrors(false);
@@ -65,7 +74,14 @@ export const TspProfilesList = () => {
                 id: 'description',
                 content: 'Description',
                 sortable: false,
-                width: '30%',
+                width: '25%',
+            },
+            {
+                id: 'defaultSigningProfile',
+                content: 'Default Signing Profile',
+                sortable: true,
+                width: '20%',
+                align: 'center',
             },
             {
                 id: 'signingUrl',
@@ -76,9 +92,9 @@ export const TspProfilesList = () => {
             {
                 id: 'status',
                 content: 'Status',
-                align: 'center' as const,
+                align: 'center',
                 sortable: true,
-                width: '15%',
+                width: '10%',
             },
         ],
         [],
@@ -86,48 +102,32 @@ export const TspProfilesList = () => {
 
     const tableData: TableDataRow[] = useMemo(
         () =>
-            tspProfiles.map((profile) => ({
-                id: profile.uuid,
+            tspProfiles.map((config) => ({
+                id: config.uuid,
                 columns: [
                     <span key="name-link" style={{ whiteSpace: 'nowrap' }}>
-                        <Link to={`./detail/${profile.uuid}`}>{profile.name}</Link>
+                        <Link to={`./detail/${config.uuid}`}>{config.name}</Link>
                     </span>,
                     <span key="description-value" className="text-sm text-gray-600">
-                        {profile.description || '—'}
+                        {config.description || '—'}
                     </span>,
+                    config.defaultSigningProfile ? (
+                        <Link
+                            key="default-signing-profile"
+                            to={`../${Resource.SigningProfiles.toLowerCase()}/detail/${config.defaultSigningProfile.uuid}`}
+                        >
+                            {config.defaultSigningProfile.name}
+                        </Link>
+                    ) : (
+                        <span key="default-signing-profile">Unassigned</span>
+                    ),
                     <CopyUrlCell key="signing-url" label="Signing URL">
-                        {profile.signingUrl}
+                        {config.signingUrl}
                     </CopyUrlCell>,
-                    <StatusBadge key="status-badge" enabled={profile.enabled} />,
+                    <StatusBadge key="status-badge" enabled={config.enabled} />,
                 ],
             })),
         [tspProfiles],
-    );
-
-    const getAvailableFiltersApi = useCallback((apiClients: ApiClients) => apiClients.tspProfiles.listTspProfileSearchableFields(), []);
-
-    const additionalButtons = useMemo(
-        () => [
-            {
-                icon: 'plus' as const,
-                disabled: false,
-                tooltip: 'Create TSP Profile',
-                onClick: () => navigate('./add'),
-            },
-            {
-                icon: 'check' as const,
-                disabled: checkedRows.length === 0,
-                tooltip: 'Enable',
-                onClick: () => dispatch(actions.bulkEnableTspProfiles({ uuids: checkedRows })),
-            },
-            {
-                icon: 'times' as const,
-                disabled: checkedRows.length === 0,
-                tooltip: 'Disable',
-                onClick: () => dispatch(actions.bulkDisableTspProfiles({ uuids: checkedRows })),
-            },
-        ],
-        [navigate, checkedRows, dispatch],
     );
 
     return (
@@ -144,8 +144,33 @@ export const TspProfilesList = () => {
                 entityNamePlural="TSP Profiles"
                 filterTitle="TSP Profiles Filter"
                 pageWidgetLockName={LockWidgetNameEnum.ListOfTspProfiles}
-                getAvailableFiltersApi={getAvailableFiltersApi}
-                additionalButtons={additionalButtons}
+                getAvailableFiltersApi={useCallback(
+                    (apiClients: ApiClients) => apiClients.tspProfiles.listTspProfileSearchableFields(),
+                    [],
+                )}
+                additionalButtons={useMemo(
+                    () => [
+                        {
+                            icon: 'plus' as const,
+                            disabled: false,
+                            tooltip: 'Create TSP Profile',
+                            onClick: () => navigate('./add'),
+                        },
+                        {
+                            icon: 'check' as const,
+                            disabled: checkedRows.length === 0,
+                            tooltip: 'Enable',
+                            onClick: onEnableClick,
+                        },
+                        {
+                            icon: 'times' as const,
+                            disabled: checkedRows.length === 0,
+                            tooltip: 'Disable',
+                            onClick: onDisableClick,
+                        },
+                    ],
+                    [checkedRows, navigate, onEnableClick, onDisableClick],
+                )}
                 addHidden
                 hasCheckboxes
             />

@@ -62,6 +62,7 @@ import vaultProfilesEpics from './vault-profiles-epics';
 import vaultsEpics from './vaults-epics';
 import timeQualityConfigurationsEpics from './time-quality-configurations-epics';
 import tspProfilesEpics from './tsp-profiles-epics';
+import tspProfileBasicCredentialsEpics from './tsp-profile-basic-credentials-epics';
 
 export interface EpicDependencies {
     apiClients: ApiClients;
@@ -128,4 +129,5 @@ export const epics = combineEpics(
     ...vaultsEpics,
     ...timeQualityConfigurationsEpics,
     ...tspProfilesEpics,
+    ...tspProfileBasicCredentialsEpics,
 );

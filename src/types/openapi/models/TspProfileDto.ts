@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { ResponseAttribute, SimplifiedSigningProfileDto } from './';
+import type { ResponseAttribute, SimplifiedSigningProfileDto, TspAuthenticationMethod, VaultProfileDto } from './';
 
 /**
  * TSP (Timestamping Protocol) profile details
@@ -55,6 +55,18 @@ export interface TspProfileDto {
      * @memberof TspProfileDto
      */
     signingUrl?: string;
+    /**
+     * Vault profile that stores this profile\'s Basic credentials; required when Basic credentials are configured
+     * @type {VaultProfileDto}
+     * @memberof TspProfileDto
+     */
+    vaultProfile?: VaultProfileDto;
+    /**
+     * Authentication methods this TSP Profile accepts
+     * @type {Array<TspAuthenticationMethod>}
+     * @memberof TspProfileDto
+     */
+    allowedAuthenticationMethods?: Array<TspAuthenticationMethod>;
     /**
      * List of Custom Attributes
      * @type {Array<ResponseAttribute>}

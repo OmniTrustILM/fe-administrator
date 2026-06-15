@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { RequestAttribute } from './';
+import type { RequestAttribute, TspAuthenticationMethod } from './';
 
 /**
  * Request to create or update a TSP (Timestamping Protocol) Profile
@@ -37,6 +37,18 @@ export interface TspProfileRequestDto {
      * @memberof TspProfileRequestDto
      */
     defaultSigningProfileUuid?: string;
+    /**
+     * Vault profile that stores this profile\'s Basic credentials; required when Basic credentials are configured
+     * @type {string}
+     * @memberof TspProfileRequestDto
+     */
+    vaultProfileUuid?: string;
+    /**
+     * Authentication methods this TSP Profile accepts on the TSP protocol endpoints. Allowed to be empty for the transitional period.
+     * @type {Array<TspAuthenticationMethod>}
+     * @memberof TspProfileRequestDto
+     */
+    allowedAuthenticationMethods?: Array<TspAuthenticationMethod>;
     /**
      * List of Custom Attributes
      * @type {Array<RequestAttribute>}

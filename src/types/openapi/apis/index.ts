@@ -45,6 +45,7 @@ export * from './SettingsApi';
 export * from './SigningProfileManagementApi';
 export * from './SigningRecordManagementApi';
 export * from './StatisticsDashboardApi';
+export * from './TSPProfileBasicCredentialManagementApi';
 export * from './TSPProfileManagementApi';
 export * from './TimeQualityConfigurationManagementApi';
 export * from './TokenInstanceManagementApi';

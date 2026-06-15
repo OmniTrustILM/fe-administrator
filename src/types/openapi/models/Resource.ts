@@ -80,4 +80,5 @@ export enum Resource {
     SigningRecords = 'signingRecords',
     TimeQualityConfigurations = 'timeQualityConfigurations',
     TspProfiles = 'tspProfiles',
+    TspProfileBasicCredentials = 'tspProfileBasicCredentials',
 }

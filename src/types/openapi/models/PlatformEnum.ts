@@ -87,4 +87,5 @@ export enum PlatformEnum {
     SigningProtocol = 'SigningProtocol',
     SigningScheme = 'SigningScheme',
     SigningWorkflowType = 'SigningWorkflowType',
+    TspAuthenticationMethod = 'TspAuthenticationMethod',
 }

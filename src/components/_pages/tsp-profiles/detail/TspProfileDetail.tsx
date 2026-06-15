@@ -1,20 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
-import Widget from 'components/Widget';
-import type { WidgetButtonProps } from 'components/WidgetButtons';
-import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
+import Badge from 'components/Badge';
 import StatusBadge from 'components/StatusBadge';
+import Widget from 'components/Widget';
+import WidgetButtons, { type WidgetButtonProps } from 'components/WidgetButtons';
+import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 
 import { actions, selectors } from 'ducks/tsp-profiles';
-import { Resource } from 'types/openapi';
+import { actions as basicCredentialActions, selectors as basicCredentialSelectors } from 'ducks/tsp-profile-basic-credentials';
+import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
+import { PlatformEnum, Resource, TspAuthenticationMethod, type TspBasicCredentialDto } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
+import TspBasicCredentialDialog from './TspBasicCredentialDialog';
 
 export const TspProfileDetail = () => {
     const dispatch = useDispatch();
@@ -28,8 +32,18 @@ export const TspProfileDetail = () => {
     const isEnabling = useSelector(selectors.isEnabling);
     const isDisabling = useSelector(selectors.isDisabling);
     const deleteErrorMessage = useSelector(selectors.deleteErrorMessage);
+    const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
+    const authenticationMethodEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.TspAuthenticationMethod));
+
+    const basicCredentials = useSelector(basicCredentialSelectors.credentials);
+    const isFetchingCredentials = useSelector(basicCredentialSelectors.isFetchingList);
+    const isDeletingCredential = useSelector(basicCredentialSelectors.isDeleting);
+    const credentialDeleteErrorMessage = useSelector(basicCredentialSelectors.deleteErrorMessage);
 
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
+    const [credentialDialogOpen, setCredentialDialogOpen] = useState<boolean>(false);
+    const [editCredential, setEditCredential] = useState<TspBasicCredentialDto | undefined>(undefined);
+    const [confirmDeleteCredentialUuid, setConfirmDeleteCredentialUuid] = useState<string>('');
 
     const isBusy = useMemo(
         () => isFetchingDetail || isDeleting || isEnabling || isDisabling,
@@ -44,6 +58,14 @@ export const TspProfileDetail = () => {
     useEffect(() => {
         getFreshData();
     }, [getFreshData]);
+
+    useEffect(() => {
+        if (!id) return;
+        dispatch(basicCredentialActions.listBasicCredentials({ tspProfileUuid: id }));
+        return () => {
+            dispatch(basicCredentialActions.resetState());
+        };
+    }, [dispatch, id]);
 
     const onEditClick = useCallback(() => {
         if (!tspProfile) return;
@@ -66,6 +88,22 @@ export const TspProfileDetail = () => {
         setConfirmDelete(false);
     }, [tspProfile, dispatch]);
 
+    const openCreateCredentialDialog = useCallback(() => {
+        setEditCredential(undefined);
+        setCredentialDialogOpen(true);
+    }, []);
+
+    const closeCredentialDialog = useCallback(() => {
+        setCredentialDialogOpen(false);
+        setEditCredential(undefined);
+    }, []);
+
+    const onDeleteCredentialConfirmed = useCallback(() => {
+        if (!id || !confirmDeleteCredentialUuid) return;
+        dispatch(basicCredentialActions.deleteBasicCredential({ tspProfileUuid: id, uuid: confirmDeleteCredentialUuid }));
+        setConfirmDeleteCredentialUuid('');
+    }, [dispatch, id, confirmDeleteCredentialUuid]);
+
     const buttons: WidgetButtonProps[] = useMemo(
         () => [
             {
@@ -85,7 +123,7 @@ export const TspProfileDetail = () => {
             {
                 id: 'enable',
                 icon: 'check',
-                disabled: tspProfile?.enabled ?? false,
+                disabled: tspProfile?.enabled ?? true,
                 tooltip: 'Enable',
                 onClick: onEnableClick,
             },
@@ -104,23 +142,176 @@ export const TspProfileDetail = () => {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            tspProfile
-                ? [
-                      { id: 'uuid', columns: ['UUID', tspProfile.uuid] },
-                      { id: 'name', columns: ['Name', tspProfile.name] },
-                      { id: 'description', columns: ['Description', tspProfile.description || '—'] },
-                      { id: 'status', columns: ['Status', <StatusBadge key="status" enabled={tspProfile.enabled} />] },
-                      { id: 'signingUrl', columns: ['TSP Signing URL', tspProfile.signingUrl || '—'] },
-                  ]
-                : [],
+            !tspProfile
+                ? []
+                : [
+                      {
+                          id: 'uuid',
+                          columns: ['UUID', tspProfile.uuid],
+                      },
+                      {
+                          id: 'name',
+                          columns: ['Name', tspProfile.name],
+                      },
+                      {
+                          id: 'description',
+                          columns: ['Description', tspProfile.description || ''],
+                      },
+                      {
+                          id: 'status',
+                          columns: ['Status', <StatusBadge enabled={tspProfile.enabled} />],
+                      },
+                      {
+                          id: 'signingUrl',
+                          columns: ['TSP Signing URL', tspProfile.signingUrl ? tspProfile.signingUrl : '-'],
+                      },
+                  ],
         [tspProfile],
+    );
+
+    const signingProfileData: TableDataRow[] = useMemo(
+        () =>
+            !tspProfile?.defaultSigningProfile
+                ? []
+                : [
+                      {
+                          id: 'uuid',
+                          columns: ['UUID', tspProfile.defaultSigningProfile.uuid],
+                      },
+                      {
+                          id: 'name',
+                          columns: [
+                              'Name',
+                              <Link
+                                  key="signing-profile"
+                                  to={`../../${Resource.SigningProfiles.toLowerCase()}/detail/${tspProfile.defaultSigningProfile.uuid}`}
+                              >
+                                  {tspProfile.defaultSigningProfile.name}
+                              </Link>,
+                          ],
+                      },
+                      {
+                          id: 'status',
+                          columns: ['Status', <StatusBadge key="status" enabled={tspProfile.defaultSigningProfile.enabled} />],
+                      },
+                  ],
+        [tspProfile],
+    );
+
+    const signingProfileTitle = useMemo(
+        () => (signingProfileData.length > 0 ? 'Default Signing Profile' : 'Default Signing Profile not assigned'),
+        [signingProfileData],
+    );
+
+    const authenticationData: TableDataRow[] = useMemo(
+        () =>
+            !tspProfile
+                ? []
+                : [
+                      {
+                          id: 'allowedMethods',
+                          columns: [
+                              'Allowed Methods',
+                              <div key="methods" className="flex flex-wrap gap-1">
+                                  {(tspProfile.allowedAuthenticationMethods ?? []).map((method) => (
+                                      <Badge key={method}>{getEnumLabel(authenticationMethodEnum, method)}</Badge>
+                                  ))}
+                              </div>,
+                          ],
+                      },
+                      {
+                          id: 'vaultProfile',
+                          columns: [
+                              'Vault Profile',
+                              tspProfile.vaultProfile ? (
+                                  <Link
+                                      key="vaultProfile"
+                                      to={`/${Resource.VaultProfiles.toLowerCase()}/detail/${tspProfile.vaultProfile.vaultInstance.uuid}/${tspProfile.vaultProfile.uuid}`}
+                                  >
+                                      {tspProfile.vaultProfile.name}
+                                  </Link>
+                              ) : (
+                                  '-'
+                              ),
+                          ],
+                      },
+                  ],
+        [tspProfile, authenticationMethodEnum],
+    );
+
+    const basicPasswordAllowed = useMemo(
+        () => (tspProfile?.allowedAuthenticationMethods ?? []).includes(TspAuthenticationMethod.BasicPassword),
+        [tspProfile],
+    );
+
+    const showCredentialsWidget = basicPasswordAllowed || basicCredentials.length > 0;
+
+    const credentialHeaders: TableHeader[] = useMemo(
+        () => [
+            { id: 'username', content: 'Username' },
+            { id: 'mappedUser', content: 'Mapped User' },
+            { id: 'actions', content: 'Actions' },
+        ],
+        [],
+    );
+
+    const credentialData: TableDataRow[] = useMemo(
+        () =>
+            basicCredentials.map((credential) => ({
+                id: credential.uuid,
+                columns: [
+                    credential.username,
+                    <Link key="mappedUser" to={`/${Resource.Users.toLowerCase()}/detail/${credential.mappedUser.uuid}`}>
+                        {credential.mappedUser.name}
+                    </Link>,
+                    <WidgetButtons
+                        key="actions"
+                        buttons={[
+                            {
+                                id: 'editCredential',
+                                icon: 'pencil',
+                                disabled: isDeletingCredential,
+                                tooltip: 'Edit',
+                                onClick: () => {
+                                    setEditCredential(credential);
+                                    setCredentialDialogOpen(true);
+                                },
+                            },
+                            {
+                                id: 'deleteCredential',
+                                icon: 'trash',
+                                disabled: isDeletingCredential,
+                                tooltip: 'Delete',
+                                onClick: () => setConfirmDeleteCredentialUuid(credential.uuid),
+                            },
+                        ]}
+                    />,
+                ],
+            })),
+        [basicCredentials, isDeletingCredential],
+    );
+
+    const credentialWidgetButtons: WidgetButtonProps[] = useMemo(
+        () => [
+            {
+                id: 'addCredential',
+                icon: 'plus',
+                disabled: false,
+                tooltip: 'Add Basic Credential',
+                onClick: openCreateCredentialDialog,
+            },
+        ],
+        [openCreateCredentialDialog],
     );
 
     return (
         <div>
             <Breadcrumb
                 items={[
-                    { label: 'TSP Profiles', href: `/${Resource.TspProfiles.toLowerCase()}` },
+                    {
+                        label: `${getEnumLabel(resourceEnum, Resource.TspProfiles)} Inventory`,
+                        href: `/${Resource.TspProfiles.toLowerCase()}`,
+                    },
                     { label: tspProfile?.name || 'TSP Profile Details', href: '' },
                 ]}
             />
@@ -140,6 +331,35 @@ export const TspProfileDetail = () => {
                             />
                         )}
                     </Container>
+
+                    <Widget title={signingProfileTitle} titleSize="large">
+                        {signingProfileData.length > 0 && <CustomTable headers={tableHeader} data={signingProfileData} />}
+                    </Widget>
+
+                    <Widget title="Authentication" titleSize="large" busy={isFetchingDetail}>
+                        <CustomTable headers={tableHeader} data={authenticationData} />
+                    </Widget>
+
+                    {showCredentialsWidget && (
+                        <Widget
+                            title="Basic Credentials"
+                            titleSize="large"
+                            busy={isFetchingCredentials || isDeletingCredential}
+                            widgetButtons={credentialWidgetButtons}
+                        >
+                            {!basicPasswordAllowed && basicCredentials.length > 0 && (
+                                <p className="mb-2 text-sm text-[var(--status-warning-color)]">
+                                    Basic authentication is not enabled for this profile — these credentials are not accepted until Basic
+                                    password is re-allowed.
+                                </p>
+                            )}
+                            {basicCredentials.length === 0 ? (
+                                <p className="text-sm text-gray-500">No Basic credentials configured yet.</p>
+                            ) : (
+                                <CustomTable headers={credentialHeaders} data={credentialData} />
+                            )}
+                        </Widget>
+                    )}
                 </Container>
             </Widget>
 
@@ -172,6 +392,57 @@ export const TspProfileDetail = () => {
                         color: 'secondary',
                         variant: 'outline',
                         onClick: () => dispatch(actions.clearDeleteErrorMessages()),
+                        body: 'Close',
+                    },
+                ]}
+            />
+
+            <Dialog
+                isOpen={credentialDialogOpen}
+                caption={editCredential ? 'Edit Basic Credential' : 'Add Basic Credential'}
+                toggle={closeCredentialDialog}
+                body={
+                    credentialDialogOpen && tspProfile ? (
+                        <TspBasicCredentialDialog
+                            key={editCredential?.uuid ?? 'create'}
+                            tspProfileUuid={tspProfile.uuid}
+                            credential={editCredential}
+                            onClose={closeCredentialDialog}
+                        />
+                    ) : null
+                }
+                buttons={[]}
+            />
+
+            <Dialog
+                isOpen={confirmDeleteCredentialUuid !== ''}
+                caption="Delete Basic Credential"
+                body="You are about to delete this Basic credential. Its password will be removed from the Vault. Is this what you want to do?"
+                toggle={() => setConfirmDeleteCredentialUuid('')}
+                icon="delete"
+                buttons={[
+                    { color: 'danger', onClick: onDeleteCredentialConfirmed, body: 'Delete' },
+                    { color: 'secondary', variant: 'outline', onClick: () => setConfirmDeleteCredentialUuid(''), body: 'Cancel' },
+                ]}
+            />
+
+            <Dialog
+                isOpen={credentialDeleteErrorMessage.length > 0}
+                caption="Delete Basic Credential"
+                body={
+                    <>
+                        Failed to delete the Basic credential. Please find the details below:
+                        <br />
+                        <br />
+                        {credentialDeleteErrorMessage}
+                    </>
+                }
+                toggle={() => dispatch(basicCredentialActions.clearDeleteErrorMessage())}
+                buttons={[
+                    {
+                        color: 'secondary',
+                        variant: 'outline',
+                        onClick: () => dispatch(basicCredentialActions.clearDeleteErrorMessage()),
                         body: 'Close',
                     },
                 ]}

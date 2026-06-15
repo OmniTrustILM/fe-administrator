@@ -63,6 +63,7 @@ import { slice as vaultProfilesSlice } from './vault-profiles';
 import { slice as vaultsSlice } from './vaults';
 import { slice as timeQualityConfigurationsSlice } from './time-quality-configurations';
 import { slice as tspProfilesSlice } from './tsp-profiles';
+import { slice as tspProfileBasicCredentialsSlice } from './tsp-profile-basic-credentials';
 
 export const reducers = combineReducers({
     [alertsSlice.name]: alertsSlice.reducer,
@@ -124,4 +125,5 @@ export const reducers = combineReducers({
     [vaultsSlice.name]: vaultsSlice.reducer,
     [timeQualityConfigurationsSlice.name]: timeQualityConfigurationsSlice.reducer,
     [tspProfilesSlice.name]: tspProfilesSlice.reducer,
+    [tspProfileBasicCredentialsSlice.name]: tspProfileBasicCredentialsSlice.reducer,
 });

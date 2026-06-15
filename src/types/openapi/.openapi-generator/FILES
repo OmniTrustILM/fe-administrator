@@ -46,6 +46,7 @@ apis/SettingsApi.ts
 apis/SigningProfileManagementApi.ts
 apis/SigningRecordManagementApi.ts
 apis/StatisticsDashboardApi.ts
+apis/TSPProfileBasicCredentialManagementApi.ts
 apis/TSPProfileManagementApi.ts
 apis/TimeQualityConfigurationManagementApi.ts
 apis/TokenInstanceManagementApi.ts
@@ -576,6 +577,9 @@ models/TriggerType.ts
 models/TrustedCertificateDto.ts
 models/TrustedCertificateRequestDto.ts
 models/TspActivationDetailDto.ts
+models/TspAuthenticationMethod.ts
+models/TspBasicCredentialDto.ts
+models/TspBasicCredentialRequestDto.ts
 models/TspProfileDto.ts
 models/TspProfileListDto.ts
 models/TspProfileRequestDto.ts
