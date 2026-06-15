@@ -48,7 +48,7 @@ async function runEpic(
     action: any,
     depsOverrides: { signingProfiles?: any; connectorsV2?: any } = {},
     takeCount = 1,
-    state: any = { signingProfiles: {} },
+    state?: any,
 ): Promise<UnknownAction[]> {
     const { default: epics } = await import('./signing-profiles-epics');
 
@@ -90,7 +90,7 @@ async function runEpic(
     };
 
     const epic = (epics as any)[epicIndex];
-    const output$ = epic(of(action), new BehaviorSubject(state) as any, deps as any);
+    const output$ = epic(of(action), new BehaviorSubject(state ?? { signingProfiles: {} }) as any, deps as any);
     return firstValueFrom(output$.pipe(take(takeCount), toArray()));
 }
 

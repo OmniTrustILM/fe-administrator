@@ -28,7 +28,7 @@ test('tooltip content renders above a dialog-level overlay (not occluded)', asyn
     const topMostTestId = await page.evaluate(
         ({ x, y }) => {
             const el = document.elementFromPoint(x, y);
-            return el?.closest('[data-testid]')?.getAttribute('data-testid') ?? el?.textContent ?? null;
+            return (el?.closest('[data-testid]') as HTMLElement | null)?.dataset.testid ?? el?.textContent ?? null;
         },
         { x: box.x + box.width / 2, y: box.y + box.height / 2 },
     );

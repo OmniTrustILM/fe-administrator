@@ -8,6 +8,12 @@ import {
     resetReloadGuardForTests,
 } from './lazyWithRetry';
 
+function preloadErrorEvent(payload: unknown): Event & { payload?: unknown } {
+    const event = new Event('vite:preloadError', { cancelable: true }) as Event & { payload?: unknown };
+    event.payload = payload;
+    return event;
+}
+
 describe('lazyWithRetry', () => {
     let reloadSpy: ReturnType<typeof vi.fn>;
     const originalLocationDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'location');
@@ -31,12 +37,6 @@ describe('lazyWithRetry', () => {
             Object.defineProperty(globalThis, 'location', originalLocationDescriptor);
         }
     });
-
-    function preloadErrorEvent(payload: unknown): Event & { payload?: unknown } {
-        const event = new Event('vite:preloadError', { cancelable: true }) as Event & { payload?: unknown };
-        event.payload = payload;
-        return event;
-    }
 
     describe('loadWithReload (fallback for unwrapped imports)', () => {
         it('returns the module on success without clearing the guard (a sibling 404 must not loop)', async () => {

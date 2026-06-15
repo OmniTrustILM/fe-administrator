@@ -6,7 +6,7 @@ import './tailwindcss.css';
 import App from './App';
 import { handleVitePreloadError } from 'utils/lazyWithRetry';
 
-globalThis.addEventListener('vite:preloadError', handleVitePreloadError as EventListener);
+globalThis.addEventListener('vite:preloadError', handleVitePreloadError);
 
 const container = document.getElementById('root')!;
 const root = createRoot(container);

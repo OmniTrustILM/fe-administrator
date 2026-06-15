@@ -389,7 +389,7 @@ const listSignatureFormatterConnectorAttributes: AppEpic = (action$, state$, dep
                         );
                         const merged = descriptors.map((descriptor) => {
                             const savedContent = savedContentByUuid.get(descriptor.uuid);
-                            return savedContent !== undefined ? { ...descriptor, content: savedContent } : descriptor;
+                            return savedContent === undefined ? descriptor : { ...descriptor, content: savedContent };
                         });
 
                         return slice.actions.listSignatureFormatterConnectorAttributesSuccess({ attributeDescriptors: merged });

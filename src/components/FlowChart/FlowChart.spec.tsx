@@ -5,15 +5,15 @@ import FlowChartMountWrapper from './FlowChartMountWrapper';
 
 function buildNode(id: string, overrides: Partial<CustomNode> = {}): CustomNode {
     return {
-        id,
         type: 'customFlowNode',
-        position: { x: 0, y: 0 },
         ...overrides,
+        id,
+        position: overrides.position ?? { x: 0, y: 0 },
         data: {
             customNodeCardTitle: `Node ${id}`,
             ...overrides.data,
         },
-    } as CustomNode;
+    };
 }
 
 function buildEdge(id: string, source: string, target: string): Edge {

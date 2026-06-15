@@ -87,7 +87,7 @@ export default function SigningProfileDetail() {
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [confirmDeactivateTsp, setConfirmDeactivateTsp] = useState(false);
     const [activateTspDialog, setActivateTspDialog] = useState(false);
-    const [selectedTspProfileUuid, setSelectedTspConfigUuid] = useState<string | undefined>(undefined);
+    const [selectedTspProfileUuid, setSelectedTspProfileUuid] = useState<string | undefined>(undefined);
 
     // ── Derived ────────────────────────────────────────────────────────────────
 
@@ -188,55 +188,54 @@ export default function SigningProfileDetail() {
 
     // ── General details ────────────────────────────────────────────────────────
 
-    const generalData: TableDataRow[] = useMemo(
-        () =>
-            !signingProfile
-                ? []
-                : [
-                      { id: 'uuid', columns: ['UUID', signingProfile.uuid] },
-                      { id: 'name', columns: ['Name', signingProfile.name] },
-                      { id: 'description', columns: ['Description', signingProfile.description || ''] },
-                      { id: 'version', columns: ['Version', String(signingProfile.version)] },
-                      { id: 'status', columns: ['Status', <StatusBadge key="value" enabled={signingProfile.enabled} />] },
-                      {
-                          id: 'workflowType',
-                          columns: [
-                              'Signing Workflow Type',
-                              <span
-                                  key="value"
-                                  className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800"
-                              >
-                                  {workflowTypeLabels[(signingProfile.workflow as TimestampingWorkflowDto)?.type] ??
-                                      (signingProfile.workflow as TimestampingWorkflowDto)?.type ??
-                                      '—'}
-                              </span>,
-                          ],
-                      },
-                      {
-                          id: 'enabledProtocols',
-                          columns: [
-                              'Enabled Protocols',
-                              signingProfile.enabledProtocols && signingProfile.enabledProtocols.length > 0 ? (
-                                  <div key="value" className="flex flex-wrap gap-1">
-                                      {signingProfile.enabledProtocols.map((p) => (
-                                          <span
-                                              key={p}
-                                              className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800"
-                                          >
-                                              {protocolLabels[p] ?? p}
-                                          </span>
-                                      ))}
-                                  </div>
-                              ) : (
-                                  <span key="value" className="text-gray-400 text-sm">
-                                      None
-                                  </span>
-                              ),
-                          ],
-                      },
-                  ],
-        [signingProfile],
-    );
+    const generalData: TableDataRow[] = useMemo(() => {
+        if (!signingProfile) {
+            return [];
+        }
+        return [
+            { id: 'uuid', columns: ['UUID', signingProfile.uuid] },
+            { id: 'name', columns: ['Name', signingProfile.name] },
+            { id: 'description', columns: ['Description', signingProfile.description || ''] },
+            { id: 'version', columns: ['Version', String(signingProfile.version)] },
+            { id: 'status', columns: ['Status', <StatusBadge key="value" enabled={signingProfile.enabled} />] },
+            {
+                id: 'workflowType',
+                columns: [
+                    'Signing Workflow Type',
+                    <span
+                        key="value"
+                        className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800"
+                    >
+                        {workflowTypeLabels[(signingProfile.workflow as TimestampingWorkflowDto)?.type] ??
+                            (signingProfile.workflow as TimestampingWorkflowDto)?.type ??
+                            '—'}
+                    </span>,
+                ],
+            },
+            {
+                id: 'enabledProtocols',
+                columns: [
+                    'Enabled Protocols',
+                    signingProfile.enabledProtocols && signingProfile.enabledProtocols.length > 0 ? (
+                        <div key="value" className="flex flex-wrap gap-1">
+                            {signingProfile.enabledProtocols.map((p) => (
+                                <span
+                                    key={p}
+                                    className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800"
+                                >
+                                    {protocolLabels[p] ?? p}
+                                </span>
+                            ))}
+                        </div>
+                    ) : (
+                        <span key="value" className="text-gray-400 text-sm">
+                            None
+                        </span>
+                    ),
+                ],
+            },
+        ];
+    }, [signingProfile]);
 
     // ── Timestamping Workflow ──────────────────────────────────────────────────
 
@@ -373,7 +372,7 @@ export default function SigningProfileDetail() {
                         key="value"
                         className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800"
                     >
-                        {signingSchemeLabels[sc?.signingScheme as SigningScheme] ?? sc?.signingScheme ?? '—'}
+                        {signingSchemeLabels[sc?.signingScheme] ?? sc?.signingScheme ?? '—'}
                     </span>,
                 ],
             },
@@ -384,9 +383,7 @@ export default function SigningProfileDetail() {
                 id: 'managedSigningType',
                 columns: [
                     'Managed Signing Type',
-                    <span key="value">
-                        {managedSigningTypeLabels[sc.managedSigningType as ManagedSigningType] ?? sc.managedSigningType}
-                    </span>,
+                    <span key="value">{managedSigningTypeLabels[sc.managedSigningType] ?? sc.managedSigningType}</span>,
                 ],
             });
         }
@@ -476,7 +473,7 @@ export default function SigningProfileDetail() {
                             if (tspActivationDetails?.available) {
                                 setConfirmDeactivateTsp(true);
                             } else {
-                                setSelectedTspConfigUuid(undefined);
+                                setSelectedTspProfileUuid(undefined);
                                 dispatch(tspProfileActions.listTspProfiles());
                                 setActivateTspDialog(true);
                             }
@@ -487,15 +484,15 @@ export default function SigningProfileDetail() {
                     <></>,
                     <></>,
                     <></>,
-                    !tspActivationDetails?.available ? (
-                        <>Timestamping Protocol is not activated on this profile.</>
-                    ) : (
+                    tspActivationDetails?.available ? (
                         <>
                             <b>Protocol settings</b>
                             <br />
                             <br />
                             <CustomTable hasHeader={false} headers={detailHeaders} data={tspActivationData} />
                         </>
+                    ) : (
+                        <>Timestamping Protocol is not activated on this profile.</>
                     ),
                 ],
             },
@@ -661,7 +658,7 @@ export default function SigningProfileDetail() {
                             id="tspConfigSelect"
                             options={tspProfiles.map((c) => ({ value: c.uuid, label: c.name }))}
                             value={selectedTspProfileUuid ?? ''}
-                            onChange={(value) => setSelectedTspConfigUuid(value as string | undefined)}
+                            onChange={(value) => setSelectedTspProfileUuid(value as string | undefined)}
                             placeholder="Select TSP configuration"
                         />
                     </div>

@@ -198,9 +198,9 @@ function Select({
     // Unwrap { value, label } for single-mode value.
     const singleRawValue = useMemo(() => {
         if (isMulti) return undefined;
-        const v = value as SingleSelectProps['value'];
+        const v = value;
         if (v && typeof v === 'object' && 'value' in v) return (v as { value: OptionValue }).value;
-        return v as OptionValue | null | undefined;
+        return v;
     }, [isMulti, value]);
 
     const multiValues = isMulti ? (value as MultiSelectProps['value']) : undefined;
@@ -292,26 +292,29 @@ function Select({
         [isMulti, selectSingle, toggleMulti],
     );
 
+    const findEnabledIndex = useCallback(
+        (start: number, step: number) => {
+            let next = start;
+            // Step through the list at most once, wrapping around, until a non-disabled option is found.
+            visibleOptions.some(() => {
+                next = (next + step + visibleOptions.length) % visibleOptions.length;
+                return !visibleOptions[next].disabled;
+            });
+            return next;
+        },
+        [visibleOptions],
+    );
+
     const onListKeyDown = useCallback(
         (e: ReactKeyboardEvent<HTMLDivElement | HTMLInputElement>) => {
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 if (visibleOptions.length === 0) return;
-                let next = highlightedIndex;
-                for (let i = 0; i < visibleOptions.length; i++) {
-                    next = (next + 1) % visibleOptions.length;
-                    if (!visibleOptions[next].disabled) break;
-                }
-                setHighlightedIndex(next);
+                setHighlightedIndex(findEnabledIndex(highlightedIndex, 1));
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 if (visibleOptions.length === 0) return;
-                let next = highlightedIndex < 0 ? visibleOptions.length : highlightedIndex;
-                for (let i = 0; i < visibleOptions.length; i++) {
-                    next = (next - 1 + visibleOptions.length) % visibleOptions.length;
-                    if (!visibleOptions[next].disabled) break;
-                }
-                setHighlightedIndex(next);
+                setHighlightedIndex(findEnabledIndex(highlightedIndex < 0 ? visibleOptions.length : highlightedIndex, -1));
             } else if (e.key === 'Home') {
                 e.preventDefault();
                 const idx = visibleOptions.findIndex((o) => !o.disabled);
@@ -331,7 +334,7 @@ function Select({
                 }
             }
         },
-        [visibleOptions, highlightedIndex, handleOptionActivate],
+        [visibleOptions, highlightedIndex, handleOptionActivate, findEnabledIndex],
     );
 
     // Build the trigger display node.

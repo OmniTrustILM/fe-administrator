@@ -307,6 +307,7 @@ export default function ApprovalStepField({ approvalSteps }: Readonly<Props>) {
                 title: (
                     <div className="flex items-center justify-center gap-2">
                         Approval Step {index + 1}
+                        {/* biome-ignore lint/a11y/useSemanticElements: can't be a <button> — the tab title renders inside RadixTabs.Trigger's own <button>, and nested buttons are invalid HTML; role="button" with key handling keeps it accessible. */}
                         <div
                             onClick={(e) => {
                                 e.stopPropagation();

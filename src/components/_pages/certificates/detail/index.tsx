@@ -1306,8 +1306,7 @@ export default function CertificateDetail() {
                                     flowDirection="TB"
                                 />
                             ) : (
-                                // Todo: Add a placeholder for the flow chart
-                                <></>
+                                <div className="p-4 text-sm text-gray-500">No flow chart data available.</div>
                             ),
                         },
                         {
