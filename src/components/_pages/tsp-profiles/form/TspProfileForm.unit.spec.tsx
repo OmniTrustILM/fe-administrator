@@ -11,6 +11,16 @@ import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMoc
 
 setupReactActEnvironment();
 
+// Sets a controlled input's value and dispatches the change event (declaration is hoisted, so position is free).
+async function typeInto(container: HTMLElement, testId: string, value: string) {
+    const setValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    const input = container.querySelector(`[data-testid="${testId}"]`) as HTMLInputElement;
+    await act(async () => {
+        setValue.call(input, value);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+}
+
 // Set per-test to control what the (mocked) auth-methods multi-select emits on click.
 let authMethodsSelection: { value: string; label: string }[] = [];
 
@@ -23,26 +33,22 @@ vi.mock('react-router', () => ({
     useNavigate: () => () => {},
 }));
 
-vi.mock('components/Breadcrumb', () => ({ default: () => <div data-testid="breadcrumb" /> }));
+vi.mock('components/Widget', async () => {
+    const { widgetMockModule } = await import('../../test-utils/mockModules');
+    return widgetMockModule();
+});
 
 vi.mock('components/Container', async () => {
     const { containerMockModule } = await import('../../test-utils/mockModules');
     return containerMockModule();
 });
 
-vi.mock('components/Widget', async () => {
-    const { widgetMockModule } = await import('../../test-utils/mockModules');
-    return widgetMockModule();
-});
+vi.mock('components/Breadcrumb', () => ({ default: () => <div data-testid="breadcrumb" /> }));
 
 vi.mock('components/Attributes/AttributeEditor', () => ({ default: () => null }));
 
-vi.mock('components/Button', () => ({
-    default: ({ children, onClick, type }: any) => (
-        <button type={type ?? 'button'} onClick={onClick}>
-            {children}
-        </button>
-    ),
+vi.mock('components/TextInput', () => ({
+    default: ({ id, onChange, value }: any) => <input data-testid={`input-${id}`} value={value} onChange={onChange} />,
 }));
 
 vi.mock('components/ProgressButton', () => ({
@@ -53,8 +59,12 @@ vi.mock('components/ProgressButton', () => ({
     ),
 }));
 
-vi.mock('components/TextInput', () => ({
-    default: ({ id, onChange, value }: any) => <input data-testid={`input-${id}`} value={value} onChange={onChange} />,
+vi.mock('components/Button', () => ({
+    default: ({ children, onClick, type }: any) => (
+        <button type={type ?? 'button'} onClick={onClick}>
+            {children}
+        </button>
+    ),
 }));
 
 vi.mock('components/Select', () => ({
@@ -79,15 +89,6 @@ vi.mock('components/Select', () => ({
         </div>
     ),
 }));
-
-async function typeInto(container: HTMLElement, testId: string, value: string) {
-    const input = container.querySelector(`[data-testid="${testId}"]`) as HTMLInputElement;
-    const setValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
-    await act(async () => {
-        setValue.call(input, value);
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-    });
-}
 
 describe('TspProfileForm authentication fields', () => {
     let container: HTMLDivElement;
