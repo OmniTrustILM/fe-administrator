@@ -205,6 +205,12 @@ const menuItemMappings: MenuItemMapping[] = [
                 requiredResources: [Resource.NotificationProfiles],
             },
             { _key: '/vaultprofiles', name: 'Vault Profiles', link: '/vaultprofiles', requiredResources: [Resource.VaultProfiles] },
+            {
+                _key: `/${Resource.SigningProfiles.toLowerCase()}`,
+                name: 'Signing Profiles',
+                link: `/${Resource.SigningProfiles.toLowerCase()}`,
+                requiredResources: [Resource.SigningProfiles],
+            },
         ],
     },
 
@@ -242,12 +248,6 @@ const menuItemMappings: MenuItemMapping[] = [
                 name: 'TSP Profiles',
                 link: `/${Resource.TspProfiles.toLowerCase()}`,
                 requiredResources: [Resource.TspProfiles],
-            },
-            {
-                _key: `/${Resource.SigningProfiles.toLowerCase()}`,
-                name: 'Signing Profiles',
-                link: `/${Resource.SigningProfiles.toLowerCase()}`,
-                requiredResources: [Resource.SigningProfiles],
             },
         ],
     },
