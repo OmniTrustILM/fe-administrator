@@ -43,6 +43,7 @@ import { slice as rulesSlice } from './rules';
 import { slice as eventHistorySlice } from './event-history';
 import { slice as schedulerSlice } from './scheduler';
 import { slice as signingProfilesSlice } from './signing-profiles';
+import { slice as signingRecordsSlice } from './signing-records';
 import { slice as settingsSlice } from './settings';
 import { slice as dashboardSlice } from './statisticsDashboard';
 import { slice as tokenProfileSlice } from './token-profiles';
@@ -102,6 +103,7 @@ export const reducers = combineReducers({
     [settingsSlice.name]: settingsSlice.reducer,
     [schedulerSlice.name]: schedulerSlice.reducer,
     [signingProfilesSlice.name]: signingProfilesSlice.reducer,
+    [signingRecordsSlice.name]: signingRecordsSlice.reducer,
     [profileApprovalSlice.name]: profileApprovalSlice.reducer,
     [approvalSlice.name]: approvalSlice.reducer,
     [notificationsSlice.name]: notificationsSlice.reducer,

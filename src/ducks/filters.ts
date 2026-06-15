@@ -28,6 +28,7 @@ export enum EntityType {
     TSP_PROFILE,
     SIGNING_PROFILE,
     ACTIONS_SOURCE,
+    SIGNING_RECORD,
 }
 
 export type Filter = {

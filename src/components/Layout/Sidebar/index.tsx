@@ -211,6 +211,12 @@ const menuItemMappings: MenuItemMapping[] = [
                 link: `/${Resource.SigningProfiles.toLowerCase()}`,
                 requiredResources: [Resource.SigningProfiles],
             },
+            {
+                _key: `/${Resource.SigningRecords.toLowerCase()}`,
+                name: 'Signing Records',
+                link: `/${Resource.SigningRecords.toLowerCase()}`,
+                requiredResources: [Resource.SigningRecords],
+            },
         ],
     },
 
