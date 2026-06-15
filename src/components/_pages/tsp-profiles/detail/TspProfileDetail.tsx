@@ -296,12 +296,12 @@ export const TspProfileDetail = () => {
             {
                 id: 'addCredential',
                 icon: 'plus',
-                disabled: false,
+                disabled: !basicPasswordAllowed,
                 tooltip: 'Add Basic Credential',
                 onClick: openCreateCredentialDialog,
             },
         ],
-        [openCreateCredentialDialog],
+        [openCreateCredentialDialog, basicPasswordAllowed],
     );
 
     return (
