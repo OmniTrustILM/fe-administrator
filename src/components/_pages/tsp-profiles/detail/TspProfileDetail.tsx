@@ -159,7 +159,7 @@ export const TspProfileDetail = () => {
                       },
                       {
                           id: 'status',
-                          columns: ['Status', <StatusBadge enabled={tspProfile.enabled} />],
+                          columns: ['Status', <StatusBadge key="status" enabled={tspProfile.enabled} />],
                       },
                       {
                           id: 'signingUrl',
