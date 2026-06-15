@@ -114,6 +114,7 @@
         "typescript": "$typescript",
         "nodemailer": "^8.0.5",
         "shell-quote": "^1.8.4",
+        "esbuild": "^0.28.1",
         "nyc": {
             "istanbul-lib-processinfo": {
                 "uuid": "^14.0.0"
