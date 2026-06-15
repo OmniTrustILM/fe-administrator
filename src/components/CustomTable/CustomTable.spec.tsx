@@ -626,6 +626,75 @@ test.describe('CustomTable', () => {
         await rolesAfterSwitch.unmount();
     });
 
+    test('paginationPersistKey pagination survives a root route switch (not cleared)', async ({ mount }) => {
+        const manyRows = Array.from({ length: 30 }, (_, i) => ({
+            id: i + 1,
+            columns: [`Row ${i + 1}`, `b`, `c`],
+        }));
+        const store = createMockStore();
+        const persistKey = 'custom-table-persistent:workflows:conditions';
+
+        const listTable = await mount(
+            withProviders(
+                <CustomTable headers={mockHeaders} data={manyRows} hasPagination={true} paginationPersistKey="workflows:conditions" />,
+                { store, initialRoute: '/rules/1' },
+            ),
+        );
+        await expect(listTable.getByText(/Showing 1 to 10/)).toBeVisible();
+        await listTable.getByTestId('pagination-next').click();
+        await expect(listTable.getByText(/Showing 11 to 20/)).toBeVisible();
+        expect((store.getState() as any).tablePagination.byKey[persistKey]).toEqual({ page: 2, pageSize: 10 });
+        await listTable.unmount();
+
+        const detailTable = await mount(
+            withProviders(<CustomTable headers={mockHeaders} data={manyRows} hasPagination={true} />, {
+                store,
+                initialRoute: '/conditions/detail/123',
+            }),
+        );
+        await expect(detailTable.getByText(/Showing 1 to 10/)).toBeVisible();
+        expect((store.getState() as any).tablePagination.byKey[persistKey]).toEqual({ page: 2, pageSize: 10 });
+        await detailTable.unmount();
+    });
+
+    test('persists the search term to the pagination record when canSearch + paginationPersistKey', async ({ mount }) => {
+        const store = createMockStore();
+        const persistKey = 'custom-table-persistent:roles';
+
+        const table = await mount(
+            withProviders(
+                <CustomTable headers={mockHeaders} data={mockData} canSearch={true} hasPagination={true} paginationPersistKey="roles" />,
+                { store, initialRoute: '/roles' },
+            ),
+        );
+
+        await table.getByPlaceholder('Search').fill('jane');
+        await expect(table.getByText('jane@example.com')).toBeVisible();
+        await expect(table.getByText('john@example.com')).toBeHidden();
+        await expect.poll(() => (store.getState() as any).tablePagination.byKey[persistKey]?.search).toBe('jane');
+        await table.unmount();
+    });
+
+    test('persists the active sort column/direction when paginationPersistKey is set', async ({ mount }) => {
+        const store = createMockStore();
+        const persistKey = 'custom-table-persistent:roles';
+
+        const table = await mount(
+            withProviders(<CustomTable headers={mockHeaders} data={mockData} hasPagination={true} paginationPersistKey="roles" />, {
+                store,
+                initialRoute: '/roles',
+            }),
+        );
+
+        await table.getByText('Name').click();
+        await expect.poll(() => (store.getState() as any).tablePagination.byKey[persistKey]?.sortColumn).toBe('name');
+        await expect.poll(() => (store.getState() as any).tablePagination.byKey[persistKey]?.sortDirection).toBe('asc');
+
+        await table.getByText('Name').click();
+        await expect.poll(() => (store.getState() as any).tablePagination.byKey[persistKey]?.sortDirection).toBe('desc');
+        await table.unmount();
+    });
+
     test('should render skeleton when isLoading is true', async ({ mount }) => {
         const paginationData = {
             page: 1,

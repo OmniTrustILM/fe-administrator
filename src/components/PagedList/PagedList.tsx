@@ -1,7 +1,8 @@
 import { type EntityType, selectors as filterSelectors } from 'ducks/filters';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
+import { actions as listScopeActions } from 'ducks/list-scopes';
 
 import type { ApiClients } from 'src/api';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
@@ -64,6 +65,15 @@ function PagedList({
     const dispatch = useDispatch();
     const store = useStore();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        const segment = location.pathname.split('/')[1] ?? '';
+        if (!segment) {
+            return;
+        }
+        dispatch(listScopeActions.registerScope({ entity, prefix: `/${segment}` }));
+    }, [dispatch, entity, location.pathname]);
 
     const currentFilters = useSelector(filterSelectors.currentFilters(entity));
 

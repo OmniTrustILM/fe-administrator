@@ -3,6 +3,9 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 export type TablePaginationState = {
     page: number;
     pageSize: number;
+    search?: string;
+    sortColumn?: string;
+    sortDirection?: 'asc' | 'desc';
 };
 
 export type State = {
@@ -28,8 +31,26 @@ export const slice = createSlice({
     reducers: {
         setPagination: (state, action: PayloadAction<{ key: string; page: number; pageSize: number }>) => {
             state.byKey[action.payload.key] = {
+                ...state.byKey[action.payload.key],
                 page: action.payload.page,
                 pageSize: action.payload.pageSize,
+            };
+        },
+
+        setSearch: (state, action: PayloadAction<{ key: string; search: string }>) => {
+            const prev = state.byKey[action.payload.key] ?? DEFAULT_PAGINATION_STATE;
+            state.byKey[action.payload.key] = {
+                ...prev,
+                search: action.payload.search,
+            };
+        },
+
+        setSort: (state, action: PayloadAction<{ key: string; sortColumn?: string; sortDirection?: 'asc' | 'desc' }>) => {
+            const prev = state.byKey[action.payload.key] ?? DEFAULT_PAGINATION_STATE;
+            state.byKey[action.payload.key] = {
+                ...prev,
+                sortColumn: action.payload.sortColumn,
+                sortDirection: action.payload.sortDirection,
             };
         },
 

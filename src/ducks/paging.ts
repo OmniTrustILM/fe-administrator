@@ -85,6 +85,14 @@ export const slice = createSlice({
                 paging.pageSize = normalizePositiveInteger(action.payload.pageSize, paging.pageSize || 10);
             });
         },
+
+        resetPaging: (state, action: PayloadAction<{ entity: EntityType }>) => {
+            updatePagingState(state, action.payload.entity, (paging) => {
+                paging.pageNumber = EMPTY_PAGING.pageNumber;
+                paging.pageSize = EMPTY_PAGING.pageSize;
+                paging.checkedRows = [];
+            });
+        },
     },
 });
 

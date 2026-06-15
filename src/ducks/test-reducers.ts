@@ -380,7 +380,7 @@ function vaultProfilesTestReducer(state: VaultProfilesTestState | undefined, _ac
 }
 
 export type TablePaginationTestState = {
-    byKey: Record<string, { page: number; pageSize: number }>;
+    byKey: Record<string, { page: number; pageSize: number; search?: string; sortColumn?: string; sortDirection?: 'asc' | 'desc' }>;
     activeRootRoute?: string;
 };
 
@@ -401,9 +401,29 @@ function tablePaginationTestReducer(
             byKey: {
                 ...state.byKey,
                 [a.payload.key]: {
+                    ...state.byKey[a.payload.key],
                     page: a.payload.page,
                     pageSize: a.payload.pageSize,
                 },
+            },
+        };
+    }
+
+    if (a.type === 'tablePagination/setSearch' && a.payload?.key) {
+        const prev = state.byKey[a.payload.key] ?? { page: 1, pageSize: 10 };
+        return {
+            ...state,
+            byKey: { ...state.byKey, [a.payload.key]: { ...prev, search: a.payload.search } },
+        };
+    }
+
+    if (a.type === 'tablePagination/setSort' && a.payload?.key) {
+        const prev = state.byKey[a.payload.key] ?? { page: 1, pageSize: 10 };
+        return {
+            ...state,
+            byKey: {
+                ...state.byKey,
+                [a.payload.key]: { ...prev, sortColumn: a.payload.sortColumn, sortDirection: a.payload.sortDirection },
             },
         };
     }
@@ -499,6 +519,8 @@ function pagingsTestReducer(state: PagingsTestState = pagingsTestInitialState, a
             pageNumber: a.payload?.pageNumber ?? p.pageNumber,
             pageSize: a.payload?.pageSize ?? p.pageSize,
         }));
+    if (a.type === 'pagings/resetPaging')
+        return updatePaging(state, a.payload?.entity, (p) => ({ ...p, pageNumber: 1, pageSize: 10, checkedRows: [] }));
     return state;
 }
 

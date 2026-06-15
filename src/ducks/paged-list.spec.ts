@@ -11,6 +11,7 @@ const navigateMock = vi.fn();
 
 vi.mock('react-router', () => ({
     useNavigate: () => navigateMock,
+    useLocation: () => ({ pathname: '/test-list' }),
 }));
 
 vi.mock('components/FilterWidget', () => ({

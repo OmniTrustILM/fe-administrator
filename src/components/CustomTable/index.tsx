@@ -46,6 +46,7 @@ type Props = {
     columnForDetail?: string;
     detailHeaders?: TableHeader[];
     paginationStateKey?: string;
+    paginationPersistKey?: string;
     disablePaginationControls?: boolean;
     disableSelectionControls?: boolean;
     disableSearchControls?: boolean;
@@ -72,8 +73,8 @@ function CustomTable({
     itemsPerPageOptions,
     newRowWidgetProps,
     detailHeaders,
-    columnForDetail,
     paginationStateKey,
+    paginationPersistKey,
     disablePaginationControls = false,
     disableSelectionControls = false,
     disableSearchControls = false,
@@ -85,7 +86,6 @@ function CustomTable({
     const [tblCheckedRows, setTblCheckedRows] = useState<(string | number)[]>(checkedRows || emptyCheckedRows);
     const [totalPages, setTotalPages] = useState(1);
 
-    const [searchKey, setSearchKey] = useState<string>('');
     const [sortColumn, setSortColumn] = useState<string>('');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -105,8 +105,12 @@ function CustomTable({
         return location.pathname;
     }, [location.pathname]);
     const internalPaginationStorageKey = useMemo(
-        () => `custom-table-pagination:${internalPaginationRouteKey}:${tableSignature}`,
-        [internalPaginationRouteKey, tableSignature],
+        () =>
+            paginationPersistKey
+                ? // route-independent: exempt from clearPaginationByRootRoute
+                  `custom-table-persistent:${paginationPersistKey}`
+                : `custom-table-pagination:${internalPaginationRouteKey}:${tableSignature}`,
+        [paginationPersistKey, internalPaginationRouteKey, tableSignature],
     );
     const currentRootRoute = useMemo(() => {
         const normalizedRoute = internalPaginationRouteKey.startsWith('/')
@@ -122,6 +126,9 @@ function CustomTable({
     const persistedInternalPagination = useSelector(selectInternalPagination);
     const [page, setPage] = useState(() => (internalPaginationEnabled ? persistedInternalPagination.page : 1));
     const [pageSize, setPageSize] = useState(() => (internalPaginationEnabled ? persistedInternalPagination.pageSize : 10));
+    const [searchKey, setSearchKey] = useState<string>(() =>
+        internalPaginationEnabled && canSearch ? (persistedInternalPagination.search ?? '') : '',
+    );
     const activeRootRoute = useSelector(tablePaginationSelectors.activeRootRoute);
     const dispatch = useDispatch();
 
@@ -157,14 +164,37 @@ function CustomTable({
         if (pageSize !== persistedInternalPagination.pageSize) {
             setPageSize(persistedInternalPagination.pageSize);
         }
+        if (canSearch && searchKey !== (persistedInternalPagination.search ?? '')) {
+            setSearchKey(persistedInternalPagination.search ?? '');
+        }
     }, [
         internalPaginationEnabled,
         internalPaginationStorageKey,
         page,
         pageSize,
+        canSearch,
+        searchKey,
         persistedInternalPagination.page,
         persistedInternalPagination.pageSize,
+        persistedInternalPagination.search,
     ]);
+
+    useEffect(() => {
+        if (!internalPaginationEnabled || !canSearch) {
+            return;
+        }
+
+        if ((persistedInternalPagination.search ?? '') === searchKey) {
+            return;
+        }
+
+        dispatch(
+            tablePaginationActions.setSearch({
+                key: internalPaginationStorageKey,
+                search: searchKey,
+            }),
+        );
+    }, [dispatch, internalPaginationEnabled, canSearch, internalPaginationStorageKey, searchKey, persistedInternalPagination.search]);
 
     useEffect(() => {
         if (!internalPaginationEnabled) {
@@ -259,8 +289,18 @@ function CustomTable({
     );
 
     useEffect(() => {
+        if (internalPaginationEnabled && persistedInternalPagination.sortColumn) {
+            const sortColumn = persistedInternalPagination.sortColumn;
+            const sortDirection = persistedInternalPagination.sortDirection ?? 'asc';
+            setTblHeaders(
+                headers.map((header) =>
+                    header.sortable ? { ...header, sort: header.id === sortColumn ? sortDirection : undefined } : header,
+                ),
+            );
+            return;
+        }
         setTblHeaders(headers);
-    }, [headers]);
+    }, [headers, internalPaginationEnabled, persistedInternalPagination.sortColumn, persistedInternalPagination.sortDirection]);
 
     useEffect(() => {
         if (!tblHeaders) return;
@@ -462,8 +502,12 @@ function CustomTable({
             }));
 
             setTblHeaders(headers);
+
+            if (internalPaginationEnabled) {
+                dispatch(tablePaginationActions.setSort({ key: internalPaginationStorageKey, sortColumn, sortDirection: sort }));
+            }
         },
-        [tblHeaders],
+        [tblHeaders, internalPaginationEnabled, internalPaginationStorageKey, dispatch],
     );
 
     const onPageSizeChange = useCallback(
@@ -675,6 +719,7 @@ function CustomTable({
                                 <input
                                     id="search"
                                     placeholder="Search"
+                                    value={searchKey}
                                     onChange={(event) => setSearchKey(event.target.value)}
                                     type="text"
                                     disabled={disableSearchControls}

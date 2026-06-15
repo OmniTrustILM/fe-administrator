@@ -6,11 +6,15 @@ import Dialog from 'components/Dialog';
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { actions as actionGroupsActions, selectors as rulesSelectors } from 'ducks/rules';
+import { actions as listFilterActions, selectors as listFilterSelectors } from 'ducks/list-filters';
+import { WorkflowListKey } from 'utils/listViewState';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import Select from 'components/Select';
 import { PlatformEnum, type Resource } from 'types/openapi';
 import { useRuleEvaluatorResourceOptions } from 'utils/rules';
+
+const LIST_FILTER_KEY = WorkflowListKey.executions;
 
 const ExecutionsList = () => {
     const executions = useSelector(rulesSelectors.executions);
@@ -19,7 +23,11 @@ const ExecutionsList = () => {
 
     const resourceTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const executionTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ExecutionType));
-    const [selectedResource, setSelectedResource] = useState<Resource>();
+    const selectedResource = useSelector(listFilterSelectors.listFilter(LIST_FILTER_KEY)).resource;
+    const setSelectedResource = useCallback(
+        (resource?: Resource) => dispatch(listFilterActions.setListResource({ key: LIST_FILTER_KEY, resource })),
+        [dispatch],
+    );
     const isFetchingList = useSelector(rulesSelectors.isFetchingExecutions);
     const isDeleting = useSelector(rulesSelectors.isDeletingExecution);
     const isBulkDeleting = useSelector(rulesSelectors.isBulkDeletingExecutions);
@@ -130,7 +138,7 @@ const ExecutionsList = () => {
                 onClick: () => setConfirmDelete(true),
             },
         ],
-        [checkedRows, resourceOptionsWithRuleEvaluator, navigate, selectedResource],
+        [checkedRows, resourceOptionsWithRuleEvaluator, navigate, selectedResource, setSelectedResource],
     );
 
     return (
@@ -157,6 +165,7 @@ const ExecutionsList = () => {
                         setCheckedRows(checkedRows as string[]);
                     }}
                     hasPagination={true}
+                    paginationPersistKey={LIST_FILTER_KEY}
                     disablePaginationControls={isBusy}
                     disableSelectionControls={isBusy}
                     disableSearchControls={isBusy}

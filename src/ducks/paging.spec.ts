@@ -87,6 +87,24 @@ describe('paging slice', () => {
         expect(cert?.paging.pageNumber).toBe(7);
         expect(cert?.paging.pageSize).toBe(100);
     });
+
+    test('resetPaging restores defaults and clears checked rows for one entity only', () => {
+        let next = reducer(initialState, actions.setPagination({ entity: EntityType.CBOM, pageNumber: 3, pageSize: 100 }));
+        next = reducer(next, actions.setCheckedRows({ entity: EntityType.CBOM, checkedRows: ['a', 'b'] }));
+        next = reducer(next, actions.setPagination({ entity: EntityType.CERTIFICATE, pageNumber: 5, pageSize: 50 }));
+
+        next = reducer(next, actions.resetPaging({ entity: EntityType.CBOM }));
+
+        const cbom = next.pagings.find((p) => p.entity === EntityType.CBOM);
+        const cert = next.pagings.find((p) => p.entity === EntityType.CERTIFICATE);
+
+        expect(cbom?.paging.pageNumber).toBe(1);
+        expect(cbom?.paging.pageSize).toBe(10);
+        expect(cbom?.paging.checkedRows).toEqual([]);
+        // other entities untouched
+        expect(cert?.paging.pageNumber).toBe(5);
+        expect(cert?.paging.pageSize).toBe(50);
+    });
 });
 
 describe('paging selectors', () => {

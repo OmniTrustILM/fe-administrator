@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import { HashRouter, Navigate, Route, Routes } from 'react-router';
 
 import AppRedirect from './AppRedirect';
+import ListStateScopeCleaner from './ListStateScopeCleaner';
 import Layout from './Layout';
 import Spinner from './Spinner';
 
@@ -473,6 +474,7 @@ export default function AppRouter() {
     return (
         <HashRouter>
             <AppRedirect />
+            <ListStateScopeCleaner />
 
             <Suspense fallback={<RouteFallback />}>
                 <Routes>

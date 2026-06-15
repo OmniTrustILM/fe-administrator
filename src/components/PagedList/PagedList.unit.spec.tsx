@@ -23,6 +23,7 @@ vi.mock('react-redux', () => ({
 
 vi.mock('react-router', () => ({
     useNavigate: () => useNavigateMock(),
+    useLocation: () => ({ pathname: '/test-list' }),
 }));
 
 vi.mock('components/FilterWidget', () => ({

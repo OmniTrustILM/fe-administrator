@@ -5,6 +5,8 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import Dialog from 'components/Dialog';
 import Widget from 'components/Widget';
 import { actions as rulesActions, selectors as rulesSelectors } from 'ducks/rules';
+import { actions as listFilterActions, selectors as listFilterSelectors } from 'ducks/list-filters';
+import { WorkflowListKey } from 'utils/listViewState';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { Link } from 'react-router';
@@ -13,6 +15,8 @@ import { useRuleEvaluatorResourceOptions } from 'utils/rules';
 import { useResourceFilterButtons } from '../useResourceFilterButtons';
 import ConditionForm from '../../../conditions/form';
 
+const LIST_FILTER_KEY = WorkflowListKey.conditions;
+
 const ConditionsList = () => {
     const conditions = useSelector(rulesSelectors.conditions);
 
@@ -20,7 +24,11 @@ const ConditionsList = () => {
 
     const resourceTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const conditionTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ConditionType));
-    const [selectedResource, setSelectedResource] = useState<Resource>();
+    const selectedResource = useSelector(listFilterSelectors.listFilter(LIST_FILTER_KEY)).resource;
+    const setSelectedResource = useCallback(
+        (resource?: Resource) => dispatch(listFilterActions.setListResource({ key: LIST_FILTER_KEY, resource })),
+        [dispatch],
+    );
     const isFetchingList = useSelector(rulesSelectors.isFetchingConditions);
     const isDeleting = useSelector(rulesSelectors.isDeletingCondition);
     const isBulkDeleting = useSelector(rulesSelectors.isBulkDeletingConditions);
@@ -147,6 +155,7 @@ const ConditionsList = () => {
                         setCheckedRows(checkedRows as string[]);
                     }}
                     hasPagination={true}
+                    paginationPersistKey={LIST_FILTER_KEY}
                     disablePaginationControls={isBusy}
                     disableSelectionControls={isBusy}
                     disableSearchControls={isBusy}

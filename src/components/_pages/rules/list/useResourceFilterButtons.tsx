@@ -11,7 +11,7 @@ type ResourceOption = {
 type Params = {
     resourceOptionsWithRuleEvaluator: ResourceOption[];
     selectedResource?: Resource;
-    setSelectedResource: React.Dispatch<React.SetStateAction<Resource | undefined>>;
+    setSelectedResource: (resource?: Resource) => void;
     checkedRows: string[];
     handleOpenAddModal: () => void;
     setConfirmDelete: (open: boolean) => void;

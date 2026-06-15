@@ -6,6 +6,8 @@ import Dialog from 'components/Dialog';
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { actions as rulesActions, selectors as rulesSelectors } from 'ducks/rules';
+import { actions as listFilterActions, selectors as listFilterSelectors } from 'ducks/list-filters';
+import { WorkflowListKey } from 'utils/listViewState';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { Link } from 'react-router';
@@ -15,6 +17,8 @@ import { PlatformEnum, type Resource } from 'types/openapi';
 import { actions as resourceActions, selectors as resourceSelectors } from 'ducks/resource';
 import TriggerForm from '../form';
 
+const LIST_FILTER_KEY = WorkflowListKey.triggers;
+
 const TriggerList = () => {
     const triggers = useSelector(rulesSelectors.triggers);
     const dispatch = useDispatch();
@@ -23,7 +27,11 @@ const TriggerList = () => {
     const eventNameEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ResourceEvent));
     const triggerTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.TriggerType));
     const allResourceEvents = useSelector(resourceSelectors.allResourceEvents);
-    const [selectedResource, setSelectedResource] = useState<Resource>();
+    const selectedResource = useSelector(listFilterSelectors.listFilter(LIST_FILTER_KEY)).resource;
+    const setSelectedResource = useCallback(
+        (resource?: Resource) => dispatch(listFilterActions.setListResource({ key: LIST_FILTER_KEY, resource })),
+        [dispatch],
+    );
     const isFetchingList = useSelector(rulesSelectors.isFetchingTriggers);
     const isDeleting = useSelector(rulesSelectors.isDeletingTrigger);
     const isBulkDeleting = useSelector(rulesSelectors.isBulkDeletingTriggers);
@@ -177,7 +185,7 @@ const TriggerList = () => {
                 onClick: () => setConfirmDelete(true),
             },
         ],
-        [checkedRows, triggerResourceOptions, selectedResource, handleOpenAddModal],
+        [checkedRows, triggerResourceOptions, selectedResource, setSelectedResource, handleOpenAddModal],
     );
 
     return (
@@ -203,6 +211,7 @@ const TriggerList = () => {
                         setCheckedRows(checkedRows as string[]);
                     }}
                     hasPagination
+                    paginationPersistKey={LIST_FILTER_KEY}
                     disablePaginationControls={isBusy}
                     disableSelectionControls={isBusy}
                     disableSearchControls={isBusy}
