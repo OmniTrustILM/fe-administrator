@@ -8,7 +8,7 @@
       "y": 0,
       "name": "Component Library",
       "clip": true,
-      "width": 1380,
+      "width": 1680,
       "fill": "#f4f5f7",
       "layout": "vertical",
       "children": [
@@ -16,7 +16,7 @@
           "type": "frame",
           "id": "J5MSA",
           "name": "Header",
-          "width": 1380,
+          "width": 1680,
           "fill": "$color.neutral-900",
           "padding": [
             28,
@@ -51,8 +51,7 @@
           "type": "frame",
           "id": "W3Yt2",
           "name": "Body",
-          "width": 1380,
-          "height": 515,
+          "width": 1680,
           "gap": 40,
           "padding": [
             40,
@@ -579,7 +578,7 @@
                       "x": 0,
                       "y": 0,
                       "name": "Label",
-                      "fill": "#8c8c8c",
+                      "fill": "$color.gray-500",
                       "content": "BREADCRUMB",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -591,7 +590,7 @@
                       "x": 0,
                       "y": 23,
                       "name": "Divider",
-                      "fill": "#e8e8e8",
+                      "fill": "$color.gray-300",
                       "width": 240,
                       "height": 1
                     }
@@ -627,6 +626,229 @@
                   ]
                 }
               ]
+            },
+            {
+              "type": "frame",
+              "id": "Ompod",
+              "name": "Text Inputs Group",
+              "width": 260,
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Yk70W",
+                  "name": "Group Header",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "OF3HY",
+                      "name": "Group Title",
+                      "fill": "$color.gray-500",
+                      "content": "TEXT INPUT",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "rectangle",
+                      "id": "Cd5eh",
+                      "name": "Divider",
+                      "fill": "$color.gray-300",
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "eEL5R",
+                  "name": "Items",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "XJAJQ",
+                      "name": "TextInput/Default",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "GIqJN",
+                          "type": "ref",
+                          "ref": "QxVfY",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "descendants": {
+                            "vMtqi": {
+                              "content": "Placeholder",
+                              "fill": "$color.gray-500"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "opZ8t",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Default",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "bq8TM",
+                      "name": "TextInput/Filled",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "bA6LN",
+                          "type": "ref",
+                          "ref": "QxVfY",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "descendants": {
+                            "vMtqi": {
+                              "content": "Acme Corp",
+                              "fill": "$color.gray-900"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "C5BvVa",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Filled",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fN0Vt",
+                      "name": "TextInput/Focus",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "loB55",
+                          "type": "ref",
+                          "ref": "QxVfY",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "stroke": "$color.blue-500",
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "$color.blue-300",
+                            "spread": 2
+                          },
+                          "descendants": {
+                            "vMtqi": {
+                              "content": "Placeholder",
+                              "fill": "$color.gray-500"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "EUI3v",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Focus",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fGrJI",
+                      "name": "TextInput/Error",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "SO1Nr",
+                          "type": "ref",
+                          "ref": "QxVfY",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "stroke": "$color.red-500",
+                          "descendants": {
+                            "vMtqi": {
+                              "content": "user@@example",
+                              "fill": "$color.gray-900"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "pdJdW",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Error",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "mBR6Y",
+                      "name": "TextInput/Disabled",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "f0gLz",
+                          "type": "ref",
+                          "ref": "QxVfY",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "opacity": 0.5,
+                          "fill": "$color.gray-100",
+                          "descendants": {
+                            "vMtqi": {
+                              "content": "ACC-009912",
+                              "fill": "$color.gray-900"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "BiqSP",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Disabled",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -651,7 +873,7 @@
                   "x": 40,
                   "y": 14,
                   "name": "Label",
-                  "fill": "#8c8c8c",
+                  "fill": "$color.gray-500",
                   "content": "INPUT",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -663,8 +885,8 @@
                   "x": 0,
                   "y": 0,
                   "name": "Top Divider",
-                  "fill": "#e8e8e8",
-                  "width": 1100,
+                  "fill": "$color.gray-300",
+                  "width": 1680,
                   "height": 1
                 },
                 {
@@ -673,8 +895,8 @@
                   "x": 0,
                   "y": 39,
                   "name": "Bottom Divider",
-                  "fill": "#e8e8e8",
-                  "width": 1100,
+                  "fill": "$color.gray-300",
+                  "width": 1680,
                   "height": 1
                 }
               ]
@@ -2247,6 +2469,40 @@
           "fontFamily": "Inter",
           "fontSize": 22,
           "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "QxVfY",
+      "x": 0,
+      "y": 1605,
+      "name": "TextInput/Field",
+      "reusable": true,
+      "width": 260,
+      "fill": "$color.white",
+      "cornerRadius": 8,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "gap": 8,
+      "padding": [
+        12,
+        16
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "vMtqi",
+          "name": "Value",
+          "fill": "$color.gray-500",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Placeholder",
+          "fontFamily": "Inter",
+          "fontSize": 14,
+          "fontWeight": "normal"
         }
       ]
     }
