@@ -144,12 +144,12 @@ const bulkDeleteSigningRecords: AppEpic = (action$, state, deps) => {
         filter(slice.actions.bulkDeleteSigningRecords.match),
         switchMap((action) =>
             deps.apiClients.signingRecords.bulkDeleteSigningRecords({ requestBody: action.payload.uuids }).pipe(
-                mergeMap(() =>
-                    of(
-                        slice.actions.bulkDeleteSigningRecordsSuccess({ uuids: action.payload.uuids }),
-                        alertsSlice.actions.success('Selected Signing Records successfully deleted.'),
-                    ),
-                ),
+                mergeMap((errors) => {
+                    const successAction = slice.actions.bulkDeleteSigningRecordsSuccess({ uuids: action.payload.uuids, errors });
+                    return errors.length === 0
+                        ? of(successAction, alertsSlice.actions.success('Selected Signing Records successfully deleted.'))
+                        : of(successAction);
+                }),
                 catchError((err) =>
                     of(
                         slice.actions.bulkDeleteSigningRecordsFailure({

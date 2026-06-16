@@ -97,7 +97,7 @@ describe('signingRecords slice', () => {
         expect(next.signingRecordsData?.totalItems).toBe(1);
     });
 
-    test('bulkDeleteSigningRecords success removes items and decrements totalItems', () => {
+    test('bulkDeleteSigningRecords success (no errors) removes items and decrements totalItems', () => {
         const state = {
             ...initialState,
             signingRecordsData: {
@@ -110,11 +110,41 @@ describe('signingRecords slice', () => {
             isBulkDeleting: true,
         } as any;
 
-        const next = reducer(state, actions.bulkDeleteSigningRecordsSuccess({ uuids: ['rec-1', 'rec-3'] }));
+        const next = reducer(state, actions.bulkDeleteSigningRecordsSuccess({ uuids: ['rec-1', 'rec-3'], errors: [] }));
 
         expect(next.isBulkDeleting).toBe(false);
         expect(next.deletedSigningRecordUuids).toEqual(['rec-1', 'rec-3']);
         expect(next.signingRecordsData?.items).toEqual([{ uuid: 'rec-2' }]);
         expect(next.signingRecordsData?.totalItems).toBe(1);
+        expect(next.bulkDeleteErrorMessages).toEqual([]);
+    });
+
+    test('bulkDeleteSigningRecords success with errors stores messages and keeps items', () => {
+        const state = {
+            ...initialState,
+            signingRecordsData: {
+                items: [{ uuid: 'rec-1' }, { uuid: 'rec-2' }],
+                totalItems: 2,
+                pageNumber: 1,
+                itemsPerPage: 10,
+                totalPages: 1,
+            },
+            isBulkDeleting: true,
+        } as any;
+
+        const errors = [{ uuid: 'rec-1', name: 'rec-1', message: 'In use' }] as any;
+        const next = reducer(state, actions.bulkDeleteSigningRecordsSuccess({ uuids: ['rec-1', 'rec-2'], errors }));
+
+        expect(next.isBulkDeleting).toBe(false);
+        expect(next.bulkDeleteErrorMessages).toEqual(errors);
+        expect(next.deletedSigningRecordUuids).toEqual([]);
+        expect(next.signingRecordsData?.items).toEqual([{ uuid: 'rec-1' }, { uuid: 'rec-2' }]);
+        expect(next.signingRecordsData?.totalItems).toBe(2);
+    });
+
+    test('clearDeleteErrorMessages resets bulk delete error messages', () => {
+        const state = { ...initialState, bulkDeleteErrorMessages: [{ uuid: 'x', name: 'x', message: 'm' }] } as any;
+        const next = reducer(state, actions.clearDeleteErrorMessages());
+        expect(next.bulkDeleteErrorMessages).toEqual([]);
     });
 });

@@ -22,6 +22,7 @@ import {
     ArrowRightToLine,
     Network,
     FileLock2,
+    FileSignature,
 } from 'lucide-react';
 import Button from 'components/Button';
 import { Resource } from 'types/openapi';
@@ -159,6 +160,13 @@ const menuItemMappings: MenuItemMapping[] = [
         requiredResources: [Resource.Cboms],
     },
     {
+        _key: `/${Resource.SigningRecords.toLowerCase()}`,
+        icon: <FileSignature size={16} strokeWidth={1.5} />,
+        header: 'Signing Records',
+        headerLink: `/${Resource.SigningRecords.toLowerCase()}`,
+        requiredResources: [Resource.SigningRecords],
+    },
+    {
         _key: '/proxies',
         icon: <Network size={16} strokeWidth={1.5} />,
         header: 'Proxies',
@@ -210,12 +218,6 @@ const menuItemMappings: MenuItemMapping[] = [
                 name: 'Signing Profiles',
                 link: `/${Resource.SigningProfiles.toLowerCase()}`,
                 requiredResources: [Resource.SigningProfiles],
-            },
-            {
-                _key: `/${Resource.SigningRecords.toLowerCase()}`,
-                name: 'Signing Records',
-                link: `/${Resource.SigningRecords.toLowerCase()}`,
-                requiredResources: [Resource.SigningRecords],
             },
         ],
     },

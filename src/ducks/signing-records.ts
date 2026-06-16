@@ -1,5 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
+    BulkActionMessageDto,
     PaginationResponseDtoSigningRecordListDto,
     SearchFieldDataByGroupDto,
     SearchRequestDto,
@@ -13,6 +14,7 @@ export type State = {
     signingRecordDetailError?: string;
     signingRecordDetailErrorStatusCode?: number;
     searchableFields: SearchFieldDataByGroupDto[];
+    bulkDeleteErrorMessages: BulkActionMessageDto[];
 
     isFetchingList: boolean;
     isFetchingDetail: boolean;
@@ -24,6 +26,7 @@ export type State = {
 export const initialState: State = {
     deletedSigningRecordUuids: [],
     searchableFields: [],
+    bulkDeleteErrorMessages: [],
 
     isFetchingList: false,
     isFetchingDetail: false,
@@ -129,11 +132,17 @@ export const slice = createSlice({
 
         // Bulk delete Signing Records
         bulkDeleteSigningRecords: (state, action: PayloadAction<{ uuids: string[] }>) => {
+            state.bulkDeleteErrorMessages = [];
             state.isBulkDeleting = true;
         },
 
-        bulkDeleteSigningRecordsSuccess: (state, action: PayloadAction<{ uuids: string[] }>) => {
+        bulkDeleteSigningRecordsSuccess: (state, action: PayloadAction<{ uuids: string[]; errors: BulkActionMessageDto[] }>) => {
             state.isBulkDeleting = false;
+
+            if (action.payload.errors?.length > 0) {
+                state.bulkDeleteErrorMessages = action.payload.errors;
+                return;
+            }
 
             action.payload.uuids.forEach((uuid) => {
                 if (!state.deletedSigningRecordUuids.includes(uuid)) {
@@ -153,6 +162,10 @@ export const slice = createSlice({
         bulkDeleteSigningRecordsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isBulkDeleting = false;
         },
+
+        clearDeleteErrorMessages: (state, action: PayloadAction<void>) => {
+            state.bulkDeleteErrorMessages = [];
+        },
     },
 });
 
@@ -160,6 +173,8 @@ const featureSelector = (reduxStore: any): State => reduxStore?.signingRecords;
 
 export const selectSigningRecordsData = createSelector(featureSelector, (state) => state.signingRecordsData);
 export const selectSigningRecordsList = createSelector(featureSelector, (state) => state.signingRecordsData?.items || []);
+export const selectDeletedSigningRecordUuids = createSelector(featureSelector, (state) => state.deletedSigningRecordUuids);
+export const selectBulkDeleteErrorMessages = createSelector(featureSelector, (state) => state.bulkDeleteErrorMessages);
 export const selectSigningRecordDetail = createSelector(featureSelector, (state) => state.signingRecordDetail);
 export const selectSigningRecordDetailError = createSelector(featureSelector, (state) => state.signingRecordDetailError);
 export const selectSigningRecordDetailErrorStatusCode = createSelector(
@@ -177,6 +192,8 @@ export const selectIsBulkDeleting = createSelector(featureSelector, (state) => s
 export const selectors = {
     selectSigningRecordsData,
     selectSigningRecordsList,
+    selectDeletedSigningRecordUuids,
+    selectBulkDeleteErrorMessages,
     selectSigningRecordDetail,
     selectSigningRecordDetailError,
     selectSigningRecordDetailErrorStatusCode,

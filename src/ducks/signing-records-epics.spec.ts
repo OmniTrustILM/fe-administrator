@@ -158,7 +158,7 @@ describe('signingRecords epics', () => {
         expect(emitted[1].type).toBe(alertsSlice.actions.success.type);
     });
 
-    test('bulkDeleteSigningRecords success emits success and alert', async () => {
+    test('bulkDeleteSigningRecords success (no errors) emits success and alert', async () => {
         const deps = createDeps({
             bulkDeleteSigningRecords: ({ requestBody }) => {
                 expect(requestBody).toEqual(['rec-1', 'rec-2']);
@@ -173,7 +173,21 @@ describe('signingRecords epics', () => {
         );
         const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
 
-        expect(emitted[0]).toEqual(slice.actions.bulkDeleteSigningRecordsSuccess({ uuids: ['rec-1', 'rec-2'] }));
+        expect(emitted[0]).toEqual(slice.actions.bulkDeleteSigningRecordsSuccess({ uuids: ['rec-1', 'rec-2'], errors: [] }));
         expect(emitted[1].type).toBe(alertsSlice.actions.success.type);
+    });
+
+    test('bulkDeleteSigningRecords with per-item errors emits success carrying errors and no alert', async () => {
+        const errors = [{ uuid: 'rec-1', name: 'rec-1', message: 'In use' }] as any;
+        const deps = createDeps({ bulkDeleteSigningRecords: () => of(errors) });
+
+        const output$ = (bulkDeleteSigningRecords as any)(
+            of(slice.actions.bulkDeleteSigningRecords({ uuids: ['rec-1', 'rec-2'] })),
+            of({}) as any,
+            deps as any,
+        );
+        const emitted = await firstValueFrom(output$.pipe(take(1), toArray()));
+
+        expect(emitted).toEqual([slice.actions.bulkDeleteSigningRecordsSuccess({ uuids: ['rec-1', 'rec-2'], errors })]);
     });
 });
