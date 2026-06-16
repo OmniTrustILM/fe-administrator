@@ -15,11 +15,17 @@ import type { Observable } from 'rxjs';
 import type { AjaxResponse } from 'rxjs/ajax';
 import { BaseAPI, throwIfNullOrUndefined, encodeURI } from '../runtime';
 import type { OperationOpts, HttpHeaders } from '../runtime';
-import type { AuthenticationServiceExceptionDto, ErrorMessageDto, TspBasicCredentialDto, TspBasicCredentialRequestDto } from '../models';
+import type {
+    AuthenticationServiceExceptionDto,
+    ErrorMessageDto,
+    TspBasicCredentialCreateRequestDto,
+    TspBasicCredentialDto,
+    TspBasicCredentialUpdateRequestDto,
+} from '../models';
 
 export interface CreateTspProfileBasicCredentialRequest {
     tspProfileUuid: string;
-    tspBasicCredentialRequestDto: TspBasicCredentialRequestDto;
+    tspBasicCredentialCreateRequestDto: TspBasicCredentialCreateRequestDto;
 }
 
 export interface DeleteTspProfileBasicCredentialRequest {
@@ -39,7 +45,7 @@ export interface ListTspProfileBasicCredentialsRequest {
 export interface UpdateTspProfileBasicCredentialRequest {
     tspProfileUuid: string;
     uuid: string;
-    tspBasicCredentialRequestDto: TspBasicCredentialRequestDto;
+    tspBasicCredentialUpdateRequestDto: TspBasicCredentialUpdateRequestDto;
 }
 
 /**
@@ -51,18 +57,18 @@ export class TSPProfileBasicCredentialManagementApi extends BaseAPI {
      */
     createTspProfileBasicCredential({
         tspProfileUuid,
-        tspBasicCredentialRequestDto,
+        tspBasicCredentialCreateRequestDto,
     }: CreateTspProfileBasicCredentialRequest): Observable<TspBasicCredentialDto>;
     createTspProfileBasicCredential(
-        { tspProfileUuid, tspBasicCredentialRequestDto }: CreateTspProfileBasicCredentialRequest,
+        { tspProfileUuid, tspBasicCredentialCreateRequestDto }: CreateTspProfileBasicCredentialRequest,
         opts?: OperationOpts,
     ): Observable<AjaxResponse<TspBasicCredentialDto>>;
     createTspProfileBasicCredential(
-        { tspProfileUuid, tspBasicCredentialRequestDto }: CreateTspProfileBasicCredentialRequest,
+        { tspProfileUuid, tspBasicCredentialCreateRequestDto }: CreateTspProfileBasicCredentialRequest,
         opts?: OperationOpts,
     ): Observable<TspBasicCredentialDto | AjaxResponse<TspBasicCredentialDto>> {
         throwIfNullOrUndefined(tspProfileUuid, 'tspProfileUuid', 'createTspProfileBasicCredential');
-        throwIfNullOrUndefined(tspBasicCredentialRequestDto, 'tspBasicCredentialRequestDto', 'createTspProfileBasicCredential');
+        throwIfNullOrUndefined(tspBasicCredentialCreateRequestDto, 'tspBasicCredentialCreateRequestDto', 'createTspProfileBasicCredential');
 
         const headers: HttpHeaders = {
             'Content-Type': 'application/json',
@@ -73,7 +79,7 @@ export class TSPProfileBasicCredentialManagementApi extends BaseAPI {
                 url: '/v1/tspProfiles/{tspProfileUuid}/basicCredentials'.replace('{tspProfileUuid}', encodeURI(tspProfileUuid)),
                 method: 'POST',
                 headers,
-                body: tspBasicCredentialRequestDto,
+                body: tspBasicCredentialCreateRequestDto,
             },
             opts?.responseOpts,
         );
@@ -160,19 +166,19 @@ export class TSPProfileBasicCredentialManagementApi extends BaseAPI {
     updateTspProfileBasicCredential({
         tspProfileUuid,
         uuid,
-        tspBasicCredentialRequestDto,
+        tspBasicCredentialUpdateRequestDto,
     }: UpdateTspProfileBasicCredentialRequest): Observable<TspBasicCredentialDto>;
     updateTspProfileBasicCredential(
-        { tspProfileUuid, uuid, tspBasicCredentialRequestDto }: UpdateTspProfileBasicCredentialRequest,
+        { tspProfileUuid, uuid, tspBasicCredentialUpdateRequestDto }: UpdateTspProfileBasicCredentialRequest,
         opts?: OperationOpts,
     ): Observable<AjaxResponse<TspBasicCredentialDto>>;
     updateTspProfileBasicCredential(
-        { tspProfileUuid, uuid, tspBasicCredentialRequestDto }: UpdateTspProfileBasicCredentialRequest,
+        { tspProfileUuid, uuid, tspBasicCredentialUpdateRequestDto }: UpdateTspProfileBasicCredentialRequest,
         opts?: OperationOpts,
     ): Observable<TspBasicCredentialDto | AjaxResponse<TspBasicCredentialDto>> {
         throwIfNullOrUndefined(tspProfileUuid, 'tspProfileUuid', 'updateTspProfileBasicCredential');
         throwIfNullOrUndefined(uuid, 'uuid', 'updateTspProfileBasicCredential');
-        throwIfNullOrUndefined(tspBasicCredentialRequestDto, 'tspBasicCredentialRequestDto', 'updateTspProfileBasicCredential');
+        throwIfNullOrUndefined(tspBasicCredentialUpdateRequestDto, 'tspBasicCredentialUpdateRequestDto', 'updateTspProfileBasicCredential');
 
         const headers: HttpHeaders = {
             'Content-Type': 'application/json',
@@ -185,7 +191,7 @@ export class TSPProfileBasicCredentialManagementApi extends BaseAPI {
                     .replace('{uuid}', encodeURI(uuid)),
                 method: 'PUT',
                 headers,
-                body: tspBasicCredentialRequestDto,
+                body: tspBasicCredentialUpdateRequestDto,
             },
             opts?.responseOpts,
         );

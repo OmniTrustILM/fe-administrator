@@ -578,8 +578,9 @@ models/TrustedCertificateDto.ts
 models/TrustedCertificateRequestDto.ts
 models/TspActivationDetailDto.ts
 models/TspAuthenticationMethod.ts
+models/TspBasicCredentialCreateRequestDto.ts
 models/TspBasicCredentialDto.ts
-models/TspBasicCredentialRequestDto.ts
+models/TspBasicCredentialUpdateRequestDto.ts
 models/TspProfileDto.ts
 models/TspProfileListDto.ts
 models/TspProfileRequestDto.ts
