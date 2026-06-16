@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 
 import Button from 'components/Button';
@@ -72,6 +72,10 @@ export default function TspBasicCredentialDialog({ tspProfileUuid, credential, o
         mode: 'onChange',
     });
 
+    // Changing the username on update requires a new password.
+    const currentUsername = useWatch({ control, name: 'username' });
+    const requirePasswordForUsernameChange = editMode && (credential?.username ?? '') !== currentUsername;
+
     const onSubmit = useCallback(
         (values: FormValues) => {
             const request: TspBasicCredentialRequestDto = {
@@ -95,7 +99,7 @@ export default function TspBasicCredentialDialog({ tspProfileUuid, credential, o
                 <Controller
                     name="username"
                     control={control}
-                    rules={buildValidationRules([validateRequired()])}
+                    rules={{ ...buildValidationRules([validateRequired()]), deps: ['password'] }}
                     render={({ field, fieldState }) => (
                         <TextInput
                             {...field}
@@ -112,7 +116,16 @@ export default function TspBasicCredentialDialog({ tspProfileUuid, credential, o
                 <Controller
                     name="password"
                     control={control}
-                    rules={editMode ? undefined : buildValidationRules([validateRequired()])}
+                    rules={{
+                        validate: (value: string) => {
+                            if (!editMode) {
+                                return validateRequired()(value);
+                            }
+                            return requirePasswordForUsernameChange && !value
+                                ? 'A new password is required when changing the username.'
+                                : undefined;
+                        },
+                    }}
                     render={({ field, fieldState }) => (
                         <div>
                             <TextInput
@@ -120,11 +133,17 @@ export default function TspBasicCredentialDialog({ tspProfileUuid, credential, o
                                 id="password"
                                 type="password"
                                 label="Password"
-                                required={!editMode}
+                                required={!editMode || requirePasswordForUsernameChange}
                                 invalid={fieldState.error && fieldState.isTouched}
                                 error={getFieldErrorMessage(fieldState)}
                             />
-                            {editMode && <p className="mt-1 text-sm text-gray-500">Leave blank to keep the current password.</p>}
+                            {editMode && (
+                                <p className="mt-1 text-sm text-gray-500">
+                                    {requirePasswordForUsernameChange
+                                        ? 'Changing the username requires a new password.'
+                                        : 'Leave blank to keep the current password.'}
+                                </p>
+                            )}
                         </div>
                     )}
                 />

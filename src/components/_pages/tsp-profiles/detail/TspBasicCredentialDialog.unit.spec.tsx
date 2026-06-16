@@ -116,14 +116,16 @@ describe('TspBasicCredentialDialog', () => {
         });
     });
 
-    it('edit mode submits without password when left blank (keeps the current secret)', async () => {
+    it('edit mode submits without password when the username is unchanged (keeps the current secret)', async () => {
+        // Credential mapped to a different user so re-selecting user-1 makes the form dirty without touching the username.
+        const credential = { uuid: 'cred-1', username: 'alice', mappedUser: { uuid: 'user-2', name: 'Bob' } } as any;
         await act(async () => {
-            root.render(<TspBasicCredentialDialog tspProfileUuid="tsp-1" credential={CREDENTIAL} onClose={onClose} />);
+            root.render(<TspBasicCredentialDialog tspProfileUuid="tsp-1" credential={credential} onClose={onClose} />);
         });
 
         expect(container.textContent).toContain('Leave blank to keep the current password.');
 
-        await typeInto(container, 'input-username', 'alice2');
+        await clickByTestId(container, 'select-mappedUserSelect');
         await clickByTestId(container, 'submit');
 
         const updateAction = dispatch.mock.calls
@@ -132,7 +134,35 @@ describe('TspBasicCredentialDialog', () => {
         expect(updateAction.payload).toEqual({
             tspProfileUuid: 'tsp-1',
             uuid: 'cred-1',
-            request: { username: 'alice2', password: undefined, mappedUserUuid: 'user-1' },
+            request: { username: 'alice', password: undefined, mappedUserUuid: 'user-1' },
+        });
+    });
+
+    it('edit mode requires a new password when the username changes', async () => {
+        await act(async () => {
+            root.render(<TspBasicCredentialDialog tspProfileUuid="tsp-1" credential={CREDENTIAL} onClose={onClose} />);
+        });
+
+        await typeInto(container, 'input-username', 'alice2');
+
+        // The form surfaces the constraint and blocks submit while the password is blank.
+        expect(container.textContent).toContain('Changing the username requires a new password.');
+        await clickByTestId(container, 'submit');
+        expect(
+            dispatch.mock.calls.map((call) => call[0]).some((action) => action.type === 'tspProfileBasicCredentials/updateBasicCredential'),
+        ).toBe(false);
+
+        // Supplying a new password unblocks the update and rotates the secret.
+        await typeInto(container, 'input-password', 'newpw');
+        await clickByTestId(container, 'submit');
+
+        const updateAction = dispatch.mock.calls
+            .map((call) => call[0])
+            .find((action) => action.type === 'tspProfileBasicCredentials/updateBasicCredential');
+        expect(updateAction.payload).toEqual({
+            tspProfileUuid: 'tsp-1',
+            uuid: 'cred-1',
+            request: { username: 'alice2', password: 'newpw', mappedUserUuid: 'user-1' },
         });
     });
 
