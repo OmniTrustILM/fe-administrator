@@ -1,5 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { TspBasicCredentialDto, TspBasicCredentialRequestDto } from 'types/openapi';
+import type { TspBasicCredentialCreateRequestDto, TspBasicCredentialDto, TspBasicCredentialUpdateRequestDto } from 'types/openapi';
 
 export type State = {
     credentials: TspBasicCredentialDto[];
@@ -65,7 +65,7 @@ export const slice = createSlice({
             state.isFetchingList = false;
         },
 
-        createBasicCredential: (state, _action: PayloadAction<{ tspProfileUuid: string; request: TspBasicCredentialRequestDto }>) => {
+        createBasicCredential: (state, _action: PayloadAction<{ tspProfileUuid: string; request: TspBasicCredentialCreateRequestDto }>) => {
             state.isCreating = true;
             state.saveSucceeded = false;
             state.saveErrorMessage = '';
@@ -85,7 +85,7 @@ export const slice = createSlice({
 
         updateBasicCredential: (
             state,
-            _action: PayloadAction<{ tspProfileUuid: string; uuid: string; request: TspBasicCredentialRequestDto }>,
+            _action: PayloadAction<{ tspProfileUuid: string; uuid: string; request: TspBasicCredentialUpdateRequestDto }>,
         ) => {
             state.isUpdating = true;
             state.saveSucceeded = false;

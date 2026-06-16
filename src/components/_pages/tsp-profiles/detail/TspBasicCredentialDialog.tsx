@@ -11,7 +11,7 @@ import TextInput from 'components/TextInput';
 import { actions as basicCredentialActions, selectors as basicCredentialSelectors } from 'ducks/tsp-profile-basic-credentials';
 import { actions as userActions, selectors as userSelectors } from 'ducks/users';
 
-import type { TspBasicCredentialDto, TspBasicCredentialRequestDto } from 'types/openapi';
+import type { TspBasicCredentialCreateRequestDto, TspBasicCredentialDto, TspBasicCredentialUpdateRequestDto } from 'types/openapi';
 import { validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { buildUserOption } from 'utils/widget';
@@ -78,15 +78,21 @@ export default function TspBasicCredentialDialog({ tspProfileUuid, credential, o
 
     const onSubmit = useCallback(
         (values: FormValues) => {
-            const request: TspBasicCredentialRequestDto = {
-                username: values.username,
-                password: values.password || undefined,
-                mappedUserUuid: values.mappedUser,
-            };
-
             if (editMode && credential) {
+                // Password is write-only on update: blank keeps the existing secret, a value rotates it.
+                const request: TspBasicCredentialUpdateRequestDto = {
+                    username: values.username,
+                    password: values.password || undefined,
+                    mappedUserUuid: values.mappedUser,
+                };
                 dispatch(basicCredentialActions.updateBasicCredential({ tspProfileUuid, uuid: credential.uuid, request }));
             } else {
+                // Password is required on create; the form validation guarantees a non-empty value here.
+                const request: TspBasicCredentialCreateRequestDto = {
+                    username: values.username,
+                    password: values.password,
+                    mappedUserUuid: values.mappedUser,
+                };
                 dispatch(basicCredentialActions.createBasicCredential({ tspProfileUuid, request }));
             }
         },

@@ -33,7 +33,7 @@ const createBasicCredential: AppEpic = (action$, state$, deps) => {
             deps.apiClients.tspProfileBasicCredentials
                 .createTspProfileBasicCredential({
                     tspProfileUuid: action.payload.tspProfileUuid,
-                    tspBasicCredentialRequestDto: action.payload.request,
+                    tspBasicCredentialCreateRequestDto: action.payload.request,
                 })
                 .pipe(
                     mergeMap((credential: TspBasicCredentialDto) =>
@@ -58,7 +58,7 @@ const updateBasicCredential: AppEpic = (action$, state$, deps) => {
                 .updateTspProfileBasicCredential({
                     tspProfileUuid: action.payload.tspProfileUuid,
                     uuid: action.payload.uuid,
-                    tspBasicCredentialRequestDto: action.payload.request,
+                    tspBasicCredentialUpdateRequestDto: action.payload.request,
                 })
                 .pipe(
                     mergeMap((credential: TspBasicCredentialDto) =>
