@@ -94,11 +94,14 @@ const WORKFLOW_TYPE = SigningWorkflowType.Timestamping;
 // Returns undefined if the value can't be parsed.
 function parseIsoDurationSeconds(duration: string | undefined): number | undefined {
     if (!duration) return undefined;
-    const text = duration.trim();
-    // Validate the overall shape (optional days, optional time section), then pull out each unit separately.
-    if (!/^P(?:[\d.]+D)?(?:T(?:[\d.]+[HMS])+)?$/.test(text)) return undefined;
-    const unit = (re: RegExp) => Number(re.exec(text)?.[1]) || 0;
-    const total = unit(/([\d.]+)D/) * 86400 + unit(/([\d.]+)H/) * 3600 + unit(/([\d.]+)M/) * 60 + unit(/([\d.]+)S/);
+    // Single anchored pass that enforces the canonical D → (T) H → M → S ordering. Each unit is its own
+    // capture group, so out-of-order values (e.g. "PT1S1H") fail to match. Anchoring keeps it linear-time.
+    const match = /^P(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/.exec(duration.trim());
+    if (!match) return undefined;
+    const [, days, hours, minutes, seconds] = match;
+    // Reject component-less durations like "P" or "PT".
+    if (days === undefined && hours === undefined && minutes === undefined && seconds === undefined) return undefined;
+    const total = (Number(days) || 0) * 86400 + (Number(hours) || 0) * 3600 + (Number(minutes) || 0) * 60 + (Number(seconds) || 0);
     return Number.isFinite(total) ? total : undefined;
 }
 
