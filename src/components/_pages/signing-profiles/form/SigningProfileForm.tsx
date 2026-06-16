@@ -25,8 +25,10 @@ import {
     ManagedSigningType,
     PlatformEnum,
     Resource,
+    SigningRecordPersistenceMode,
     SigningScheme,
     SigningWorkflowType,
+    type SigningRecordPolicyRequestDto,
     type TimestampingWorkflowRequestDto,
     type StaticKeyManagedSigningRequestDto,
 } from 'types/openapi';
@@ -59,6 +61,23 @@ const managedSigningTypeLabels: Record<ManagedSigningType, string> = {
     [ManagedSigningType.OneTimeKey]: 'One-Time Key (coming soon)',
 };
 
+// Persistence-mode labels + descriptions are hardcoded here: SigningRecordPersistenceMode is not
+// exposed as a platform enum and the generated enum carries no per-value descriptions. Ordered by
+// descending durability, mirroring the DTO @Schema.
+const persistenceModeLabels: Record<SigningRecordPersistenceMode, string> = {
+    [SigningRecordPersistenceMode.Immediate]: 'Immediate',
+    [SigningRecordPersistenceMode.DeferredDurable]: 'Deferred Durable',
+    [SigningRecordPersistenceMode.BestEffort]: 'Best Effort',
+};
+
+const persistenceModeDescriptions: Record<SigningRecordPersistenceMode, string> = {
+    [SigningRecordPersistenceMode.Immediate]: 'Persisted synchronously before responding — highest durability, highest latency.',
+    [SigningRecordPersistenceMode.DeferredDurable]: 'Persisted durably but asynchronously — balanced latency and durability.',
+    [SigningRecordPersistenceMode.BestEffort]: 'Persistence attempted without guarantees — lowest latency, may be lost.',
+};
+
+const persistenceModeOptions = Object.values(SigningRecordPersistenceMode).map((v) => ({ value: v, label: persistenceModeLabels[v] }));
+
 const digestAlgorithmOptions = Object.values(DigestAlgorithm).map((v) => ({ value: v, label: v }));
 
 // ─── Form Values ──────────────────────────────────────────────────────────────
@@ -84,7 +103,17 @@ interface FormValues {
     signingScheme: SigningScheme;
     managedSigningType: ManagedSigningType;
     certificateUuid: string;
-    // Tab 4 – custom attributes are handled by AttributeEditor / collectFormAttributes
+    // Tab 4 – Record policy
+    recordingEnabled: boolean;
+    recordRequestMetadata: boolean;
+    recordSignature: boolean;
+    recordSignedDocument: boolean;
+    recordDtbs: boolean;
+    retentionIndefinite: boolean;
+    retentionDays: string;
+    deleteAfterRetrieval: boolean;
+    persistenceMode: SigningRecordPersistenceMode;
+    // Tab 5 – custom attributes are handled by AttributeEditor / collectFormAttributes
     [key: string]: unknown;
 }
 
@@ -239,6 +268,15 @@ export default function SigningProfileForm() {
             signingScheme: SigningScheme.Managed,
             managedSigningType: ManagedSigningType.StaticKey,
             certificateUuid: '',
+            recordingEnabled: true,
+            recordRequestMetadata: false,
+            recordSignature: false,
+            recordSignedDocument: false,
+            recordDtbs: false,
+            retentionIndefinite: true,
+            retentionDays: '',
+            deleteAfterRetrieval: false,
+            persistenceMode: SigningRecordPersistenceMode.DeferredDurable,
             ...transformAttributes(initialCustomAttributes ?? []),
         }),
         [initialCustomAttributes],
@@ -264,6 +302,13 @@ export default function SigningProfileForm() {
     const certificateUuidValue = useWatch({ control, name: 'certificateUuid' });
     const signatureFormatterConnectorUuidValue = useWatch({ control, name: 'signatureFormatterConnectorUuid' });
     const timeQualityConfigurationUuidValue = useWatch({ control, name: 'timeQualityConfigurationUuid' });
+    const recordingEnabledValue = useWatch({ control, name: 'recordingEnabled' });
+    const retentionIndefiniteValue = useWatch({ control, name: 'retentionIndefinite' });
+    const persistenceModeValue = useWatch({ control, name: 'persistenceMode' });
+
+    // recordSignedDocument is only valid for CONTENT_SIGNING and TIMESTAMPING workflows.
+    const recordSignedDocumentAllowed =
+        workflowTypeValue === SigningWorkflowType.ContentSigning || workflowTypeValue === SigningWorkflowType.Timestamping;
 
     const isFirstQualifiedTimestampRender = useRef(true);
     useEffect(() => {
@@ -319,6 +364,7 @@ export default function SigningProfileForm() {
 
         const wf = signingProfile.workflow;
         const sc = signingProfile.signingScheme;
+        const rp = signingProfile.recordPolicy;
 
         const attrInitial = mapProfileAttribute(
             signingProfile,
@@ -344,6 +390,15 @@ export default function SigningProfileForm() {
             signingScheme: sc?.signingScheme || SigningScheme.Managed,
             managedSigningType: isStaticKeyManagedSigning(sc) ? sc.managedSigningType : ManagedSigningType.StaticKey,
             certificateUuid: isStaticKeyManagedSigning(sc) ? sc.certificateUuid || (sc as any).certificate?.uuid || '' : '',
+            recordingEnabled: rp?.recordingEnabled ?? true,
+            recordRequestMetadata: rp?.recordRequestMetadata ?? false,
+            recordSignature: rp?.recordSignature ?? false,
+            recordSignedDocument: rp?.recordSignedDocument ?? false,
+            recordDtbs: rp?.recordDtbs ?? false,
+            retentionIndefinite: rp?.retentionDays == null,
+            retentionDays: rp?.retentionDays != null ? String(rp.retentionDays) : '',
+            deleteAfterRetrieval: rp?.deleteAfterRetrieval ?? false,
+            persistenceMode: rp?.persistenceMode ?? SigningRecordPersistenceMode.DeferredDurable,
             ...transformAttributes(attrInitial ?? []),
         };
     }, [editMode, id, signingProfile, isFetchingDetail, multipleResourceCustomAttributes]);
@@ -435,11 +490,26 @@ export default function SigningProfileForm() {
                 signingOperationAttributes: signingOpAttrs,
             };
 
+            const recordPolicy: SigningRecordPolicyRequestDto = values.recordingEnabled
+                ? {
+                      recordingEnabled: true,
+                      recordRequestMetadata: values.recordRequestMetadata,
+                      recordSignature: values.recordSignature,
+                      // Only valid for CONTENT_SIGNING / TIMESTAMPING; force false otherwise.
+                      recordSignedDocument: recordSignedDocumentAllowed ? values.recordSignedDocument : false,
+                      recordDtbs: values.recordDtbs,
+                      retentionDays: values.retentionIndefinite ? undefined : Number(values.retentionDays),
+                      deleteAfterRetrieval: values.deleteAfterRetrieval,
+                      persistenceMode: values.persistenceMode,
+                  }
+                : { recordingEnabled: false };
+
             const requestDto = {
                 name: values.name,
                 description: values.description || undefined,
                 workflow: workflowRequest,
                 signingScheme: schemeRequest,
+                recordPolicy,
                 customAttributes: customAttrs,
             };
 
@@ -457,6 +527,7 @@ export default function SigningProfileForm() {
             multipleResourceCustomAttributes,
             signingOperationAttributeDescriptors,
             signatureFormatterConnectorAttributeDescriptors,
+            recordSignedDocumentAllowed,
         ],
     );
 
@@ -858,8 +929,186 @@ export default function SigningProfileForm() {
         </div>
     );
 
-    // Tab 4 ── Custom Attributes
+    // Tab 4 ── Record Policy
     const tab4Content = (
+        <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+                Configure what is captured for each signing operation, how long it is retained, and how durably it is persisted.
+            </p>
+
+            <div className="flex items-center mt-2">
+                <Controller
+                    name="recordingEnabled"
+                    control={control}
+                    render={({ field }) => (
+                        <Switch
+                            id="recordingEnabled"
+                            checked={field.value ?? true}
+                            onChange={(checked) => field.onChange(checked)}
+                            secondaryLabel="Recording Enabled"
+                        />
+                    )}
+                />
+            </div>
+            {!recordingEnabledValue && (
+                <p className="text-xs text-gray-500">No Signing Record is created for this profile while recording is disabled.</p>
+            )}
+
+            {/* Content policy */}
+            <div className={recordingEnabledValue ? '' : 'opacity-60'}>
+                <p className="block text-sm font-medium text-gray-700 mb-2">Captured Content</p>
+                <div className="space-y-3">
+                    <Controller
+                        name="recordRequestMetadata"
+                        control={control}
+                        render={({ field }) => (
+                            <Switch
+                                id="recordRequestMetadata"
+                                checked={field.value ?? false}
+                                onChange={(checked) => field.onChange(checked)}
+                                disabled={!recordingEnabledValue}
+                                secondaryLabel="Request metadata (algorithm, policy IDs, claimed signer)"
+                            />
+                        )}
+                    />
+                    <Controller
+                        name="recordSignature"
+                        control={control}
+                        render={({ field }) => (
+                            <Switch
+                                id="recordSignature"
+                                checked={field.value ?? false}
+                                onChange={(checked) => field.onChange(checked)}
+                                disabled={!recordingEnabledValue}
+                                secondaryLabel="Raw signature value"
+                            />
+                        )}
+                    />
+                    <div>
+                        <Controller
+                            name="recordSignedDocument"
+                            control={control}
+                            render={({ field }) => (
+                                <Switch
+                                    id="recordSignedDocument"
+                                    checked={(field.value ?? false) && recordSignedDocumentAllowed}
+                                    onChange={(checked) => field.onChange(checked)}
+                                    disabled={!recordingEnabledValue || !recordSignedDocumentAllowed}
+                                    secondaryLabel="Assembled signed document"
+                                />
+                            )}
+                        />
+                        {!recordSignedDocumentAllowed && (
+                            <p className="ml-16 mt-1 text-xs text-gray-500">
+                                Only available for the Content Signing and Timestamping workflows.
+                            </p>
+                        )}
+                    </div>
+                    <Controller
+                        name="recordDtbs"
+                        control={control}
+                        render={({ field }) => (
+                            <Switch
+                                id="recordDtbs"
+                                checked={field.value ?? false}
+                                onChange={(checked) => field.onChange(checked)}
+                                disabled={!recordingEnabledValue}
+                                secondaryLabel="Data-to-be-signed bytes"
+                            />
+                        )}
+                    />
+                </div>
+            </div>
+
+            {/* Retention */}
+            <div className={recordingEnabledValue ? '' : 'opacity-60'}>
+                <p className="block text-sm font-medium text-gray-700 mb-2">Retention</p>
+                <Controller
+                    name="retentionIndefinite"
+                    control={control}
+                    render={({ field }) => (
+                        <Switch
+                            id="retentionIndefinite"
+                            checked={field.value ?? true}
+                            onChange={(checked) => field.onChange(checked)}
+                            disabled={!recordingEnabledValue}
+                            secondaryLabel="Retain indefinitely"
+                        />
+                    )}
+                />
+                {recordingEnabledValue && !retentionIndefiniteValue && (
+                    <div className="mt-3">
+                        <Controller
+                            name="retentionDays"
+                            control={control}
+                            rules={{
+                                required: 'Retention period is required',
+                                validate: (value) => {
+                                    const n = Number(value);
+                                    if (!value || !Number.isInteger(n) || n < 1) {
+                                        return 'Retention must be a whole number of at least 1 day';
+                                    }
+                                    return true;
+                                },
+                            }}
+                            render={({ field, fieldState }) => (
+                                <TextInput
+                                    {...field}
+                                    id="retentionDays"
+                                    type="number"
+                                    label="Retention (days)"
+                                    placeholder="e.g. 365"
+                                    invalid={fieldState.error && fieldState.isTouched}
+                                    error={getFieldErrorMessage(fieldState)}
+                                />
+                            )}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Delete after retrieval */}
+            <div className={recordingEnabledValue ? '' : 'opacity-60'}>
+                <Controller
+                    name="deleteAfterRetrieval"
+                    control={control}
+                    render={({ field }) => (
+                        <Switch
+                            id="deleteAfterRetrieval"
+                            checked={field.value ?? false}
+                            onChange={(checked) => field.onChange(checked)}
+                            disabled={!recordingEnabledValue}
+                            secondaryLabel="Delete the signed document after CSC API async retrieval"
+                        />
+                    )}
+                />
+            </div>
+
+            {/* Persistence mode */}
+            <div className={recordingEnabledValue ? '' : 'opacity-60'}>
+                <Controller
+                    name="persistenceMode"
+                    control={control}
+                    render={({ field }) => (
+                        <Select
+                            id="persistenceMode"
+                            label="Persistence Mode"
+                            value={field.value}
+                            onChange={field.onChange}
+                            options={persistenceModeOptions}
+                            disabled={!recordingEnabledValue}
+                            isClearable={false}
+                            placement="bottom"
+                        />
+                    )}
+                />
+                {persistenceModeValue && <p className="mt-1 text-xs text-gray-500">{persistenceModeDescriptions[persistenceModeValue]}</p>}
+            </div>
+        </div>
+    );
+
+    // Tab 5 ── Custom Attributes
+    const tab5Content = (
         <Widget title="Custom Attributes" noBorder busy={isFetchingResourceCustomAttributes}>
             <AttributeEditor
                 id="customSigningProfile"
@@ -909,8 +1158,12 @@ export default function SigningProfileForm() {
                                     content: tab3Content,
                                 },
                                 {
-                                    title: '4 · Custom Attributes',
+                                    title: '4 · Record Policy',
                                     content: tab4Content,
+                                },
+                                {
+                                    title: '5 · Custom Attributes',
+                                    content: tab5Content,
                                 },
                             ]}
                         />

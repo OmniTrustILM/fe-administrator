@@ -25,6 +25,7 @@ import {
     PlatformEnum,
     Resource,
     SigningProtocol,
+    SigningRecordPersistenceMode,
     SigningScheme,
     SigningWorkflowType,
     type StaticKeyManagedSigningDto,
@@ -55,6 +56,12 @@ const signingSchemeLabels: Record<SigningScheme, string> = {
 const managedSigningTypeLabels: Record<ManagedSigningType, string> = {
     [ManagedSigningType.StaticKey]: 'Static Key',
     [ManagedSigningType.OneTimeKey]: 'One-Time Key',
+};
+
+const persistenceModeLabels: Record<SigningRecordPersistenceMode, string> = {
+    [SigningRecordPersistenceMode.Immediate]: 'Immediate',
+    [SigningRecordPersistenceMode.DeferredDurable]: 'Deferred Durable',
+    [SigningRecordPersistenceMode.BestEffort]: 'Best Effort',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -430,6 +437,59 @@ export default function SigningProfileDetail() {
         return rows;
     }, [signingProfile, staticKeyScheme]);
 
+    // ── Record Policy ──────────────────────────────────────────────────────────
+
+    const recordPolicyData: TableDataRow[] = useMemo(() => {
+        const rp = signingProfile?.recordPolicy;
+        if (!rp) return [];
+
+        const recordingEnabled = rp.recordingEnabled ?? false;
+        const rows: TableDataRow[] = [
+            {
+                id: 'recordingEnabled',
+                columns: ['Recording Enabled', <StatusBadge key="value" enabled={recordingEnabled} />],
+            },
+        ];
+
+        if (!recordingEnabled) return rows;
+
+        rows.push(
+            {
+                id: 'recordRequestMetadata',
+                columns: ['Request Metadata', <StatusBadge key="value" enabled={rp.recordRequestMetadata ?? false} />],
+            },
+            {
+                id: 'recordSignature',
+                columns: ['Signature', <StatusBadge key="value" enabled={rp.recordSignature ?? false} />],
+            },
+            {
+                id: 'recordSignedDocument',
+                columns: ['Signed Document', <StatusBadge key="value" enabled={rp.recordSignedDocument ?? false} />],
+            },
+            {
+                id: 'recordDtbs',
+                columns: ['Data-to-be-signed', <StatusBadge key="value" enabled={rp.recordDtbs ?? false} />],
+            },
+            {
+                id: 'retentionDays',
+                columns: [
+                    'Retention',
+                    rp.retentionDays != null ? `${rp.retentionDays} day${rp.retentionDays === 1 ? '' : 's'}` : 'Indefinite',
+                ],
+            },
+            {
+                id: 'deleteAfterRetrieval',
+                columns: ['Delete After Retrieval', <StatusBadge key="value" enabled={rp.deleteAfterRetrieval ?? false} />],
+            },
+            {
+                id: 'persistenceMode',
+                columns: ['Persistence Mode', rp.persistenceMode ? (persistenceModeLabels[rp.persistenceMode] ?? rp.persistenceMode) : '—'],
+            },
+        );
+
+        return rows;
+    }, [signingProfile]);
+
     // ── Protocol activation ────────────────────────────────────────────────────
 
     const tspActivationData: TableDataRow[] = useMemo(() => {
@@ -577,6 +637,25 @@ export default function SigningProfileDetail() {
                             content: (
                                 <Widget title="Signing Scheme Configuration" titleSize="large">
                                     <CustomTable headers={detailHeaders} data={signingSchemeData} />
+                                </Widget>
+                            ),
+                        },
+                        {
+                            title: 'Record Policy',
+                            content: (
+                                <Widget title="Signing Record Policy" titleSize="large">
+                                    {recordPolicyData.length > 0 ? (
+                                        <>
+                                            <CustomTable headers={detailHeaders} data={recordPolicyData} />
+                                            {!(signingProfile?.recordPolicy?.recordingEnabled ?? false) && (
+                                                <p className="mt-2 text-sm text-gray-500">
+                                                    No Signing Records are created for this profile.
+                                                </p>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <p className="text-gray-400 text-sm">No record policy configured.</p>
+                                    )}
                                 </Widget>
                             ),
                         },
