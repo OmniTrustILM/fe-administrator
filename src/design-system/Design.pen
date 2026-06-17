@@ -8,7 +8,7 @@
       "y": 0,
       "name": "Component Library",
       "clip": true,
-      "width": 1680,
+      "width": 1920,
       "fill": "#f4f5f7",
       "layout": "vertical",
       "children": [
@@ -16,7 +16,7 @@
           "type": "frame",
           "id": "J5MSA",
           "name": "Header",
-          "width": 1680,
+          "width": 1920,
           "fill": "$color.neutral-900",
           "padding": [
             28,
@@ -51,7 +51,7 @@
           "type": "frame",
           "id": "W3Yt2",
           "name": "Body",
-          "width": 1680,
+          "width": 1920,
           "gap": 40,
           "padding": [
             40,
@@ -837,6 +837,227 @@
                         {
                           "type": "text",
                           "id": "BiqSP",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Disabled",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "NaNF6",
+              "name": "Number Inputs Group",
+              "width": 200,
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "J5Y3NF",
+                  "name": "Group Header",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ywNHS",
+                      "name": "Group Title",
+                      "fill": "$color.gray-500",
+                      "content": "NUMBER INPUT",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "rectangle",
+                      "id": "t4x8mq",
+                      "name": "Divider",
+                      "fill": "$color.gray-300",
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "X4YYpP",
+                  "name": "Items",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "l9gjpU",
+                      "name": "NumberInput/Default",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "PZp7j",
+                          "type": "ref",
+                          "ref": "mXtap",
+                          "name": "instance",
+                          "width": "fit_content",
+                          "descendants": {
+                            "gvKCH": {
+                              "content": "5"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "sQNR2",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Default",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "sRuE4",
+                      "name": "NumberInput/Focus",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "JXnGd",
+                          "type": "ref",
+                          "ref": "mXtap",
+                          "name": "instance",
+                          "width": "fit_content",
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "$color.blue-300",
+                            "spread": 3
+                          },
+                          "descendants": {
+                            "gvKCH": {
+                              "content": "5"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "B2r6Z",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Focus",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "H7Wln",
+                      "name": "NumberInput/At minimum",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "KxwoB",
+                          "type": "ref",
+                          "ref": "mXtap",
+                          "name": "instance",
+                          "width": "fit_content",
+                          "descendants": {
+                            "hZD8e": {
+                              "opacity": 0.5
+                            },
+                            "gvKCH": {
+                              "content": "0"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "c7Q44J",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Min reached",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Q8j6o",
+                      "name": "NumberInput/At maximum",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "O5dK7",
+                          "type": "ref",
+                          "ref": "mXtap",
+                          "name": "instance",
+                          "width": "fit_content",
+                          "descendants": {
+                            "gvKCH": {
+                              "content": "999"
+                            },
+                            "ocIhq": {
+                              "opacity": 0.5
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "IWlNf",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Max reached",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "XZ1qz",
+                      "name": "NumberInput/Disabled",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "uha1U",
+                          "type": "ref",
+                          "ref": "mXtap",
+                          "name": "instance",
+                          "width": "fit_content",
+                          "opacity": 0.5,
+                          "descendants": {
+                            "gvKCH": {
+                              "content": "5"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "JYy6v",
                           "name": "Label",
                           "fill": "$color.gray-700",
                           "content": "Disabled",
@@ -2503,6 +2724,120 @@
           "fontFamily": "Inter",
           "fontSize": 14,
           "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "mXtap",
+      "x": 2340,
+      "y": 0,
+      "name": "NumberInput",
+      "reusable": true,
+      "fill": "$color.white",
+      "cornerRadius": 8,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "padding": [
+        6,
+        8
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "r0Mwo",
+          "name": "Row",
+          "gap": 6,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "hZD8e",
+              "name": "Minus Button",
+              "width": 24,
+              "height": 24,
+              "fill": "$color.white",
+              "cornerRadius": 6,
+              "stroke": "$color.gray-200",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#0000000d",
+                "offset": {
+                  "x": 0,
+                  "y": 1
+                },
+                "blur": 2
+              },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "cFeu4",
+                  "name": "Minus Icon",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "minus",
+                  "library": "lucide",
+                  "fill": "$color.gray-900"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "gvKCH",
+              "name": "Value",
+              "fill": "$color.gray-900",
+              "textGrowth": "fixed-width",
+              "width": 32,
+              "content": "5",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "ocIhq",
+              "name": "Plus Button",
+              "width": 24,
+              "height": 24,
+              "fill": "$color.white",
+              "cornerRadius": 6,
+              "stroke": "$color.gray-200",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#0000000d",
+                "offset": {
+                  "x": 0,
+                  "y": 1
+                },
+                "blur": 2
+              },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "S3dD7",
+                  "name": "Plus Icon",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "plus",
+                  "library": "lucide",
+                  "fill": "$color.gray-900"
+                }
+              ]
+            }
+          ]
         }
       ]
     }
