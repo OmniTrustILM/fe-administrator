@@ -25,7 +25,7 @@
         "dompurify": "^3.3.3",
         "highlight.js": "^11.11.1",
         "html-react-parser": "^6.0.1",
-        "js-yaml": "^4.1.1",
+        "js-yaml": "^4.2.0",
         "jszip": "^3.10.1",
         "lodash.debounce": "^4.0.8",
         "lucide-react": "^1.7.0",
@@ -112,6 +112,7 @@
     },
     "overrides": {
         "typescript": "$typescript",
+        "js-yaml": "$js-yaml",
         "nodemailer": "^8.0.5",
         "shell-quote": "^1.8.4",
         "esbuild": "^0.28.1",
