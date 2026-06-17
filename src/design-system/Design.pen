@@ -8,7 +8,7 @@
       "y": 0,
       "name": "Component Library",
       "clip": true,
-      "width": 1920,
+      "width": 2220,
       "fill": "#f4f5f7",
       "layout": "vertical",
       "children": [
@@ -16,7 +16,7 @@
           "type": "frame",
           "id": "J5MSA",
           "name": "Header",
-          "width": 1920,
+          "width": 2220,
           "fill": "$color.neutral-900",
           "padding": [
             28,
@@ -51,7 +51,7 @@
           "type": "frame",
           "id": "W3Yt2",
           "name": "Body",
-          "width": 1920,
+          "width": 2220,
           "gap": 40,
           "padding": [
             40,
@@ -1058,6 +1058,229 @@
                         {
                           "type": "text",
                           "id": "JYy6v",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Disabled",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "t6baJn",
+              "name": "Text Areas Group",
+              "width": 260,
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "n10zY",
+                  "name": "Group Header",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cYbT4",
+                      "name": "Group Title",
+                      "fill": "$color.gray-500",
+                      "content": "TEXT AREA",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "rectangle",
+                      "id": "dFcQE",
+                      "name": "Divider",
+                      "fill": "$color.gray-300",
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "jZX0L",
+                  "name": "Items",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "e4PGHQ",
+                      "name": "TextArea/Default",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "KuqDl",
+                          "type": "ref",
+                          "ref": "RE61E",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "descendants": {
+                            "YsVOe": {
+                              "content": "Enter description...",
+                              "fill": "$color.gray-500"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "YqCJW",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Default",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "lprrV",
+                      "name": "TextArea/Filled",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "suMYm",
+                          "type": "ref",
+                          "ref": "RE61E",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "descendants": {
+                            "YsVOe": {
+                              "content": "Issues TLS certificates for internal services.",
+                              "fill": "$color.gray-900"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "zmIli",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Filled",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Nv97H",
+                      "name": "TextArea/Focus",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "E9V5w",
+                          "type": "ref",
+                          "ref": "RE61E",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "stroke": "$color.blue-500",
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "$color.blue-300",
+                            "spread": 2
+                          },
+                          "descendants": {
+                            "YsVOe": {
+                              "content": "Enter description...",
+                              "fill": "$color.gray-500"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "Gg8fJ",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Focus",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "x9ThBj",
+                      "name": "TextArea/Error",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "W6bG26",
+                          "type": "ref",
+                          "ref": "RE61E",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "stroke": "$color.red-500",
+                          "descendants": {
+                            "YsVOe": {
+                              "content": "Too short.",
+                              "fill": "$color.gray-900"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "f3x6b",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Error",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "D05aAV",
+                      "name": "TextArea/Disabled",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "MZmWX",
+                          "type": "ref",
+                          "ref": "RE61E",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "fill": "$color.gray-100",
+                          "opacity": 0.5,
+                          "descendants": {
+                            "YsVOe": {
+                              "content": "Imported from legacy system.",
+                              "fill": "$color.gray-900"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "yv6cE",
                           "name": "Label",
                           "fill": "$color.gray-700",
                           "content": "Disabled",
@@ -2838,6 +3061,41 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "RE61E",
+      "x": 0,
+      "y": 1706,
+      "name": "TextArea/Field",
+      "reusable": true,
+      "width": 260,
+      "height": 72,
+      "fill": "$color.white",
+      "cornerRadius": 8,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "layout": "vertical",
+      "padding": [
+        12,
+        16
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "YsVOe",
+          "name": "Value",
+          "fill": "$color.gray-500",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Placeholder",
+          "lineHeight": 1.4,
+          "fontFamily": "Inter",
+          "fontSize": 14,
+          "fontWeight": "normal"
         }
       ]
     }

@@ -1,0 +1,2173 @@
+{
+  "version": "2.13",
+  "children": [
+    {
+      "type": "frame",
+      "id": "y6PyZm",
+      "x": 0,
+      "y": 0,
+      "name": "Light",
+      "clip": true,
+      "width": 700,
+      "fill": "$color.white",
+      "cornerRadius": 12,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "layout": "vertical",
+      "gap": 28,
+      "padding": [
+        44,
+        40,
+        40,
+        40
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "lc0P3",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "uzK0h",
+              "name": "Title",
+              "fill": "$color.gray-900",
+              "content": "TextArea",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "PmW7D",
+              "name": "Subtitle",
+              "fill": "$color.gray-700",
+              "content": "Multi-line text field — states, sizes & examples",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "e6aZlK",
+          "name": "States Table",
+          "width": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "iEBrG",
+              "name": "Header Row",
+              "width": "fill_container",
+              "padding": [
+                0,
+                0,
+                12,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vAZK9",
+                  "name": "Label Spacer",
+                  "width": 90,
+                  "height": "fit_content(0)"
+                },
+                {
+                  "type": "frame",
+                  "id": "xaEZ7",
+                  "name": "Default Col",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VSU06",
+                      "name": "Label",
+                      "fill": "$color.gray-700",
+                      "content": "Default",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "FA09S",
+                  "name": "Focus Col",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "RCfZu",
+                      "name": "Label",
+                      "fill": "$color.gray-700",
+                      "content": "Focus",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "be1eK",
+                  "name": "Disabled Col",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "w0jBfF",
+                      "name": "Label",
+                      "fill": "$color.gray-700",
+                      "content": "Disabled",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "tB4hh",
+              "name": "Divider",
+              "fill": "$color.gray-200",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "IdNNn",
+              "name": "Default Row",
+              "width": "fill_container",
+              "padding": [
+                16,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "axoV2",
+                  "name": "Label Cell",
+                  "width": 90,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "RtK1C",
+                      "name": "Label",
+                      "fill": "$color.gray-700",
+                      "content": "Default",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "eix4Z",
+                  "name": "Default Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "QIeBQ",
+                      "name": "Default Field",
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.white",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "g7DzS",
+                          "name": "Value",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nX9P5",
+                  "name": "Focus Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "i5DjUg",
+                      "name": "Focus Field",
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.white",
+                      "cornerRadius": 8,
+                      "stroke": "$color.blue-500",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "$color.blue-300",
+                        "spread": 2
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "W8eZ60",
+                          "name": "Value",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "h7bliU",
+                  "name": "Disabled Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "bNQdR",
+                      "name": "Disabled Field",
+                      "opacity": 0.5,
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "LUk0u",
+                          "name": "Value",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "BEnVD",
+              "name": "Divider",
+              "fill": "$color.gray-200",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "TuwpB",
+              "name": "Invalid Row",
+              "width": "fill_container",
+              "padding": [
+                16,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "WwdnQ",
+                  "name": "Label Cell",
+                  "width": 90,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "QqxXQ",
+                      "name": "Label",
+                      "fill": "$color.gray-700",
+                      "content": "Invalid",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "iEyuZ",
+                  "name": "Default Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ZeW1o",
+                      "name": "Default Field",
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.white",
+                      "cornerRadius": 8,
+                      "stroke": "$color.red-500",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "JRp59",
+                          "name": "Value",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Jdrsm",
+                  "name": "Focus Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "GrOxm",
+                      "name": "Focus Field",
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.white",
+                      "cornerRadius": 8,
+                      "stroke": "$color.red-500",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "$color.red-400",
+                        "spread": 2
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "m1QDb",
+                          "name": "Value",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "fwvi9",
+                  "name": "Disabled Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "e6BfBn",
+                      "name": "Disabled Field",
+                      "opacity": 0.5,
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 8,
+                      "stroke": "$color.red-500",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "u6W21e",
+                          "name": "Value",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "Fw3Gf",
+          "name": "Section Divider",
+          "fill": "$color.gray-200",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "jzQwi",
+          "name": "Sizes",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "text",
+              "id": "H6IJY",
+              "name": "Section: Sizes",
+              "fill": "$color.gray-900",
+              "content": "Sizes",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "o8UGJL",
+              "name": "Size Demos",
+              "width": "fill_container",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "O9UiFy",
+                  "name": "2 rows Demo",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "I9Yzch",
+                      "name": "Size Label",
+                      "fill": "$color.gray-700",
+                      "content": "2 rows",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "p8xgRV",
+                      "name": "2 rows Field",
+                      "width": "fill_container",
+                      "height": 52,
+                      "fill": "$color.white",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "cIOc2",
+                          "name": "Value",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter text...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "EkzNm",
+                  "name": "3 rows Demo",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "mCvxU",
+                      "name": "Size Label",
+                      "fill": "$color.gray-700",
+                      "content": "3 rows",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "PpJNI",
+                      "name": "3 rows Field",
+                      "width": "fill_container",
+                      "height": 76,
+                      "fill": "$color.white",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "PpkuB",
+                          "name": "Value",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter text...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "J1777K",
+                  "name": "5 rows Demo",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "N3qKQt",
+                      "name": "Size Label",
+                      "fill": "$color.gray-700",
+                      "content": "5 rows",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MHHc0",
+                      "name": "5 rows Field",
+                      "width": "fill_container",
+                      "height": 116,
+                      "fill": "$color.white",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "cdLUx",
+                          "name": "Value",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter text...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "UgE9X",
+          "name": "Section Divider 2",
+          "fill": "$color.gray-200",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "tVoXN",
+          "name": "Examples",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "children": [
+            {
+              "type": "text",
+              "id": "D7Ijs",
+              "name": "Section: Examples",
+              "fill": "$color.gray-900",
+              "content": "Examples",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "qqy0e",
+              "name": "Description Example",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "fs81n",
+                  "name": "Label",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Dbd1v",
+                      "name": "Label Text",
+                      "fill": "$color.gray-900",
+                      "content": "Description",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "H5AWm",
+                  "name": "Field",
+                  "width": "fill_container",
+                  "height": 76,
+                  "fill": "$color.white",
+                  "cornerRadius": 8,
+                  "stroke": "$color.gray-200",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "padding": [
+                    10,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "L39DOF",
+                      "name": "Value",
+                      "fill": "$color.gray-900",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Certificate authority for issuing TLS server certificates to internal services.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "w56D9Q",
+              "name": "Comment Example",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "prUVE",
+                  "name": "Label",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "TFjJu",
+                      "name": "Label Text",
+                      "fill": "$color.gray-900",
+                      "content": "Comment",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "XtGfF",
+                      "name": "Required",
+                      "fill": "$color.red-500",
+                      "content": " *",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nXFyE",
+                  "name": "Field",
+                  "width": "fill_container",
+                  "height": 64,
+                  "fill": "$color.white",
+                  "cornerRadius": 8,
+                  "stroke": "$color.gray-200",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "padding": [
+                    10,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "LTLJF",
+                      "name": "Value",
+                      "fill": "$color.gray-500",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Add a comment...",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "BRVdB",
+              "name": "Notes Example",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "B0ezj7",
+                  "name": "Label",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "wxQn4",
+                      "name": "Label Text",
+                      "fill": "$color.gray-900",
+                      "content": "Notes",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bYvEY",
+                  "name": "Field",
+                  "width": "fill_container",
+                  "height": 76,
+                  "fill": "$color.white",
+                  "cornerRadius": 8,
+                  "stroke": "$color.red-500",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "padding": [
+                    10,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "lrswA",
+                      "name": "Value",
+                      "fill": "$color.gray-900",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Too short.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "m6kjfi",
+                  "name": "Error",
+                  "fill": "$color.red-600",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Notes must be at least 20 characters.",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "NOYaH",
+              "name": "Read-only Example",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rJL7g",
+                  "name": "Label",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "fuh5S",
+                      "name": "Label Text",
+                      "fill": "$color.gray-900",
+                      "content": "Audit note (read-only)",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "d1vKhi",
+                  "name": "Field",
+                  "opacity": 0.5,
+                  "width": "fill_container",
+                  "height": 76,
+                  "fill": "$color.gray-100",
+                  "cornerRadius": 8,
+                  "stroke": "$color.gray-200",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "padding": [
+                    10,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "JqBdK",
+                      "name": "Value",
+                      "fill": "$color.gray-900",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Imported from legacy system on 2024-11-02.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "fe3JE",
+      "x": 740,
+      "y": 0,
+      "name": "Dark",
+      "clip": true,
+      "width": 700,
+      "fill": "$color.neutral-900",
+      "cornerRadius": 12,
+      "stroke": "$color.neutral-700",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "layout": "vertical",
+      "gap": 28,
+      "padding": [
+        44,
+        40,
+        40,
+        40
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "LjQM4",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "f5rt8",
+              "name": "Title",
+              "fill": "$color.white",
+              "content": "TextArea",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "OikNj",
+              "name": "Subtitle",
+              "fill": "$color.neutral-300",
+              "content": "Multi-line text field — states, sizes & examples",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Jdv9x",
+          "name": "States Table",
+          "width": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "CxNTT",
+              "name": "Header Row",
+              "width": "fill_container",
+              "padding": [
+                0,
+                0,
+                12,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "W9pp7",
+                  "name": "Label Spacer",
+                  "width": 90,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "f3mRvU",
+                  "name": "Default Col",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "BkSnj",
+                      "name": "Label",
+                      "fill": "$color.neutral-300",
+                      "content": "Default",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "M8Wcz",
+                  "name": "Focus Col",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "QDddI",
+                      "name": "Label",
+                      "fill": "$color.neutral-300",
+                      "content": "Focus",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nJKrK",
+                  "name": "Disabled Col",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "TV4TW",
+                      "name": "Label",
+                      "fill": "$color.neutral-300",
+                      "content": "Disabled",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "i2TEfc",
+              "name": "Divider",
+              "fill": "$color.neutral-700",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "MR9AS",
+              "name": "Default Row",
+              "width": "fill_container",
+              "padding": [
+                16,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "CPxX4",
+                  "name": "Label Cell",
+                  "width": 90,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "YHImg",
+                      "name": "Label",
+                      "fill": "$color.neutral-300",
+                      "content": "Default",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SvJ8H",
+                  "name": "Default Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "pqXQ6",
+                      "name": "Default Field",
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.neutral-900",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "h1KOC",
+                          "name": "Value",
+                          "fill": "$color.neutral-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Hz7t9",
+                  "name": "Focus Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "t1Pm0w",
+                      "name": "Focus Field",
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.neutral-900",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "$color.neutral-600",
+                        "spread": 2
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "aPUIU",
+                          "name": "Value",
+                          "fill": "$color.neutral-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "p35UOK",
+                  "name": "Disabled Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "CxBcN",
+                      "name": "Disabled Field",
+                      "opacity": 0.5,
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.neutral-900",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Kg0O6",
+                          "name": "Value",
+                          "fill": "$color.neutral-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "X1xqA",
+              "name": "Divider",
+              "fill": "$color.neutral-700",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "x6fAks",
+              "name": "Invalid Row",
+              "width": "fill_container",
+              "padding": [
+                16,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "g9e10H",
+                  "name": "Label Cell",
+                  "width": 90,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "OMCu9",
+                      "name": "Label",
+                      "fill": "$color.neutral-300",
+                      "content": "Invalid",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "DVJhq",
+                  "name": "Default Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "IgELz",
+                      "name": "Default Field",
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.neutral-900",
+                      "cornerRadius": 8,
+                      "stroke": "$color.red-500",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "XJRSI",
+                          "name": "Value",
+                          "fill": "$color.neutral-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Ipe0X",
+                  "name": "Focus Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "K08V2",
+                      "name": "Focus Field",
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.neutral-900",
+                      "cornerRadius": 8,
+                      "stroke": "$color.red-500",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "$color.red-400",
+                        "spread": 2
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "nJ23h",
+                          "name": "Value",
+                          "fill": "$color.neutral-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "B8j4B",
+                  "name": "Disabled Cell",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "bamWh",
+                      "name": "Disabled Field",
+                      "opacity": 0.5,
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$color.neutral-900",
+                      "cornerRadius": 8,
+                      "stroke": "$color.red-500",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "pduQX",
+                          "name": "Value",
+                          "fill": "$color.neutral-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter description...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "OPAWj",
+          "name": "Section Divider",
+          "fill": "$color.neutral-700",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "OZYVo",
+          "name": "Sizes",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "text",
+              "id": "SBleI",
+              "name": "Section: Sizes",
+              "fill": "$color.white",
+              "content": "Sizes",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "BcO2C",
+              "name": "Size Demos",
+              "width": "fill_container",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "hIhRg",
+                  "name": "2 rows Demo",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "UnP1u",
+                      "name": "Size Label",
+                      "fill": "$color.neutral-300",
+                      "content": "2 rows",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "v66FxH",
+                      "name": "2 rows Field",
+                      "width": "fill_container",
+                      "height": 52,
+                      "fill": "$color.neutral-900",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "RnmrZ",
+                          "name": "Value",
+                          "fill": "$color.neutral-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter text...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "oh0Pz",
+                  "name": "3 rows Demo",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "wC2Ex",
+                      "name": "Size Label",
+                      "fill": "$color.neutral-300",
+                      "content": "3 rows",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Ye0JL",
+                      "name": "3 rows Field",
+                      "width": "fill_container",
+                      "height": 76,
+                      "fill": "$color.neutral-900",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "omIW0",
+                          "name": "Value",
+                          "fill": "$color.neutral-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter text...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "EJyYb",
+                  "name": "5 rows Demo",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "lpFAm",
+                      "name": "Size Label",
+                      "fill": "$color.neutral-300",
+                      "content": "5 rows",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hyWpl",
+                      "name": "5 rows Field",
+                      "width": "fill_container",
+                      "height": 116,
+                      "fill": "$color.neutral-900",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "mEx4Q",
+                          "name": "Value",
+                          "fill": "$color.neutral-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter text...",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "MWLco",
+          "name": "Section Divider 2",
+          "fill": "$color.neutral-700",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "xpyd5",
+          "name": "Examples",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "children": [
+            {
+              "type": "text",
+              "id": "nJtih",
+              "name": "Section: Examples",
+              "fill": "$color.white",
+              "content": "Examples",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "AgGHd",
+              "name": "Description Example",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "KsWnA",
+                  "name": "Label",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "A2rAR",
+                      "name": "Label Text",
+                      "fill": "$color.white",
+                      "content": "Description",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "R23Ii",
+                  "name": "Field",
+                  "width": "fill_container",
+                  "height": 76,
+                  "fill": "$color.neutral-900",
+                  "cornerRadius": 8,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "padding": [
+                    10,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "qNlTJ",
+                      "name": "Value",
+                      "fill": "$color.neutral-400",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Certificate authority for issuing TLS server certificates to internal services.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "CMPLe",
+              "name": "Comment Example",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "QNGtm",
+                  "name": "Label",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "TxF0v",
+                      "name": "Label Text",
+                      "fill": "$color.white",
+                      "content": "Comment",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "tJDT7",
+                      "name": "Required",
+                      "fill": "$color.red-400",
+                      "content": " *",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "DQ9mL",
+                  "name": "Field",
+                  "width": "fill_container",
+                  "height": 64,
+                  "fill": "$color.neutral-900",
+                  "cornerRadius": 8,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "padding": [
+                    10,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "vTcJ6",
+                      "name": "Value",
+                      "fill": "$color.neutral-500",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Add a comment...",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "e5yOd",
+              "name": "Notes Example",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "JzKPK",
+                  "name": "Label",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "S2Iui",
+                      "name": "Label Text",
+                      "fill": "$color.white",
+                      "content": "Notes",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "cboIA",
+                  "name": "Field",
+                  "width": "fill_container",
+                  "height": 76,
+                  "fill": "$color.neutral-900",
+                  "cornerRadius": 8,
+                  "stroke": "$color.red-500",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "padding": [
+                    10,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "qbJlD",
+                      "name": "Value",
+                      "fill": "$color.neutral-400",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Too short.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "NuXp6",
+                  "name": "Error",
+                  "fill": "$color.red-400",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Notes must be at least 20 characters.",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "bDoXi",
+              "name": "Read-only Example",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "mM8dE",
+                  "name": "Label",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "tYjkH",
+                      "name": "Label Text",
+                      "fill": "$color.white",
+                      "content": "Audit note (read-only)",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Z0eBR",
+                  "name": "Field",
+                  "opacity": 0.5,
+                  "width": "fill_container",
+                  "height": 76,
+                  "fill": "$color.neutral-900",
+                  "cornerRadius": 8,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "padding": [
+                    10,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ZAVN9",
+                      "name": "Value",
+                      "fill": "$color.neutral-400",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Imported from legacy system on 2024-11-02.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color.blue-100": {
+      "type": "color",
+      "value": "#cce5ff"
+    },
+    "color.blue-200": {
+      "type": "color",
+      "value": "#99ccff"
+    },
+    "color.blue-300": {
+      "type": "color",
+      "value": "#66b2ff"
+    },
+    "color.blue-400": {
+      "type": "color",
+      "value": "#3399ff"
+    },
+    "color.blue-50": {
+      "type": "color",
+      "value": "#e6f2ff"
+    },
+    "color.blue-500": {
+      "type": "color",
+      "value": "#0085e6"
+    },
+    "color.blue-600": {
+      "type": "color",
+      "value": "#0073cf"
+    },
+    "color.blue-700": {
+      "type": "color",
+      "value": "#005ba6"
+    },
+    "color.blue-800": {
+      "type": "color",
+      "value": "#004480"
+    },
+    "color.blue-900": {
+      "type": "color",
+      "value": "#002d59"
+    },
+    "color.blue-950": {
+      "type": "color",
+      "value": "#001a33"
+    },
+    "color.gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.gray-400": {
+      "type": "color",
+      "value": "#c7c7c7"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-600": {
+      "type": "color",
+      "value": "#b4b4b4"
+    },
+    "color.gray-700": {
+      "type": "color",
+      "value": "#8c8c8c"
+    },
+    "color.gray-800": {
+      "type": "color",
+      "value": "#666666"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-200": {
+      "type": "color",
+      "value": "#e5e5e5"
+    },
+    "color.neutral-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.neutral-400": {
+      "type": "color",
+      "value": "#a3a3a3"
+    },
+    "color.neutral-500": {
+      "type": "color",
+      "value": "#737373"
+    },
+    "color.neutral-600": {
+      "type": "color",
+      "value": "#525252"
+    },
+    "color.neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "color.neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    },
+    "color.red-100": {
+      "type": "color",
+      "value": "#fee2e2"
+    },
+    "color.red-400": {
+      "type": "color",
+      "value": "#f87171"
+    },
+    "color.red-500": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.red-600": {
+      "type": "color",
+      "value": "#dc2626"
+    },
+    "color.red-800": {
+      "type": "color",
+      "value": "#991b1b"
+    },
+    "color.red-800-30": {
+      "type": "color",
+      "value": "#991b1b4d"
+    },
+    "color.transparent": {
+      "type": "color",
+      "value": "#00000000"
+    },
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "color.white-10": {
+      "type": "color",
+      "value": "#ffffff1a"
+    },
+    "color.white-20": {
+      "type": "color",
+      "value": "#ffffff33"
+    },
+    "color.yellow-100": {
+      "type": "color",
+      "value": "#fef9c3"
+    },
+    "color.yellow-400": {
+      "type": "color",
+      "value": "#facc15"
+    },
+    "color.yellow-500": {
+      "type": "color",
+      "value": "#eab308"
+    },
+    "color.yellow-600": {
+      "type": "color",
+      "value": "#ca8a04"
+    },
+    "color.yellow-800": {
+      "type": "color",
+      "value": "#854d0e"
+    },
+    "color.yellow-800-30": {
+      "type": "color",
+      "value": "#854d0e4d"
+    }
+  }
+}
