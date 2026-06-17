@@ -268,7 +268,7 @@ export default function SigningProfileForm() {
             signingScheme: SigningScheme.Managed,
             managedSigningType: ManagedSigningType.StaticKey,
             certificateUuid: '',
-            recordingEnabled: true,
+            recordingEnabled: false,
             recordRequestMetadata: false,
             recordSignature: false,
             recordSignedDocument: false,
@@ -390,7 +390,7 @@ export default function SigningProfileForm() {
             signingScheme: sc?.signingScheme || SigningScheme.Managed,
             managedSigningType: isStaticKeyManagedSigning(sc) ? sc.managedSigningType : ManagedSigningType.StaticKey,
             certificateUuid: isStaticKeyManagedSigning(sc) ? sc.certificateUuid || (sc as any).certificate?.uuid || '' : '',
-            recordingEnabled: rp?.recordingEnabled ?? true,
+            recordingEnabled: rp?.recordingEnabled ?? false,
             recordRequestMetadata: rp?.recordRequestMetadata ?? false,
             recordSignature: rp?.recordSignature ?? false,
             recordSignedDocument: rp?.recordSignedDocument ?? false,
@@ -490,7 +490,9 @@ export default function SigningProfileForm() {
                 signingOperationAttributes: signingOpAttrs,
             };
 
-            const recordPolicy: SigningRecordPolicyRequestDto = values.recordingEnabled
+            // When recording is disabled, omit recordPolicy entirely so the API applies its
+            // default (no signing record) rather than persisting an explicit disabled policy.
+            const recordPolicy: SigningRecordPolicyRequestDto | undefined = values.recordingEnabled
                 ? {
                       recordingEnabled: true,
                       recordRequestMetadata: values.recordRequestMetadata,
@@ -502,7 +504,7 @@ export default function SigningProfileForm() {
                       deleteAfterRetrieval: values.deleteAfterRetrieval,
                       persistenceMode: values.persistenceMode,
                   }
-                : { recordingEnabled: false };
+                : undefined;
 
             const requestDto = {
                 name: values.name,
@@ -943,7 +945,7 @@ export default function SigningProfileForm() {
                     render={({ field }) => (
                         <Switch
                             id="recordingEnabled"
-                            checked={field.value ?? true}
+                            checked={field.value ?? false}
                             onChange={(checked) => field.onChange(checked)}
                             secondaryLabel="Recording Enabled"
                         />
