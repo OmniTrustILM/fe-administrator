@@ -468,6 +468,8 @@ export * from './SigningRecordListDto';
 export * from './SigningRecordPersistenceMode';
 export * from './SigningRecordPolicyDto';
 export * from './SigningRecordPolicyRequestDto';
+export * from './SigningRecordStatisticsDto';
+export * from './SigningRecordStatisticsPeriod';
 export * from './SigningScheme';
 export * from './SigningSchemeInterface';
 export * from './SigningSchemeRequestInterface';

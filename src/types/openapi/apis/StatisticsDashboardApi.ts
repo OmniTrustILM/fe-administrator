@@ -15,7 +15,17 @@ import type { Observable } from 'rxjs';
 import type { AjaxResponse } from 'rxjs/ajax';
 import { BaseAPI } from '../runtime';
 import type { OperationOpts, HttpQuery } from '../runtime';
-import type { AuthenticationServiceExceptionDto, ErrorMessageDto, StatisticsDto } from '../models';
+import type {
+    AuthenticationServiceExceptionDto,
+    ErrorMessageDto,
+    SigningRecordStatisticsDto,
+    SigningRecordStatisticsPeriod,
+    StatisticsDto,
+} from '../models';
+
+export interface GetSigningRecordStatisticsRequest {
+    period?: SigningRecordStatisticsPeriod;
+}
 
 export interface GetStatisticsRequest {
     includeArchived?: boolean;
@@ -25,6 +35,34 @@ export interface GetStatisticsRequest {
  * no description
  */
 export class StatisticsDashboardApi extends BaseAPI {
+    /**
+     * Get Signing Records dashboard statistics
+     */
+    getSigningRecordStatistics({ period }: GetSigningRecordStatisticsRequest): Observable<SigningRecordStatisticsDto>;
+    getSigningRecordStatistics(
+        { period }: GetSigningRecordStatisticsRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<SigningRecordStatisticsDto>>;
+    getSigningRecordStatistics(
+        { period }: GetSigningRecordStatisticsRequest,
+        opts?: OperationOpts,
+    ): Observable<SigningRecordStatisticsDto | AjaxResponse<SigningRecordStatisticsDto>> {
+        const query: HttpQuery = {};
+
+        if (period != null) {
+            query['period'] = period;
+        }
+
+        return this.request<SigningRecordStatisticsDto>(
+            {
+                url: '/v1/statistics/signingRecords',
+                method: 'GET',
+                query,
+            },
+            opts?.responseOpts,
+        );
+    }
+
     /**
      * Get Dashboard/Statistics Details
      */

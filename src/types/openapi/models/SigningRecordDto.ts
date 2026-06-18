@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { NameAndUuidDto, SigningProfileListDto } from './';
+import type { NameAndUuidDto, SigningProfileListDto, SigningProtocol } from './';
 
 /**
  * Signing Record detail
@@ -37,6 +37,12 @@ export interface SigningRecordDto {
      * @memberof SigningRecordDto
      */
     signingProfile: SigningProfileListDto;
+    /**
+     * Signing protocol used to produce this Signing Record
+     * @type {SigningProtocol}
+     * @memberof SigningRecordDto
+     */
+    protocol: SigningProtocol;
     /**
      * Claimed signing time embedded in the signature structure by the signing operation.
      * @type {string}
