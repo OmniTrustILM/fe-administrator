@@ -105,19 +105,19 @@ const menuItemMappings: MenuItemMapping[] = [
         children: [
             {
                 _key: '/dashboard/certificates',
-                name: 'Certificates Dashboard',
+                name: 'Certificates',
                 link: '/dashboard/certificates',
                 requiredResources: [Resource.Certificates, Resource.RaProfiles, Resource.Discoveries, Resource.Groups],
             },
             {
                 _key: '/dashboard/secrets',
-                name: 'Secrets Dashboard',
+                name: 'Secrets',
                 link: '/dashboard/secrets',
                 requiredResources: [Resource.Secrets],
             },
             {
                 _key: '/dashboard/signing-records',
-                name: 'Signing Records Dashboard',
+                name: 'Signing Records',
                 link: '/dashboard/signing-records',
                 requiredResources: [Resource.SigningRecords],
             },
