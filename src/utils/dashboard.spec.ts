@@ -9,6 +9,8 @@ import {
     getCertificateDonutChartColorsByDaysOfExpiration,
     getDonutChartColorsByRandomNumberOfOptions,
     getSecretDonutChartColors,
+    getSigningRecordDonutChartColors,
+    getSigningSchemeLabel,
     useGetLabels,
 } from './dashboard';
 import { createMockStore, withProviders } from './test-helpers';
@@ -260,5 +262,26 @@ describe('dashboard utils', () => {
             const result = getDonutChartColorsByRandomNumberOfOptions(5);
             expect(result.colors.every((c) => /^#[0-9a-fA-F]{6}$/.test(c))).toBe(true);
         });
+    });
+});
+
+describe('signing record dashboard helpers', () => {
+    test('getSigningSchemeLabel maps known flattened scheme codes', () => {
+        expect(getSigningSchemeLabel('managed_static_key')).toBe('Managed – static key');
+        expect(getSigningSchemeLabel('managed_one_time_key')).toBe('Managed – one-time key');
+        expect(getSigningSchemeLabel('delegated')).toBe('Delegated');
+    });
+
+    test('getSigningSchemeLabel falls back to the raw code for unknown values', () => {
+        expect(getSigningSchemeLabel('future_scheme')).toBe('future_scheme');
+    });
+
+    test('getSigningRecordDonutChartColors returns one color per key', () => {
+        const colors = getSigningRecordDonutChartColors({ a: 1, b: 2, c: 3 });
+        expect(colors.colors).toHaveLength(3);
+    });
+
+    test('getSigningRecordDonutChartColors handles undefined', () => {
+        expect(getSigningRecordDonutChartColors(undefined).colors).toHaveLength(0);
     });
 });

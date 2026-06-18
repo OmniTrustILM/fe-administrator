@@ -154,3 +154,17 @@ export function getDonutChartColorsByRandomNumberOfOptions(numberOfOptions: numb
 
     return { colors: colors.slice(0, numberOfOptions) };
 }
+
+export const SIGNING_SCHEME_LABELS: Record<string, string> = {
+    delegated: 'Delegated',
+    managed_static_key: 'Managed – static key',
+    managed_one_time_key: 'Managed – one-time key',
+};
+
+export function getSigningSchemeLabel(code: string): string {
+    return SIGNING_SCHEME_LABELS[code] ?? code;
+}
+
+export function getSigningRecordDonutChartColors(stat?: { [key: string]: number }): ColorOptions {
+    return getDonutChartColorsByRandomNumberOfOptions(Object.keys(stat ?? {}).length);
+}
