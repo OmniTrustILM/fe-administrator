@@ -582,6 +582,27 @@ function eventHistoryTestReducer(state: EventHistoryTestState | undefined, _acti
     return state ?? eventHistoryTestInitialState;
 }
 
+type SigningRecordsDashboardTestState = {
+    isFetching: boolean;
+    isFetchingSeries: boolean;
+    period: string;
+    statistics?: any;
+};
+
+const signingRecordsDashboardTestInitialState: SigningRecordsDashboardTestState = {
+    isFetching: false,
+    isFetchingSeries: false,
+    period: '24h',
+    statistics: undefined,
+};
+
+function signingRecordsDashboardTestReducer(
+    state: SigningRecordsDashboardTestState | undefined,
+    _action: UnknownAction,
+): SigningRecordsDashboardTestState {
+    return state ?? signingRecordsDashboardTestInitialState;
+}
+
 export const testReducers = combineReducers({
     userInterface: userInterfaceTestReducer,
     enums: enumsTestReducer,
@@ -600,6 +621,7 @@ export const testReducers = combineReducers({
     certificates: certificatesTestReducer,
     utilsCertificate: utilsCertificateTestReducer,
     utilsActuator: utilsActuatorTestReducer,
+    signingRecordsDashboard: signingRecordsDashboardTestReducer,
 });
 
 export const testInitialState = {
@@ -620,4 +642,5 @@ export const testInitialState = {
     certificates: certificatesTestInitialState,
     utilsCertificate: utilsCertificateTestInitialState,
     utilsActuator: utilsActuatorTestInitialState,
+    signingRecordsDashboard: signingRecordsDashboardTestInitialState,
 };
