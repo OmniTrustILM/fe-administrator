@@ -322,6 +322,12 @@ export default function SigningProfileForm() {
     const recordSignedDocumentAllowed =
         workflowTypeValue === SigningWorkflowType.ContentSigning || workflowTypeValue === SigningWorkflowType.Timestamping;
 
+    // For the timestamping (TSP) workflow the raw signature value and DTBS are intentionally not stored
+    // separately: the RFC 3161 timestamp token is self-contained and already embeds both, so they are
+    // recoverable from the stored signed document. The recordSignature / recordDtbs toggles are therefore
+    // hidden for timestamping. (issue #1692)
+    const signatureAndDtbsRecordable = workflowTypeValue !== SigningWorkflowType.Timestamping;
+
     const isFirstQualifiedTimestampRender = useRef(true);
     useEffect(() => {
         if (isFirstQualifiedTimestampRender.current) {
@@ -505,10 +511,11 @@ export default function SigningProfileForm() {
                 ? {
                       recordingEnabled: true,
                       recordRequestMetadata: values.recordRequestMetadata,
-                      recordSignature: values.recordSignature,
+                      // Not stored for the timestamping workflow; force false when the toggle is hidden.
+                      recordSignature: signatureAndDtbsRecordable ? values.recordSignature : false,
                       // Only valid for CONTENT_SIGNING / TIMESTAMPING; force false otherwise.
                       recordSignedDocument: recordSignedDocumentAllowed ? values.recordSignedDocument : false,
-                      recordDtbs: values.recordDtbs,
+                      recordDtbs: signatureAndDtbsRecordable ? values.recordDtbs : false,
                       retentionDays: values.retentionIndefinite ? undefined : Number(values.retentionDays),
                       deleteAfterRetrieval: values.deleteAfterRetrieval,
                       persistenceMode: values.persistenceMode,
@@ -539,6 +546,7 @@ export default function SigningProfileForm() {
             signingOperationAttributeDescriptors,
             signatureFormatterConnectorAttributeDescriptors,
             recordSignedDocumentAllowed,
+            signatureAndDtbsRecordable,
         ],
     );
 
@@ -976,19 +984,21 @@ export default function SigningProfileForm() {
                             />
                         )}
                     />
-                    <Controller
-                        name="recordSignature"
-                        control={control}
-                        render={({ field }) => (
-                            <Switch
-                                id="recordSignature"
-                                checked={field.value ?? false}
-                                onChange={(checked) => field.onChange(checked)}
-                                disabled={!recordingEnabledValue}
-                                secondaryLabel="Raw signature value"
-                            />
-                        )}
-                    />
+                    {signatureAndDtbsRecordable && (
+                        <Controller
+                            name="recordSignature"
+                            control={control}
+                            render={({ field }) => (
+                                <Switch
+                                    id="recordSignature"
+                                    checked={field.value ?? false}
+                                    onChange={(checked) => field.onChange(checked)}
+                                    disabled={!recordingEnabledValue}
+                                    secondaryLabel="Raw signature value"
+                                />
+                            )}
+                        />
+                    )}
                     <div>
                         <Controller
                             name="recordSignedDocument"
@@ -1009,19 +1019,21 @@ export default function SigningProfileForm() {
                             </p>
                         )}
                     </div>
-                    <Controller
-                        name="recordDtbs"
-                        control={control}
-                        render={({ field }) => (
-                            <Switch
-                                id="recordDtbs"
-                                checked={field.value ?? false}
-                                onChange={(checked) => field.onChange(checked)}
-                                disabled={!recordingEnabledValue}
-                                secondaryLabel="Data-to-be-signed bytes"
-                            />
-                        )}
-                    />
+                    {signatureAndDtbsRecordable && (
+                        <Controller
+                            name="recordDtbs"
+                            control={control}
+                            render={({ field }) => (
+                                <Switch
+                                    id="recordDtbs"
+                                    checked={field.value ?? false}
+                                    onChange={(checked) => field.onChange(checked)}
+                                    disabled={!recordingEnabledValue}
+                                    secondaryLabel="Data-to-be-signed bytes"
+                                />
+                            )}
+                        />
+                    )}
                 </div>
             </div>
 

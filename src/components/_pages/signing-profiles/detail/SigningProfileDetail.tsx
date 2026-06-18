@@ -458,23 +458,31 @@ export default function SigningProfileDetail() {
 
         if (!recordingEnabled) return rows;
 
-        rows.push(
-            {
-                id: 'recordRequestMetadata',
-                columns: ['Request Metadata', <StatusBadge key="value" enabled={rp.recordRequestMetadata ?? false} />],
-            },
-            {
+        // The signature value and DTBS are not stored for the timestamping workflow (the RFC 3161 token
+        // already embeds both), so those rows are omitted to mirror the form. (issue #1692)
+        const isTimestamping = signingProfile?.workflow ? isTimestampingWorkflow(signingProfile.workflow) : false;
+
+        rows.push({
+            id: 'recordRequestMetadata',
+            columns: ['Request Metadata', <StatusBadge key="value" enabled={rp.recordRequestMetadata ?? false} />],
+        });
+        if (!isTimestamping) {
+            rows.push({
                 id: 'recordSignature',
                 columns: ['Signature', <StatusBadge key="value" enabled={rp.recordSignature ?? false} />],
-            },
-            {
-                id: 'recordSignedDocument',
-                columns: ['Signed Document', <StatusBadge key="value" enabled={rp.recordSignedDocument ?? false} />],
-            },
-            {
+            });
+        }
+        rows.push({
+            id: 'recordSignedDocument',
+            columns: ['Signed Document', <StatusBadge key="value" enabled={rp.recordSignedDocument ?? false} />],
+        });
+        if (!isTimestamping) {
+            rows.push({
                 id: 'recordDtbs',
                 columns: ['Data-to-be-signed', <StatusBadge key="value" enabled={rp.recordDtbs ?? false} />],
-            },
+            });
+        }
+        rows.push(
             {
                 id: 'retentionDays',
                 columns: [
