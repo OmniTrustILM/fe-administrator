@@ -78,7 +78,7 @@
                   "id": "vAZK9",
                   "name": "Label Spacer",
                   "width": 90,
-                  "height": "fit_content(0)"
+                  "height": 1
                 },
                 {
                   "type": "frame",
@@ -804,6 +804,8 @@
                   "type": "frame",
                   "id": "prUVE",
                   "name": "Label",
+                  "gap": 2,
+                  "alignItems": "center",
                   "children": [
                     {
                       "type": "text",
@@ -820,7 +822,7 @@
                       "id": "XtGfF",
                       "name": "Required",
                       "fill": "$color.red-500",
-                      "content": " *",
+                      "content": "*",
                       "fontFamily": "Inter",
                       "fontSize": 14,
                       "fontWeight": "500"
@@ -935,7 +937,7 @@
             {
               "type": "frame",
               "id": "NOYaH",
-              "name": "Read-only Example",
+              "name": "Disabled Example",
               "width": "fill_container",
               "layout": "vertical",
               "gap": 8,
@@ -950,7 +952,7 @@
                       "id": "fuh5S",
                       "name": "Label Text",
                       "fill": "$color.gray-900",
-                      "content": "Audit note (read-only)",
+                      "content": "Audit note (disabled)",
                       "fontFamily": "Inter",
                       "fontSize": 14,
                       "fontWeight": "500"
@@ -1241,7 +1243,7 @@
                       "height": 64,
                       "fill": "$color.neutral-900",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "$color.blue-500",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "effect": {
@@ -1799,6 +1801,8 @@
                   "type": "frame",
                   "id": "QNGtm",
                   "name": "Label",
+                  "gap": 2,
+                  "alignItems": "center",
                   "children": [
                     {
                       "type": "text",
@@ -1815,7 +1819,7 @@
                       "id": "tJDT7",
                       "name": "Required",
                       "fill": "$color.red-400",
-                      "content": " *",
+                      "content": "*",
                       "fontFamily": "Inter",
                       "fontSize": 14,
                       "fontWeight": "500"
@@ -1930,7 +1934,7 @@
             {
               "type": "frame",
               "id": "bDoXi",
-              "name": "Read-only Example",
+              "name": "Disabled Example",
               "width": "fill_container",
               "layout": "vertical",
               "gap": 8,
@@ -1945,7 +1949,7 @@
                       "id": "tYjkH",
                       "name": "Label Text",
                       "fill": "$color.white",
-                      "content": "Audit note (read-only)",
+                      "content": "Audit note (disabled)",
                       "fontFamily": "Inter",
                       "fontSize": 14,
                       "fontWeight": "500"
