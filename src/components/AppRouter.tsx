@@ -16,6 +16,7 @@ import Login from './_pages/login';
 const AuditLogs = lazyWithRetry(() => import('./_pages/auditLogs'));
 const CertificatesDashboard = lazyWithRetry(() => import('./_pages/dashboard/CertificatesDashboard'));
 const SecretsDashboard = lazyWithRetry(() => import('./_pages/dashboard/SecretsDashboard'));
+const SigningRecordsDashboard = lazyWithRetry(() => import('./_pages/dashboard/SigningRecordsDashboard'));
 const AuthenticationSettings = lazyWithRetry(() => import('./_pages/auth-settings'));
 const OAuth2ProviderDetail = lazyWithRetry(() => import('./_pages/auth-settings/detail'));
 
@@ -197,6 +198,7 @@ export default function AppRouter() {
                     />
                     <Route path={`/${Resource.Dashboard.toLowerCase()}/certificates`} element={<CertificatesDashboard />} />
                     <Route path={`/${Resource.Dashboard.toLowerCase()}/secrets`} element={<SecretsDashboard />} />
+                    <Route path={`/${Resource.Dashboard.toLowerCase()}/signing-records`} element={<SigningRecordsDashboard />} />
 
                     <Route path={`/${Resource.Users.toLowerCase()}`} element={<UsersList />} />
                     <Route path={`/${Resource.Users.toLowerCase()}/list`} element={<Navigate to={`/${Resource.Users.toLowerCase()}`} />} />

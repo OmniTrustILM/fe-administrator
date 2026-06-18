@@ -115,6 +115,12 @@ const menuItemMappings: MenuItemMapping[] = [
                 link: '/dashboard/secrets',
                 requiredResources: [Resource.Secrets],
             },
+            {
+                _key: '/dashboard/signing-records',
+                name: 'Signing Records Dashboard',
+                link: '/dashboard/signing-records',
+                requiredResources: [Resource.SigningRecords],
+            },
         ],
     },
     {
