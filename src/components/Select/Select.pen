@@ -205,7 +205,7 @@
                 {
                   "type": "frame",
                   "id": "HtGLw",
-                  "name": "default Cell",
+                  "name": "Default Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -259,7 +259,7 @@
                 {
                   "type": "frame",
                   "id": "D1bVH",
-                  "name": "hover Cell",
+                  "name": "Hover Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -313,7 +313,7 @@
                 {
                   "type": "frame",
                   "id": "HW06Z",
-                  "name": "focus Cell",
+                  "name": "Focus Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -373,7 +373,7 @@
                 {
                   "type": "frame",
                   "id": "MLTBO",
-                  "name": "disabled Cell",
+                  "name": "Disabled Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -468,7 +468,7 @@
                 {
                   "type": "frame",
                   "id": "PdIko",
-                  "name": "default Cell",
+                  "name": "Default Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -522,7 +522,7 @@
                 {
                   "type": "frame",
                   "id": "MGZCN",
-                  "name": "hover Cell",
+                  "name": "Hover Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -576,7 +576,7 @@
                 {
                   "type": "frame",
                   "id": "tiWGT",
-                  "name": "focus Cell",
+                  "name": "Focus Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -636,7 +636,7 @@
                 {
                   "type": "frame",
                   "id": "U8DFKL",
-                  "name": "disabled Cell",
+                  "name": "Disabled Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -731,7 +731,7 @@
                 {
                   "type": "frame",
                   "id": "aOz1G",
-                  "name": "default Cell",
+                  "name": "Default Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -836,7 +836,7 @@
                 {
                   "type": "frame",
                   "id": "HvTUm",
-                  "name": "hover Cell",
+                  "name": "Hover Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -941,7 +941,7 @@
                 {
                   "type": "frame",
                   "id": "K24LF",
-                  "name": "focus Cell",
+                  "name": "Focus Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -1052,7 +1052,7 @@
                 {
                   "type": "frame",
                   "id": "TGX4c",
-                  "name": "disabled Cell",
+                  "name": "Disabled Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -1500,7 +1500,7 @@
                             {
                               "type": "text",
                               "id": "W8SPe",
-                              "name": "Search Placeholder",
+                              "name": "Search Query",
                               "fill": "$color.gray-900",
                               "content": "Cert",
                               "fontFamily": "Inter",
@@ -2126,7 +2126,7 @@
                 {
                   "type": "frame",
                   "id": "m1eBJn",
-                  "name": "default Cell",
+                  "name": "Default Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2180,7 +2180,7 @@
                 {
                   "type": "frame",
                   "id": "B14q6u",
-                  "name": "hover Cell",
+                  "name": "Hover Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2234,7 +2234,7 @@
                 {
                   "type": "frame",
                   "id": "MS2Wq",
-                  "name": "focus Cell",
+                  "name": "Focus Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2294,7 +2294,7 @@
                 {
                   "type": "frame",
                   "id": "Hr8lr",
-                  "name": "disabled Cell",
+                  "name": "Disabled Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2389,7 +2389,7 @@
                 {
                   "type": "frame",
                   "id": "S0k3f1",
-                  "name": "default Cell",
+                  "name": "Default Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2443,7 +2443,7 @@
                 {
                   "type": "frame",
                   "id": "fIcx1",
-                  "name": "hover Cell",
+                  "name": "Hover Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2497,7 +2497,7 @@
                 {
                   "type": "frame",
                   "id": "t7SDt",
-                  "name": "focus Cell",
+                  "name": "Focus Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2557,7 +2557,7 @@
                 {
                   "type": "frame",
                   "id": "WbzVP",
-                  "name": "disabled Cell",
+                  "name": "Disabled Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2652,7 +2652,7 @@
                 {
                   "type": "frame",
                   "id": "gZlYN",
-                  "name": "default Cell",
+                  "name": "Default Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2757,7 +2757,7 @@
                 {
                   "type": "frame",
                   "id": "Q4G7Rx",
-                  "name": "hover Cell",
+                  "name": "Hover Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2862,7 +2862,7 @@
                 {
                   "type": "frame",
                   "id": "nIqYi",
-                  "name": "focus Cell",
+                  "name": "Focus Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -2973,7 +2973,7 @@
                 {
                   "type": "frame",
                   "id": "WGKBv",
-                  "name": "disabled Cell",
+                  "name": "Disabled Cell",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -3421,7 +3421,7 @@
                             {
                               "type": "text",
                               "id": "H0VTXE",
-                              "name": "Search Placeholder",
+                              "name": "Search Query",
                               "fill": "$color.neutral-300",
                               "content": "Cert",
                               "fontFamily": "Inter",

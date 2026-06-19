@@ -3348,7 +3348,7 @@
           "type": "text",
           "id": "VEqvF",
           "name": "Value",
-          "fill": "$color.gray-500",
+          "fill": "$color.gray-400",
           "textGrowth": "fixed-width",
           "width": "fill_container",
           "content": "Placeholder",
