@@ -216,6 +216,7 @@ Always set `name` on every node. Use descriptive, hierarchical names:
 | Input | `src/components/Input/Input.pen` |
 | NumberInput | `src/components/NumberInput/NumberInput.pen` |
 | TextArea | `src/components/TextArea/TextArea.pen` |
+| Select | `src/components/Select/Select.pen` |
 
 Button.pen is the most complete reference — it has 6 pages (Light/Dark × Solid/Outline/Transparent) showing all 5 color variants across 4 states.
 
@@ -241,6 +242,7 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 | Card visual (border, shadow, layout, typography) | `Card` |
 | TextInput visual (border, radius, focus ring, padding) | `TextInput/Field` |
 | TextArea visual (border, radius, focus ring, padding, height) | `TextArea/Field` |
+| Select visual (trigger border, radius, focus ring, chevron, chips) | `Select/Single`, `Select/Multi` |
 | NumberInput visual (container, stepper buttons, value) | `NumberInput` |
 | Input sub-component visual (any of the 6 types) | `Input/DurationInput`, `Input/HostnameListInput`, `Input/FileUpload`, `Input/MultipleValueTextInput`, `Input/CodeEditor`, `Input/DynamicContent` |
 | New component `.pen` created | Add new reusable components + a new column in the showcase |
@@ -274,6 +276,8 @@ These IDs change if components are ever deleted and recreated. Re-read `get_edit
 | Card | `maUy6` | Card.pen |
 | TextInput/Field | `QxVfY` | TextInput.pen |
 | TextArea/Field | `RE61E` | TextArea.pen |
+| Select/Single | `qkMSt` | Select.pen |
+| Select/Multi | `QmsCq` | Select.pen |
 | NumberInput | `mXtap` | NumberInput.pen |
 | Breadcrumb | `UEZoP` | Breadcrumb.pen |
 | Input/DurationInput | `RLZEG` | Input.pen |

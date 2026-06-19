@@ -1293,6 +1293,222 @@
                   ]
                 }
               ]
+            },
+            {
+              "type": "frame",
+              "id": "r385du",
+              "name": "Selects Group",
+              "width": 260,
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "dHdAR",
+                  "name": "Group Header",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SknYJ",
+                      "name": "Group Title",
+                      "fill": "$color.gray-500",
+                      "content": "SELECT",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "rectangle",
+                      "id": "iijp0",
+                      "name": "Divider",
+                      "fill": "$color.gray-300",
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nJbU3",
+                  "name": "Items",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "f9G9fd",
+                      "name": "Select/Default",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "IWBXg",
+                          "type": "ref",
+                          "ref": "qkMSt",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "descendants": {
+                            "VEqvF": {
+                              "content": "Select...",
+                              "fill": "$color.gray-500"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "jUf9r",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Default",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nvwVB",
+                      "name": "Select/Filled",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "j1QOL",
+                          "type": "ref",
+                          "ref": "qkMSt",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "descendants": {
+                            "VEqvF": {
+                              "content": "Certificate",
+                              "fill": "$color.gray-900"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "qUL9S",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Filled",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "vDDmU",
+                      "name": "Select/Focus",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "wbojd",
+                          "type": "ref",
+                          "ref": "qkMSt",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "stroke": "$color.blue-500",
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "$color.blue-300",
+                            "spread": 2
+                          },
+                          "descendants": {
+                            "VEqvF": {
+                              "content": "Select...",
+                              "fill": "$color.gray-500"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "yuwDx",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Focus",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "b304Sr",
+                      "name": "Select/Multi",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "xhwc0",
+                          "type": "ref",
+                          "ref": "QmsCq",
+                          "name": "instance",
+                          "width": "fill_container"
+                        },
+                        {
+                          "type": "text",
+                          "id": "NQPvO",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Multi",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MXBT9",
+                      "name": "Select/Disabled",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "fro9J",
+                          "type": "ref",
+                          "ref": "qkMSt",
+                          "name": "instance",
+                          "width": "fill_container",
+                          "fill": "$color.gray-100",
+                          "opacity": 0.5,
+                          "descendants": {
+                            "VEqvF": {
+                              "content": "Discovery",
+                              "fill": "$color.gray-900"
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "gGlB0",
+                          "name": "Label",
+                          "fill": "$color.gray-700",
+                          "content": "Disabled",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -3096,6 +3312,198 @@
           "fontFamily": "Inter",
           "fontSize": 14,
           "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "qkMSt",
+      "x": 0,
+      "y": 1838,
+      "name": "Select/Single",
+      "reusable": true,
+      "width": 260,
+      "fill": "$color.white",
+      "cornerRadius": 8,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "gap": 8,
+      "padding": [
+        12,
+        16
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "VEqvF",
+          "name": "Value",
+          "fill": "$color.gray-500",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Placeholder",
+          "fontFamily": "Inter",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "icon",
+          "id": "DOYAN",
+          "name": "Chevron",
+          "width": 14,
+          "height": 14,
+          "icon": "chevrons-up-down",
+          "library": "lucide",
+          "fill": "$color.gray-700"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "QmsCq",
+      "x": 0,
+      "y": 1939,
+      "name": "Select/Multi",
+      "reusable": true,
+      "width": 260,
+      "fill": "$color.white",
+      "cornerRadius": 8,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "gap": 6,
+      "padding": [
+        8,
+        12
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "dN0tO",
+          "name": "Chips",
+          "width": "fill_container",
+          "gap": 4,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "wkDYW",
+              "name": "Chip",
+              "fill": "$color.white",
+              "cornerRadius": 999,
+              "stroke": "$color.gray-200",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 6,
+              "padding": [
+                3,
+                4,
+                3,
+                10
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "W3MsQA",
+                  "name": "Chip Label",
+                  "fill": "$color.gray-900",
+                  "content": "Active",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "jlwtN",
+                  "name": "Remove",
+                  "width": 20,
+                  "height": 20,
+                  "fill": "$color.gray-200",
+                  "cornerRadius": 999,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "F4D6S",
+                      "name": "X",
+                      "width": 12,
+                      "height": 12,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "$color.gray-800"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "GVgYJ",
+              "name": "Chip",
+              "fill": "$color.white",
+              "cornerRadius": 999,
+              "stroke": "$color.gray-200",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 6,
+              "padding": [
+                3,
+                4,
+                3,
+                10
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "L5aAK",
+                  "name": "Chip Label",
+                  "fill": "$color.gray-900",
+                  "content": "Pending",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "F4LHb",
+                  "name": "Remove",
+                  "width": 20,
+                  "height": 20,
+                  "fill": "$color.gray-200",
+                  "cornerRadius": 999,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "itL4G",
+                      "name": "X",
+                      "width": 12,
+                      "height": 12,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "$color.gray-800"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "icon",
+          "id": "vczvf",
+          "name": "Chevron",
+          "width": 14,
+          "height": 14,
+          "icon": "chevrons-up-down",
+          "library": "lucide",
+          "fill": "$color.gray-700"
         }
       ]
     }
