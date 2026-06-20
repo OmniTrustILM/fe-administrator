@@ -2783,6 +2783,169 @@
                   ]
                 }
               ]
+            },
+            {
+              "type": "frame",
+              "id": "ZxqYx",
+              "name": "Row 5",
+              "gap": 40,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "b5ItZy",
+                  "name": "Tabs Group",
+                  "width": 300,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "V13SzF",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "fyeJP",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "TABS",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "M76F9R",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "B6p4c",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "C7frKm",
+                          "name": "Preview",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "QqYHY",
+                              "name": "Tab Bar",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "JvPbi",
+                                  "name": "Overview Tab",
+                                  "fill": "$color.gray-200",
+                                  "cornerRadius": 8,
+                                  "gap": 6,
+                                  "padding": [
+                                    8,
+                                    12
+                                  ],
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "B6oHc",
+                                      "name": "Overview Label",
+                                      "fill": "$color.gray-800",
+                                      "content": "Overview",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 13,
+                                      "fontWeight": "500"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "mrDW0",
+                                  "name": "Activity Tab",
+                                  "fill": "$color.transparent",
+                                  "cornerRadius": 8,
+                                  "gap": 6,
+                                  "padding": [
+                                    8,
+                                    12
+                                  ],
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "AXi6h",
+                                      "name": "Activity Label",
+                                      "fill": "$color.gray-500",
+                                      "content": "Activity",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 13,
+                                      "fontWeight": "500"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "XwPdA",
+                                  "name": "Settings Tab",
+                                  "fill": "$color.transparent",
+                                  "cornerRadius": 8,
+                                  "gap": 6,
+                                  "padding": [
+                                    8,
+                                    12
+                                  ],
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "JIBHj",
+                                      "name": "Settings Label",
+                                      "fill": "$color.gray-500",
+                                      "content": "Settings",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 13,
+                                      "fontWeight": "500"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "V7mwU6",
+                          "name": "Caption",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "active pill · ghost inactive · scrollable",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
