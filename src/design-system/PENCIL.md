@@ -222,6 +222,7 @@ Always set `name` on every node. Use descriptive, hierarchical names:
 | DatePicker | `src/components/DatePicker/DatePicker.pen` |
 | Badge | `src/components/Badge/Badge.pen` |
 | BooleanBadge | `src/components/BooleanBadge/BooleanBadge.pen` |
+| StatusBadge | `src/components/StatusBadge/StatusBadge.pen` |
 
 Button.pen is the most complete reference — it has 6 pages (Light/Dark × Solid/Outline/Transparent) showing all 5 color variants across 4 states.
 
@@ -253,6 +254,7 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 | DatePicker visual (input field, calendar popover, day cells, time footer) | `DatePicker/Input`, `DatePicker/Calendar` |
 | Badge visual (pill radius, padding/size, colors, remove button) | `Badge/Solid`, `Badge/Removable` |
 | BooleanBadge visual (Yes/No label, success/danger color, `invertColor`) | reuses `Badge/Solid` (override fill + Label; no dedicated reusable) |
+| StatusBadge visual (enabled flag → Enabled/Disabled/Unknown; `textStatus` → Approved/Rejected/Pending/Expired; success/danger/secondary color) | reuses `Badge/Solid` (override `padding:[2,6]` for small size + fill + Label; no dedicated reusable) |
 | NumberInput visual (container, stepper buttons, value) | `NumberInput` |
 | Input sub-component visual (any of the 6 types) | `Input/DurationInput`, `Input/HostnameListInput`, `Input/FileUpload`, `Input/MultipleValueTextInput`, `Input/CodeEditor`, `Input/DynamicContent` |
 | New component `.pen` created | Add new reusable components + a new component group to the showcase grid (see layout note below) |
@@ -260,7 +262,7 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 
 ### Showcase layout (Component Library frame `VLhPh`)
 
-The primitives **Body** (`W3Yt2`, vertical, gap 40) is a **grid of rows**, not a single strip. Each row (`Row 1`/`Row 2`/`Row 3`, horizontal, gap 40, `alignItems:start`) holds ~4 component groups. A component group = vertical frame (Group Header with title + divider, then an Items frame). The frame is intentionally kept ~3200 wide as **headroom**: new component groups fill the blank space — append to the shortest/last row, then start a new row once a row reaches ~4–5 groups. Below the primitives is the full-width **Input Section** (`jMZl6`) with composite form examples.
+The primitives **Body** (`W3Yt2`, vertical, gap 40) is a **grid of rows**, not a single strip. Each row (`Row 1`/`Row 2`/`Row 3`/`Row 4`, horizontal, gap 40, `alignItems:start`) holds ~4 component groups. (`Row 4` currently holds just the `Status Badge Group` — append the next components there before starting `Row 5`.) A component group = vertical frame (Group Header with title + divider, then an Items frame). The frame is intentionally kept ~3200 wide as **headroom**: new component groups fill the blank space — append to the shortest/last row, then start a new row once a row reaches ~4–5 groups. Below the primitives is the full-width **Input Section** (`jMZl6`) with composite form examples.
 
 ### How to update a component in Design.pen
 

@@ -1967,6 +1967,240 @@
                   ]
                 }
               ]
+            },
+            {
+              "type": "frame",
+              "id": "DTZVv",
+              "name": "Row 4",
+              "gap": 40,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "v1Pezr",
+                  "name": "Status Badge Group",
+                  "width": 280,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "JiEQv",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ku4sI",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "STATUS BADGE",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "idMgA",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "un7uv",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "W7ORau",
+                          "name": "Enabled",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "X2nvp",
+                              "name": "Badges",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "id": "DiVLl",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Enabled",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.status-success",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Enabled",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "MkeLj",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Disabled",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.status-danger",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Disabled",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "T0Mfg3",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Unknown",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.gray-500",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Unknown",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "j1W7S",
+                              "name": "Caption",
+                              "fill": "$color.gray-500",
+                              "content": "enabled: true / false / —",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "s4kHUy",
+                          "name": "Approval",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "WHseb",
+                              "name": "Badges",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "id": "JYJ3i",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Approved",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.status-success",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Approved",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "UhIOL",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Rejected",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.status-danger",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Rejected",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "r1BWV7",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Pending",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.gray-500",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Pending",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "qdIzL",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Expired",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.status-danger",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Expired",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "EXHez",
+                              "name": "Caption",
+                              "fill": "$color.gray-500",
+                              "content": "textStatus",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },

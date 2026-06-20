@@ -1,0 +1,899 @@
+{
+  "version": "2.13",
+  "children": [
+    {
+      "type": "frame",
+      "id": "z7jC5",
+      "x": 0,
+      "y": 0,
+      "name": "StatusBadge — Light",
+      "width": 720,
+      "fill": "$color.white",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "XmaGs",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "Vyutv",
+              "name": "Title",
+              "fill": "$color.neutral-900",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "StatusBadge",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "nuFxd",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Badge wrapper that maps an enabled flag or approval status to a colored label.",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "cqCAb",
+          "name": "ENABLED STATES Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "xd6vq",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "ENABLED STATES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 0.6
+            },
+            {
+              "type": "frame",
+              "id": "vwXE9",
+              "name": "Row",
+              "gap": 28,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "N4GHHw",
+                  "name": "Enabled Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ksYxq",
+                      "name": "Badge",
+                      "fill": "$color.status-success",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "dDyU1",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Enabled",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "o8UrDQ",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "enabled = true",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "N0mjzz",
+                  "name": "Disabled Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "hzPgH",
+                      "name": "Badge",
+                      "fill": "$color.status-danger",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "JYtpR",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Disabled",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "fe3lv",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "enabled = false",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "k2ulxB",
+                  "name": "Unknown Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "XIPgG",
+                      "name": "Badge",
+                      "fill": "$color.gray-500",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "iBCgv",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Unknown",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "lQHGD",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "enabled = undefined",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "F47ts",
+          "name": "APPROVAL STATUSES Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "t2CT8I",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "APPROVAL STATUSES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 0.6
+            },
+            {
+              "type": "frame",
+              "id": "o23CCp",
+              "name": "Row",
+              "gap": 28,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "J5LJv",
+                  "name": "Approved Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "roCsm",
+                      "name": "Badge",
+                      "fill": "$color.status-success",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "u2y3Zt",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Approved",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "t1Na4A",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "Approved",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tgmrI",
+                  "name": "Rejected Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ljO61",
+                      "name": "Badge",
+                      "fill": "$color.status-danger",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "pKJM7",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Rejected",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "Xl5rG",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "Rejected",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "m1fLnp",
+                  "name": "Pending Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "NPLvc",
+                      "name": "Badge",
+                      "fill": "$color.gray-500",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "QT0sk",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Pending",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "R1wdey",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "Pending",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Q7GNDl",
+                  "name": "Expired Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "gnrFC",
+                      "name": "Badge",
+                      "fill": "$color.status-danger",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "RZGV9",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Expired",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "g8Sa7I",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "Expired",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "RHJJB",
+      "x": 760,
+      "y": 0,
+      "name": "StatusBadge — Dark",
+      "width": 720,
+      "fill": "$color.neutral-900",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "WYkQ0",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "z0l8ax",
+              "name": "Title",
+              "fill": "$color.neutral-200",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "StatusBadge",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "VcaQ0",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Badge wrapper that maps an enabled flag or approval status to a colored label.",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "bPTWO",
+          "name": "ENABLED STATES Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "aTRM9",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "ENABLED STATES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 0.6
+            },
+            {
+              "type": "frame",
+              "id": "TuIjj",
+              "name": "Row",
+              "gap": 28,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "z76AV",
+                  "name": "Enabled Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Xh9ka",
+                      "name": "Badge",
+                      "fill": "$color.status-success",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "TexbO",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Enabled",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "Xy5xt",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "enabled = true",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "CoKHC",
+                  "name": "Disabled Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "kLGjI",
+                      "name": "Badge",
+                      "fill": "$color.status-danger",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "PNjnd",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Disabled",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "koNxU",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "enabled = false",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hpAmR",
+                  "name": "Unknown Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "U2MI5",
+                      "name": "Badge",
+                      "fill": "$color.gray-500",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "tMKU9",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Unknown",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "RYkAv",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "enabled = undefined",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "bMEzi",
+          "name": "APPROVAL STATUSES Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "JP2M1",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "APPROVAL STATUSES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 0.6
+            },
+            {
+              "type": "frame",
+              "id": "ups8t",
+              "name": "Row",
+              "gap": 28,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "CRxur",
+                  "name": "Approved Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "r9se7",
+                      "name": "Badge",
+                      "fill": "$color.status-success",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "mEdo8",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Approved",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "JRPaA",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "Approved",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "L8FDZD",
+                  "name": "Rejected Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "MGjHW",
+                      "name": "Badge",
+                      "fill": "$color.status-danger",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "mhE0N",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Rejected",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "c5eja",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "Rejected",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "v0nao",
+                  "name": "Pending Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "BRPBD",
+                      "name": "Badge",
+                      "fill": "$color.gray-500",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "xmykL",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Pending",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "LoVLE",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "Pending",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "eErOD",
+                  "name": "Expired Item",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "K6C3iB",
+                      "name": "Badge",
+                      "fill": "$color.status-danger",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "CL157",
+                          "name": "Label",
+                          "fill": "$color.white",
+                          "content": "Expired",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "FaIge",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "Expired",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color.gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-700": {
+      "type": "color",
+      "value": "#8c8c8c"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-200": {
+      "type": "color",
+      "value": "#e5e5e5"
+    },
+    "color.neutral-400": {
+      "type": "color",
+      "value": "#a3a3a3"
+    },
+    "color.neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "color.neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    },
+    "color.status-danger": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.status-info": {
+      "type": "color",
+      "value": "#3399ff"
+    },
+    "color.status-success": {
+      "type": "color",
+      "value": "#14b8a6"
+    },
+    "color.status-warning": {
+      "type": "color",
+      "value": "#eab308"
+    },
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    }
+  }
+}
