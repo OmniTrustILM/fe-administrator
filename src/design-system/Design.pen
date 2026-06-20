@@ -2199,6 +2199,153 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ORF1S",
+                  "name": "Status Circle Group",
+                  "width": 200,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "VJfui",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "BFeDx",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "STATUS CIRCLE",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "CMKR3",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "a5XLVG",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Q2377g",
+                          "name": "Status",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "xvFPA",
+                              "name": "Badges",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "id": "F6czea",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "True",
+                                  "fill": "$color.status-success",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "type": "icon",
+                                      "id": "cNYkZ",
+                                      "name": "Icon",
+                                      "width": 16,
+                                      "height": 16,
+                                      "icon": "check",
+                                      "library": "lucide",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "JCRIl",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "False",
+                                  "fill": "$color.status-danger",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "type": "icon",
+                                      "id": "J3Zqh",
+                                      "name": "Icon",
+                                      "width": 16,
+                                      "height": 16,
+                                      "icon": "x",
+                                      "library": "lucide",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "s99jP",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Unknown",
+                                  "fill": "$color.gray-500",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "type": "icon",
+                                      "id": "P2FCEQ",
+                                      "name": "Icon",
+                                      "width": 16,
+                                      "height": 16,
+                                      "icon": "circle-question-mark",
+                                      "library": "lucide",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "Mc5h8",
+                              "name": "Caption",
+                              "fill": "$color.gray-500",
+                              "content": "status: true / false / —",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
