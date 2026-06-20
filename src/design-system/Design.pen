@@ -2346,6 +2346,132 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zpqX3",
+                  "name": "Label Group",
+                  "width": 200,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "JjhDm",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SdBxL",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "LABEL",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "lPWRo",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Ij1cD",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "XZQUi",
+                          "name": "Default",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "dBRG5",
+                              "name": "Label",
+                              "fill": "$color.neutral-700",
+                              "content": "Field label",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "text",
+                              "id": "KYyJk",
+                              "name": "Caption",
+                              "fill": "$color.gray-500",
+                              "content": "default",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "G8Q7FI",
+                          "name": "Required",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "m4FKQ",
+                              "name": "Label",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "cVKuV",
+                                  "name": "Text",
+                                  "fill": "$color.neutral-700",
+                                  "content": "Field label",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "GGh6i",
+                                  "name": "Asterisk",
+                                  "fill": "$color.red-500",
+                                  "content": " *",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "DyYnE",
+                              "name": "Caption",
+                              "fill": "$color.gray-500",
+                              "content": "required",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
