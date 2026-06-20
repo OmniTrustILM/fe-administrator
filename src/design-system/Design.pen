@@ -8,7 +8,7 @@
       "y": 0,
       "name": "Component Library",
       "clip": true,
-      "width": 2900,
+      "width": 3200,
       "fill": "#f4f5f7",
       "layout": "vertical",
       "children": [
@@ -16,7 +16,7 @@
           "type": "frame",
           "id": "J5MSA",
           "name": "Header",
-          "width": 2900,
+          "width": 3200,
           "fill": "$color.neutral-900",
           "padding": [
             28,
@@ -51,7 +51,7 @@
           "type": "frame",
           "id": "W3Yt2",
           "name": "Body",
-          "width": 2900,
+          "width": 3200,
           "layout": "vertical",
           "gap": 40,
           "padding": [
@@ -1368,6 +1368,403 @@
                               "name": "Label",
                               "fill": "$color.gray-700",
                               "content": "Calendar popover",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "QzeUy",
+                  "name": "Badges Group",
+                  "width": 240,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "zdO8x",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "D57qt",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "BADGE",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "lv8jl",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "lTPWv",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "H0RRUS",
+                          "name": "Colors Item",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "eXsep",
+                              "name": "Grid",
+                              "layout": "vertical",
+                              "gap": 8,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "CFKig",
+                                  "name": "CRow",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "id": "KwG6G",
+                                      "type": "ref",
+                                      "ref": "xz3Ab",
+                                      "name": "Gray",
+                                      "padding": [
+                                        2,
+                                        6
+                                      ],
+                                      "fill": "$color.gray-800",
+                                      "descendants": {
+                                        "e7K7wr": {
+                                          "content": "Gray",
+                                          "fontSize": 12,
+                                          "fill": "$color.white"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "h8OysC",
+                                      "type": "ref",
+                                      "ref": "xz3Ab",
+                                      "name": "Secondary",
+                                      "padding": [
+                                        2,
+                                        6
+                                      ],
+                                      "fill": "$color.gray-500",
+                                      "descendants": {
+                                        "e7K7wr": {
+                                          "content": "Secondary",
+                                          "fontSize": 12,
+                                          "fill": "$color.white"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "q966g",
+                                  "name": "CRow",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "id": "j1lwC",
+                                      "type": "ref",
+                                      "ref": "xz3Ab",
+                                      "name": "Primary",
+                                      "padding": [
+                                        2,
+                                        6
+                                      ],
+                                      "fill": "$color.blue-600",
+                                      "descendants": {
+                                        "e7K7wr": {
+                                          "content": "Primary",
+                                          "fontSize": 12,
+                                          "fill": "$color.white"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "eGJyd",
+                                      "type": "ref",
+                                      "ref": "xz3Ab",
+                                      "name": "Success",
+                                      "padding": [
+                                        2,
+                                        6
+                                      ],
+                                      "fill": "$color.status-success",
+                                      "descendants": {
+                                        "e7K7wr": {
+                                          "content": "Success",
+                                          "fontSize": 12,
+                                          "fill": "$color.white"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "bL5H1",
+                                  "name": "CRow",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "id": "Vc1PD",
+                                      "type": "ref",
+                                      "ref": "xz3Ab",
+                                      "name": "Danger",
+                                      "padding": [
+                                        2,
+                                        6
+                                      ],
+                                      "fill": "$color.red-500",
+                                      "descendants": {
+                                        "e7K7wr": {
+                                          "content": "Danger",
+                                          "fontSize": 12,
+                                          "fill": "$color.white"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "a81W53",
+                                      "type": "ref",
+                                      "ref": "xz3Ab",
+                                      "name": "Warning",
+                                      "padding": [
+                                        2,
+                                        6
+                                      ],
+                                      "fill": "$color.yellow-500",
+                                      "descendants": {
+                                        "e7K7wr": {
+                                          "content": "Warning",
+                                          "fontSize": 12,
+                                          "fill": "$color.white"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "yHddy",
+                                  "name": "CRow",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "id": "ecxRH",
+                                      "type": "ref",
+                                      "ref": "xz3Ab",
+                                      "name": "Info",
+                                      "padding": [
+                                        2,
+                                        6
+                                      ],
+                                      "fill": "$color.status-info",
+                                      "descendants": {
+                                        "e7K7wr": {
+                                          "content": "Info",
+                                          "fontSize": 12,
+                                          "fill": "$color.white"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "nxTPi",
+                                      "type": "ref",
+                                      "ref": "xz3Ab",
+                                      "name": "Transparent",
+                                      "padding": [
+                                        2,
+                                        6
+                                      ],
+                                      "fill": "$color.white",
+                                      "stroke": "$color.gray-200",
+                                      "strokeWidth": 1,
+                                      "strokeAlignment": "inner",
+                                      "descendants": {
+                                        "e7K7wr": {
+                                          "content": "Transparent",
+                                          "fontSize": 12,
+                                          "fill": "$color.gray-600"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "bDMDD",
+                              "name": "Caption",
+                              "fill": "$color.gray-700",
+                              "content": "8 colors",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "okVbb",
+                          "name": "Sizes Item",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "QscdD",
+                              "name": "Row",
+                              "gap": 10,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "id": "HlWsT",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Size S",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.blue-600",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Primary",
+                                      "fontSize": 12,
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "Qm3cN",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Size M",
+                                  "padding": [
+                                    6,
+                                    10
+                                  ],
+                                  "fill": "$color.blue-600",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Primary",
+                                      "fontSize": 12,
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "aEdfP",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Size L",
+                                  "padding": [
+                                    8,
+                                    12
+                                  ],
+                                  "fill": "$color.blue-600",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Primary",
+                                      "fontSize": 14,
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "nd5Xq",
+                              "name": "Caption",
+                              "fill": "$color.gray-700",
+                              "content": "3 sizes",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "VBrKk",
+                          "name": "Removable Item",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "YA2vu",
+                              "name": "Row",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "id": "PezXL",
+                                  "type": "ref",
+                                  "ref": "Le8f4",
+                                  "name": "Rem 1",
+                                  "fill": "$color.blue-600",
+                                  "descendants": {
+                                    "RxXP2": {
+                                      "content": "Active"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "LEx7F",
+                                  "type": "ref",
+                                  "ref": "Le8f4",
+                                  "name": "Rem 2",
+                                  "fill": "$color.status-success",
+                                  "descendants": {
+                                    "RxXP2": {
+                                      "content": "Verified"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "vnnda",
+                              "name": "Caption",
+                              "fill": "$color.gray-700",
+                              "content": "Removable",
                               "fontFamily": "Inter",
                               "fontSize": 12,
                               "fontWeight": "normal"
@@ -5546,6 +5943,86 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "xz3Ab",
+      "x": 7050,
+      "y": 2000,
+      "name": "Badge/Solid",
+      "reusable": true,
+      "fill": "$color.blue-600",
+      "cornerRadius": 6,
+      "gap": 6,
+      "padding": [
+        6,
+        10
+      ],
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "e7K7wr",
+          "name": "Label",
+          "fill": "$color.white",
+          "content": "Badge",
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "500"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Le8f4",
+      "x": 7200,
+      "y": 2000,
+      "name": "Badge/Removable",
+      "reusable": true,
+      "fill": "$color.blue-600",
+      "cornerRadius": 6,
+      "gap": 6,
+      "padding": [
+        6,
+        10
+      ],
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "RxXP2",
+          "name": "Label",
+          "fill": "$color.white",
+          "content": "Tag",
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "500"
+        },
+        {
+          "type": "frame",
+          "id": "CDAXV",
+          "name": "Remove",
+          "width": 16,
+          "height": 16,
+          "cornerRadius": 8,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "hSvKE",
+              "name": "X",
+              "width": 12,
+              "height": 12,
+              "icon": "x",
+              "library": "lucide",
+              "fill": "$color.white"
+            }
+          ]
+        }
+      ]
     }
   ],
   "variables": {
@@ -5736,6 +6213,14 @@
     "color.yellow-800-30": {
       "type": "color",
       "value": "#854d0e4d"
+    },
+    "color.status-info": {
+      "type": "color",
+      "value": "#2798e7"
+    },
+    "color.status-success": {
+      "type": "color",
+      "value": "#14b8a6"
     }
   }
 }
