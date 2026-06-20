@@ -8,7 +8,7 @@
       "y": 0,
       "name": "Component Library",
       "clip": true,
-      "width": 2220,
+      "width": 2900,
       "fill": "#f4f5f7",
       "layout": "vertical",
       "children": [
@@ -16,7 +16,7 @@
           "type": "frame",
           "id": "J5MSA",
           "name": "Header",
-          "width": 2220,
+          "width": 2900,
           "fill": "$color.neutral-900",
           "padding": [
             28,
@@ -51,7 +51,7 @@
           "type": "frame",
           "id": "W3Yt2",
           "name": "Body",
-          "width": 2220,
+          "width": 2900,
           "layout": "vertical",
           "gap": 40,
           "padding": [
@@ -1268,6 +1268,106 @@
                               "name": "Label",
                               "fill": "$color.gray-700",
                               "content": "Selected",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "E3yzE",
+                  "name": "Date Pickers Group",
+                  "width": 340,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "dwXJ7",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ugL4T",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "DATE PICKER",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "VRiUz",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "efQHO",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "jLJh4",
+                          "name": "Input",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "id": "NfElS",
+                              "type": "ref",
+                              "ref": "iVhII",
+                              "name": "Input Ref",
+                              "width": "fill_container"
+                            },
+                            {
+                              "type": "text",
+                              "id": "aCtx9",
+                              "name": "Label",
+                              "fill": "$color.gray-700",
+                              "content": "Input",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "vH6Ls",
+                          "name": "Calendar",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "id": "ldJkJ",
+                              "type": "ref",
+                              "ref": "WFIpF",
+                              "name": "Calendar Ref"
+                            },
+                            {
+                              "type": "text",
+                              "id": "VEKSJ",
+                              "name": "Label",
+                              "fill": "$color.gray-700",
+                              "content": "Calendar popover",
                               "fontFamily": "Inter",
                               "fontSize": 12,
                               "fontWeight": "normal"
@@ -4003,6 +4103,1445 @@
               "fontFamily": "Inter",
               "fontSize": 14,
               "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "iVhII",
+      "x": 6350,
+      "y": 2000,
+      "name": "DatePicker/Input",
+      "reusable": true,
+      "width": 240,
+      "fill": "$color.white",
+      "cornerRadius": 8,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "gap": 10,
+      "padding": [
+        12,
+        16
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "icon",
+          "id": "PHPAj",
+          "name": "Calendar Icon",
+          "width": 16,
+          "height": 16,
+          "icon": "calendar-range",
+          "library": "lucide",
+          "fill": "$color.gray-400"
+        },
+        {
+          "type": "text",
+          "id": "BJFY7",
+          "name": "Value",
+          "fill": "$color.gray-800",
+          "content": "20.06.2026",
+          "fontFamily": "Inter",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "WFIpF",
+      "x": 6650,
+      "y": 2000,
+      "name": "DatePicker/Calendar",
+      "reusable": true,
+      "clip": true,
+      "width": 320,
+      "fill": "$color.white",
+      "cornerRadius": 12,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#0000001f",
+        "offset": {
+          "x": 0,
+          "y": 10
+        },
+        "blur": 15,
+        "spread": -3
+      },
+      "layout": "vertical",
+      "gap": 2,
+      "padding": 12,
+      "children": [
+        {
+          "type": "frame",
+          "id": "UEBtv",
+          "name": "Month Nav",
+          "width": "fill_container",
+          "padding": [
+            0,
+            6,
+            12,
+            6
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "yyHR6",
+              "name": "Prev Button",
+              "width": 32,
+              "height": 32,
+              "cornerRadius": 16,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "T19uL",
+                  "name": "Chevron",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$color.gray-800"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cOUfh",
+              "name": "Month Label",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "jtEcX",
+                  "name": "Month",
+                  "fill": "$color.gray-800",
+                  "content": "June",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "RarJA",
+                  "name": "Slash",
+                  "fill": "$color.gray-800",
+                  "content": "/",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "fTdKK",
+                  "name": "Year",
+                  "fill": "$color.gray-800",
+                  "content": "2026",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "af1Vm",
+              "name": "Next Button",
+              "width": 32,
+              "height": 32,
+              "cornerRadius": 16,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "LmM3G",
+                  "name": "Chevron",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "chevron-right",
+                  "library": "lucide",
+                  "fill": "$color.gray-800"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "tT8Qf",
+          "name": "Weekdays",
+          "width": "fill_container",
+          "gap": 2,
+          "padding": [
+            0,
+            0,
+            6,
+            0
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "R4LUS",
+              "name": "WD Mo",
+              "width": 40,
+              "height": 20,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "w53MaB",
+                  "name": "D",
+                  "fill": "$color.gray-700",
+                  "content": "Mo",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ukjZk",
+              "name": "WD Tu",
+              "width": 40,
+              "height": 20,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "zKyLN",
+                  "name": "D",
+                  "fill": "$color.gray-700",
+                  "content": "Tu",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "hkHDE",
+              "name": "WD We",
+              "width": 40,
+              "height": 20,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "d82u2x",
+                  "name": "D",
+                  "fill": "$color.gray-700",
+                  "content": "We",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xGEBA",
+              "name": "WD Th",
+              "width": 40,
+              "height": 20,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "O1POt9",
+                  "name": "D",
+                  "fill": "$color.gray-700",
+                  "content": "Th",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nPe9F",
+              "name": "WD Fr",
+              "width": 40,
+              "height": 20,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Q5ZdED",
+                  "name": "D",
+                  "fill": "$color.gray-700",
+                  "content": "Fr",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "kdT4l",
+              "name": "WD Sa",
+              "width": 40,
+              "height": 20,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "bMDZ1",
+                  "name": "D",
+                  "fill": "$color.gray-700",
+                  "content": "Sa",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "tzqOO",
+              "name": "WD Su",
+              "width": 40,
+              "height": 20,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "nRcfN",
+                  "name": "D",
+                  "fill": "$color.gray-700",
+                  "content": "Su",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Rz2YT",
+          "name": "Week",
+          "width": "fill_container",
+          "gap": 2,
+          "children": [
+            {
+              "type": "frame",
+              "id": "xeINL",
+              "name": "Day 1",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "d6PCkk",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "1",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "lUV5b",
+              "name": "Day 2",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "UWY9S",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "2",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "lpsYq",
+              "name": "Day 3",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "w7dbY",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "3",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "T2Qh6",
+              "name": "Day 4",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pjE9Q",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "4",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "oOVbG",
+              "name": "Day 5",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "i73Zz",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "5",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "b0vhDq",
+              "name": "Day 6",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "LxA2B",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "6",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ZbhfX",
+              "name": "Day 7",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "oEUrW",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "7",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ac71F",
+          "name": "Week",
+          "width": "fill_container",
+          "gap": 2,
+          "children": [
+            {
+              "type": "frame",
+              "id": "hQvEE",
+              "name": "Day 8",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "LfhYH",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "8",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "S9GI0A",
+              "name": "Day 9",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Quwcw",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "9",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Rigjj",
+              "name": "Day 10",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "zJPpH",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "10",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "FQi4f",
+              "name": "Day 11",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "EtYYc",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "11",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "CYcnf",
+              "name": "Day 12",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "H0IcXJ",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "12",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Z7DqpH",
+              "name": "Day 13",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "i06e5",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "13",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pnRoZ",
+              "name": "Day 14",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "qM8xk",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "14",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "CmNZ8",
+          "name": "Week",
+          "width": "fill_container",
+          "gap": 2,
+          "children": [
+            {
+              "type": "frame",
+              "id": "Sw0ho",
+              "name": "Day 15",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "L8BZp",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "15",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "u5GBb",
+              "name": "Day 16",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "HuNd4",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "16",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "BPunH",
+              "name": "Day 17",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tRMKj",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "17",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "w4X0fk",
+              "name": "Day 18",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "XdDBl",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "18",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "TT42p",
+              "name": "Day 19",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "wGXNV",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "19",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SWZfT",
+              "name": "Day 20",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.blue-600",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "euVtc",
+                  "name": "N",
+                  "fill": "$color.white",
+                  "content": "20",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "D6T8EC",
+              "name": "Day 21",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "rp6Sz",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "21",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "U9m6i",
+          "name": "Week",
+          "width": "fill_container",
+          "gap": 2,
+          "children": [
+            {
+              "type": "frame",
+              "id": "h2HAvc",
+              "name": "Day 22",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "HHr8S",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "22",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cqaB1",
+              "name": "Day 23",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "SQxHO",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "23",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "g8wsp",
+              "name": "Day 24",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.blue-600",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "L6kIuv",
+                  "name": "N",
+                  "fill": "$color.blue-600",
+                  "content": "24",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "MBEqa",
+              "name": "Day 25",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Ba1TD",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "25",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "g3DIGl",
+              "name": "Day 26",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "M40IRs",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "26",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "QIOIm",
+              "name": "Day 27",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Bt67d",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "27",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f3zmNK",
+              "name": "Day 28",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "TDdmN",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "28",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "fct02",
+          "name": "Week",
+          "width": "fill_container",
+          "gap": 2,
+          "children": [
+            {
+              "type": "frame",
+              "id": "Vticf",
+              "name": "Day 29",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "l7J0B",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "29",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pDEbl",
+              "name": "Day 30",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "m8NxE7",
+                  "name": "N",
+                  "fill": "$color.gray-800",
+                  "content": "30",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "j9enS",
+              "name": "Day 1",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "s56Pjq",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "1",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "kKr3m",
+              "name": "Day 2",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "k5I4d",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "2",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "iN0vb",
+              "name": "Day 3",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "VR4tm",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "3",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rORM4",
+              "name": "Day 4",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tc2mI",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "4",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "APZv7",
+              "name": "Day 5",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "U3HhkX",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "5",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "M4fXGV",
+          "name": "Week",
+          "width": "fill_container",
+          "gap": 2,
+          "children": [
+            {
+              "type": "frame",
+              "id": "U1hPTt",
+              "name": "Day 6",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "CocYd",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "6",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "F0j2l",
+              "name": "Day 7",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "iF8rU",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "7",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "BCK1P",
+              "name": "Day 8",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "X6CEya",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "8",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "By8YQ",
+              "name": "Day 9",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Gm85b",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "9",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "d4S4u",
+              "name": "Day 10",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "v0LEvT",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "10",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "uayjg",
+              "name": "Day 11",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "gnrai",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "11",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PcUAX",
+              "name": "Day 12",
+              "width": 40,
+              "height": 40,
+              "fill": "$color.transparent",
+              "cornerRadius": 20,
+              "stroke": "$color.transparent",
+              "strokeWidth": 1.5,
+              "strokeAlignment": "inner",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "I194Nj",
+                  "name": "N",
+                  "fill": "$color.gray-400",
+                  "content": "12",
+                  "fontFamily": "Inter",
+                  "fontSize": 14
+                }
+              ]
             }
           ]
         }
