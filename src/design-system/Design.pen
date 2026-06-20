@@ -1077,6 +1077,104 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "y0lRK",
+                  "name": "Dropdowns Group",
+                  "width": 240,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "sU5LA",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "o30cgP",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "DROPDOWN",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "UAVhp",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "UQe6v",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "kFsNo",
+                          "name": "Trigger",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "id": "gtaWD",
+                              "type": "ref",
+                              "ref": "EJ5mv",
+                              "name": "Trigger Ref"
+                            },
+                            {
+                              "type": "text",
+                              "id": "DA4rC",
+                              "name": "Label",
+                              "fill": "$color.gray-700",
+                              "content": "Trigger",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Z5IF5e",
+                          "name": "Menu",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "id": "VR5fK",
+                              "type": "ref",
+                              "ref": "pMW71",
+                              "name": "Menu Ref"
+                            },
+                            {
+                              "type": "text",
+                              "id": "y3VR0",
+                              "name": "Label",
+                              "fill": "$color.gray-700",
+                              "content": "Open menu",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
@@ -3513,6 +3611,181 @@
           "icon": "chevrons-up-down",
           "library": "lucide",
           "fill": "$color.gray-700"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "EJ5mv",
+      "x": 5311,
+      "y": 2000,
+      "name": "Dropdown/Trigger",
+      "reusable": true,
+      "fill": "$color.white",
+      "cornerRadius": 8,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "gap": 8,
+      "padding": 8,
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "M5Nxlj",
+          "name": "Label",
+          "fill": "$color.gray-800",
+          "content": "Actions",
+          "fontFamily": "Inter",
+          "fontSize": 14,
+          "fontWeight": "500"
+        },
+        {
+          "type": "icon",
+          "id": "v8sqo",
+          "name": "Chevron",
+          "width": 16,
+          "height": 16,
+          "icon": "chevron-down",
+          "library": "lucide",
+          "fill": "$color.gray-800"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "pMW71",
+      "x": 5460,
+      "y": 2000,
+      "name": "Dropdown/Menu",
+      "reusable": true,
+      "width": 240,
+      "fill": "$color.white",
+      "cornerRadius": 8,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#0000001f",
+        "offset": {
+          "x": 0,
+          "y": 4
+        },
+        "blur": 12
+      },
+      "layout": "vertical",
+      "gap": 2,
+      "padding": 4,
+      "children": [
+        {
+          "type": "frame",
+          "id": "tsde1",
+          "name": "Menu Item",
+          "width": "fill_container",
+          "fill": "$color.transparent",
+          "cornerRadius": 8,
+          "gap": 14,
+          "padding": [
+            8,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "F5yt9t",
+              "name": "Item Icon",
+              "width": 16,
+              "height": 16,
+              "icon": "pencil",
+              "library": "lucide",
+              "fill": "$color.gray-700"
+            },
+            {
+              "type": "text",
+              "id": "yoDVj",
+              "name": "Item Label",
+              "fill": "$color.gray-800",
+              "content": "Edit",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "u4z4h",
+          "name": "Menu Item",
+          "width": "fill_container",
+          "fill": "$color.gray-100",
+          "cornerRadius": 8,
+          "gap": 14,
+          "padding": [
+            8,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "fzhqT",
+              "name": "Item Icon",
+              "width": 16,
+              "height": 16,
+              "icon": "copy",
+              "library": "lucide",
+              "fill": "$color.gray-700"
+            },
+            {
+              "type": "text",
+              "id": "pum8q",
+              "name": "Item Label",
+              "fill": "$color.gray-800",
+              "content": "Duplicate",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "kcBVp",
+          "name": "Menu Item",
+          "width": "fill_container",
+          "fill": "$color.transparent",
+          "cornerRadius": 8,
+          "gap": 14,
+          "padding": [
+            8,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "i3ts7",
+              "name": "Item Icon",
+              "width": 16,
+              "height": 16,
+              "icon": "archive",
+              "library": "lucide",
+              "fill": "$color.gray-700"
+            },
+            {
+              "type": "text",
+              "id": "QvMxd",
+              "name": "Item Label",
+              "fill": "$color.gray-800",
+              "content": "Archive",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
         }
       ]
     }
