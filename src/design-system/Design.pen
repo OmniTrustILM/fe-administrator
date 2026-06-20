@@ -560,7 +560,15 @@
                       ]
                     }
                   ]
-                },
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "OHL7N",
+              "name": "Row 2",
+              "gap": 40,
+              "children": [
                 {
                   "type": "frame",
                   "id": "vPxft",
@@ -1175,7 +1183,15 @@
                       ]
                     }
                   ]
-                },
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fTPQC",
+              "name": "Row 3",
+              "gap": 40,
+              "children": [
                 {
                   "type": "frame",
                   "id": "n9TuYW",
@@ -1774,6 +1790,181 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "VbnmV",
+                  "name": "Boolean Badge Group",
+                  "width": 240,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "GxFwg",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 9,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "QCZyu",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "BOOLEAN BADGE",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "yFMMt",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ITqus",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "U9pvC",
+                          "name": "States",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "cNOTp",
+                              "name": "Badges",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "id": "PV4Qg",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Yes",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.status-success",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Yes",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "tDWhu",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "No",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.status-danger",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "No",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "FCH6K",
+                              "name": "Caption",
+                              "fill": "$color.gray-500",
+                              "content": "value true / false",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "wRSdX",
+                          "name": "Inverted",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "C2mgc",
+                              "name": "Badges",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "id": "a73kD",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "Yes",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.status-danger",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "Yes",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "n0v8FS",
+                                  "type": "ref",
+                                  "ref": "xz3Ab",
+                                  "name": "No",
+                                  "padding": [
+                                    2,
+                                    6
+                                  ],
+                                  "fill": "$color.status-success",
+                                  "descendants": {
+                                    "e7K7wr": {
+                                      "content": "No",
+                                      "fill": "$color.white"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "NEXAL",
+                              "name": "Caption",
+                              "fill": "$color.gray-500",
+                              "content": "invertColor",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
@@ -1844,7 +2035,7 @@
                   "type": "frame",
                   "id": "yPZvt",
                   "name": "Input Row 1",
-                  "width": "fill_container",
+                  "width": 3120,
                   "gap": 40,
                   "children": [
                     {
@@ -2157,7 +2348,7 @@
                   "type": "frame",
                   "id": "Hfe2m",
                   "name": "Input Row 2",
-                  "width": "fill_container",
+                  "width": 3120,
                   "gap": 40,
                   "children": [
                     {
@@ -6221,6 +6412,14 @@
     "color.status-success": {
       "type": "color",
       "value": "#14b8a6"
+    },
+    "color.status-danger": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.status-warning": {
+      "type": "color",
+      "value": "#eab308"
     }
   }
 }
