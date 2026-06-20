@@ -225,6 +225,7 @@ Always set `name` on every node. Use descriptive, hierarchical names:
 | StatusBadge | `src/components/StatusBadge/StatusBadge.pen` |
 | StatusCircle | `src/components/StatusCircle/StatusCircle.pen` |
 | Label | `src/components/Label/Label.pen` |
+| Spinner | `src/components/Spinner/Spinner.pen` |
 
 Button.pen is the most complete reference — it has 6 pages (Light/Dark × Solid/Outline/Transparent) showing all 5 color variants across 4 states.
 
@@ -259,6 +260,7 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 | StatusBadge visual (enabled flag → Enabled/Disabled/Unknown; `textStatus` → Approved/Rejected/Pending/Expired; success/danger/secondary color) | reuses `Badge/Solid` (override `padding:[2,6]` for small size + fill + Label; no dedicated reusable) |
 | StatusCircle visual (`status` true → success/check, false → danger/x, undefined → gray-500/circle-question-mark; small icon badge) | reuses `Badge/Solid` (override `padding:[2,6]` + fill, and **replace** the `e7K7wr` Label descendant with a 16×16 white lucide `icon`; no dedicated reusable) |
 | Label visual (form field label text 14/500 `neutral-700`; optional required `*` in `red-500`; clickable variant renders as button, same visual) | plain text — no reusable; showcase `Label Group` shows default + required (`Field label` + red ` *`) |
+| Spinner visual (animated ring, `border-3` + `border-t-transparent` → C-shaped arc; sizes sm/md/lg/xl = 16/24/32/40px; primary `blue-600` (dark `blue-500`), light `white`) | plain `ellipse` (`innerRadius:(d-6)/d`, `startAngle:135`, `sweepAngle:270`) — no reusable; showcase `Spinner Group` shows primary sm/md/lg + light-on-dark |
 | NumberInput visual (container, stepper buttons, value) | `NumberInput` |
 | Input sub-component visual (any of the 6 types) | `Input/DurationInput`, `Input/HostnameListInput`, `Input/FileUpload`, `Input/MultipleValueTextInput`, `Input/CodeEditor`, `Input/DynamicContent` |
 | New component `.pen` created | Add new reusable components + a new component group to the showcase grid (see layout note below) |
@@ -266,7 +268,7 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 
 ### Showcase layout (Component Library frame `VLhPh`)
 
-The primitives **Body** (`W3Yt2`, vertical, gap 40) is a **grid of rows**, not a single strip. Each row (`Row 1`/`Row 2`/`Row 3`/`Row 4`, horizontal, gap 40, `alignItems:start`) holds ~4 component groups. (`Row 4` currently holds the `Status Badge Group` + `Status Circle Group` + `Label Group` — append the next components there before starting `Row 5`.) A component group = vertical frame (Group Header with title + divider, then an Items frame). The frame is intentionally kept ~3200 wide as **headroom**: new component groups fill the blank space — append to the shortest/last row, then start a new row once a row reaches ~4–5 groups. Below the primitives is the full-width **Input Section** (`jMZl6`) with composite form examples.
+The primitives **Body** (`W3Yt2`, vertical, gap 40) is a **grid of rows**, not a single strip. Each row (`Row 1`/`Row 2`/`Row 3`/`Row 4`, horizontal, gap 40, `alignItems:start`) holds ~4 component groups. (`Row 4` currently holds the `Status Badge Group` + `Status Circle Group` + `Label Group` + `Spinner Group` — append the next components there before starting `Row 5`.) A component group = vertical frame (Group Header with title + divider, then an Items frame). The frame is intentionally kept ~3200 wide as **headroom**: new component groups fill the blank space — append to the shortest/last row, then start a new row once a row reaches ~4–5 groups. Below the primitives is the full-width **Input Section** (`jMZl6`) with composite form examples.
 
 ### How to update a component in Design.pen
 

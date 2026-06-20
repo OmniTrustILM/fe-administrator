@@ -2472,6 +2472,161 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ZlsMR",
+                  "name": "Spinner Group",
+                  "width": 200,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "kek4r",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "A1JyzJ",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "SPINNER",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "P3heN9",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "BKvdA",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "l9Mhmo",
+                          "name": "Sizes",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "ovUzq",
+                              "name": "Ring Row",
+                              "gap": 20,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "KdriR",
+                                  "name": "Spinner sm",
+                                  "innerRadius": 0.625,
+                                  "startAngle": 135,
+                                  "sweepAngle": 270,
+                                  "fill": "$color.blue-600",
+                                  "width": 16,
+                                  "height": 16
+                                },
+                                {
+                                  "type": "ellipse",
+                                  "id": "QmBBm",
+                                  "name": "Spinner md",
+                                  "innerRadius": 0.75,
+                                  "startAngle": 135,
+                                  "sweepAngle": 270,
+                                  "fill": "$color.blue-600",
+                                  "width": 24,
+                                  "height": 24
+                                },
+                                {
+                                  "type": "ellipse",
+                                  "id": "wYQoN",
+                                  "name": "Spinner lg",
+                                  "innerRadius": 0.8125,
+                                  "startAngle": 135,
+                                  "sweepAngle": 270,
+                                  "fill": "$color.blue-600",
+                                  "width": 32,
+                                  "height": 32
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "C00xm0",
+                              "name": "Caption",
+                              "fill": "$color.gray-500",
+                              "content": "primary — sm / md / lg",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "If0fe",
+                          "name": "Light",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "D1fomn",
+                              "name": "Chip",
+                              "width": 48,
+                              "height": 48,
+                              "fill": "$color.neutral-900",
+                              "cornerRadius": 8,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "O1QrZK",
+                                  "name": "Spinner light",
+                                  "innerRadius": 0.75,
+                                  "startAngle": 135,
+                                  "sweepAngle": 270,
+                                  "fill": "$color.white",
+                                  "width": 24,
+                                  "height": 24
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "ErrOZ",
+                              "name": "Caption",
+                              "fill": "$color.gray-500",
+                              "content": "light (on dark)",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
