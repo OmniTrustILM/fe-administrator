@@ -2627,6 +2627,160 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "xUA7E",
+                  "name": "Tooltip Group",
+                  "width": 240,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "r47pv",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "LyYk9",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "TOOLTIP",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "eVUGH",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "inuJ8",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "a8FChc",
+                          "name": "Preview",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "Jmrty",
+                              "name": "Trigger",
+                              "width": 28,
+                              "height": 28,
+                              "fill": "$color.white",
+                              "cornerRadius": 6,
+                              "stroke": "$color.gray-300",
+                              "strokeWidth": 1,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon",
+                                  "id": "nZku0",
+                                  "name": "Icon",
+                                  "width": 16,
+                                  "height": 16,
+                                  "icon": "circle-question-mark",
+                                  "library": "lucide",
+                                  "fill": "$color.neutral-600"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "g45eX",
+                              "name": "Tooltip",
+                              "layout": "vertical",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "path",
+                                  "id": "w66hw",
+                                  "name": "Arrow",
+                                  "geometry": "M0 6l6-6 6 6z",
+                                  "viewBox": [
+                                    0,
+                                    0,
+                                    12,
+                                    6
+                                  ],
+                                  "fill": "$color.tooltip-bg",
+                                  "width": 12,
+                                  "height": 6
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "GtdvX",
+                                  "name": "Bubble",
+                                  "fill": "$color.tooltip-bg",
+                                  "cornerRadius": 6,
+                                  "effect": {
+                                    "type": "shadow",
+                                    "shadowType": "outer",
+                                    "color": "#0000001f",
+                                    "offset": {
+                                      "x": 0,
+                                      "y": 1
+                                    },
+                                    "blur": 3
+                                  },
+                                  "padding": [
+                                    4,
+                                    8
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "Y92Y3Y",
+                                      "name": "Label",
+                                      "fill": "$color.white",
+                                      "content": "More information",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "500"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "ejcNN",
+                          "name": "Caption",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "hover hint · arrow · bottom",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
@@ -7082,6 +7236,10 @@
     "color.status-warning": {
       "type": "color",
       "value": "#eab308"
+    },
+    "color.tooltip-bg": {
+      "type": "color",
+      "value": "#111827"
     }
   }
 }
