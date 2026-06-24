@@ -511,7 +511,6 @@ export default function SigningProfileForm() {
                 recordSignedDocument: recordSignedDocumentAllowed ? values.recordSignedDocument : false,
                 recordDtbs: signatureAndDtbsRecordable ? values.recordDtbs : false,
                 retentionDays: values.retentionIndefinite ? undefined : Number(values.retentionDays),
-                deleteAfterRetrieval: values.deleteAfterRetrieval,
                 persistenceMode: values.persistenceMode,
             };
 
