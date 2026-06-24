@@ -491,10 +491,6 @@ export default function SigningProfileDetail() {
                 ],
             },
             {
-                id: 'deleteAfterRetrieval',
-                columns: ['Delete After Retrieval', <StatusBadge key="value" enabled={rp.deleteAfterRetrieval ?? false} />],
-            },
-            {
                 id: 'persistenceMode',
                 columns: ['Persistence Mode', rp.persistenceMode ? (persistenceModeLabels[rp.persistenceMode] ?? rp.persistenceMode) : '—'],
             },

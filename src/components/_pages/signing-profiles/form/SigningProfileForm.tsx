@@ -111,7 +111,6 @@ interface FormValues {
     recordDtbs: boolean;
     retentionIndefinite: boolean;
     retentionDays: string;
-    deleteAfterRetrieval: boolean;
     persistenceMode: SigningRecordPersistenceMode;
     // Tab 5 – custom attributes are handled by AttributeEditor / collectFormAttributes
     [key: string]: unknown;
@@ -287,7 +286,6 @@ export default function SigningProfileForm() {
             recordDtbs: false,
             retentionIndefinite: true,
             retentionDays: '',
-            deleteAfterRetrieval: false,
             persistenceMode: SigningRecordPersistenceMode.DeferredDurable,
             ...transformAttributes(initialCustomAttributes ?? []),
         }),
@@ -412,7 +410,6 @@ export default function SigningProfileForm() {
             recordDtbs: rp?.recordDtbs ?? false,
             retentionIndefinite: rp?.retentionDays == null,
             retentionDays: rp?.retentionDays != null ? String(rp.retentionDays) : '',
-            deleteAfterRetrieval: rp?.deleteAfterRetrieval ?? false,
             persistenceMode: rp?.persistenceMode ?? SigningRecordPersistenceMode.DeferredDurable,
             ...transformAttributes(attrInitial ?? []),
         };
@@ -495,7 +492,7 @@ export default function SigningProfileForm() {
                 timeQualityConfigurationUuid: values.timeQualityConfigurationUuid || undefined,
                 defaultPolicyId: values.defaultPolicyId || undefined,
                 allowedPolicyIds: allowedPolicyIds.map((p) => p.value),
-                allowedDigestAlgorithms: values.allowedDigestAlgorithms.map((d) => d.value),
+                allowedDigestAlgorithms: (values.allowedDigestAlgorithms ?? []).map((d) => d.value),
             };
 
             const schemeRequest: StaticKeyManagedSigningRequestDto = {
@@ -517,7 +514,6 @@ export default function SigningProfileForm() {
                       recordSignedDocument: recordSignedDocumentAllowed ? values.recordSignedDocument : false,
                       recordDtbs: signatureAndDtbsRecordable ? values.recordDtbs : false,
                       retentionDays: values.retentionIndefinite ? undefined : Number(values.retentionDays),
-                      deleteAfterRetrieval: values.deleteAfterRetrieval,
                       persistenceMode: values.persistenceMode,
                   }
                 : undefined;
@@ -1082,23 +1078,6 @@ export default function SigningProfileForm() {
                         />
                     </div>
                 )}
-            </div>
-
-            {/* Delete after retrieval */}
-            <div className={recordingEnabledValue ? '' : 'opacity-60'}>
-                <Controller
-                    name="deleteAfterRetrieval"
-                    control={control}
-                    render={({ field }) => (
-                        <Switch
-                            id="deleteAfterRetrieval"
-                            checked={field.value ?? false}
-                            onChange={(checked) => field.onChange(checked)}
-                            disabled={!recordingEnabledValue}
-                            secondaryLabel="Delete the signed document after CSC API async retrieval"
-                        />
-                    )}
-                />
             </div>
 
             {/* Persistence mode */}
