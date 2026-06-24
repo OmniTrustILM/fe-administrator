@@ -502,21 +502,18 @@ export default function SigningProfileForm() {
                 signingOperationAttributes: signingOpAttrs,
             };
 
-            // When recording is disabled, omit recordPolicy entirely so the API applies its
-            // default (no signing record) rather than persisting an explicit disabled policy.
-            const recordPolicy: SigningRecordPolicyRequestDto | undefined = values.recordingEnabled
-                ? {
-                      recordingEnabled: true,
-                      recordRequestMetadata: values.recordRequestMetadata,
-                      // Not stored for the timestamping workflow; force false when the toggle is hidden.
-                      recordSignature: signatureAndDtbsRecordable ? values.recordSignature : false,
-                      // Only valid for CONTENT_SIGNING / TIMESTAMPING; force false otherwise.
-                      recordSignedDocument: recordSignedDocumentAllowed ? values.recordSignedDocument : false,
-                      recordDtbs: signatureAndDtbsRecordable ? values.recordDtbs : false,
-                      retentionDays: values.retentionIndefinite ? undefined : Number(values.retentionDays),
-                      persistenceMode: values.persistenceMode,
-                  }
-                : undefined;
+            const recordPolicy: SigningRecordPolicyRequestDto = {
+                recordingEnabled: values.recordingEnabled,
+                recordRequestMetadata: values.recordRequestMetadata,
+                // Not stored for the timestamping workflow; force false when the toggle is hidden.
+                recordSignature: signatureAndDtbsRecordable ? values.recordSignature : false,
+                // Only valid for CONTENT_SIGNING / TIMESTAMPING; force false otherwise.
+                recordSignedDocument: recordSignedDocumentAllowed ? values.recordSignedDocument : false,
+                recordDtbs: signatureAndDtbsRecordable ? values.recordDtbs : false,
+                retentionDays: values.retentionIndefinite ? undefined : Number(values.retentionDays),
+                deleteAfterRetrieval: values.deleteAfterRetrieval,
+                persistenceMode: values.persistenceMode,
+            };
 
             const requestDto = {
                 name: values.name,
