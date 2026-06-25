@@ -97,7 +97,7 @@ describe('signingRecords slice', () => {
         expect(next.signingRecordsData?.totalItems).toBe(1);
     });
 
-    test('bulkDeleteSigningRecords success (no errors) removes items and decrements totalItems', () => {
+    test('bulkDeleteSigningRecords success (no errors) tracks deleted UUIDs without modifying items', () => {
         const state = {
             ...initialState,
             signingRecordsData: {
@@ -114,8 +114,9 @@ describe('signingRecords slice', () => {
 
         expect(next.isBulkDeleting).toBe(false);
         expect(next.deletedSigningRecordUuids).toEqual(['rec-1', 'rec-3']);
-        expect(next.signingRecordsData?.items).toEqual([{ uuid: 'rec-2' }]);
-        expect(next.signingRecordsData?.totalItems).toBe(1);
+        // Items are not spliced optimistically — the epic triggers a server re-fetch
+        expect(next.signingRecordsData?.items).toEqual([{ uuid: 'rec-1' }, { uuid: 'rec-2' }, { uuid: 'rec-3' }]);
+        expect(next.signingRecordsData?.totalItems).toBe(3);
         expect(next.bulkDeleteErrorMessages).toEqual([]);
     });
 
