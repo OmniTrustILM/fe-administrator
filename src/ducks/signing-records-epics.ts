@@ -180,7 +180,7 @@ function getListParams(state: { value: AppState }, deletedCount: number) {
 
     // If the current page was last and becomes empty after deletion, step back to the new last page
     const totalAfterDelete = Math.max(0, totalItems - deletedCount);
-    const lastPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / itemsPerPage));
+    const lastPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / Math.max(1, itemsPerPage)));
     const safePage = Math.min(pageNumber, lastPageAfterDelete);
 
     return { pageNumber: safePage, itemsPerPage, filters };
