@@ -126,7 +126,6 @@ export const selectors = {
     isFetchingList,
     pageNumber,
     pageSize,
-    entityListParams,
 };
 
 export const actions = slice.actions;
