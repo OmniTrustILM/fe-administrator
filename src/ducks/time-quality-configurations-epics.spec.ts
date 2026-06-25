@@ -335,7 +335,7 @@ describe('timeQualityConfigurations epics', () => {
         );
     });
 
-    test('listAssociatedSigningProfiles failure emits listAssociatedSigningProfilesFailure', async () => {
+    test('listAssociatedSigningProfiles failure emits listAssociatedSigningProfilesFailure and fetchError', async () => {
         const err = new Error('fetch failed');
         const emitted = await runEpic(
             TimeQualityConfigurationsEpicIndex.ListAssociatedSigningProfiles,
@@ -345,9 +345,10 @@ describe('timeQualityConfigurations epics', () => {
                     listSigningProfilesForTimeQualityConfiguration: () => throwError(() => err),
                 } as any,
             },
-            1,
+            2,
         );
 
         expect(emitted[0].type).toBe(timeQualityConfigurationActions.listAssociatedSigningProfilesFailure.type);
+        expect(emitted[1]).toEqual(appRedirectActions.fetchError({ error: err, message: 'Failed to get associated Signing Profiles' }));
     });
 });

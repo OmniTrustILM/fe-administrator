@@ -211,6 +211,7 @@ const listAssociatedSigningProfiles: AppEpic = (action$, state$, deps) => {
                         slice.actions.listAssociatedSigningProfilesFailure({
                             error: extractError(error, 'Failed to get associated Signing Profiles'),
                         }),
+                        appRedirectActions.fetchError({ error, message: 'Failed to get associated Signing Profiles' }),
                     ),
                 ),
             ),

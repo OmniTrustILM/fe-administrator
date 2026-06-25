@@ -162,7 +162,7 @@ export const TspProfileForm = () => {
     const lastResetIdRef = useRef<string | undefined>(undefined);
 
     const valuesToReset = useMemo<FormValues | undefined>(() => {
-        if (!editMode || !id || !tspProfile || tspProfile.uuid !== id || isFetchingDetail) return undefined;
+        if (!editMode || !id || tspProfile?.uuid !== id || isFetchingDetail) return undefined;
 
         const attributeInitialValues = mapProfileAttribute(
             tspProfile,
