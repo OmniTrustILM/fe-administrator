@@ -59,17 +59,21 @@ async function runEpic(
     const { default: epics } = await import('./tsp-profiles-epics');
 
     const defaultClient = {
-        listTspProfiles: () => of({ items: [{ uuid: 'p-1', name: 'TSP Profile 1', enabled: true }], totalItems: 1 }),
-        getTspProfile: () => of({ uuid: 'p-1', name: 'TSP Profile 1', enabled: true }),
+        listTspProfiles: () =>
+            of({
+                items: [{ uuid: 'profile-1', name: 'TSP Profile 1', enabled: true }],
+                totalItems: 1,
+            }),
+        getTspProfile: () => of({ uuid: 'profile-1', name: 'TSP Profile 1', enabled: true }),
         listTspProfileSearchableFields: () => of([{ searchGroupEnum: 'g-1' }]),
-        createTspProfile: () => of({ uuid: 'p-new', name: 'New TSP Profile', enabled: true }),
-        updateTspProfile: () => of({ uuid: 'p-1', name: 'Updated TSP Profile', enabled: true }),
+        createTspProfile: () => of({ uuid: 'c-new', name: 'New TSP Profile' }),
+        updateTspProfile: () => of({ uuid: 'profile-1', name: 'Updated TSP Profile' }),
         deleteTspProfile: () => of(null),
-        enableTspProfile: () => of(null),
-        disableTspProfile: () => of(null),
+        enableTspProfile: () => of(undefined),
+        disableTspProfile: () => of(undefined),
         bulkDeleteTspProfiles: () => of([]),
-        bulkEnableTspProfiles: () => of(null),
-        bulkDisableTspProfiles: () => of(null),
+        bulkEnableTspProfiles: () => of(undefined),
+        bulkDisableTspProfiles: () => of(undefined),
     };
 
     const deps: EpicDeps = {
@@ -84,24 +88,28 @@ async function runEpic(
 }
 
 describe('tspProfiles epics', () => {
-    test('listTspProfiles success emits listSuccess, pagingListSuccess and removeWidgetLock', async () => {
+    test('listTspProfiles success emits listSuccess and removeWidgetLock', async () => {
         const emitted = await runEpic(TspProfilesEpicIndex.List, tspProfileActions.listTspProfiles(), {}, 3);
 
         expect(emitted[0]).toEqual(
             tspProfileActions.listTspProfilesSuccess({
-                tspProfiles: [{ uuid: 'p-1', name: 'TSP Profile 1', enabled: true }] as any,
+                tspProfiles: [{ uuid: 'profile-1', name: 'TSP Profile 1', enabled: true }] as any,
             }),
         );
         expect(emitted[1]).toEqual(pagingActions.listSuccess({ entity: EntityType.TSP_PROFILE, totalItems: 1 }));
         expect(emitted[2]).toEqual(userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ListOfTspProfiles));
     });
 
-    test('listTspProfiles failure emits listFailure, pagingListFailure and insertWidgetLock', async () => {
+    test('listTspProfiles failure emits listFailure and insertWidgetLock', async () => {
         const err = new Error('failed');
         const emitted = await runEpic(
             TspProfilesEpicIndex.List,
             tspProfileActions.listTspProfiles(),
-            { tspProfiles: { listTspProfiles: () => throwError(() => err) } as any },
+            {
+                tspProfiles: {
+                    listTspProfiles: () => throwError(() => err),
+                } as any,
+            },
             3,
         );
 
@@ -111,11 +119,15 @@ describe('tspProfiles epics', () => {
     });
 
     test('getTspProfile success emits getSuccess and removeWidgetLock', async () => {
-        const profile = { uuid: 'p-1', name: 'TSP Profile 1', enabled: true };
+        const profile = { uuid: 'profile-1', name: 'TSP Profile 1', enabled: true };
         const emitted = await runEpic(
             TspProfilesEpicIndex.Detail,
-            tspProfileActions.getTspProfile({ uuid: 'p-1' }),
-            { tspProfiles: { getTspProfile: () => of(profile) } as any },
+            tspProfileActions.getTspProfile({ uuid: 'profile-1' }),
+            {
+                tspProfiles: {
+                    getTspProfile: () => of(profile),
+                } as any,
+            },
             2,
         );
 
@@ -127,8 +139,12 @@ describe('tspProfiles epics', () => {
         const err = new Error('failed');
         const emitted = await runEpic(
             TspProfilesEpicIndex.Detail,
-            tspProfileActions.getTspProfile({ uuid: 'p-1' }),
-            { tspProfiles: { getTspProfile: () => throwError(() => err) } as any },
+            tspProfileActions.getTspProfile({ uuid: 'profile-1' }),
+            {
+                tspProfiles: {
+                    getTspProfile: () => throwError(() => err),
+                } as any,
+            },
             3,
         );
 
@@ -142,7 +158,11 @@ describe('tspProfiles epics', () => {
         const emitted = await runEpic(
             TspProfilesEpicIndex.SearchableFields,
             tspProfileActions.listTspProfileSearchableFields(),
-            { tspProfiles: { listTspProfileSearchableFields: () => of(fields) } as any },
+            {
+                tspProfiles: {
+                    listTspProfileSearchableFields: () => of(fields),
+                } as any,
+            },
             1,
         );
 
@@ -154,7 +174,11 @@ describe('tspProfiles epics', () => {
         const emitted = await runEpic(
             TspProfilesEpicIndex.SearchableFields,
             tspProfileActions.listTspProfileSearchableFields(),
-            { tspProfiles: { listTspProfileSearchableFields: () => throwError(() => err) } as any },
+            {
+                tspProfiles: {
+                    listTspProfileSearchableFields: () => throwError(() => err),
+                } as any,
+            },
             1,
         );
 
@@ -170,7 +194,7 @@ describe('tspProfiles epics', () => {
         );
 
         expect(emitted[0].type).toBe(tspProfileActions.createTspProfileSuccess.type);
-        expect(emitted[1]).toEqual(appRedirectActions.redirect({ url: '../tspprofiles/detail/p-new' }));
+        expect(emitted[1]).toEqual(appRedirectActions.redirect({ url: '../tspprofiles/detail/c-new' }));
     });
 
     test('createTspProfile failure emits createFailure and fetchError', async () => {
@@ -178,7 +202,11 @@ describe('tspProfiles epics', () => {
         const emitted = await runEpic(
             TspProfilesEpicIndex.Create,
             tspProfileActions.createTspProfile({ tspProfileRequestDto: {} as any }),
-            { tspProfiles: { createTspProfile: () => throwError(() => err) } as any },
+            {
+                tspProfiles: {
+                    createTspProfile: () => throwError(() => err),
+                } as any,
+            },
             2,
         );
 
@@ -189,21 +217,25 @@ describe('tspProfiles epics', () => {
     test('updateTspProfile success emits updateSuccess and redirect', async () => {
         const emitted = await runEpic(
             TspProfilesEpicIndex.Update,
-            tspProfileActions.updateTspProfile({ uuid: 'p-1', tspProfileRequestDto: {} as any }),
+            tspProfileActions.updateTspProfile({ uuid: 'profile-1', tspProfileRequestDto: {} as any }),
             {},
             2,
         );
 
         expect(emitted[0].type).toBe(tspProfileActions.updateTspProfileSuccess.type);
-        expect(emitted[1]).toEqual(appRedirectActions.redirect({ url: '../../tspprofiles/detail/p-1' }));
+        expect(emitted[1]).toEqual(appRedirectActions.redirect({ url: '../../tspprofiles/detail/profile-1' }));
     });
 
     test('updateTspProfile failure emits updateFailure and fetchError', async () => {
         const err = new Error('update failed');
         const emitted = await runEpic(
             TspProfilesEpicIndex.Update,
-            tspProfileActions.updateTspProfile({ uuid: 'p-1', tspProfileRequestDto: {} as any }),
-            { tspProfiles: { updateTspProfile: () => throwError(() => err) } as any },
+            tspProfileActions.updateTspProfile({ uuid: 'profile-1', tspProfileRequestDto: {} as any }),
+            {
+                tspProfiles: {
+                    updateTspProfile: () => throwError(() => err),
+                } as any,
+            },
             2,
         );
 
@@ -212,9 +244,9 @@ describe('tspProfiles epics', () => {
     });
 
     test('deleteTspProfile success emits deleteSuccess and redirect', async () => {
-        const emitted = await runEpic(TspProfilesEpicIndex.Delete, tspProfileActions.deleteTspProfile({ uuid: 'p-1' }), {}, 2);
+        const emitted = await runEpic(TspProfilesEpicIndex.Delete, tspProfileActions.deleteTspProfile({ uuid: 'profile-1' }), {}, 2);
 
-        expect(emitted[0]).toEqual(tspProfileActions.deleteTspProfileSuccess({ uuid: 'p-1' }));
+        expect(emitted[0]).toEqual(tspProfileActions.deleteTspProfileSuccess({ uuid: 'profile-1' }));
         expect(emitted[1]).toEqual(appRedirectActions.redirect({ url: '../../tspprofiles' }));
     });
 
@@ -222,8 +254,12 @@ describe('tspProfiles epics', () => {
         const err = new Error('delete failed');
         const emitted = await runEpic(
             TspProfilesEpicIndex.Delete,
-            tspProfileActions.deleteTspProfile({ uuid: 'p-1' }),
-            { tspProfiles: { deleteTspProfile: () => throwError(() => err) } as any },
+            tspProfileActions.deleteTspProfile({ uuid: 'profile-1' }),
+            {
+                tspProfiles: {
+                    deleteTspProfile: () => throwError(() => err),
+                } as any,
+            },
             2,
         );
 
@@ -232,17 +268,21 @@ describe('tspProfiles epics', () => {
     });
 
     test('enableTspProfile success emits enableSuccess', async () => {
-        const emitted = await runEpic(TspProfilesEpicIndex.Enable, tspProfileActions.enableTspProfile({ uuid: 'p-1' }), {}, 1);
+        const emitted = await runEpic(TspProfilesEpicIndex.Enable, tspProfileActions.enableTspProfile({ uuid: 'profile-1' }), {}, 1);
 
-        expect(emitted[0]).toEqual(tspProfileActions.enableTspProfileSuccess({ uuid: 'p-1' }));
+        expect(emitted[0]).toEqual(tspProfileActions.enableTspProfileSuccess({ uuid: 'profile-1' }));
     });
 
     test('enableTspProfile failure emits enableFailure and fetchError', async () => {
         const err = new Error('enable failed');
         const emitted = await runEpic(
             TspProfilesEpicIndex.Enable,
-            tspProfileActions.enableTspProfile({ uuid: 'p-1' }),
-            { tspProfiles: { enableTspProfile: () => throwError(() => err) } as any },
+            tspProfileActions.enableTspProfile({ uuid: 'profile-1' }),
+            {
+                tspProfiles: {
+                    enableTspProfile: () => throwError(() => err),
+                } as any,
+            },
             2,
         );
 
@@ -251,17 +291,21 @@ describe('tspProfiles epics', () => {
     });
 
     test('disableTspProfile success emits disableSuccess', async () => {
-        const emitted = await runEpic(TspProfilesEpicIndex.Disable, tspProfileActions.disableTspProfile({ uuid: 'p-1' }), {}, 1);
+        const emitted = await runEpic(TspProfilesEpicIndex.Disable, tspProfileActions.disableTspProfile({ uuid: 'profile-1' }), {}, 1);
 
-        expect(emitted[0]).toEqual(tspProfileActions.disableTspProfileSuccess({ uuid: 'p-1' }));
+        expect(emitted[0]).toEqual(tspProfileActions.disableTspProfileSuccess({ uuid: 'profile-1' }));
     });
 
     test('disableTspProfile failure emits disableFailure and fetchError', async () => {
         const err = new Error('disable failed');
         const emitted = await runEpic(
             TspProfilesEpicIndex.Disable,
-            tspProfileActions.disableTspProfile({ uuid: 'p-1' }),
-            { tspProfiles: { disableTspProfile: () => throwError(() => err) } as any },
+            tspProfileActions.disableTspProfile({ uuid: 'profile-1' }),
+            {
+                tspProfiles: {
+                    disableTspProfile: () => throwError(() => err),
+                } as any,
+            },
             2,
         );
 
@@ -269,15 +313,15 @@ describe('tspProfiles epics', () => {
         expect(emitted[1]).toEqual(appRedirectActions.fetchError({ error: err, message: 'Failed to disable TSP Profile' }));
     });
 
-    test('bulkDeleteTspProfiles success (no errors) emits bulkDeleteSuccess and alert', async () => {
+    test('bulkDeleteTspProfiles success emits bulkDeleteSuccess and alert', async () => {
         const emitted = await runEpic(
             TspProfilesEpicIndex.BulkDelete,
-            tspProfileActions.bulkDeleteTspProfiles({ uuids: ['p-1', 'p-2'] }),
+            tspProfileActions.bulkDeleteTspProfiles({ uuids: ['profile-1', 'c-2'] }),
             {},
             2,
         );
 
-        expect(emitted[0]).toEqual(tspProfileActions.bulkDeleteTspProfilesSuccess({ uuids: ['p-1', 'p-2'], errors: [] }));
+        expect(emitted[0]).toEqual(tspProfileActions.bulkDeleteTspProfilesSuccess({ uuids: ['profile-1', 'c-2'], errors: [] }));
         expect(emitted[1]).toEqual(alertActions.success('Selected TSP Profiles successfully deleted.'));
     });
 
@@ -285,8 +329,12 @@ describe('tspProfiles epics', () => {
         const err = new Error('bulk delete failed');
         const emitted = await runEpic(
             TspProfilesEpicIndex.BulkDelete,
-            tspProfileActions.bulkDeleteTspProfiles({ uuids: ['p-1'] }),
-            { tspProfiles: { bulkDeleteTspProfiles: () => throwError(() => err) } as any },
+            tspProfileActions.bulkDeleteTspProfiles({ uuids: ['profile-1'] }),
+            {
+                tspProfiles: {
+                    bulkDeleteTspProfiles: () => throwError(() => err),
+                } as any,
+            },
             2,
         );
 
@@ -295,17 +343,26 @@ describe('tspProfiles epics', () => {
     });
 
     test('bulkEnableTspProfiles success emits bulkEnableSuccess', async () => {
-        const emitted = await runEpic(TspProfilesEpicIndex.BulkEnable, tspProfileActions.bulkEnableTspProfiles({ uuids: ['p-1'] }), {}, 1);
+        const emitted = await runEpic(
+            TspProfilesEpicIndex.BulkEnable,
+            tspProfileActions.bulkEnableTspProfiles({ uuids: ['profile-1', 'c-2'] }),
+            {},
+            1,
+        );
 
-        expect(emitted[0]).toEqual(tspProfileActions.bulkEnableTspProfilesSuccess({ uuids: ['p-1'] }));
+        expect(emitted[0]).toEqual(tspProfileActions.bulkEnableTspProfilesSuccess({ uuids: ['profile-1', 'c-2'] }));
     });
 
     test('bulkEnableTspProfiles failure emits bulkEnableFailure and fetchError', async () => {
         const err = new Error('bulk enable failed');
         const emitted = await runEpic(
             TspProfilesEpicIndex.BulkEnable,
-            tspProfileActions.bulkEnableTspProfiles({ uuids: ['p-1'] }),
-            { tspProfiles: { bulkEnableTspProfiles: () => throwError(() => err) } as any },
+            tspProfileActions.bulkEnableTspProfiles({ uuids: ['profile-1'] }),
+            {
+                tspProfiles: {
+                    bulkEnableTspProfiles: () => throwError(() => err),
+                } as any,
+            },
             2,
         );
 
@@ -316,20 +373,24 @@ describe('tspProfiles epics', () => {
     test('bulkDisableTspProfiles success emits bulkDisableSuccess', async () => {
         const emitted = await runEpic(
             TspProfilesEpicIndex.BulkDisable,
-            tspProfileActions.bulkDisableTspProfiles({ uuids: ['p-1'] }),
+            tspProfileActions.bulkDisableTspProfiles({ uuids: ['profile-1', 'c-2'] }),
             {},
             1,
         );
 
-        expect(emitted[0]).toEqual(tspProfileActions.bulkDisableTspProfilesSuccess({ uuids: ['p-1'] }));
+        expect(emitted[0]).toEqual(tspProfileActions.bulkDisableTspProfilesSuccess({ uuids: ['profile-1', 'c-2'] }));
     });
 
     test('bulkDisableTspProfiles failure emits bulkDisableFailure and fetchError', async () => {
         const err = new Error('bulk disable failed');
         const emitted = await runEpic(
             TspProfilesEpicIndex.BulkDisable,
-            tspProfileActions.bulkDisableTspProfiles({ uuids: ['p-1'] }),
-            { tspProfiles: { bulkDisableTspProfiles: () => throwError(() => err) } as any },
+            tspProfileActions.bulkDisableTspProfiles({ uuids: ['profile-1'] }),
+            {
+                tspProfiles: {
+                    bulkDisableTspProfiles: () => throwError(() => err),
+                } as any,
+            },
             2,
         );
 

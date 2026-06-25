@@ -191,6 +191,31 @@ describe('timeQualityConfigurations slice', () => {
         expect(next.bulkDeleteErrorMessages).toEqual(errors);
         expect(next.timeQualityConfigurations).toHaveLength(1);
     });
+
+    test('listAssociatedSigningProfiles sets isFetchingAssociatedSigningProfiles and clears list', () => {
+        const state = { ...initialState, associatedSigningProfiles: [{ uuid: 'sp-1' }] as any[] };
+        const next = reducer(state, actions.listAssociatedSigningProfiles({ uuid: 'c-1' }));
+        expect(next.isFetchingAssociatedSigningProfiles).toBe(true);
+        expect(next.associatedSigningProfiles).toEqual([]);
+    });
+
+    test('listAssociatedSigningProfilesSuccess sets profiles and clears flag', () => {
+        const profiles = [{ uuid: 'sp-1' }] as any[];
+        const next = reducer(
+            { ...initialState, isFetchingAssociatedSigningProfiles: true },
+            actions.listAssociatedSigningProfilesSuccess({ signingProfiles: profiles }),
+        );
+        expect(next.isFetchingAssociatedSigningProfiles).toBe(false);
+        expect(next.associatedSigningProfiles).toEqual(profiles);
+    });
+
+    test('listAssociatedSigningProfilesFailure clears isFetchingAssociatedSigningProfiles', () => {
+        const next = reducer(
+            { ...initialState, isFetchingAssociatedSigningProfiles: true },
+            actions.listAssociatedSigningProfilesFailure({ error: 'err' }),
+        );
+        expect(next.isFetchingAssociatedSigningProfiles).toBe(false);
+    });
 });
 
 describe('timeQualityConfigurations selectors', () => {
@@ -199,6 +224,8 @@ describe('timeQualityConfigurations selectors', () => {
         const configs = [config];
         const fields = [{ searchGroupEnum: 'g-1' }] as any[];
         const bulkErrors = [{ message: 'err' }] as any[];
+
+        const profiles = [{ uuid: 'sp-1' }] as any[];
 
         const featureState = {
             ...initialState,
@@ -215,6 +242,8 @@ describe('timeQualityConfigurations selectors', () => {
             isDeleting: true,
             isUpdating: true,
             isBulkDeleting: true,
+            associatedSigningProfiles: profiles,
+            isFetchingAssociatedSigningProfiles: true,
         };
 
         const state = { timeQualityConfigurations: featureState } as any;
@@ -232,5 +261,7 @@ describe('timeQualityConfigurations selectors', () => {
         expect(selectors.isDeleting(state)).toBe(true);
         expect(selectors.isUpdating(state)).toBe(true);
         expect(selectors.isBulkDeleting(state)).toBe(true);
+        expect(selectors.associatedSigningProfiles(state)).toEqual(profiles);
+        expect(selectors.isFetchingAssociatedSigningProfiles(state)).toBe(true);
     });
 });

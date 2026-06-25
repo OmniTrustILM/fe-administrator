@@ -34,6 +34,7 @@ enum TimeQualityConfigurationsEpicIndex {
     Update = 4,
     Delete = 5,
     BulkDelete = 6,
+    ListAssociatedSigningProfiles = 7,
 }
 
 vi.mock('../App', () => ({
@@ -314,5 +315,39 @@ describe('timeQualityConfigurations epics', () => {
 
         expect(emitted[0].type).toBe(timeQualityConfigurationActions.bulkDeleteTimeQualityConfigurationsFailure.type);
         expect(emitted[1]).toEqual(appRedirectActions.fetchError({ error: err, message: 'Failed to delete Time Quality Configurations' }));
+    });
+
+    test('listAssociatedSigningProfiles success emits listAssociatedSigningProfilesSuccess', async () => {
+        const profiles = [{ uuid: 'sp-1', name: 'Signing Profile 1' }];
+        const emitted = await runEpic(
+            TimeQualityConfigurationsEpicIndex.ListAssociatedSigningProfiles,
+            timeQualityConfigurationActions.listAssociatedSigningProfiles({ uuid: 'c-1' }),
+            {
+                timeQualityConfigurations: {
+                    listSigningProfilesForTimeQualityConfiguration: () => of(profiles),
+                } as any,
+            },
+            1,
+        );
+
+        expect(emitted[0]).toEqual(
+            timeQualityConfigurationActions.listAssociatedSigningProfilesSuccess({ signingProfiles: profiles as any }),
+        );
+    });
+
+    test('listAssociatedSigningProfiles failure emits listAssociatedSigningProfilesFailure', async () => {
+        const err = new Error('fetch failed');
+        const emitted = await runEpic(
+            TimeQualityConfigurationsEpicIndex.ListAssociatedSigningProfiles,
+            timeQualityConfigurationActions.listAssociatedSigningProfiles({ uuid: 'c-1' }),
+            {
+                timeQualityConfigurations: {
+                    listSigningProfilesForTimeQualityConfiguration: () => throwError(() => err),
+                } as any,
+            },
+            1,
+        );
+
+        expect(emitted[0].type).toBe(timeQualityConfigurationActions.listAssociatedSigningProfilesFailure.type);
     });
 });

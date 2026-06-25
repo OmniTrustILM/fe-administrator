@@ -200,6 +200,24 @@ const bulkDeleteTimeQualityConfigurations: AppEpic = (action$, state$, deps) => 
     );
 };
 
+const listAssociatedSigningProfiles: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listAssociatedSigningProfiles.match),
+        switchMap((action) =>
+            deps.apiClients.timeQualityConfigurations.listSigningProfilesForTimeQualityConfiguration({ uuid: action.payload.uuid }).pipe(
+                switchMap((profiles) => of(slice.actions.listAssociatedSigningProfilesSuccess({ signingProfiles: profiles }))),
+                catchError((error) =>
+                    of(
+                        slice.actions.listAssociatedSigningProfilesFailure({
+                            error: extractError(error, 'Failed to get associated Signing Profiles'),
+                        }),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
 const epics = [
     listTimeQualityConfigurations,
     getTimeQualityConfiguration,
@@ -208,6 +226,7 @@ const epics = [
     updateTimeQualityConfiguration,
     deleteTimeQualityConfiguration,
     bulkDeleteTimeQualityConfigurations,
+    listAssociatedSigningProfiles,
 ];
 
 export default epics;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
@@ -9,6 +9,7 @@ import Dialog from 'components/Dialog';
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
+import StatusBadge from 'components/StatusBadge';
 
 import { actions, selectors } from 'ducks/time-quality-configurations';
 import { Resource } from 'types/openapi';
@@ -26,6 +27,9 @@ export const TimeQualityConfigurationDetail = () => {
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
     const isDeleting = useSelector(selectors.isDeleting);
     const deleteErrorMessage = useSelector(selectors.deleteErrorMessage);
+    const associatedSigningProfiles = useSelector(selectors.associatedSigningProfiles);
+    const isFetchingAssociatedSigningProfiles = useSelector(selectors.isFetchingAssociatedSigningProfiles);
+
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
 
     const isBusy = useMemo(() => isFetchingDetail || isDeleting, [isFetchingDetail, isDeleting]);
@@ -33,6 +37,7 @@ export const TimeQualityConfigurationDetail = () => {
     const getFreshData = useCallback(() => {
         if (!id) return;
         dispatch(actions.getTimeQualityConfiguration({ uuid: id }));
+        dispatch(actions.listAssociatedSigningProfiles({ uuid: id }));
     }, [dispatch, id]);
 
     useEffect(() => {
@@ -71,6 +76,28 @@ export const TimeQualityConfigurationDetail = () => {
     );
 
     const tableHeader: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
+
+    const signingProfilesTableHeaders: TableHeader[] = useMemo(
+        () => [
+            { id: 'name', content: 'Name', sortable: true },
+            { id: 'enabled', content: 'Enabled' },
+        ],
+        [],
+    );
+
+    const signingProfilesTableData: TableDataRow[] = useMemo(
+        () =>
+            associatedSigningProfiles.map((sp) => ({
+                id: sp.uuid,
+                columns: [
+                    <Link key="name" to={`/${Resource.SigningProfiles.toLowerCase()}/detail/${sp.uuid}`}>
+                        {sp.name}
+                    </Link>,
+                    <StatusBadge key="enabled" enabled={sp.enabled} />,
+                ],
+            })),
+        [associatedSigningProfiles],
+    );
 
     const generalData: TableDataRow[] = useMemo(
         () =>
@@ -214,6 +241,17 @@ export const TimeQualityConfigurationDetail = () => {
 
                     <Widget title="NTP Settings" titleSize="large">
                         {ntpData.length > 0 && <CustomTable headers={tableHeader} data={ntpData} />}
+                    </Widget>
+                    <Widget title="Used by Signing Profiles" titleSize="large" busy={isFetchingAssociatedSigningProfiles}>
+                        {associatedSigningProfiles.length > 0 ? (
+                            <CustomTable headers={signingProfilesTableHeaders} data={signingProfilesTableData} />
+                        ) : (
+                            !isFetchingAssociatedSigningProfiles && (
+                                <p className="text-sm text-gray-400">
+                                    No Signing Profiles are currently using this Time Quality Configuration.
+                                </p>
+                            )
+                        )}
                     </Widget>
                 </Container>
             </Widget>

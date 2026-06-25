@@ -7,16 +7,11 @@ describe('tspProfiles slice', () => {
         expect(reducer(undefined, { type: 'unknown' })).toEqual(initialState);
     });
 
-    test('setCheckedRows updates checkedRows', () => {
-        const next = reducer(initialState, actions.setCheckedRows({ checkedRows: ['p-1', 'p-2'] }));
-        expect(next.checkedRows).toEqual(['p-1', 'p-2']);
-    });
-
     test('resetState restores initial values', () => {
         const dirty = {
             ...initialState,
-            tspProfile: { uuid: 'p-1' } as any,
-            tspProfiles: [{ uuid: 'p-1' } as any],
+            tspProfile: { uuid: 'profile-1' } as any,
+            tspProfiles: [{ uuid: 'profile-1' } as any],
             isFetchingList: true,
             tempKey: 'gone',
         } as any;
@@ -25,6 +20,11 @@ describe('tspProfiles slice', () => {
 
         expect(next).toEqual(initialState);
         expect((next as any).tempKey).toBeUndefined();
+    });
+
+    test('setCheckedRows updates checkedRows', () => {
+        const next = reducer(initialState, actions.setCheckedRows({ checkedRows: ['profile-1', 'profile-2'] }));
+        expect(next.checkedRows).toEqual(['profile-1', 'profile-2']);
     });
 
     test('clearDeleteErrorMessages clears error fields', () => {
@@ -42,7 +42,7 @@ describe('tspProfiles slice', () => {
     });
 
     test('listTspProfilesSuccess updates list', () => {
-        const profiles = [{ uuid: 'p-1', enabled: true }] as any[];
+        const profiles = [{ uuid: 'profile-1' }] as any[];
         const next = reducer({ ...initialState, isFetchingList: true }, actions.listTspProfilesSuccess({ tspProfiles: profiles }));
         expect(next.isFetchingList).toBe(false);
         expect(next.tspProfiles).toEqual(profiles);
@@ -54,13 +54,13 @@ describe('tspProfiles slice', () => {
     });
 
     test('getTspProfile sets isFetchingDetail', () => {
-        const next = reducer(initialState, actions.getTspProfile({ uuid: 'p-1' }));
+        const next = reducer(initialState, actions.getTspProfile({ uuid: 'profile-1' }));
         expect(next.isFetchingDetail).toBe(true);
     });
 
     test('getTspProfileSuccess sets detail and updates list entry', () => {
-        const existing = { uuid: 'p-1', name: 'Old', enabled: true } as any;
-        const updated = { uuid: 'p-1', name: 'New', enabled: true } as any;
+        const existing = { uuid: 'profile-1', name: 'Old' } as any;
+        const updated = { uuid: 'profile-1', name: 'New' } as any;
         const state = { ...initialState, isFetchingDetail: true, tspProfiles: [existing] };
         const next = reducer(state, actions.getTspProfileSuccess({ tspProfile: updated }));
         expect(next.isFetchingDetail).toBe(false);
@@ -104,7 +104,7 @@ describe('tspProfiles slice', () => {
     test('createTspProfileSuccess clears isCreating', () => {
         const next = reducer(
             { ...initialState, isCreating: true },
-            actions.createTspProfileSuccess({ tspProfile: { uuid: 'p-1' } as any }),
+            actions.createTspProfileSuccess({ tspProfile: { uuid: 'profile-1' } as any }),
         );
         expect(next.isCreating).toBe(false);
     });
@@ -115,13 +115,13 @@ describe('tspProfiles slice', () => {
     });
 
     test('updateTspProfile sets isUpdating', () => {
-        const next = reducer(initialState, actions.updateTspProfile({ uuid: 'p-1', tspProfileRequestDto: {} as any }));
+        const next = reducer(initialState, actions.updateTspProfile({ uuid: 'profile-1', tspProfileRequestDto: {} as any }));
         expect(next.isUpdating).toBe(true);
     });
 
     test('updateTspProfileSuccess updates detail and list', () => {
-        const existing = { uuid: 'p-1', name: 'Old', enabled: true } as any;
-        const updated = { uuid: 'p-1', name: 'Updated', enabled: true } as any;
+        const existing = { uuid: 'profile-1', name: 'Old' } as any;
+        const updated = { uuid: 'profile-1', name: 'Updated' } as any;
         const state = { ...initialState, isUpdating: true, tspProfile: existing, tspProfiles: [existing] };
         const next = reducer(state, actions.updateTspProfileSuccess({ tspProfile: updated }));
         expect(next.isUpdating).toBe(false);
@@ -135,15 +135,15 @@ describe('tspProfiles slice', () => {
     });
 
     test('deleteTspProfile sets isDeleting and clears deleteErrorMessage', () => {
-        const next = reducer({ ...initialState, deleteErrorMessage: 'old error' }, actions.deleteTspProfile({ uuid: 'p-1' }));
+        const next = reducer({ ...initialState, deleteErrorMessage: 'old error' }, actions.deleteTspProfile({ uuid: 'profile-1' }));
         expect(next.isDeleting).toBe(true);
         expect(next.deleteErrorMessage).toBe('');
     });
 
     test('deleteTspProfileSuccess removes from list and clears detail', () => {
-        const profile = { uuid: 'p-1', enabled: true } as any;
+        const profile = { uuid: 'profile-1' } as any;
         const state = { ...initialState, isDeleting: true, tspProfile: profile, tspProfiles: [profile] };
-        const next = reducer(state, actions.deleteTspProfileSuccess({ uuid: 'p-1' }));
+        const next = reducer(state, actions.deleteTspProfileSuccess({ uuid: 'profile-1' }));
         expect(next.isDeleting).toBe(false);
         expect(next.tspProfiles).toHaveLength(0);
         expect(next.tspProfile).toBeUndefined();
@@ -156,14 +156,19 @@ describe('tspProfiles slice', () => {
     });
 
     test('enableTspProfile sets isEnabling', () => {
-        const next = reducer(initialState, actions.enableTspProfile({ uuid: 'p-1' }));
+        const next = reducer(initialState, actions.enableTspProfile({ uuid: 'profile-1' }));
         expect(next.isEnabling).toBe(true);
     });
 
-    test('enableTspProfileSuccess enables list entry and detail', () => {
-        const profile = { uuid: 'p-1', enabled: false } as any;
-        const state = { ...initialState, isEnabling: true, tspProfile: profile, tspProfiles: [profile] };
-        const next = reducer(state, actions.enableTspProfileSuccess({ uuid: 'p-1' }));
+    test('enableTspProfileSuccess sets enabled=true in list and detail', () => {
+        const profile = { uuid: 'profile-1', enabled: false } as any;
+        const state = {
+            ...initialState,
+            isEnabling: true,
+            tspProfile: profile,
+            tspProfiles: [{ ...profile }],
+        };
+        const next = reducer(state, actions.enableTspProfileSuccess({ uuid: 'profile-1' }));
         expect(next.isEnabling).toBe(false);
         expect(next.tspProfiles[0].enabled).toBe(true);
         expect(next.tspProfile?.enabled).toBe(true);
@@ -175,14 +180,19 @@ describe('tspProfiles slice', () => {
     });
 
     test('disableTspProfile sets isDisabling', () => {
-        const next = reducer(initialState, actions.disableTspProfile({ uuid: 'p-1' }));
+        const next = reducer(initialState, actions.disableTspProfile({ uuid: 'profile-1' }));
         expect(next.isDisabling).toBe(true);
     });
 
-    test('disableTspProfileSuccess disables list entry and detail', () => {
-        const profile = { uuid: 'p-1', enabled: true } as any;
-        const state = { ...initialState, isDisabling: true, tspProfile: profile, tspProfiles: [profile] };
-        const next = reducer(state, actions.disableTspProfileSuccess({ uuid: 'p-1' }));
+    test('disableTspProfileSuccess sets enabled=false in list and detail', () => {
+        const profile = { uuid: 'profile-1', enabled: true } as any;
+        const state = {
+            ...initialState,
+            isDisabling: true,
+            tspProfile: profile,
+            tspProfiles: [{ ...profile }],
+        };
+        const next = reducer(state, actions.disableTspProfileSuccess({ uuid: 'profile-1' }));
         expect(next.isDisabling).toBe(false);
         expect(next.tspProfiles[0].enabled).toBe(false);
         expect(next.tspProfile?.enabled).toBe(false);
@@ -196,29 +206,26 @@ describe('tspProfiles slice', () => {
     test('bulkDeleteTspProfiles sets isBulkDeleting and clears errors', () => {
         const next = reducer(
             { ...initialState, bulkDeleteErrorMessages: [{ message: 'err' } as any] },
-            actions.bulkDeleteTspProfiles({ uuids: ['p-1'] }),
+            actions.bulkDeleteTspProfiles({ uuids: ['profile-1'] }),
         );
         expect(next.isBulkDeleting).toBe(true);
         expect(next.bulkDeleteErrorMessages).toEqual([]);
     });
 
     test('bulkDeleteTspProfilesSuccess removes items from list', () => {
-        const profiles = [
-            { uuid: 'p-1', enabled: true },
-            { uuid: 'p-2', enabled: true },
-        ] as any[];
+        const profiles = [{ uuid: 'profile-1' }, { uuid: 'profile-2' }] as any[];
         const state = { ...initialState, isBulkDeleting: true, tspProfiles: profiles };
-        const next = reducer(state, actions.bulkDeleteTspProfilesSuccess({ uuids: ['p-1'], errors: [] }));
+        const next = reducer(state, actions.bulkDeleteTspProfilesSuccess({ uuids: ['profile-1'], errors: [] }));
         expect(next.isBulkDeleting).toBe(false);
         expect(next.tspProfiles).toHaveLength(1);
-        expect(next.tspProfiles[0].uuid).toBe('p-2');
+        expect(next.tspProfiles[0].uuid).toBe('profile-2');
     });
 
     test('bulkDeleteTspProfilesSuccess with errors sets bulkDeleteErrorMessages', () => {
-        const errors = [{ message: 'err', uuid: 'p-1', name: 'TSP Profile 1' }] as any[];
-        const profiles = [{ uuid: 'p-1', enabled: true }] as any[];
+        const errors = [{ message: 'err', uuid: 'profile-1', name: 'TSP Profile 1' }] as any[];
+        const profiles = [{ uuid: 'profile-1' }] as any[];
         const state = { ...initialState, isBulkDeleting: true, tspProfiles: profiles };
-        const next = reducer(state, actions.bulkDeleteTspProfilesSuccess({ uuids: ['p-1'], errors }));
+        const next = reducer(state, actions.bulkDeleteTspProfilesSuccess({ uuids: ['profile-1'], errors }));
         expect(next.isBulkDeleting).toBe(false);
         expect(next.bulkDeleteErrorMessages).toEqual(errors);
         expect(next.tspProfiles).toHaveLength(1);
@@ -230,17 +237,20 @@ describe('tspProfiles slice', () => {
     });
 
     test('bulkEnableTspProfiles sets isBulkEnabling', () => {
-        const next = reducer(initialState, actions.bulkEnableTspProfiles({ uuids: ['p-1'] }));
+        const next = reducer(initialState, actions.bulkEnableTspProfiles({ uuids: ['profile-1'] }));
         expect(next.isBulkEnabling).toBe(true);
     });
 
-    test('bulkEnableTspProfilesSuccess enables list entries', () => {
-        const profiles = [{ uuid: 'p-1', enabled: false }] as any[];
-        const state = { ...initialState, isBulkEnabling: true, tspProfiles: profiles, tspProfile: profiles[0] };
-        const next = reducer(state, actions.bulkEnableTspProfilesSuccess({ uuids: ['p-1'] }));
+    test('bulkEnableTspProfilesSuccess sets enabled=true for matching uuids', () => {
+        const profiles = [
+            { uuid: 'profile-1', enabled: false },
+            { uuid: 'profile-2', enabled: false },
+        ] as any[];
+        const state = { ...initialState, isBulkEnabling: true, tspProfiles: profiles };
+        const next = reducer(state, actions.bulkEnableTspProfilesSuccess({ uuids: ['profile-1'] }));
         expect(next.isBulkEnabling).toBe(false);
         expect(next.tspProfiles[0].enabled).toBe(true);
-        expect(next.tspProfile?.enabled).toBe(true);
+        expect(next.tspProfiles[1].enabled).toBe(false);
     });
 
     test('bulkEnableTspProfilesFailure clears isBulkEnabling', () => {
@@ -249,17 +259,20 @@ describe('tspProfiles slice', () => {
     });
 
     test('bulkDisableTspProfiles sets isBulkDisabling', () => {
-        const next = reducer(initialState, actions.bulkDisableTspProfiles({ uuids: ['p-1'] }));
+        const next = reducer(initialState, actions.bulkDisableTspProfiles({ uuids: ['profile-1'] }));
         expect(next.isBulkDisabling).toBe(true);
     });
 
-    test('bulkDisableTspProfilesSuccess disables list entries', () => {
-        const profiles = [{ uuid: 'p-1', enabled: true }] as any[];
-        const state = { ...initialState, isBulkDisabling: true, tspProfiles: profiles, tspProfile: profiles[0] };
-        const next = reducer(state, actions.bulkDisableTspProfilesSuccess({ uuids: ['p-1'] }));
+    test('bulkDisableTspProfilesSuccess sets enabled=false for matching uuids', () => {
+        const profiles = [
+            { uuid: 'profile-1', enabled: true },
+            { uuid: 'profile-2', enabled: true },
+        ] as any[];
+        const state = { ...initialState, isBulkDisabling: true, tspProfiles: profiles };
+        const next = reducer(state, actions.bulkDisableTspProfilesSuccess({ uuids: ['profile-1'] }));
         expect(next.isBulkDisabling).toBe(false);
         expect(next.tspProfiles[0].enabled).toBe(false);
-        expect(next.tspProfile?.enabled).toBe(false);
+        expect(next.tspProfiles[1].enabled).toBe(true);
     });
 
     test('bulkDisableTspProfilesFailure clears isBulkDisabling', () => {
@@ -270,7 +283,7 @@ describe('tspProfiles slice', () => {
 
 describe('tspProfiles selectors', () => {
     test('selectors read all values from state', () => {
-        const profile = { uuid: 'p-1', enabled: true } as any;
+        const profile = { uuid: 'profile-1' } as any;
         const profiles = [profile];
         const fields = [{ searchGroupEnum: 'g-1' }] as any[];
         const bulkErrors = [{ message: 'err' }] as any[];
@@ -280,7 +293,7 @@ describe('tspProfiles selectors', () => {
             tspProfile: profile,
             tspProfiles: profiles,
             searchableFields: fields,
-            checkedRows: ['p-1'],
+            checkedRows: ['profile-1'],
             deleteErrorMessage: 'del err',
             bulkDeleteErrorMessages: bulkErrors,
             isFetchingList: true,
@@ -298,20 +311,20 @@ describe('tspProfiles selectors', () => {
 
         const state = { tspProfiles: featureState } as any;
 
-        expect(selectors.searchableFields(state)).toEqual(fields);
         expect(selectors.tspProfile(state)).toEqual(profile);
         expect(selectors.tspProfiles(state)).toEqual(profiles);
+        expect(selectors.searchableFields(state)).toEqual(fields);
+        expect(selectors.checkedRows(state)).toEqual(['profile-1']);
         expect(selectors.deleteErrorMessage(state)).toBe('del err');
-        expect(selectors.checkedRows(state)).toEqual(['p-1']);
+        expect(selectors.bulkDeleteErrorMessages(state)).toEqual(bulkErrors);
         expect(selectors.isFetchingList(state)).toBe(true);
         expect(selectors.isFetchingDetail(state)).toBe(true);
         expect(selectors.isFetchingSearchableFields(state)).toBe(true);
         expect(selectors.isCreating(state)).toBe(true);
-        expect(selectors.isUpdating(state)).toBe(true);
         expect(selectors.isDeleting(state)).toBe(true);
+        expect(selectors.isUpdating(state)).toBe(true);
         expect(selectors.isEnabling(state)).toBe(true);
         expect(selectors.isDisabling(state)).toBe(true);
-        expect(selectors.bulkDeleteErrorMessages(state)).toEqual(bulkErrors);
         expect(selectors.isBulkDeleting(state)).toBe(true);
         expect(selectors.isBulkEnabling(state)).toBe(true);
         expect(selectors.isBulkDisabling(state)).toBe(true);

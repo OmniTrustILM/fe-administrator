@@ -111,10 +111,12 @@ export enum LockWidgetNameEnum {
     VaultProfileDetails,
     ListOfTrustedCertificates,
     TrustedCertificateDetails,
-    ListOfTimeQualityConfigurations,
-    TimeQualityConfigurationDetails,
     ListOfTspProfiles,
     TspProfileDetails,
+    ListOfTimeQualityConfigurations,
+    TimeQualityConfigurationDetails,
+    ListOfSigningProfiles,
+    SigningProfileDetails,
 }
 
 export interface WidgetLockModel {
