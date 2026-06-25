@@ -1,4 +1,4 @@
-import type { AppEpic } from 'ducks';
+import type { AppEpic, AppState } from 'ducks';
 import { concat, of } from 'rxjs';
 import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
@@ -174,7 +174,7 @@ const bulkDeleteSigningRecords: AppEpic = (action$, state, deps) => {
     );
 };
 
-function getListParams(state: { value: any }, deletedCount: number) {
+function getListParams(state: { value: AppState }, deletedCount: number) {
     const { pageNumber, itemsPerPage, filters } = entityListParams(EntityType.SIGNING_RECORD, state.value);
     const totalItems = pagingSelectors.totalItems(EntityType.SIGNING_RECORD)(state.value);
 
