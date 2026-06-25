@@ -7,8 +7,8 @@ import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { actions as userInterfaceActions } from './user-interface';
-import { actions as pagingActions, selectors as pagingSelectors } from './paging';
-import { EntityType, selectors as filterSelectors } from './filters';
+import { actions as pagingActions, entityListParams } from './paging';
+import { EntityType } from './filters';
 
 import { slice } from './connectors';
 
@@ -406,11 +406,7 @@ const bulkAuthorizeConnectors: AppEpic = (action$, state, deps) => {
                 mergeMap(() =>
                     of(
                         slice.actions.bulkAuthorizeConnectorsSuccess({ uuids: action.payload.uuids }),
-                        slice.actions.listConnectors({
-                            itemsPerPage: pagingSelectors.pageSize(EntityType.CONNECTOR)(state.value),
-                            pageNumber: pagingSelectors.pageNumber(EntityType.CONNECTOR)(state.value),
-                            filters: filterSelectors.currentFilters(EntityType.CONNECTOR)(state.value),
-                        }),
+                        slice.actions.listConnectors(entityListParams(EntityType.CONNECTOR, state.value)),
                     ),
                 ),
 

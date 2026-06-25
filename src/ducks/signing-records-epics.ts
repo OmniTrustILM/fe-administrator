@@ -4,8 +4,8 @@ import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { alertsSlice } from './alert-slice';
 import { actions as appRedirectActions } from './app-redirect';
-import { EntityType, selectors as filterSelectors } from './filters';
-import { actions as pagingActions, selectors as pagingSelectors } from './paging';
+import { EntityType } from './filters';
+import { actions as pagingActions, selectors as pagingSelectors, entityListParams } from './paging';
 import { slice } from './signing-records';
 import {
     transformPaginationResponseDtoToModel,
@@ -175,17 +175,14 @@ const bulkDeleteSigningRecords: AppEpic = (action$, state, deps) => {
 };
 
 function getListParams(state: { value: any }, deletedCount: number) {
-    const pageNumber = pagingSelectors.pageNumber(EntityType.SIGNING_RECORD)(state.value);
-    const pageSize = pagingSelectors.pageSize(EntityType.SIGNING_RECORD)(state.value);
-    const totalItems = pagingSelectors.totalItems(EntityType.SIGNING_RECORD)(state.value);
-    const filters = filterSelectors.currentFilters(EntityType.SIGNING_RECORD)(state.value);
+    const { pageNumber, itemsPerPage, totalItems, filters } = entityListParams(EntityType.SIGNING_RECORD, state.value);
 
-    // If the current page becomes empty after deletion, step back to the new last page
+    // If the current page was last and becomes empty after deletion, step back to the new last page
     const totalAfterDelete = Math.max(0, totalItems - deletedCount);
-    const lastPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / pageSize));
+    const lastPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / itemsPerPage));
     const safePage = Math.min(pageNumber, lastPageAfterDelete);
 
-    return { pageNumber: safePage, itemsPerPage: pageSize, filters };
+    return { pageNumber: safePage, itemsPerPage, filters };
 }
 
 export default [listSigningRecords, getSigningRecord, getSearchableFields, deleteSigningRecord, bulkDeleteSigningRecords];

@@ -1,6 +1,7 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { WritableDraft } from 'immer/dist/internal';
 import type { EntityType } from './filters';
+import { selectors as filterSelectors } from './filters';
 
 export type Paging = {
     entity: EntityType;
@@ -109,6 +110,15 @@ const pageNumber = (entity: EntityType) =>
 const pageSize = (entity: EntityType) =>
     createSelector(state, (state) => (state.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageSize);
 
+export function entityListParams(entity: EntityType, stateValue: any) {
+    return {
+        pageNumber: pageNumber(entity)(stateValue),
+        itemsPerPage: pageSize(entity)(stateValue),
+        totalItems: totalItems(entity)(stateValue),
+        filters: filterSelectors.currentFilters(entity)(stateValue),
+    };
+}
+
 export const selectors = {
     state,
 
@@ -117,6 +127,7 @@ export const selectors = {
     isFetchingList,
     pageNumber,
     pageSize,
+    entityListParams,
 };
 
 export const actions = slice.actions;
