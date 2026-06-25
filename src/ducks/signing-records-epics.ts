@@ -175,7 +175,8 @@ const bulkDeleteSigningRecords: AppEpic = (action$, state, deps) => {
 };
 
 function getListParams(state: { value: any }, deletedCount: number) {
-    const { pageNumber, itemsPerPage, totalItems, filters } = entityListParams(EntityType.SIGNING_RECORD, state.value);
+    const { pageNumber, itemsPerPage, filters } = entityListParams(EntityType.SIGNING_RECORD, state.value);
+    const totalItems = pagingSelectors.totalItems(EntityType.SIGNING_RECORD)(state.value);
 
     // If the current page was last and becomes empty after deletion, step back to the new last page
     const totalAfterDelete = Math.max(0, totalItems - deletedCount);

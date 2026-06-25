@@ -114,7 +114,6 @@ export function entityListParams(entity: EntityType, stateValue: any) {
     return {
         pageNumber: pageNumber(entity)(stateValue),
         itemsPerPage: pageSize(entity)(stateValue),
-        totalItems: totalItems(entity)(stateValue),
         filters: filterSelectors.currentFilters(entity)(stateValue),
     };
 }
