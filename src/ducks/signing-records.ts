@@ -52,6 +52,7 @@ export const slice = createSlice({
         // List Signing Records
         listSigningRecords: (state, action: PayloadAction<SearchRequestDto>) => {
             state.signingRecordsData = undefined;
+            state.deletedSigningRecordUuids = [];
             state.isFetchingList = true;
         },
 
@@ -149,14 +150,6 @@ export const slice = createSlice({
                     state.deletedSigningRecordUuids.push(uuid);
                 }
             });
-
-            if (state.signingRecordsData) {
-                const uuidSet = new Set(action.payload.uuids);
-                const previousItemsCount = state.signingRecordsData.items.length;
-                state.signingRecordsData.items = state.signingRecordsData.items.filter((item) => !uuidSet.has(item.uuid));
-                const removedItemsCount = previousItemsCount - state.signingRecordsData.items.length;
-                state.signingRecordsData.totalItems = Math.max(0, (state.signingRecordsData.totalItems ?? 0) - removedItemsCount);
-            }
         },
 
         bulkDeleteSigningRecordsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {

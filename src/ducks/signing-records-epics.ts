@@ -4,8 +4,8 @@ import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { alertsSlice } from './alert-slice';
 import { actions as appRedirectActions } from './app-redirect';
-import { EntityType } from './filters';
-import { actions as pagingActions } from './paging';
+import { EntityType, selectors as filterSelectors } from './filters';
+import { actions as pagingActions, selectors as pagingSelectors } from './paging';
 import { slice } from './signing-records';
 import {
     transformPaginationResponseDtoToModel,
@@ -146,9 +146,20 @@ const bulkDeleteSigningRecords: AppEpic = (action$, state, deps) => {
             deps.apiClients.signingRecords.bulkDeleteSigningRecords({ requestBody: action.payload.uuids }).pipe(
                 mergeMap((errors) => {
                     const successAction = slice.actions.bulkDeleteSigningRecordsSuccess({ uuids: action.payload.uuids, errors });
-                    return errors.length === 0
-                        ? of(successAction, alertsSlice.actions.success('Selected Signing Records successfully deleted.'))
-                        : of(successAction);
+                    if (errors.length === 0) {
+                        const listParams = getListParams(state, action.payload.uuids.length);
+                        return of(
+                            successAction,
+                            alertsSlice.actions.success('Selected Signing Records successfully deleted.'),
+                            pagingActions.setPagination({
+                                entity: EntityType.SIGNING_RECORD,
+                                pageNumber: listParams.pageNumber,
+                                pageSize: listParams.itemsPerPage,
+                            }),
+                            slice.actions.listSigningRecords(listParams),
+                        );
+                    }
+                    return of(successAction);
                 }),
                 catchError((err) =>
                     of(
@@ -162,5 +173,19 @@ const bulkDeleteSigningRecords: AppEpic = (action$, state, deps) => {
         ),
     );
 };
+
+function getListParams(state: { value: any }, deletedCount: number) {
+    const pageNumber = pagingSelectors.pageNumber(EntityType.SIGNING_RECORD)(state.value);
+    const pageSize = pagingSelectors.pageSize(EntityType.SIGNING_RECORD)(state.value);
+    const totalItems = pagingSelectors.totalItems(EntityType.SIGNING_RECORD)(state.value);
+    const filters = filterSelectors.currentFilters(EntityType.SIGNING_RECORD)(state.value);
+
+    // If the current page becomes empty after deletion, step back to the new last page
+    const totalAfterDelete = Math.max(0, totalItems - deletedCount);
+    const lastPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / pageSize));
+    const safePage = Math.min(pageNumber, lastPageAfterDelete);
+
+    return { pageNumber: safePage, itemsPerPage: pageSize, filters };
+}
 
 export default [listSigningRecords, getSigningRecord, getSearchableFields, deleteSigningRecord, bulkDeleteSigningRecords];
