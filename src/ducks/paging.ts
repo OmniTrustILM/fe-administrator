@@ -101,15 +101,15 @@ export const slice = createSlice({
 const state = (reduxStore: any): State => reduxStore?.[slice.name];
 
 const totalItems = (entity: EntityType) =>
-    createSelector(state, (state) => (state.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).totalItems);
+    createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).totalItems);
 const checkedRows = (entity: EntityType) =>
-    createSelector(state, (state) => (state.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).checkedRows);
+    createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).checkedRows);
 const isFetchingList = (entity: EntityType) =>
-    createSelector(state, (state) => (state.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).isFetchingList);
+    createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).isFetchingList);
 const pageNumber = (entity: EntityType) =>
-    createSelector(state, (state) => (state.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageNumber);
+    createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageNumber);
 const pageSize = (entity: EntityType) =>
-    createSelector(state, (state) => (state.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageSize);
+    createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageSize);
 
 export function entityListParams(entity: EntityType, stateValue: AppState) {
     return {
