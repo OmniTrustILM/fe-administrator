@@ -26,17 +26,17 @@ export interface TimestampingWorkflowDto {
      */
     type: SigningWorkflowType;
     /**
-     * Signature Formatter Connector that constructs the data-to-be-signed (DTBS) for Timestamping. Present only when ILM-managed signing is used; null for delegated signing.
+     * Signature Formatting Provider that constructs the data-to-be-signed (DTBS) for Timestamping. Present only when ILM-managed signing is used; null for delegated signing.
      * @type {NameAndUuidDto}
      * @memberof TimestampingWorkflowDto
      */
-    signatureFormatterConnector?: NameAndUuidDto;
+    signatureFormattingConnector?: NameAndUuidDto;
     /**
-     * Attributes configured on the Signature Formatter Connector that control DTBS construction (e.g. serial number generation strategy, whether to include signing time attribute). Applicable only when ILM-managed signing is used.
+     * Attributes configured on the Signature Formatting Provider that control DTBS construction (e.g. serial number generation strategy, whether to include signing time attribute). Applicable only when ILM-managed signing is used.
      * @type {Array<ResponseAttribute>}
      * @memberof TimestampingWorkflowDto
      */
-    signatureFormatterConnectorAttributes?: Array<ResponseAttribute>;
+    signatureFormattingConnectorAttributes?: Array<ResponseAttribute>;
     /**
      * ETSI qualified electronic timestamp. Present only when ILM-managed signing is used; null for delegated signing.
      * @type {boolean}

@@ -31,8 +31,8 @@ enum SigningProfilesEpicIndex {
     ListSupportedProtocols = 14,
     ListSigningCertificates = 15,
     ListSignatureAttributes = 16,
-    ListSignatureFormatterConnectorAttributes = 17,
-    ListSignatureFormatterConnectors = 18,
+    ListSignatureFormattingConnectorAttributes = 17,
+    ListSignatureFormattingConnectors = 18,
     ListSigningRecords = 19,
 }
 
@@ -74,7 +74,7 @@ async function runEpic(
         listSupportedProtocols: () => of(['tsp']),
         listSigningCertificates: () => of([{ uuid: 'c-1' }]),
         listSignatureAttributesForCertificate: () => of([{ uuid: 'a-1' }]),
-        listSignatureFormatterConnectorAttributes: () => of([{ uuid: 'a-1' }]),
+        listSignatureFormattingConnectorAttributes: () => of([{ uuid: 'a-1' }]),
         listSigningRecordsForSigningProfile: () => of({ items: [], totalItems: 0 }),
     };
 
@@ -657,7 +657,7 @@ describe('signingProfiles epics', () => {
         expect(emitted[0].type).toBe(signingProfileActions.listSignatureAttributesForCertificateFailure.type);
     });
 
-    test('listSignatureFormatterConnectorAttributes merges saved content from timestamping workflow', async () => {
+    test('listSignatureFormattingConnectorAttributes merges saved content from timestamping workflow', async () => {
         const descriptors = [{ uuid: 'a-1' }, { uuid: 'a-2' }];
         const state = {
             signingProfiles: {
@@ -665,38 +665,38 @@ describe('signingProfiles epics', () => {
                     uuid: 'p-1',
                     workflow: {
                         type: SigningWorkflowType.Timestamping,
-                        signatureFormatterConnectorAttributes: [{ uuid: 'a-1', content: [{ data: 'saved' }] }],
+                        signatureFormattingConnectorAttributes: [{ uuid: 'a-1', content: [{ data: 'saved' }] }],
                     },
                 },
             },
         };
 
         const emitted = await runEpic(
-            SigningProfilesEpicIndex.ListSignatureFormatterConnectorAttributes,
-            signingProfileActions.listSignatureFormatterConnectorAttributes({ connectorUuid: 'cn-1' }),
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectorAttributes,
+            signingProfileActions.listSignatureFormattingConnectorAttributes({ connectorUuid: 'cn-1' }),
             {
                 signingProfiles: {
-                    listSignatureFormatterConnectorAttributes: () => of(descriptors),
+                    listSignatureFormattingConnectorAttributes: () => of(descriptors),
                 },
             },
             1,
             state,
         );
 
-        expect(emitted[0].type).toBe(signingProfileActions.listSignatureFormatterConnectorAttributesSuccess.type);
+        expect(emitted[0].type).toBe(signingProfileActions.listSignatureFormattingConnectorAttributesSuccess.type);
         const merged = (emitted[0] as any).payload.attributeDescriptors;
         expect(merged[0]).toEqual({ uuid: 'a-1', content: [{ data: 'saved' }] });
         expect(merged[1]).toEqual({ uuid: 'a-2' });
     });
 
-    test('listSignatureFormatterConnectorAttributes leaves descriptors unchanged without a saved profile', async () => {
+    test('listSignatureFormattingConnectorAttributes leaves descriptors unchanged without a saved profile', async () => {
         const descriptors = [{ uuid: 'a-1' }];
         const emitted = await runEpic(
-            SigningProfilesEpicIndex.ListSignatureFormatterConnectorAttributes,
-            signingProfileActions.listSignatureFormatterConnectorAttributes({ connectorUuid: 'cn-1' }),
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectorAttributes,
+            signingProfileActions.listSignatureFormattingConnectorAttributes({ connectorUuid: 'cn-1' }),
             {
                 signingProfiles: {
-                    listSignatureFormatterConnectorAttributes: () => of(descriptors),
+                    listSignatureFormattingConnectorAttributes: () => of(descriptors),
                 },
             },
             1,
@@ -705,27 +705,27 @@ describe('signingProfiles epics', () => {
         expect((emitted[0] as any).payload.attributeDescriptors).toEqual(descriptors);
     });
 
-    test('listSignatureFormatterConnectorAttributes failure emits failure action', async () => {
+    test('listSignatureFormattingConnectorAttributes failure emits failure action', async () => {
         const err = new Error('formatter attrs failed');
         const emitted = await runEpic(
-            SigningProfilesEpicIndex.ListSignatureFormatterConnectorAttributes,
-            signingProfileActions.listSignatureFormatterConnectorAttributes({ connectorUuid: 'cn-1' }),
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectorAttributes,
+            signingProfileActions.listSignatureFormattingConnectorAttributes({ connectorUuid: 'cn-1' }),
             {
                 signingProfiles: {
-                    listSignatureFormatterConnectorAttributes: () => throwError(() => err),
+                    listSignatureFormattingConnectorAttributes: () => throwError(() => err),
                 },
             },
             1,
         );
 
-        expect(emitted[0].type).toBe(signingProfileActions.listSignatureFormatterConnectorAttributesFailure.type);
+        expect(emitted[0].type).toBe(signingProfileActions.listSignatureFormattingConnectorAttributesFailure.type);
     });
 
-    test('listSignatureFormatterConnectors success applies feature filter for timestamping', async () => {
+    test('listSignatureFormattingConnectors success applies feature filter for timestamping', async () => {
         let capturedArgs: any;
         const emitted = await runEpic(
-            SigningProfilesEpicIndex.ListSignatureFormatterConnectors,
-            signingProfileActions.listSignatureFormatterConnectors({ workflowType: SigningWorkflowType.Timestamping }),
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectors,
+            signingProfileActions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.Timestamping }),
             {
                 connectorsV2: {
                     listConnectorsV2: (args: any) => {
@@ -737,17 +737,17 @@ describe('signingProfiles epics', () => {
             1,
         );
 
-        expect(emitted[0]).toEqual(signingProfileActions.listSignatureFormatterConnectorsSuccess({ connectors: [] }));
+        expect(emitted[0]).toEqual(signingProfileActions.listSignatureFormattingConnectorsSuccess({ connectors: [] }));
         const filters = capturedArgs.searchRequestDto.filters;
         expect(filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_FEATURES' && f.value === 'timestamping')).toBe(true);
         expect(filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_INTERFACE')).toBe(true);
     });
 
-    test('listSignatureFormatterConnectors omits feature filter for unmapped workflow', async () => {
+    test('listSignatureFormattingConnectors omits feature filter for unmapped workflow', async () => {
         let capturedArgs: any;
         await runEpic(
-            SigningProfilesEpicIndex.ListSignatureFormatterConnectors,
-            signingProfileActions.listSignatureFormatterConnectors({ workflowType: SigningWorkflowType.RawSigning }),
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectors,
+            signingProfileActions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.RawSigning }),
             {
                 connectorsV2: {
                     listConnectorsV2: (args: any) => {
@@ -764,11 +764,11 @@ describe('signingProfiles epics', () => {
         expect(filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_INTERFACE')).toBe(true);
     });
 
-    test('listSignatureFormatterConnectors failure emits failure action', async () => {
+    test('listSignatureFormattingConnectors failure emits failure action', async () => {
         const err = new Error('connectors failed');
         const emitted = await runEpic(
-            SigningProfilesEpicIndex.ListSignatureFormatterConnectors,
-            signingProfileActions.listSignatureFormatterConnectors({ workflowType: SigningWorkflowType.Timestamping }),
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectors,
+            signingProfileActions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.Timestamping }),
             {
                 connectorsV2: {
                     listConnectorsV2: () => throwError(() => err),
@@ -777,7 +777,7 @@ describe('signingProfiles epics', () => {
             1,
         );
 
-        expect(emitted[0].type).toBe(signingProfileActions.listSignatureFormatterConnectorsFailure.type);
+        expect(emitted[0].type).toBe(signingProfileActions.listSignatureFormattingConnectorsFailure.type);
     });
 
     test('listSigningRecordsForSigningProfile success emits listSigningRecordsSuccess', async () => {

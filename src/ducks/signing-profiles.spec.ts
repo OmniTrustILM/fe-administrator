@@ -448,58 +448,58 @@ describe('signingProfiles slice', () => {
         expect(next.isFetchingSignatureAttributes).toBe(false);
     });
 
-    test('listSignatureFormatterConnectorAttributes sets flag and clears previous descriptors', () => {
+    test('listSignatureFormattingConnectorAttributes sets flag and clears previous descriptors', () => {
         const next = reducer(
-            { ...initialState, signatureFormatterConnectorAttributeDescriptors: [{ uuid: 'old' } as any] },
-            actions.listSignatureFormatterConnectorAttributes({ connectorUuid: 'cn-1' }),
+            { ...initialState, signatureFormattingConnectorAttributeDescriptors: [{ uuid: 'old' } as any] },
+            actions.listSignatureFormattingConnectorAttributes({ connectorUuid: 'cn-1' }),
         );
-        expect(next.isFetchingSignatureFormatterConnectorAttributes).toBe(true);
-        expect(next.signatureFormatterConnectorAttributeDescriptors).toEqual([]);
+        expect(next.isFetchingSignatureFormattingConnectorAttributes).toBe(true);
+        expect(next.signatureFormattingConnectorAttributeDescriptors).toEqual([]);
     });
 
-    test('listSignatureFormatterConnectorAttributesSuccess sets descriptors', () => {
+    test('listSignatureFormattingConnectorAttributesSuccess sets descriptors', () => {
         const descriptors = [{ uuid: 'a-1' }] as any[];
         const next = reducer(
-            { ...initialState, isFetchingSignatureFormatterConnectorAttributes: true },
-            actions.listSignatureFormatterConnectorAttributesSuccess({ attributeDescriptors: descriptors }),
+            { ...initialState, isFetchingSignatureFormattingConnectorAttributes: true },
+            actions.listSignatureFormattingConnectorAttributesSuccess({ attributeDescriptors: descriptors }),
         );
-        expect(next.isFetchingSignatureFormatterConnectorAttributes).toBe(false);
-        expect(next.signatureFormatterConnectorAttributeDescriptors).toEqual(descriptors);
+        expect(next.isFetchingSignatureFormattingConnectorAttributes).toBe(false);
+        expect(next.signatureFormattingConnectorAttributeDescriptors).toEqual(descriptors);
     });
 
-    test('listSignatureFormatterConnectorAttributesFailure clears flag', () => {
+    test('listSignatureFormattingConnectorAttributesFailure clears flag', () => {
         const next = reducer(
-            { ...initialState, isFetchingSignatureFormatterConnectorAttributes: true },
-            actions.listSignatureFormatterConnectorAttributesFailure({ error: 'err' }),
+            { ...initialState, isFetchingSignatureFormattingConnectorAttributes: true },
+            actions.listSignatureFormattingConnectorAttributesFailure({ error: 'err' }),
         );
-        expect(next.isFetchingSignatureFormatterConnectorAttributes).toBe(false);
+        expect(next.isFetchingSignatureFormattingConnectorAttributes).toBe(false);
     });
 
-    test('listSignatureFormatterConnectors sets flag and clears previous connectors', () => {
+    test('listSignatureFormattingConnectors sets flag and clears previous connectors', () => {
         const next = reducer(
-            { ...initialState, signatureFormatterConnectors: [{ uuid: 'old' } as any] },
-            actions.listSignatureFormatterConnectors({ workflowType: 'TIMESTAMPING' as any }),
+            { ...initialState, signatureFormattingConnectors: [{ uuid: 'old' } as any] },
+            actions.listSignatureFormattingConnectors({ workflowType: 'TIMESTAMPING' as any }),
         );
-        expect(next.isFetchingSignatureFormatterConnectors).toBe(true);
-        expect(next.signatureFormatterConnectors).toEqual([]);
+        expect(next.isFetchingSignatureFormattingConnectors).toBe(true);
+        expect(next.signatureFormattingConnectors).toEqual([]);
     });
 
-    test('listSignatureFormatterConnectorsSuccess sets connectors', () => {
+    test('listSignatureFormattingConnectorsSuccess sets connectors', () => {
         const connectors = [{ uuid: 'cn-1' }] as any[];
         const next = reducer(
-            { ...initialState, isFetchingSignatureFormatterConnectors: true },
-            actions.listSignatureFormatterConnectorsSuccess({ connectors }),
+            { ...initialState, isFetchingSignatureFormattingConnectors: true },
+            actions.listSignatureFormattingConnectorsSuccess({ connectors }),
         );
-        expect(next.isFetchingSignatureFormatterConnectors).toBe(false);
-        expect(next.signatureFormatterConnectors).toEqual(connectors);
+        expect(next.isFetchingSignatureFormattingConnectors).toBe(false);
+        expect(next.signatureFormattingConnectors).toEqual(connectors);
     });
 
-    test('listSignatureFormatterConnectorsFailure clears flag', () => {
+    test('listSignatureFormattingConnectorsFailure clears flag', () => {
         const next = reducer(
-            { ...initialState, isFetchingSignatureFormatterConnectors: true },
-            actions.listSignatureFormatterConnectorsFailure({ error: 'err' }),
+            { ...initialState, isFetchingSignatureFormattingConnectors: true },
+            actions.listSignatureFormattingConnectorsFailure({ error: 'err' }),
         );
-        expect(next.isFetchingSignatureFormatterConnectors).toBe(false);
+        expect(next.isFetchingSignatureFormattingConnectors).toBe(false);
     });
 
     test('listSigningRecordsForSigningProfile sets isFetchingSigningRecords', () => {
@@ -544,8 +544,8 @@ describe('signingProfiles selectors', () => {
             supportedProtocols: protocols,
             signingCertificates: [{ uuid: 'c-1' }] as any[],
             signingOperationAttributeDescriptors: [{ uuid: 'a-1' }] as any[],
-            signatureFormatterConnectorAttributeDescriptors: [{ uuid: 'a-2' }] as any[],
-            signatureFormatterConnectors: [{ uuid: 'cn-1' }] as any[],
+            signatureFormattingConnectorAttributeDescriptors: [{ uuid: 'a-2' }] as any[],
+            signatureFormattingConnectors: [{ uuid: 'cn-1' }] as any[],
             signingRecords: signingRecordData,
             searchableFields: fields,
             deleteErrorMessage: 'del err',
@@ -557,8 +557,8 @@ describe('signingProfiles selectors', () => {
             isFetchingSupportedProtocols: true,
             isFetchingSigningCertificates: true,
             isFetchingSignatureAttributes: true,
-            isFetchingSignatureFormatterConnectorAttributes: true,
-            isFetchingSignatureFormatterConnectors: true,
+            isFetchingSignatureFormattingConnectorAttributes: true,
+            isFetchingSignatureFormattingConnectors: true,
             isFetchingSigningRecords: true,
             isCreating: true,
             isDeleting: true,
@@ -581,8 +581,8 @@ describe('signingProfiles selectors', () => {
         expect(selectors.supportedProtocols(state)).toEqual(protocols);
         expect(selectors.signingCertificates(state)).toEqual([{ uuid: 'c-1' }]);
         expect(selectors.signingOperationAttributeDescriptors(state)).toEqual([{ uuid: 'a-1' }]);
-        expect(selectors.signatureFormatterConnectorAttributeDescriptors(state)).toEqual([{ uuid: 'a-2' }]);
-        expect(selectors.signatureFormatterConnectors(state)).toEqual([{ uuid: 'cn-1' }]);
+        expect(selectors.signatureFormattingConnectorAttributeDescriptors(state)).toEqual([{ uuid: 'a-2' }]);
+        expect(selectors.signatureFormattingConnectors(state)).toEqual([{ uuid: 'cn-1' }]);
         expect(selectors.signingRecords(state)).toEqual(signingRecordData);
         expect(selectors.searchableFields(state)).toEqual(fields);
         expect(selectors.deleteErrorMessage(state)).toBe('del err');
@@ -594,8 +594,8 @@ describe('signingProfiles selectors', () => {
         expect(selectors.isFetchingSupportedProtocols(state)).toBe(true);
         expect(selectors.isFetchingSigningCertificates(state)).toBe(true);
         expect(selectors.isFetchingSignatureAttributes(state)).toBe(true);
-        expect(selectors.isFetchingSignatureFormatterConnectorAttributes(state)).toBe(true);
-        expect(selectors.isFetchingSignatureFormatterConnectors(state)).toBe(true);
+        expect(selectors.isFetchingSignatureFormattingConnectorAttributes(state)).toBe(true);
+        expect(selectors.isFetchingSignatureFormattingConnectors(state)).toBe(true);
         expect(selectors.isFetchingSigningRecords(state)).toBe(true);
         expect(selectors.isCreating(state)).toBe(true);
         expect(selectors.isDeleting(state)).toBe(true);

@@ -93,7 +93,7 @@ interface FormValues {
     // Tab 1 – Workflow type
     workflowType: SigningWorkflowType;
     // Tab 2 – Timestamping workflow
-    signatureFormatterConnectorUuid: string;
+    signatureFormattingConnectorUuid: string;
     qualifiedTimestamp: boolean;
     validateTokenSignature: boolean;
     timeQualityConfigurationUuid: string;
@@ -158,8 +158,8 @@ export default function SigningProfileForm() {
     const isCreating = useSelector(signingProfileSelectors.isCreating);
     const isUpdating = useSelector(signingProfileSelectors.isUpdating);
 
-    const connectors = useSelector(signingProfileSelectors.signatureFormatterConnectors);
-    const isFetchingConnectors = useSelector(signingProfileSelectors.isFetchingSignatureFormatterConnectors);
+    const connectors = useSelector(signingProfileSelectors.signatureFormattingConnectors);
+    const isFetchingConnectors = useSelector(signingProfileSelectors.isFetchingSignatureFormattingConnectors);
 
     const timeQualityConfigurations = useSelector(tqcSelectors.timeQualityConfigurations);
     const isFetchingTqcList = useSelector(tqcSelectors.isFetchingList);
@@ -171,11 +171,11 @@ export default function SigningProfileForm() {
     const signingOperationAttributeDescriptors = useSelector(signingProfileSelectors.signingOperationAttributeDescriptors);
     const isFetchingSignatureAttributes = useSelector(signingProfileSelectors.isFetchingSignatureAttributes);
 
-    const signatureFormatterConnectorAttributeDescriptors = useSelector(
-        signingProfileSelectors.signatureFormatterConnectorAttributeDescriptors,
+    const signatureFormattingConnectorAttributeDescriptors = useSelector(
+        signingProfileSelectors.signatureFormattingConnectorAttributeDescriptors,
     );
-    const isFetchingSignatureFormatterConnectorAttributes = useSelector(
-        signingProfileSelectors.isFetchingSignatureFormatterConnectorAttributes,
+    const isFetchingSignatureFormattingConnectorAttributes = useSelector(
+        signingProfileSelectors.isFetchingSignatureFormattingConnectorAttributes,
     );
 
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
@@ -214,7 +214,7 @@ export default function SigningProfileForm() {
     // ── Load data on mount ────────────────────────────────────────────────────
 
     useEffect(() => {
-        dispatch(signingProfileActions.listSignatureFormatterConnectors({ workflowType: WORKFLOW_TYPE }));
+        dispatch(signingProfileActions.listSignatureFormattingConnectors({ workflowType: WORKFLOW_TYPE }));
         dispatch(signingProfileActions.listSigningCertificates({ workflowType: WORKFLOW_TYPE }));
         dispatch(signingProfileActions.listSupportedProtocols({ workflowType: WORKFLOW_TYPE }));
         dispatch(tqcActions.listTimeQualityConfigurations({}));
@@ -271,7 +271,7 @@ export default function SigningProfileForm() {
             name: '',
             description: '',
             workflowType: WORKFLOW_TYPE,
-            signatureFormatterConnectorUuid: '',
+            signatureFormattingConnectorUuid: '',
             qualifiedTimestamp: false,
             timeQualityConfigurationUuid: '',
             defaultPolicyId: '',
@@ -310,7 +310,7 @@ export default function SigningProfileForm() {
     const managedSigningTypeValue = useWatch({ control, name: 'managedSigningType' });
     const qualifiedTimestampValue = useWatch({ control, name: 'qualifiedTimestamp' });
     const certificateUuidValue = useWatch({ control, name: 'certificateUuid' });
-    const signatureFormatterConnectorUuidValue = useWatch({ control, name: 'signatureFormatterConnectorUuid' });
+    const signatureFormattingConnectorUuidValue = useWatch({ control, name: 'signatureFormattingConnectorUuid' });
     const timeQualityConfigurationUuidValue = useWatch({ control, name: 'timeQualityConfigurationUuid' });
     const recordingEnabledValue = useWatch({ control, name: 'recordingEnabled' });
     const retentionIndefiniteValue = useWatch({ control, name: 'retentionIndefinite' });
@@ -391,7 +391,7 @@ export default function SigningProfileForm() {
             name: signingProfile.name || '',
             description: signingProfile.description || '',
             workflowType: wf?.type || WORKFLOW_TYPE,
-            signatureFormatterConnectorUuid: isTimestampingWorkflow(wf) ? wf.signatureFormatterConnector?.uuid || '' : '',
+            signatureFormattingConnectorUuid: isTimestampingWorkflow(wf) ? wf.signatureFormattingConnector?.uuid || '' : '',
             qualifiedTimestamp: isTimestampingWorkflow(wf) ? (wf.qualifiedTimestamp ?? false) : false,
             validateTokenSignature: isTimestampingWorkflow(wf) ? (wf.validateTokenSignature ?? false) : false,
             timeQualityConfigurationUuid: isTimestampingWorkflow(wf) ? wf.timeQualityConfiguration?.uuid || '' : '',
@@ -436,19 +436,19 @@ export default function SigningProfileForm() {
     }, [dispatch, certificateUuidValue]);
 
     useEffect(() => {
-        if (!signatureFormatterConnectorUuidValue) return;
+        if (!signatureFormattingConnectorUuidValue) return;
         dispatch(
-            signingProfileActions.listSignatureFormatterConnectorAttributes({
-                connectorUuid: signatureFormatterConnectorUuidValue,
+            signingProfileActions.listSignatureFormattingConnectorAttributes({
+                connectorUuid: signatureFormattingConnectorUuidValue,
                 signingProfileUuid: editMode ? id : undefined,
             }),
         );
-    }, [dispatch, signatureFormatterConnectorUuidValue, editMode, id]);
+    }, [dispatch, signatureFormattingConnectorUuidValue, editMode, id]);
 
-    const signatureFormatterConnectorAttributes = useMemo(
+    const signatureFormattingConnectorAttributes = useMemo(
         () =>
             editMode && isTimestampingWorkflow(signingProfile?.workflow)
-                ? signingProfile?.workflow.signatureFormatterConnectorAttributes
+                ? signingProfile?.workflow.signatureFormattingConnectorAttributes
                 : undefined,
         [editMode, signingProfile?.workflow],
     );
@@ -477,16 +477,16 @@ export default function SigningProfileForm() {
             );
 
             const signingOpAttrs = collectFormAttributes('signingOperationAttrs', signingOperationAttributeDescriptors, values);
-            const formatterConnectorAttrs = collectFormAttributes(
-                'signatureFormatterConnectorAttrs',
-                signatureFormatterConnectorAttributeDescriptors,
+            const formattingConnectorAttrs = collectFormAttributes(
+                'signatureFormattingConnectorAttrs',
+                signatureFormattingConnectorAttributeDescriptors,
                 values,
             );
 
             const workflowRequest: TimestampingWorkflowRequestDto = {
                 type: values.workflowType,
-                signatureFormatterConnectorUuid: values.signatureFormatterConnectorUuid || undefined,
-                signatureFormatterConnectorAttributes: formatterConnectorAttrs,
+                signatureFormattingConnectorUuid: values.signatureFormattingConnectorUuid || undefined,
+                signatureFormattingConnectorAttributes: formattingConnectorAttrs,
                 qualifiedTimestamp: values.qualifiedTimestamp,
                 validateTokenSignature: values.validateTokenSignature,
                 timeQualityConfigurationUuid: values.timeQualityConfigurationUuid || undefined,
@@ -536,7 +536,7 @@ export default function SigningProfileForm() {
             allowedPolicyIds,
             multipleResourceCustomAttributes,
             signingOperationAttributeDescriptors,
-            signatureFormatterConnectorAttributeDescriptors,
+            signatureFormattingConnectorAttributeDescriptors,
             recordSignedDocumentAllowed,
             signatureAndDtbsRecordable,
         ],
@@ -625,17 +625,17 @@ export default function SigningProfileForm() {
     // Tab 2 ── Timestamping Workflow Properties
     const tab2Content = (
         <div className="space-y-4">
-            {/* #219: formatter connector is required for the managed scheme when timestamping
+            {/* #219: signature formatting connector is required for the managed scheme when timestamping
                 (and content signing); it is hidden/omitted for raw and delegated signing — those
                 workflows/schemes are not offered here, so the connector is always required. */}
             <Controller
-                name="signatureFormatterConnectorUuid"
+                name="signatureFormattingConnectorUuid"
                 control={control}
                 rules={buildValidationRules([validateRequired()])}
                 render={({ field, fieldState }) => (
                     <Select
-                        id="signatureFormatterConnector"
-                        label="Signature Formatter Connector"
+                        id="signatureFormattingConnector"
+                        label="Signature Formatting Connector"
                         value={field.value || ''}
                         onChange={field.onChange}
                         options={connectorOptions}
@@ -649,16 +649,16 @@ export default function SigningProfileForm() {
                 )}
             />
 
-            {signatureFormatterConnectorUuidValue && (
-                <Widget title="Signature Formatter Connector Attributes" noBorder busy={isFetchingSignatureFormatterConnectorAttributes}>
-                    {signatureFormatterConnectorAttributeDescriptors.length > 0 ? (
+            {signatureFormattingConnectorUuidValue && (
+                <Widget title="Signature Formatting Connector Attributes" noBorder busy={isFetchingSignatureFormattingConnectorAttributes}>
+                    {signatureFormattingConnectorAttributeDescriptors.length > 0 ? (
                         <AttributeEditor
-                            id="signatureFormatterConnectorAttrs"
-                            attributeDescriptors={signatureFormatterConnectorAttributeDescriptors as any}
-                            attributes={signatureFormatterConnectorAttributes}
+                            id="signatureFormattingConnectorAttrs"
+                            attributeDescriptors={signatureFormattingConnectorAttributeDescriptors as any}
+                            attributes={signatureFormattingConnectorAttributes}
                         />
                     ) : (
-                        !isFetchingSignatureFormatterConnectorAttributes && (
+                        !isFetchingSignatureFormattingConnectorAttributes && (
                             <p className="text-xs text-gray-500">No attributes available for the selected connector.</p>
                         )
                     )}

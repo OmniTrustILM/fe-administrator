@@ -82,7 +82,7 @@ export interface ListSignatureAttributesForCertificateRequest {
     certificateUuid: string;
 }
 
-export interface ListSignatureFormatterConnectorAttributesRequest {
+export interface ListSignatureFormattingConnectorAttributesRequest {
     connectorUuid: string;
     signingProfileUuid?: string;
 }
@@ -404,22 +404,22 @@ export class SigningProfileManagementApi extends BaseAPI {
     }
 
     /**
-     * Queries the Signature Formatter Connector for its available formatter attribute descriptors with connector default values. The signingProfileUuid parameter is used for authorization only and does not affect the returned descriptors.
-     * Get formatter attribute descriptors from a Signature Formatter Connector
+     * Queries the Signature Formatting Provider for its available formatting attribute descriptors with connector default values. The signingProfileUuid parameter is used for authorization only and does not affect the returned descriptors.
+     * Get formatting attribute descriptors from a Signature Formatting Provider
      */
-    listSignatureFormatterConnectorAttributes({
+    listSignatureFormattingConnectorAttributes({
         connectorUuid,
         signingProfileUuid,
-    }: ListSignatureFormatterConnectorAttributesRequest): Observable<Array<BaseAttributeDto>>;
-    listSignatureFormatterConnectorAttributes(
-        { connectorUuid, signingProfileUuid }: ListSignatureFormatterConnectorAttributesRequest,
+    }: ListSignatureFormattingConnectorAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    listSignatureFormattingConnectorAttributes(
+        { connectorUuid, signingProfileUuid }: ListSignatureFormattingConnectorAttributesRequest,
         opts?: OperationOpts,
     ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
-    listSignatureFormatterConnectorAttributes(
-        { connectorUuid, signingProfileUuid }: ListSignatureFormatterConnectorAttributesRequest,
+    listSignatureFormattingConnectorAttributes(
+        { connectorUuid, signingProfileUuid }: ListSignatureFormattingConnectorAttributesRequest,
         opts?: OperationOpts,
     ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
-        throwIfNullOrUndefined(connectorUuid, 'connectorUuid', 'listSignatureFormatterConnectorAttributes');
+        throwIfNullOrUndefined(connectorUuid, 'connectorUuid', 'listSignatureFormattingConnectorAttributes');
 
         const query: HttpQuery = {};
 
@@ -429,7 +429,7 @@ export class SigningProfileManagementApi extends BaseAPI {
 
         return this.request<Array<BaseAttributeDto>>(
             {
-                url: '/v1/signingProfiles/signatureFormatterConnectors/{connectorUuid}/formatterAttributes'.replace(
+                url: '/v1/signingProfiles/signatureFormattingConnectors/{connectorUuid}/formattingAttributes'.replace(
                     '{connectorUuid}',
                     encodeURI(connectorUuid),
                 ),

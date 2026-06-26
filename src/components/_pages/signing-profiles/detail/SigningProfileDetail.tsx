@@ -257,13 +257,13 @@ export default function SigningProfileDetail() {
             {
                 id: 'connectorName',
                 columns: [
-                    'Signature Formatter Connector',
-                    timestampingWorkflow.signatureFormatterConnector ? (
+                    'Signature Formatting Connector',
+                    timestampingWorkflow.signatureFormattingConnector ? (
                         <Link
                             key="value"
-                            to={`/${Resource.Connectors.toLowerCase()}/detail/${timestampingWorkflow.signatureFormatterConnector.uuid}`}
+                            to={`/${Resource.Connectors.toLowerCase()}/detail/${timestampingWorkflow.signatureFormattingConnector.uuid}`}
                         >
-                            {timestampingWorkflow.signatureFormatterConnector.name}
+                            {timestampingWorkflow.signatureFormattingConnector.name}
                         </Link>
                     ) : (
                         <span key="value" className="text-gray-400 text-sm">
@@ -275,8 +275,8 @@ export default function SigningProfileDetail() {
             {
                 id: 'connectorUuid',
                 columns: [
-                    'Signature Formatter Connector UUID',
-                    timestampingWorkflow.signatureFormatterConnector?.uuid ?? (
+                    'Signature Formatting Connector UUID',
+                    timestampingWorkflow.signatureFormattingConnector?.uuid ?? (
                         <span key="value" className="text-gray-400 text-sm">
                             —
                         </span>
@@ -631,11 +631,11 @@ export default function SigningProfileDetail() {
                                             <p className="text-gray-400 text-sm">No workflow configuration available.</p>
                                         )}
                                     </Widget>
-                                    {timestampingWorkflow?.signatureFormatterConnector &&
-                                        timestampingWorkflow.signatureFormatterConnectorAttributes &&
-                                        timestampingWorkflow.signatureFormatterConnectorAttributes.length > 0 && (
-                                            <Widget title="Signature Formatter Connector Attributes" titleSize="large">
-                                                <AttributeViewer attributes={timestampingWorkflow.signatureFormatterConnectorAttributes} />
+                                    {timestampingWorkflow?.signatureFormattingConnector &&
+                                        timestampingWorkflow.signatureFormattingConnectorAttributes &&
+                                        timestampingWorkflow.signatureFormattingConnectorAttributes.length > 0 && (
+                                            <Widget title="Signature Formatting Connector Attributes" titleSize="large">
+                                                <AttributeViewer attributes={timestampingWorkflow.signatureFormattingConnectorAttributes} />
                                             </Widget>
                                         )}
                                 </>

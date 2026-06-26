@@ -367,12 +367,12 @@ const listSignatureAttributesForCertificate: AppEpic = (action$, state$, deps) =
     );
 };
 
-const listSignatureFormatterConnectorAttributes: AppEpic = (action$, state$, deps) => {
+const listSignatureFormattingConnectorAttributes: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
-        filter(slice.actions.listSignatureFormatterConnectorAttributes.match),
+        filter(slice.actions.listSignatureFormattingConnectorAttributes.match),
         switchMap((action) =>
             deps.apiClients.signingProfiles
-                .listSignatureFormatterConnectorAttributes({
+                .listSignatureFormattingConnectorAttributes({
                     connectorUuid: action.payload.connectorUuid,
                     signingProfileUuid: action.payload.signingProfileUuid,
                 })
@@ -381,7 +381,7 @@ const listSignatureFormatterConnectorAttributes: AppEpic = (action$, state$, dep
                         const profile = selectors.signingProfile(state$.value);
                         const savedAttrs =
                             profile && isTimestampingWorkflow(profile.workflow)
-                                ? (profile.workflow.signatureFormatterConnectorAttributes ?? [])
+                                ? (profile.workflow.signatureFormattingConnectorAttributes ?? [])
                                 : [];
 
                         const savedContentByUuid = new Map(
@@ -392,12 +392,12 @@ const listSignatureFormatterConnectorAttributes: AppEpic = (action$, state$, dep
                             return savedContent === undefined ? descriptor : { ...descriptor, content: savedContent };
                         });
 
-                        return slice.actions.listSignatureFormatterConnectorAttributesSuccess({ attributeDescriptors: merged });
+                        return slice.actions.listSignatureFormattingConnectorAttributesSuccess({ attributeDescriptors: merged });
                     }),
                     catchError((error) =>
                         of(
-                            slice.actions.listSignatureFormatterConnectorAttributesFailure({
-                                error: extractError(error, 'Failed to get formatter attributes for connector'),
+                            slice.actions.listSignatureFormattingConnectorAttributesFailure({
+                                error: extractError(error, 'Failed to get signature formatting connector attributes'),
                             }),
                         ),
                     ),
@@ -431,9 +431,9 @@ const workflowTypeToConnectorFeature: Partial<Record<SigningWorkflowType, string
     [SigningWorkflowType.Timestamping]: 'timestamping',
 };
 
-const listSignatureFormatterConnectors: AppEpic = (action$, _state$, deps) => {
+const listSignatureFormattingConnectors: AppEpic = (action$, _state$, deps) => {
     return action$.pipe(
-        filter(slice.actions.listSignatureFormatterConnectors.match),
+        filter(slice.actions.listSignatureFormattingConnectors.match),
         switchMap((action) => {
             const featureValue = workflowTypeToConnectorFeature[action.payload.workflowType];
             const featureFilter = featureValue
@@ -464,14 +464,14 @@ const listSignatureFormatterConnectors: AppEpic = (action$, _state$, deps) => {
                 })
                 .pipe(
                     map((page) =>
-                        slice.actions.listSignatureFormatterConnectorsSuccess({
+                        slice.actions.listSignatureFormattingConnectorsSuccess({
                             connectors: page.items.map(transformConnectorDtoV2ToModel),
                         }),
                     ),
                     catchError((error) =>
                         of(
-                            slice.actions.listSignatureFormatterConnectorsFailure({
-                                error: extractError(error, 'Failed to get signature formatter connectors'),
+                            slice.actions.listSignatureFormattingConnectorsFailure({
+                                error: extractError(error, 'Failed to get signature formatting connectors'),
                             }),
                         ),
                     ),
@@ -498,8 +498,8 @@ const epics = [
     listSupportedProtocols,
     listSigningCertificates,
     listSignatureAttributesForCertificate,
-    listSignatureFormatterConnectorAttributes,
-    listSignatureFormatterConnectors,
+    listSignatureFormattingConnectorAttributes,
+    listSignatureFormattingConnectors,
     listSigningRecordsForSigningProfile,
 ];
 
