@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { of } from 'rxjs';
-import { catchError, filter, map, mergeMap, startWith, switchMap } from 'rxjs/operators';
+import { catchError, filter, groupBy, map, mergeMap, startWith, switchMap } from 'rxjs/operators';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { AuthType, ConnectorVersion } from 'types/openapi';
 import { extractError } from 'utils/net';
@@ -456,43 +456,52 @@ const bulkForceDeleteConnectors: AppEpic = (action$, state, deps) => {
 const callbackConnector: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.callbackConnector.match),
-        mergeMap((action) => {
-            const { callbackConnector: payload } = action.payload;
-            const requestAttributeCallback = transformCallbackAttributeModelToDto(payload.requestAttributeCallback);
-            // Guard against missing UUID (would produce /v1/connectors/undefined/... URLs)
-            if (!payload.uuid) {
-                return of(slice.actions.callbackFailure({ callbackId: action.payload.callbackId }));
-            }
-            const rootState: any = (state as any).value ?? (state as any);
-            const connectorsState: any = rootState.connectors;
-            const connector = connectorsState?.connectors?.find((c: any) => c.uuid === payload.uuid) ?? connectorsState?.connector;
-            // Fall back to v1 when the connector is not in connectors state (e.g. authority/credential providers)
-            const isV2 = connector?.version === ConnectorVersion.V2;
-            const api$ = isV2
-                ? deps.apiClients.callback.callbackV2({
-                      uuid: payload.uuid,
-                      requestAttributeCallback,
-                  })
-                : deps.apiClients.callback.callback({
-                      uuid: payload.uuid,
-                      functionGroup: payload.functionGroup,
-                      kind: payload.kind,
-                      requestAttributeCallback,
-                  });
+        // Group by callbackId (the per-control form name) and switchMap WITHIN each group so a
+        // newer dispatch for the SAME control cancels the previous in-flight request — the per-control
+        // stale-response discard. Different controls (different callbackIds) run concurrently via
+        // mergeMap, so a cascading dependsOn callback on one control is never dropped by another.
+        groupBy((action) => action.payload.callbackId),
+        mergeMap((group$) =>
+            group$.pipe(
+                switchMap((action) => {
+                    const { callbackConnector: payload } = action.payload;
+                    const requestAttributeCallback = transformCallbackAttributeModelToDto(payload.requestAttributeCallback);
+                    // Guard against missing UUID (would produce /v1/connectors/undefined/... URLs)
+                    if (!payload.uuid) {
+                        return of(slice.actions.callbackFailure({ callbackId: action.payload.callbackId }));
+                    }
+                    const rootState: any = (state as any).value ?? (state as any);
+                    const connectorsState: any = rootState.connectors;
+                    const connector = connectorsState?.connectors?.find((c: any) => c.uuid === payload.uuid) ?? connectorsState?.connector;
+                    // Fall back to v1 when the connector is not in connectors state (e.g. authority/credential providers)
+                    const isV2 = connector?.version === ConnectorVersion.V2;
+                    const api$ = isV2
+                        ? deps.apiClients.callback.callbackV2({
+                              uuid: payload.uuid,
+                              requestAttributeCallback,
+                          })
+                        : deps.apiClients.callback.callback({
+                              uuid: payload.uuid,
+                              functionGroup: payload.functionGroup,
+                              kind: payload.kind,
+                              requestAttributeCallback,
+                          });
 
-            return api$.pipe(
-                map((data) => {
-                    return slice.actions.callbackSuccess({ callbackId: action.payload.callbackId, data });
+                    return api$.pipe(
+                        map((data) => {
+                            return slice.actions.callbackSuccess({ callbackId: action.payload.callbackId, data });
+                        }),
+
+                        catchError((error) =>
+                            of(
+                                slice.actions.callbackFailure({ callbackId: action.payload.callbackId }),
+                                appRedirectActions.fetchError({ error, message: 'Connector callback failure' }),
+                            ),
+                        ),
+                    );
                 }),
-
-                catchError((error) =>
-                    of(
-                        slice.actions.callbackFailure({ callbackId: action.payload.callbackId }),
-                        appRedirectActions.fetchError({ error, message: 'Connector callback failure' }),
-                    ),
-                ),
-            );
-        }),
+            ),
+        ),
 
         catchError((error) =>
             of(
@@ -506,26 +515,33 @@ const callbackConnector: AppEpic = (action$, state, deps) => {
 const callbackResource: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.callbackResource.match),
-        mergeMap((action) =>
-            deps.apiClients.callback
-                .resourceCallback({
-                    ...action.payload.callbackResource,
-                    requestAttributeCallback: transformCallbackAttributeModelToDto(
-                        action.payload.callbackResource.requestAttributeCallback,
-                    ),
-                })
-                .pipe(
-                    map((data) => {
-                        return slice.actions.callbackSuccess({ callbackId: action.payload.callbackId, data });
-                    }),
+        // Per-callbackId stale-response discard: switchMap within each callbackId group cancels a
+        // superseded same-control request; distinct controls stay concurrent via mergeMap.
+        groupBy((action) => action.payload.callbackId),
+        mergeMap((group$) =>
+            group$.pipe(
+                switchMap((action) =>
+                    deps.apiClients.callback
+                        .resourceCallback({
+                            ...action.payload.callbackResource,
+                            requestAttributeCallback: transformCallbackAttributeModelToDto(
+                                action.payload.callbackResource.requestAttributeCallback,
+                            ),
+                        })
+                        .pipe(
+                            map((data) => {
+                                return slice.actions.callbackSuccess({ callbackId: action.payload.callbackId, data });
+                            }),
 
-                    catchError((error) =>
-                        of(
-                            slice.actions.callbackFailure({ callbackId: action.payload.callbackId }),
-                            appRedirectActions.fetchError({ error, message: 'Resource callback failure' }),
+                            catchError((error) =>
+                                of(
+                                    slice.actions.callbackFailure({ callbackId: action.payload.callbackId }),
+                                    appRedirectActions.fetchError({ error, message: 'Resource callback failure' }),
+                                ),
+                            ),
                         ),
-                    ),
                 ),
+            ),
         ),
 
         catchError((error) =>
@@ -567,6 +583,12 @@ const getConnectorAuthAttributesDescriptors: AppEpic = (action$, state, deps) =>
         }),
     );
 };
+
+// Named exports for the callback epics so tests can reference them directly instead of
+// by a fragile positional index into the default `epics` array (which shifts on insert).
+// These are the SAME function instances used in the array below — no behavior change.
+export const callbackConnectorEpic = callbackConnector;
+export const callbackResourceEpic = callbackResource;
 
 const epics = [
     listConnectors,

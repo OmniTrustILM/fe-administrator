@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from 'vitest';
-import { firstValueFrom, of, throwError } from 'rxjs';
-import { take, toArray } from 'rxjs/operators';
+import { Subject, firstValueFrom, of, throwError } from 'rxjs';
+import { delay, take, toArray } from 'rxjs/operators';
 
-import connectorsEpics from './connectors-epic';
+import connectorsEpics, { callbackConnectorEpic, callbackResourceEpic } from './connectors-epic';
 import { slice } from './connectors';
 import { actions as userInterfaceActions } from './user-interface';
 import { actions as appRedirectActions } from './app-redirect';
@@ -970,5 +970,113 @@ describe('connectors epics', () => {
         expect(basicCalled).toBe(false);
         expect(certificateCalled).toBe(false);
         expect(emitted[0]).toEqual(slice.actions.getConnectorAuthAttributesDescriptorsSuccess({ attributes: [] }));
+    });
+
+    // --- AC-6: per-callbackId stale-response discard ---------------------------
+
+    test('callbackResource drain-all stale-race: superseded callbackId-A success is ABSENT', async () => {
+        const deps = createDeps({
+            callback: {
+                // First request for cb-A is SLOW; second (newer) request for the SAME cb-A is FAST.
+                // switchMap within the cb-A group must cancel the slow first request, so its success
+                // never emits.
+                resourceCallback: (() => {
+                    let call = 0;
+                    return () => {
+                        call += 1;
+                        return call === 1 ? of({ which: 'A-stale' }).pipe(delay(50)) : of({ which: 'A-fresh' });
+                    };
+                })(),
+            } as any,
+        });
+        const epic = callbackResourceEpic as any;
+        const action$ = new Subject<any>();
+        const state$ = of({}) as any;
+        state$.value = {};
+        const collected = firstValueFrom(epic(action$, state$, deps).pipe(toArray())) as Promise<any[]>;
+
+        const mk = () =>
+            slice.actions.callbackResource({
+                callbackId: 'cb-A',
+                callbackResource: { uuid: 'c-1', requestAttributeCallback: { mappings: [] } } as any,
+            });
+        action$.next(mk()); // slow (stale) request
+        action$.next(mk()); // newer request supersedes it
+        action$.complete();
+
+        const emitted = await collected;
+        const successes = emitted.filter((a: any) => a.type === slice.actions.callbackSuccess.type);
+        // Only the fresh result emits; the stale (superseded) success is absent.
+        expect(successes).toHaveLength(1);
+        expect(successes[0].payload.data).toEqual({ which: 'A-fresh' });
+        expect(emitted.some((a: any) => a?.payload?.data?.which === 'A-stale')).toBe(false);
+    });
+
+    test('callbackResource: distinct callbackIds run concurrently (cascade not dropped)', async () => {
+        const deps = createDeps({
+            callback: {
+                resourceCallback: (({ parentObjectUuid }: any) => of({ for: parentObjectUuid })) as any,
+            } as any,
+        });
+        const epic = callbackResourceEpic as any;
+        const action$ = new Subject<any>();
+        const state$ = of({}) as any;
+        state$.value = {};
+        const collected = firstValueFrom(epic(action$, state$, deps).pipe(toArray())) as Promise<any[]>;
+
+        action$.next(
+            slice.actions.callbackResource({
+                callbackId: 'cb-A',
+                callbackResource: { parentObjectUuid: 'A', requestAttributeCallback: { mappings: [] } } as any,
+            }),
+        );
+        action$.next(
+            slice.actions.callbackResource({
+                callbackId: 'cb-B',
+                callbackResource: { parentObjectUuid: 'B', requestAttributeCallback: { mappings: [] } } as any,
+            }),
+        );
+        action$.complete();
+
+        const emitted = await collected;
+        const successIds = emitted.filter((a: any) => a.type === slice.actions.callbackSuccess.type).map((a: any) => a.payload.callbackId);
+        // Both controls' callbacks complete — neither is dropped.
+        expect(successIds).toContain('cb-A');
+        expect(successIds).toContain('cb-B');
+    });
+
+    test('callbackConnector drain-all stale-race: superseded callbackId success is ABSENT (V2 selection preserved)', async () => {
+        const callbackV2 = (() => {
+            let call = 0;
+            return () => {
+                call += 1;
+                return call === 1 ? of({ which: 'stale' }).pipe(delay(50)) : of({ which: 'fresh' });
+            };
+        })();
+        const callbackV1 = vi.fn(() => of({}));
+        const deps = createDeps({ callback: { callbackV2, callback: callbackV1 } as any });
+        const epic = callbackConnectorEpic as any;
+        const action$ = new Subject<any>();
+        const stateValue = { connectors: { connectors: [{ uuid: 'c-1', version: ConnectorVersion.V2 }], connector: undefined } };
+        const state$ = of(stateValue) as any;
+        state$.value = stateValue;
+        const collected = firstValueFrom(epic(action$, state$, deps).pipe(toArray())) as Promise<any[]>;
+
+        const mk = () =>
+            slice.actions.callbackConnector({
+                callbackId: 'cb-1',
+                callbackConnector: { uuid: 'c-1', functionGroup: 'FG', kind: 'k', requestAttributeCallback: { mappings: [] } } as any,
+            });
+        action$.next(mk());
+        action$.next(mk());
+        action$.complete();
+
+        const emitted = await collected;
+        const successes = emitted.filter((a: any) => a.type === slice.actions.callbackSuccess.type);
+        expect(successes).toHaveLength(1);
+        expect(successes[0].payload.data).toEqual({ which: 'fresh' });
+        // V2 path used (V1 never called); stale absent.
+        expect(callbackV1).not.toHaveBeenCalled();
+        expect(emitted.some((a: any) => a?.payload?.data?.which === 'stale')).toBe(false);
     });
 });

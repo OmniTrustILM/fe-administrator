@@ -268,6 +268,29 @@ test.describe('AttributeEditor', () => {
         await expect(input).toHaveValue('defaultValue');
     });
 
+    test('RESOURCE attribute renders Core-sourced options unchanged (AC-5 rendering)', async ({ mount, page }) => {
+        // A RESOURCE attribute renders like a list, sourced from the static `content`
+        // Core pre-populates. This asserts the rendering path is unchanged by #1764.
+        // NOTE: the secret-free `{resource, uuid, name}` *serialisation* half of AC-5
+        // is Core-dependent ("reference-typed values expanded inline by Core" per the
+        // OpenAPI spec) and is intentionally NOT emitted by the FE here.
+        const descriptors: AttributeDescriptorModel[] = [
+            dataDescriptor({
+                name: 'resourceField',
+                uuid: 'resource-uuid',
+                contentType: AttributeContentType.Resource,
+                properties: { label: 'Resource Field', required: false, list: false, multiSelect: false } as any,
+                content: [
+                    { reference: 'Authority One', data: { uuid: 'auth-1', name: 'Authority One' } },
+                    { reference: 'Authority Two', data: { uuid: 'auth-2', name: 'Authority Two' } },
+                ] as any,
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
+        await expect(page.getByText('Resource Field')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('select-__attributes__testEditor__.resourceFieldSelect')).toBeAttached({ timeout: 5000 });
+    });
+
     test('Boolean required with no value shows false', async ({ mount, page }) => {
         const descriptors: AttributeDescriptorModel[] = [
             dataDescriptor({
