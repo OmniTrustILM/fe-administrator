@@ -1,0 +1,529 @@
+{
+  "version": "2.13",
+  "children": [
+    {
+      "type": "frame",
+      "id": "jruD7",
+      "x": 0,
+      "y": 0,
+      "name": "Label / Light",
+      "clip": true,
+      "width": 600,
+      "fill": "$color.white",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "aS9l5",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "jsQeM",
+              "name": "Title",
+              "fill": "$color.neutral-900",
+              "content": "Label",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "QMHjl",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Form field label — text with an optional required asterisk; renders as a button when clickable.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ANZMq",
+          "name": "States",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "LZZpz",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "STATES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "gqOUf",
+              "name": "Default",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "SJNfT",
+                  "name": "Label",
+                  "fill": "$color.neutral-700",
+                  "content": "Email address",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "z6Tl5",
+                  "name": "Caption",
+                  "fill": "$color.neutral-400",
+                  "content": "default",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "uhH8a",
+              "name": "Required",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "FNBYC",
+                  "name": "Label",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "FAQEB",
+                      "name": "Text",
+                      "fill": "$color.neutral-700",
+                      "content": "Email address",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "LLDFl",
+                      "name": "Asterisk",
+                      "fill": "$color.red-500",
+                      "content": " *",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "eqMFz",
+                  "name": "Caption",
+                  "fill": "$color.neutral-400",
+                  "content": "required",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Dc9VN",
+              "name": "Clickable",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "H08AW",
+                  "name": "Label",
+                  "fill": "$color.neutral-700",
+                  "content": "Email address",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "eC4H9",
+                  "name": "Caption",
+                  "fill": "$color.neutral-400",
+                  "content": "clickable (renders as button)",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "MdgL5",
+      "x": 660,
+      "y": 0,
+      "name": "Label / Dark",
+      "clip": true,
+      "width": 600,
+      "fill": "$color.neutral-900",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "Z70iY",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "lU9Ka",
+              "name": "Title",
+              "fill": "$color.neutral-200",
+              "content": "Label",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "s388F",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Form field label — text with an optional required asterisk; renders as a button when clickable.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "s6DZAt",
+          "name": "States",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "EPjrz",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "STATES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "zwO7a",
+              "name": "Default",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "xdgJU",
+                  "name": "Label",
+                  "fill": "$color.white",
+                  "content": "Email address",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "uMGNs",
+                  "name": "Caption",
+                  "fill": "$color.neutral-400",
+                  "content": "default",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "G5htnb",
+              "name": "Required",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Q7TCqF",
+                  "name": "Label",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ASpLV",
+                      "name": "Text",
+                      "fill": "$color.white",
+                      "content": "Email address",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "xNtCb",
+                      "name": "Asterisk",
+                      "fill": "$color.red-500",
+                      "content": " *",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "ZasTT",
+                  "name": "Caption",
+                  "fill": "$color.neutral-400",
+                  "content": "required",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ans2K",
+              "name": "Clickable",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "zojFm",
+                  "name": "Label",
+                  "fill": "$color.white",
+                  "content": "Email address",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "rilCu",
+                  "name": "Caption",
+                  "fill": "$color.neutral-400",
+                  "content": "clickable (renders as button)",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color.blue-100": {
+      "type": "color",
+      "value": "#cce5ff"
+    },
+    "color.blue-200": {
+      "type": "color",
+      "value": "#99ccff"
+    },
+    "color.blue-300": {
+      "type": "color",
+      "value": "#66b2ff"
+    },
+    "color.blue-400": {
+      "type": "color",
+      "value": "#3399ff"
+    },
+    "color.blue-50": {
+      "type": "color",
+      "value": "#e6f2ff"
+    },
+    "color.blue-500": {
+      "type": "color",
+      "value": "#0085e6"
+    },
+    "color.blue-600": {
+      "type": "color",
+      "value": "#0073cf"
+    },
+    "color.blue-700": {
+      "type": "color",
+      "value": "#005ba6"
+    },
+    "color.blue-800": {
+      "type": "color",
+      "value": "#004480"
+    },
+    "color.blue-900": {
+      "type": "color",
+      "value": "#002d59"
+    },
+    "color.blue-950": {
+      "type": "color",
+      "value": "#001a33"
+    },
+    "color.gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.gray-400": {
+      "type": "color",
+      "value": "#c7c7c7"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-600": {
+      "type": "color",
+      "value": "#b4b4b4"
+    },
+    "color.gray-700": {
+      "type": "color",
+      "value": "#8c8c8c"
+    },
+    "color.gray-800": {
+      "type": "color",
+      "value": "#666666"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-200": {
+      "type": "color",
+      "value": "#e5e5e5"
+    },
+    "color.neutral-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.neutral-400": {
+      "type": "color",
+      "value": "#a3a3a3"
+    },
+    "color.neutral-500": {
+      "type": "color",
+      "value": "#737373"
+    },
+    "color.neutral-600": {
+      "type": "color",
+      "value": "#525252"
+    },
+    "color.neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "color.neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    },
+    "color.red-100": {
+      "type": "color",
+      "value": "#fee2e2"
+    },
+    "color.red-400": {
+      "type": "color",
+      "value": "#f87171"
+    },
+    "color.red-500": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.red-600": {
+      "type": "color",
+      "value": "#dc2626"
+    },
+    "color.red-800": {
+      "type": "color",
+      "value": "#991b1b"
+    },
+    "color.red-800-30": {
+      "type": "color",
+      "value": "#991b1b4d"
+    },
+    "color.transparent": {
+      "type": "color",
+      "value": "#00000000"
+    },
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "color.white-10": {
+      "type": "color",
+      "value": "#ffffff1a"
+    },
+    "color.white-20": {
+      "type": "color",
+      "value": "#ffffff33"
+    },
+    "color.yellow-100": {
+      "type": "color",
+      "value": "#fef9c3"
+    },
+    "color.yellow-400": {
+      "type": "color",
+      "value": "#facc15"
+    },
+    "color.yellow-500": {
+      "type": "color",
+      "value": "#eab308"
+    },
+    "color.yellow-600": {
+      "type": "color",
+      "value": "#ca8a04"
+    },
+    "color.yellow-800": {
+      "type": "color",
+      "value": "#854d0e"
+    },
+    "color.yellow-800-30": {
+      "type": "color",
+      "value": "#854d0e4d"
+    }
+  }
+}
