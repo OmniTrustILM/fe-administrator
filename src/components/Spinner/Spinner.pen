@@ -1,0 +1,907 @@
+{
+  "version": "2.13",
+  "children": [
+    {
+      "type": "frame",
+      "id": "tcvTf",
+      "x": 0,
+      "y": 0,
+      "name": "Spinner / Light",
+      "clip": true,
+      "width": 600,
+      "fill": "$color.white",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "Y3qiL",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "d05csl",
+              "name": "Title",
+              "fill": "$color.neutral-900",
+              "content": "Spinner",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "mDPjO",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Loading indicator — an animated ring with one open segment. Four sizes and two colors (primary on light, light on dark).",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "X4g6xX",
+          "name": "Sizes",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "nu2gu",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "SIZES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "ZjIoF",
+              "name": "Sizes Row",
+              "gap": 40,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "m5R8v",
+                  "name": "Cell sm",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "c1SQL",
+                      "name": "Box",
+                      "width": 48,
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "oiHu1",
+                          "name": "Spinner sm",
+                          "innerRadius": 0.625,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.blue-600",
+                          "width": 16,
+                          "height": 16
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "kKdmA",
+                      "name": "Caption sm",
+                      "fill": "$color.neutral-400",
+                      "content": "sm",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "KXiwu",
+                  "name": "Cell md",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "oHRqM",
+                      "name": "Box",
+                      "width": 48,
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "U2bmPR",
+                          "name": "Spinner md",
+                          "innerRadius": 0.75,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.blue-600",
+                          "width": 24,
+                          "height": 24
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "Y8vbGF",
+                      "name": "Caption md",
+                      "fill": "$color.neutral-400",
+                      "content": "md",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Q9NjoG",
+                  "name": "Cell lg",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "B2rhKR",
+                      "name": "Box",
+                      "width": 48,
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "Pbx0Z",
+                          "name": "Spinner lg",
+                          "innerRadius": 0.8125,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.blue-600",
+                          "width": 32,
+                          "height": 32
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "bGFEQ",
+                      "name": "Caption lg",
+                      "fill": "$color.neutral-400",
+                      "content": "lg",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "w2TKW",
+                  "name": "Cell xl",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "O1OIbg",
+                      "name": "Box",
+                      "width": 48,
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "E6e4H",
+                          "name": "Spinner xl",
+                          "innerRadius": 0.85,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.blue-600",
+                          "width": 40,
+                          "height": 40
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "Ho4zg",
+                      "name": "Caption xl",
+                      "fill": "$color.neutral-400",
+                      "content": "xl",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "GIxSJ",
+          "name": "Colors",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "UTcgy",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "COLORS",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "ajDpl",
+              "name": "Colors Row",
+              "gap": 40,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ENI6R",
+                  "name": "Cell primary",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "w3Cgo3",
+                      "name": "Box",
+                      "width": 64,
+                      "height": 64,
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 10,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "zrJvw",
+                          "name": "Spinner primary",
+                          "innerRadius": 0.8125,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.blue-600",
+                          "width": 32,
+                          "height": 32
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "H2Bdo",
+                      "name": "Caption primary",
+                      "fill": "$color.neutral-400",
+                      "content": "primary",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Z8zbU",
+                  "name": "Cell light",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "DeOVg",
+                      "name": "Box",
+                      "width": 64,
+                      "height": 64,
+                      "fill": "$color.neutral-900",
+                      "cornerRadius": 10,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "NfpdB",
+                          "name": "Spinner light",
+                          "innerRadius": 0.8125,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.white",
+                          "width": 32,
+                          "height": 32
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "r33OiJ",
+                      "name": "Caption light",
+                      "fill": "$color.neutral-400",
+                      "content": "light (on dark)",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "F7tWo",
+      "x": 660,
+      "y": 0,
+      "name": "Spinner / Dark",
+      "clip": true,
+      "width": 600,
+      "fill": "$color.neutral-900",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "qZ4Hj",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "LLwht",
+              "name": "Title",
+              "fill": "$color.neutral-200",
+              "content": "Spinner",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "A36if3",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Loading indicator — an animated ring with one open segment. Four sizes and two colors (primary on light, light on dark).",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "e9by5",
+          "name": "Sizes",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "X6ecRe",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "SIZES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "LNXQi",
+              "name": "Sizes Row",
+              "gap": 40,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Y3Cm8t",
+                  "name": "Cell sm",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "zVEW4",
+                      "name": "Box",
+                      "width": 48,
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "HJ1zA",
+                          "name": "Spinner sm",
+                          "innerRadius": 0.625,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.blue-500",
+                          "width": 16,
+                          "height": 16
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "USmvr",
+                      "name": "Caption sm",
+                      "fill": "$color.neutral-400",
+                      "content": "sm",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ekAXK",
+                  "name": "Cell md",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "JDE46",
+                      "name": "Box",
+                      "width": 48,
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "TJ5bg",
+                          "name": "Spinner md",
+                          "innerRadius": 0.75,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.blue-500",
+                          "width": 24,
+                          "height": 24
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "b4Qfx",
+                      "name": "Caption md",
+                      "fill": "$color.neutral-400",
+                      "content": "md",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "qj5Nx",
+                  "name": "Cell lg",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "VaESc",
+                      "name": "Box",
+                      "width": 48,
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "UXJon",
+                          "name": "Spinner lg",
+                          "innerRadius": 0.8125,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.blue-500",
+                          "width": 32,
+                          "height": 32
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "iMchJ",
+                      "name": "Caption lg",
+                      "fill": "$color.neutral-400",
+                      "content": "lg",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MUqag",
+                  "name": "Cell xl",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "o6sCRM",
+                      "name": "Box",
+                      "width": 48,
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "gU1tQ",
+                          "name": "Spinner xl",
+                          "innerRadius": 0.85,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.blue-500",
+                          "width": 40,
+                          "height": 40
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "PyMGL",
+                      "name": "Caption xl",
+                      "fill": "$color.neutral-400",
+                      "content": "xl",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "syBqp",
+          "name": "Colors",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "tRYqj",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "COLORS",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "lB3rb",
+              "name": "Colors Row",
+              "gap": 40,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "p3VQQX",
+                  "name": "Cell primary",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "qhSeA",
+                      "name": "Box",
+                      "width": 64,
+                      "height": 64,
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 10,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "p65Fxs",
+                          "name": "Spinner primary",
+                          "innerRadius": 0.8125,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.blue-500",
+                          "width": 32,
+                          "height": 32
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "MgIiH",
+                      "name": "Caption primary",
+                      "fill": "$color.neutral-400",
+                      "content": "primary",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "LUxlh",
+                  "name": "Cell light",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "r34Rp",
+                      "name": "Box",
+                      "width": 64,
+                      "height": 64,
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 10,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "Q5YV5",
+                          "name": "Spinner light",
+                          "innerRadius": 0.8125,
+                          "startAngle": 135,
+                          "sweepAngle": 270,
+                          "fill": "$color.white",
+                          "width": 32,
+                          "height": 32
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "PSpRZ",
+                      "name": "Caption light",
+                      "fill": "$color.neutral-400",
+                      "content": "light (on dark)",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color.blue-100": {
+      "type": "color",
+      "value": "#cce5ff"
+    },
+    "color.blue-200": {
+      "type": "color",
+      "value": "#99ccff"
+    },
+    "color.blue-300": {
+      "type": "color",
+      "value": "#66b2ff"
+    },
+    "color.blue-400": {
+      "type": "color",
+      "value": "#3399ff"
+    },
+    "color.blue-50": {
+      "type": "color",
+      "value": "#e6f2ff"
+    },
+    "color.blue-500": {
+      "type": "color",
+      "value": "#0085e6"
+    },
+    "color.blue-600": {
+      "type": "color",
+      "value": "#0073cf"
+    },
+    "color.blue-700": {
+      "type": "color",
+      "value": "#005ba6"
+    },
+    "color.blue-800": {
+      "type": "color",
+      "value": "#004480"
+    },
+    "color.blue-900": {
+      "type": "color",
+      "value": "#002d59"
+    },
+    "color.blue-950": {
+      "type": "color",
+      "value": "#001a33"
+    },
+    "color.gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.gray-400": {
+      "type": "color",
+      "value": "#c7c7c7"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-600": {
+      "type": "color",
+      "value": "#b4b4b4"
+    },
+    "color.gray-700": {
+      "type": "color",
+      "value": "#8c8c8c"
+    },
+    "color.gray-800": {
+      "type": "color",
+      "value": "#666666"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-200": {
+      "type": "color",
+      "value": "#e5e5e5"
+    },
+    "color.neutral-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.neutral-400": {
+      "type": "color",
+      "value": "#a3a3a3"
+    },
+    "color.neutral-500": {
+      "type": "color",
+      "value": "#737373"
+    },
+    "color.neutral-600": {
+      "type": "color",
+      "value": "#525252"
+    },
+    "color.neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "color.neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    },
+    "color.red-100": {
+      "type": "color",
+      "value": "#fee2e2"
+    },
+    "color.red-400": {
+      "type": "color",
+      "value": "#f87171"
+    },
+    "color.red-500": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.red-600": {
+      "type": "color",
+      "value": "#dc2626"
+    },
+    "color.red-800": {
+      "type": "color",
+      "value": "#991b1b"
+    },
+    "color.red-800-30": {
+      "type": "color",
+      "value": "#991b1b4d"
+    },
+    "color.transparent": {
+      "type": "color",
+      "value": "#00000000"
+    },
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "color.white-10": {
+      "type": "color",
+      "value": "#ffffff1a"
+    },
+    "color.white-20": {
+      "type": "color",
+      "value": "#ffffff33"
+    },
+    "color.yellow-100": {
+      "type": "color",
+      "value": "#fef9c3"
+    },
+    "color.yellow-400": {
+      "type": "color",
+      "value": "#facc15"
+    },
+    "color.yellow-500": {
+      "type": "color",
+      "value": "#eab308"
+    },
+    "color.yellow-600": {
+      "type": "color",
+      "value": "#ca8a04"
+    },
+    "color.yellow-800": {
+      "type": "color",
+      "value": "#854d0e"
+    },
+    "color.yellow-800-30": {
+      "type": "color",
+      "value": "#854d0e4d"
+    }
+  }
+}
