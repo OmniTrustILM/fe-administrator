@@ -303,6 +303,8 @@ export default function SigningProfileForm() {
         formState: { isSubmitting, isValid, isDirty },
         reset,
         setValue,
+        getValues,
+        trigger,
     } = methods;
 
     const workflowTypeValue = useWatch({ control, name: 'workflowType' });
@@ -328,6 +330,13 @@ export default function SigningProfileForm() {
 
     const isFirstQualifiedTimestampRender = useRef(true);
     useEffect(() => {
+        // Time Quality Configuration is required only while Qualified Timestamp is on. RHF does not
+        // re-validate that field when this unrelated toggle changes, so re-validate it explicitly —
+        // otherwise a stale "required" error (or a missing one) leaves isValid wrong. Running this
+        // on every render of this effect (including mount and the edit-load reset that flips the
+        // toggle) keeps it correct regardless of the toggle's default value. (issue #1820)
+        void trigger('timeQualityConfigurationUuid');
+
         if (isFirstQualifiedTimestampRender.current) {
             isFirstQualifiedTimestampRender.current = false;
             return;
@@ -340,7 +349,7 @@ export default function SigningProfileForm() {
                 }),
             );
         }
-    }, [dispatch, workflowTypeValue, qualifiedTimestampValue]);
+    }, [dispatch, workflowTypeValue, qualifiedTimestampValue, trigger]);
 
     // Fetch the selected Time Quality configuration's detail (the list DTO has no accuracy).
     useEffect(() => {
@@ -698,7 +707,11 @@ export default function SigningProfileForm() {
             <Controller
                 name="timeQualityConfigurationUuid"
                 control={control}
-                rules={qualifiedTimestampValue ? buildValidationRules([validateRequired()]) : undefined}
+                // Required only when Qualified Timestamp is on. The validator reads the live value via
+                // getValues (rather than a render-time closure) because a Controller's `rules` prop is
+                // captured at registration and not reactive; pair this with the trigger() call in the
+                // qualifiedTimestamp effect so isValid is recomputed when the toggle flips. (issue #1820)
+                rules={buildValidationRules([(value) => (getValues('qualifiedTimestamp') ? validateRequired()(value) : undefined)])}
                 render={({ field, fieldState }) => (
                     <Select
                         {...field}
