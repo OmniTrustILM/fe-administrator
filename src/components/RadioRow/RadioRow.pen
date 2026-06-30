@@ -1,5 +1,5 @@
 {
-  "version": "2.13",
+  "version": "2.14",
   "children": [
     {
       "type": "frame",
@@ -546,6 +546,7 @@
                             {
                               "type": "text",
                               "id": "J8OuA",
+                              "name": "Number",
                               "fill": "$color.gray-900",
                               "content": "5",
                               "fontFamily": "Inter",
@@ -1171,6 +1172,7 @@
                             {
                               "type": "text",
                               "id": "IJqeA",
+                              "name": "Number",
                               "fill": "$color.white",
                               "content": "5",
                               "fontFamily": "Inter",
@@ -1429,5 +1431,6 @@
       "type": "color",
       "value": "#854d0e4d"
     }
-  }
+  },
+  "fileToken": "b95896eb-f8b9-4414-ac8d-15a3ac46d2a3"
 }

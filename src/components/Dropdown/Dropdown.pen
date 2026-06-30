@@ -1,5 +1,5 @@
 {
-  "version": "2.13",
+  "version": "2.14",
   "children": [
     {
       "type": "frame",
@@ -85,6 +85,7 @@
                 {
                   "type": "frame",
                   "id": "rzYOZ",
+                  "name": "Default Header",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -92,6 +93,7 @@
                     {
                       "type": "text",
                       "id": "iBGXh",
+                      "name": "Label",
                       "fill": "$color.gray-700",
                       "content": "Default",
                       "fontFamily": "Inter",
@@ -103,6 +105,7 @@
                 {
                   "type": "frame",
                   "id": "whWx9",
+                  "name": "Hover Header",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -110,6 +113,7 @@
                     {
                       "type": "text",
                       "id": "y6mUav",
+                      "name": "Label",
                       "fill": "$color.gray-700",
                       "content": "Hover",
                       "fontFamily": "Inter",
@@ -121,6 +125,7 @@
                 {
                   "type": "frame",
                   "id": "wurPc",
+                  "name": "Focus Header",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -128,6 +133,7 @@
                     {
                       "type": "text",
                       "id": "gyVzr",
+                      "name": "Label",
                       "fill": "$color.gray-700",
                       "content": "Focus",
                       "fontFamily": "Inter",
@@ -139,6 +145,7 @@
                 {
                   "type": "frame",
                   "id": "JKQJQ",
+                  "name": "Disabled Header",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -146,6 +153,7 @@
                     {
                       "type": "text",
                       "id": "u6qcTD",
+                      "name": "Label",
                       "fill": "$color.gray-700",
                       "content": "Disabled",
                       "fontFamily": "Inter",
@@ -682,7 +690,7 @@
                   "effect": {
                     "type": "shadow",
                     "shadowType": "outer",
-                    "color": "#0000001f",
+                    "color": "$color.black-12",
                     "offset": {
                       "x": 0,
                       "y": 4
@@ -1070,6 +1078,7 @@
                 {
                   "type": "frame",
                   "id": "v4JKSa",
+                  "name": "Default Header",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -1077,6 +1086,7 @@
                     {
                       "type": "text",
                       "id": "uMgNc",
+                      "name": "Label",
                       "fill": "$color.neutral-300",
                       "content": "Default",
                       "fontFamily": "Inter",
@@ -1088,6 +1098,7 @@
                 {
                   "type": "frame",
                   "id": "a5FB4",
+                  "name": "Hover Header",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -1095,6 +1106,7 @@
                     {
                       "type": "text",
                       "id": "t686FV",
+                      "name": "Label",
                       "fill": "$color.neutral-300",
                       "content": "Hover",
                       "fontFamily": "Inter",
@@ -1106,6 +1118,7 @@
                 {
                   "type": "frame",
                   "id": "wPqsP",
+                  "name": "Focus Header",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -1113,6 +1126,7 @@
                     {
                       "type": "text",
                       "id": "B0cFqH",
+                      "name": "Label",
                       "fill": "$color.neutral-300",
                       "content": "Focus",
                       "fontFamily": "Inter",
@@ -1124,6 +1138,7 @@
                 {
                   "type": "frame",
                   "id": "HqHjw",
+                  "name": "Disabled Header",
                   "width": "fill_container",
                   "justifyContent": "center",
                   "alignItems": "center",
@@ -1131,6 +1146,7 @@
                     {
                       "type": "text",
                       "id": "ig4T0",
+                      "name": "Label",
                       "fill": "$color.neutral-300",
                       "content": "Disabled",
                       "fontFamily": "Inter",
@@ -1667,7 +1683,7 @@
                   "effect": {
                     "type": "shadow",
                     "shadowType": "outer",
-                    "color": "#00000066",
+                    "color": "$color.black-40",
                     "offset": {
                       "x": 0,
                       "y": 4
@@ -2148,6 +2164,15 @@
     "color.yellow-800-30": {
       "type": "color",
       "value": "#854d0e4d"
+    },
+    "color.black-12": {
+      "type": "color",
+      "value": "#0000001f"
+    },
+    "color.black-40": {
+      "type": "color",
+      "value": "#00000066"
     }
-  }
+  },
+  "fileToken": "b1d83c04-42c6-4a90-b037-12aeeef95595"
 }
