@@ -560,6 +560,141 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "NFq1g",
+                  "name": "Progress Button Group",
+                  "width": 220,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "irg3U",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "aJsYd",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "PROGRESS BUTTON",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "Pi6D5",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "W2gj62",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ifulI",
+                          "name": "Default",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "id": "Y36fil",
+                              "type": "ref",
+                              "ref": "i4PcLp",
+                              "name": "Default Button",
+                              "descendants": {
+                                "VX0qh": {
+                                  "content": "Save changes"
+                                }
+                              }
+                            },
+                            {
+                              "type": "text",
+                              "id": "heCI4",
+                              "name": "Label",
+                              "fill": "$color.gray-700",
+                              "content": "Default",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "P45k2h",
+                          "name": "Loading",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "id": "H2Zde",
+                              "type": "ref",
+                              "ref": "bjqC3",
+                              "name": "Loading Button",
+                              "opacity": 0.5
+                            },
+                            {
+                              "type": "text",
+                              "id": "d3lIt",
+                              "name": "Label",
+                              "fill": "$color.gray-700",
+                              "content": "Loading",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "niSWy",
+                          "name": "Disabled",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "id": "k2a1e",
+                              "type": "ref",
+                              "ref": "i4PcLp",
+                              "name": "Disabled Button",
+                              "opacity": 0.35,
+                              "descendants": {
+                                "VX0qh": {
+                                  "content": "Save changes"
+                                }
+                              }
+                            },
+                            {
+                              "type": "text",
+                              "id": "qFgsO",
+                              "name": "Label",
+                              "fill": "$color.gray-700",
+                              "content": "Disabled",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             },
@@ -7667,6 +7802,47 @@
               "fill": "$color.white"
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "bjqC3",
+      "x": 7324,
+      "y": 3600,
+      "name": "ProgressButton/Loading",
+      "reusable": true,
+      "height": 40,
+      "fill": "$color.blue-600",
+      "cornerRadius": 8,
+      "gap": 8,
+      "padding": [
+        0,
+        20
+      ],
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "ellipse",
+          "id": "CCfho",
+          "name": "Spinner",
+          "innerRadius": 0.625,
+          "startAngle": 135,
+          "sweepAngle": 270,
+          "fill": "$color.white",
+          "width": 16,
+          "height": 16
+        },
+        {
+          "type": "text",
+          "id": "LZsdH",
+          "name": "Label",
+          "fill": "$color.white",
+          "content": "Saving…",
+          "fontFamily": "Inter",
+          "fontSize": 14,
+          "fontWeight": "500"
         }
       ]
     }

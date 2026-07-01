@@ -230,6 +230,7 @@ Always set `name` on every node. Use descriptive, hierarchical names:
 | Tabs | `src/components/Tabs/Tabs.pen` |
 | Dialog | `src/components/Dialog/Dialog.pen` |
 | Pagination | `src/components/Pagination/Pagination.pen` |
+| ProgressButton | `src/components/ProgressButton/ProgressButton.pen` |
 
 Button.pen is the most complete reference — it has 6 pages (Light/Dark × Solid/Outline/Transparent) showing all 5 color variants across 4 states.
 
@@ -269,6 +270,7 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 | Tabs visual (horizontal pill tab bar; active tab `bg gray-200`/`text gray-800` (dark `neutral-700`/`white`), inactive `transparent`/`gray-500` (dark `neutral-500`), `text-sm`/500, `rounded-lg`, `py-3 px-4`, `gap-x-1` between tabs + `gap-x-2` for icon+label; disabled = `opacity-50`; horizontally scrollable via SimpleBar `forceVisible="x"` when tabs overflow) | tab = `frame` (`fill gray-200`/`transparent`, `cornerRadius 8`, `padding [12,16]`, optional leading lucide `icon` + `text` 14/500) — no reusable; showcase `Tabs Group` shows a 3-tab bar with the first active |
 | Dialog visual (Radix modal: white card `rounded-xl` (`p-8 !pb-0`), `border gray-200` + shadow (dark `bg neutral-800`/`border neutral-700`), over a `black/50` overlay scrim; optional 48px circular icon (`bg-current/12` + 64px `bg-current/6` ring behind) — delete/destroy/warning `red-800`, check `teal-800`/`teal-100` bg, default `#6b7280`; `caption` h3 24/700, `body` `text-gray-500` (dark `white`), footer button row `justify-end gap-4`; delete/destroy are centered + borderless; sizes sm/md/lg/xl/xxl = `max-w-sm/lg/xl/4xl/6xl`) | dialog = `frame` (`fill white`/`neutral-800`, `cornerRadius 12`, outer shadow), icon circle = 2 stacked `ellipse` (outer 6%, inner 12%) + lucide `icon`, footer buttons reuse the `btn` pattern (`padding [9,13]`, `cornerRadius 8`) — no reusable; needs `teal-100`/`teal-800`/`dialog-scrim`/tint tokens; showcase `Dialog Group` shows a compact card with caption + body + Cancel/Delete footer |
 | Pagination visual (horizontal nav `gap-x-1`; Previous/Next ghost buttons = lucide chevron + label `text-sm`, `text-gray-800` (dark `white`), `min-h/w-9.5`≈38px, `rounded-lg`, disabled at first/last page → `opacity-50`; page-number buttons 38px square `rounded-lg`, active `bg-gray-200`/`text-gray-800` (dark `bg-neutral-600`/`white`) else transparent; ellipsis `•••` `text-gray-400` (dark `neutral-500`) for collapsed ranges; shows all pages if `totalPages ≤ 7` else `1 … window … last`) | nav = `frame` (`gap 4`, prev/next = chevron `icon` + `text`, page = `frame` 38×38 `cornerRadius 8`, active `fill gray-200`/`neutral-600`, ellipsis `•••`) — no reusable; showcase `Pagination Group` shows a compact `‹ 1 ··· 4 [5] 6 ›` bar |
+| ProgressButton visual (solid Button + inline loading state; when `inProgress` → light `Spinner size="sm"` (white C-arc) precedes `inProgressTitle`, button becomes `disabled` + `opacity-50`; plain `disabled` → `opacity-35`; always `solid` variant, color from `ButtonColor`) | reuses `Button/Primary` (`i4PcLp`) for Default/Disabled (override Label + `opacity`); dedicated `ProgressButton/Loading` (`bjqC3`) for the loading state (blue button + white spinner arc + "Saving…") |
 | NumberInput visual (container, stepper buttons, value) | `NumberInput` |
 | Input sub-component visual (any of the 6 types) | `Input/DurationInput`, `Input/HostnameListInput`, `Input/FileUpload`, `Input/MultipleValueTextInput`, `Input/CodeEditor`, `Input/DynamicContent` |
 | New component `.pen` created | Add new reusable components + a new component group to the showcase grid (see layout note below) |
@@ -276,7 +278,16 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 
 ### Showcase layout (Component Library frame `VLhPh`)
 
-The primitives **Body** (`W3Yt2`, vertical, gap 40) is a **grid of rows**, not a single strip. Each row (`Row 1`/`Row 2`/`Row 3`/`Row 4`/`Row 5`, horizontal, gap 40, `alignItems:start`) holds ~4 component groups. (`Row 4` is full with 5 groups — `Status Badge Group` + `Status Circle Group` + `Label Group` + `Spinner Group` + `Tooltip Group`. `Row 5` now holds `Tabs Group` + `Dialog Group` + `Pagination Group`; append the next component to `Row 5` until it reaches ~5 groups, then start `Row 6`.) The reusable source symbols live in a horizontal strip below the Component Library (at `y:3600`), kept clear of the showcase frame. A component group = vertical frame (Group Header with title + divider, then an Items frame). The frame is intentionally kept ~3200 wide as **headroom**: new component groups fill the blank space — append to the shortest/last row, then start a new row once a row reaches ~4–5 groups. Below the primitives is the full-width **Input Section** (`jMZl6`) with composite form examples.
+The primitives **Body** (`W3Yt2`, vertical, gap 40, `width:3200`, padding `[40,40,48,40]` → ~3120 usable) is a **grid of rows**, not a single strip. Each row (`Row 1`…`Row 5`, horizontal, gap 40, `alignItems:start`) is a horizontal strip of component groups. A component group = vertical frame (Group Header with title + divider, then an Items frame). The reusable source symbols live in a horizontal strip below the Component Library (at `y:3600`), kept clear of the showcase frame.
+
+**Placement policy — fill the row rightward before adding a new row.** The Body is ~3120 wide but historically each row only reached ~1000–1280, leaving the whole right half empty. **Extend existing rows to the right** (append groups to a row until it approaches ~3000 wide) before starting a new row below. Prefer placing a new component next to a semantically related group. Current rows:
+- `Row 1` (`LO8oA`): `Buttons` + `Checkboxes` + `Switches` + `Cards` + `Progress Button Group` (`NFq1g`, `ProgressButton/Loading` `bjqC3`) — still has room to the right.
+- `Row 2` (`OHL7N`): `Breadcrumb` + `Text Inputs` + `Number Inputs` + `Dropdowns`.
+- `Row 3` (`fTPQC`): `Radio Rows` + `Date Pickers` + `Badges` + `Boolean Badge`.
+- `Row 4` (`DTZVv`): `Status Badge` + `Status Circle` + `Label` + `Spinner` + `Tooltip`.
+- `Row 5` (`ZxqYx`): `Tabs` + `Dialog` + `Pagination`.
+
+Below the primitives is the full-width **Input Section** (`jMZl6`) with composite form examples.
 
 ### How to update a component in Design.pen
 
@@ -316,6 +327,7 @@ These IDs change if components are ever deleted and recreated. Re-read `get_edit
 | DatePicker/Calendar | `WFIpF` | DatePicker.pen (open date-only calendar popover) |
 | Badge/Solid | `xz3Ab` | Badge.pen (solid pill; override fill + Label for color/size) |
 | Badge/Removable | `Le8f4` | Badge.pen (pill with circular X remove button) |
+| ProgressButton/Loading | `bjqC3` | ProgressButton.pen (blue solid button + white spinner arc + "Saving…"; Default/Disabled reuse `Button/Primary` `i4PcLp`) |
 | NumberInput | `mXtap` | NumberInput.pen |
 | Breadcrumb | `UEZoP` | Breadcrumb.pen |
 | Input/DurationInput | `RLZEG` | Input.pen |
