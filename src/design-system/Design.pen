@@ -3932,6 +3932,207 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "VEgLI",
+                  "name": "WidgetButtons Group",
+                  "width": 300,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ofaTJ",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "rRkIe",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "WIDGET BUTTONS",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "OUAk9",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zQ5fb",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "A6gQ7",
+                          "name": "Toolbar Demo",
+                          "width": "fill_container",
+                          "fill": "$color.white",
+                          "cornerRadius": 12,
+                          "stroke": "$color.gray-200",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "#00000014",
+                            "offset": {
+                              "x": 0,
+                              "y": 1
+                            },
+                            "blur": 3
+                          },
+                          "layout": "vertical",
+                          "gap": 12,
+                          "padding": 16,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "cWf7j",
+                              "name": "Header Row",
+                              "width": "fill_container",
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "rUOqZ",
+                                  "name": "Widget Title",
+                                  "fill": "$color.gray-900",
+                                  "content": "Certificates",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "Hsorv",
+                                  "name": "Toolbar",
+                                  "gap": 4,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "QZxKh",
+                                      "name": "Btn refresh-cw",
+                                      "cornerRadius": 8,
+                                      "padding": 6,
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "R9Cvu",
+                                          "name": "Icon",
+                                          "width": 16,
+                                          "height": 16,
+                                          "icon": "refresh-cw",
+                                          "library": "lucide",
+                                          "fill": "$color.gray-800"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "hAsHt",
+                                      "name": "Btn download",
+                                      "fill": "$color.gray-200",
+                                      "cornerRadius": 8,
+                                      "padding": 6,
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "LWeMS",
+                                          "name": "Icon",
+                                          "width": 16,
+                                          "height": 16,
+                                          "icon": "download",
+                                          "library": "lucide",
+                                          "fill": "$color.gray-800"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "fU8Ub",
+                                      "name": "Btn search",
+                                      "cornerRadius": 8,
+                                      "padding": 6,
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "ik0Ni",
+                                          "name": "Icon",
+                                          "width": 16,
+                                          "height": 16,
+                                          "icon": "search",
+                                          "library": "lucide",
+                                          "fill": "$color.gray-800"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "Y76yO",
+                                      "name": "Btn info",
+                                      "cornerRadius": 8,
+                                      "padding": 6,
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "VQVVG",
+                                          "name": "Icon",
+                                          "width": 16,
+                                          "height": 16,
+                                          "icon": "info",
+                                          "library": "lucide",
+                                          "fill": "$color.gray-800"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "lPidh",
+                          "name": "Caption",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "transparent 16px icon buttons · gap-1 · hover / disabled · justify end",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }

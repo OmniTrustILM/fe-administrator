@@ -65,7 +65,7 @@ Tooltip, Tabs, Dialog, Pagination.
 - [x] #1722 Alerts — Row 5 group `aNggh`; reusables `Alerts/Success` `gNmMe` + `Alerts/Error` `e4bLs9`; added `teal-100/200/800` + `red-200` tokens to Design.pen
 - [x] #1723 Container — Row 5 group `eKo82` (plain layout demo, no reusable; layout primitive has no visual chrome); Container.pen shows BEHAVIOR + GAP VARIANTS (gap-2/4/8) + marginTop example
 - [x] #1724 Widget — Row 5 group `B7v2S8` (plain widget-card demo, no reusable — composite of Button/Spinner/WidgetButtons/WidgetLock); Widget.pen shows ANATOMY + TITLE SIZES (small/medium/large/larger) + STATES (Default / Busy / No Border / Locked) + EXAMPLES (list widget + open info card)
-- [ ] #1725 WidgetButtons
+- [x] #1725 WidgetButtons — Row 5 group `VEgLI` (plain toolbar demo, no reusable — composite of transparent `Button`s); WidgetButtons.pen shows ANATOMY (widget-header card) + BUTTON STATES (default / hover / focus / disabled) + JUSTIFY (start / center / end tracks) + EXAMPLES (disabled action w/ disabledTooltip + custom-node pill slot)
 - [ ] #1726 WidgetLock
 - [ ] #1727 CustomTable
 

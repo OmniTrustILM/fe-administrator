@@ -234,6 +234,7 @@ Always set `name` on every node. Use descriptive, hierarchical names:
 | Alerts | `src/components/Alerts/Alerts.pen` |
 | Container | `src/components/Container/Container.pen` |
 | Widget | `src/components/Widget/Widget.pen` |
+| WidgetButtons | `src/components/WidgetButtons/WidgetButtons.pen` |
 
 Button.pen is the most complete reference — it has 6 pages (Light/Dark × Solid/Outline/Transparent) showing all 5 color variants across 4 states.
 
@@ -277,6 +278,7 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 | Alerts visual (dismissible banner list; `text-lg`/600 message, `border rounded-lg`, `px-10 py-4`, leading status icon (14) `top-5 left-4` + dismiss `X` (14) `top-2 right-2`; two variants — **success** `bg-teal-100 text-teal-800 border-teal-200` (dark `bg-teal-800/10 text-teal-500 border-teal-900`) + `CircleCheck`, **error/non-success** `bg-red-100 text-red-800 border-red-200` (dark `bg-red-800/10 text-red-500 border-red-900`) + `CircleX`; `opacity-0` fade on dismiss) | dedicated `Alerts/Success` (`gNmMe`) + `Alerts/Error` (`e4bLs9`) reusables (banner frame + leading lucide icon + bold message + `x` dismiss). Design.pen is light-only, so it needed `teal-100`/`teal-200`/`teal-800` + `red-200` tokens added (`red-100`/`red-800` already present); the component's own Alerts.pen also carries the dark tokens `teal-500/900`, `teal-800-10`, `red-500/900`, `red-800-10`. Showcase `Alerts Group` (`aNggh`) shows one success + one error banner |
 | Container visual (pure layout primitive: `flex flex-col` vertical stack; gap `gap-4 md:gap-8` default or custom `gap-N`; optional `marginTop` → `mt-4 md:mt-8`; no colors/borders of its own) | plain layout demo — no reusable; showcase `Container Group` (`eKo82`) shows a bordered container with 3 stacked blocks + gap caption |
 | Widget visual (card/panel shell: `rounded-xl border border-gray-200 shadow-2xs bg-white` (dark `bg-neutral-900`/`border-neutral-700`), `p-4 md:p-5`; optional header row — title (`h5`; sizes small/medium/large/larger = `text-sm/base/lg/xl`; `titleBoldness`; `titleLink` wraps in `text-blue-600`) + `refreshAction`/`resetViewAction` transparent icon buttons on the left, right-aligned `WidgetButtons` + `widgetExtraTopNode`; optional collapsible `widgetInfoCard`; body = children, or `WidgetLock` when `widgetLockName` matches an active lock; `busy` → `Spinner` + optional `white/35` (dark `neutral-900/35`) overlay; `noBorder` drops border/bg/padding/shadow) | plain widget-card demo — no reusable (composite of Button/Spinner/WidgetButtons/WidgetLock); showcase `Widget Group` (`B7v2S8`) shows a compact card with header (title + refresh/reset + search/info) + body rows |
+| WidgetButtons visual (toolbar row of transparent icon `Button`s: `flex ml-2 items-center gap-1`; each = 16px lucide icon in a `p-2` transparent button, hover `bg-gray-200` (dark `neutral-700`), `disabled` → `opacity-35` (+ `disabledTooltip`); `justify` start/center/end; per-button `custom` slot renders any React node inline) | plain demo — no reusable (composite of transparent `Button`s); showcase `WidgetButtons Group` (`VEgLI`) shows a widget-header card with a `Certificates` title + a right-aligned refresh/download(hover)/search/info icon cluster |
 | NumberInput visual (container, stepper buttons, value) | `NumberInput` |
 | Input sub-component visual (any of the 6 types) | `Input/DurationInput`, `Input/HostnameListInput`, `Input/FileUpload`, `Input/MultipleValueTextInput`, `Input/CodeEditor`, `Input/DynamicContent` |
 | New component `.pen` created | Add new reusable components + a new component group to the showcase grid (see layout note below) |
@@ -291,7 +293,7 @@ The primitives **Body** (`W3Yt2`, vertical, gap 40, `width:3200`, padding `[40,4
 - `Row 2` (`OHL7N`): `Breadcrumb` + `Text Inputs` + `Number Inputs` + `Dropdowns`.
 - `Row 3` (`fTPQC`): `Radio Rows` + `Date Pickers` + `Badges` + `Boolean Badge`.
 - `Row 4` (`DTZVv`): `Status Badge` + `Status Circle` + `Label` + `Spinner` + `Tooltip`.
-- `Row 5` (`ZxqYx`): `Tabs` + `Dialog` + `Pagination` + `Alerts Group` (`aNggh`, `Alerts/Success` `gNmMe` + `Alerts/Error` `e4bLs9`) + `Container Group` (`eKo82`, plain layout demo, no reusable) + `Widget Group` (`B7v2S8`, plain widget-card demo, no reusable) — ends at ~2140, still room to the right.
+- `Row 5` (`ZxqYx`): `Tabs` + `Dialog` + `Pagination` + `Alerts Group` (`aNggh`, `Alerts/Success` `gNmMe` + `Alerts/Error` `e4bLs9`) + `Container Group` (`eKo82`, plain layout demo, no reusable) + `Widget Group` (`B7v2S8`, plain widget-card demo, no reusable) + `WidgetButtons Group` (`VEgLI`, plain toolbar demo, no reusable) — ends at ~2480, still room to the right.
 
 Below the primitives is the full-width **Input Section** (`jMZl6`) with composite form examples.
 
