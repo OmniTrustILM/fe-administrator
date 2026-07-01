@@ -80,7 +80,7 @@ describe('signingRecords epics', () => {
         expect(emitted[3].payload.widgetName).toBe(LockWidgetNameEnum.ListOfSigningRecords);
     });
 
-    test('listSigningRecords success adjusts paging totalItems for locally deleted records', async () => {
+    test('listSigningRecords success passes the server response through without local filtering', async () => {
         const response = {
             items: [{ uuid: 'rec-deleted' }, { uuid: 'rec-1' }, { uuid: 'rec-2' }],
             totalItems: 3,
@@ -90,6 +90,8 @@ describe('signingRecords epics', () => {
         } as any;
 
         const deps = createDeps({ listSigningRecords: () => of(response) });
+        // Even if the store still carries locally-deleted uuids, the list must reflect server state:
+        // the server is the source of truth now that bulk delete re-fetches after completing.
         const state$ = { value: { signingRecords: { deletedSigningRecordUuids: ['rec-deleted'] } } } as any;
 
         const output$ = (listSigningRecords as any)(
@@ -99,12 +101,8 @@ describe('signingRecords epics', () => {
         );
         const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
 
-        expect(emitted[1]).toEqual(
-            slice.actions.listSigningRecordsSuccess({
-                data: { ...response, items: [{ uuid: 'rec-1' }, { uuid: 'rec-2' }], totalItems: 2 },
-            }),
-        );
-        expect(emitted[2]).toEqual(pagingActions.listSuccess({ entity: EntityType.SIGNING_RECORD, totalItems: 2 }));
+        expect(emitted[1]).toEqual(slice.actions.listSigningRecordsSuccess({ data: response }));
+        expect(emitted[2]).toEqual(pagingActions.listSuccess({ entity: EntityType.SIGNING_RECORD, totalItems: 3 }));
     });
 
     test('getSigningRecord success emits success and removeWidgetLock', async () => {
@@ -158,7 +156,7 @@ describe('signingRecords epics', () => {
         expect(emitted[1].type).toBe(alertsSlice.actions.success.type);
     });
 
-    test('bulkDeleteSigningRecords success (no errors) emits success, alert, setPagination and listSigningRecords', async () => {
+    test('bulkDeleteSigningRecords success (no errors, page unchanged) emits success, alert and a re-fetch without setPagination', async () => {
         const deps = createDeps({
             bulkDeleteSigningRecords: ({ requestBody }) => {
                 expect(requestBody).toEqual(['rec-1', 'rec-2']);
@@ -166,6 +164,8 @@ describe('signingRecords epics', () => {
             },
         });
 
+        // On page 1 with 5 items, deleting 2 still leaves page 1 populated, so the page does not
+        // shift and no setPagination is dispatched — only the re-fetch of the current page.
         const state$ = {
             value: {
                 pagings: {
@@ -187,12 +187,12 @@ describe('signingRecords epics', () => {
             state$,
             deps as any,
         );
-        const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
+        const emitted = await firstValueFrom(output$.pipe(take(3), toArray()));
 
         expect(emitted[0]).toEqual(slice.actions.bulkDeleteSigningRecordsSuccess({ uuids: ['rec-1', 'rec-2'], errors: [] }));
         expect(emitted[1].type).toBe(alertsSlice.actions.success.type);
-        expect(emitted[2]).toEqual(pagingActions.setPagination({ entity: EntityType.SIGNING_RECORD, pageNumber: 1, pageSize: 10 }));
-        expect(emitted[3]).toEqual(slice.actions.listSigningRecords({ pageNumber: 1, itemsPerPage: 10, filters: [] }));
+        expect(emitted[2]).toEqual(slice.actions.listSigningRecords({ pageNumber: 1, itemsPerPage: 10, filters: [] }));
+        expect(emitted.some((a: any) => a.type === pagingActions.setPagination.type)).toBe(false);
     });
 
     test('bulkDeleteSigningRecords success steps back to last valid page when current page becomes empty', async () => {

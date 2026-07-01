@@ -119,7 +119,7 @@ const state = (reduxStore: any): State => reduxStore?.[slice.name];
 const availableFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).availableFilters);
 const currentFilters = (entity: EntityType) =>
-    createSelector(state, (state) => (state.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).currentFilters);
+    createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).currentFilters);
 const preservedFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).preservedFilters);
 const isFetchingFilters = (entity: EntityType) =>

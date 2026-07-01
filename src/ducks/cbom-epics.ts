@@ -5,7 +5,7 @@ import { extractError } from 'utils/net';
 import { alertsSlice } from './alert-slice';
 import { actions as appRedirectActions } from './app-redirect';
 import { EntityType } from './filters';
-import { actions as pagingActions } from './paging';
+import { actions as pagingActions, selectors as pagingSelectors, listParamsAfterDelete } from './paging';
 import { slice } from './cbom';
 import {
     transformCbomDtoToModel,
@@ -40,29 +40,15 @@ const listCboms: AppEpic = (action$, state, deps) => {
                 deps.apiClients.cbomManagement.listCboms({ searchRequestDto: action.payload }).pipe(
                     mergeMap((response) => {
                         const transformedResponse = transformPaginationResponseDtoToModel(response);
-                        const deletedCbomUuids: string[] = (state as any)?.value?.cbom?.deletedCbomUuids ?? [];
-                        const deletedCbomUuidsSet = new Set(deletedCbomUuids);
-                        const originalItems = transformedResponse.items ?? [];
-                        const filteredItems =
-                            deletedCbomUuidsSet.size === 0
-                                ? originalItems
-                                : originalItems.filter((item) => !deletedCbomUuidsSet.has(item.uuid));
-                        const removedItemsCount = originalItems.length - filteredItems.length;
-                        const baseTotalItems = transformedResponse.totalItems ?? originalItems.length;
-                        const adjustedTotalItems = Math.max(0, baseTotalItems - removedItemsCount);
-                        const adjustedResponse = {
-                            ...transformedResponse,
-                            items: filteredItems,
-                            totalItems: adjustedTotalItems,
-                        };
+                        const totalItems = transformedResponse.totalItems ?? transformedResponse.items?.length ?? 0;
 
                         return of(
                             slice.actions.listCbomsSuccess({
-                                data: adjustedResponse,
+                                data: transformedResponse,
                             }),
                             pagingActions.listSuccess({
                                 entity: EntityType.CBOM,
-                                totalItems: adjustedTotalItems,
+                                totalItems,
                             }),
                             userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ListOfCboms),
                         );
@@ -208,12 +194,27 @@ const bulkDeleteCbom: AppEpic = (action$, state, deps) => {
         filter(slice.actions.bulkDeleteCbom.match),
         switchMap((action) =>
             deps.apiClients.cbomManagement.bulkDeleteCbom({ requestBody: action.payload.uuids }).pipe(
-                mergeMap(() =>
-                    of(
+                mergeMap(() => {
+                    const currentPage = pagingSelectors.pageNumber(EntityType.CBOM)(state.value);
+                    const listParams = listParamsAfterDelete(EntityType.CBOM, state.value, action.payload.uuids.length);
+
+                    return of(
                         slice.actions.bulkDeleteCbomSuccess({ uuids: action.payload.uuids }),
                         alertsSlice.actions.success('Selected CBOMs successfully deleted.'),
-                    ),
-                ),
+                        // Only re-align the paging slice when the deletion emptied the current page
+                        // and we had to step back; otherwise the re-fetch below is enough.
+                        ...(listParams.pageNumber !== currentPage
+                            ? [
+                                  pagingActions.setPagination({
+                                      entity: EntityType.CBOM,
+                                      pageNumber: listParams.pageNumber,
+                                      pageSize: listParams.itemsPerPage,
+                                  }),
+                              ]
+                            : []),
+                        slice.actions.listCboms(listParams),
+                    );
+                }),
                 catchError((err) =>
                     of(
                         slice.actions.bulkDeleteCbomFailure({ error: extractError(err, 'Failed to bulk delete CBOMs') }),

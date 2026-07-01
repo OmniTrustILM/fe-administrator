@@ -111,12 +111,33 @@ const pageNumber = (entity: EntityType) =>
 const pageSize = (entity: EntityType) =>
     createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageSize);
 
+/**
+ * Builds the params for a list request for `entity` from the current redux root state:
+ * the active page, page size and filters. Callers pass the full `AppState` value
+ * (e.g. `state.value` inside an epic).
+ */
 export function entityListParams(entity: EntityType, stateValue: AppState) {
     return {
         pageNumber: pageNumber(entity)(stateValue),
         itemsPerPage: pageSize(entity)(stateValue),
         filters: filterSelectors.currentFilters(entity)(stateValue),
     };
+}
+
+/**
+ * Builds the list-request params to use after deleting `deletedCount` items of `entity`.
+ * When the current page would become empty (e.g. all rows on the last page were deleted),
+ * steps back to the new last page so the re-fetch lands on a page that still has data.
+ */
+export function listParamsAfterDelete(entity: EntityType, stateValue: AppState, deletedCount: number) {
+    const { pageNumber: currentPage, itemsPerPage, filters } = entityListParams(entity, stateValue);
+    const total = totalItems(entity)(stateValue);
+
+    const totalAfterDelete = Math.max(0, total - deletedCount);
+    const lastPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / Math.max(1, itemsPerPage)));
+    const pageNumber = Math.min(currentPage, lastPageAfterDelete);
+
+    return { pageNumber, itemsPerPage, filters };
 }
 
 export const selectors = {
