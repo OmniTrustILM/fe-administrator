@@ -4294,6 +4294,385 @@
                   ]
                 }
               ]
+            },
+            {
+              "type": "frame",
+              "id": "iFVR1",
+              "name": "Row 6",
+              "gap": 40,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ana3z",
+                  "name": "CustomTable Group",
+                  "width": 460,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "uoPOu",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "aFDUU",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "CUSTOM TABLE",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "GrzkJ",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "HwBl8",
+                      "name": "Table",
+                      "clip": true,
+                      "width": "fill_container",
+                      "fill": "$color.white",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000014",
+                        "offset": {
+                          "x": 0,
+                          "y": 1
+                        },
+                        "blur": 2
+                      },
+                      "layout": "vertical",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "r5gAY",
+                          "name": "Header Row",
+                          "width": "fill_container",
+                          "fill": "$color.gray-100",
+                          "stroke": "$color.gray-200",
+                          "strokeWidth": {
+                            "bottom": 1
+                          },
+                          "strokeAlignment": "inner",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "N4VcM",
+                              "name": "Cell",
+                              "width": 40,
+                              "padding": [
+                                10,
+                                12
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "FnENQ",
+                                  "name": "Checkbox",
+                                  "width": 15,
+                                  "height": 15,
+                                  "fill": "$color.white",
+                                  "cornerRadius": 4,
+                                  "stroke": "$color.gray-300",
+                                  "strokeWidth": 1.5,
+                                  "strokeAlignment": "inner",
+                                  "justifyContent": "center",
+                                  "alignItems": "center"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "g9kEpH",
+                              "name": "Cell",
+                              "width": "fill_container",
+                              "padding": [
+                                10,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "JvaMj",
+                                  "name": "HL",
+                                  "gap": 5,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "F5u9M",
+                                      "name": "T",
+                                      "fill": "$color.gray-500",
+                                      "content": "NAME",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 10,
+                                      "fontWeight": "600",
+                                      "letterSpacing": 0.4
+                                    },
+                                    {
+                                      "type": "icon",
+                                      "id": "IB6jb",
+                                      "name": "Sort",
+                                      "width": 11,
+                                      "height": 11,
+                                      "icon": "arrow-down-up",
+                                      "library": "lucide",
+                                      "fill": "$color.gray-500"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "EKpDC",
+                              "name": "Cell",
+                              "width": 110,
+                              "padding": [
+                                10,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "lbP0r",
+                                  "name": "T",
+                                  "fill": "$color.gray-500",
+                                  "content": "STATUS",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 10,
+                                  "fontWeight": "600",
+                                  "letterSpacing": 0.4
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "c9Fvp",
+                          "name": "Row 1",
+                          "width": "fill_container",
+                          "fill": "$color.white",
+                          "stroke": "$color.gray-200",
+                          "strokeWidth": {
+                            "bottom": 1
+                          },
+                          "strokeAlignment": "inner",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "v9TCE",
+                              "name": "Cell",
+                              "width": 40,
+                              "padding": [
+                                10,
+                                12
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "Fd2bh",
+                                  "name": "Checkbox",
+                                  "width": 15,
+                                  "height": 15,
+                                  "fill": "$color.blue-600",
+                                  "cornerRadius": 4,
+                                  "stroke": "$color.blue-600",
+                                  "strokeAlignment": "inner",
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "id": "j9PPaY",
+                                      "name": "Check",
+                                      "width": 11,
+                                      "height": 11,
+                                      "icon": "check",
+                                      "library": "lucide",
+                                      "fill": "$color.white"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "XuSwF",
+                              "name": "Cell",
+                              "width": "fill_container",
+                              "padding": [
+                                10,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "k0DSfR",
+                                  "name": "Name",
+                                  "fill": "$color.gray-900",
+                                  "content": "EJBCA Root CA",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "IsTGw",
+                              "name": "Cell",
+                              "width": 110,
+                              "padding": [
+                                10,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "JNyMO",
+                                  "name": "Status",
+                                  "fill": "$color.green-600",
+                                  "content": "Active",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "lBChN",
+                          "name": "Row 2",
+                          "width": "fill_container",
+                          "fill": "$color.white",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "IUs3b",
+                              "name": "Cell",
+                              "width": 40,
+                              "padding": [
+                                10,
+                                12
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "BH0qI",
+                                  "name": "Checkbox",
+                                  "width": 15,
+                                  "height": 15,
+                                  "fill": "$color.white",
+                                  "cornerRadius": 4,
+                                  "stroke": "$color.gray-300",
+                                  "strokeWidth": 1.5,
+                                  "strokeAlignment": "inner",
+                                  "justifyContent": "center",
+                                  "alignItems": "center"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "COFSf",
+                              "name": "Cell",
+                              "width": "fill_container",
+                              "padding": [
+                                10,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "GyFXg",
+                                  "name": "Name",
+                                  "fill": "$color.gray-900",
+                                  "content": "Signing Profile",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "DhkDx",
+                              "name": "Cell",
+                              "width": 110,
+                              "padding": [
+                                10,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "wm9NX",
+                                  "name": "Status",
+                                  "fill": "$color.gray-500",
+                                  "content": "Disabled",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "MoFUY",
+                      "name": "Caption",
+                      "fill": "$color.gray-500",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "sortable columns · row + select-all checkboxes · search · pagination · expandable details · empty & loading states",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
