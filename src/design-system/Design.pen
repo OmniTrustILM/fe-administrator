@@ -3514,6 +3514,91 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "aNggh",
+                  "name": "Alerts Group",
+                  "width": 420,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "d16TeA",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "dd5LP",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "ALERTS",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "gbcdB",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "oOtfi",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Hf35i",
+                          "name": "Stack",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "id": "icxAn",
+                              "type": "ref",
+                              "ref": "gNmMe",
+                              "name": "Alerts/Success",
+                              "width": "fill_container"
+                            },
+                            {
+                              "id": "wV7Qr",
+                              "type": "ref",
+                              "ref": "e4bLs9",
+                              "name": "Alerts/Error",
+                              "width": "fill_container"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "XBV8q",
+                          "name": "Caption",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "success + error · dismissible banner",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
@@ -7845,6 +7930,114 @@
           "fontWeight": "500"
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "gNmMe",
+      "x": 7507,
+      "y": 0,
+      "name": "Alerts/Success",
+      "reusable": true,
+      "width": 380,
+      "fill": "$color.teal-100",
+      "cornerRadius": 8,
+      "stroke": "$color.teal-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "gap": 10,
+      "padding": [
+        12,
+        16
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "icon",
+          "id": "YNUKH",
+          "name": "Icon",
+          "width": 16,
+          "height": 16,
+          "icon": "circle-check",
+          "library": "lucide",
+          "fill": "$color.teal-800"
+        },
+        {
+          "type": "text",
+          "id": "tPiHj",
+          "name": "Message",
+          "fill": "$color.teal-800",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Operation completed successfully.",
+          "fontFamily": "Inter",
+          "fontSize": 14,
+          "fontWeight": "600"
+        },
+        {
+          "type": "icon",
+          "id": "F6qJyk",
+          "name": "Dismiss",
+          "width": 14,
+          "height": 14,
+          "icon": "x",
+          "library": "lucide",
+          "fill": "$color.teal-800"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "e4bLs9",
+      "x": 7507,
+      "y": 81,
+      "name": "Alerts/Error",
+      "reusable": true,
+      "width": 380,
+      "fill": "$color.red-100",
+      "cornerRadius": 8,
+      "stroke": "$color.red-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "gap": 10,
+      "padding": [
+        12,
+        16
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "icon",
+          "id": "my0ff",
+          "name": "Icon",
+          "width": 16,
+          "height": 16,
+          "icon": "circle-x",
+          "library": "lucide",
+          "fill": "$color.red-800"
+        },
+        {
+          "type": "text",
+          "id": "oCPAZ",
+          "name": "Message",
+          "fill": "$color.red-800",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Something went wrong. Please try again.",
+          "fontFamily": "Inter",
+          "fontSize": 14,
+          "fontWeight": "600"
+        },
+        {
+          "type": "icon",
+          "id": "kqp9R",
+          "name": "Dismiss",
+          "width": 14,
+          "height": 14,
+          "icon": "x",
+          "library": "lucide",
+          "fill": "$color.red-800"
+        }
+      ]
     }
   ],
   "variables": {
@@ -8055,6 +8248,22 @@
     "color.tooltip-bg": {
       "type": "color",
       "value": "#111827"
+    },
+    "color.teal-100": {
+      "type": "color",
+      "value": "#ccfbf1"
+    },
+    "color.teal-200": {
+      "type": "color",
+      "value": "#99f6e4"
+    },
+    "color.teal-800": {
+      "type": "color",
+      "value": "#115e59"
+    },
+    "color.red-200": {
+      "type": "color",
+      "value": "#fecaca"
     }
   },
   "fileToken": "80b7c32e-739d-48ca-890f-fd7e0c2c4a1b"

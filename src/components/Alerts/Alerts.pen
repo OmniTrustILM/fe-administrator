@@ -1,0 +1,864 @@
+{
+  "version": "2.14",
+  "children": [
+    {
+      "type": "frame",
+      "id": "B9QnYc",
+      "x": 0,
+      "y": 0,
+      "name": "Alerts — Light",
+      "clip": true,
+      "width": 660,
+      "fill": "$color.white",
+      "layout": "vertical",
+      "gap": 32,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "TM9AY",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "l1tZv",
+              "name": "Title",
+              "fill": "$color.gray-900",
+              "content": "Alerts",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "nrmYc",
+              "name": "Subtitle",
+              "fill": "$color.gray-800",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Dismissible notification banners. Two color variants — success (teal) and error (red) — each with a leading status icon, a bold message, and a close button.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "x9aBst",
+          "name": "Variants",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "Uz67B",
+              "name": "Section Label",
+              "fill": "$color.gray-500",
+              "content": "VARIANTS",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "700",
+              "letterSpacing": 0.6
+            },
+            {
+              "type": "frame",
+              "id": "a3J4o",
+              "name": "Alert / Success",
+              "width": "fill_container",
+              "fill": "$color.teal-100",
+              "cornerRadius": 8,
+              "stroke": "$color.teal-200",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 14,
+              "padding": [
+                16,
+                40
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "ysNOQ",
+                  "name": "Icon",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "circle-check",
+                  "library": "lucide",
+                  "fill": "$color.teal-800"
+                },
+                {
+                  "type": "text",
+                  "id": "dXdDj",
+                  "name": "Message",
+                  "fill": "$color.teal-800",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Operation completed successfully.",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "icon",
+                  "id": "bZobg",
+                  "name": "Dismiss",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "x",
+                  "library": "lucide",
+                  "fill": "$color.teal-800"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "y5p4Hs",
+              "name": "Alert / Error",
+              "width": "fill_container",
+              "fill": "$color.red-100",
+              "cornerRadius": 8,
+              "stroke": "$color.red-200",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 14,
+              "padding": [
+                16,
+                40
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "twAzy",
+                  "name": "Icon",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "circle-x",
+                  "library": "lucide",
+                  "fill": "$color.red-800"
+                },
+                {
+                  "type": "text",
+                  "id": "KmSEp",
+                  "name": "Message",
+                  "fill": "$color.red-800",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Something went wrong. Please try again.",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "icon",
+                  "id": "MlVTA",
+                  "name": "Dismiss",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "x",
+                  "library": "lucide",
+                  "fill": "$color.red-800"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "Dmx8D",
+          "name": "Divider",
+          "fill": "$color.gray-200",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "qIJEO",
+          "name": "Examples",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 20,
+          "children": [
+            {
+              "type": "text",
+              "id": "r63Ebr",
+              "name": "Section Label",
+              "fill": "$color.gray-500",
+              "content": "EXAMPLES",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "700",
+              "letterSpacing": 0.6
+            },
+            {
+              "type": "frame",
+              "id": "G6VVgW",
+              "name": "Toast Stack",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "yXT1D",
+                  "name": "Toast / Success",
+                  "width": "fill_container",
+                  "fill": "$color.teal-100",
+                  "cornerRadius": 8,
+                  "stroke": "$color.teal-200",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "gap": 14,
+                  "padding": [
+                    16,
+                    40
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "lcoq9",
+                      "name": "Icon",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "circle-check",
+                      "library": "lucide",
+                      "fill": "$color.teal-800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "o6zsb",
+                      "name": "Message",
+                      "fill": "$color.teal-800",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Certificate issued successfully.",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon",
+                      "id": "RUdbW",
+                      "name": "Dismiss",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "$color.teal-800"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "y3zYz",
+                  "name": "Toast / Error",
+                  "width": "fill_container",
+                  "fill": "$color.red-100",
+                  "cornerRadius": 8,
+                  "stroke": "$color.red-200",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "gap": 14,
+                  "padding": [
+                    16,
+                    40
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "d4tqQt",
+                      "name": "Icon",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "circle-x",
+                      "library": "lucide",
+                      "fill": "$color.red-800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "xt7dD",
+                      "name": "Message",
+                      "fill": "$color.red-800",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Failed to connect to the connector.",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon",
+                      "id": "D6Gt09",
+                      "name": "Dismiss",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "$color.red-800"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PWgUb",
+              "name": "Dismissing",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "y54dpd",
+                  "name": "Alert / Dismissing",
+                  "opacity": 0.4,
+                  "width": "fill_container",
+                  "fill": "$color.red-100",
+                  "cornerRadius": 8,
+                  "stroke": "$color.red-200",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "gap": 14,
+                  "padding": [
+                    16,
+                    40
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "N5tzl",
+                      "name": "Icon",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "circle-x",
+                      "library": "lucide",
+                      "fill": "$color.red-800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "jpE2s",
+                      "name": "Message",
+                      "fill": "$color.red-800",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "This alert is fading out…",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon",
+                      "id": "agqqs",
+                      "name": "Dismiss",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "$color.red-800"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "fSVbz",
+                  "name": "Caption",
+                  "fill": "$color.gray-500",
+                  "content": "opacity-0 transition applied while dismissing",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "R5BwZO",
+      "x": 740,
+      "y": 0,
+      "name": "Alerts — Dark",
+      "clip": true,
+      "width": 660,
+      "fill": "$color.neutral-900",
+      "layout": "vertical",
+      "gap": 32,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "F9jjJH",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "L6R6y",
+              "name": "Title",
+              "fill": "$color.white",
+              "content": "Alerts",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "nexqp",
+              "name": "Subtitle",
+              "fill": "$color.neutral-500",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Dismissible notification banners. Two color variants — success (teal) and error (red) — each with a leading status icon, a bold message, and a close button.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "jJY5X",
+          "name": "Variants",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "c1J32W",
+              "name": "Section Label",
+              "fill": "$color.neutral-500",
+              "content": "VARIANTS",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "700",
+              "letterSpacing": 0.6
+            },
+            {
+              "type": "frame",
+              "id": "p6mTcK",
+              "name": "Alert / Success",
+              "width": "fill_container",
+              "fill": "$color.teal-800-10",
+              "cornerRadius": 8,
+              "stroke": "$color.teal-900",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 14,
+              "padding": [
+                16,
+                40
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "PTkQ4",
+                  "name": "Icon",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "circle-check",
+                  "library": "lucide",
+                  "fill": "$color.teal-500"
+                },
+                {
+                  "type": "text",
+                  "id": "hgAuU",
+                  "name": "Message",
+                  "fill": "$color.teal-500",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Operation completed successfully.",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "icon",
+                  "id": "k4JKX",
+                  "name": "Dismiss",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "x",
+                  "library": "lucide",
+                  "fill": "$color.teal-500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "QoAhW",
+              "name": "Alert / Error",
+              "width": "fill_container",
+              "fill": "$color.red-800-10",
+              "cornerRadius": 8,
+              "stroke": "$color.red-900",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 14,
+              "padding": [
+                16,
+                40
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "eo5gQ",
+                  "name": "Icon",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "circle-x",
+                  "library": "lucide",
+                  "fill": "$color.red-500"
+                },
+                {
+                  "type": "text",
+                  "id": "aQEaA",
+                  "name": "Message",
+                  "fill": "$color.red-500",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Something went wrong. Please try again.",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "icon",
+                  "id": "IMD4R",
+                  "name": "Dismiss",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "x",
+                  "library": "lucide",
+                  "fill": "$color.red-500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "aVO12",
+          "name": "Divider",
+          "fill": "$color.neutral-700",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "B4tbVV",
+          "name": "Examples",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 20,
+          "children": [
+            {
+              "type": "text",
+              "id": "fbhYs",
+              "name": "Section Label",
+              "fill": "$color.neutral-500",
+              "content": "EXAMPLES",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "700",
+              "letterSpacing": 0.6
+            },
+            {
+              "type": "frame",
+              "id": "OdPgR",
+              "name": "Toast Stack",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "CvTFS",
+                  "name": "Toast / Success",
+                  "width": "fill_container",
+                  "fill": "$color.teal-800-10",
+                  "cornerRadius": 8,
+                  "stroke": "$color.teal-900",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "gap": 14,
+                  "padding": [
+                    16,
+                    40
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "jmq0T",
+                      "name": "Icon",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "circle-check",
+                      "library": "lucide",
+                      "fill": "$color.teal-500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "k5Qni",
+                      "name": "Message",
+                      "fill": "$color.teal-500",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Certificate issued successfully.",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon",
+                      "id": "bq7Xd",
+                      "name": "Dismiss",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "$color.teal-500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zqRG5",
+                  "name": "Toast / Error",
+                  "width": "fill_container",
+                  "fill": "$color.red-800-10",
+                  "cornerRadius": 8,
+                  "stroke": "$color.red-900",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "gap": 14,
+                  "padding": [
+                    16,
+                    40
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "IsUSB",
+                      "name": "Icon",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "circle-x",
+                      "library": "lucide",
+                      "fill": "$color.red-500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "dlvKU",
+                      "name": "Message",
+                      "fill": "$color.red-500",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Failed to connect to the connector.",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon",
+                      "id": "QVIt9",
+                      "name": "Dismiss",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "$color.red-500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "WWMbp",
+              "name": "Dismissing",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "WS7Ic",
+                  "name": "Alert / Dismissing",
+                  "opacity": 0.4,
+                  "width": "fill_container",
+                  "fill": "$color.red-800-10",
+                  "cornerRadius": 8,
+                  "stroke": "$color.red-900",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "gap": 14,
+                  "padding": [
+                    16,
+                    40
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "hYBbX",
+                      "name": "Icon",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "circle-x",
+                      "library": "lucide",
+                      "fill": "$color.red-500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "oCsY2",
+                      "name": "Message",
+                      "fill": "$color.red-500",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "This alert is fading out…",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon",
+                      "id": "qVGVy",
+                      "name": "Dismiss",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "$color.red-500"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "B9TKC",
+                  "name": "Caption",
+                  "fill": "$color.neutral-500",
+                  "content": "opacity-0 transition applied while dismissing",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "color.gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-800": {
+      "type": "color",
+      "value": "#666666"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-500": {
+      "type": "color",
+      "value": "#737373"
+    },
+    "color.neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "color.neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    },
+    "color.red-100": {
+      "type": "color",
+      "value": "#fee2e2"
+    },
+    "color.red-200": {
+      "type": "color",
+      "value": "#fecaca"
+    },
+    "color.red-500": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.red-800": {
+      "type": "color",
+      "value": "#991b1b"
+    },
+    "color.red-800-10": {
+      "type": "color",
+      "value": "#991b1b1a"
+    },
+    "color.red-900": {
+      "type": "color",
+      "value": "#7f1d1d"
+    },
+    "color.teal-100": {
+      "type": "color",
+      "value": "#ccfbf1"
+    },
+    "color.teal-200": {
+      "type": "color",
+      "value": "#99f6e4"
+    },
+    "color.teal-500": {
+      "type": "color",
+      "value": "#14b8a6"
+    },
+    "color.teal-800": {
+      "type": "color",
+      "value": "#115e59"
+    },
+    "color.teal-800-10": {
+      "type": "color",
+      "value": "#115e591a"
+    },
+    "color.teal-900": {
+      "type": "color",
+      "value": "#134e4a"
+    }
+  },
+  "fileToken": "c5b00c5c-79b2-4e78-be37-c3f6e53e384b"
+}

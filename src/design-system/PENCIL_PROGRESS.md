@@ -61,8 +61,8 @@ Tooltip, Tabs, Dialog, Pagination.
 
 **This batch (branch `pencil-remaining-components`):**
 
-- [x] #1721 ProgressButton — commit `bcfac0c3` (Row 1 group `NFq1g`, reusable `ProgressButton/Loading` `bjqC3`)
-- [ ] #1722 Alerts
+- [x] #1721 ProgressButton — commit `c1fd9d52` (Row 1 group `NFq1g`, reusable `ProgressButton/Loading` `bjqC3`)
+- [x] #1722 Alerts — Row 5 group `aNggh`; reusables `Alerts/Success` `gNmMe` + `Alerts/Error` `e4bLs9`; added `teal-100/200/800` + `red-200` tokens to Design.pen
 - [ ] #1723 Container
 - [ ] #1724 Widget
 - [ ] #1725 WidgetButtons

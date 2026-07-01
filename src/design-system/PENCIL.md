@@ -231,6 +231,7 @@ Always set `name` on every node. Use descriptive, hierarchical names:
 | Dialog | `src/components/Dialog/Dialog.pen` |
 | Pagination | `src/components/Pagination/Pagination.pen` |
 | ProgressButton | `src/components/ProgressButton/ProgressButton.pen` |
+| Alerts | `src/components/Alerts/Alerts.pen` |
 
 Button.pen is the most complete reference — it has 6 pages (Light/Dark × Solid/Outline/Transparent) showing all 5 color variants across 4 states.
 
@@ -271,6 +272,7 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 | Dialog visual (Radix modal: white card `rounded-xl` (`p-8 !pb-0`), `border gray-200` + shadow (dark `bg neutral-800`/`border neutral-700`), over a `black/50` overlay scrim; optional 48px circular icon (`bg-current/12` + 64px `bg-current/6` ring behind) — delete/destroy/warning `red-800`, check `teal-800`/`teal-100` bg, default `#6b7280`; `caption` h3 24/700, `body` `text-gray-500` (dark `white`), footer button row `justify-end gap-4`; delete/destroy are centered + borderless; sizes sm/md/lg/xl/xxl = `max-w-sm/lg/xl/4xl/6xl`) | dialog = `frame` (`fill white`/`neutral-800`, `cornerRadius 12`, outer shadow), icon circle = 2 stacked `ellipse` (outer 6%, inner 12%) + lucide `icon`, footer buttons reuse the `btn` pattern (`padding [9,13]`, `cornerRadius 8`) — no reusable; needs `teal-100`/`teal-800`/`dialog-scrim`/tint tokens; showcase `Dialog Group` shows a compact card with caption + body + Cancel/Delete footer |
 | Pagination visual (horizontal nav `gap-x-1`; Previous/Next ghost buttons = lucide chevron + label `text-sm`, `text-gray-800` (dark `white`), `min-h/w-9.5`≈38px, `rounded-lg`, disabled at first/last page → `opacity-50`; page-number buttons 38px square `rounded-lg`, active `bg-gray-200`/`text-gray-800` (dark `bg-neutral-600`/`white`) else transparent; ellipsis `•••` `text-gray-400` (dark `neutral-500`) for collapsed ranges; shows all pages if `totalPages ≤ 7` else `1 … window … last`) | nav = `frame` (`gap 4`, prev/next = chevron `icon` + `text`, page = `frame` 38×38 `cornerRadius 8`, active `fill gray-200`/`neutral-600`, ellipsis `•••`) — no reusable; showcase `Pagination Group` shows a compact `‹ 1 ··· 4 [5] 6 ›` bar |
 | ProgressButton visual (solid Button + inline loading state; when `inProgress` → light `Spinner size="sm"` (white C-arc) precedes `inProgressTitle`, button becomes `disabled` + `opacity-50`; plain `disabled` → `opacity-35`; always `solid` variant, color from `ButtonColor`) | reuses `Button/Primary` (`i4PcLp`) for Default/Disabled (override Label + `opacity`); dedicated `ProgressButton/Loading` (`bjqC3`) for the loading state (blue button + white spinner arc + "Saving…") |
+| Alerts visual (dismissible banner list; `text-lg`/600 message, `border rounded-lg`, `px-10 py-4`, leading status icon (14) `top-5 left-4` + dismiss `X` (14) `top-2 right-2`; two variants — **success** `bg-teal-100 text-teal-800 border-teal-200` (dark `bg-teal-800/10 text-teal-500 border-teal-900`) + `CircleCheck`, **error/non-success** `bg-red-100 text-red-800 border-red-200` (dark `bg-red-800/10 text-red-500 border-red-900`) + `CircleX`; `opacity-0` fade on dismiss) | dedicated `Alerts/Success` (`gNmMe`) + `Alerts/Error` (`e4bLs9`) reusables (banner frame + leading lucide icon + bold message + `x` dismiss). Design.pen is light-only, so it needed `teal-100`/`teal-200`/`teal-800` + `red-200` tokens added (`red-100`/`red-800` already present); the component's own Alerts.pen also carries the dark tokens `teal-500/900`, `teal-800-10`, `red-500/900`, `red-800-10`. Showcase `Alerts Group` (`aNggh`) shows one success + one error banner |
 | NumberInput visual (container, stepper buttons, value) | `NumberInput` |
 | Input sub-component visual (any of the 6 types) | `Input/DurationInput`, `Input/HostnameListInput`, `Input/FileUpload`, `Input/MultipleValueTextInput`, `Input/CodeEditor`, `Input/DynamicContent` |
 | New component `.pen` created | Add new reusable components + a new component group to the showcase grid (see layout note below) |
@@ -285,7 +287,7 @@ The primitives **Body** (`W3Yt2`, vertical, gap 40, `width:3200`, padding `[40,4
 - `Row 2` (`OHL7N`): `Breadcrumb` + `Text Inputs` + `Number Inputs` + `Dropdowns`.
 - `Row 3` (`fTPQC`): `Radio Rows` + `Date Pickers` + `Badges` + `Boolean Badge`.
 - `Row 4` (`DTZVv`): `Status Badge` + `Status Circle` + `Label` + `Spinner` + `Tooltip`.
-- `Row 5` (`ZxqYx`): `Tabs` + `Dialog` + `Pagination`.
+- `Row 5` (`ZxqYx`): `Tabs` + `Dialog` + `Pagination` + `Alerts Group` (`aNggh`, `Alerts/Success` `gNmMe` + `Alerts/Error` `e4bLs9`) — ends at ~1440, still room to the right.
 
 Below the primitives is the full-width **Input Section** (`jMZl6`) with composite form examples.
 
@@ -328,6 +330,8 @@ These IDs change if components are ever deleted and recreated. Re-read `get_edit
 | Badge/Solid | `xz3Ab` | Badge.pen (solid pill; override fill + Label for color/size) |
 | Badge/Removable | `Le8f4` | Badge.pen (pill with circular X remove button) |
 | ProgressButton/Loading | `bjqC3` | ProgressButton.pen (blue solid button + white spinner arc + "Saving…"; Default/Disabled reuse `Button/Primary` `i4PcLp`) |
+| Alerts/Success | `gNmMe` | Alerts.pen (teal banner: `bg teal-100`/`border teal-200`/`text teal-800`, `circle-check` icon + bold message + `x` dismiss) |
+| Alerts/Error | `e4bLs9` | Alerts.pen (red banner: `bg red-100`/`border red-200`/`text red-800`, `circle-x` icon + bold message + `x` dismiss) |
 | NumberInput | `mXtap` | NumberInput.pen |
 | Breadcrumb | `UEZoP` | Breadcrumb.pen |
 | Input/DurationInput | `RLZEG` | Input.pen |
