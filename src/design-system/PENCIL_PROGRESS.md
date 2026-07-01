@@ -63,7 +63,7 @@ Tooltip, Tabs, Dialog, Pagination.
 
 - [x] #1721 ProgressButton — commit `c1fd9d52` (Row 1 group `NFq1g`, reusable `ProgressButton/Loading` `bjqC3`)
 - [x] #1722 Alerts — Row 5 group `aNggh`; reusables `Alerts/Success` `gNmMe` + `Alerts/Error` `e4bLs9`; added `teal-100/200/800` + `red-200` tokens to Design.pen
-- [ ] #1723 Container
+- [x] #1723 Container — Row 5 group `eKo82` (plain layout demo, no reusable; layout primitive has no visual chrome); Container.pen shows BEHAVIOR + GAP VARIANTS (gap-2/4/8) + marginTop example
 - [ ] #1724 Widget
 - [ ] #1725 WidgetButtons
 - [ ] #1726 WidgetLock

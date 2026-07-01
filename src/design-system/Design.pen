@@ -3599,6 +3599,119 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "eKo82",
+                  "name": "Container Group",
+                  "width": 300,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "xZRQI",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "sc7Hu",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "CONTAINER",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "J3EVYz",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ZFiEl",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "w5jPE",
+                          "name": "Container Demo",
+                          "width": "fill_container",
+                          "fill": "$color.white",
+                          "cornerRadius": 8,
+                          "stroke": "$color.gray-200",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
+                          "layout": "vertical",
+                          "gap": 16,
+                          "padding": 14,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "cJHMR",
+                              "name": "Block 1",
+                              "width": "fill_container",
+                              "height": 24,
+                              "fill": "$color.gray-100",
+                              "cornerRadius": 6,
+                              "stroke": "$color.gray-300",
+                              "strokeWidth": 1,
+                              "strokeAlignment": "inner"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "FbTLg",
+                              "name": "Block 2",
+                              "width": "fill_container",
+                              "height": 24,
+                              "fill": "$color.gray-100",
+                              "cornerRadius": 6,
+                              "stroke": "$color.gray-300",
+                              "strokeWidth": 1,
+                              "strokeAlignment": "inner"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "Qh3nj",
+                              "name": "Block 3",
+                              "width": "fill_container",
+                              "height": 24,
+                              "fill": "$color.gray-100",
+                              "cornerRadius": 6,
+                              "stroke": "$color.gray-300",
+                              "strokeWidth": 1,
+                              "strokeAlignment": "inner"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "k8c0RP",
+                          "name": "Caption",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "flex-col · gap-4 md:gap-8",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
