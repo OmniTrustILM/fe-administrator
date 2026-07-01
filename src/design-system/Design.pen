@@ -4133,6 +4133,165 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "i4MJSC",
+                  "name": "WidgetLock Group",
+                  "width": 340,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "zVdVO",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "lJfvK",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "WIDGET LOCK",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "frame",
+                          "id": "k3NqM",
+                          "name": "Divider",
+                          "width": "fill_container",
+                          "height": 1,
+                          "fill": "$color.gray-300"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "f6IaP",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "bTnHp",
+                          "name": "Lock Card",
+                          "width": "fill_container",
+                          "fill": "$color.white",
+                          "cornerRadius": 12,
+                          "stroke": "$color.gray-200",
+                          "strokeWidth": 1,
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "#00000014",
+                            "offset": {
+                              "x": 0,
+                              "y": 1
+                            },
+                            "blur": 2
+                          },
+                          "gap": 14,
+                          "padding": 16,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "VLm3S",
+                              "name": "Icon",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon",
+                                  "id": "hXEV8",
+                                  "name": "triangle-alert",
+                                  "width": 30,
+                                  "height": 30,
+                                  "icon": "triangle-alert",
+                                  "library": "lucide",
+                                  "fill": "$color.red-500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "SYYs2",
+                              "name": "Text",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "ekqLJ",
+                                  "name": "Title Row",
+                                  "width": "fill_container",
+                                  "gap": 6,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "RHNfG",
+                                      "name": "Lock Title",
+                                      "fill": "$color.gray-900",
+                                      "content": "There was some problem",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 14,
+                                      "fontWeight": "600"
+                                    },
+                                    {
+                                      "type": "icon",
+                                      "id": "o1FJB0",
+                                      "name": "info",
+                                      "width": 14,
+                                      "height": 14,
+                                      "icon": "info",
+                                      "library": "lucide",
+                                      "fill": "$color.gray-500"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "M2vNg",
+                                  "name": "Lock Text",
+                                  "fill": "$color.gray-700",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "There was some issue please try again later",
+                                  "lineHeight": 1.4,
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "GmKgP",
+                          "name": "Caption",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "widget error / empty state · danger icon by lockType · optional info tooltip · centered card",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
