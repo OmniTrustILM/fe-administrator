@@ -1,0 +1,665 @@
+{
+  "version": "2.13",
+  "children": [
+    {
+      "type": "frame",
+      "id": "GjhGw",
+      "x": 0,
+      "y": 0,
+      "name": "StatusCircle / Light",
+      "width": 600,
+      "fill": "$color.white",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "g4tdCE",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "JMMsI",
+              "name": "Title",
+              "fill": "$color.neutral-900",
+              "content": "StatusCircle",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "sWlTL",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "content": "Icon badge reflecting a boolean status — true, false, or unknown.",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "NAA6p",
+          "name": "States",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "ZMU6J",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "STATES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 0.5
+            },
+            {
+              "type": "frame",
+              "id": "V6gV4x",
+              "name": "States Row",
+              "width": "fill_container",
+              "gap": 40,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "RxzWB",
+                  "name": "True Cell",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "uJnb4",
+                      "name": "True Badge",
+                      "fill": "$color.status-success",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "qUs9a",
+                          "name": "Icon",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "check",
+                          "library": "lucide",
+                          "fill": "$color.white"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "hK4pu",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "status: true",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "c6nPl",
+                  "name": "False Cell",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "uc0uY",
+                      "name": "False Badge",
+                      "fill": "$color.status-danger",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "eccMt",
+                          "name": "Icon",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "x",
+                          "library": "lucide",
+                          "fill": "$color.white"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "WZR2P",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "status: false",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "h3FcHf",
+                  "name": "Unknown Cell",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "cQJBY",
+                      "name": "Unknown Badge",
+                      "fill": "$color.gray-500",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "NoPVv",
+                          "name": "Icon",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "circle-question-mark",
+                          "library": "lucide",
+                          "fill": "$color.white"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "sZpRJ",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "status: undefined",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "q0pfVX",
+      "x": 660,
+      "y": 0,
+      "name": "StatusCircle / Dark",
+      "width": 600,
+      "fill": "$color.neutral-900",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "tq719",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "pKgzn",
+              "name": "Title",
+              "fill": "$color.neutral-200",
+              "content": "StatusCircle",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "Pq2sB",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "content": "Icon badge reflecting a boolean status — true, false, or unknown.",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "r61Wm7",
+          "name": "States",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "MMkQn",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "STATES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 0.5
+            },
+            {
+              "type": "frame",
+              "id": "m9qoc",
+              "name": "States Row",
+              "width": "fill_container",
+              "gap": 40,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "USn10",
+                  "name": "True Cell",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "r2Mih",
+                      "name": "True Badge",
+                      "fill": "$color.status-success",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "I1hyO",
+                          "name": "Icon",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "check",
+                          "library": "lucide",
+                          "fill": "$color.white"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "uoerV",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "status: true",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "D8IoX",
+                  "name": "False Cell",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "CPCCh",
+                      "name": "False Badge",
+                      "fill": "$color.status-danger",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "T02WFa",
+                          "name": "Icon",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "x",
+                          "library": "lucide",
+                          "fill": "$color.white"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "fyEda",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "status: false",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Z4pXAu",
+                  "name": "Unknown Cell",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "c86Wy",
+                      "name": "Unknown Badge",
+                      "fill": "$color.gray-500",
+                      "cornerRadius": 6,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "ph0Zn",
+                          "name": "Icon",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "circle-question-mark",
+                          "library": "lucide",
+                          "fill": "$color.white"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "lFi3A",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "status: undefined",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "gray-700": {
+      "type": "color",
+      "value": "#8c8c8c"
+    },
+    "gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "neutral-200": {
+      "type": "color",
+      "value": "#e5e5e5"
+    },
+    "neutral-400": {
+      "type": "color",
+      "value": "#a3a3a3"
+    },
+    "neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    },
+    "status-danger": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "status-info": {
+      "type": "color",
+      "value": "#3399ff"
+    },
+    "status-success": {
+      "type": "color",
+      "value": "#14b8a6"
+    },
+    "status-warning": {
+      "type": "color",
+      "value": "#eab308"
+    },
+    "white": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "color.blue-100": {
+      "type": "color",
+      "value": "#cce5ff"
+    },
+    "color.blue-200": {
+      "type": "color",
+      "value": "#99ccff"
+    },
+    "color.blue-300": {
+      "type": "color",
+      "value": "#66b2ff"
+    },
+    "color.blue-400": {
+      "type": "color",
+      "value": "#3399ff"
+    },
+    "color.blue-50": {
+      "type": "color",
+      "value": "#e6f2ff"
+    },
+    "color.blue-500": {
+      "type": "color",
+      "value": "#0085e6"
+    },
+    "color.blue-600": {
+      "type": "color",
+      "value": "#0073cf"
+    },
+    "color.blue-700": {
+      "type": "color",
+      "value": "#005ba6"
+    },
+    "color.blue-800": {
+      "type": "color",
+      "value": "#004480"
+    },
+    "color.blue-900": {
+      "type": "color",
+      "value": "#002d59"
+    },
+    "color.blue-950": {
+      "type": "color",
+      "value": "#001a33"
+    },
+    "color.gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.gray-400": {
+      "type": "color",
+      "value": "#c7c7c7"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-600": {
+      "type": "color",
+      "value": "#b4b4b4"
+    },
+    "color.gray-700": {
+      "type": "color",
+      "value": "#8c8c8c"
+    },
+    "color.gray-800": {
+      "type": "color",
+      "value": "#666666"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-200": {
+      "type": "color",
+      "value": "#e5e5e5"
+    },
+    "color.neutral-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.neutral-400": {
+      "type": "color",
+      "value": "#a3a3a3"
+    },
+    "color.neutral-500": {
+      "type": "color",
+      "value": "#737373"
+    },
+    "color.neutral-600": {
+      "type": "color",
+      "value": "#525252"
+    },
+    "color.neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "color.neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    },
+    "color.red-100": {
+      "type": "color",
+      "value": "#fee2e2"
+    },
+    "color.red-400": {
+      "type": "color",
+      "value": "#f87171"
+    },
+    "color.red-500": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.red-600": {
+      "type": "color",
+      "value": "#dc2626"
+    },
+    "color.red-800": {
+      "type": "color",
+      "value": "#991b1b"
+    },
+    "color.status-danger": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.status-info": {
+      "type": "color",
+      "value": "#3399ff"
+    },
+    "color.status-success": {
+      "type": "color",
+      "value": "#14b8a6"
+    },
+    "color.status-warning": {
+      "type": "color",
+      "value": "#eab308"
+    },
+    "color.transparent": {
+      "type": "color",
+      "value": "#00000000"
+    },
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "color.yellow-100": {
+      "type": "color",
+      "value": "#fef9c3"
+    },
+    "color.yellow-400": {
+      "type": "color",
+      "value": "#facc15"
+    },
+    "color.yellow-500": {
+      "type": "color",
+      "value": "#eab308"
+    },
+    "color.yellow-600": {
+      "type": "color",
+      "value": "#ca8a04"
+    },
+    "color.yellow-800": {
+      "type": "color",
+      "value": "#854d0e"
+    }
+  }
+}

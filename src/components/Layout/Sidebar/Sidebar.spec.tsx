@@ -37,6 +37,24 @@ test.describe('Sidebar', () => {
         await expect(component.getByRole('link', { name: 'Users' })).toBeVisible();
     });
 
+    test('headerLink item exposes a stable data-testid', async ({ mount }) => {
+        const store = createMockStore();
+        const component = await mount(withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }));
+        await expect(component.getByTestId('sidebar-certificates')).toBeVisible();
+    });
+
+    test('section toggle and nested children expose stable data-testid attributes', async ({ mount }) => {
+        const store = createMockStore();
+        const component = await mount(
+            withProviders(<Sidebar allowedResources={[Resource.Users, Resource.Roles]} />, { store, initialRoute: '/' }),
+        );
+        // parent toggle: sidebar-<parent>
+        await expect(component.getByTestId('sidebar-access-control')).toBeVisible();
+        // nested items: sidebar-<parent>-<child> (present in DOM even while the section is collapsed)
+        await expect(component.getByTestId('sidebar-access-control-users')).toBeAttached();
+        await expect(component.getByTestId('sidebar-access-control-roles')).toBeAttached();
+    });
+
     test('toggle button can be clicked', async ({ mount }) => {
         const store = createMockStore();
         const component = await mount(withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }));
