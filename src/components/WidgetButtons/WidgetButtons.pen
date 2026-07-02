@@ -9,9 +9,9 @@
       "name": "Light",
       "clip": true,
       "width": 720,
-      "fill": "$white",
+      "fill": "$color.white",
       "cornerRadius": 12,
-      "stroke": "$gray-200",
+      "stroke": "$color.gray-200",
       "strokeWidth": 1,
       "strokeAlignment": "inner",
       "layout": "vertical",
@@ -35,7 +35,7 @@
               "type": "text",
               "id": "j3dvv",
               "name": "Title",
-              "fill": "$gray-900",
+              "fill": "$color.gray-900",
               "content": "WidgetButtons",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -45,7 +45,7 @@
               "type": "text",
               "id": "b7hIs",
               "name": "Subtitle",
-              "fill": "$gray-700",
+              "fill": "$color.gray-700",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Toolbar row of transparent icon buttons — states, justify & examples",
@@ -67,7 +67,7 @@
               "type": "text",
               "id": "O7UZb0",
               "name": "Label",
-              "fill": "$gray-700",
+              "fill": "$color.gray-700",
               "content": "ANATOMY",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -79,9 +79,9 @@
               "id": "i9mjI0",
               "name": "Header Context",
               "width": "fill_container",
-              "fill": "$white",
+              "fill": "$color.white",
               "cornerRadius": 10,
-              "stroke": "$gray-200",
+              "stroke": "$color.gray-200",
               "strokeWidth": 1,
               "strokeAlignment": "inner",
               "padding": [
@@ -95,7 +95,7 @@
                   "type": "text",
                   "id": "M61Y1h",
                   "name": "Widget Title",
-                  "fill": "$gray-900",
+                  "fill": "$color.gray-900",
                   "content": "Certificates",
                   "fontFamily": "Inter",
                   "fontSize": 14,
@@ -125,7 +125,7 @@
                           "height": 16,
                           "icon": "refresh-cw",
                           "library": "lucide",
-                          "fill": "$gray-800"
+                          "fill": "$color.gray-800"
                         }
                       ]
                     },
@@ -146,7 +146,7 @@
                           "height": 16,
                           "icon": "download",
                           "library": "lucide",
-                          "fill": "$gray-800"
+                          "fill": "$color.gray-800"
                         }
                       ]
                     },
@@ -167,7 +167,7 @@
                           "height": 16,
                           "icon": "search",
                           "library": "lucide",
-                          "fill": "$gray-800"
+                          "fill": "$color.gray-800"
                         }
                       ]
                     },
@@ -188,7 +188,7 @@
                           "height": 16,
                           "icon": "info",
                           "library": "lucide",
-                          "fill": "$gray-800"
+                          "fill": "$color.gray-800"
                         }
                       ]
                     }
@@ -200,7 +200,7 @@
               "type": "text",
               "id": "V2lal",
               "name": "Caption",
-              "fill": "$gray-500",
+              "fill": "$color.gray-500",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "flex · items-center · gap-1 · ml-2 — transparent 16px icon buttons, right-aligned in a widget header",
@@ -222,7 +222,7 @@
               "type": "text",
               "id": "vELMm",
               "name": "Label",
-              "fill": "$gray-700",
+              "fill": "$color.gray-700",
               "content": "BUTTON STATES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -265,7 +265,7 @@
                           "height": 16,
                           "icon": "refresh-cw",
                           "library": "lucide",
-                          "fill": "$gray-800"
+                          "fill": "$color.gray-800"
                         }
                       ]
                     },
@@ -273,7 +273,7 @@
                       "type": "text",
                       "id": "U6Fao5",
                       "name": "State Label",
-                      "fill": "$gray-700",
+                      "fill": "$color.gray-700",
                       "content": "Default",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -298,7 +298,7 @@
                       "type": "frame",
                       "id": "a8noo3",
                       "name": "Btn download",
-                      "fill": "$gray-200",
+                      "fill": "$color.gray-200",
                       "cornerRadius": 8,
                       "padding": 8,
                       "justifyContent": "center",
@@ -312,7 +312,7 @@
                           "height": 16,
                           "icon": "download",
                           "library": "lucide",
-                          "fill": "$gray-800"
+                          "fill": "$color.gray-800"
                         }
                       ]
                     },
@@ -320,7 +320,7 @@
                       "type": "text",
                       "id": "S0C74",
                       "name": "State Label",
-                      "fill": "$gray-700",
+                      "fill": "$color.gray-700",
                       "content": "Hover",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -349,7 +349,7 @@
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
-                        "color": "$blue-300",
+                        "color": "$color.blue-300",
                         "spread": 2
                       },
                       "padding": 8,
@@ -364,7 +364,7 @@
                           "height": 16,
                           "icon": "search",
                           "library": "lucide",
-                          "fill": "$gray-800"
+                          "fill": "$color.gray-800"
                         }
                       ]
                     },
@@ -372,7 +372,7 @@
                       "type": "text",
                       "id": "m67ZQ5",
                       "name": "State Label",
-                      "fill": "$gray-700",
+                      "fill": "$color.gray-700",
                       "content": "Focus",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -411,7 +411,7 @@
                           "height": 16,
                           "icon": "info",
                           "library": "lucide",
-                          "fill": "$gray-800"
+                          "fill": "$color.gray-800"
                         }
                       ]
                     },
@@ -419,7 +419,7 @@
                       "type": "text",
                       "id": "r6hZnX",
                       "name": "State Label",
-                      "fill": "$gray-700",
+                      "fill": "$color.gray-700",
                       "content": "Disabled",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -435,7 +435,7 @@
           "type": "rectangle",
           "id": "g71B0",
           "name": "Section Divider",
-          "fill": "$gray-200",
+          "fill": "$color.gray-200",
           "width": "fill_container",
           "height": 1
         },
@@ -451,7 +451,7 @@
               "type": "text",
               "id": "qPgQ4",
               "name": "Label",
-              "fill": "$gray-700",
+              "fill": "$color.gray-700",
               "content": "JUSTIFY",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -470,7 +470,7 @@
                   "type": "text",
                   "id": "S1A2io",
                   "name": "Value",
-                  "fill": "$gray-700",
+                  "fill": "$color.gray-700",
                   "content": "justify-start",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -481,9 +481,9 @@
                   "id": "xTQwP",
                   "name": "Track",
                   "width": "fill_container",
-                  "fill": "$gray-100",
+                  "fill": "$color.gray-100",
                   "cornerRadius": 10,
-                  "stroke": "$gray-300",
+                  "stroke": "$color.gray-300",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -516,7 +516,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -537,7 +537,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -558,7 +558,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         }
@@ -580,7 +580,7 @@
                   "type": "text",
                   "id": "xYz9m",
                   "name": "Value",
-                  "fill": "$gray-700",
+                  "fill": "$color.gray-700",
                   "content": "justify-center",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -591,9 +591,9 @@
                   "id": "Q6Damx",
                   "name": "Track",
                   "width": "fill_container",
-                  "fill": "$gray-100",
+                  "fill": "$color.gray-100",
                   "cornerRadius": 10,
-                  "stroke": "$gray-300",
+                  "stroke": "$color.gray-300",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -627,7 +627,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -648,7 +648,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -669,7 +669,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         }
@@ -691,7 +691,7 @@
                   "type": "text",
                   "id": "n3vMn",
                   "name": "Value",
-                  "fill": "$gray-700",
+                  "fill": "$color.gray-700",
                   "content": "justify-end",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -702,9 +702,9 @@
                   "id": "L3BqV",
                   "name": "Track",
                   "width": "fill_container",
-                  "fill": "$gray-100",
+                  "fill": "$color.gray-100",
                   "cornerRadius": 10,
-                  "stroke": "$gray-300",
+                  "stroke": "$color.gray-300",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -738,7 +738,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -759,7 +759,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -780,7 +780,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         }
@@ -796,7 +796,7 @@
           "type": "rectangle",
           "id": "d5Akxl",
           "name": "Section Divider",
-          "fill": "$gray-200",
+          "fill": "$color.gray-200",
           "width": "fill_container",
           "height": 1
         },
@@ -812,7 +812,7 @@
               "type": "text",
               "id": "vkkCK",
               "name": "Label",
-              "fill": "$gray-700",
+              "fill": "$color.gray-700",
               "content": "EXAMPLES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -831,7 +831,7 @@
                   "type": "text",
                   "id": "wcmJg",
                   "name": "Caption",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "Widget header — one action disabled (disabledTooltip)",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -842,9 +842,9 @@
                   "id": "pAjen",
                   "name": "Header Card",
                   "width": "fill_container",
-                  "fill": "$white",
+                  "fill": "$color.white",
                   "cornerRadius": 10,
-                  "stroke": "$gray-200",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -858,7 +858,7 @@
                       "type": "text",
                       "id": "gTiXC",
                       "name": "Widget Title",
-                      "fill": "$gray-900",
+                      "fill": "$color.gray-900",
                       "content": "Discovery",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -888,7 +888,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -909,7 +909,7 @@
                               "height": 16,
                               "icon": "list-restart",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -931,7 +931,7 @@
                               "height": 16,
                               "icon": "download",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         }
@@ -953,7 +953,7 @@
                   "type": "text",
                   "id": "P9zdJ",
                   "name": "Caption",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "Custom slot — buttons[].custom renders any React node inline",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -964,9 +964,9 @@
                   "id": "WzpWc",
                   "name": "Header Card",
                   "width": "fill_container",
-                  "fill": "$white",
+                  "fill": "$color.white",
                   "cornerRadius": 10,
-                  "stroke": "$gray-200",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -980,7 +980,7 @@
                       "type": "text",
                       "id": "catDp",
                       "name": "Widget Title",
-                      "fill": "$gray-900",
+                      "fill": "$color.gray-900",
                       "content": "Certificates",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -997,9 +997,9 @@
                           "type": "frame",
                           "id": "Xb2Tl",
                           "name": "Custom Pill",
-                          "fill": "$blue-50",
+                          "fill": "$color.blue-50",
                           "cornerRadius": 20,
-                          "stroke": "$blue-200",
+                          "stroke": "$color.blue-200",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner",
                           "gap": 6,
@@ -1013,7 +1013,7 @@
                               "type": "ellipse",
                               "id": "XEScF",
                               "name": "Dot",
-                              "fill": "$blue-600",
+                              "fill": "$color.blue-600",
                               "width": 6,
                               "height": 6
                             },
@@ -1021,7 +1021,7 @@
                               "type": "text",
                               "id": "tJV4v",
                               "name": "Label",
-                              "fill": "$blue-700",
+                              "fill": "$color.blue-700",
                               "content": "Auto-refresh",
                               "fontFamily": "Inter",
                               "fontSize": 12,
@@ -1046,7 +1046,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -1067,7 +1067,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         }
@@ -1089,9 +1089,9 @@
       "name": "Dark",
       "clip": true,
       "width": 720,
-      "fill": "$neutral-900",
+      "fill": "$color.neutral-900",
       "cornerRadius": 12,
-      "stroke": "$neutral-700",
+      "stroke": "$color.neutral-700",
       "strokeWidth": 1,
       "strokeAlignment": "inner",
       "layout": "vertical",
@@ -1115,7 +1115,7 @@
               "type": "text",
               "id": "Lwtbr",
               "name": "Title",
-              "fill": "$white",
+              "fill": "$color.white",
               "content": "WidgetButtons",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -1125,7 +1125,7 @@
               "type": "text",
               "id": "suJFq",
               "name": "Subtitle",
-              "fill": "$neutral-300",
+              "fill": "$color.neutral-300",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Toolbar row of transparent icon buttons — states, justify & examples",
@@ -1147,7 +1147,7 @@
               "type": "text",
               "id": "a53rJz",
               "name": "Label",
-              "fill": "$neutral-300",
+              "fill": "$color.neutral-300",
               "content": "ANATOMY",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -1159,9 +1159,9 @@
               "id": "T6xO14",
               "name": "Header Context",
               "width": "fill_container",
-              "fill": "$neutral-800",
+              "fill": "$color.neutral-800",
               "cornerRadius": 10,
-              "stroke": "$neutral-700",
+              "stroke": "$color.neutral-700",
               "strokeWidth": 1,
               "strokeAlignment": "inner",
               "padding": [
@@ -1175,7 +1175,7 @@
                   "type": "text",
                   "id": "dUXqS",
                   "name": "Widget Title",
-                  "fill": "$white",
+                  "fill": "$color.white",
                   "content": "Certificates",
                   "fontFamily": "Inter",
                   "fontSize": 14,
@@ -1205,7 +1205,7 @@
                           "height": 16,
                           "icon": "refresh-cw",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         }
                       ]
                     },
@@ -1226,7 +1226,7 @@
                           "height": 16,
                           "icon": "download",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         }
                       ]
                     },
@@ -1247,7 +1247,7 @@
                           "height": 16,
                           "icon": "search",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         }
                       ]
                     },
@@ -1268,7 +1268,7 @@
                           "height": 16,
                           "icon": "info",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         }
                       ]
                     }
@@ -1280,7 +1280,7 @@
               "type": "text",
               "id": "McpBv",
               "name": "Caption",
-              "fill": "$neutral-500",
+              "fill": "$color.neutral-500",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "flex · items-center · gap-1 · ml-2 — transparent 16px icon buttons, right-aligned in a widget header",
@@ -1302,7 +1302,7 @@
               "type": "text",
               "id": "B6JRo",
               "name": "Label",
-              "fill": "$neutral-300",
+              "fill": "$color.neutral-300",
               "content": "BUTTON STATES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -1345,7 +1345,7 @@
                           "height": 16,
                           "icon": "refresh-cw",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         }
                       ]
                     },
@@ -1353,7 +1353,7 @@
                       "type": "text",
                       "id": "pSIGO",
                       "name": "State Label",
-                      "fill": "$neutral-300",
+                      "fill": "$color.neutral-300",
                       "content": "Default",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -1378,7 +1378,7 @@
                       "type": "frame",
                       "id": "m4fg8L",
                       "name": "Btn download",
-                      "fill": "$neutral-700",
+                      "fill": "$color.neutral-700",
                       "cornerRadius": 8,
                       "padding": 8,
                       "justifyContent": "center",
@@ -1392,7 +1392,7 @@
                           "height": 16,
                           "icon": "download",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         }
                       ]
                     },
@@ -1400,7 +1400,7 @@
                       "type": "text",
                       "id": "UiGpG",
                       "name": "State Label",
-                      "fill": "$neutral-300",
+                      "fill": "$color.neutral-300",
                       "content": "Hover",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -1429,7 +1429,7 @@
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
-                        "color": "$blue-500",
+                        "color": "$color.blue-500",
                         "spread": 2
                       },
                       "padding": 8,
@@ -1444,7 +1444,7 @@
                           "height": 16,
                           "icon": "search",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         }
                       ]
                     },
@@ -1452,7 +1452,7 @@
                       "type": "text",
                       "id": "DwR0f",
                       "name": "State Label",
-                      "fill": "$neutral-300",
+                      "fill": "$color.neutral-300",
                       "content": "Focus",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -1491,7 +1491,7 @@
                           "height": 16,
                           "icon": "info",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         }
                       ]
                     },
@@ -1499,7 +1499,7 @@
                       "type": "text",
                       "id": "dhQgx",
                       "name": "State Label",
-                      "fill": "$neutral-300",
+                      "fill": "$color.neutral-300",
                       "content": "Disabled",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -1515,7 +1515,7 @@
           "type": "rectangle",
           "id": "yQyWE",
           "name": "Section Divider",
-          "fill": "$neutral-700",
+          "fill": "$color.neutral-700",
           "width": "fill_container",
           "height": 1
         },
@@ -1531,7 +1531,7 @@
               "type": "text",
               "id": "t8CsfX",
               "name": "Label",
-              "fill": "$neutral-300",
+              "fill": "$color.neutral-300",
               "content": "JUSTIFY",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -1550,7 +1550,7 @@
                   "type": "text",
                   "id": "jdttr",
                   "name": "Value",
-                  "fill": "$neutral-300",
+                  "fill": "$color.neutral-300",
                   "content": "justify-start",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -1561,9 +1561,9 @@
                   "id": "xopty",
                   "name": "Track",
                   "width": "fill_container",
-                  "fill": "$neutral-800",
+                  "fill": "$color.neutral-800",
                   "cornerRadius": 10,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -1596,7 +1596,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -1617,7 +1617,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -1638,7 +1638,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         }
@@ -1660,7 +1660,7 @@
                   "type": "text",
                   "id": "dGqph",
                   "name": "Value",
-                  "fill": "$neutral-300",
+                  "fill": "$color.neutral-300",
                   "content": "justify-center",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -1671,9 +1671,9 @@
                   "id": "P8fZ37",
                   "name": "Track",
                   "width": "fill_container",
-                  "fill": "$neutral-800",
+                  "fill": "$color.neutral-800",
                   "cornerRadius": 10,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -1707,7 +1707,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -1728,7 +1728,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -1749,7 +1749,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         }
@@ -1771,7 +1771,7 @@
                   "type": "text",
                   "id": "V0zFKM",
                   "name": "Value",
-                  "fill": "$neutral-300",
+                  "fill": "$color.neutral-300",
                   "content": "justify-end",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -1782,9 +1782,9 @@
                   "id": "hb8kC",
                   "name": "Track",
                   "width": "fill_container",
-                  "fill": "$neutral-800",
+                  "fill": "$color.neutral-800",
                   "cornerRadius": 10,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -1818,7 +1818,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -1839,7 +1839,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -1860,7 +1860,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         }
@@ -1876,7 +1876,7 @@
           "type": "rectangle",
           "id": "KC9P9",
           "name": "Section Divider",
-          "fill": "$neutral-700",
+          "fill": "$color.neutral-700",
           "width": "fill_container",
           "height": 1
         },
@@ -1892,7 +1892,7 @@
               "type": "text",
               "id": "AbANw",
               "name": "Label",
-              "fill": "$neutral-300",
+              "fill": "$color.neutral-300",
               "content": "EXAMPLES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -1911,7 +1911,7 @@
                   "type": "text",
                   "id": "nVlkH",
                   "name": "Caption",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "Widget header — one action disabled (disabledTooltip)",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -1922,9 +1922,9 @@
                   "id": "GZVcu",
                   "name": "Header Card",
                   "width": "fill_container",
-                  "fill": "$neutral-800",
+                  "fill": "$color.neutral-800",
                   "cornerRadius": 10,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -1938,7 +1938,7 @@
                       "type": "text",
                       "id": "qDzxA",
                       "name": "Widget Title",
-                      "fill": "$white",
+                      "fill": "$color.white",
                       "content": "Discovery",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -1968,7 +1968,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -1989,7 +1989,7 @@
                               "height": 16,
                               "icon": "list-restart",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -2011,7 +2011,7 @@
                               "height": 16,
                               "icon": "download",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         }
@@ -2033,7 +2033,7 @@
                   "type": "text",
                   "id": "GrkG6",
                   "name": "Caption",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "Custom slot — buttons[].custom renders any React node inline",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -2044,9 +2044,9 @@
                   "id": "KftKI",
                   "name": "Header Card",
                   "width": "fill_container",
-                  "fill": "$neutral-800",
+                  "fill": "$color.neutral-800",
                   "cornerRadius": 10,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -2060,7 +2060,7 @@
                       "type": "text",
                       "id": "q2D5Z",
                       "name": "Widget Title",
-                      "fill": "$white",
+                      "fill": "$color.white",
                       "content": "Certificates",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -2077,9 +2077,9 @@
                           "type": "frame",
                           "id": "xg5Uc",
                           "name": "Custom Pill",
-                          "fill": "$blue-950",
+                          "fill": "$color.blue-950",
                           "cornerRadius": 20,
-                          "stroke": "$blue-800",
+                          "stroke": "$color.blue-800",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner",
                           "gap": 6,
@@ -2093,7 +2093,7 @@
                               "type": "ellipse",
                               "id": "Svtor",
                               "name": "Dot",
-                              "fill": "$blue-500",
+                              "fill": "$color.blue-500",
                               "width": 6,
                               "height": 6
                             },
@@ -2101,7 +2101,7 @@
                               "type": "text",
                               "id": "r95x53",
                               "name": "Label",
-                              "fill": "$blue-300",
+                              "fill": "$color.blue-300",
                               "content": "Auto-refresh",
                               "fontFamily": "Inter",
                               "fontSize": 12,
@@ -2126,7 +2126,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -2147,7 +2147,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         }
@@ -2163,119 +2163,119 @@
     }
   ],
   "variables": {
-    "white": {
+    "color.white": {
       "type": "color",
       "value": "#ffffff"
     },
-    "transparent": {
+    "color.transparent": {
       "type": "color",
       "value": "#00000000"
     },
-    "blue-50": {
+    "color.blue-50": {
       "type": "color",
       "value": "#e6f2ff"
     },
-    "blue-100": {
+    "color.blue-100": {
       "type": "color",
       "value": "#cce5ff"
     },
-    "blue-200": {
+    "color.blue-200": {
       "type": "color",
       "value": "#99ccff"
     },
-    "blue-300": {
+    "color.blue-300": {
       "type": "color",
       "value": "#66b2ff"
     },
-    "blue-500": {
+    "color.blue-500": {
       "type": "color",
       "value": "#0085e6"
     },
-    "blue-600": {
+    "color.blue-600": {
       "type": "color",
       "value": "#0073cf"
     },
-    "blue-700": {
+    "color.blue-700": {
       "type": "color",
       "value": "#005ba6"
     },
-    "blue-800": {
+    "color.blue-800": {
       "type": "color",
       "value": "#004480"
     },
-    "blue-950": {
+    "color.blue-950": {
       "type": "color",
       "value": "#001a33"
     },
-    "gray-100": {
+    "color.gray-100": {
       "type": "color",
       "value": "#f5f5f5"
     },
-    "gray-200": {
+    "color.gray-200": {
       "type": "color",
       "value": "#e8e8e8"
     },
-    "gray-300": {
+    "color.gray-300": {
       "type": "color",
       "value": "#d4d4d4"
     },
-    "gray-400": {
+    "color.gray-400": {
       "type": "color",
       "value": "#c7c7c7"
     },
-    "gray-500": {
+    "color.gray-500": {
       "type": "color",
       "value": "#a8a8a8"
     },
-    "gray-700": {
+    "color.gray-700": {
       "type": "color",
       "value": "#8c8c8c"
     },
-    "gray-800": {
+    "color.gray-800": {
       "type": "color",
       "value": "#666666"
     },
-    "gray-900": {
+    "color.gray-900": {
       "type": "color",
       "value": "#404040"
     },
-    "neutral-200": {
+    "color.neutral-200": {
       "type": "color",
       "value": "#e5e5e5"
     },
-    "neutral-300": {
+    "color.neutral-300": {
       "type": "color",
       "value": "#d4d4d4"
     },
-    "neutral-400": {
+    "color.neutral-400": {
       "type": "color",
       "value": "#a3a3a3"
     },
-    "neutral-500": {
+    "color.neutral-500": {
       "type": "color",
       "value": "#737373"
     },
-    "neutral-600": {
+    "color.neutral-600": {
       "type": "color",
       "value": "#525252"
     },
-    "neutral-700": {
+    "color.neutral-700": {
       "type": "color",
       "value": "#404040"
     },
-    "neutral-800": {
+    "color.neutral-800": {
       "type": "color",
       "value": "#262626"
     },
-    "neutral-900": {
+    "color.neutral-900": {
       "type": "color",
       "value": "#171717"
     },
-    "red-100": {
+    "color.red-100": {
       "type": "color",
       "value": "#fee2e2"
     },
-    "red-500": {
+    "color.red-500": {
       "type": "color",
       "value": "#ef4444"
     }

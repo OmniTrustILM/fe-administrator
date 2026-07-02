@@ -9,9 +9,9 @@
       "name": "WidgetLock — Light",
       "clip": true,
       "width": 760,
-      "fill": "$white",
+      "fill": "$color.white",
       "cornerRadius": 12,
-      "stroke": "$gray-200",
+      "stroke": "$color.gray-200",
       "strokeWidth": 1,
       "layout": "vertical",
       "gap": 34,
@@ -32,7 +32,7 @@
               "type": "text",
               "id": "TGSAB",
               "name": "Title",
-              "fill": "$gray-900",
+              "fill": "$color.gray-900",
               "content": "WidgetLock",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -42,7 +42,7 @@
               "type": "text",
               "id": "v77gI",
               "name": "Subtitle",
-              "fill": "$gray-700",
+              "fill": "$color.gray-700",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Error / empty-state card shown when a widget can't load its content.",
@@ -73,7 +73,7 @@
                   "type": "text",
                   "id": "E3HLk",
                   "name": "Label",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "ANATOMY",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -86,7 +86,7 @@
                   "name": "Divider",
                   "width": "fill_container",
                   "height": 1,
-                  "fill": "$gray-200"
+                  "fill": "$color.gray-200"
                 }
               ]
             },
@@ -95,9 +95,9 @@
               "id": "LeMOr",
               "name": "Lock Card",
               "width": "fill_container",
-              "fill": "$white",
+              "fill": "$color.white",
               "cornerRadius": 12,
-              "stroke": "$gray-200",
+              "stroke": "$color.gray-200",
               "strokeWidth": 1,
               "gap": 16,
               "padding": 24,
@@ -118,7 +118,7 @@
                       "height": 32,
                       "icon": "triangle-alert",
                       "library": "lucide",
-                      "fill": "$red-500"
+                      "fill": "$color.red-500"
                     }
                   ]
                 },
@@ -142,7 +142,7 @@
                           "type": "text",
                           "id": "iE2Uz",
                           "name": "Lock Title",
-                          "fill": "$gray-900",
+                          "fill": "$color.gray-900",
                           "content": "There was some problem",
                           "fontFamily": "Inter",
                           "fontSize": 16,
@@ -154,7 +154,7 @@
                       "type": "text",
                       "id": "szoAx",
                       "name": "Lock Text",
-                      "fill": "$gray-700",
+                      "fill": "$color.gray-700",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "There was some issue please try again later",
@@ -171,10 +171,10 @@
               "type": "text",
               "id": "whDId",
               "name": "Caption",
-              "fill": "$gray-500",
+              "fill": "$color.gray-500",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Danger-colored icon · semibold title · muted body text · white card with subtle border · centered in a Container.",
+              "content": "Danger-colored icon · semibold title · muted body text · card surface with subtle border · centered in a Container.",
               "lineHeight": 1.4,
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -202,7 +202,7 @@
                   "type": "text",
                   "id": "KXytc",
                   "name": "Label",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "LOCK TYPES",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -215,7 +215,7 @@
                   "name": "Divider",
                   "width": "fill_container",
                   "height": 1,
-                  "fill": "$gray-200"
+                  "fill": "$color.gray-200"
                 }
               ]
             },
@@ -239,9 +239,9 @@
                       "id": "GPdla",
                       "name": "Generic",
                       "width": "fill_container",
-                      "fill": "$gray-100",
+                      "fill": "$color.gray-100",
                       "cornerRadius": 10,
-                      "stroke": "$gray-200",
+                      "stroke": "$color.gray-200",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -257,13 +257,13 @@
                           "height": 26,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$red-500"
+                          "fill": "$color.red-500"
                         },
                         {
                           "type": "text",
                           "id": "JyVLj",
                           "name": "Label",
-                          "fill": "$gray-800",
+                          "fill": "$color.gray-800",
                           "content": "Generic",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -276,9 +276,9 @@
                       "id": "lpj1D",
                       "name": "Network",
                       "width": "fill_container",
-                      "fill": "$gray-100",
+                      "fill": "$color.gray-100",
                       "cornerRadius": 10,
-                      "stroke": "$gray-200",
+                      "stroke": "$color.gray-200",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -294,13 +294,13 @@
                           "height": 26,
                           "icon": "wifi",
                           "library": "lucide",
-                          "fill": "$red-500"
+                          "fill": "$color.red-500"
                         },
                         {
                           "type": "text",
                           "id": "i43m4o",
                           "name": "Label",
-                          "fill": "$gray-800",
+                          "fill": "$color.gray-800",
                           "content": "Network",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -313,9 +313,9 @@
                       "id": "eTSiQ",
                       "name": "Permission",
                       "width": "fill_container",
-                      "fill": "$gray-100",
+                      "fill": "$color.gray-100",
                       "cornerRadius": 10,
-                      "stroke": "$gray-200",
+                      "stroke": "$color.gray-200",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -331,13 +331,13 @@
                           "height": 26,
                           "icon": "lock",
                           "library": "lucide",
-                          "fill": "$red-500"
+                          "fill": "$color.red-500"
                         },
                         {
                           "type": "text",
                           "id": "gnoUT",
                           "name": "Label",
-                          "fill": "$gray-800",
+                          "fill": "$color.gray-800",
                           "content": "Permission",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -359,9 +359,9 @@
                       "id": "tPrto",
                       "name": "Client",
                       "width": "fill_container",
-                      "fill": "$gray-100",
+                      "fill": "$color.gray-100",
                       "cornerRadius": 10,
-                      "stroke": "$gray-200",
+                      "stroke": "$color.gray-200",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -377,13 +377,13 @@
                           "height": 26,
                           "icon": "house",
                           "library": "lucide",
-                          "fill": "$red-500"
+                          "fill": "$color.red-500"
                         },
                         {
                           "type": "text",
                           "id": "AANNd",
                           "name": "Label",
-                          "fill": "$gray-800",
+                          "fill": "$color.gray-800",
                           "content": "Client",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -396,9 +396,9 @@
                       "id": "EljF8",
                       "name": "Service Error",
                       "width": "fill_container",
-                      "fill": "$gray-100",
+                      "fill": "$color.gray-100",
                       "cornerRadius": 10,
-                      "stroke": "$gray-200",
+                      "stroke": "$color.gray-200",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -414,13 +414,13 @@
                           "height": 26,
                           "icon": "database",
                           "library": "lucide",
-                          "fill": "$red-500"
+                          "fill": "$color.red-500"
                         },
                         {
                           "type": "text",
                           "id": "UHXvg",
                           "name": "Label",
-                          "fill": "$gray-800",
+                          "fill": "$color.gray-800",
                           "content": "Service Error",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -433,9 +433,9 @@
                       "id": "HvA4i",
                       "name": "Server Error",
                       "width": "fill_container",
-                      "fill": "$gray-100",
+                      "fill": "$color.gray-100",
                       "cornerRadius": 10,
-                      "stroke": "$gray-200",
+                      "stroke": "$color.gray-200",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -451,13 +451,13 @@
                           "height": 26,
                           "icon": "server",
                           "library": "lucide",
-                          "fill": "$red-500"
+                          "fill": "$color.red-500"
                         },
                         {
                           "type": "text",
                           "id": "OMIt4",
                           "name": "Label",
-                          "fill": "$gray-800",
+                          "fill": "$color.gray-800",
                           "content": "Server Error",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -491,7 +491,7 @@
                   "type": "text",
                   "id": "Y5aw4",
                   "name": "Label",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "SIZES (ICON)",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -504,7 +504,7 @@
                   "name": "Divider",
                   "width": "fill_container",
                   "height": 1,
-                  "fill": "$gray-200"
+                  "fill": "$color.gray-200"
                 }
               ]
             },
@@ -520,9 +520,9 @@
                   "id": "ck4gt",
                   "name": "small",
                   "width": "fill_container",
-                  "fill": "$gray-100",
+                  "fill": "$color.gray-100",
                   "cornerRadius": 10,
-                  "stroke": "$gray-200",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "layout": "vertical",
                   "gap": 12,
@@ -546,7 +546,7 @@
                           "height": 24,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$red-500"
+                          "fill": "$color.red-500"
                         }
                       ]
                     },
@@ -554,7 +554,7 @@
                       "type": "text",
                       "id": "eJSLD",
                       "name": "Label",
-                      "fill": "$gray-800",
+                      "fill": "$color.gray-800",
                       "content": "small · 24px",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -567,9 +567,9 @@
                   "id": "ahsnY",
                   "name": "normal",
                   "width": "fill_container",
-                  "fill": "$gray-100",
+                  "fill": "$color.gray-100",
                   "cornerRadius": 10,
-                  "stroke": "$gray-200",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "layout": "vertical",
                   "gap": 12,
@@ -593,7 +593,7 @@
                           "height": 32,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$red-500"
+                          "fill": "$color.red-500"
                         }
                       ]
                     },
@@ -601,7 +601,7 @@
                       "type": "text",
                       "id": "yn28i",
                       "name": "Label",
-                      "fill": "$gray-800",
+                      "fill": "$color.gray-800",
                       "content": "normal · 32px",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -614,9 +614,9 @@
                   "id": "W4JSU",
                   "name": "large",
                   "width": "fill_container",
-                  "fill": "$gray-100",
+                  "fill": "$color.gray-100",
                   "cornerRadius": 10,
-                  "stroke": "$gray-200",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "layout": "vertical",
                   "gap": 12,
@@ -640,7 +640,7 @@
                           "height": 48,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$red-500"
+                          "fill": "$color.red-500"
                         }
                       ]
                     },
@@ -648,7 +648,7 @@
                       "type": "text",
                       "id": "vDeD3",
                       "name": "Label",
-                      "fill": "$gray-800",
+                      "fill": "$color.gray-800",
                       "content": "large · 48px",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -680,7 +680,7 @@
                   "type": "text",
                   "id": "JiazG",
                   "name": "Label",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "EXAMPLES",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -693,7 +693,7 @@
                   "name": "Divider",
                   "width": "fill_container",
                   "height": 1,
-                  "fill": "$gray-200"
+                  "fill": "$color.gray-200"
                 }
               ]
             },
@@ -702,9 +702,9 @@
               "id": "aD0lp",
               "name": "Lock Card",
               "width": "fill_container",
-              "fill": "$white",
+              "fill": "$color.white",
               "cornerRadius": 12,
-              "stroke": "$gray-200",
+              "stroke": "$color.gray-200",
               "strokeWidth": 1,
               "gap": 16,
               "padding": 24,
@@ -725,7 +725,7 @@
                       "height": 32,
                       "icon": "wifi",
                       "library": "lucide",
-                      "fill": "$red-500"
+                      "fill": "$color.red-500"
                     }
                   ]
                 },
@@ -749,7 +749,7 @@
                           "type": "text",
                           "id": "QFIPR",
                           "name": "Lock Title",
-                          "fill": "$gray-900",
+                          "fill": "$color.gray-900",
                           "content": "Connection lost",
                           "fontFamily": "Inter",
                           "fontSize": 16,
@@ -770,7 +770,7 @@
                               "height": 15,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$gray-500"
+                              "fill": "$color.gray-500"
                             }
                           ]
                         }
@@ -780,7 +780,7 @@
                       "type": "text",
                       "id": "NHGwU",
                       "name": "Lock Text",
-                      "fill": "$gray-700",
+                      "fill": "$color.gray-700",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "We couldn't reach the server. Check your network connection and try again.",
@@ -797,7 +797,7 @@
               "type": "text",
               "id": "RCaT2",
               "name": "Note A",
-              "fill": "$gray-500",
+              "fill": "$color.gray-500",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "With lockDetails → an Info tooltip button appears next to the title.",
@@ -811,9 +811,9 @@
               "id": "mW0AG",
               "name": "Lock Card",
               "width": "fill_container",
-              "fill": "$white",
+              "fill": "$color.white",
               "cornerRadius": 12,
-              "stroke": "$gray-200",
+              "stroke": "$color.gray-200",
               "strokeWidth": 1,
               "gap": 16,
               "padding": 24,
@@ -834,7 +834,7 @@
                       "height": 32,
                       "icon": "lock",
                       "library": "lucide",
-                      "fill": "$red-500"
+                      "fill": "$color.red-500"
                     }
                   ]
                 },
@@ -858,7 +858,7 @@
                           "type": "text",
                           "id": "KO2Ob",
                           "name": "Lock Title",
-                          "fill": "$gray-900",
+                          "fill": "$color.gray-900",
                           "content": "Access denied",
                           "fontFamily": "Inter",
                           "fontSize": 16,
@@ -870,7 +870,7 @@
                       "type": "text",
                       "id": "YjCKx",
                       "name": "Lock Text",
-                      "fill": "$gray-700",
+                      "fill": "$color.gray-700",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "You don't have permission to view this widget.",
@@ -895,9 +895,9 @@
       "name": "WidgetLock — Dark",
       "clip": true,
       "width": 760,
-      "fill": "$neutral-900",
+      "fill": "$color.neutral-900",
       "cornerRadius": 12,
-      "stroke": "$neutral-700",
+      "stroke": "$color.neutral-700",
       "strokeWidth": 1,
       "layout": "vertical",
       "gap": 34,
@@ -918,7 +918,7 @@
               "type": "text",
               "id": "ylIdk",
               "name": "Title",
-              "fill": "$white",
+              "fill": "$color.white",
               "content": "WidgetLock",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -928,7 +928,7 @@
               "type": "text",
               "id": "a6ZK2C",
               "name": "Subtitle",
-              "fill": "$neutral-400",
+              "fill": "$color.neutral-400",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Error / empty-state card shown when a widget can't load its content.",
@@ -959,7 +959,7 @@
                   "type": "text",
                   "id": "tQ1uF",
                   "name": "Label",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "ANATOMY",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -972,7 +972,7 @@
                   "name": "Divider",
                   "width": "fill_container",
                   "height": 1,
-                  "fill": "$neutral-700"
+                  "fill": "$color.neutral-700"
                 }
               ]
             },
@@ -981,9 +981,9 @@
               "id": "O1FzV",
               "name": "Lock Card",
               "width": "fill_container",
-              "fill": "$neutral-800",
+              "fill": "$color.neutral-800",
               "cornerRadius": 12,
-              "stroke": "$neutral-700",
+              "stroke": "$color.neutral-700",
               "strokeWidth": 1,
               "gap": 16,
               "padding": 24,
@@ -1004,7 +1004,7 @@
                       "height": 32,
                       "icon": "triangle-alert",
                       "library": "lucide",
-                      "fill": "$neutral-400"
+                      "fill": "$color.neutral-400"
                     }
                   ]
                 },
@@ -1028,7 +1028,7 @@
                           "type": "text",
                           "id": "l9MV4Y",
                           "name": "Lock Title",
-                          "fill": "$neutral-200",
+                          "fill": "$color.neutral-200",
                           "content": "There was some problem",
                           "fontFamily": "Inter",
                           "fontSize": 16,
@@ -1040,7 +1040,7 @@
                       "type": "text",
                       "id": "m8kuP",
                       "name": "Lock Text",
-                      "fill": "$neutral-400",
+                      "fill": "$color.neutral-400",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "There was some issue please try again later",
@@ -1057,10 +1057,10 @@
               "type": "text",
               "id": "ZVmi8",
               "name": "Caption",
-              "fill": "$neutral-500",
+              "fill": "$color.neutral-500",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Danger-colored icon · semibold title · muted body text · white card with subtle border · centered in a Container.",
+              "content": "Danger-colored icon · semibold title · muted body text · card surface with subtle border · centered in a Container.",
               "lineHeight": 1.4,
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -1088,7 +1088,7 @@
                   "type": "text",
                   "id": "RIkdv",
                   "name": "Label",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "LOCK TYPES",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -1101,7 +1101,7 @@
                   "name": "Divider",
                   "width": "fill_container",
                   "height": 1,
-                  "fill": "$neutral-700"
+                  "fill": "$color.neutral-700"
                 }
               ]
             },
@@ -1125,9 +1125,9 @@
                       "id": "ne5QG",
                       "name": "Generic",
                       "width": "fill_container",
-                      "fill": "$neutral-800",
+                      "fill": "$color.neutral-800",
                       "cornerRadius": 10,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -1143,13 +1143,13 @@
                           "height": 26,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         },
                         {
                           "type": "text",
                           "id": "GuaEV",
                           "name": "Label",
-                          "fill": "$neutral-300",
+                          "fill": "$color.neutral-300",
                           "content": "Generic",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -1162,9 +1162,9 @@
                       "id": "vp4DT",
                       "name": "Network",
                       "width": "fill_container",
-                      "fill": "$neutral-800",
+                      "fill": "$color.neutral-800",
                       "cornerRadius": 10,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -1180,13 +1180,13 @@
                           "height": 26,
                           "icon": "wifi",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         },
                         {
                           "type": "text",
                           "id": "kAk6j",
                           "name": "Label",
-                          "fill": "$neutral-300",
+                          "fill": "$color.neutral-300",
                           "content": "Network",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -1199,9 +1199,9 @@
                       "id": "yKa59",
                       "name": "Permission",
                       "width": "fill_container",
-                      "fill": "$neutral-800",
+                      "fill": "$color.neutral-800",
                       "cornerRadius": 10,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -1217,13 +1217,13 @@
                           "height": 26,
                           "icon": "lock",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         },
                         {
                           "type": "text",
                           "id": "gWzQN",
                           "name": "Label",
-                          "fill": "$neutral-300",
+                          "fill": "$color.neutral-300",
                           "content": "Permission",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -1245,9 +1245,9 @@
                       "id": "laGKd",
                       "name": "Client",
                       "width": "fill_container",
-                      "fill": "$neutral-800",
+                      "fill": "$color.neutral-800",
                       "cornerRadius": 10,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -1263,13 +1263,13 @@
                           "height": 26,
                           "icon": "house",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         },
                         {
                           "type": "text",
                           "id": "TdEvY",
                           "name": "Label",
-                          "fill": "$neutral-300",
+                          "fill": "$color.neutral-300",
                           "content": "Client",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -1282,9 +1282,9 @@
                       "id": "GpAho",
                       "name": "Service Error",
                       "width": "fill_container",
-                      "fill": "$neutral-800",
+                      "fill": "$color.neutral-800",
                       "cornerRadius": 10,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -1300,13 +1300,13 @@
                           "height": 26,
                           "icon": "database",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         },
                         {
                           "type": "text",
                           "id": "xSsX8",
                           "name": "Label",
-                          "fill": "$neutral-300",
+                          "fill": "$color.neutral-300",
                           "content": "Service Error",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -1319,9 +1319,9 @@
                       "id": "i5o4wq",
                       "name": "Server Error",
                       "width": "fill_container",
-                      "fill": "$neutral-800",
+                      "fill": "$color.neutral-800",
                       "cornerRadius": 10,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 10,
@@ -1337,13 +1337,13 @@
                           "height": 26,
                           "icon": "server",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         },
                         {
                           "type": "text",
                           "id": "MCAcS",
                           "name": "Label",
-                          "fill": "$neutral-300",
+                          "fill": "$color.neutral-300",
                           "content": "Server Error",
                           "fontFamily": "Inter",
                           "fontSize": 12,
@@ -1377,7 +1377,7 @@
                   "type": "text",
                   "id": "desFv",
                   "name": "Label",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "SIZES (ICON)",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -1390,7 +1390,7 @@
                   "name": "Divider",
                   "width": "fill_container",
                   "height": 1,
-                  "fill": "$neutral-700"
+                  "fill": "$color.neutral-700"
                 }
               ]
             },
@@ -1406,9 +1406,9 @@
                   "id": "gmdql",
                   "name": "small",
                   "width": "fill_container",
-                  "fill": "$neutral-800",
+                  "fill": "$color.neutral-800",
                   "cornerRadius": 10,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "layout": "vertical",
                   "gap": 12,
@@ -1432,7 +1432,7 @@
                           "height": 24,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         }
                       ]
                     },
@@ -1440,7 +1440,7 @@
                       "type": "text",
                       "id": "B9QOCR",
                       "name": "Label",
-                      "fill": "$neutral-300",
+                      "fill": "$color.neutral-300",
                       "content": "small · 24px",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -1453,9 +1453,9 @@
                   "id": "jeaqT",
                   "name": "normal",
                   "width": "fill_container",
-                  "fill": "$neutral-800",
+                  "fill": "$color.neutral-800",
                   "cornerRadius": 10,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "layout": "vertical",
                   "gap": 12,
@@ -1479,7 +1479,7 @@
                           "height": 32,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         }
                       ]
                     },
@@ -1487,7 +1487,7 @@
                       "type": "text",
                       "id": "KqIxQ",
                       "name": "Label",
-                      "fill": "$neutral-300",
+                      "fill": "$color.neutral-300",
                       "content": "normal · 32px",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -1500,9 +1500,9 @@
                   "id": "KJ9pz",
                   "name": "large",
                   "width": "fill_container",
-                  "fill": "$neutral-800",
+                  "fill": "$color.neutral-800",
                   "cornerRadius": 10,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "layout": "vertical",
                   "gap": 12,
@@ -1526,7 +1526,7 @@
                           "height": 48,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$neutral-400"
+                          "fill": "$color.neutral-400"
                         }
                       ]
                     },
@@ -1534,7 +1534,7 @@
                       "type": "text",
                       "id": "jzsXK",
                       "name": "Label",
-                      "fill": "$neutral-300",
+                      "fill": "$color.neutral-300",
                       "content": "large · 48px",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -1566,7 +1566,7 @@
                   "type": "text",
                   "id": "qoOwF",
                   "name": "Label",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "EXAMPLES",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -1579,7 +1579,7 @@
                   "name": "Divider",
                   "width": "fill_container",
                   "height": 1,
-                  "fill": "$neutral-700"
+                  "fill": "$color.neutral-700"
                 }
               ]
             },
@@ -1588,9 +1588,9 @@
               "id": "FdKIw",
               "name": "Lock Card",
               "width": "fill_container",
-              "fill": "$neutral-800",
+              "fill": "$color.neutral-800",
               "cornerRadius": 12,
-              "stroke": "$neutral-700",
+              "stroke": "$color.neutral-700",
               "strokeWidth": 1,
               "gap": 16,
               "padding": 24,
@@ -1611,7 +1611,7 @@
                       "height": 32,
                       "icon": "wifi",
                       "library": "lucide",
-                      "fill": "$neutral-400"
+                      "fill": "$color.neutral-400"
                     }
                   ]
                 },
@@ -1635,7 +1635,7 @@
                           "type": "text",
                           "id": "JwsdV",
                           "name": "Lock Title",
-                          "fill": "$neutral-200",
+                          "fill": "$color.neutral-200",
                           "content": "Connection lost",
                           "fontFamily": "Inter",
                           "fontSize": 16,
@@ -1656,7 +1656,7 @@
                               "height": 15,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$neutral-500"
+                              "fill": "$color.neutral-500"
                             }
                           ]
                         }
@@ -1666,7 +1666,7 @@
                       "type": "text",
                       "id": "X53mQp",
                       "name": "Lock Text",
-                      "fill": "$neutral-400",
+                      "fill": "$color.neutral-400",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "We couldn't reach the server. Check your network connection and try again.",
@@ -1683,7 +1683,7 @@
               "type": "text",
               "id": "lpgG8",
               "name": "Note A",
-              "fill": "$neutral-500",
+              "fill": "$color.neutral-500",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "With lockDetails → an Info tooltip button appears next to the title.",
@@ -1697,9 +1697,9 @@
               "id": "CQ3yK",
               "name": "Lock Card",
               "width": "fill_container",
-              "fill": "$neutral-800",
+              "fill": "$color.neutral-800",
               "cornerRadius": 12,
-              "stroke": "$neutral-700",
+              "stroke": "$color.neutral-700",
               "strokeWidth": 1,
               "gap": 16,
               "padding": 24,
@@ -1720,7 +1720,7 @@
                       "height": 32,
                       "icon": "lock",
                       "library": "lucide",
-                      "fill": "$neutral-400"
+                      "fill": "$color.neutral-400"
                     }
                   ]
                 },
@@ -1744,7 +1744,7 @@
                           "type": "text",
                           "id": "u6eicY",
                           "name": "Lock Title",
-                          "fill": "$neutral-200",
+                          "fill": "$color.neutral-200",
                           "content": "Access denied",
                           "fontFamily": "Inter",
                           "fontSize": 16,
@@ -1756,7 +1756,7 @@
                       "type": "text",
                       "id": "U9zYw",
                       "name": "Lock Text",
-                      "fill": "$neutral-400",
+                      "fill": "$color.neutral-400",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "You don't have permission to view this widget.",
@@ -1775,75 +1775,75 @@
     }
   ],
   "variables": {
-    "white": {
+    "color.white": {
       "type": "color",
       "value": "#ffffff"
     },
-    "transparent": {
+    "color.transparent": {
       "type": "color",
       "value": "#00000000"
     },
-    "gray-100": {
+    "color.gray-100": {
       "type": "color",
       "value": "#f5f5f5"
     },
-    "gray-200": {
+    "color.gray-200": {
       "type": "color",
       "value": "#e8e8e8"
     },
-    "gray-300": {
+    "color.gray-300": {
       "type": "color",
       "value": "#d4d4d4"
     },
-    "gray-400": {
+    "color.gray-400": {
       "type": "color",
       "value": "#c7c7c7"
     },
-    "gray-500": {
+    "color.gray-500": {
       "type": "color",
       "value": "#a8a8a8"
     },
-    "gray-700": {
+    "color.gray-700": {
       "type": "color",
       "value": "#8c8c8c"
     },
-    "gray-800": {
+    "color.gray-800": {
       "type": "color",
       "value": "#666666"
     },
-    "gray-900": {
+    "color.gray-900": {
       "type": "color",
       "value": "#404040"
     },
-    "red-500": {
+    "color.red-500": {
       "type": "color",
       "value": "#ef4444"
     },
-    "neutral-200": {
+    "color.neutral-200": {
       "type": "color",
       "value": "#e5e5e5"
     },
-    "neutral-300": {
+    "color.neutral-300": {
       "type": "color",
       "value": "#d4d4d4"
     },
-    "neutral-400": {
+    "color.neutral-400": {
       "type": "color",
       "value": "#a3a3a3"
     },
-    "neutral-500": {
+    "color.neutral-500": {
       "type": "color",
       "value": "#737373"
     },
-    "neutral-700": {
+    "color.neutral-700": {
       "type": "color",
       "value": "#404040"
     },
-    "neutral-800": {
+    "color.neutral-800": {
       "type": "color",
       "value": "#262626"
     },
-    "neutral-900": {
+    "color.neutral-900": {
       "type": "color",
       "value": "#171717"
     }

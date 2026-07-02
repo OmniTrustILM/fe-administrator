@@ -9,9 +9,9 @@
       "name": "Light",
       "clip": true,
       "width": 720,
-      "fill": "$white",
+      "fill": "$color.white",
       "cornerRadius": 12,
-      "stroke": "$gray-200",
+      "stroke": "$color.gray-200",
       "strokeWidth": 1,
       "strokeAlignment": "inner",
       "layout": "vertical",
@@ -35,7 +35,7 @@
               "type": "text",
               "id": "k5HEUu",
               "name": "Title",
-              "fill": "$gray-900",
+              "fill": "$color.gray-900",
               "content": "Widget",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -45,7 +45,7 @@
               "type": "text",
               "id": "zS6z4",
               "name": "Subtitle",
-              "fill": "$gray-700",
+              "fill": "$color.gray-700",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Card/panel shell — header actions, body content, states & examples",
@@ -67,7 +67,7 @@
               "type": "text",
               "id": "r4lGJ8",
               "name": "Anatomy Label",
-              "fill": "$gray-500",
+              "fill": "$color.gray-500",
               "content": "ANATOMY",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -79,9 +79,9 @@
               "id": "o8jQog",
               "name": "Anatomy Widget",
               "width": "fill_container",
-              "fill": "$white",
+              "fill": "$color.white",
               "cornerRadius": 12,
-              "stroke": "$gray-200",
+              "stroke": "$color.gray-200",
               "strokeWidth": 1,
               "strokeAlignment": "inner",
               "effect": {
@@ -118,7 +118,7 @@
                           "type": "text",
                           "id": "kwmLs",
                           "name": "Widget Title",
-                          "fill": "$gray-900",
+                          "fill": "$color.gray-900",
                           "content": "Certificates",
                           "fontFamily": "Inter",
                           "fontSize": 16,
@@ -141,7 +141,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -162,7 +162,7 @@
                               "height": 16,
                               "icon": "list-restart",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         }
@@ -192,7 +192,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -213,7 +213,7 @@
                               "height": 16,
                               "icon": "download",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         },
@@ -234,7 +234,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$gray-800"
+                              "fill": "$color.gray-800"
                             }
                           ]
                         }
@@ -246,7 +246,7 @@
                   "type": "rectangle",
                   "id": "WcEB6",
                   "name": "Header Divider",
-                  "fill": "$gray-200",
+                  "fill": "$color.gray-200",
                   "width": "fill_container",
                   "height": 1
                 },
@@ -263,10 +263,10 @@
                       "cornerRadius": 4,
                       "id": "u0hm47",
                       "name": "Row 1",
-                      "fill": "$gray-100",
+                      "fill": "$color.gray-100",
                       "width": "fill_container",
                       "height": 14,
-                      "stroke": "$gray-300",
+                      "stroke": "$color.gray-300",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner"
                     },
@@ -275,10 +275,10 @@
                       "cornerRadius": 4,
                       "id": "XRn2B",
                       "name": "Row 2",
-                      "fill": "$gray-100",
+                      "fill": "$color.gray-100",
                       "width": "fill_container",
                       "height": 14,
-                      "stroke": "$gray-300",
+                      "stroke": "$color.gray-300",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner"
                     },
@@ -287,10 +287,10 @@
                       "cornerRadius": 4,
                       "id": "Sd4RM",
                       "name": "Row 3",
-                      "fill": "$gray-100",
+                      "fill": "$color.gray-100",
                       "width": 320,
                       "height": 14,
-                      "stroke": "$gray-300",
+                      "stroke": "$color.gray-300",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner"
                     }
@@ -302,7 +302,7 @@
               "type": "text",
               "id": "T7lV1M",
               "name": "Anatomy Caption",
-              "fill": "$gray-700",
+              "fill": "$color.gray-700",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Header — title + refresh / reset-view actions · right-aligned widget buttons.   Body — children (busy spinner overlays it).",
@@ -324,7 +324,7 @@
               "type": "text",
               "id": "HDya4",
               "name": "Sizes Label",
-              "fill": "$gray-500",
+              "fill": "$color.gray-500",
               "content": "TITLE SIZES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -351,9 +351,9 @@
                       "id": "sqkjq",
                       "name": "small Card",
                       "width": "fill_container",
-                      "fill": "$white",
+                      "fill": "$color.white",
                       "cornerRadius": 10,
-                      "stroke": "$gray-200",
+                      "stroke": "$color.gray-200",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -366,7 +366,7 @@
                           "type": "text",
                           "id": "xwrz9",
                           "name": "small Title",
-                          "fill": "$gray-900",
+                          "fill": "$color.gray-900",
                           "content": "Widget",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -378,7 +378,7 @@
                       "type": "text",
                       "id": "h2JJ4",
                       "name": "small Caption",
-                      "fill": "$gray-500",
+                      "fill": "$color.gray-500",
                       "content": "small · 14px",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -400,9 +400,9 @@
                       "id": "Ar3JM",
                       "name": "medium Card",
                       "width": "fill_container",
-                      "fill": "$white",
+                      "fill": "$color.white",
                       "cornerRadius": 10,
-                      "stroke": "$gray-200",
+                      "stroke": "$color.gray-200",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -415,7 +415,7 @@
                           "type": "text",
                           "id": "KvTIH",
                           "name": "medium Title",
-                          "fill": "$gray-900",
+                          "fill": "$color.gray-900",
                           "content": "Widget",
                           "fontFamily": "Inter",
                           "fontSize": 16,
@@ -427,7 +427,7 @@
                       "type": "text",
                       "id": "A98dqT",
                       "name": "medium Caption",
-                      "fill": "$gray-500",
+                      "fill": "$color.gray-500",
                       "content": "medium · 16px",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -449,9 +449,9 @@
                       "id": "YKOdn",
                       "name": "large Card",
                       "width": "fill_container",
-                      "fill": "$white",
+                      "fill": "$color.white",
                       "cornerRadius": 10,
-                      "stroke": "$gray-200",
+                      "stroke": "$color.gray-200",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -464,7 +464,7 @@
                           "type": "text",
                           "id": "fHhNR",
                           "name": "large Title",
-                          "fill": "$gray-900",
+                          "fill": "$color.gray-900",
                           "content": "Widget",
                           "fontFamily": "Inter",
                           "fontSize": 18,
@@ -476,7 +476,7 @@
                       "type": "text",
                       "id": "LBM5g",
                       "name": "large Caption",
-                      "fill": "$gray-500",
+                      "fill": "$color.gray-500",
                       "content": "large · 18px",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -498,9 +498,9 @@
                       "id": "dqAQc",
                       "name": "larger Card",
                       "width": "fill_container",
-                      "fill": "$white",
+                      "fill": "$color.white",
                       "cornerRadius": 10,
-                      "stroke": "$gray-200",
+                      "stroke": "$color.gray-200",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -513,7 +513,7 @@
                           "type": "text",
                           "id": "bvREl",
                           "name": "larger Title",
-                          "fill": "$gray-900",
+                          "fill": "$color.gray-900",
                           "content": "Widget",
                           "fontFamily": "Inter",
                           "fontSize": 20,
@@ -525,7 +525,7 @@
                       "type": "text",
                       "id": "Fa76l",
                       "name": "larger Caption",
-                      "fill": "$gray-500",
+                      "fill": "$color.gray-500",
                       "content": "larger · 20px",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -542,7 +542,7 @@
           "type": "rectangle",
           "id": "XUgOD",
           "name": "Section Divider 1",
-          "fill": "$gray-200",
+          "fill": "$color.gray-200",
           "width": "fill_container",
           "height": 1
         },
@@ -558,7 +558,7 @@
               "type": "text",
               "id": "j5WkJ",
               "name": "States Label",
-              "fill": "$gray-500",
+              "fill": "$color.gray-500",
               "content": "STATES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -577,7 +577,7 @@
                   "type": "text",
                   "id": "WFrMb",
                   "name": "Default Label",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "DEFAULT",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -589,9 +589,9 @@
                   "id": "Vn16c",
                   "name": "Default Widget",
                   "width": "fill_container",
-                  "fill": "$white",
+                  "fill": "$color.white",
                   "cornerRadius": 12,
-                  "stroke": "$gray-200",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -628,7 +628,7 @@
                               "type": "text",
                               "id": "f3MLvC",
                               "name": "Widget Title",
-                              "fill": "$gray-900",
+                              "fill": "$color.gray-900",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -651,7 +651,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -672,7 +672,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -702,7 +702,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -723,7 +723,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -744,7 +744,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -756,7 +756,7 @@
                       "type": "rectangle",
                       "id": "CXXNT",
                       "name": "Header Divider",
-                      "fill": "$gray-200",
+                      "fill": "$color.gray-200",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -773,10 +773,10 @@
                           "cornerRadius": 4,
                           "id": "g9wDJd",
                           "name": "Row 1",
-                          "fill": "$gray-100",
+                          "fill": "$color.gray-100",
                           "width": "fill_container",
                           "height": 14,
-                          "stroke": "$gray-300",
+                          "stroke": "$color.gray-300",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         },
@@ -785,10 +785,10 @@
                           "cornerRadius": 4,
                           "id": "O4mGfp",
                           "name": "Row 2",
-                          "fill": "$gray-100",
+                          "fill": "$color.gray-100",
                           "width": "fill_container",
                           "height": 14,
-                          "stroke": "$gray-300",
+                          "stroke": "$color.gray-300",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         },
@@ -797,10 +797,10 @@
                           "cornerRadius": 4,
                           "id": "DHHlA",
                           "name": "Row 3",
-                          "fill": "$gray-100",
+                          "fill": "$color.gray-100",
                           "width": 320,
                           "height": 14,
-                          "stroke": "$gray-300",
+                          "stroke": "$color.gray-300",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         }
@@ -822,7 +822,7 @@
                   "type": "text",
                   "id": "TTQiD",
                   "name": "Busy Label",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "BUSY",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -834,9 +834,9 @@
                   "id": "BC2c0",
                   "name": "Busy Widget",
                   "width": "fill_container",
-                  "fill": "$white",
+                  "fill": "$color.white",
                   "cornerRadius": 12,
-                  "stroke": "$gray-200",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -873,7 +873,7 @@
                               "type": "text",
                               "id": "Kho7M",
                               "name": "Widget Title",
-                              "fill": "$gray-900",
+                              "fill": "$color.gray-900",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -896,7 +896,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -917,7 +917,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -947,7 +947,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -968,7 +968,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -989,7 +989,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -1001,7 +1001,7 @@
                       "type": "rectangle",
                       "id": "H5Or1d",
                       "name": "Header Divider",
-                      "fill": "$gray-200",
+                      "fill": "$color.gray-200",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -1028,10 +1028,10 @@
                               "cornerRadius": 4,
                               "id": "DP4zR",
                               "name": "Row 1",
-                              "fill": "$gray-100",
+                              "fill": "$color.gray-100",
                               "width": "fill_container",
                               "height": 14,
-                              "stroke": "$gray-300",
+                              "stroke": "$color.gray-300",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner"
                             },
@@ -1040,10 +1040,10 @@
                               "cornerRadius": 4,
                               "id": "CANcP",
                               "name": "Row 2",
-                              "fill": "$gray-100",
+                              "fill": "$color.gray-100",
                               "width": "fill_container",
                               "height": 14,
-                              "stroke": "$gray-300",
+                              "stroke": "$color.gray-300",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner"
                             },
@@ -1052,10 +1052,10 @@
                               "cornerRadius": 4,
                               "id": "ZfT4L",
                               "name": "Row 3",
-                              "fill": "$gray-100",
+                              "fill": "$color.gray-100",
                               "width": 320,
                               "height": 14,
-                              "stroke": "$gray-300",
+                              "stroke": "$color.gray-300",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner"
                             }
@@ -1079,7 +1079,7 @@
                               "innerRadius": 0.78,
                               "startAngle": 135,
                               "sweepAngle": 270,
-                              "fill": "$blue-600",
+                              "fill": "$color.blue-600",
                               "width": 22,
                               "height": 22
                             },
@@ -1087,7 +1087,7 @@
                               "type": "text",
                               "id": "zV6Qi",
                               "name": "Loading Label",
-                              "fill": "$gray-700",
+                              "fill": "$color.gray-700",
                               "content": "Loading…",
                               "fontFamily": "Inter",
                               "fontSize": 13,
@@ -1103,7 +1103,7 @@
                   "type": "text",
                   "id": "aDzld",
                   "name": "Busy Caption",
-                  "fill": "$gray-700",
+                  "fill": "$color.gray-700",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
                   "content": "busy → content dims behind a white/35 overlay, spinner shows, header actions disable.",
@@ -1125,7 +1125,7 @@
                   "type": "text",
                   "id": "imiPp",
                   "name": "NoBorder Label",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "NO BORDER",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -1160,7 +1160,7 @@
                               "type": "text",
                               "id": "hpa4o",
                               "name": "Widget Title",
-                              "fill": "$gray-900",
+                              "fill": "$color.gray-900",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -1183,7 +1183,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -1204,7 +1204,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -1234,7 +1234,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -1255,7 +1255,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -1276,7 +1276,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -1288,7 +1288,7 @@
                       "type": "rectangle",
                       "id": "iQ15b",
                       "name": "Header Divider",
-                      "fill": "$gray-200",
+                      "fill": "$color.gray-200",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -1305,10 +1305,10 @@
                           "cornerRadius": 4,
                           "id": "EMTfz",
                           "name": "Row 1",
-                          "fill": "$gray-100",
+                          "fill": "$color.gray-100",
                           "width": "fill_container",
                           "height": 14,
-                          "stroke": "$gray-300",
+                          "stroke": "$color.gray-300",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         },
@@ -1317,10 +1317,10 @@
                           "cornerRadius": 4,
                           "id": "DgRZK",
                           "name": "Row 2",
-                          "fill": "$gray-100",
+                          "fill": "$color.gray-100",
                           "width": "fill_container",
                           "height": 14,
-                          "stroke": "$gray-300",
+                          "stroke": "$color.gray-300",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         },
@@ -1329,10 +1329,10 @@
                           "cornerRadius": 4,
                           "id": "AjVlb",
                           "name": "Row 3",
-                          "fill": "$gray-100",
+                          "fill": "$color.gray-100",
                           "width": 320,
                           "height": 14,
-                          "stroke": "$gray-300",
+                          "stroke": "$color.gray-300",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         }
@@ -1344,7 +1344,7 @@
                   "type": "text",
                   "id": "GxgCZ",
                   "name": "NoBorder Caption",
-                  "fill": "$gray-700",
+                  "fill": "$color.gray-700",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
                   "content": "noBorder → no border, background, padding or shadow — content sits directly in the page flow.",
@@ -1366,7 +1366,7 @@
                   "type": "text",
                   "id": "VxCJF",
                   "name": "Locked Label",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "LOCKED (WidgetLock)",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -1378,9 +1378,9 @@
                   "id": "TUzpe",
                   "name": "Locked Widget",
                   "width": "fill_container",
-                  "fill": "$white",
+                  "fill": "$color.white",
                   "cornerRadius": 12,
-                  "stroke": "$gray-200",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -1417,7 +1417,7 @@
                               "type": "text",
                               "id": "jwAtr",
                               "name": "Widget Title",
-                              "fill": "$gray-900",
+                              "fill": "$color.gray-900",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -1440,7 +1440,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -1461,7 +1461,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -1491,7 +1491,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -1512,7 +1512,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -1533,7 +1533,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -1545,7 +1545,7 @@
                       "type": "rectangle",
                       "id": "s7CPmH",
                       "name": "Header Divider",
-                      "fill": "$gray-200",
+                      "fill": "$color.gray-200",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -1564,9 +1564,9 @@
                           "type": "frame",
                           "id": "V0s3N",
                           "name": "Lock Card",
-                          "fill": "$white",
+                          "fill": "$color.white",
                           "cornerRadius": 12,
-                          "stroke": "$gray-200",
+                          "stroke": "$color.gray-200",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner",
                           "gap": 16,
@@ -1581,7 +1581,7 @@
                               "height": 32,
                               "icon": "triangle-alert",
                               "library": "lucide",
-                              "fill": "$red-500"
+                              "fill": "$color.red-500"
                             },
                             {
                               "type": "frame",
@@ -1594,7 +1594,7 @@
                                   "type": "text",
                                   "id": "psiqH",
                                   "name": "Lock Title",
-                                  "fill": "$gray-900",
+                                  "fill": "$color.gray-900",
                                   "content": "There was some problem",
                                   "fontFamily": "Inter",
                                   "fontSize": 15,
@@ -1604,7 +1604,7 @@
                                   "type": "text",
                                   "id": "PcjqF",
                                   "name": "Lock Message",
-                                  "fill": "$gray-700",
+                                  "fill": "$color.gray-700",
                                   "content": "There was some issue please try again later",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
@@ -1622,7 +1622,7 @@
                   "type": "text",
                   "id": "XBy1p",
                   "name": "Locked Caption",
-                  "fill": "$gray-700",
+                  "fill": "$color.gray-700",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
                   "content": "widgetLockName matches an active lock → body is replaced by WidgetLock (icon varies by lockType).",
@@ -1638,7 +1638,7 @@
           "type": "rectangle",
           "id": "Oi5lp",
           "name": "Section Divider 2",
-          "fill": "$gray-200",
+          "fill": "$color.gray-200",
           "width": "fill_container",
           "height": 1
         },
@@ -1654,7 +1654,7 @@
               "type": "text",
               "id": "Kavkk",
               "name": "Examples Label",
-              "fill": "$gray-500",
+              "fill": "$color.gray-500",
               "content": "EXAMPLES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -1673,7 +1673,7 @@
                   "type": "text",
                   "id": "hmrqr",
                   "name": "Ex1 Label",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "LIST WIDGET",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -1685,9 +1685,9 @@
                   "id": "xn1dK",
                   "name": "List Widget",
                   "width": "fill_container",
-                  "fill": "$white",
+                  "fill": "$color.white",
                   "cornerRadius": 12,
-                  "stroke": "$gray-200",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -1724,7 +1724,7 @@
                               "type": "text",
                               "id": "Ge8rG",
                               "name": "Widget Title",
-                              "fill": "$gray-900",
+                              "fill": "$color.gray-900",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -1747,7 +1747,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -1768,7 +1768,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -1798,7 +1798,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -1819,7 +1819,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -1840,7 +1840,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -1852,7 +1852,7 @@
                       "type": "rectangle",
                       "id": "nnf1k",
                       "name": "Header Divider",
-                      "fill": "$gray-200",
+                      "fill": "$color.gray-200",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -1887,7 +1887,7 @@
                                   "type": "ellipse",
                                   "id": "DYCNc",
                                   "name": "Dot",
-                                  "fill": "$blue-500",
+                                  "fill": "$color.blue-500",
                                   "width": 8,
                                   "height": 8
                                 },
@@ -1895,7 +1895,7 @@
                                   "type": "text",
                                   "id": "vZheu",
                                   "name": "Name",
-                                  "fill": "$gray-800",
+                                  "fill": "$color.gray-800",
                                   "content": "server-cert-01.pem",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -1907,7 +1907,7 @@
                               "type": "frame",
                               "id": "G0S89n",
                               "name": "Pill",
-                              "fill": "$gray-100",
+                              "fill": "$color.gray-100",
                               "cornerRadius": 999,
                               "padding": [
                                 3,
@@ -1918,7 +1918,7 @@
                                   "type": "text",
                                   "id": "smEk6",
                                   "name": "Pill Label",
-                                  "fill": "$gray-700",
+                                  "fill": "$color.gray-700",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 11,
@@ -1932,7 +1932,7 @@
                           "type": "rectangle",
                           "id": "vO7ZX",
                           "name": "List Divider 1",
-                          "fill": "$gray-200",
+                          "fill": "$color.gray-200",
                           "width": "fill_container",
                           "height": 1
                         },
@@ -1960,7 +1960,7 @@
                                   "type": "ellipse",
                                   "id": "rBxZ3",
                                   "name": "Dot",
-                                  "fill": "$blue-500",
+                                  "fill": "$color.blue-500",
                                   "width": 8,
                                   "height": 8
                                 },
@@ -1968,7 +1968,7 @@
                                   "type": "text",
                                   "id": "nWVw6",
                                   "name": "Name",
-                                  "fill": "$gray-800",
+                                  "fill": "$color.gray-800",
                                   "content": "api-gateway.pem",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -1980,7 +1980,7 @@
                               "type": "frame",
                               "id": "W7rMpC",
                               "name": "Pill",
-                              "fill": "$gray-100",
+                              "fill": "$color.gray-100",
                               "cornerRadius": 999,
                               "padding": [
                                 3,
@@ -1991,7 +1991,7 @@
                                   "type": "text",
                                   "id": "VPaso",
                                   "name": "Pill Label",
-                                  "fill": "$gray-700",
+                                  "fill": "$color.gray-700",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 11,
@@ -2005,7 +2005,7 @@
                           "type": "rectangle",
                           "id": "dL900",
                           "name": "List Divider 2",
-                          "fill": "$gray-200",
+                          "fill": "$color.gray-200",
                           "width": "fill_container",
                           "height": 1
                         },
@@ -2033,7 +2033,7 @@
                                   "type": "ellipse",
                                   "id": "ngyqB",
                                   "name": "Dot",
-                                  "fill": "$blue-500",
+                                  "fill": "$color.blue-500",
                                   "width": 8,
                                   "height": 8
                                 },
@@ -2041,7 +2041,7 @@
                                   "type": "text",
                                   "id": "q47Iw",
                                   "name": "Name",
-                                  "fill": "$gray-800",
+                                  "fill": "$color.gray-800",
                                   "content": "root-ca-2026.pem",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -2053,7 +2053,7 @@
                               "type": "frame",
                               "id": "Gv0Lk",
                               "name": "Pill",
-                              "fill": "$gray-100",
+                              "fill": "$color.gray-100",
                               "cornerRadius": 999,
                               "padding": [
                                 3,
@@ -2064,7 +2064,7 @@
                                   "type": "text",
                                   "id": "vGnae",
                                   "name": "Pill Label",
-                                  "fill": "$gray-700",
+                                  "fill": "$color.gray-700",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 11,
@@ -2092,7 +2092,7 @@
                   "type": "text",
                   "id": "s5XogR",
                   "name": "Ex2 Label",
-                  "fill": "$gray-500",
+                  "fill": "$color.gray-500",
                   "content": "INFO CARD OPEN",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -2104,9 +2104,9 @@
                   "id": "BAhlS",
                   "name": "Info Card Widget",
                   "width": "fill_container",
-                  "fill": "$white",
+                  "fill": "$color.white",
                   "cornerRadius": 12,
-                  "stroke": "$gray-200",
+                  "stroke": "$color.gray-200",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -2143,7 +2143,7 @@
                               "type": "text",
                               "id": "u1EQPj",
                               "name": "Widget Title",
-                              "fill": "$gray-900",
+                              "fill": "$color.gray-900",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -2166,7 +2166,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -2187,7 +2187,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -2217,7 +2217,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -2238,7 +2238,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             },
@@ -2259,7 +2259,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$gray-800"
+                                  "fill": "$color.gray-800"
                                 }
                               ]
                             }
@@ -2271,7 +2271,7 @@
                       "type": "rectangle",
                       "id": "Ty3DV",
                       "name": "Header Divider",
-                      "fill": "$gray-200",
+                      "fill": "$color.gray-200",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -2281,7 +2281,7 @@
                       "name": "Info Panel",
                       "width": "fill_container",
                       "cornerRadius": 8,
-                      "stroke": "$gray-200",
+                      "stroke": "$color.gray-200",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "layout": "vertical",
@@ -2302,7 +2302,7 @@
                               "type": "text",
                               "id": "A5EKdM",
                               "name": "Info Heading",
-                              "fill": "$gray-900",
+                              "fill": "$color.gray-900",
                               "content": "About this widget",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -2326,7 +2326,7 @@
                               "type": "text",
                               "id": "a2S0r",
                               "name": "Info Desc",
-                              "fill": "$gray-700",
+                              "fill": "$color.gray-700",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Certificates: Lists issued certificates and their current validity.",
@@ -2346,7 +2346,7 @@
                                   "type": "text",
                                   "id": "cv9oA",
                                   "name": "Note",
-                                  "fill": "$gray-700",
+                                  "fill": "$color.gray-700",
                                   "content": "•   Auto-refreshes every 5 minutes",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -2356,7 +2356,7 @@
                                   "type": "text",
                                   "id": "ulfEJ",
                                   "name": "Note",
-                                  "fill": "$gray-700",
+                                  "fill": "$color.gray-700",
                                   "content": "•   Click a row to view details",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -2381,10 +2381,10 @@
                           "cornerRadius": 4,
                           "id": "U0aKs",
                           "name": "Row 1",
-                          "fill": "$gray-100",
+                          "fill": "$color.gray-100",
                           "width": "fill_container",
                           "height": 14,
-                          "stroke": "$gray-300",
+                          "stroke": "$color.gray-300",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         },
@@ -2393,10 +2393,10 @@
                           "cornerRadius": 4,
                           "id": "Z1CLA3",
                           "name": "Row 2",
-                          "fill": "$gray-100",
+                          "fill": "$color.gray-100",
                           "width": 320,
                           "height": 14,
-                          "stroke": "$gray-300",
+                          "stroke": "$color.gray-300",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         }
@@ -2418,9 +2418,9 @@
       "name": "Dark",
       "clip": true,
       "width": 720,
-      "fill": "$neutral-900",
+      "fill": "$color.neutral-900",
       "cornerRadius": 12,
-      "stroke": "$neutral-700",
+      "stroke": "$color.neutral-700",
       "strokeWidth": 1,
       "strokeAlignment": "inner",
       "layout": "vertical",
@@ -2444,7 +2444,7 @@
               "type": "text",
               "id": "OMTei",
               "name": "Title",
-              "fill": "$white",
+              "fill": "$color.white",
               "content": "Widget",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -2454,7 +2454,7 @@
               "type": "text",
               "id": "Jx6AE",
               "name": "Subtitle",
-              "fill": "$neutral-400",
+              "fill": "$color.neutral-400",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Card/panel shell — header actions, body content, states & examples",
@@ -2476,7 +2476,7 @@
               "type": "text",
               "id": "v7sGG",
               "name": "Anatomy Label",
-              "fill": "$neutral-500",
+              "fill": "$color.neutral-500",
               "content": "ANATOMY",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -2488,9 +2488,9 @@
               "id": "CpvTq",
               "name": "Anatomy Widget",
               "width": "fill_container",
-              "fill": "$neutral-900",
+              "fill": "$color.neutral-900",
               "cornerRadius": 12,
-              "stroke": "$neutral-700",
+              "stroke": "$color.neutral-700",
               "strokeWidth": 1,
               "strokeAlignment": "inner",
               "effect": {
@@ -2527,7 +2527,7 @@
                           "type": "text",
                           "id": "v8FCHe",
                           "name": "Widget Title",
-                          "fill": "$neutral-200",
+                          "fill": "$color.neutral-200",
                           "content": "Certificates",
                           "fontFamily": "Inter",
                           "fontSize": 16,
@@ -2550,7 +2550,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -2571,7 +2571,7 @@
                               "height": 16,
                               "icon": "list-restart",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         }
@@ -2601,7 +2601,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -2622,7 +2622,7 @@
                               "height": 16,
                               "icon": "download",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         },
@@ -2643,7 +2643,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$neutral-400"
+                              "fill": "$color.neutral-400"
                             }
                           ]
                         }
@@ -2655,7 +2655,7 @@
                   "type": "rectangle",
                   "id": "M5JwM",
                   "name": "Header Divider",
-                  "fill": "$neutral-700",
+                  "fill": "$color.neutral-700",
                   "width": "fill_container",
                   "height": 1
                 },
@@ -2672,10 +2672,10 @@
                       "cornerRadius": 4,
                       "id": "DgKh8",
                       "name": "Row 1",
-                      "fill": "$neutral-800",
+                      "fill": "$color.neutral-800",
                       "width": "fill_container",
                       "height": 14,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner"
                     },
@@ -2684,10 +2684,10 @@
                       "cornerRadius": 4,
                       "id": "yYkIR",
                       "name": "Row 2",
-                      "fill": "$neutral-800",
+                      "fill": "$color.neutral-800",
                       "width": "fill_container",
                       "height": 14,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner"
                     },
@@ -2696,10 +2696,10 @@
                       "cornerRadius": 4,
                       "id": "u4XirP",
                       "name": "Row 3",
-                      "fill": "$neutral-800",
+                      "fill": "$color.neutral-800",
                       "width": 320,
                       "height": 14,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner"
                     }
@@ -2711,7 +2711,7 @@
               "type": "text",
               "id": "wb7mO",
               "name": "Anatomy Caption",
-              "fill": "$neutral-400",
+              "fill": "$color.neutral-400",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Header — title + refresh / reset-view actions · right-aligned widget buttons.   Body — children (busy spinner overlays it).",
@@ -2733,7 +2733,7 @@
               "type": "text",
               "id": "PTT2u",
               "name": "Sizes Label",
-              "fill": "$neutral-500",
+              "fill": "$color.neutral-500",
               "content": "TITLE SIZES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -2760,9 +2760,9 @@
                       "id": "p0weBY",
                       "name": "small Card",
                       "width": "fill_container",
-                      "fill": "$neutral-900",
+                      "fill": "$color.neutral-900",
                       "cornerRadius": 10,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -2775,7 +2775,7 @@
                           "type": "text",
                           "id": "gmgTw",
                           "name": "small Title",
-                          "fill": "$neutral-200",
+                          "fill": "$color.neutral-200",
                           "content": "Widget",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -2787,7 +2787,7 @@
                       "type": "text",
                       "id": "cPaUZ",
                       "name": "small Caption",
-                      "fill": "$neutral-500",
+                      "fill": "$color.neutral-500",
                       "content": "small · 14px",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -2809,9 +2809,9 @@
                       "id": "VkIAz",
                       "name": "medium Card",
                       "width": "fill_container",
-                      "fill": "$neutral-900",
+                      "fill": "$color.neutral-900",
                       "cornerRadius": 10,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -2824,7 +2824,7 @@
                           "type": "text",
                           "id": "jY5sV",
                           "name": "medium Title",
-                          "fill": "$neutral-200",
+                          "fill": "$color.neutral-200",
                           "content": "Widget",
                           "fontFamily": "Inter",
                           "fontSize": 16,
@@ -2836,7 +2836,7 @@
                       "type": "text",
                       "id": "oVPp5",
                       "name": "medium Caption",
-                      "fill": "$neutral-500",
+                      "fill": "$color.neutral-500",
                       "content": "medium · 16px",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -2858,9 +2858,9 @@
                       "id": "CWyVO",
                       "name": "large Card",
                       "width": "fill_container",
-                      "fill": "$neutral-900",
+                      "fill": "$color.neutral-900",
                       "cornerRadius": 10,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -2873,7 +2873,7 @@
                           "type": "text",
                           "id": "z46lY0",
                           "name": "large Title",
-                          "fill": "$neutral-200",
+                          "fill": "$color.neutral-200",
                           "content": "Widget",
                           "fontFamily": "Inter",
                           "fontSize": 18,
@@ -2885,7 +2885,7 @@
                       "type": "text",
                       "id": "H9tE6",
                       "name": "large Caption",
-                      "fill": "$neutral-500",
+                      "fill": "$color.neutral-500",
                       "content": "large · 18px",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -2907,9 +2907,9 @@
                       "id": "V6mLU",
                       "name": "larger Card",
                       "width": "fill_container",
-                      "fill": "$neutral-900",
+                      "fill": "$color.neutral-900",
                       "cornerRadius": 10,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -2922,7 +2922,7 @@
                           "type": "text",
                           "id": "tr4vJ",
                           "name": "larger Title",
-                          "fill": "$neutral-200",
+                          "fill": "$color.neutral-200",
                           "content": "Widget",
                           "fontFamily": "Inter",
                           "fontSize": 20,
@@ -2934,7 +2934,7 @@
                       "type": "text",
                       "id": "FYIs0",
                       "name": "larger Caption",
-                      "fill": "$neutral-500",
+                      "fill": "$color.neutral-500",
                       "content": "larger · 20px",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -2951,7 +2951,7 @@
           "type": "rectangle",
           "id": "XMGmf",
           "name": "Section Divider 1",
-          "fill": "$neutral-700",
+          "fill": "$color.neutral-700",
           "width": "fill_container",
           "height": 1
         },
@@ -2967,7 +2967,7 @@
               "type": "text",
               "id": "Ermsr",
               "name": "States Label",
-              "fill": "$neutral-500",
+              "fill": "$color.neutral-500",
               "content": "STATES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -2986,7 +2986,7 @@
                   "type": "text",
                   "id": "N5P7G",
                   "name": "Default Label",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "DEFAULT",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -2998,9 +2998,9 @@
                   "id": "KksmG",
                   "name": "Default Widget",
                   "width": "fill_container",
-                  "fill": "$neutral-900",
+                  "fill": "$color.neutral-900",
                   "cornerRadius": 12,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -3037,7 +3037,7 @@
                               "type": "text",
                               "id": "Hvj0z",
                               "name": "Widget Title",
-                              "fill": "$neutral-200",
+                              "fill": "$color.neutral-200",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -3060,7 +3060,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3081,7 +3081,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -3111,7 +3111,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3132,7 +3132,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3153,7 +3153,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -3165,7 +3165,7 @@
                       "type": "rectangle",
                       "id": "QZ16N",
                       "name": "Header Divider",
-                      "fill": "$neutral-700",
+                      "fill": "$color.neutral-700",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -3182,10 +3182,10 @@
                           "cornerRadius": 4,
                           "id": "cz7gv",
                           "name": "Row 1",
-                          "fill": "$neutral-800",
+                          "fill": "$color.neutral-800",
                           "width": "fill_container",
                           "height": 14,
-                          "stroke": "$neutral-700",
+                          "stroke": "$color.neutral-700",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         },
@@ -3194,10 +3194,10 @@
                           "cornerRadius": 4,
                           "id": "idKRK",
                           "name": "Row 2",
-                          "fill": "$neutral-800",
+                          "fill": "$color.neutral-800",
                           "width": "fill_container",
                           "height": 14,
-                          "stroke": "$neutral-700",
+                          "stroke": "$color.neutral-700",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         },
@@ -3206,10 +3206,10 @@
                           "cornerRadius": 4,
                           "id": "ErZze",
                           "name": "Row 3",
-                          "fill": "$neutral-800",
+                          "fill": "$color.neutral-800",
                           "width": 320,
                           "height": 14,
-                          "stroke": "$neutral-700",
+                          "stroke": "$color.neutral-700",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         }
@@ -3231,7 +3231,7 @@
                   "type": "text",
                   "id": "UziUl",
                   "name": "Busy Label",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "BUSY",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -3243,9 +3243,9 @@
                   "id": "Tm0ef",
                   "name": "Busy Widget",
                   "width": "fill_container",
-                  "fill": "$neutral-900",
+                  "fill": "$color.neutral-900",
                   "cornerRadius": 12,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -3282,7 +3282,7 @@
                               "type": "text",
                               "id": "D9oCjX",
                               "name": "Widget Title",
-                              "fill": "$neutral-200",
+                              "fill": "$color.neutral-200",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -3305,7 +3305,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3326,7 +3326,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -3356,7 +3356,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3377,7 +3377,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3398,7 +3398,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -3410,7 +3410,7 @@
                       "type": "rectangle",
                       "id": "lIgKo",
                       "name": "Header Divider",
-                      "fill": "$neutral-700",
+                      "fill": "$color.neutral-700",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -3437,10 +3437,10 @@
                               "cornerRadius": 4,
                               "id": "svV1x",
                               "name": "Row 1",
-                              "fill": "$neutral-800",
+                              "fill": "$color.neutral-800",
                               "width": "fill_container",
                               "height": 14,
-                              "stroke": "$neutral-700",
+                              "stroke": "$color.neutral-700",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner"
                             },
@@ -3449,10 +3449,10 @@
                               "cornerRadius": 4,
                               "id": "VwRMJ",
                               "name": "Row 2",
-                              "fill": "$neutral-800",
+                              "fill": "$color.neutral-800",
                               "width": "fill_container",
                               "height": 14,
-                              "stroke": "$neutral-700",
+                              "stroke": "$color.neutral-700",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner"
                             },
@@ -3461,10 +3461,10 @@
                               "cornerRadius": 4,
                               "id": "V7Zqj",
                               "name": "Row 3",
-                              "fill": "$neutral-800",
+                              "fill": "$color.neutral-800",
                               "width": 320,
                               "height": 14,
-                              "stroke": "$neutral-700",
+                              "stroke": "$color.neutral-700",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner"
                             }
@@ -3488,7 +3488,7 @@
                               "innerRadius": 0.78,
                               "startAngle": 135,
                               "sweepAngle": 270,
-                              "fill": "$blue-500",
+                              "fill": "$color.blue-500",
                               "width": 22,
                               "height": 22
                             },
@@ -3496,7 +3496,7 @@
                               "type": "text",
                               "id": "Tpkag",
                               "name": "Loading Label",
-                              "fill": "$neutral-400",
+                              "fill": "$color.neutral-400",
                               "content": "Loading…",
                               "fontFamily": "Inter",
                               "fontSize": 13,
@@ -3512,7 +3512,7 @@
                   "type": "text",
                   "id": "ntlt6",
                   "name": "Busy Caption",
-                  "fill": "$neutral-400",
+                  "fill": "$color.neutral-400",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
                   "content": "busy → content dims behind a white/35 overlay, spinner shows, header actions disable.",
@@ -3534,7 +3534,7 @@
                   "type": "text",
                   "id": "N0NBWp",
                   "name": "NoBorder Label",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "NO BORDER",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -3569,7 +3569,7 @@
                               "type": "text",
                               "id": "CpAT9",
                               "name": "Widget Title",
-                              "fill": "$neutral-200",
+                              "fill": "$color.neutral-200",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -3592,7 +3592,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3613,7 +3613,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -3643,7 +3643,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3664,7 +3664,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3685,7 +3685,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -3697,7 +3697,7 @@
                       "type": "rectangle",
                       "id": "YaIS7",
                       "name": "Header Divider",
-                      "fill": "$neutral-700",
+                      "fill": "$color.neutral-700",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -3714,10 +3714,10 @@
                           "cornerRadius": 4,
                           "id": "V6lJ8k",
                           "name": "Row 1",
-                          "fill": "$neutral-800",
+                          "fill": "$color.neutral-800",
                           "width": "fill_container",
                           "height": 14,
-                          "stroke": "$neutral-700",
+                          "stroke": "$color.neutral-700",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         },
@@ -3726,10 +3726,10 @@
                           "cornerRadius": 4,
                           "id": "oJFMC",
                           "name": "Row 2",
-                          "fill": "$neutral-800",
+                          "fill": "$color.neutral-800",
                           "width": "fill_container",
                           "height": 14,
-                          "stroke": "$neutral-700",
+                          "stroke": "$color.neutral-700",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         },
@@ -3738,10 +3738,10 @@
                           "cornerRadius": 4,
                           "id": "CaVSi",
                           "name": "Row 3",
-                          "fill": "$neutral-800",
+                          "fill": "$color.neutral-800",
                           "width": 320,
                           "height": 14,
-                          "stroke": "$neutral-700",
+                          "stroke": "$color.neutral-700",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         }
@@ -3753,7 +3753,7 @@
                   "type": "text",
                   "id": "ZyBSr",
                   "name": "NoBorder Caption",
-                  "fill": "$neutral-400",
+                  "fill": "$color.neutral-400",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
                   "content": "noBorder → no border, background, padding or shadow — content sits directly in the page flow.",
@@ -3775,7 +3775,7 @@
                   "type": "text",
                   "id": "MiJ1Z",
                   "name": "Locked Label",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "LOCKED (WidgetLock)",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -3787,9 +3787,9 @@
                   "id": "UkoZO",
                   "name": "Locked Widget",
                   "width": "fill_container",
-                  "fill": "$neutral-900",
+                  "fill": "$color.neutral-900",
                   "cornerRadius": 12,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -3826,7 +3826,7 @@
                               "type": "text",
                               "id": "ca6Jm",
                               "name": "Widget Title",
-                              "fill": "$neutral-200",
+                              "fill": "$color.neutral-200",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -3849,7 +3849,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3870,7 +3870,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -3900,7 +3900,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3921,7 +3921,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -3942,7 +3942,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -3954,7 +3954,7 @@
                       "type": "rectangle",
                       "id": "DvMAf",
                       "name": "Header Divider",
-                      "fill": "$neutral-700",
+                      "fill": "$color.neutral-700",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -3973,9 +3973,9 @@
                           "type": "frame",
                           "id": "A3oyo",
                           "name": "Lock Card",
-                          "fill": "$neutral-800",
+                          "fill": "$color.neutral-800",
                           "cornerRadius": 12,
-                          "stroke": "$neutral-700",
+                          "stroke": "$color.neutral-700",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner",
                           "gap": 16,
@@ -3990,7 +3990,7 @@
                               "height": 32,
                               "icon": "triangle-alert",
                               "library": "lucide",
-                              "fill": "$red-500"
+                              "fill": "$color.red-500"
                             },
                             {
                               "type": "frame",
@@ -4003,7 +4003,7 @@
                                   "type": "text",
                                   "id": "mlGtm",
                                   "name": "Lock Title",
-                                  "fill": "$white",
+                                  "fill": "$color.white",
                                   "content": "There was some problem",
                                   "fontFamily": "Inter",
                                   "fontSize": 15,
@@ -4013,7 +4013,7 @@
                                   "type": "text",
                                   "id": "q07c9",
                                   "name": "Lock Message",
-                                  "fill": "$neutral-400",
+                                  "fill": "$color.neutral-400",
                                   "content": "There was some issue please try again later",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
@@ -4031,7 +4031,7 @@
                   "type": "text",
                   "id": "siOl3",
                   "name": "Locked Caption",
-                  "fill": "$neutral-400",
+                  "fill": "$color.neutral-400",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
                   "content": "widgetLockName matches an active lock → body is replaced by WidgetLock (icon varies by lockType).",
@@ -4047,7 +4047,7 @@
           "type": "rectangle",
           "id": "VsOtD",
           "name": "Section Divider 2",
-          "fill": "$neutral-700",
+          "fill": "$color.neutral-700",
           "width": "fill_container",
           "height": 1
         },
@@ -4063,7 +4063,7 @@
               "type": "text",
               "id": "kE0i9",
               "name": "Examples Label",
-              "fill": "$neutral-500",
+              "fill": "$color.neutral-500",
               "content": "EXAMPLES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -4082,7 +4082,7 @@
                   "type": "text",
                   "id": "yikkx",
                   "name": "Ex1 Label",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "LIST WIDGET",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -4094,9 +4094,9 @@
                   "id": "gajmj",
                   "name": "List Widget",
                   "width": "fill_container",
-                  "fill": "$neutral-900",
+                  "fill": "$color.neutral-900",
                   "cornerRadius": 12,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -4133,7 +4133,7 @@
                               "type": "text",
                               "id": "K8cvOT",
                               "name": "Widget Title",
-                              "fill": "$neutral-200",
+                              "fill": "$color.neutral-200",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -4156,7 +4156,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -4177,7 +4177,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -4207,7 +4207,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -4228,7 +4228,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -4249,7 +4249,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -4261,7 +4261,7 @@
                       "type": "rectangle",
                       "id": "J7mcZ",
                       "name": "Header Divider",
-                      "fill": "$neutral-700",
+                      "fill": "$color.neutral-700",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -4296,7 +4296,7 @@
                                   "type": "ellipse",
                                   "id": "bv8Wn",
                                   "name": "Dot",
-                                  "fill": "$blue-500",
+                                  "fill": "$color.blue-500",
                                   "width": 8,
                                   "height": 8
                                 },
@@ -4304,7 +4304,7 @@
                                   "type": "text",
                                   "id": "fNGsm",
                                   "name": "Name",
-                                  "fill": "$neutral-300",
+                                  "fill": "$color.neutral-300",
                                   "content": "server-cert-01.pem",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -4316,7 +4316,7 @@
                               "type": "frame",
                               "id": "HzKPB",
                               "name": "Pill",
-                              "fill": "$neutral-800",
+                              "fill": "$color.neutral-800",
                               "cornerRadius": 999,
                               "padding": [
                                 3,
@@ -4327,7 +4327,7 @@
                                   "type": "text",
                                   "id": "DsdiK",
                                   "name": "Pill Label",
-                                  "fill": "$neutral-400",
+                                  "fill": "$color.neutral-400",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 11,
@@ -4341,7 +4341,7 @@
                           "type": "rectangle",
                           "id": "d6DsHl",
                           "name": "List Divider 1",
-                          "fill": "$neutral-700",
+                          "fill": "$color.neutral-700",
                           "width": "fill_container",
                           "height": 1
                         },
@@ -4369,7 +4369,7 @@
                                   "type": "ellipse",
                                   "id": "iQsAn",
                                   "name": "Dot",
-                                  "fill": "$blue-500",
+                                  "fill": "$color.blue-500",
                                   "width": 8,
                                   "height": 8
                                 },
@@ -4377,7 +4377,7 @@
                                   "type": "text",
                                   "id": "J3bxs",
                                   "name": "Name",
-                                  "fill": "$neutral-300",
+                                  "fill": "$color.neutral-300",
                                   "content": "api-gateway.pem",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -4389,7 +4389,7 @@
                               "type": "frame",
                               "id": "K7raWN",
                               "name": "Pill",
-                              "fill": "$neutral-800",
+                              "fill": "$color.neutral-800",
                               "cornerRadius": 999,
                               "padding": [
                                 3,
@@ -4400,7 +4400,7 @@
                                   "type": "text",
                                   "id": "O7tvy",
                                   "name": "Pill Label",
-                                  "fill": "$neutral-400",
+                                  "fill": "$color.neutral-400",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 11,
@@ -4414,7 +4414,7 @@
                           "type": "rectangle",
                           "id": "UYbCy",
                           "name": "List Divider 2",
-                          "fill": "$neutral-700",
+                          "fill": "$color.neutral-700",
                           "width": "fill_container",
                           "height": 1
                         },
@@ -4442,7 +4442,7 @@
                                   "type": "ellipse",
                                   "id": "PeJ2e",
                                   "name": "Dot",
-                                  "fill": "$blue-500",
+                                  "fill": "$color.blue-500",
                                   "width": 8,
                                   "height": 8
                                 },
@@ -4450,7 +4450,7 @@
                                   "type": "text",
                                   "id": "h7Zda9",
                                   "name": "Name",
-                                  "fill": "$neutral-300",
+                                  "fill": "$color.neutral-300",
                                   "content": "root-ca-2026.pem",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -4462,7 +4462,7 @@
                               "type": "frame",
                               "id": "cL6ni",
                               "name": "Pill",
-                              "fill": "$neutral-800",
+                              "fill": "$color.neutral-800",
                               "cornerRadius": 999,
                               "padding": [
                                 3,
@@ -4473,7 +4473,7 @@
                                   "type": "text",
                                   "id": "jh4XB",
                                   "name": "Pill Label",
-                                  "fill": "$neutral-400",
+                                  "fill": "$color.neutral-400",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 11,
@@ -4501,7 +4501,7 @@
                   "type": "text",
                   "id": "IgBsQ",
                   "name": "Ex2 Label",
-                  "fill": "$neutral-500",
+                  "fill": "$color.neutral-500",
                   "content": "INFO CARD OPEN",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -4513,9 +4513,9 @@
                   "id": "Ijidi",
                   "name": "Info Card Widget",
                   "width": "fill_container",
-                  "fill": "$neutral-900",
+                  "fill": "$color.neutral-900",
                   "cornerRadius": 12,
-                  "stroke": "$neutral-700",
+                  "stroke": "$color.neutral-700",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -4552,7 +4552,7 @@
                               "type": "text",
                               "id": "tr5Xk",
                               "name": "Widget Title",
-                              "fill": "$neutral-200",
+                              "fill": "$color.neutral-200",
                               "content": "Certificates",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -4575,7 +4575,7 @@
                                   "height": 16,
                                   "icon": "refresh-cw",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -4596,7 +4596,7 @@
                                   "height": 16,
                                   "icon": "list-restart",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -4626,7 +4626,7 @@
                                   "height": 16,
                                   "icon": "search",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -4647,7 +4647,7 @@
                                   "height": 16,
                                   "icon": "download",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             },
@@ -4668,7 +4668,7 @@
                                   "height": 16,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$neutral-400"
+                                  "fill": "$color.neutral-400"
                                 }
                               ]
                             }
@@ -4680,7 +4680,7 @@
                       "type": "rectangle",
                       "id": "O7q8u",
                       "name": "Header Divider",
-                      "fill": "$neutral-700",
+                      "fill": "$color.neutral-700",
                       "width": "fill_container",
                       "height": 1
                     },
@@ -4690,7 +4690,7 @@
                       "name": "Info Panel",
                       "width": "fill_container",
                       "cornerRadius": 8,
-                      "stroke": "$neutral-700",
+                      "stroke": "$color.neutral-700",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "layout": "vertical",
@@ -4711,7 +4711,7 @@
                               "type": "text",
                               "id": "qFHMq",
                               "name": "Info Heading",
-                              "fill": "$white",
+                              "fill": "$color.white",
                               "content": "About this widget",
                               "fontFamily": "Inter",
                               "fontSize": 16,
@@ -4735,7 +4735,7 @@
                               "type": "text",
                               "id": "adnNG",
                               "name": "Info Desc",
-                              "fill": "$neutral-400",
+                              "fill": "$color.neutral-400",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Certificates: Lists issued certificates and their current validity.",
@@ -4755,7 +4755,7 @@
                                   "type": "text",
                                   "id": "C2EZwo",
                                   "name": "Note",
-                                  "fill": "$neutral-400",
+                                  "fill": "$color.neutral-400",
                                   "content": "•   Auto-refreshes every 5 minutes",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -4765,7 +4765,7 @@
                                   "type": "text",
                                   "id": "s0wxR",
                                   "name": "Note",
-                                  "fill": "$neutral-400",
+                                  "fill": "$color.neutral-400",
                                   "content": "•   Click a row to view details",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -4790,10 +4790,10 @@
                           "cornerRadius": 4,
                           "id": "A8oGa",
                           "name": "Row 1",
-                          "fill": "$neutral-800",
+                          "fill": "$color.neutral-800",
                           "width": "fill_container",
                           "height": 14,
-                          "stroke": "$neutral-700",
+                          "stroke": "$color.neutral-700",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         },
@@ -4802,10 +4802,10 @@
                           "cornerRadius": 4,
                           "id": "gcc6C",
                           "name": "Row 2",
-                          "fill": "$neutral-800",
+                          "fill": "$color.neutral-800",
                           "width": 320,
                           "height": 14,
-                          "stroke": "$neutral-700",
+                          "stroke": "$color.neutral-700",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner"
                         }
@@ -4821,187 +4821,187 @@
     }
   ],
   "variables": {
-    "white": {
+    "color.white": {
       "type": "color",
       "value": "#ffffff"
     },
-    "transparent": {
+    "color.transparent": {
       "type": "color",
       "value": "#00000000"
     },
-    "white-10": {
+    "color.white-10": {
       "type": "color",
       "value": "#ffffff1a"
     },
-    "white-20": {
+    "color.white-20": {
       "type": "color",
       "value": "#ffffff33"
     },
-    "black-12": {
+    "color.black-12": {
       "type": "color",
       "value": "#0000001f"
     },
-    "black-40": {
+    "color.black-40": {
       "type": "color",
       "value": "#00000066"
     },
-    "blue-50": {
+    "color.blue-50": {
       "type": "color",
       "value": "#e6f2ff"
     },
-    "blue-100": {
+    "color.blue-100": {
       "type": "color",
       "value": "#cce5ff"
     },
-    "blue-200": {
+    "color.blue-200": {
       "type": "color",
       "value": "#99ccff"
     },
-    "blue-300": {
+    "color.blue-300": {
       "type": "color",
       "value": "#66b2ff"
     },
-    "blue-400": {
+    "color.blue-400": {
       "type": "color",
       "value": "#3399ff"
     },
-    "blue-500": {
+    "color.blue-500": {
       "type": "color",
       "value": "#0085e6"
     },
-    "blue-600": {
+    "color.blue-600": {
       "type": "color",
       "value": "#0073cf"
     },
-    "blue-700": {
+    "color.blue-700": {
       "type": "color",
       "value": "#005ba6"
     },
-    "blue-800": {
+    "color.blue-800": {
       "type": "color",
       "value": "#004480"
     },
-    "blue-900": {
+    "color.blue-900": {
       "type": "color",
       "value": "#002d59"
     },
-    "blue-950": {
+    "color.blue-950": {
       "type": "color",
       "value": "#001a33"
     },
-    "gray-100": {
+    "color.gray-100": {
       "type": "color",
       "value": "#f5f5f5"
     },
-    "gray-200": {
+    "color.gray-200": {
       "type": "color",
       "value": "#e8e8e8"
     },
-    "gray-300": {
+    "color.gray-300": {
       "type": "color",
       "value": "#d4d4d4"
     },
-    "gray-400": {
+    "color.gray-400": {
       "type": "color",
       "value": "#c7c7c7"
     },
-    "gray-500": {
+    "color.gray-500": {
       "type": "color",
       "value": "#a8a8a8"
     },
-    "gray-600": {
+    "color.gray-600": {
       "type": "color",
       "value": "#b4b4b4"
     },
-    "gray-700": {
+    "color.gray-700": {
       "type": "color",
       "value": "#8c8c8c"
     },
-    "gray-800": {
+    "color.gray-800": {
       "type": "color",
       "value": "#666666"
     },
-    "gray-900": {
+    "color.gray-900": {
       "type": "color",
       "value": "#404040"
     },
-    "neutral-200": {
+    "color.neutral-200": {
       "type": "color",
       "value": "#e5e5e5"
     },
-    "neutral-300": {
+    "color.neutral-300": {
       "type": "color",
       "value": "#d4d4d4"
     },
-    "neutral-400": {
+    "color.neutral-400": {
       "type": "color",
       "value": "#a3a3a3"
     },
-    "neutral-500": {
+    "color.neutral-500": {
       "type": "color",
       "value": "#737373"
     },
-    "neutral-600": {
+    "color.neutral-600": {
       "type": "color",
       "value": "#525252"
     },
-    "neutral-700": {
+    "color.neutral-700": {
       "type": "color",
       "value": "#404040"
     },
-    "neutral-800": {
+    "color.neutral-800": {
       "type": "color",
       "value": "#262626"
     },
-    "neutral-900": {
+    "color.neutral-900": {
       "type": "color",
       "value": "#171717"
     },
-    "red-100": {
+    "color.red-100": {
       "type": "color",
       "value": "#fee2e2"
     },
-    "red-400": {
+    "color.red-400": {
       "type": "color",
       "value": "#f87171"
     },
-    "red-500": {
+    "color.red-500": {
       "type": "color",
       "value": "#ef4444"
     },
-    "red-600": {
+    "color.red-600": {
       "type": "color",
       "value": "#dc2626"
     },
-    "red-800": {
+    "color.red-800": {
       "type": "color",
       "value": "#991b1b"
     },
-    "red-800-30": {
+    "color.red-800-30": {
       "type": "color",
       "value": "#991b1b4d"
     },
-    "yellow-100": {
+    "color.yellow-100": {
       "type": "color",
       "value": "#fef9c3"
     },
-    "yellow-400": {
+    "color.yellow-400": {
       "type": "color",
       "value": "#facc15"
     },
-    "yellow-500": {
+    "color.yellow-500": {
       "type": "color",
       "value": "#eab308"
     },
-    "yellow-600": {
+    "color.yellow-600": {
       "type": "color",
       "value": "#ca8a04"
     },
-    "yellow-800": {
+    "color.yellow-800": {
       "type": "color",
       "value": "#854d0e"
     },
-    "yellow-800-30": {
+    "color.yellow-800-30": {
       "type": "color",
       "value": "#854d0e4d"
     }

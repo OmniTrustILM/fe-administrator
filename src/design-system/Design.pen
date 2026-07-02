@@ -9006,8 +9006,8 @@
     {
       "type": "frame",
       "id": "gNmMe",
-      "x": 7507,
-      "y": 0,
+      "x": 7700,
+      "y": 3600,
       "name": "Alerts/Success",
       "reusable": true,
       "width": 380,
@@ -9060,8 +9060,8 @@
     {
       "type": "frame",
       "id": "e4bLs9",
-      "x": 7507,
-      "y": 81,
+      "x": 8120,
+      "y": 3600,
       "name": "Alerts/Error",
       "reusable": true,
       "width": 380,
