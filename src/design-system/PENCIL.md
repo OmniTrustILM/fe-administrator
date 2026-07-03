@@ -238,6 +238,7 @@ Always set `name` on every node. Use descriptive, hierarchical names:
 | WidgetButtons | `src/components/WidgetButtons/WidgetButtons.pen` |
 | WidgetLock | `src/components/WidgetLock/WidgetLock.pen` |
 | CustomTable | `src/components/CustomTable/CustomTable.pen` |
+| JsonViewer | `src/components/JsonViewer/JsonViewer.pen` |
 
 Button.pen is the most complete reference — it has 6 pages (Light/Dark × Solid/Outline/Transparent) showing all 5 color variants across 4 states.
 
@@ -285,6 +286,7 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 | WidgetButtons visual (toolbar row of transparent icon `Button`s: `flex ml-2 items-center gap-1`; each = 16px lucide icon in a `p-2` transparent button, hover `bg-gray-200` (dark `neutral-700`), `disabled` → `opacity-35` (+ `disabledTooltip`); `justify` start/center/end; per-button `custom` slot renders any React node inline) | plain demo — no reusable (composite of transparent `Button`s); showcase `WidgetButtons Group` (`VEgLI`) shows a widget-header card with a `Certificates` title + a right-aligned refresh/download(hover)/search/info icon cluster |
 | WidgetLock visual (error / empty-state card wrapped in a `Container`, centered `max-w-md`/`xl`/`full` by `size`: `bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl p-6 flex items-center gap-4`; danger-colored (`--status-danger` red) icon that **switches to `neutral-400` in dark mode**, varying by `lockType` (Generic/`triangle-alert`, Network/`wifi`, Permission/`lock`, Client/`house`, ServiceError/`database`, ServerError/`server`), icon size 24/32/48 by `size`; `h5` semibold title + optional `lockDetails` `Info` tooltip button; `text-sm` muted body) | plain demo — no reusable (composite of Container + icon + text); showcase `WidgetLock Group` (`i4MJSC`) shows the default lock card (`triangle-alert` + `There was some problem` title + info tooltip + muted body) |
 | CustomTable visual (feature-rich data table: bordered `rounded-md` container (`border-gray-100`), `thead` (`bg-gray-50` light / `bg-neutral-700` dark) with uppercase `text-xs` `text-gray-500`/`neutral-400` `th`; sortable columns toggle an `arrow-down-up` icon; `divide-y divide-gray-200`/`neutral-700` rows on `bg-white`/`neutral-800`; optional row + select-all `Checkbox` column (checked = `blue-600`/`blue-500`); optional right-aligned `Search` input; optional bottom pagination bar (page-size `Select` + `Pagination` + `Showing X to Y of Z`); `hasDetails` opens a nested `CustomTable` in a modal; empty state = `table-properties` icon in a gray circle + `No items to show`/`No matching items`; `isLoading` → `TableSkeleton`) | plain demo — no reusable (composite of Checkbox/Select/Pagination/SimpleBar); showcase `CustomTable Group` (`ana3z`) shows a mini sortable+selectable table (select-all + `NAME`/`STATUS` headers, one checked row) |
+| JsonViewer visual (read-only syntax-highlighted JSON in a `<pre>`; **always dark** regardless of app theme — `bg #0B1220`, base text `#c8d3f5`, `rounded-lg`, `p-3`, `text-xs`/`leading-5`, monospace; token colors key `#7AA2F7`, string `#9ECE6A`, number `#F7768E`, boolean `#BB9AF7`, null `#E0AF68`; input pretty-printed to 2-space indent (falls back to raw text on parse error); `whitespace-pre-wrap break-words` wrapping + thin custom scrollbar) | plain demo — no reusable (syntax highlighting = per-token colored text nodes on a `$color.json-bg` block); needs `json-bg`/`json-key`/`json-string`/`json-number`/`json-boolean`/`json-null` tokens in Design.pen; showcase `JsonViewer Group` (`L5nHF`, Row 6) shows a colored JSON block |
 | NumberInput visual (container, stepper buttons, value) | `NumberInput` |
 | Input sub-component visual (any of the 6 types) | `Input/DurationInput`, `Input/HostnameListInput`, `Input/FileUpload`, `Input/MultipleValueTextInput`, `Input/CodeEditor`, `Input/DynamicContent` |
 | New component `.pen` created | Add new reusable components + a new component group to the showcase grid (see layout note below) |
@@ -292,17 +294,17 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 
 ### Showcase layout (Component Library frame `VLhPh`)
 
-The primitives **Body** (`W3Yt2`, vertical, gap 40, `width:3200`, padding `[40,40,48,40]` → ~3120 usable) is a **grid of rows**, not a single strip. Each row (`Row 1`…`Row 5`, horizontal, gap 40, `alignItems:start`) is a horizontal strip of component groups. A component group = vertical frame (Group Header with title + divider, then an Items frame). The reusable source symbols live in a horizontal strip below the Component Library (at `y:3600`), kept clear of the showcase frame.
+The primitives **Body** (`W3Yt2`) is a **square** grid: `1760 × 1760`, vertical, gap 40, padding `[40,40,40,40]` (→ 1680 usable). It holds a **grid of rows** (horizontal, gap 40, `alignItems:start`); each row is a strip of component groups. A component group = vertical frame (Group Header with title + divider, then an Items frame). The reusable source symbols live in a horizontal strip below the Component Library (at `y:3600`), kept clear of the showcase frame.
 
-**Placement policy — fill the row rightward before adding a new row.** The Body is ~3120 wide but historically each row only reached ~1000–1280, leaving the whole right half empty. **Extend existing rows to the right** (append groups to a row until it approaches ~3000 wide) before starting a new row below. Prefer placing a new component next to a semantically related group. Current rows:
-- `Row 1` (`LO8oA`): `Buttons` + `Checkboxes` + `Switches` + `Cards` + `Progress Button Group` (`NFq1g`, `ProgressButton/Loading` `bjqC3`) — still has room to the right.
-- `Row 2` (`OHL7N`): `Breadcrumb` + `Text Inputs` + `Number Inputs` + `Dropdowns`.
-- `Row 3` (`fTPQC`): `Radio Rows` + `Date Pickers` + `Badges` + `Boolean Badge`.
-- `Row 4` (`DTZVv`): `Status Badge` + `Status Circle` + `Label` + `Spinner` + `Tooltip` + `Toggletip Group` (`A0zOAk`, plain inline preview, no reusable) — ends at ~1560; still has room to the right.
-- `Row 5` (`ZxqYx`): `Tabs` + `Dialog` + `Pagination` + `Alerts Group` (`aNggh`, `Alerts/Success` `gNmMe` + `Alerts/Error` `e4bLs9`) + `Container Group` (`eKo82`, plain layout demo, no reusable) + `Widget Group` (`B7v2S8`, plain widget-card demo, no reusable) + `WidgetButtons Group` (`VEgLI`, plain toolbar demo, no reusable) + `WidgetLock Group` (`i4MJSC`, plain lock-card demo, no reusable) — ends at ~2860; Row 5 is now full (a table demo won't fit the ~260px left).
-- `Row 6` (`iFVR1`): `CustomTable Group` (`ana3z`, width 460, plain mini-table demo, no reusable) — first group of a fresh row; plenty of room to the right for future components.
+**Placement policy — keep the grid square; re-pack when adding.** Do NOT just sprawl right or start a new bottom row. The grid is bin-packed: groups are ordered by height (tallest first) and greedily wrapped into rows whose width stays ≤ ~1640, so the total stacked height ≈ the width (a square). When you add a component, insert its group and then **re-pack all rows** so the Body stays ~square with no large empty margin. The title band (`J5MSA`) and Input Section (`jMZl6`) are also width `1760` to match. Current rows (heights drive the packing):
+- `Row 1` (`K4l6tD`, h495): `Date Pickers` + `Text Inputs` + `Buttons` + `Number Inputs` + `Badges`.
+- `Row 2` (`OJHyX`, h272): `Checkboxes` + `Progress Button` (`NFq1g`, `ProgressButton/Loading` `bjqC3`) + `Dropdowns` + `JsonViewer` (`L5nHF`) + `Container` (`eKo82`).
+- `Row 3` (`jmobK`, h200): `Breadcrumb` + `Widget` (`B7v2S8`) + `CustomTable` (`ana3z`) + `Radio Rows` + `Spinner`.
+- `Row 4` (`gBupi`, h171): `Cards` + `Dialog` + `Alerts` (`aNggh`, `Alerts/Success` `gNmMe` + `Alerts/Error` `e4bLs9`) + `WidgetLock` (`i4MJSC`).
+- `Row 5` (`F2DRv`, h157): `Toggletip` (`A0zOAk`) + `Switches` + `Status Badge` + `WidgetButtons` (`VEgLI`) + `Boolean Badge`.
+- `Row 6` (`RVCHI`, h140): `Label` + `Tooltip` (`xUA7E`) + `Tabs` + `Pagination` + `Status Circle`.
 
-Below the primitives is the full-width **Input Section** (`jMZl6`) with composite form examples.
+Below the primitives is the **Input Section** (`jMZl6`, width `1760`) with composite form examples.
 
 ### How to update a component in Design.pen
 
