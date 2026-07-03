@@ -3713,7 +3713,7 @@
                               "effect": {
                                 "type": "shadow",
                                 "shadowType": "outer",
-                                "color": "#0000001f",
+                                "color": "$color.black-12",
                                 "offset": {
                                   "x": 0,
                                   "y": 4
@@ -9991,6 +9991,10 @@
     "color.json-null": {
       "type": "color",
       "value": "#E0AF68"
+    },
+    "color.black-12": {
+      "type": "color",
+      "value": "#0000001f"
     }
   },
   "fileToken": "80b7c32e-739d-48ca-890f-fd7e0c2c4a1b"

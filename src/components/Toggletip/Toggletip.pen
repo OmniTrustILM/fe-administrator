@@ -157,7 +157,7 @@
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
-                        "color": "#0000001f",
+                        "color": "$color.black-12",
                         "offset": {
                           "x": 0,
                           "y": 4
@@ -356,7 +356,7 @@
                           "effect": {
                             "type": "shadow",
                             "shadowType": "outer",
-                            "color": "#0000001f",
+                            "color": "$color.black-12",
                             "offset": {
                               "x": 0,
                               "y": 4
@@ -440,7 +440,7 @@
                           "effect": {
                             "type": "shadow",
                             "shadowType": "outer",
-                            "color": "#0000001f",
+                            "color": "$color.black-12",
                             "offset": {
                               "x": 0,
                               "y": 4
@@ -600,7 +600,7 @@
                   "effect": {
                     "type": "shadow",
                     "shadowType": "outer",
-                    "color": "#0000001f",
+                    "color": "$color.black-12",
                     "offset": {
                       "x": 0,
                       "y": 4
@@ -818,7 +818,7 @@
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
-                        "color": "#00000066",
+                        "color": "$color.black-40",
                         "offset": {
                           "x": 0,
                           "y": 4
@@ -1017,7 +1017,7 @@
                           "effect": {
                             "type": "shadow",
                             "shadowType": "outer",
-                            "color": "#00000066",
+                            "color": "$color.black-40",
                             "offset": {
                               "x": 0,
                               "y": 4
@@ -1101,7 +1101,7 @@
                           "effect": {
                             "type": "shadow",
                             "shadowType": "outer",
-                            "color": "#00000066",
+                            "color": "$color.black-40",
                             "offset": {
                               "x": 0,
                               "y": 4
@@ -1261,7 +1261,7 @@
                   "effect": {
                     "type": "shadow",
                     "shadowType": "outer",
-                    "color": "#00000066",
+                    "color": "$color.black-40",
                     "offset": {
                       "x": 0,
                       "y": 4
