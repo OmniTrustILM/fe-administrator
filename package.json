@@ -113,7 +113,6 @@
     "overrides": {
         "typescript": "$typescript",
         "js-yaml": "$js-yaml",
-        "nodemailer": "^9.0.0",
         "shell-quote": "^1.8.4",
         "esbuild": "^0.28.1",
         "nyc": {
