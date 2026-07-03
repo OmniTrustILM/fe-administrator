@@ -9,13 +9,14 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { OidCategory, PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource } from 'types/openapi';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumValueDescription } from 'components/EnumDescription';
 import { getEditAndDeleteWidgetButtons, createWidgetDetailHeaders, createTableDataRow } from 'utils/widget';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
+import { isCertificateExtensionCategory, isRdnAttributeTypeCategory, isRdnProperties, isCertificateExtensionProperties } from 'utils/oid';
 
 export default function CustomOIDDetail() {
     const dispatch = useDispatch();
@@ -38,7 +39,7 @@ export default function CustomOIDDetail() {
 
     const showAdditionalProperties = useMemo(() => {
         if (!oid) return false;
-        return oid.category === OidCategory.RdnAttributeType;
+        return isRdnAttributeTypeCategory(oid.category) || isCertificateExtensionCategory(oid.category);
     }, [oid]);
 
     const getFreshOIDDetails = useCallback(() => {
@@ -100,16 +101,19 @@ export default function CustomOIDDetail() {
         [oid, oidCategoryEnum],
     );
 
-    const additionalPropertiesData: TableDataRow[] = useMemo<TableDataRow[]>(
-        () =>
-            oid
-                ? [
-                      createTableDataRow('Code', oid.additionalProperties?.code),
-                      createTableDataRow('Alternative Codes', oid.additionalProperties?.altCodes?.join(', ')),
-                  ]
-                : [],
-        [oid],
-    );
+    const additionalPropertiesData: TableDataRow[] = useMemo<TableDataRow[]>(() => {
+        const props = oid?.additionalProperties;
+        if (isRdnProperties(props)) {
+            return [createTableDataRow('Code', props.code), createTableDataRow('Alternative Codes', props.altCodes?.join(', '))];
+        }
+        if (isCertificateExtensionProperties(props)) {
+            return [
+                createTableDataRow('Default Critical', props.defaultCritical ? 'Enabled' : 'Disabled'),
+                createTableDataRow('Value Encoding', props.valueEncoding),
+            ];
+        }
+        return [];
+    }, [oid]);
 
     if (isFetching && !isEditDialogOpen) {
         return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
