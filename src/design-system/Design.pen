@@ -2916,6 +2916,155 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "A0zOAk",
+                  "name": "Toggletip Group",
+                  "width": 240,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "DKqLS",
+                      "name": "Group Header",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "mCLZ7",
+                          "name": "Group Title",
+                          "fill": "$color.gray-500",
+                          "content": "TOGGLETIP",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.5
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "pZDgk",
+                          "name": "Divider",
+                          "fill": "$color.gray-300",
+                          "width": "fill_container",
+                          "height": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "o7mlm",
+                      "name": "Items",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "dlQLN",
+                          "name": "Preview",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "wqwpR",
+                              "name": "Trigger",
+                              "fill": "$color.transparent",
+                              "cornerRadius": 999,
+                              "padding": 3,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon",
+                                  "id": "c0v6MV",
+                                  "name": "Info",
+                                  "width": 16,
+                                  "height": 16,
+                                  "icon": "info",
+                                  "library": "lucide",
+                                  "fill": "$color.gray-800"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "NqzIE",
+                              "name": "Panel",
+                              "width": 200,
+                              "fill": "$color.white",
+                              "cornerRadius": 8,
+                              "stroke": "$color.gray-200",
+                              "strokeWidth": 1,
+                              "effect": {
+                                "type": "shadow",
+                                "shadowType": "outer",
+                                "color": "#0000001f",
+                                "offset": {
+                                  "x": 0,
+                                  "y": 4
+                                },
+                                "blur": 12
+                              },
+                              "layout": "vertical",
+                              "gap": 5,
+                              "padding": [
+                                12,
+                                28,
+                                12,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "o8yYH",
+                                  "name": "Panel Body",
+                                  "fill": "$color.gray-800",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "Longer help text lives here — dismissible.",
+                                  "lineHeight": 1.45,
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "XxfCo",
+                                  "layoutPosition": "absolute",
+                                  "x": 178,
+                                  "y": 10,
+                                  "name": "Close",
+                                  "width": 14,
+                                  "height": 14,
+                                  "icon": "x",
+                                  "library": "lucide",
+                                  "fill": "$color.gray-400"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "j4K3R",
+                          "name": "Caption",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "click-to-pin info popover · dismissible",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             },
