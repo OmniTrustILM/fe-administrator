@@ -38,7 +38,7 @@ vi.mock('components/TextArea', () => ({
 vi.mock('components/Input/MultipleValueTextInput', () => ({
     default: ({ id }: any) => <div data-testid={`multi-${id}`} />,
 }));
-vi.mock('components/Label', () => ({ default: ({ children }: any) => <label>{children}</label> }));
+vi.mock('components/Label', () => ({ default: ({ children }: any) => <span>{children}</span> }));
 vi.mock('components/Widget', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 vi.mock('components/Container', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 vi.mock('components/Button', () => ({
