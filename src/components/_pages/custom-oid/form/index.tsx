@@ -2,7 +2,7 @@ import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/oids';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { type CustomOidEntryRequestDto, OidCategory, PlatformEnum } from 'types/openapi';
+import { type CustomOidEntryRequestDto, type OidCategory, PlatformEnum } from 'types/openapi';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { validateLength, validateRequired, validateOid, validateOidCode } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
@@ -18,6 +18,7 @@ import TextArea from 'components/TextArea';
 import Label from 'components/Label';
 import {
     isCertificateExtensionCategory,
+    isRdnAttributeTypeCategory,
     isRdnProperties,
     isCertificateExtensionProperties,
     getExtensionValueEncodingOptions,
@@ -244,7 +245,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                             )}
                         />
 
-                        {watchedCategory === OidCategory.RdnAttributeType && (
+                        {isRdnAttributeTypeCategory(watchedCategory) && (
                             <>
                                 <Controller
                                     name="code"
