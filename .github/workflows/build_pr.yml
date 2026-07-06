@@ -19,6 +19,7 @@ jobs:
         run: |
           npm ci --ignore-scripts
           npm run lint
+          npm run typecheck
           npm run build
 
       # Package up PR context for downstream workflow_run
