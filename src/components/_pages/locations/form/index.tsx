@@ -9,7 +9,7 @@ import { actions as locationActions, selectors as locationSelectors } from 'duck
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 
-import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
+import { Controller, FormProvider, type Path, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 
@@ -40,6 +40,7 @@ interface FormValues {
     name: string;
     description: string;
     entity: string;
+    storeKind?: unknown;
 }
 
 export default function LocationForm({ locationId, entityId: propEntityId, onCancel, onSuccess }: LocationFormProps) {
@@ -307,10 +308,10 @@ export default function LocationForm({ locationId, entityId: propEntityId, onCan
                                             const formValues = getValues();
                                             Object.keys(formValues).forEach((key) => {
                                                 if (key.startsWith('__attributes__location__')) {
-                                                    setValue(key as any, undefined);
+                                                    setValue(key as Path<FormValues>, undefined);
                                                 }
                                             });
-                                            setValue('storeKind' as any, undefined);
+                                            setValue('storeKind', undefined);
                                             field.onChange(value);
                                         }}
                                         options={optionsForEntities || []}

@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { combineReducers, configureStore, type Reducer } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import { useMemo } from 'react';
@@ -8,15 +8,15 @@ import SigningProfileForm from './SigningProfileForm';
 
 // Identity reducer for building a lightweight, inert test store (no epics, reducers are no-ops).
 const identity =
-    <S,>(initial: S) =>
-    (state: S | undefined): S =>
+    <S,>(initial: S): Reducer<S> =>
+    (state) =>
         state ?? initial;
 
 export function SigningProfileFormTestWrapper() {
     const store = useMemo(
         () =>
             configureStore({
-                reducer: {
+                reducer: combineReducers({
                     enums: identity({ platformEnums: {} }),
                     signingProfiles: identity({
                         signingProfile: undefined,
@@ -46,7 +46,7 @@ export function SigningProfileFormTestWrapper() {
                     // them in this test, so their initial state is stable.
                     connectors: connectorsReducer,
                     userInterface: userInterfaceReducer,
-                },
+                }),
                 middleware: (getDefault) => getDefault({ serializableCheck: false }),
             }),
         [],

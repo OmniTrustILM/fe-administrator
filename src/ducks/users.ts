@@ -1,6 +1,8 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { RoleResponseModel, UserDetailModel, UserUpdateRequestModel } from 'types/auth';
 import type { UserAddRequestModel, UserResponseModel } from 'types/users';
+import { resetSliceState } from 'ducks/reducerUtils';
+import type { AppState } from 'ducks';
 
 export type State = {
     usersListCheckedRows: string[];
@@ -58,11 +60,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         setUserListCheckedRows: (state, action: PayloadAction<{ checkedRows: string[] }>) => {
@@ -310,7 +308,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const usersListCheckedRows = createSelector(state, (state) => state.usersListCheckedRows);
 const userRolesListCheckedRows = createSelector(state, (state) => state.userRolesListCheckedRows);

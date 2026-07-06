@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import { SigningRecordStatisticsPeriod, type SigningRecordStatisticsDto } from 'types/openapi';
 
 export type State = {
@@ -45,7 +46,7 @@ export const slice = createSlice({
     },
 });
 
-const selectState = (reduxStore: any): State => reduxStore?.[slice.name];
+const selectState = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const statistics = createSelector(selectState, (state) => state.statistics);
 const isFetching = createSelector(selectState, (state) => state.isFetching);

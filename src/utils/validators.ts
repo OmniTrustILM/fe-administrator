@@ -1,38 +1,43 @@
 import cronValidator from 'cron-expression-validator';
 import regexpTree from 'regexp-tree';
 
+// A single form-field validator. The `value` type is intentionally `never` so that validators with
+// concrete parameter types (e.g. `(value: string) => ...`) remain assignable to this aggregate type;
+// callers narrow the value themselves. Only the composing helpers below rely on this shape.
+export type FieldValidator = (value: never, allValues?: object, fieldState?: unknown) => string | undefined;
+
 export const composeValidators =
-    (...validators: any[]) =>
-    (value: any, allValues?: object, fieldState?: any) =>
+    (...validators: FieldValidator[]) =>
+    (value: unknown, allValues?: object, fieldState?: unknown): string | undefined =>
         validators
             .filter((validator) => typeof validator === 'function')
-            .reduce((error, validator) => error || validator(value, allValues, fieldState), undefined);
+            .reduce<string | undefined>((error, validator) => error || validator(value as never, allValues, fieldState), undefined);
 
-export const validateRequired = () => (value: any) => {
+export const validateRequired = () => (value: unknown) => {
     const isValid = !!(Array.isArray(value) ? value.length > 0 : value) || typeof value === 'boolean';
     return isValid ? undefined : 'Required Field';
 };
 
-const getValueFromObject = (value: any) => {
+const getValueFromObject = (value: unknown): unknown => {
     if (typeof value === 'object' && value && Object.hasOwn(value, 'label') && Object.hasOwn(value, 'value')) {
-        return value.value.data;
+        return (value as { value: { data: unknown } }).value.data;
     }
     // Attribute content objects from list (select) fields are stored as {data, reference}.
     // Extract the primitive data value so pattern validators can test it correctly.
     if (typeof value === 'object' && value && Object.hasOwn(value, 'data')) {
-        return value.data;
+        return (value as { data: unknown }).data;
     }
     return value;
 };
 
-export const validatePattern = (pattern: RegExp, message?: string) => (value: any) => {
+export const validatePattern = (pattern: RegExp, message?: string) => (value: unknown) => {
     if (Array.isArray(value)) {
-        return value.reduce((prev, curr) => prev && pattern.test(getValueFromObject(curr)), true)
+        return value.reduce((prev, curr) => prev && pattern.test(String(getValueFromObject(curr))), true)
             ? undefined
             : message || `Value must conform to ${pattern}`;
     }
     const validationInput = getValueFromObject(value);
-    return !validationInput || pattern.test(validationInput) ? undefined : message || `Value must conform to ${pattern}`;
+    return !validationInput || pattern.test(String(validationInput)) ? undefined : message || `Value must conform to ${pattern}`;
 };
 
 export const validateInteger = () => validatePattern(/^[+-]?(\d*)$/, 'Value must be an integer');
@@ -71,11 +76,11 @@ export const validateCustomIp = (value: string) => {
     return !value || IP_REGEX.test(value) ? undefined : 'Value must be a valid ip address';
 };
 
-export const validateLength = (min: number, max: number) => (value: any) => {
+export const validateLength = (min: number, max: number) => (value: unknown) => {
     const validationInput = getValueFromObject(value);
-    return !validationInput || (validationInput.length >= min && validationInput.length <= max)
-        ? undefined
-        : `Value must be between ${min} and ${max} characters long`;
+    if (!validationInput) return undefined;
+    const length = typeof validationInput === 'string' || Array.isArray(validationInput) ? validationInput.length : Number.NaN;
+    return length >= min && length <= max ? undefined : `Value must be between ${min} and ${max} characters long`;
 };
 
 export const validateDuration =
@@ -90,7 +95,11 @@ export const validateDuration =
     };
 
 export const validateQuartzCronExpression = () => (value: string) => {
-    const validationInput = getValueFromObject(value);
+    const unwrapped = getValueFromObject(value);
+    // Keep the unwrapped {label,value}/{data} string when present; otherwise fall back to the raw
+    // value so a non-string input is still forwarded and makes `isValidCronExpression` throw, which
+    // the catch below turns into the generic error message.
+    const validationInput = typeof unwrapped === 'string' ? unwrapped : value;
 
     try {
         const validObj: { isValid: boolean; errorMessage: string | string[] } = cronValidator.isValidCronExpression(validationInput, {
@@ -208,8 +217,9 @@ const checkJsParse = (value: string): string => {
     try {
         regexpTree.parse(`/${value}/`);
         return '';
-    } catch (error: any) {
-        return `Invalid regex pattern: ${error?.message ?? error}`;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return `Invalid regex pattern: ${message}`;
     }
 };
 

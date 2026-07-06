@@ -51,6 +51,8 @@ interface FormValues {
     name: string;
     description: string;
     authority: string;
+    // Attribute fields are registered dynamically by AttributeEditor.
+    [attributeField: `__attributes__${string}`]: unknown;
 }
 
 export default function RaProfileForm({
@@ -313,7 +315,7 @@ export default function RaProfileForm({
             const formValues = getValues();
             Object.keys(formValues).forEach((key) => {
                 if (key.startsWith('__attributes__ra-profile__')) {
-                    setValue(key as any, undefined);
+                    setValue(key as `__attributes__${string}`, undefined);
                 }
             });
             setLocalProfileModifications({ attributes: [] });

@@ -27,7 +27,7 @@ import { AttributeContentType, AttributeValueTarget, type ConnectorVersion, type
 import { base64ToUtf8 } from 'utils/common-utils';
 import { Attribute } from './Attribute';
 import CustomAttributeAddSelect from 'components/Attributes/AttributeEditor/CustomAttributeAddSelect';
-import { collectFormAttributes, mapAttributeContentToOptionValue } from 'utils/attributes/attributes';
+import { type AttributeSelectOption, collectFormAttributes, mapAttributeContentToOptionValue } from 'utils/attributes/attributes';
 import { deepEqual } from 'utils/deep-equal';
 import Button from 'components/Button';
 import { Trash } from 'lucide-react';
@@ -64,11 +64,14 @@ export const CALLBACK_DEBOUNCE_MS = 600;
  * Select-option label for a content item: reference first, then a RESOURCE-style object's name
  * (never the object's default stringification), then the primitive value. Null-safe.
  */
-const contentItemLabel = (value: any): string => {
+const contentItemLabel = (value: { reference?: string; data?: unknown } | null | undefined): string => {
     if (value?.reference) return value.reference;
     const data = value?.data;
     if (data == null) return '';
-    if (typeof data === 'object') return typeof data.name === 'string' ? data.name : String(data);
+    if (typeof data === 'object') {
+        const name = (data as { name?: unknown }).name;
+        return typeof name === 'string' ? name : String(data);
+    }
     return String(data);
 };
 
@@ -105,7 +108,7 @@ function AttributeEditorInner({
 }: Readonly<Props>) {
     const dispatch = useDispatch();
 
-    const { setValue, watch } = useFormContext<Record<string, any>>();
+    const { setValue, watch } = useFormContext();
     const formValues = watch();
 
     const isRunningCallback = useSelector(connectorSelectors.isRunningCallback);
@@ -122,11 +125,11 @@ function AttributeEditorInner({
     const [prevGroupDescriptors, setPrevGroupDescriptors] = useState<AttributeDescriptorModel[]>();
 
     // options for selects
-    const [options, setOptions] = useState<{ [attributeName: string]: { label: string; value: any }[] }>({});
+    const [options, setOptions] = useState<{ [attributeName: string]: AttributeSelectOption[] }>({});
 
-    const previousAttributesRef = useRef<Record<string, any>>({});
+    const previousAttributesRef = useRef<Record<string, unknown>>({});
     // stores previous callback data in order to be possible to detect what data changed
-    const [previousCallbackData, setPreviousCallbackData] = useState<{ [callbackId: string]: any }>({});
+    const [previousCallbackData, setPreviousCallbackData] = useState<{ [callbackId: string]: unknown }>({});
 
     // used to store custom attributes which user has selected
     const [prevShownCustomAttributes, setPrevShownCustomAttributes] = useState<AttributeDescriptorModel[]>([]);
@@ -140,7 +143,7 @@ function AttributeEditorInner({
 
     // workaround to be possible to set options from multiple places;
     // multiple effects can modify opts during single render call
-    let opts: { [attributeName: string]: { label: string; value: any }[] } = {};
+    let opts: { [attributeName: string]: AttributeSelectOption[] } = {};
 
     useEffect(() => {
         dispatch(connectorActions.clearCallbackData());
@@ -186,10 +189,10 @@ function AttributeEditorInner({
      * Gets the value from the object property identified by path
      */
     /* c8 ignore start */
-    const getObjectPropertyValue = useCallback((object: any, path: string) => {
+    const getObjectPropertyValue = useCallback((object: unknown, path: string): unknown => {
         const pathParts = path.split('.');
 
-        let currentObject = object;
+        let currentObject: unknown = object;
 
         for (const pathPart of pathParts) {
             if (currentObject === undefined) {
@@ -203,7 +206,7 @@ function AttributeEditorInner({
                     return undefined;
                 }
             } else {
-                currentObject = currentObject[pathPart];
+                currentObject = (currentObject as Record<string, unknown>)[pathPart];
             }
         }
 
@@ -223,7 +226,7 @@ function AttributeEditorInner({
      */
     /* istanbul ignore next */
     const getAttributeValue = useCallback(
-        (attributes: AttributeResponseModel[], path: string | undefined): any => {
+        (attributes: AttributeResponseModel[], path: string | undefined): unknown => {
             if (!path) return undefined;
 
             if (!path.includes('.')) return getObjectPropertyValue(attributes.find((a) => a.name === path)?.content, 'value');
@@ -240,7 +243,7 @@ function AttributeEditorInner({
      */
     /* istanbul ignore next */
     const getCurrentFromMappingValue = useCallback(
-        (mapping: AttributeCallbackMappingModel): any => {
+        (mapping: AttributeCallbackMappingModel): unknown => {
             const attributeFromValue = getAttributeValue(attributes, mapping.from);
             const formAttributes = formValues[`__attributes__${id}__`] ?? undefined;
             const formMappingName = mapping.from?.includes('.') ? mapping.from.split('.')[0] : (mapping.from ?? '');
@@ -288,29 +291,38 @@ function AttributeEditorInner({
 
             if (isDataAttributeModel(descriptor) || isGroupAttributeModel(descriptor)) {
                 (descriptor.attributeCallback?.mappings ?? []).forEach((mapping) => {
-                    let value = mapping.value || getCurrentFromMappingValue(mapping);
+                    let value: unknown = mapping.value || getCurrentFromMappingValue(mapping);
                     if (typeof value === 'object' && value !== null) {
                         // Resolve dot path from mapping.from (e.g. "endEntityProfile.data.id" -> extract value at data.id)
                         if (mapping.from?.includes('.')) {
                             const pathParts = mapping.from.split('.').slice(1);
-                            const tryResolve = (obj: any, parts: string[]): any => {
-                                let resolved = obj;
+                            const tryResolve = (obj: unknown, parts: string[]): unknown => {
+                                let resolved: unknown = obj;
                                 for (const part of parts) {
                                     if (resolved === undefined || resolved === null) return undefined;
-                                    resolved = Array.isArray(resolved) ? resolved[0]?.[part] : resolved[part];
+                                    resolved = Array.isArray(resolved) ? resolved[0]?.[part] : (resolved as Record<string, unknown>)[part];
                                 }
                                 return resolved;
                             };
                             const resolved =
                                 tryResolve(value, pathParts) ??
-                                (value?.value === undefined ? undefined : tryResolve(value, ['value', ...pathParts]));
+                                ((value as { value?: unknown }).value === undefined
+                                    ? undefined
+                                    : tryResolve(value, ['value', ...pathParts]));
                             if (resolved !== undefined && (typeof resolved !== 'object' || resolved === null)) {
                                 value = resolved;
                             }
                         }
-                        if (typeof value === 'object' && value !== null && Object.hasOwn(value, 'data')) value = value.data;
-                        if (typeof value === 'object' && value !== null && Object.hasOwn(value, 'uuid') && typeof value.uuid === 'string') {
-                            value = value.uuid;
+                        if (typeof value === 'object' && value !== null && Object.hasOwn(value, 'data')) {
+                            value = (value as { data?: unknown }).data;
+                        }
+                        if (
+                            typeof value === 'object' &&
+                            value !== null &&
+                            Object.hasOwn(value, 'uuid') &&
+                            typeof (value as { uuid?: unknown }).uuid === 'string'
+                        ) {
+                            value = (value as { uuid: string }).uuid;
                         }
                     }
                     if (value === undefined) hasUndefinedMapping = true;
@@ -521,7 +533,7 @@ function AttributeEditorInner({
             forceDefaultDescriptorValue: boolean,
             wasDeletedLocally: boolean = false,
         ) => {
-            let formAttributeValue;
+            let formAttributeValue: unknown;
             // For re-added attributes, we want empty values but still need access to descriptor options for selects
             // So we use a separate flag for value setting vs options access
             const shouldUseAttributeValues = !wasDeletedLocally;
@@ -590,7 +602,7 @@ function AttributeEditorInner({
             } else if (descriptor.properties.list || descriptor.contentType === AttributeContentType.Resource) {
                 setSelectListAttributeValue();
             } else if (appliedContent) {
-                const firstApplied = appliedContent[0] as any;
+                const firstApplied = appliedContent[0] as { reference?: string; data?: unknown } | undefined;
                 formAttributeValue = firstApplied?.reference ?? firstApplied?.data;
             } else if (
                 descriptor.content &&
@@ -599,7 +611,7 @@ function AttributeEditorInner({
             ) {
                 // This acts as a fallback for the case when the attribute has no value, but has a default value in the
                 // descriptor. Read-only attributes are always seeded so a locked field shows its predefined default.
-                const firstDescriptorContent = descriptor.content[0] as any;
+                const firstDescriptorContent = descriptor.content[0] as { reference?: string; data?: unknown } | undefined;
                 formAttributeValue = firstDescriptorContent?.data ?? firstDescriptorContent?.reference;
             }
 
@@ -703,7 +715,7 @@ function AttributeEditorInner({
 
     const getAttributeStaticOptions = useCallback(
         (descriptor: DataAttributeModel | CustomAttributeModel | GroupAttributeModel, formAttributeName: string) => {
-            let newOptions = {};
+            let newOptions: { [attributeName: string]: AttributeSelectOption[] } = {};
 
             if (isDataAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) {
                 const typedDescriptor = descriptor;
@@ -713,8 +725,8 @@ function AttributeEditorInner({
 
                 if (shouldHaveStaticOptions && Array.isArray(typedDescriptor.content)) {
                     const safeOptions = typedDescriptor.content
-                        .filter((item: any) => item != null)
-                        .map((data: any) => ({ label: contentItemLabel(data), value: data }));
+                        .filter((item) => item != null)
+                        .map((data) => ({ label: contentItemLabel(data), value: data }));
 
                     newOptions = {
                         ...newOptions,
@@ -746,7 +758,7 @@ function AttributeEditorInner({
         )
             return;
 
-        let newOptions: { [attributeName: string]: { label: string; value: any }[] } = {};
+        let newOptions: { [attributeName: string]: AttributeSelectOption[] } = {};
 
         const descriptorsToLoad =
             attributeDescriptors === prevDescriptors && attributes === prevAttributes
@@ -824,7 +836,7 @@ function AttributeEditorInner({
 
         setPrevShownCustomAttributes(shownCustomAttributes);
 
-        let newOptions: { [attributeName: string]: { label: string; value: any }[] } = {};
+        let newOptions: { [attributeName: string]: AttributeSelectOption[] } = {};
 
         shownCustomAttributes.forEach((descriptor) => {
             if (isCustomAttributeModel(descriptor)) {
@@ -917,7 +929,7 @@ function AttributeEditorInner({
     /* istanbul ignore next */
     const doCallbacks = useCallback(() => {
         const attributesKey = `__attributes__${id}__`;
-        const currentAttributes = (formValues?.[attributesKey] ?? {}) as Record<string, any>;
+        const currentAttributes = (formValues?.[attributesKey] ?? {}) as Record<string, unknown>;
         const previousAttributes = previousAttributesRef.current;
 
         if (deepEqual(previousAttributes, currentAttributes)) return;
@@ -1009,6 +1021,9 @@ function AttributeEditorInner({
     useEffect(() => {
         if (previousCallbackData === callbackData) return;
 
+        const isDescriptorValue = (value: unknown): boolean =>
+            typeof value === 'object' && value !== null && isAttributeDescriptorModel(value);
+
         /* istanbul ignore next */
         function updateValueFromCallbackData(callbackId: string, callbackDescriptor: AttributeDescriptorModel) {
             if (!callbackDescriptor) return;
@@ -1021,7 +1036,7 @@ function AttributeEditorInner({
             // not content values for the current attribute. Without this filter, a callback that
             // returns only descriptors (e.g. Algorithm returning RSA key size descriptor) would
             // incorrectly clear the parent attribute's own value.
-            const callbackValues = rawCallbackValues.filter((v: any) => !isAttributeDescriptorModel(v));
+            const callbackValues = rawCallbackValues.filter((v: unknown) => !isDescriptorValue(v));
             if (callbackValues.length === 0) return;
 
             if (!callbackDescriptor.properties.list && callbackDescriptor.contentType !== AttributeContentType.Resource) {
@@ -1047,7 +1062,7 @@ function AttributeEditorInner({
             const groupCallbackAttributesContentOpts = groupCallbackAttributes.reduce((acc, attr) => {
                 if (isDataAttributeModel(attr) || isInfoAttributeModel(attr)) {
                     const formAttributeName = `__attributes__${id}__.${attr.name}`;
-                    const optionsFromGroupCallback = attr.content?.map((value: any) => ({
+                    const optionsFromGroupCallback = attr.content?.map((value) => ({
                         label: contentItemLabel(value),
                         value,
                     }));
@@ -1060,7 +1075,7 @@ function AttributeEditorInner({
 
             // Only update options for callbackId when the callback returned actual content values,
             // not just group attribute descriptors. An empty update would overwrite existing options with [].
-            const nonDescriptorCallbackValues = callbackData[callbackId].filter((v: any) => !isAttributeDescriptorModel(v));
+            const nonDescriptorCallbackValues = callbackData[callbackId].filter((v: unknown) => !isDescriptorValue(v));
             const callbackContentOpts =
                 nonDescriptorCallbackValues.length > 0
                     ? { [callbackId]: nonDescriptorCallbackValues.map((value: any) => ({ label: contentItemLabel(value), value })) }
@@ -1198,7 +1213,7 @@ function AttributeEditorFormBridge({ children }: Readonly<{ children: React.Reac
 }
 
 export default function AttributeEditor(props: Readonly<Props>) {
-    useFormContext<Record<string, any>>();
+    useFormContext();
 
     return (
         <AttributeEditorFormBridge>

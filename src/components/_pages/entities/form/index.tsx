@@ -38,6 +38,8 @@ interface FormValues {
     name: string;
     entityProvider: string;
     storeKind: string;
+    // Attribute fields are registered dynamically by AttributeEditor.
+    [attributeField: `__attributes__${string}`]: unknown;
 }
 
 export default function EntityForm({ entityId, onCancel, onSuccess }: EntityFormProps) {
@@ -323,10 +325,10 @@ export default function EntityForm({ entityId, onCancel, onSuccess }: EntityForm
                                                     const formValues = getValues();
                                                     Object.keys(formValues).forEach((key) => {
                                                         if (key.startsWith('__attributes__entity__')) {
-                                                            setValue(key as any, undefined);
+                                                            setValue(key as `__attributes__${string}`, undefined);
                                                         }
                                                     });
-                                                    setValue('storeKind' as any, undefined);
+                                                    setValue('storeKind', '');
                                                     field.onChange(value);
                                                 }}
                                                 options={optionsForEntityProviders || []}

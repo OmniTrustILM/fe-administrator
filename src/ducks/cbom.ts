@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type {
     CbomDetailDto,
     CbomDto,
@@ -7,6 +8,7 @@ import type {
     SearchFieldDataByGroupDto,
     SearchRequestDto,
 } from 'types/openapi';
+import { resetSliceState } from './reducerUtils';
 
 export type State = {
     cbomsData?: PaginationResponseDtoCbomDto;
@@ -51,11 +53,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         // List CBOMs
@@ -202,7 +200,7 @@ export const slice = createSlice({
     },
 });
 
-const featureSelector = (reduxStore: any): State => reduxStore?.cbom;
+const featureSelector = (reduxStore: AppState): State => reduxStore.cbom;
 
 export const selectCbomsData = createSelector(featureSelector, (state) => state.cbomsData);
 export const selectCbomList = createSelector(featureSelector, (state) => state.cbomsData?.items || []);

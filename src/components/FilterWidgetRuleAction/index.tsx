@@ -14,6 +14,7 @@ import DatePicker from 'components/DatePicker';
 import Badge from 'components/Badge';
 import type { Observable } from 'rxjs';
 import type { SearchFieldListModel } from 'types/certificate';
+import type { PlatformEnumModel } from 'types/enums';
 import { AttributeContentType, FilterFieldSource, FilterFieldType, PlatformEnum } from 'types/openapi';
 import type { ExecutionItemModel, ExecutionItemRequestModel } from 'types/rules';
 import { getFormTypeFromAttributeContentType, getFormTypeFromFilterFieldType } from 'utils/common-utils';
@@ -27,59 +28,78 @@ import {
 
 const supportedInputTypes = new Set(['number', 'email', 'time', 'textarea', 'text', 'password', 'date']);
 
-type SelectableValue = string | number | boolean | object;
+type SelectableValue = string | number | object;
 
-function formatBadgeDataValue(v: any, field: any, platformEnums: Record<string, any>): string {
+type TextInputType = 'text' | 'textarea' | 'number' | 'email' | 'password' | 'date' | 'time' | 'datetime-local';
+
+type FieldData = NonNullable<SearchFieldListModel['searchFieldData']>[number];
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+    typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined;
+
+const toSelectableValue = (value: unknown): SelectableValue => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string' || typeof value === 'number') return value;
+    if (typeof value === 'object') return value;
+    return String(value);
+};
+
+function formatBadgeDataValue(v: unknown, field: FieldData | undefined, platformEnums: PlatformEnumModel): string {
     if (field?.platformEnum) {
-        return platformEnums[field.platformEnum]?.[v]?.label ?? String(v);
+        return platformEnums[field.platformEnum]?.[String(v)]?.label ?? String(v);
     }
-    if (typeof v === 'object' && v !== null) {
-        if (v.name) return v.name;
+    const record = asRecord(v);
+    if (record) {
+        if (record.name) return String(record.name);
         if (field && checkIfFieldAttributeTypeIsDate(field)) {
-            const labelStr = v.label ?? v;
-            return field.attributeContentType === AttributeContentType.Date
-                ? getFormattedDate(labelStr as string)
-                : getFormattedDateTime(labelStr as string);
+            const labelStr = String(record.label ?? v);
+            return field.attributeContentType === AttributeContentType.Date ? getFormattedDate(labelStr) : getFormattedDateTime(labelStr);
         }
-        return v.label ?? String(v);
+        return record.label != null ? String(record.label) : String(v);
     }
     if (Array.isArray(field?.value)) {
-        const matched = field.value.find((fv: any) => fv?.uuid === v || fv?.value === v || fv?.reference === v);
-        if (matched) return matched.name ?? matched.label ?? matched.data ?? String(v);
+        const matched = (field.value as unknown[]).find((fv) => {
+            const r = asRecord(fv);
+            return r ? r.uuid === v || r.value === v || r.reference === v : false;
+        });
+        const mr = asRecord(matched);
+        if (mr) return String(mr.name ?? mr.label ?? mr.data ?? v);
     }
     if (field?.attributeContentType === AttributeContentType.Date) {
-        return getFormattedDate(v as string);
+        return getFormattedDate(String(v));
     }
     if (field?.attributeContentType === AttributeContentType.Datetime) {
-        return getFormattedDateTime(v as string);
+        return getFormattedDateTime(String(v));
     }
     return String(v);
 }
 
 function mapFieldValueToOption(
-    v: any,
-    fieldRef: any,
-    normalizeValue: (v: any) => SelectableValue = (x) => x,
+    v: unknown,
+    fieldRef: FieldData,
+    normalizeValue: (value: unknown) => SelectableValue = toSelectableValue,
 ): { label: string; value: SelectableValue } {
     if (typeof v === 'string') {
         let label = v;
         if (checkIfFieldAttributeTypeIsDate(fieldRef)) {
-            label = fieldRef?.attributeContentType === AttributeContentType.Date ? getFormattedDate(v) : getFormattedDateTime(v);
+            label = fieldRef.attributeContentType === AttributeContentType.Date ? getFormattedDate(v) : getFormattedDateTime(v);
         }
         return { label, value: v };
     }
+    const record = asRecord(v);
     if (checkIfFieldAttributeTypeIsDate(fieldRef)) {
-        return { label: v.label, value: v.value };
+        return { label: String(record?.label ?? ''), value: toSelectableValue(record?.value) };
     }
+    const dataLabel = record && typeof record.data !== 'object' ? record.data : undefined;
     return {
-        label: v?.name || v?.label || (typeof v?.data === 'object' ? undefined : v?.data) || JSON.stringify(v),
+        label: String(record?.name || record?.label || dataLabel || JSON.stringify(v)),
         value: normalizeValue(v),
     };
 }
 
 interface CurrentActionOptions {
     label: string;
-    value: any;
+    value: SelectableValue;
 }
 
 function findSearchFieldData(availableFilters: SearchFieldListModel[], source: FilterFieldSource | undefined) {
@@ -109,11 +129,12 @@ function mapActionToExecutionItem(a: ExecutionItemRequestModel, availableFilters
     }
     const fieldOfAction = findFieldDef(availableFilters, a.fieldSource, a.fieldIdentifier);
     const isDateField = fieldOfAction && checkIfFieldAttributeTypeIsDate(fieldOfAction);
-    const formatData = (v: any) => {
-        if (typeof v === 'object' && v !== null && Object.hasOwn(v, 'uuid')) return v.uuid;
+    const formatData = (v: unknown): unknown => {
+        const record = asRecord(v);
+        if (record && Object.hasOwn(record, 'uuid')) return record.uuid;
         if (isDateField) {
-            const raw = typeof v === 'object' && v !== null && Object.hasOwn(v, 'value') ? v.value : v;
-            return getFormattedUtc(fieldOfAction.attributeContentType!, raw);
+            const raw = record && Object.hasOwn(record, 'value') ? record.value : v;
+            return getFormattedUtc(fieldOfAction.attributeContentType!, String(raw));
         }
         return v;
     };
@@ -298,49 +319,51 @@ export default function FilterWidgetRuleAction({
 
     const currentField = useMemo(() => currentFields?.find((f) => f.fieldIdentifier === filterField), [filterField, currentFields]);
 
-    const normalizeSelectValue = useCallback((value: any): SelectableValue => {
+    const normalizeSelectValue = useCallback((value: unknown): SelectableValue => {
         if (value == null) return '';
-        if (typeof value !== 'object') return value;
+        const record = asRecord(value);
+        if (!record) return toSelectableValue(value);
 
-        const direct = value.uuid ?? value.value ?? value.reference;
-        if (direct != null) return direct;
+        const direct = record.uuid ?? record.value ?? record.reference;
+        if (direct != null) return toSelectableValue(direct);
 
-        if (value.data != null) {
-            if (typeof value.data !== 'object') return value.data;
-            const nested = value.data.uuid ?? value.data.value ?? value.data.reference ?? value.data.name ?? value.data.label;
+        if (record.data != null) {
+            const dataRecord = asRecord(record.data);
+            if (!dataRecord) return toSelectableValue(record.data);
+            const nested = dataRecord.uuid ?? dataRecord.value ?? dataRecord.reference ?? dataRecord.name ?? dataRecord.label;
 
-            return nested ?? value.data;
+            return toSelectableValue(nested ?? record.data);
         }
 
-        return value.name ?? value.label ?? value;
+        return toSelectableValue(record.name ?? record.label ?? value);
     }, []);
 
     const mapActionDataToSelectValue = useCallback(
-        (field: any, actionData: any) => {
-            const getComparableValues = (value: any): Array<string | number | boolean> => {
+        (field: FieldData, actionData: unknown) => {
+            const getComparableValues = (value: unknown): unknown[] => {
                 if (value === null || value === undefined) return [];
-                if (typeof value !== 'object') return [value];
+                const record = asRecord(value);
+                if (!record) return [value];
 
-                const directDataValue =
-                    value.data !== undefined && value.data !== null && typeof value.data !== 'object' ? value.data : undefined;
-                const nestedDataValue =
-                    value.data !== undefined && value.data !== null && typeof value.data === 'object'
-                        ? (value.data.value ?? value.data.reference ?? value.data.uuid ?? value.data.name ?? value.data.label)
-                        : undefined;
+                const directDataValue = record.data != null && typeof record.data !== 'object' ? record.data : undefined;
+                const dataRecord = asRecord(record.data);
+                const nestedDataValue = dataRecord
+                    ? (dataRecord.value ?? dataRecord.reference ?? dataRecord.uuid ?? dataRecord.name ?? dataRecord.label)
+                    : undefined;
 
                 return [
                     normalizeSelectValue(value),
-                    value.uuid,
-                    value.value,
-                    value.name,
-                    value.label,
-                    value.reference,
+                    record.uuid,
+                    record.value,
+                    record.name,
+                    record.label,
+                    record.reference,
                     directDataValue,
                     nestedDataValue,
-                ].filter((candidate): candidate is string | number | boolean => candidate !== undefined && candidate !== null);
+                ].filter((candidate) => candidate !== undefined && candidate !== null);
             };
 
-            const isFieldOptionMatched = (optionValue: any, rawValue: any) => {
+            const isFieldOptionMatched = (optionValue: unknown, rawValue: unknown) => {
                 const optionCandidates = getComparableValues(optionValue);
                 const rawCandidates = getComparableValues(rawValue);
 
@@ -349,8 +372,8 @@ export default function FilterWidgetRuleAction({
                 );
             };
 
-            const mapSingleValue = (singleValue: any): { label: string; value: any } => {
-                const fieldValues = Array.isArray(field?.value) ? (field.value as Array<any>) : [];
+            const mapSingleValue = (singleValue: unknown): { label: string; value: SelectableValue } => {
+                const fieldValues = Array.isArray(field?.value) ? (field.value as unknown[]) : [];
                 const matchedFieldValue = fieldValues.find((fieldValue) => isFieldOptionMatched(fieldValue, singleValue));
 
                 if (matchedFieldValue !== undefined) {
@@ -358,33 +381,33 @@ export default function FilterWidgetRuleAction({
                         return { label: matchedFieldValue, value: matchedFieldValue };
                     }
 
+                    const matchedRecord = asRecord(matchedFieldValue);
                     if (checkIfFieldAttributeTypeIsDate(field)) {
+                        const dateSource = matchedRecord?.value || singleValue;
                         return {
-                            label: matchedFieldValue.label || getFormattedDateTime(matchedFieldValue.value || singleValue),
-                            value: normalizeSelectValue(matchedFieldValue.value || singleValue),
+                            label: String(matchedRecord?.label || getFormattedDateTime(String(dateSource))),
+                            value: normalizeSelectValue(dateSource),
                         };
                     }
 
                     return {
-                        label: matchedFieldValue.name || matchedFieldValue.label || String(singleValue),
+                        label: String(matchedRecord?.name || matchedRecord?.label || String(singleValue)),
                         value: normalizeSelectValue(matchedFieldValue),
                     };
                 }
 
-                if (typeof singleValue === 'object' && singleValue !== null) {
-                    if (Object.hasOwn(singleValue, 'value')) {
+                const singleRecord = asRecord(singleValue);
+                if (singleRecord) {
+                    if (Object.hasOwn(singleRecord, 'value')) {
                         return {
-                            label: singleValue.label || singleValue.name || JSON.stringify(singleValue.value),
-                            value: normalizeSelectValue(singleValue.value),
+                            label: String(singleRecord.label || singleRecord.name || JSON.stringify(singleRecord.value)),
+                            value: normalizeSelectValue(singleRecord.value),
                         };
                     }
 
+                    const dataLabel = typeof singleRecord.data === 'object' ? undefined : singleRecord.data;
                     return {
-                        label:
-                            singleValue.name ||
-                            singleValue.label ||
-                            (typeof singleValue.data === 'object' ? undefined : singleValue.data) ||
-                            JSON.stringify(singleValue),
+                        label: String(singleRecord.name || singleRecord.label || dataLabel || JSON.stringify(singleValue)),
                         value: normalizeSelectValue(singleValue),
                     };
                 }
@@ -398,14 +421,14 @@ export default function FilterWidgetRuleAction({
     );
 
     const mapActionDataToSingleSelectPrimitive = useCallback(
-        (field: any, actionData: any): string | number | object => {
+        (field: FieldData, actionData: unknown): SelectableValue => {
             const normalizedActionData = Array.isArray(actionData) ? actionData[0] : actionData;
-            const mapped = mapActionDataToSelectValue(field, normalizedActionData) as { label: string; value: any };
+            const mapped = mapActionDataToSelectValue(field, normalizedActionData) as { label: string; value: SelectableValue };
             if (mapped && typeof mapped === 'object' && Object.hasOwn(mapped, 'value')) {
                 return mapped.value;
             }
 
-            return normalizeSelectValue(normalizedActionData) as string | number | object;
+            return normalizeSelectValue(normalizedActionData);
         },
         [mapActionDataToSelectValue, normalizeSelectValue],
     );
@@ -424,7 +447,7 @@ export default function FilterWidgetRuleAction({
             };
         } else {
             if (isFilterValueEmpty(filterValue)) return;
-            let executionData: any;
+            let executionData: unknown;
             if (typeof filterValue === 'string' || typeof filterValue === 'number' || typeof filterValue === 'boolean') {
                 executionData = filterValue;
             } else if (Array.isArray(filterValue)) {
@@ -494,15 +517,16 @@ export default function FilterWidgetRuleAction({
 
         return [];
     }, [currentField, normalizeSelectValue]);
-    const updateFilterValueDateTime = useCallback((currentFieldThis: any, currentActionData: any) => {
-        if (currentFieldThis.type === 'list') {
+    const updateFilterValueDateTime = useCallback((currentFieldThis: FieldData, currentActionData: unknown) => {
+        if (currentFieldThis.type === FilterFieldType.List) {
             // Compare only the YYYY-MM-DD part: saved data uses plain dates, API field values use ISO strings.
-            const findMatchingFieldOption = (v: any): { label: string; value: any } => {
-                const rawStr = typeof v === 'object' && v !== null && v.value !== undefined ? String(v.value) : String(v);
+            const findMatchingFieldOption = (v: unknown): { label: string; value: SelectableValue } => {
+                const vRecord = asRecord(v);
+                const rawStr = vRecord && vRecord.value !== undefined ? String(vRecord.value) : String(v);
                 const datePart = rawStr.split('T')[0];
                 if (Array.isArray(currentFieldThis.value)) {
-                    const matched = currentFieldThis.value.find(
-                        (fv: any) => (typeof fv === 'string' ? fv : String(fv)).split('T')[0] === datePart,
+                    const matched = (currentFieldThis.value as unknown[]).find(
+                        (fv) => (typeof fv === 'string' ? fv : String(fv)).split('T')[0] === datePart,
                     );
                     if (matched !== undefined) {
                         return mapFieldValueToOption(matched, currentFieldThis);
@@ -518,7 +542,7 @@ export default function FilterWidgetRuleAction({
                 setFilterValue(currentFieldThis.multiValue ? [resolved] : resolved);
             }
         } else {
-            setFilterValue(getFormattedDateByType(currentActionData, currentFieldThis.attributeContentType));
+            setFilterValue(getFormattedDateByType(String(currentActionData), currentFieldThis.attributeContentType!));
         }
     }, []);
     useEffect(() => {
@@ -641,11 +665,13 @@ export default function FilterWidgetRuleAction({
                 const mappedData = action.data.map((v) => {
                     if (!Array.isArray(thisCurrentField.value)) return { label: v, value: v };
 
-                    const value = thisCurrentField.value.find(
-                        (f: any) => f.uuid === v || f.value === v || f.reference === v || f.data === v,
-                    );
+                    const matched = (thisCurrentField.value as unknown[]).find((f) => {
+                        const r = asRecord(f);
+                        return r ? r.uuid === v || r.value === v || r.reference === v || r.data === v : false;
+                    });
+                    const mr = asRecord(matched);
 
-                    return value ? { uuid: value.uuid, name: value.name, value: value.value ?? value.uuid ?? v } : { label: v, value: v };
+                    return mr ? { uuid: mr.uuid, name: mr.name, value: mr.value ?? mr.uuid ?? v } : { label: v, value: v };
                 });
 
                 return {
@@ -800,7 +826,7 @@ export default function FilterWidgetRuleAction({
     const renderTextInputField = (
         <TextInput
             id="valueSelect"
-            type={supportedInputTypes.has(resolvedInputType) ? (resolvedInputType as any) : 'text'}
+            type={supportedInputTypes.has(resolvedInputType) ? (resolvedInputType as TextInputType) : 'text'}
             value={filterValue !== undefined && typeof filterValue !== 'object' ? String(filterValue) : ''}
             onChange={(value) => {
                 setFilterValue(structuredClone(value));

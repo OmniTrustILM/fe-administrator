@@ -1,7 +1,7 @@
 import { vi, test, expect, beforeEach } from 'vitest';
 
 export interface AnchorDownloadMocks {
-    fakeAnchor: any;
+    fakeAnchor: Partial<HTMLAnchorElement>;
     mockClick: ReturnType<typeof vi.fn>;
     mockAppendChild: ReturnType<typeof vi.fn>;
     mockRemove: ReturnType<typeof vi.fn>;
@@ -11,10 +11,16 @@ export function setupAnchorDownloadMocks(): AnchorDownloadMocks {
     const mockClick = vi.fn();
     const mockRemove = vi.fn();
     const mockAppendChild = vi.fn();
-    const fakeAnchor: any = { href: '', download: '', click: mockClick, remove: mockRemove, style: {} };
+    const fakeAnchor: Partial<HTMLAnchorElement> = {
+        href: '',
+        download: '',
+        click: mockClick,
+        remove: mockRemove,
+        style: {} as CSSStyleDeclaration,
+    };
 
     vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-        if (tag === 'a') return fakeAnchor;
+        if (tag === 'a') return fakeAnchor as HTMLAnchorElement;
         return document.createElement(tag);
     });
     vi.spyOn(document.body, 'appendChild').mockImplementation(mockAppendChild);

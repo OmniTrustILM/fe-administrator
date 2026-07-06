@@ -63,9 +63,9 @@ export const defaultAvailableFilters: SearchFieldListModel[] = [
                 fieldLabel: 'Severity',
                 type: FilterFieldType.List,
                 conditions: [FilterConditionOperator.Equals],
-                platformEnum: 'SeverityEnum' as any,
+                platformEnum: 'SeverityEnum' as PlatformEnum,
                 multiValue: false,
-                value: ['low', 'high'] as any,
+                value: ['low', 'high'],
             },
             {
                 fieldIdentifier: 'owners',
@@ -76,7 +76,7 @@ export const defaultAvailableFilters: SearchFieldListModel[] = [
                 value: [
                     { uuid: 'u1', name: 'Alice' },
                     { uuid: 'u2', name: 'Bob' },
-                ] as any,
+                ],
             },
             {
                 fieldIdentifier: 'customDate',

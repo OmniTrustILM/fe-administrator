@@ -9,9 +9,25 @@ import { attributeFieldNameTransform } from 'utils/attributes/attributes';
 
 import InventoryStatusBadge from '../ConnectorStatus';
 
+type EndpointInfo = {
+    name?: string;
+    context?: string;
+    method?: string;
+};
+
+type FunctionGroupInfo = {
+    name?: string;
+    endPoints?: EndpointInfo[];
+};
+
+type ConnectionDetailV1Info = {
+    version?: ConnectorVersion | string;
+    functionGroups?: FunctionGroupInfo[];
+};
+
 type Props = Readonly<{
     url?: string;
-    connectionDetails?: any[];
+    connectionDetails?: ConnectionDetailV1Info[];
     errorMessage?: string;
 }>;
 
@@ -47,15 +63,15 @@ const endPointsHeaders: TableHeader[] = [
 
 export default function ConnectionDetailsV1({ url, connectionDetails, errorMessage }: Props) {
     const v1Info = useMemo(
-        () => (connectionDetails || []).find((info: any) => info?.version === ConnectorVersion.V1 || info?.version === 'v1'),
+        () => (connectionDetails || []).find((info) => info?.version === ConnectorVersion.V1 || info?.version === 'v1'),
         [connectionDetails],
     );
 
-    const functionGroups = useMemo(() => (v1Info?.functionGroups || []) as any[], [v1Info]);
+    const functionGroups = useMemo<FunctionGroupInfo[]>(() => v1Info?.functionGroups || [], [v1Info]);
 
-    const getEndPointInfo = useCallback((endpoints: any[]): TableDataRow[] => {
-        return (endpoints || []).map((endpoint: any) => ({
-            id: endpoint.name,
+    const getEndPointInfo = useCallback((endpoints: EndpointInfo[] | undefined): TableDataRow[] => {
+        return (endpoints || []).map((endpoint) => ({
+            id: endpoint.name ?? '',
             columns: [endpoint.name, endpoint.context, endpoint.method],
         }));
     }, []);

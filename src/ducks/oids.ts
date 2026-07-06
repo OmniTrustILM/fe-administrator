@@ -2,6 +2,8 @@ import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolki
 import type { SearchRequestModel } from 'types/certificate';
 import type { OidCategory } from 'types/openapi';
 import type { OIDRequestModel, OIDResponseModel, OIDUpdateRequestModel } from 'types/oids';
+import { resetSliceState } from 'ducks/reducerUtils';
+import type { AppState } from 'ducks';
 
 export type State = {
     oid?: OIDResponseModel;
@@ -46,11 +48,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         listOIDs: (state, action: PayloadAction<SearchRequestModel>) => {
@@ -182,7 +180,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name] ?? initialState;
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name] ?? initialState;
 
 const oids = createSelector(state, (state) => state.oids);
 const oidsByCategory = createSelector(state, (state) => state.oidsByCategory);

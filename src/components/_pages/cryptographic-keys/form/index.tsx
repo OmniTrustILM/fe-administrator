@@ -11,7 +11,7 @@ import { actions as userActions, selectors as userSelectors } from 'ducks/users'
 import { actions as cryptographicKeysActions, selectors as cryptographicKeysSelectors } from 'ducks/cryptographic-keys';
 import { actions as tokenProfilesActions, selectors as tokenProfilesSelectors } from 'ducks/token-profiles';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
+import { Controller, FormProvider, type Path, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import Select from 'components/Select';
@@ -193,7 +193,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
             const formValues = getValues();
             Object.keys(formValues).forEach((key) => {
                 if (key.startsWith('__attributes__cryptographicKey__')) {
-                    (setValue as any)(key, undefined);
+                    setValue(key as Path<FormValues>, undefined);
                 }
             });
             dispatch(cryptographicKeysActions.clearKeyAttributeDescriptors());
@@ -365,7 +365,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
             const formValues = getValues();
             Object.keys(formValues).forEach((key) => {
                 if (key.startsWith('__attributes__cryptographicKey__')) {
-                    (setValue as any)(key, undefined);
+                    setValue(key as Path<FormValues>, undefined);
                 }
             });
             setValue('type', undefined);
@@ -500,7 +500,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                                             const formValues = getValues();
                                             Object.keys(formValues).forEach((key) => {
                                                 if (key.startsWith('__attributes__cryptographicKey__')) {
-                                                    (setValue as any)(key, undefined);
+                                                    setValue(key as Path<FormValues>, undefined);
                                                 }
                                             });
                                             setValue('type', undefined);

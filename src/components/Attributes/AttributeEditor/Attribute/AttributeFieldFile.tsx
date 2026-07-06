@@ -23,7 +23,7 @@ export function AttributeFieldFile({
     onFileDragOver,
     onFileChanged,
 }: Readonly<AttributeFieldFileProps>): React.ReactNode {
-    const { control } = useFormContext<Record<string, any>>();
+    const { control } = useFormContext();
 
     return (
         <>

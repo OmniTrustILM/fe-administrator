@@ -8,7 +8,7 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import { useForm, Controller, FormProvider, useWatch } from 'react-hook-form';
 import { AuditLoggingSettingsDtoOutputEnum, Module, PlatformEnum, Resource } from 'types/openapi';
 
-import Select from 'components/Select';
+import Select, { type OptionValue } from 'components/Select';
 import { selectors as enumSelectors, getEnumDescription, getEnumLabel } from 'ducks/enums';
 import ProgressButton from 'components/ProgressButton';
 import Switch from 'components/Switch';
@@ -374,7 +374,7 @@ const LoggingSetting = () => {
                                 label="Audit Logs Output Destination"
                                 options={auditLogsOutputOptions.map((item) => ({ value: item.value, label: item.label }))}
                                 value={field.value || ''}
-                                onChange={(value: string | number) => field.onChange(value)}
+                                onChange={(value: OptionValue | { value: OptionValue; label: string } | null) => field.onChange(value)}
                                 placeholder="Select Output"
                             />
                         )}

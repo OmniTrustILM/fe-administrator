@@ -5,6 +5,8 @@ import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useMemo, useState } from 'react';
 import usersReducer, { actions as usersActions } from 'ducks/users';
 import certificateGroupsReducer, { actions as certificateGroupsActions } from 'ducks/certificateGroups';
+import type { UserResponseModel } from 'types/users';
+import type { CertificateGroupResponseModel } from 'types/certificateGroups';
 import CertificateAssociationsFormWidget from './CertificateAssociationsFormWidget';
 
 type Option = { value: string; label: string };
@@ -31,10 +33,10 @@ export function createCertificateAssociationsStore({ users = [], groups = [] }: 
     });
 
     if (users.length > 0) {
-        store.dispatch(usersActions.listSuccess({ users: users as any }));
+        store.dispatch(usersActions.listSuccess({ users: users as UserResponseModel[] }));
     }
     if (groups.length > 0) {
-        store.dispatch(certificateGroupsActions.listGroupsSuccess({ groups: groups as any }));
+        store.dispatch(certificateGroupsActions.listGroupsSuccess({ groups: groups as CertificateGroupResponseModel[] }));
     }
 
     return store;

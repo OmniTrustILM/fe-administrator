@@ -44,6 +44,8 @@ interface FormValues {
     cronExpression: string | undefined;
     scheduled: boolean;
     oneTime: boolean;
+    // Attribute fields are registered dynamically by AttributeEditor.
+    [attributeField: `__attributes__${string}`]: unknown;
 }
 
 const DEFAULT_CRON_EXPRESSION = '0 0 00 1/1 * ? *';
@@ -367,7 +369,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                                             const formValues = getValues();
                                             Object.keys(formValues).forEach((key) => {
                                                 if (key.startsWith('__attributes__discovery__')) {
-                                                    (setValue as any)(key, undefined);
+                                                    setValue(key as `__attributes__${string}`, undefined);
                                                 }
                                             });
                                             setValue('storeKind', undefined);

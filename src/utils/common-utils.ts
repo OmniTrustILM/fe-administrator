@@ -2,7 +2,7 @@ import { Buffer } from 'buffer';
 type InputType = 'text' | 'number' | 'email' | 'password' | 'date' | 'time' | 'datetime-local' | 'textarea' | 'checkbox' | 'radio' | 'file';
 import { AttributeContentType, FilterFieldType } from 'types/openapi';
 
-export const removeNullValues = (obj: any): any => {
+export const removeNullValues = (obj: unknown): unknown => {
     if (obj === null || obj === undefined) {
         return null;
     }
@@ -12,7 +12,7 @@ export const removeNullValues = (obj: any): any => {
     }
 
     if (typeof obj === 'object') {
-        const newObj: any = {};
+        const newObj: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(obj)) {
             const newValue = removeNullValues(value);
             if (newValue !== null) {

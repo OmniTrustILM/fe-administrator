@@ -82,7 +82,7 @@ export default function CustomAttributeWidget({ resource, resourceUuid, attribut
 
     const [selectedAttributeUuid, setSelectedAttributeUuid] = useState<string>('');
 
-    const methods = useForm<any>({
+    const methods = useForm<{ selectCustomAttribute: string }>({
         defaultValues: {
             selectCustomAttribute: '',
         },
@@ -137,7 +137,7 @@ export default function CustomAttributeWidget({ resource, resourceUuid, attribut
                                 <Controller
                                     name="selectCustomAttribute"
                                     control={control}
-                                    render={({ field }: { field: any }) => (
+                                    render={({ field }) => (
                                         <Select
                                             id="selectCustomAttribute"
                                             options={options}
@@ -145,7 +145,7 @@ export default function CustomAttributeWidget({ resource, resourceUuid, attribut
                                             value={field.value}
                                             onChange={(value) => {
                                                 field.onChange(value);
-                                                setSelectedAttributeUuid(value as string);
+                                                setSelectedAttributeUuid(typeof value === 'string' ? value : String(value ?? ''));
                                             }}
                                         />
                                     )}

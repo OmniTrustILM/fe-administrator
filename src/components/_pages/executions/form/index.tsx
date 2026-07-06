@@ -279,7 +279,7 @@ const ExecutionForm = () => {
                                         isSubmitting ||
                                         !isValid ||
                                         isBusy ||
-                                        (!formValues.items.length && !formValues.notificationProfileItems?.length)
+                                        (!formValues.items?.length && !formValues.notificationProfileItems?.length)
                                     }
                                     type="submit"
                                 />

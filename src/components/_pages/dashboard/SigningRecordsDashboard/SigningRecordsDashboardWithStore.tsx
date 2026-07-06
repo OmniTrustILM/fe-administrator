@@ -4,7 +4,7 @@ import { createMockStore } from 'utils/test-helpers';
 import { SigningRecordStatisticsPeriod } from 'types/openapi';
 import SigningRecordsDashboard from './index';
 
-const preloadedState = {
+const preloadedState: Parameters<typeof createMockStore>[0] = {
     signingRecordsDashboard: {
         isFetching: false,
         isFetchingSeries: false,
@@ -23,7 +23,7 @@ const preloadedState = {
             statByScheme: { managed_static_key: 93 },
         },
     },
-} as any;
+};
 
 export default function SigningRecordsDashboardWithStore() {
     const store = createMockStore(preloadedState);

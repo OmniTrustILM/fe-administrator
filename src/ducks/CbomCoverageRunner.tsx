@@ -1,5 +1,8 @@
+import type { AppState } from 'ducks';
 import { useEffect } from 'react';
+import type { StateObservable } from 'redux-observable';
 import { of, throwError } from 'rxjs';
+import type { BulkActionMessageDto, CbomDetailDto, CbomDto, PaginationResponseDtoCbomDto, SearchFieldDataByGroupDto } from 'types/openapi';
 import cbomEpics from './cbom-epics';
 import reducer, { actions, initialState, selectors } from './cbom';
 import {
@@ -13,30 +16,36 @@ import {
 
 function runReducerAndSelectors() {
     let state = reducer(undefined, { type: 'unknown' });
-    state = reducer(state, actions.listCboms({ pageNumber: 1, itemsPerPage: 10, filters: [] } as any));
+    state = reducer(state, actions.listCboms({ pageNumber: 1, itemsPerPage: 10, filters: [] }));
     state = reducer(
         state,
         actions.listCbomsSuccess({
-            data: { items: [{ uuid: 'cbom-1' }], totalItems: 1, pageNumber: 1, itemsPerPage: 10, totalPages: 1 } as any,
+            data: {
+                items: [{ uuid: 'cbom-1' }],
+                totalItems: 1,
+                pageNumber: 1,
+                itemsPerPage: 10,
+                totalPages: 1,
+            } as PaginationResponseDtoCbomDto,
         }),
     );
     state = reducer(state, actions.listCbomsFailure({ error: 'err' }));
 
     state = reducer(state, actions.getCbomDetail({ uuid: 'detail-1' }));
-    state = reducer(state, actions.getCbomDetailSuccess({ detail: { uuid: 'detail-1', version: 2 } as any }));
+    state = reducer(state, actions.getCbomDetailSuccess({ detail: { uuid: 'detail-1', version: 2 } as CbomDetailDto }));
     state = reducer(state, actions.getCbomDetailFailure({ error: 'err' }));
     state = reducer(state, actions.clearCbomDetail());
 
     state = reducer(state, actions.listCbomVersions({ uuid: 'detail-1' }));
-    state = reducer(state, actions.listCbomVersionsSuccess({ versions: [{ uuid: 'v-1' } as any] }));
+    state = reducer(state, actions.listCbomVersionsSuccess({ versions: [{ uuid: 'v-1' } as CbomDto] }));
     state = reducer(state, actions.listCbomVersionsFailure({ error: 'err' }));
 
     state = reducer(state, actions.getSearchableFields());
-    state = reducer(state, actions.getSearchableFieldsSuccess({ fields: [{ group: 'cbom', fields: [] }] as any }));
+    state = reducer(state, actions.getSearchableFieldsSuccess({ fields: [{} as SearchFieldDataByGroupDto] }));
     state = reducer(state, actions.getSearchableFieldsFailure({ error: 'err' }));
 
-    state = reducer(state, actions.uploadCbom({ content: { metadata: {} } } as any));
-    state = reducer(state, actions.uploadCbomSuccess({ cbom: { uuid: 'cbom-new' } as any }));
+    state = reducer(state, actions.uploadCbom({ content: { metadata: {} } }));
+    state = reducer(state, actions.uploadCbomSuccess({ cbom: { uuid: 'cbom-new' } as CbomDto }));
     state = reducer(state, actions.uploadCbomFailure({ error: 'err' }));
 
     state = reducer(state, actions.deleteCbom({ uuid: 'cbom-new' }));
@@ -53,7 +62,7 @@ function runReducerAndSelectors() {
 
     state = reducer(state, actions.resetState());
 
-    const rootState = { cbom: state } as any;
+    const rootState = { cbom: state } as AppState;
     selectors.selectCbomsData(rootState);
     selectors.selectCbomList(rootState);
     selectors.selectCbomDetail(rootState);
@@ -72,43 +81,58 @@ function runReducerAndSelectors() {
     reducer(
         {
             ...initialState,
-            cbomsData: { items: [{ uuid: 'old' }], totalItems: 1, pageNumber: 1, itemsPerPage: 10, totalPages: 1 } as any,
+            cbomsData: {
+                items: [{ uuid: 'old' }],
+                totalItems: 1,
+                pageNumber: 1,
+                itemsPerPage: 10,
+                totalPages: 1,
+            } as PaginationResponseDtoCbomDto,
             isUploading: true,
         },
-        actions.uploadCbomSuccess({ cbom: { uuid: 'new' } as any }),
+        actions.uploadCbomSuccess({ cbom: { uuid: 'new' } as CbomDto }),
     );
 }
 
 function runTransforms() {
-    transformCbomDtoToModel({ uuid: 'cbom-1', metadata: { source: 'lens' } } as any);
-    transformCbomDetailDtoToModel({ uuid: 'detail-1', content: { metadata: { a: 1 } } } as any);
-    transformCbomUploadRequestModelToDto({ content: { metadata: { serialNumber: 'urn:1' } } } as any);
-    transformSearchRequestModelToDto({ pageNumber: 1, itemsPerPage: 10, filters: [] } as any);
-    transformSearchableFieldsDtoToModel([{ group: 'cbom', fields: [{ field: 'serialNumber', label: 'Serial Number' }] }] as any);
+    transformCbomDtoToModel({ uuid: 'cbom-1' } as CbomDto);
+    transformCbomDetailDtoToModel({ uuid: 'detail-1' } as CbomDetailDto);
+    transformCbomUploadRequestModelToDto({ content: { metadata: { serialNumber: 'urn:1' } } });
+    transformSearchRequestModelToDto({ pageNumber: 1, itemsPerPage: 10, filters: [] });
+    transformSearchableFieldsDtoToModel([{} as SearchFieldDataByGroupDto]);
     transformPaginationResponseDtoToModel({
         items: [{ uuid: 'cbom-1' }],
         totalItems: 1,
         pageNumber: 1,
         itemsPerPage: 10,
         totalPages: 1,
-    } as any);
+    } as PaginationResponseDtoCbomDto);
 }
+
+const emptyState$ = of({}) as StateObservable<AppState>;
 
 export function runEpicsForCoverage() {
     const successDeps = {
         apiClients: {
             cbomManagement: {
-                listCboms: () => of({ items: [{ uuid: 'cbom-1' }], totalItems: 1, pageNumber: 1, itemsPerPage: 10, totalPages: 1 }),
-                getCbomDetail: () => of({ uuid: 'detail-1', version: 1 }),
-                listCbomVersions: () => of([{ uuid: 'v-1', version: 1 }]),
-                getCbomSearchableFields: () => of([{ group: 'cbom', fields: [] }]),
-                uploadCbom: () => of({ uuid: 'created-1' }),
+                listCboms: () =>
+                    of({
+                        items: [{ uuid: 'cbom-1' }],
+                        totalItems: 1,
+                        pageNumber: 1,
+                        itemsPerPage: 10,
+                        totalPages: 1,
+                    } as PaginationResponseDtoCbomDto),
+                getCbomDetail: () => of({ uuid: 'detail-1', version: 1 } as CbomDetailDto),
+                listCbomVersions: () => of([{ uuid: 'v-1', version: 1 } as CbomDto]),
+                getCbomSearchableFields: () => of([{} as SearchFieldDataByGroupDto]),
+                uploadCbom: () => of({ uuid: 'created-1' } as CbomDto),
                 deleteCbom: () => of(undefined),
-                bulkDeleteCbom: () => of([]),
+                bulkDeleteCbom: () => of([] as BulkActionMessageDto[]),
                 sync: () => of(undefined),
             },
         },
-    } as any;
+    } as any; // test-double: partial ApiClients cannot satisfy the full generated ApiClients type without laundering
 
     const failureDeps = {
         apiClients: {
@@ -123,39 +147,31 @@ export function runEpicsForCoverage() {
                 sync: () => throwError(() => new Error('sync failed')),
             },
         },
-    } as any;
+    } as any; // test-double: partial ApiClients cannot satisfy the full generated ApiClients type without laundering
 
-    cbomEpics[0](
-        of(actions.listCboms({ pageNumber: 1, itemsPerPage: 10, filters: [] } as any)) as any,
-        of({}) as any,
-        successDeps,
-    ).subscribe();
-    cbomEpics[0](
-        of(actions.listCboms({ pageNumber: 1, itemsPerPage: 10, filters: [] } as any)) as any,
-        of({}) as any,
-        failureDeps,
-    ).subscribe();
+    cbomEpics[0](of(actions.listCboms({ pageNumber: 1, itemsPerPage: 10, filters: [] })), emptyState$, successDeps).subscribe();
+    cbomEpics[0](of(actions.listCboms({ pageNumber: 1, itemsPerPage: 10, filters: [] })), emptyState$, failureDeps).subscribe();
 
-    cbomEpics[1](of(actions.getCbomDetail({ uuid: 'detail-1' })) as any, of({}) as any, successDeps).subscribe();
-    cbomEpics[1](of(actions.getCbomDetail({ uuid: 'detail-1' })) as any, of({}) as any, failureDeps).subscribe();
+    cbomEpics[1](of(actions.getCbomDetail({ uuid: 'detail-1' })), emptyState$, successDeps).subscribe();
+    cbomEpics[1](of(actions.getCbomDetail({ uuid: 'detail-1' })), emptyState$, failureDeps).subscribe();
 
-    cbomEpics[2](of(actions.listCbomVersions({ uuid: 'detail-1' })) as any, of({}) as any, successDeps).subscribe();
-    cbomEpics[2](of(actions.listCbomVersions({ uuid: 'detail-1' })) as any, of({}) as any, failureDeps).subscribe();
+    cbomEpics[2](of(actions.listCbomVersions({ uuid: 'detail-1' })), emptyState$, successDeps).subscribe();
+    cbomEpics[2](of(actions.listCbomVersions({ uuid: 'detail-1' })), emptyState$, failureDeps).subscribe();
 
-    cbomEpics[3](of(actions.getSearchableFields()) as any, of({}) as any, successDeps).subscribe();
-    cbomEpics[3](of(actions.getSearchableFields()) as any, of({}) as any, failureDeps).subscribe();
+    cbomEpics[3](of(actions.getSearchableFields()), emptyState$, successDeps).subscribe();
+    cbomEpics[3](of(actions.getSearchableFields()), emptyState$, failureDeps).subscribe();
 
-    cbomEpics[4](of(actions.uploadCbom({ content: { metadata: {} } } as any)) as any, of({}) as any, successDeps).subscribe();
-    cbomEpics[4](of(actions.uploadCbom({ content: { metadata: {} } } as any)) as any, of({}) as any, failureDeps).subscribe();
+    cbomEpics[4](of(actions.uploadCbom({ content: { metadata: {} } })), emptyState$, successDeps).subscribe();
+    cbomEpics[4](of(actions.uploadCbom({ content: { metadata: {} } })), emptyState$, failureDeps).subscribe();
 
-    cbomEpics[5](of(actions.deleteCbom({ uuid: 'detail-1' })) as any, of({}) as any, successDeps).subscribe();
-    cbomEpics[5](of(actions.deleteCbom({ uuid: 'detail-1' })) as any, of({}) as any, failureDeps).subscribe();
+    cbomEpics[5](of(actions.deleteCbom({ uuid: 'detail-1' })), emptyState$, successDeps).subscribe();
+    cbomEpics[5](of(actions.deleteCbom({ uuid: 'detail-1' })), emptyState$, failureDeps).subscribe();
 
-    cbomEpics[6](of(actions.bulkDeleteCbom({ uuids: ['cbom-1', 'cbom-2'] })) as any, of({}) as any, successDeps).subscribe();
-    cbomEpics[6](of(actions.bulkDeleteCbom({ uuids: ['cbom-1', 'cbom-2'] })) as any, of({}) as any, failureDeps).subscribe();
+    cbomEpics[6](of(actions.bulkDeleteCbom({ uuids: ['cbom-1', 'cbom-2'] })), emptyState$, successDeps).subscribe();
+    cbomEpics[6](of(actions.bulkDeleteCbom({ uuids: ['cbom-1', 'cbom-2'] })), emptyState$, failureDeps).subscribe();
 
-    cbomEpics[7](of(actions.syncCboms()) as any, of({}) as any, successDeps).subscribe();
-    cbomEpics[7](of(actions.syncCboms()) as any, of({}) as any, failureDeps).subscribe();
+    cbomEpics[7](of(actions.syncCboms()), emptyState$, successDeps).subscribe();
+    cbomEpics[7](of(actions.syncCboms()), emptyState$, failureDeps).subscribe();
 }
 
 export default function CbomCoverageRunner() {

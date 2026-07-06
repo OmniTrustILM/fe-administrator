@@ -68,29 +68,7 @@ function RolePermissionsForm() {
         setPermissions(rolePermissionsSelector.permissions);
     }, [id, rolePermissionsSelector]);
 
-    const patchPermissions = useCallback(
-        (outPerms: SubjectPermissionsModel) => {
-            const perms = structuredClone(outPerms);
-
-            const inPerms: SubjectPermissionsModel = rolePermissionsSelector?.permissions ?? {
-                allowAllResources: false,
-                resources: [],
-            };
-
-            for (const outRes of perms.resources) {
-                const inRes = inPerms.resources.find((res) => res.name === outRes.name);
-
-                if (!outRes.objects) continue;
-
-                if (outRes.objects?.length === 0 && (!inRes || inRes.objects?.length === 0)) {
-                    delete perms.objects;
-                }
-            }
-
-            return perms;
-        },
-        [rolePermissionsSelector],
-    );
+    const patchPermissions = useCallback((outPerms: SubjectPermissionsModel) => structuredClone(outPerms), []);
 
     const handleSubmit = useCallback(() => {
         if (!id) return;

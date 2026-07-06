@@ -31,7 +31,7 @@ import {
 } from '../../../../types/openapi';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FormProvider, useForm, useWatch } from 'react-hook-form';
+import { type FieldValues, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 
@@ -67,7 +67,7 @@ import Label from 'components/Label';
 import ObjectEventHistoryWidget from 'components/_pages/notifications/events-settings/ObjectEventHistoryWidget';
 
 type LocationPushFormProps = Readonly<{
-    onSubmit: (values: any) => void;
+    onSubmit: (values: FieldValues) => void;
     selectLocationsHeaders: TableHeader[];
     selectLocationsData: TableDataRow[];
     selectLocationsCheckedRows: string[];
@@ -109,7 +109,7 @@ function LocationPushForm({
         }
     }, [isPushing, locationAttributeDescriptors, trigger]);
 
-    const handleFormSubmit = (values: any) => {
+    const handleFormSubmit = () => {
         onSubmit(allFormValues);
     };
 
@@ -421,7 +421,7 @@ export default function CertificateDetail() {
     }, [dispatch, locationToEntityMap, selectLocationsCheckedRows]);
 
     const onAddCertToLocations = useCallback(
-        (values: { locationAttributes: Record<string, any> }) => {
+        (values: FieldValues) => {
             setAddCertToLocation(false);
 
             if (selectLocationsCheckedRows.length === 0 || !certificate) return;
@@ -564,8 +564,8 @@ export default function CertificateDetail() {
         [eventHistory],
     );
 
-    const additionalInfoEntry = (): any => {
-        const returnList = [];
+    const additionalInfoEntry = (): React.ReactElement[] | undefined => {
+        const returnList: React.ReactElement[] = [];
 
         if (!currentInfoId) return;
 

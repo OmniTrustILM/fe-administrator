@@ -1,19 +1,21 @@
 import type React from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
-import { configureStore, type UnknownAction } from '@reduxjs/toolkit';
+import { configureStore, Tuple, type Middleware } from '@reduxjs/toolkit';
 
 declare global {
     var __lastDispatchedAction: { type: string; payload: unknown } | undefined;
 }
 
-function recordDispatchedAction(action: UnknownAction) {
-    if (typeof globalThis !== 'undefined') {
-        globalThis.__lastDispatchedAction = { type: action.type, payload: (action as { payload?: unknown }).payload };
+function recordDispatchedAction(action: unknown) {
+    if (typeof globalThis === 'undefined') return;
+    if (typeof action === 'object' && action !== null && 'type' in action) {
+        const { type, payload } = action as { type: unknown; payload?: unknown };
+        globalThis.__lastDispatchedAction = { type: String(type), payload };
     }
 }
 
-const dispatchSpyMiddleware = () => (next: (action: UnknownAction) => unknown) => (action: UnknownAction) => {
+const dispatchSpyMiddleware: Middleware = () => (next) => (action) => {
     recordDispatchedAction(action);
     return next(action);
 };
@@ -21,7 +23,7 @@ const dispatchSpyMiddleware = () => (next: (action: UnknownAction) => unknown) =
 export function makeDispatchSpyStore() {
     return configureStore({
         reducer: () => ({}),
-        middleware: () => [dispatchSpyMiddleware as never],
+        middleware: () => new Tuple(dispatchSpyMiddleware),
     });
 }
 

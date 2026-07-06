@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type { ParseCertificateRequestDtoParseTypeEnum, ParseCertificateResponseDto } from '../types/openapi/utils';
 
 export type State = {
@@ -33,7 +34,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const parsedCertificate = createSelector(state, (state: State) => state.parsedCertificate);
 const isFetchingDetail = createSelector(state, (state: State) => state.isFetchingDetail);

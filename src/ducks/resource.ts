@@ -1,6 +1,8 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { Resource } from 'types/openapi';
 import type { ResourceEventModel, ResourceModel } from 'types/resource';
+import { resetSliceState } from 'ducks/reducerUtils';
+import type { AppState } from 'ducks';
 
 export type State = {
     resourcesList: ResourceModel[];
@@ -25,11 +27,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         listResources: (state, action: PayloadAction<void>) => {
@@ -53,10 +51,7 @@ export const slice = createSlice({
             state.isFetchingResourceEvents = false;
             const mappedEvents = action.payload.mappedEvents;
             if (!mappedEvents) return;
-            state.allResourceEvents = Object.keys(mappedEvents).reduce(
-                (acc, mappedEvent) => [...acc, ...mappedEvents[mappedEvent]],
-                [] as ResourceEventModel[],
-            );
+            state.allResourceEvents = Object.values(mappedEvents).flat();
         },
 
         listAllResourceEventsFailure(state, action: PayloadAction<{ error: string | undefined }>) {
@@ -78,7 +73,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const resourcesList = createSelector(state, (state) => state.resourcesList);
 const resourcesWithComplianceProfiles = createSelector(resourcesList, (list) => list.filter((r) => r.hasComplianceProfiles === true));

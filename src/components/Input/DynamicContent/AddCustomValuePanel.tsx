@@ -14,9 +14,9 @@ type Props = {
     contentType: AttributeContentType;
     multiSelect?: boolean;
     readOnly: boolean;
-    fieldValue: any;
-    onFieldChange: (value: any) => void;
-    parseValue?: (raw: string | number | boolean) => any;
+    fieldValue: unknown;
+    onFieldChange: (value: unknown) => void;
+    parseValue?: (raw: string | number | boolean) => unknown;
     inputClassName?: string;
 };
 
@@ -49,7 +49,7 @@ export function AddCustomValuePanel({
         if (!isValid) return;
         const parsed = parseValue(val);
         if (multiSelect) {
-            let current: any[];
+            let current: unknown[];
             if (Array.isArray(fieldValue)) {
                 current = fieldValue;
             } else if (fieldValue == null) {

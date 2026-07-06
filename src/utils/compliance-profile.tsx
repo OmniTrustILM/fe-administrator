@@ -152,7 +152,7 @@ export function makeOptions<T extends { uuid: string; name: string }>(profiles: 
 
 export const getTypeTableColumn = (
     ruleOrGroup: TRuleGroupType,
-    setSelectedEntityDetails: (entityDetails: any) => void,
+    setSelectedEntityDetails: (entityDetails: TRuleGroupType) => void,
     setIsEntityDetailMenuOpen: (isEntityDetailMenuOpen: boolean) => void,
 ) => {
     return (

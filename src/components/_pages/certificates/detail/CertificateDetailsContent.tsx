@@ -45,7 +45,7 @@ import PendingActionDialogs from '../PendingActionButtons/PendingActionDialogs';
 import type { PendingAction } from '../PendingActionButtons/types';
 
 interface SelectChangeValue {
-    value: string;
+    value: string | number;
     label: string;
 }
 
@@ -242,7 +242,12 @@ export default function CertificateDetailsContent({ certificate, validationResul
 
     const onUpdateGroup = useCallback(() => {
         if (!certificate || !groups) return;
-        dispatch(actions.updateGroup({ uuid: certificate.uuid, updateGroupRequest: { groupUuids: groups.map((group) => group.value) } }));
+        dispatch(
+            actions.updateGroup({
+                uuid: certificate.uuid,
+                updateGroupRequest: { groupUuids: groups.map((group) => String(group.value)) },
+            }),
+        );
         setUpdateGroup(false);
     }, [certificate, dispatch, groups]);
 

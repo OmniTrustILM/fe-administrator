@@ -15,6 +15,7 @@ import {
     isCustomAttributeModel,
     isDataAttributeModel,
 } from 'types/attributes';
+import type { FieldValues } from 'react-hook-form';
 import {
     AttributeContentType,
     AttributeVersion,
@@ -26,6 +27,24 @@ import { base64ToUtf8, utf8ToBase64 } from 'utils/common-utils';
 import { getFormattedDate, getFormattedDateTime } from 'utils/dateUtil';
 import CodeBlock from '../../components/Attributes/CodeBlock';
 import { getDatetimeFormValue, getDateFormValue } from './attributeFormValues';
+
+/**
+ * Value carried by a react-select option produced from an attribute's content.
+ * Structurally identical to the `OptionValue` accepted by the shared Select component
+ * (`string | number | object`) — an option value is either a primitive scalar or a
+ * full attribute content object ({ data, reference }).
+ */
+export type AttributeSelectOptionValue = string | number | object;
+
+/** A react-select option produced from / consumed by attribute editing components. */
+export type AttributeSelectOption = { label: string; value: AttributeSelectOptionValue; disabled?: boolean };
+
+/**
+ * Loosely-shaped attribute content produced while collecting values from the form.
+ * The form stores raw user input which is normalised into this partial content shape
+ * before being cast to the strict request content DTOs.
+ */
+export type FormAttributeContentItem = { data?: unknown; reference?: string; contentType?: AttributeContentType };
 
 export const attributeFieldNameTransform: { [name: string]: string } = {
     name: 'Name',
@@ -120,7 +139,7 @@ export const getAttributeContent = (contentType: AttributeContentType, content: 
         return undefined;
     };
 
-    const isFileAttributeContentData = (data: any): data is FileAttributeContentData => {
+    const isFileAttributeContentData = (data: unknown): data is FileAttributeContentData => {
         return typeof data === 'object' && data !== null && 'fileName' in data && 'mimeType' in data;
     };
 
@@ -159,24 +178,22 @@ const getResourceFormValue = (item: any) => {
 export const getAttributeFormValue = (
     contentType: AttributeContentType,
     descriptorContent: BaseAttributeContentModel[] | undefined,
-    item: any,
-) => {
-    const normalizeContentItem = (value: any) => {
-        if (!value || typeof value !== 'object') return value;
-
-        const normalized: Record<string, unknown> = {};
+    item: unknown,
+): FormAttributeContentItem => {
+    const normalizeContentItem = (value: Record<string, unknown>): FormAttributeContentItem => {
+        const normalized: FormAttributeContentItem = {};
 
         if ('data' in value) {
             normalized.data = normalizePrimitiveAttributeValue(value.data);
         }
         if ('reference' in value && value.reference !== null && value.reference !== '') {
-            normalized.reference = value.reference;
+            normalized.reference = value.reference as string;
         }
 
         return normalized;
     };
 
-    const normalizePrimitiveAttributeValue = (value: unknown) => {
+    const normalizePrimitiveAttributeValue = (value: unknown): unknown => {
         if (value === undefined || value === null || value === '') return value;
 
         if (contentType === AttributeContentType.Integer || contentType === AttributeContentType.Float) {
@@ -193,21 +210,23 @@ export const getAttributeFormValue = (
     if (contentType === AttributeContentType.Datetime) return getDatetimeFormValue(item);
     if (contentType === AttributeContentType.Date) return getDateFormValue(item);
     if (contentType === AttributeContentType.Codeblock) {
-        const language = getCodeBlockLanguage(item?.language, descriptorContent);
-        return { data: { code: utf8ToBase64(item.code), language } } as CodeBlockAttributeContentDtoV2;
+        const codeItem = (item ?? {}) as { code?: unknown; language?: ProgrammingLanguageEnum };
+        const language = getCodeBlockLanguage(codeItem.language, descriptorContent);
+        return { data: { code: utf8ToBase64(String(codeItem.code ?? '')), language } } as CodeBlockAttributeContentDtoV2;
     }
     if (contentType === AttributeContentType.Secret) {
         return { data: { secret: item } } as SecretAttributeContentV2;
     }
     if (contentType === AttributeContentType.Resource) return getResourceFormValue(item);
     if (item && typeof item === 'object' && ('data' in item || 'reference' in item)) {
-        return normalizeContentItem(item);
+        return normalizeContentItem(item as Record<string, unknown>);
     }
     if (item && typeof item === 'object' && 'value' in item) {
-        if (item.value && typeof item.value === 'object' && ('data' in item.value || 'reference' in item.value)) {
-            return normalizeContentItem(item.value);
+        const value = (item as { value: unknown }).value;
+        if (value && typeof value === 'object' && ('data' in value || 'reference' in value)) {
+            return normalizeContentItem(value as Record<string, unknown>);
         }
-        return { data: normalizePrimitiveAttributeValue(item.value) };
+        return { data: normalizePrimitiveAttributeValue(value) };
     }
     return { data: normalizePrimitiveAttributeValue(item) };
 };
@@ -237,12 +256,12 @@ export const getCodeBlockLanguage = (
 };
 
 export const resolveAttributeVersion = (descriptor: DataAttributeModel | CustomAttributeModel): AttributeVersion => {
-    const schemaVersion = (descriptor as any).schemaVersion;
+    const schemaVersion = (descriptor as { schemaVersion?: AttributeVersion }).schemaVersion;
     if (schemaVersion === AttributeVersion.V2 || schemaVersion === AttributeVersion.V3) {
         return schemaVersion;
     }
 
-    const version = (descriptor as any).version;
+    const version = (descriptor as { version?: AttributeVersion | number | string }).version;
     if (version === AttributeVersion.V3 || version === '3' || version === 3) {
         return AttributeVersion.V3;
     }
@@ -265,12 +284,12 @@ const resolveFinalAttributeVersion = (
 
 export const buildAttributeRequestModel = (
     attributeName: string,
-    contentArray: any[],
+    contentArray: FormAttributeContentItem[],
     descriptor: DataAttributeModel | CustomAttributeModel,
     version: AttributeVersion,
 ): AttributeRequestModel => {
     if (version === AttributeVersion.V3) {
-        const finalContent = contentArray.map((item: { data: unknown }) => ({
+        const finalContent = contentArray.map((item) => ({
             ...item,
             contentType: descriptor.contentType,
         })) as BaseAttributeContentDtoV3[];
@@ -301,9 +320,11 @@ export const buildAttributeRequestModel = (
 // polymorphic deserialisation on the backend with "missing type id property
 // 'resource'". Strip the stub so a cleared selection serialises as either
 // content: [] (list / multiSelect) or no attribute at all (single-pick).
-function stripEmptyResourceContent(content: any): any {
+function stripEmptyResourceContent(
+    content: FormAttributeContentItem | FormAttributeContentItem[],
+): FormAttributeContentItem | FormAttributeContentItem[] | undefined {
     if (Array.isArray(content)) {
-        return content.filter((item: { data: unknown }) => item.data !== null && item.data !== undefined && item.data !== '');
+        return content.filter((item) => item.data !== null && item.data !== undefined && item.data !== '');
     }
     if (content?.data === null || content?.data === undefined || content?.data === '') {
         return undefined;
@@ -330,13 +351,13 @@ function shouldSkipAttribute(
 export function collectFormAttributes(
     id: string,
     descriptors: AttributeDescriptorModel[] | undefined,
-    values: Record<string, any>,
+    values: FieldValues,
     existingAttributes?: Array<AttributeResponseModel | { name: string; version?: AttributeVersion }>,
 ): AttributeRequestModel[] {
     if (!descriptors || !values[`__attributes__${id}__`]) return [];
 
-    const attributes = values[`__attributes__${id}__`];
-    const deletedAttributes = values[`deletedAttributes_${id}`] || [];
+    const attributes = (values[`__attributes__${id}__`] ?? {}) as Record<string, unknown>;
+    const deletedAttributes = (values[`deletedAttributes_${id}`] as string[] | undefined) ?? [];
 
     const attrs: AttributeRequestModel[] = [];
 
@@ -346,8 +367,8 @@ export function collectFormAttributes(
         const { descriptor, attributeName } = guard;
 
         const rawValue = attributes[attribute];
-        let content = Array.isArray(rawValue)
-            ? rawValue.map((i: any) => getAttributeFormValue(descriptor.contentType, descriptor.content, i))
+        let content: FormAttributeContentItem | FormAttributeContentItem[] | undefined = Array.isArray(rawValue)
+            ? rawValue.map((i: unknown) => getAttributeFormValue(descriptor.contentType, descriptor.content, i))
             : getAttributeFormValue(descriptor.contentType, descriptor.content, rawValue);
 
         if (descriptor.contentType === AttributeContentType.Resource) {
@@ -369,11 +390,11 @@ export function collectFormAttributes(
 
 type InputItem = {
     formAttributeName: string;
-    formAttributeValue: any;
+    formAttributeValue: unknown;
 };
 
-export function transformAttributes(data: InputItem[]): Record<string, any> {
-    const result: Record<string, any> = {};
+export function transformAttributes(data: InputItem[]): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
 
     data.forEach(({ formAttributeName, formAttributeValue }) => {
         // split by the last dot
@@ -385,10 +406,9 @@ export function transformAttributes(data: InputItem[]): Record<string, any> {
             const parentKey = formAttributeName.slice(0, lastDotIndex);
             const childKey = formAttributeName.slice(lastDotIndex + 1);
 
-            if (!result[parentKey]) {
-                result[parentKey] = {};
-            }
-            result[parentKey][childKey] = formAttributeValue;
+            const parent = (result[parentKey] as Record<string, unknown>) ?? {};
+            parent[childKey] = formAttributeValue;
+            result[parentKey] = parent;
         }
     });
 
@@ -421,7 +441,7 @@ export const testAttributeSetFunction = (
     setDefaultOnRequiredValuesOnly: boolean,
     forceDefaultDescriptorValue: boolean,
 ) => {
-    let formAttributeValue;
+    let formAttributeValue: unknown;
 
     const appliedContent = forceDefaultDescriptorValue ? descriptor?.content : attribute?.content;
 
@@ -490,28 +510,26 @@ export const testAttributeSetFunction = (
     };
 };
 
-export const mapProfileAttribute = <T extends Record<string, any>>(
+export const mapProfileAttribute = <T extends FieldValues>(
     profile: T | undefined,
     multipleResourceCustomAttributes: Record<string, CustomAttributeModel[]>,
     resourceType: string,
     attributePath: string,
     formAttributePrefix: string,
 ) => {
-    const getNestedValue = (obj: any, path: string) => {
-        return path.split('.').reduce((current, key) => current?.[key], obj);
-    };
+    const getNestedValue = (obj: unknown, path: string): unknown =>
+        path.split('.').reduce<unknown>((current, key) => (current == null ? undefined : (current as Record<string, unknown>)[key]), obj);
 
     const attributes = getNestedValue(profile, attributePath);
+    if (!Array.isArray(attributes)) return [];
 
-    return (
-        attributes
-            ?.map((attr: any) => {
-                const matched = multipleResourceCustomAttributes[resourceType]?.find((x) => x.uuid === attr.uuid);
-                if (!matched) {
-                    return null;
-                }
-                return testAttributeSetFunction(matched, attr, `${formAttributePrefix}.${attr.name}`, true, false);
-            })
-            .filter((x: any) => x !== null) ?? []
-    );
+    return (attributes as AttributeResponseModel[])
+        .map((attr) => {
+            const matched = multipleResourceCustomAttributes[resourceType]?.find((x) => x.uuid === attr.uuid);
+            if (!matched) {
+                return null;
+            }
+            return testAttributeSetFunction(matched, attr, `${formAttributePrefix}.${attr.name}`, true, false);
+        })
+        .filter((x) => x !== null);
 };

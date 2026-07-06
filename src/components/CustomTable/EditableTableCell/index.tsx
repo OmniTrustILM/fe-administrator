@@ -1,6 +1,6 @@
 import { useCallback, useState, useRef } from 'react';
 import Spinner from 'components/Spinner';
-import { Controller, FormProvider, useForm } from 'react-hook-form';
+import { Controller, FormProvider, useForm, type Path } from 'react-hook-form';
 import Button from 'components/Button';
 import { Check, X } from 'lucide-react';
 import EditIcon from 'components/icons/EditIcon';
@@ -38,9 +38,9 @@ const EditableTableCellInner = <TValue,>({
     formProps,
 }: EditableTableCellProps<TValue> & {
     setIsEditing: (value: boolean) => void;
-    blurListenerWrapperRef: React.RefObject<HTMLDivElement | null>;
+    blurListenerWrapperRef: React.RefObject<HTMLFieldSetElement | null>;
     handleCancel: () => void;
-    handleBlur: React.FocusEventHandler<HTMLDivElement>;
+    handleBlur: React.FocusEventHandler<HTMLFieldSetElement>;
 }) => {
     const methods = useForm<FormValues<TValue>>({
         defaultValues: { field: value },
@@ -58,7 +58,7 @@ const EditableTableCellInner = <TValue,>({
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <Controller
-                    name={'field' as any}
+                    name={'field' as Path<FormValues<TValue>>}
                     control={control}
                     rules={{
                         validate: formProps?.validate,
@@ -125,14 +125,14 @@ const EditableTableCell = <TValue,>({
     formProps,
 }: EditableTableCellProps<TValue>) => {
     const [isEditing, setIsEditing] = useState(false);
-    const blurListenerWrapperRef = useRef<HTMLDivElement>(null);
+    const blurListenerWrapperRef = useRef<HTMLFieldSetElement>(null);
 
     const handleCancel = useCallback(() => {
         setIsEditing(false);
         onCancel?.();
     }, [onCancel]);
 
-    const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(
+    const handleBlur: React.FocusEventHandler<HTMLFieldSetElement> = useCallback(
         (event) => {
             if (blurListenerWrapperRef.current && !blurListenerWrapperRef.current.contains(event.relatedTarget)) {
                 handleCancel();
@@ -146,7 +146,7 @@ const EditableTableCell = <TValue,>({
         <fieldset
             data-testid="editable-cell-editing"
             data-editable-cell-opened={isEditing}
-            ref={blurListenerWrapperRef as React.Ref<HTMLFieldSetElement>}
+            ref={blurListenerWrapperRef}
             aria-label="Edit cell"
             onBlur={handleBlur}
             tabIndex={-1}

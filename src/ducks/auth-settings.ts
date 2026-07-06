@@ -1,4 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
+import { resetSliceState } from 'ducks/reducerUtils';
 import type {
     AuthenticationSettingsModel,
     AuthenticationSettingsUpdateModel,
@@ -38,11 +40,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as Partial<State>)[key as keyof State] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as Partial<State>)[key as keyof State] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         getAuthenticationSettings: (state, action: PayloadAction<void>) => {
@@ -162,7 +160,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const authenticationSettings = createSelector(state, (state) => state.authenticationSettings);
 const oauth2Provider = createSelector(state, (state) => state.oauth2Provider);

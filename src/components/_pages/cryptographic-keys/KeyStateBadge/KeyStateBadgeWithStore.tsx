@@ -9,7 +9,7 @@ import { keyStatePreloadedState } from '../keyStateStorePreload';
 export type KeyStateBadgeWithStoreProps = Readonly<React.ComponentProps<typeof KeyStateBadge>>;
 
 export default function KeyStateBadgeWithStore(props: KeyStateBadgeWithStoreProps) {
-    const store = createMockStore(keyStatePreloadedState as any);
+    const store = createMockStore(keyStatePreloadedState as Parameters<typeof createMockStore>[0]);
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>

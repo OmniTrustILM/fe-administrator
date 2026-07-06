@@ -1,4 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
+import { resetSliceState } from 'ducks/reducerUtils';
 import type {
     BulkActionMessageDto,
     PaginationResponseDtoSigningRecordListDto,
@@ -42,11 +44,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         // List Signing Records
@@ -161,7 +159,7 @@ export const slice = createSlice({
     },
 });
 
-const featureSelector = (reduxStore: any): State => reduxStore?.signingRecords;
+const featureSelector = (reduxStore: AppState): State => reduxStore.signingRecords;
 
 export const selectSigningRecordsData = createSelector(featureSelector, (state) => state.signingRecordsData);
 export const selectSigningRecordsList = createSelector(featureSelector, (state) => state.signingRecordsData?.items || []);

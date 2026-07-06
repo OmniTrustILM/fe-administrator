@@ -3,7 +3,7 @@ import Spinner from 'components/Spinner';
 
 import { actions, selectors } from 'ducks/cryptographic-operations';
 import { useCallback, useEffect, useState } from 'react';
-import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
+import { Controller, type FieldValues, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from 'components/Button';
 import type { AttributeDescriptorModel, AttributeRequestModel } from 'types/attributes';
@@ -36,7 +36,7 @@ export default function RandomDataGeneration({ tokenUuid, visible, onClose }: Pr
     }, [visible, tokenUuid, dispatch]);
 
     const onSubmit = useCallback(
-        (values: any) => {
+        (values: FieldValues) => {
             if (!tokenUuid) return;
 
             const attribs: AttributeRequestModel[] =
@@ -68,7 +68,7 @@ export default function RandomDataGeneration({ tokenUuid, visible, onClose }: Pr
     const { control, handleSubmit, formState } = methods;
     const allFormValues = useWatch({ control });
 
-    const handleFormSubmit = (values: any) => {
+    const handleFormSubmit = () => {
         onSubmit(allFormValues);
     };
 

@@ -21,7 +21,7 @@ interface DropDownOptionsData {
 
 interface Props {
     dropDownOptionsList: DropDownOptionsData[];
-    onSubmit: (values: Record<string, any>) => void;
+    onSubmit: (values: Record<string, string>) => void;
     onClose: () => void;
     isBusy?: boolean;
 }

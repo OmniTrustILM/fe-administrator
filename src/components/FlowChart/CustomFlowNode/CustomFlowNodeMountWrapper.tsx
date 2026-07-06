@@ -35,7 +35,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
  * Must live outside the spec file so CT can mount it.
  */
 export default function CustomFlowNodeMountWrapper({ nodeProps, initialStoreState, onStoreReady }: Readonly<Props>) {
-    const store = React.useMemo(() => createMockStore((initialStoreState ?? testInitialState) as any), [initialStoreState]);
+    const store = React.useMemo(() => createMockStore(initialStoreState ?? testInitialState), [initialStoreState]);
     React.useEffect(() => {
         onStoreReady?.(store);
     }, [store, onStoreReady]);

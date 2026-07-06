@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, type Middleware } from '@reduxjs/toolkit';
 import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
@@ -30,36 +30,33 @@ export function SyncVaultProfileDialogTestWrapper({
     onAddSyncVaultProfile,
     onClose = () => {},
 }: SyncVaultProfileDialogTestWrapperProps) {
-    const store = useMemo(
-        () =>
-            configureStore({
-                reducer: testReducers,
-                middleware: (getDefaultMiddleware) =>
-                    getDefaultMiddleware({ serializableCheck: false }).concat(
-                        (_store: any) => (next: (arg0: any) => any) => (action: any) => {
-                            if (action.type === secretsActions.getSyncVaultProfileAttributes.type) {
-                                onGetSyncVaultProfileAttributes?.(action.payload);
-                            }
-                            if (action.type === secretsActions.addSyncVaultProfile.type) {
-                                onAddSyncVaultProfile?.(action.payload);
-                            }
-                            return next(action);
-                        },
-                    ),
-                preloadedState: {
-                    ...testInitialState,
-                    secrets: { syncVaultProfileAttributeDescriptors, isFetchingSyncVaultProfileAttributes },
-                    vaultProfiles: { vaultProfiles },
-                },
-            }),
-        [
-            isFetchingSyncVaultProfileAttributes,
-            onAddSyncVaultProfile,
-            onGetSyncVaultProfileAttributes,
-            syncVaultProfileAttributeDescriptors,
-            vaultProfiles,
-        ],
-    );
+    const store = useMemo(() => {
+        const captureMiddleware: Middleware = () => (next) => (action) => {
+            if (secretsActions.getSyncVaultProfileAttributes.match(action)) {
+                onGetSyncVaultProfileAttributes?.(action.payload);
+            }
+            if (secretsActions.addSyncVaultProfile.match(action)) {
+                onAddSyncVaultProfile?.(action.payload);
+            }
+            return next(action);
+        };
+
+        return configureStore({
+            reducer: testReducers,
+            middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(captureMiddleware),
+            preloadedState: {
+                ...testInitialState,
+                secrets: { syncVaultProfileAttributeDescriptors, isFetchingSyncVaultProfileAttributes },
+                vaultProfiles: { vaultProfiles },
+            },
+        });
+    }, [
+        isFetchingSyncVaultProfileAttributes,
+        onAddSyncVaultProfile,
+        onGetSyncVaultProfileAttributes,
+        syncVaultProfileAttributeDescriptors,
+        vaultProfiles,
+    ]);
 
     return (
         <Provider store={store}>

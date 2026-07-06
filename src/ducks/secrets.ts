@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type { SearchRequestModel } from 'types/certificate';
 import type { AttributeDescriptorModel, AttributeRequestModel } from 'types/attributes';
 import type {
@@ -11,6 +12,7 @@ import type {
     SecretUpdateRequestDto,
     SecretVersionDto,
 } from 'types/openapi';
+import { resetSliceState } from './reducerUtils';
 
 export type State = {
     secrets: SecretDto[];
@@ -67,11 +69,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         clearSecret: (state, action: PayloadAction<void>) => {
@@ -297,7 +295,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore.secrets;
 
 const secrets = createSelector(state, (state) => state.secrets);
 const secret = createSelector(state, (state) => state.secret);

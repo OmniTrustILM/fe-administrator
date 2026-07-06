@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type { Resource } from 'types/openapi';
 
 export type ListFilterState = {
@@ -36,11 +37,11 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name] ?? initialState;
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name] ?? initialState;
 
 const listFilter =
     (key: string) =>
-    (reduxStore: any): ListFilterState =>
+    (reduxStore: AppState): ListFilterState =>
         state(reduxStore).byKey[key] ?? DEFAULT_LIST_FILTER_STATE;
 
 export const selectors = {

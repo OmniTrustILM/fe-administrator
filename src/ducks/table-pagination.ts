@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 
 export type TablePaginationState = {
     page: number;
@@ -96,18 +97,18 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name] ?? initialState;
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name] ?? initialState;
 
 const pagination =
     (key: string) =>
-    (reduxStore: any): TablePaginationState =>
+    (reduxStore: AppState): TablePaginationState =>
         state(reduxStore).byKey[key] ?? DEFAULT_PAGINATION_STATE;
 
-const activeRootRoute = (reduxStore: any): string | undefined => state(reduxStore).activeRootRoute;
+const activeRootRoute = (reduxStore: AppState): string | undefined => state(reduxStore).activeRootRoute;
 
 const hasResettableStateForPath =
     (pathname: string) =>
-    (reduxStore: any): boolean => {
+    (reduxStore: AppState): boolean => {
         const prefix = `custom-table-pagination:${pathname}:`;
         return Object.entries(state(reduxStore).byKey).some(
             ([key, value]) =>
@@ -117,7 +118,7 @@ const hasResettableStateForPath =
 
 const resetVersionForKey =
     (key: string) =>
-    (reduxStore: any): number =>
+    (reduxStore: AppState): number =>
         state(reduxStore).resetVersionByKey?.[key] ?? 0;
 
 export const selectors = {

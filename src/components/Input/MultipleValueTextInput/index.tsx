@@ -57,21 +57,12 @@ export default function MultipleValueTextInput({
     }, [selectedValues]);
 
     const handleSelectChange = useCallback(
-        (values: any) => {
+        (values: { value: string | number; label: string }[] | undefined) => {
             if (!values || !Array.isArray(values)) {
                 onValuesChange([]);
                 return;
             }
-            const stringValues = values.map((v: any) => {
-                if (typeof v === 'string') return v;
-                if (typeof v === 'object' && v !== null && 'value' in v) {
-                    return typeof v.value === 'string' ? v.value : String(v.value);
-                }
-                if (typeof v === 'object' && v !== null && 'label' in v) {
-                    return v.label || String(v);
-                }
-                return String(v);
-            });
+            const stringValues = values.map((v) => (typeof v.value === 'string' ? v.value : String(v.value)));
             onValuesChange(stringValues);
         },
         [onValuesChange],

@@ -64,10 +64,9 @@ export function transformConnectorDtoV2ToModel(connector: ConnectorDtoV2): Conne
 }
 
 export function transformConnectInfoDtoToFunctionGroups(info: ConnectInfoDto): FunctionGroupModel[] {
-    const anyInfo = info as any;
-    if (Array.isArray(anyInfo.functionGroups)) {
+    if ('functionGroups' in info && Array.isArray(info.functionGroups)) {
         // V1 shape
-        return anyInfo.functionGroups.map((fg: FunctionGroupDto) => transformFunctionGroupDtoToModel(fg));
+        return info.functionGroups.map((fg) => transformFunctionGroupDtoToModel(fg));
     }
     // V2 shape does not expose function groups directly
     return [];

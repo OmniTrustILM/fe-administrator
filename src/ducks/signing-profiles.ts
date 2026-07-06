@@ -1,4 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
+import { resetSliceState } from 'ducks/reducerUtils';
 import {
     type BaseAttributeDto,
     type CertificateDto,
@@ -95,10 +97,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         clearDeleteErrorMessages: (state, action: PayloadAction<void>) => {
@@ -442,7 +441,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const signingProfile = createSelector(state, (state) => state.signingProfile);
 const signingProfiles = createSelector(state, (state) => state.signingProfiles);

@@ -17,7 +17,7 @@ type Props = {
 };
 
 interface SelectChangeValue {
-    value: string;
+    value: string | number;
     label: string;
 }
 
@@ -36,7 +36,13 @@ export default function CertificateGroupDialog({ uuids, onCancel, onUpdate }: Re
 
     const updateGroup = useCallback(() => {
         if (!selectedGroups?.length) return;
-        dispatch(actions.bulkUpdateGroup({ certificateUuids: uuids, groupUuids: selectedGroups.map((group) => group.value), filters: [] }));
+        dispatch(
+            actions.bulkUpdateGroup({
+                certificateUuids: uuids,
+                groupUuids: selectedGroups.map((group) => String(group.value)),
+                filters: [],
+            }),
+        );
         onUpdate();
     }, [dispatch, onUpdate, selectedGroups, uuids]);
 

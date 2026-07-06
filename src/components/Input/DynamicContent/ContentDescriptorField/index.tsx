@@ -1,7 +1,7 @@
 import WidgetButtons from 'components/WidgetButtons';
 import { useEffect, useMemo } from 'react';
 
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, type ControllerRenderProps, useFormContext } from 'react-hook-form';
 import Button from 'components/Button';
 import Label from 'components/Label';
 import TextInput from 'components/TextInput';
@@ -24,7 +24,7 @@ function DescriptorInputControl({
     name: string;
     contentType: AttributeContentType;
     fieldStepValue: number | undefined;
-    field: { value: any; onChange: (v: any) => void; onBlur: () => void };
+    field: ControllerRenderProps;
     fieldState: { error?: { message?: string } | string; isTouched: boolean };
 }>) {
     const inputType = ContentFieldConfiguration[contentType].type;
@@ -111,7 +111,9 @@ export default function ContentDescriptorField({ isList, contentType }: Readonly
         if (readOnly) {
             const updatedContent =
                 Array.isArray(contentValues) && contentValues?.length
-                    ? contentValues?.map((content: any) => ({ data: content.data || ContentFieldConfiguration[contentType].initial }))
+                    ? contentValues?.map((content: { data?: unknown }) => ({
+                          data: content.data || ContentFieldConfiguration[contentType].initial,
+                      }))
                     : [{ data: ContentFieldConfiguration[contentType].initial }];
             setValue('content', updatedContent);
         }
@@ -120,7 +122,7 @@ export default function ContentDescriptorField({ isList, contentType }: Readonly
 
     return (
         <>
-            {contentValues?.map((_contentValue: any, index: number) => {
+            {contentValues?.map((_contentValue: unknown, index: number) => {
                 const name = `content.${index}.data` as const;
 
                 return (
@@ -161,7 +163,7 @@ export default function ContentDescriptorField({ isList, contentType }: Readonly
                                                 onClick: () => {
                                                     setValue(
                                                         'content',
-                                                        contentValues.filter((_: any, filterIndex: number) => index !== filterIndex),
+                                                        contentValues.filter((_: unknown, filterIndex: number) => index !== filterIndex),
                                                     );
                                                 },
                                             },

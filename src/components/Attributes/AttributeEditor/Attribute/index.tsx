@@ -12,7 +12,7 @@ import {
 } from 'types/attributes';
 import { AttributeContentType } from 'types/openapi';
 import { actions as userInterfaceActions, selectors as userInterfaceSelectors } from '../../../../ducks/user-interface';
-import { getAttributeContent } from '../../../../utils/attributes/attributes';
+import { type AttributeSelectOption, getAttributeContent } from '../../../../utils/attributes/attributes';
 import { AttributeInfo } from './AttributeInfo';
 import { AttributeFieldSelect } from './AttributeFieldSelect';
 import { AttributeFieldFile } from './AttributeFieldFile';
@@ -21,7 +21,7 @@ import { AttributeFieldInput } from './AttributeFieldInput';
 type Props = {
     name: string;
     descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel | undefined;
-    options?: { label: string; value: any }[];
+    options?: AttributeSelectOption[];
     busy?: boolean;
     userInteractedRef?: React.RefObject<boolean>;
     deleteButton?: React.ReactNode;
@@ -35,7 +35,7 @@ export function Attribute({
     userInteractedRef: userInteractionRef,
     deleteButton,
 }: Readonly<Props>): React.ReactNode {
-    const { setValue } = useFormContext<Record<string, any>>();
+    const { setValue } = useFormContext();
     const [addNewAttributeValue, setAddNewAttributeValue] = useState<AddNewAttributeType | undefined>();
     const attributeCallbackValue = useSelector(userInterfaceSelectors.selectAttributeCallbackValue);
     const initiateAttributeCallback = useSelector(userInterfaceSelectors.selectInitiateAttributeCallback);
@@ -119,12 +119,12 @@ export function Attribute({
     }, [attributeCallbackValue, dispatch, options, setValue, initiateAttributeCallback, name]);
 
     const handleSelectChangeMulti = useCallback(
-        (fieldOnChange: (v: any) => void) => (newValue: any) => {
-            const selected = Array.isArray(newValue) ? newValue : [];
-            const toRawValue = (v: any) => (v && typeof v === 'object' && 'value' in v ? v.value : v);
-            if (selected.some((v: any) => toRawValue(v) === '__add_new__')) {
+        (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
+            const selected: unknown[] = Array.isArray(newValue) ? newValue : [];
+            const toRawValue = (v: unknown) => (v && typeof v === 'object' && 'value' in v ? (v as { value: unknown }).value : v);
+            if (selected.some((v) => toRawValue(v) === '__add_new__')) {
                 handleAddNew();
-                const filteredValue = selected.filter((v: any) => toRawValue(v) !== '__add_new__').map(toRawValue);
+                const filteredValue = selected.filter((v) => toRawValue(v) !== '__add_new__').map(toRawValue);
                 fieldOnChange(filteredValue.length > 0 ? filteredValue : undefined);
                 return;
             }
@@ -136,7 +136,7 @@ export function Attribute({
     );
 
     const handleSelectChangeSingle = useCallback(
-        (fieldOnChange: (v: any) => void) => (newValue: any) => {
+        (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
             if (newValue === '__add_new__') {
                 handleAddNew();
                 return;

@@ -5,11 +5,13 @@ type Props = React.ComponentProps<typeof SimpleBarOriginal> & {
     children: React.ReactNode;
 };
 
+type SimpleBarInstance = React.ComponentRef<typeof SimpleBarOriginal>;
+
 function SimpleBar({ children, ...props }: Readonly<Props>) {
-    const simpleBarRef = useRef<any>(null);
+    const simpleBarRef = useRef<SimpleBarInstance>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const setSimpleBarRef = useCallback((node: any) => {
+    const setSimpleBarRef = useCallback((node: SimpleBarInstance) => {
         simpleBarRef.current = node;
     }, []);
 

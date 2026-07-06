@@ -13,7 +13,14 @@ import {
     isCustomAttributeModelArray,
 } from 'types/attributes';
 import type { MetadataItemModel, MetadataModel } from 'types/locations';
-import { AttributeContentType, type NameAndUuidDto, PlatformEnum, type Resource } from 'types/openapi';
+import {
+    type AttributeResource,
+    AttributeContentType,
+    type NameAndUuidDto,
+    PlatformEnum,
+    type Resource,
+    type ResourceObjectContent,
+} from 'types/openapi';
 import { getAttributeContent, getAttributeCopyValue } from 'utils/attributes/attributes';
 import { useCopyToClipboard } from 'utils/common-hooks';
 import { actions as userInterfaceActions } from '../../../ducks/user-interface';
@@ -37,7 +44,7 @@ type AttributeEditFormProps = {
 };
 
 function AttributeEditForm({ descriptor, initialContent, onSubmit, onCancel }: Readonly<AttributeEditFormProps>) {
-    const methods = ReactHookForm.useForm<any>({
+    const methods = ReactHookForm.useForm<Record<string, unknown>>({
         defaultValues: {},
     });
 
@@ -172,7 +179,7 @@ export default function AttributeViewer({
     };
 
     const renderResourceLink = useCallback(
-        (resource: Resource, uuid: string, label: ReactNode) => (
+        (resource: Resource | AttributeResource, uuid: string, label: ReactNode) => (
             <Link onClick={() => dispatch(userInterfaceActions.resetState())} to={`/${resource}/detail/${uuid}`}>
                 {label}
             </Link>
@@ -227,8 +234,9 @@ export default function AttributeViewer({
                     return (
                         <>
                             {attribute.content.map((item, idx) => {
-                                const data = (item as any)?.data as { uuid?: string; name?: string; resource?: Resource } | undefined;
-                                const label = data?.name || (item as any)?.reference || data?.uuid || '';
+                                const contentItem = item as ResourceObjectContent;
+                                const data = contentItem.data;
+                                const label = data?.name || contentItem.reference || data?.uuid || '';
                                 const separator = idx > 0 ? ', ' : '';
                                 if (data?.uuid && data.resource) {
                                     return (

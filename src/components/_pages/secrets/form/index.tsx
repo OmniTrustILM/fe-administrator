@@ -291,8 +291,8 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                             attributes,
                             customAttributes,
                             // For updates, secret content itself is optional; backend keeps existing content if it's not provided.
-                            ...(includeSecret ? { secret: secretContent as any } : {}),
-                        } as any,
+                            ...(includeSecret ? { secret: secretContent } : {}),
+                        },
                     }),
                 );
 
@@ -303,7 +303,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                             update: {
                                 sourceVaultProfileUuid,
                                 secretAttributes: attributes,
-                            } as any,
+                            },
                         }),
                     );
                 }

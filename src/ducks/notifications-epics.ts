@@ -6,6 +6,7 @@ import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { FunctionGroupCode } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { extractError } from 'utils/net';
+import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { actions as authActions } from './auth';
 import { EntityType } from './filters';
@@ -211,7 +212,7 @@ const createNotificationInstance: AppEpic = (action$, state$, deps) => {
                     mergeMap((res) =>
                         of(
                             slice.actions.createNotificationInstanceSuccess(),
-                            'Notifications Instance added successfully.',
+                            alertActions.success('Notifications Instance added successfully.'),
                             appRedirectActions.redirect({ url: `/notificationinstances/detail/${res.uuid}` }),
                         ),
                     ),
@@ -241,7 +242,7 @@ const editNotificationInstance: AppEpic = (action$, state$, deps) => {
                     mergeMap((res) =>
                         of(
                             slice.actions.editNotificationInstanceSuccess(),
-                            'Notifications Instance updated successfully.',
+                            alertActions.success('Notifications Instance updated successfully.'),
                             appRedirectActions.redirect({ url: `/notificationinstances/detail/${res.uuid}` }),
                         ),
                     ),
@@ -299,7 +300,7 @@ const deleteNotificationInstance: AppEpic = (action$, state$, deps) => {
                 mergeMap((res) =>
                     of(
                         slice.actions.deleteNotificationInstanceSuccess({ uuid: action.payload.uuid }),
-                        'Notifications Instance deleted successfully.',
+                        alertActions.success('Notifications Instance deleted successfully.'),
                         appRedirectActions.redirect({ url: `../../../events` }),
                     ),
                 ),
@@ -367,7 +368,7 @@ const bulkMarkNotificationAsRead: AppEpic = (action$, state$, deps) => {
                     of(
                         slice.actions.bulkMarkNotificationAsReadSuccess({ markedNotificationUuids: action.payload.uuids }),
                         slice.actions.listOverviewNotifications(),
-                        `Notifications marked as read successfully`,
+                        alertActions.success('Notifications marked as read successfully'),
                     ),
                 ),
 

@@ -51,6 +51,8 @@ interface FormValues {
     owner: string;
     groups: { value: string; label: string }[];
     deletedAttributes: string[];
+    // Attribute fields are registered dynamically by AttributeEditor.
+    [attributeField: `__attributes__${string}`]: unknown;
 }
 export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: CmpProfileFormProps) {
     const { id: routeId } = useParams();
@@ -482,7 +484,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                 const formValues = getValues();
                 Object.keys(formValues).forEach((key) => {
                     if (key.startsWith('__attributes__issuanceAttributes__') || key.startsWith('__attributes__revocationAttributes__')) {
-                        setValue(key as any, undefined);
+                        setValue(key as `__attributes__${string}`, undefined);
                     }
                 });
                 setValue('raProfileUuid', '');
@@ -508,7 +510,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                 const formValues = getValues();
                 Object.keys(formValues).forEach((key) => {
                     if (key.startsWith('__attributes__issuanceAttributes__') || key.startsWith('__attributes__revocationAttributes__')) {
-                        setValue(key as any, undefined);
+                        setValue(key as `__attributes__${string}`, undefined);
                     }
                 });
             }
@@ -551,7 +553,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
     const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues as unknown as Record<string, unknown>);
 
     const allFormValues = useWatch({ control });
-    const isEqual = useMemo(() => deepEqual(defaultValues, allFormValues), [defaultValues, allFormValues]);
+    const isEqual = useMemo(() => deepEqual<unknown>(defaultValues, allFormValues), [defaultValues, allFormValues]);
 
     const isSaving = isSubmitting || isCreating || isUpdating;
 

@@ -4,6 +4,8 @@ import type { AttributeDescriptorModel } from 'types/attributes';
 import type { AuthorityRequestModel, AuthorityResponseModel, AuthorityUpdateRequestModel } from 'types/authorities';
 import type { BulkActionModel, ConnectorResponseModel } from 'types/connectors';
 import type { FunctionGroupCode } from 'types/openapi';
+import { resetSliceState } from 'ducks/reducerUtils';
+import type { AppState } from 'ducks';
 
 export type State = {
     checkedRows: string[];
@@ -65,11 +67,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         setCheckedRows: (state, action: PayloadAction<{ checkedRows: string[] }>) => {
@@ -289,7 +287,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const checkedRows = createSelector(state, (state) => state.checkedRows);
 

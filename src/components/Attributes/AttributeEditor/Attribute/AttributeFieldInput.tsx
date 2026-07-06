@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Controller, useFormContext, useFormState } from 'react-hook-form';
+import { Controller, type ControllerRenderProps, useFormContext, useFormState } from 'react-hook-form';
 import Label from 'components/Label';
 import TextInput from 'components/TextInput';
 import DatePicker from 'components/DatePicker';
@@ -19,12 +19,6 @@ import {
     getRegexpConstraint,
 } from './attributeHelpers';
 
-interface FieldStateLike {
-    value: any;
-    onChange: (v: any) => void;
-    onBlur: () => void;
-}
-
 interface FieldStateError {
     isTouched: boolean;
     invalid: boolean;
@@ -43,7 +37,7 @@ type StandardInputControlProps = {
     descriptor: DataAttributeModel | CustomAttributeModel;
     busy: boolean;
     deleteButton?: React.ReactNode;
-    field: FieldStateLike;
+    field: ControllerRenderProps;
     fieldState: FieldStateError;
     submitCount: number;
 };
@@ -58,6 +52,7 @@ function StandardInputControl({
     submitCount,
 }: Readonly<StandardInputControlProps>): React.ReactNode {
     const transformed = transformInputValueForDescriptor(field.value, descriptor);
+    const textValue = transformed ? String(transformed) : '';
     const validationVisible = fieldState.isTouched || submitCount > 0;
     const inputClassName = cn(
         'py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600',
@@ -69,7 +64,7 @@ function StandardInputControl({
             <div className="flex items-center mb-3">
                 <Switch
                     id={name}
-                    checked={transformed ?? false}
+                    checked={!!transformed}
                     onChange={(checked) => field.onChange(checked)}
                     disabled={descriptor.properties.readOnly || busy}
                     secondaryLabel={descriptor.properties.label}
@@ -87,7 +82,7 @@ function StandardInputControl({
                     id={name}
                     placeholder={`Enter ${descriptor.properties.label}`}
                     disabled={descriptor.properties.readOnly || busy}
-                    value={transformed || ''}
+                    value={textValue}
                     rows={4}
                     className={inputClassName}
                 />
@@ -135,7 +130,7 @@ function StandardInputControl({
                 type={inputType}
                 placeholder={`Enter ${descriptor.properties.label}`}
                 disabled={descriptor.properties.readOnly || busy}
-                value={transformed || ''}
+                value={textValue}
                 onChange={(value) => field.onChange(value)}
                 onBlur={field.onBlur}
                 invalid={validationVisible && !!fieldState.invalid}
@@ -146,7 +141,7 @@ function StandardInputControl({
 }
 
 export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Readonly<AttributeFieldInputProps>): React.ReactNode {
-    const { setValue, control, watch } = useFormContext<Record<string, any>>();
+    const { setValue, control, watch } = useFormContext();
     const { submitCount } = useFormState({ control });
     const formValues = watch();
 

@@ -9,7 +9,7 @@ import Container from 'components/Container';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
 import JsonViewer from 'components/JsonViewer';
-import Select from 'components/Select';
+import Select, { type OptionValue } from 'components/Select';
 import TextInput from 'components/TextInput';
 import DonutChart from 'components/_pages/dashboard/DashboardItem/DonutChart';
 import Spinner from 'components/Spinner';
@@ -336,11 +336,15 @@ export default function CbomDetail() {
         const properties = isRecord(metadata) ? metadata.properties : undefined;
 
         const timestampRaw = getPathValue(metadata, 'timestamp');
+        const formattedTimestamp =
+            typeof timestampRaw === 'string' || typeof timestampRaw === 'number' || timestampRaw instanceof Date
+                ? dateFormatter(timestampRaw)
+                : undefined;
 
         const predefinedRows: TableDataRow[] = [
             {
                 id: 'timestamp',
-                columns: ['Timestamp', toCellValue(timestampRaw ? dateFormatter(timestampRaw as any) : undefined)],
+                columns: ['Timestamp', toCellValue(formattedTimestamp)],
             },
             {
                 id: 'type',
@@ -483,7 +487,7 @@ export default function CbomDetail() {
     }, [cbomVersions]);
 
     const handleVersionSelect = useCallback(
-        (value: string | number | object | { value: string | number | object; label: string }) => {
+        (value: OptionValue | { value: OptionValue; label: string } | null) => {
             const innerValue = typeof value === 'object' && value !== null && 'value' in value ? value.value : undefined;
             const objectValue = typeof innerValue === 'string' || typeof innerValue === 'number' ? String(innerValue) : '';
             const selectedValue = typeof value === 'string' || typeof value === 'number' ? String(value) : objectValue;
@@ -562,7 +566,7 @@ export default function CbomDetail() {
         });
     }, [cryptographicComponents, assetSearchQuery, selectedAssetType]);
 
-    const handleAssetTypeChange = useCallback((value: string | number | object | { value: string | number | object; label: string }) => {
+    const handleAssetTypeChange = useCallback((value: OptionValue | { value: OptionValue; label: string } | null) => {
         const innerValue = typeof value === 'object' && value !== null && 'value' in value ? value.value : undefined;
         const objectValue =
             typeof innerValue === 'string' || typeof innerValue === 'number' ? String(innerValue) : ALL_ASSET_TYPES_OPTION_VALUE;

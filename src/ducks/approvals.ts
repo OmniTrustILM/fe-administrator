@@ -1,4 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
+import { resetSliceState } from 'ducks/reducerUtils';
 import type { ApprovalModel, DetailApprovalModel, ResponseApprovalModel, UserApprovalModel } from 'types/approvals';
 import { ApprovalDetailDtoStatusEnum, ApprovalDtoStatusEnum } from 'types/openapi';
 
@@ -35,11 +37,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         getApproval: (state, action: PayloadAction<{ uuid: string }>) => {
@@ -188,7 +186,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const approvalDetails = createSelector(state, (state) => state.approvalDetails);
 const approvals = createSelector(state, (state) => state.approvals);

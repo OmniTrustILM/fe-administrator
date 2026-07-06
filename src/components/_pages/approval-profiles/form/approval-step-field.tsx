@@ -4,10 +4,10 @@ import { actions as groupAction, selectors as groupSelectors } from 'ducks/certi
 import { actions as rolesActions, selectors as rolesSelectors } from 'ducks/roles';
 import { actions as userAction, selectors as userSelectors } from 'ducks/users';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, type Path, useFormContext } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
-import Select from 'components/Select';
+import Select, { type OptionValue } from 'components/Select';
 import TextInput from 'components/TextInput';
 import { type ApprovalStepRequestModel, ApproverType, type ProfileApprovalRequestModel } from 'types/approval-profiles';
 import { validateLength, validateNonZeroInteger, validatePositiveInteger, validateRequired } from 'utils/validators';
@@ -132,7 +132,7 @@ export default function ApprovalStepField({ approvalSteps }: Readonly<Props>) {
             if (!e || !selectedApprovalTypeList || e.value === selectedApproverList?.[index]?.value) return;
 
             resetFormUuids(index);
-            setValue(`approvalSteps.${index}.${selectedApprovalTypeList[index].value}` as any, e.value);
+            setValue(`approvalSteps.${index}.${selectedApprovalTypeList[index].value}` as Path<ProfileApprovalRequestModel>, e.value);
 
             setSelectedApproverList((prevList) => {
                 const newList = [...(prevList ?? [])];
@@ -172,7 +172,7 @@ export default function ApprovalStepField({ approvalSteps }: Readonly<Props>) {
     );
 
     const handleApproverSelectChange = useCallback(
-        (index: number, fieldOnChange: (v: any) => void) => (value: any) => {
+        (index: number, fieldOnChange: (value: unknown) => void) => (value: OptionValue | { value: OptionValue; label: string } | null) => {
             fieldOnChange(value);
             const label = selectedApprovalTypeList?.[index]?.label;
             if (!label) return;
@@ -267,14 +267,16 @@ export default function ApprovalStepField({ approvalSteps }: Readonly<Props>) {
                         <div>
                             {selectedApprovalTypeList?.[index]?.label && (
                                 <Controller
-                                    name={`approvalSteps.${index}.${selectedApprovalTypeList[index].value}` as any}
+                                    name={
+                                        `approvalSteps.${index}.${selectedApprovalTypeList[index].value}` as Path<ProfileApprovalRequestModel>
+                                    }
                                     control={control}
                                     rules={buildValidationRules([validateRequired()])}
                                     render={({ field, fieldState }) => (
                                         <>
                                             <Select
                                                 id={`approverSelect-${index}`}
-                                                value={field.value || ''}
+                                                value={typeof field.value === 'string' ? field.value : ''}
                                                 label={`Select ${selectedApprovalTypeList[index].label}`}
                                                 required
                                                 onChange={handleApproverSelectChange(index, field.onChange)}

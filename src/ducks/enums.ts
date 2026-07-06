@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type { EnumItemModel, PlatformEnumModel } from 'types/enums';
 import type { PlatformEnum } from 'types/openapi';
 
@@ -24,7 +25,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State | undefined => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State | undefined => reduxStore?.[slice.name];
 
 const platformEnums = createSelector(state, (featureState) => featureState?.platformEnums ?? {});
 

@@ -23,7 +23,7 @@ const preloadedState: Parameters<typeof createMockStore>[0] = {
 export type ConnectorStatusWithStoreProps = Readonly<React.ComponentProps<typeof InventoryStatusBadge>>;
 
 export default function ConnectorStatusWithStore(props: ConnectorStatusWithStoreProps) {
-    const store = createMockStore(preloadedState as any);
+    const store = createMockStore(preloadedState);
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>

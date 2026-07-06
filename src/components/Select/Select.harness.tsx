@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import Select from './index';
+import Select, { type OptionValue } from './index';
 import Dialog from 'components/Dialog';
+
+type SingleValueState = OptionValue | { value: OptionValue; label: string } | null;
+type MultiOption = { value: string | number; label: string };
 
 const BASE_OPTIONS = [
     { value: '1', label: 'Option 1' },
@@ -9,7 +12,7 @@ const BASE_OPTIONS = [
 ];
 
 export function SingleHarness({ initial = '', isClearable = false }: { initial?: string; isClearable?: boolean }) {
-    const [v, setV] = useState<any>(initial);
+    const [v, setV] = useState<SingleValueState>(initial);
     return (
         <div>
             <Select id="h" value={v} onChange={(nv) => setV(nv)} options={BASE_OPTIONS} isClearable={isClearable} dataTestId="sel" />
@@ -18,11 +21,11 @@ export function SingleHarness({ initial = '', isClearable = false }: { initial?:
     );
 }
 
-export function MultiHarness({ initial = [] as { value: string; label: string }[] }) {
-    const [v, setV] = useState<typeof initial | undefined>(initial);
+export function MultiHarness({ initial = [] as MultiOption[] }) {
+    const [v, setV] = useState<MultiOption[] | undefined>(initial);
     return (
         <div>
-            <Select id="m" value={v ?? []} onChange={(nv) => setV(nv as any)} options={BASE_OPTIONS} isMulti dataTestId="sel" />
+            <Select id="m" value={v ?? []} onChange={(nv) => setV(nv)} options={BASE_OPTIONS} isMulti dataTestId="sel" />
             <div data-testid="value-display">{v === undefined ? 'undefined' : JSON.stringify(v)}</div>
         </div>
     );
@@ -65,7 +68,7 @@ export function SelectPlusDialogHarness() {
 }
 
 export function SearchableHarness() {
-    const [v, setV] = useState<any>('');
+    const [v, setV] = useState<SingleValueState>('');
     return (
         <div>
             <Select

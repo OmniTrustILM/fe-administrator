@@ -1,7 +1,7 @@
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { useSelector } from 'react-redux';
 import { ConnectorStatus, PlatformEnum } from 'types/openapi';
-import Badge from 'components/Badge';
+import Badge, { type BadgeColor } from 'components/Badge';
 
 type Props = Readonly<{
     status: ConnectorStatus | undefined;
@@ -10,7 +10,7 @@ type Props = Readonly<{
 export default function InventoryStatusBadge({ status }: Props) {
     const connectorStatusEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ConnectorStatus));
     const statusText = status ? getEnumLabel(connectorStatusEnum, status) : undefined;
-    const getStatus = (status: ConnectorStatus) => {
+    const getStatus = (status: ConnectorStatus): { color: BadgeColor; text: string | undefined } | undefined => {
         switch (status) {
             case ConnectorStatus.Connected:
                 return { color: 'success', text: statusText };
@@ -23,7 +23,7 @@ export default function InventoryStatusBadge({ status }: Props) {
         }
     };
 
-    const _default = { color: 'secondary', text: 'Unknown' };
+    const _default: { color: BadgeColor; text: string } = { color: 'secondary', text: 'Unknown' };
 
     const { color, text } = status ? getStatus(status) || _default : _default;
 

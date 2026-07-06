@@ -68,7 +68,7 @@ export default function CertificateUploadDialog({
     const { control, handleSubmit, formState } = methods;
     const allFormValues = useWatch({ control });
 
-    const onSubmit = (values: any) => {
+    const onSubmit = () => {
         onUpload({
             fileContent: fileContent,
             customAttributes: showCustomAttributes

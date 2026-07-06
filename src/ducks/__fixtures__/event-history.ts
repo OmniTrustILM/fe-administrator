@@ -1,6 +1,11 @@
-import { EventStatus, ResourceEvent, Resource } from 'types/openapi';
+import type {
+    EventHistoryRequestDto,
+    PaginationResponseDtoEventHistoryDto,
+    PaginationResponseDtoObjectEventHistoryDto,
+} from 'types/openapi';
+import { EventStatus, Resource, ResourceEvent } from 'types/openapi';
 
-export const sampleEventHistory = {
+export const sampleEventHistory: PaginationResponseDtoEventHistoryDto = {
     items: [
         {
             startedAt: '2026-05-14T10:24:12Z',
@@ -17,9 +22,9 @@ export const sampleEventHistory = {
     itemsPerPage: 10,
     pageNumber: 1,
     totalPages: 1,
-} as any;
+};
 
-export const sampleObjectEventHistory = {
+export const sampleObjectEventHistory: PaginationResponseDtoObjectEventHistoryDto = {
     items: [
         {
             event: ResourceEvent.CertificateStatusChanged,
@@ -35,6 +40,6 @@ export const sampleObjectEventHistory = {
     itemsPerPage: 10,
     pageNumber: 1,
     totalPages: 1,
-} as any;
+};
 
-export const sampleEventHistoryRequest = { pagination: { itemsPerPage: 10, pageNumber: 1 } } as any;
+export const sampleEventHistoryRequest: EventHistoryRequestDto = { pagination: { itemsPerPage: 10, pageNumber: 1 } };

@@ -34,7 +34,7 @@ const preloadedState: Parameters<typeof createMockStore>[0] = {
 export type CertificateStatusWithStoreProps = Readonly<React.ComponentProps<typeof CertificateStatus>>;
 
 export default function CertificateStatusWithStore(props: CertificateStatusWithStoreProps) {
-    const store = createMockStore(preloadedState as any);
+    const store = createMockStore(preloadedState);
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>

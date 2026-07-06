@@ -25,11 +25,11 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { ResourceBadges } from 'components/_pages/compliance-profiles/detail/Components/ResourceBadges';
 import Dialog from 'components/Dialog';
 import AttributeEditor from 'components/Attributes/AttributeEditor';
-import { FormProvider, useForm } from 'react-hook-form';
+import { type FieldValues, FormProvider, useForm } from 'react-hook-form';
 import ProgressButton from 'components/ProgressButton';
 import { Plus } from 'lucide-react';
 import { collectFormAttributes } from 'utils/attributes/attributes';
-import type { AttributeDescriptorModel, AttributeRequestModel } from 'types/attributes';
+import type { AttributeDescriptorModel } from 'types/attributes';
 import InternalRuleForm from 'components/_pages/compliance-profiles/detail/InternalRuleForm/InternalRuleForm';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import type { TRuleGroupType } from 'types/complianceProfiles';
@@ -40,7 +40,7 @@ const AttributeEditorDialogBody = ({
     onCancel,
 }: {
     isAssigningRule: TRuleGroupType | null;
-    onSubmit: (values: any) => void;
+    onSubmit: (values: FieldValues) => void;
     onCancel: () => void;
 }) => {
     const methods = useForm({
@@ -79,7 +79,7 @@ const AttributeEditorDialogBody = ({
 
 type Props = Readonly<{
     profile: ComplianceProfileDtoV2 | undefined;
-    setSelectedEntityDetails: (entityDetails: any) => void;
+    setSelectedEntityDetails: (entityDetails: TRuleGroupType) => void;
     setIsEntityDetailMenuOpen: (isEntityDetailMenuOpen: boolean) => void;
     onReset?: (resetFn: () => void) => void;
 }>;
@@ -225,7 +225,7 @@ export default function AvailableRulesAndGroups({ profile, setSelectedEntityDeta
                         ruleUuid: ruleOrGroup.uuid,
                         connectorUuid: ruleOrGroup?.connectorUuid ?? undefined,
                         kind: ruleOrGroup?.kind ?? undefined,
-                        attributes: (ruleOrGroup?.attributes as AttributeRequestModel[]) ?? undefined,
+                        attributes: undefined,
                     },
                 };
                 dispatch(actions.updateRule(rulePayload));
@@ -331,7 +331,7 @@ export default function AvailableRulesAndGroups({ profile, setSelectedEntityDeta
     );
 
     const onSubmit = useCallback(
-        (values: any) => {
+        (values: FieldValues) => {
             if (!isAssigningRule || !id) return;
             const attributes = collectFormAttributes(
                 'rule-attributes',

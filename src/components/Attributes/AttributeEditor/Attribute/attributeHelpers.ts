@@ -1,8 +1,15 @@
-import type { CustomAttributeModel, DataAttributeModel, RegexpAttributeConstraintModel } from 'types/attributes';
+import type { AttributeDescriptorModel, CustomAttributeModel, DataAttributeModel, RegexpAttributeConstraintModel } from 'types/attributes';
 import { AttributeConstraintType, AttributeContentType, type RangeAttributeConstraintData } from 'types/openapi';
 import { isCustomAttributeModel, isDataAttributeModel } from 'types/attributes';
+import type { AttributeSelectOption, AttributeSelectOptionValue } from 'utils/attributes/attributes';
 import { getFormattedDateTime } from 'utils/dateUtil';
 import { composeValidators, validateFloat, validateInteger, validatePattern, validateRequired } from 'utils/validators';
+
+/** A form-field validator: returns an error message, or undefined when the value is valid. */
+export type FieldValidator = (value: unknown, allValues?: object, fieldState?: unknown) => string | undefined;
+
+/** A react-select option whose value may be any dynamic form value. */
+export type SelectFieldOption = { value: unknown; label: string };
 
 export function parseListValueByContentType(
     contentType: AttributeContentType,
@@ -28,32 +35,38 @@ export function parseListValueByContentType(
     }
 }
 
-export function transformInputValueForDescriptor(value: any, descriptor: DataAttributeModel | CustomAttributeModel): any {
+export function transformInputValueForDescriptor(
+    value: unknown,
+    descriptor: DataAttributeModel | CustomAttributeModel,
+): string | number | boolean | undefined {
     if (descriptor.contentType === AttributeContentType.Datetime) {
-        return getFormattedDateTime(value);
+        return getFormattedDateTime(value as string);
     }
     if (descriptor.contentType === AttributeContentType.Boolean && descriptor.properties.required) {
-        return value ?? false;
+        return (value as boolean | undefined) ?? false;
     }
-    return value;
+    return value as string | number | boolean | undefined;
 }
 
-export function getSelectValueFromField(fieldValue: unknown, multiSelect: boolean): { value: string; label: string }[] | string | number {
+export function getSelectValueFromField(fieldValue: unknown, multiSelect: boolean): SelectFieldOption[] | AttributeSelectOptionValue {
     if (multiSelect) {
         if (!fieldValue) return [];
         if (!Array.isArray(fieldValue)) return [];
-        return fieldValue.map((v: any) => {
-            if (typeof v === 'object' && v.value !== undefined) {
-                return { value: v.value, label: v.label || String(v.value) };
+        return (fieldValue as unknown[]).map((v): SelectFieldOption => {
+            if (typeof v === 'object' && v !== null && 'value' in v) {
+                const option = v as { value: unknown; label?: unknown };
+                return { value: option.value, label: (option.label as string) || String(option.value) };
             }
-            return typeof v === 'object'
-                ? { value: v, label: String(v.reference ?? v.data ?? JSON.stringify(v)) }
-                : { value: v, label: String(v) };
+            if (typeof v === 'object' && v !== null) {
+                const content = v as { reference?: unknown; data?: unknown };
+                return { value: v, label: String(content.reference ?? content.data ?? JSON.stringify(v)) };
+            }
+            return { value: v, label: String(v) };
         });
     }
     if (!fieldValue) return '';
-    if (typeof fieldValue === 'object' && (fieldValue as any).value !== undefined) {
-        return (fieldValue as any).value;
+    if (typeof fieldValue === 'object' && 'value' in fieldValue && (fieldValue as { value: unknown }).value !== undefined) {
+        return (fieldValue as { value: AttributeSelectOptionValue }).value;
     }
     return fieldValue as string | number;
 }
@@ -96,7 +109,7 @@ export function getRegexpConstraint(
     return regexValidator as RegexpAttributeConstraintModel | undefined;
 }
 
-function addDataAttributeConstraintValidators(descriptor: DataAttributeModel, validators: any[]): void {
+function addDataAttributeConstraintValidators(descriptor: DataAttributeModel, validators: FieldValidator[]): void {
     const regexValidator = descriptor.constraints?.find((c) => c.type === AttributeConstraintType.RegExp);
     if (regexValidator) {
         const pattern = new RegExp((regexValidator as RegexpAttributeConstraintModel).data ?? '');
@@ -113,8 +126,8 @@ function addDataAttributeConstraintValidators(descriptor: DataAttributeModel, va
     }
 }
 
-export function buildAttributeValidators(descriptor: DataAttributeModel | CustomAttributeModel | undefined): any {
-    const validators: any[] = [];
+export function buildAttributeValidators(descriptor: AttributeDescriptorModel | undefined): FieldValidator {
+    const validators: FieldValidator[] = [];
     if (!descriptor) return composeValidators(...validators);
 
     if (!isDataAttributeModel(descriptor) && !isCustomAttributeModel(descriptor)) {
@@ -139,9 +152,9 @@ export function buildAttributeValidators(descriptor: DataAttributeModel | Custom
 }
 
 export function getUpdatedOptionsForEditSelect(
-    valuesRecieved: { label: string; value: any }[],
-    options?: { label: string; value: any }[],
-): { label: string; value: any }[] | undefined {
+    valuesRecieved: AttributeSelectOption[],
+    options?: AttributeSelectOption[],
+): AttributeSelectOption[] | undefined {
     if (valuesRecieved?.length > 0) {
         const updatedOptions = options?.filter((option) => {
             return !valuesRecieved.some((value) => JSON.stringify(value.value) === JSON.stringify(option.value));

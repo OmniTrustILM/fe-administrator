@@ -98,7 +98,7 @@ export default function AssociateComplianceProfileDialogBody({ raProfile, availa
                                 <Select
                                     id="associate-compliance-profile-select"
                                     options={optionsForComplianceProfiles}
-                                    value={field.value}
+                                    value={field.value ?? null}
                                     onChange={(value) => field.onChange(value)}
                                     placeholder="Select Compliance profile to be associated"
                                     className={cn({

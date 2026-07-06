@@ -1,6 +1,8 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { SearchRequestModel } from 'types/certificate';
 import type { SchedulerJobDetailModel, SchedulerJobHistoryModel, SchedulerJobModel } from 'types/scheduler';
+import { resetSliceState } from 'ducks/reducerUtils';
+import type { AppState } from 'ducks';
 
 export type State = {
     schedulerJob?: SchedulerJobDetailModel;
@@ -30,11 +32,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         listSchedulerJobs: (state, action: PayloadAction<SearchRequestModel>) => {
@@ -200,7 +198,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const schedulerJob = createSelector(state, (state) => state.schedulerJob);
 const schedulerJobs = createSelector(state, (state) => state.schedulerJobs);

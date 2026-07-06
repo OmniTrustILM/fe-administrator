@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router';
 import { of } from 'rxjs';
 import { createMockStore } from 'utils/test-helpers';
 import FilterWidgetRuleAction from './index';
-import { EntityType } from 'ducks/filters';
+import { EntityType, type Filter } from 'ducks/filters';
 import { PlatformEnum } from 'types/openapi';
 import type { SearchFieldListModel } from 'types/certificate';
 import type { ExecutionItemModel } from 'types/rules';
@@ -59,7 +59,7 @@ export function FilterWidgetRuleActionTestWrapper({
     );
 
     const preloadedState = useMemo(() => {
-        const filters: { entity: EntityType; filter: any }[] = [
+        const filters: Filter[] = [
             {
                 entity,
                 filter: {

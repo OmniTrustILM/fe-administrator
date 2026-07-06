@@ -34,6 +34,8 @@ import type {
 import type { RaProfileResponseModel } from 'types/ra-profiles';
 import type { UserResponseModel } from 'types/users';
 import { downloadFileZip } from 'utils/download';
+import { resetSliceState } from 'ducks/reducerUtils';
+import type { AppState } from 'ducks';
 
 /**
  * Project a CertificateDetailResponseModel into a CertificateListResponseModel-shaped row.
@@ -221,11 +223,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         clearDeleteErrorMessages: (state, action: PayloadAction<void>) => {
@@ -1078,7 +1076,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const deleteErrorMessage = createSelector(state, (state) => state.deleteErrorMessage);
 

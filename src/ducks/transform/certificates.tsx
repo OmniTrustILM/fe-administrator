@@ -149,7 +149,7 @@ export function transformCertificateBulkDeleteResponseDtoToModel(
 }
 
 export function transformCertificateUploadModelToDto(upload: CertificateUploadModel): CertificateUploadDto {
-    return { ...upload, customAttributes: upload.customAttributes.map(transformAttributeRequestModelToDto) };
+    return { ...upload, customAttributes: upload.customAttributes.map((attr) => ({ ...attr, content: structuredClone(attr.content) })) };
 }
 
 export function transformCertificateComplianceCheckModelToDto(check: CertificateComplianceCheckModel): CertificateComplianceCheckDto {
@@ -276,8 +276,8 @@ function addOwnerNodeAndEdges(
         const user = users?.find((u) => u.username === certificate?.owner);
         const userOtherProperties: OtherProperties[] = [];
         let entityLabel = '';
-        let description;
-        let redirectUrl;
+        let description: string | undefined;
+        let redirectUrl: string | undefined;
         if (user) {
             entityLabel = user.username;
             description = user.description;

@@ -1,4 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
+import { resetSliceState } from 'ducks/reducerUtils';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type {
     CryptographicKeyRandomDataRequestModel,
@@ -52,11 +54,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         clearSignatureAttributeDescriptors: (state, action: PayloadAction<'alt' | 'normal' | undefined>) => {
@@ -213,7 +211,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const signatureAttributeDescriptors = createSelector(state, (state: State) => state.signatureAttributeDescriptors);
 const altSignatureAttributeDescriptors = createSelector(state, (state: State) => state.altSignatureAttributeDescriptors);

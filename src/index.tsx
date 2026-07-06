@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import 'reactflow/dist/style.css';

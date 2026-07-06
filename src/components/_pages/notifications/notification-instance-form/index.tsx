@@ -12,9 +12,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import Select from 'components/Select';
 import Button from 'components/Button';
-import { type AttributeDescriptorModel, type AttributeMappingModel, isCustomAttributeModel, isDataAttributeModel } from 'types/attributes';
+import {
+    type AttributeDescriptorModel,
+    type AttributeMappingModel,
+    type BaseAttributeContentModel,
+    isCustomAttributeModel,
+    isDataAttributeModel,
+} from 'types/attributes';
 import { type AttributeContentType, FunctionGroupCode } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
+import type { FieldValues, Path } from 'react-hook-form';
 import { validateAlphaNumericWithoutAccents, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import TextInput from 'components/TextInput';
@@ -27,8 +34,8 @@ interface FormValues {
     connectorUuid: string;
     kind: string;
     connectorName: string;
-    attributes: any[];
-    attributeMappings: any[];
+    attributes: Array<{ name: string; content: BaseAttributeContentModel[]; uuid: string; contentType: AttributeContentType }>;
+    attributeMappings: AttributeMappingModel[];
 }
 
 interface NotificationInstanceFormProps {
@@ -161,11 +168,11 @@ const NotificationInstanceForm = ({ notificationInstanceId, onCancel, onSuccess 
     const allFormValues = useWatch({ control });
 
     const onSubmit = (values: FormValues) => {
-        const allValues = allFormValues;
+        const allValues: FieldValues = allFormValues;
         const attributes = collectFormAttributes(
             'notification',
             [...(notificationProviderAttributesDescriptors ?? []), ...groupAttributesCallbackAttributes],
-            allValues as any,
+            allValues,
         );
 
         if (editMode && id) {
@@ -226,7 +233,7 @@ const NotificationInstanceForm = ({ notificationInstanceId, onCancel, onSuccess 
         const values = allFormValues;
         Object.keys(values || {})
             .filter((k) => k.startsWith('__attributes__notification__.'))
-            .forEach((k) => setValue(k as any, undefined));
+            .forEach((k) => setValue(k as Path<FormValues>, undefined));
     }, [dispatch, allFormValues, setValue]);
 
     const onInstanceNotificationProviderChange = (changedValue: string | undefined) => {
@@ -341,7 +348,7 @@ const NotificationInstanceForm = ({ notificationInstanceId, onCancel, onSuccess 
             return true;
         }
 
-        const attributeValues = (allFormValues as any).__attributes__notification__ || {};
+        const attributeValues = ((allFormValues as Record<string, unknown>).__attributes__notification__ ?? {}) as Record<string, unknown>;
 
         const isAttributeValueEmpty = (fieldValue: unknown): boolean => {
             if (fieldValue === null || fieldValue === undefined) return true;
@@ -349,13 +356,13 @@ const NotificationInstanceForm = ({ notificationInstanceId, onCancel, onSuccess 
             if (typeof fieldValue === 'string') return fieldValue.trim() === '';
             if (typeof fieldValue === 'object') {
                 if ('code' in fieldValue || 'language' in fieldValue) {
-                    const codeVal = (fieldValue as any).code;
+                    const codeVal = (fieldValue as { code?: unknown }).code;
                     const isCodeEmpty = codeVal === null || codeVal === undefined;
                     const isCodeStringEmpty = typeof codeVal === 'string' && codeVal.trim() === '';
                     return isCodeEmpty || isCodeStringEmpty;
                 }
                 if ('value' in fieldValue || 'label' in fieldValue) {
-                    const v = (fieldValue as any).value;
+                    const v = (fieldValue as { value?: unknown }).value;
                     return v === null || v === undefined;
                 }
                 return Object.keys(fieldValue).length === 0;
@@ -366,7 +373,7 @@ const NotificationInstanceForm = ({ notificationInstanceId, onCancel, onSuccess 
         const allDescriptors = [...notificationProviderAttributesDescriptors, ...groupAttributesCallbackAttributes];
 
         for (const descriptor of allDescriptors) {
-            if ((isDataAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) && (descriptor as any).properties?.required) {
+            if ((isDataAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) && descriptor.properties?.required) {
                 const fieldValue = attributeValues[descriptor.name];
                 if (isAttributeValueEmpty(fieldValue)) {
                     return false;

@@ -1,3 +1,5 @@
+import { resetSliceState } from 'ducks/reducerUtils';
+import type { AppState } from 'ducks';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { CustomNode } from 'components/FlowChart';
 import type { Edge } from 'reactflow';
@@ -39,16 +41,12 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         insertWidgetLock: {
             prepare: (error: AjaxError | WidgetLockErrorModel, lockWidgetName: LockWidgetNameEnum) => {
-                let payload;
+                let payload: WidgetLockModel;
                 if (error instanceof AjaxError) {
                     const widgetLockObject = getLockWidgetObject(error);
                     payload = {
@@ -156,7 +154,7 @@ export const slice = createSlice({
     },
 });
 
-const selectState = (reduxStore: any): State => reduxStore?.[slice.name];
+const selectState = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const selectWidgetLocks = createSelector(selectState, (state) => state?.widgetLocks ?? []);
 const selectGlobalModal = createSelector(selectState, (state) => state?.globalModal ?? initialState.globalModal);

@@ -7,6 +7,7 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import Widget from 'components/Widget';
 import AttributeDescriptorViewer from 'components/Attributes/AttributeDescriptorViewer';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import type { AttributeDescriptorModel } from 'types/attributes';
 import type { FunctionGroupModel } from 'types/connectors';
 import { useSelector } from 'react-redux';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
@@ -17,7 +18,7 @@ type Props = Readonly<{
     functionGroups: FunctionGroupModel[];
     currentFunctionGroup?: FunctionGroupModel;
     currentFunctionGroupKind?: string;
-    currentFunctionGroupKindAttributes?: any[];
+    currentFunctionGroupKindAttributes?: AttributeDescriptorModel[];
     isFetchingDetail: boolean;
     isReconnecting: boolean;
     isFetchingAllAttributes: boolean;

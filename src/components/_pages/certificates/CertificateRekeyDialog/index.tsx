@@ -9,7 +9,7 @@ import { actions as keyActions, selectors as keySelectors } from 'ducks/cryptogr
 import { actions as cryptographyOperationActions, selectors as cryptographyOperationSelectors } from 'ducks/cryptographic-operations';
 import { actions as tokenProfileActions, selectors as tokenProfileSelectors } from 'ducks/token-profiles';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
+import { Controller, type FieldValues, FormProvider, useForm, useWatch } from 'react-hook-form';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -99,7 +99,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
     }, [dispatch, certificate?.key?.tokenProfileUuid, certificate?.key]);
 
     const submitCallback = useCallback(
-        (values: FormValues, allValues: any) => {
+        (values: FormValues, allValues: FieldValues) => {
             if (!certificate) return;
             if (!certificate.raProfile) return;
             if (!values.uploadCsr && !values.tokenProfile) return;

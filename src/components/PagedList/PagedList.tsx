@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router';
 import { actions as listScopeActions } from 'ducks/list-scopes';
+import type { AppState } from 'ducks';
 
 import type { ApiClients } from 'src/api';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
@@ -64,7 +65,7 @@ function PagedList({
     extraFilterComponent,
 }: Readonly<Props>) {
     const dispatch = useDispatch();
-    const store = useStore();
+    const store = useStore<AppState>();
     const navigate = useNavigate();
     const location = useLocation();
 

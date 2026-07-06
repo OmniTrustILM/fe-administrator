@@ -1,7 +1,8 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { ApiClients } from '../api';
-import type { WritableDraft } from 'immer/dist/internal';
+import type { WritableDraft } from 'immer';
 import type { Observable } from 'rxjs';
+import type { ApiClients } from '../api';
+import type { AppState } from 'ducks';
 import type { SearchFieldListModel, SearchFilterModel } from 'types/certificate';
 
 export enum EntityType {
@@ -114,7 +115,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const availableFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).availableFilters);

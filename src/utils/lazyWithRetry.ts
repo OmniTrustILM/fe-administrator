@@ -1,4 +1,4 @@
-import { type ComponentType, lazy } from 'react';
+import { lazy } from 'react';
 
 // sessionStorage key holding the timestamp of the last auto-reload attempt (used as a cooldown).
 export const RELOAD_TIMESTAMP_KEY = 'chunk-reload-timestamp';
@@ -150,6 +150,6 @@ export async function loadWithReload<T>(factory: () => Promise<T>): Promise<T> {
     }
 }
 
-export function lazyWithRetry<T extends ComponentType<any>>(factory: () => Promise<{ default: T }>) {
-    return lazy(() => loadWithReload(factory));
-}
+// Mirrors React's own `lazy` signature (whose constraint is `ComponentType<any>`); reusing its
+// parameter type keeps per-route component prop typing without writing an explicit `any` here.
+export const lazyWithRetry: typeof lazy = (factory) => lazy(() => loadWithReload(factory));

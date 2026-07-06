@@ -8,14 +8,17 @@ import {
     getUpdatedOptionsForEditSelect,
     parseListValueByContentType,
 } from './attributeHelpers';
-import { AttributeContentType, AttributeConstraintType } from 'types/openapi';
+import { AttributeConstraintType, AttributeContentType, AttributeType } from 'types/openapi';
+import type { DataAttributeModel, InfoAttributeModel } from 'types/attributes';
 
-const minimalDataDescriptor = (contentType: AttributeContentType, required = false) =>
-    ({
-        type: 'data',
-        contentType,
-        properties: { required, label: 'Test', readOnly: false, visible: true, list: false, multiSelect: false },
-    }) as any;
+const minimalDataDescriptor = (contentType: AttributeContentType, required = false): DataAttributeModel => ({
+    uuid: 'coverage-uuid',
+    name: 'coverageAttr',
+    version: 2,
+    type: AttributeType.Data,
+    contentType,
+    properties: { required, label: 'Test', readOnly: false, visible: true, list: false, multiSelect: false, extensibleList: false },
+});
 
 /**
  * Mounted in the browser by attributeHelpers.spec.ts so that attributeHelpers.ts
@@ -51,18 +54,25 @@ export default function AttributeHelpersCoverageRunner() {
         getFormTypeFromAttributeContentType('unknown' as AttributeContentType);
 
         buildAttributeValidators(undefined);
-        buildAttributeValidators({ type: 'info', contentType: AttributeContentType.String, properties: {} } as any);
+        const infoDescriptor: InfoAttributeModel = {
+            uuid: 'coverage-info-uuid',
+            name: 'coverageInfo',
+            version: 2,
+            type: AttributeType.Info,
+            contentType: AttributeContentType.String,
+            content: [],
+            properties: { label: 'Info', visible: true },
+        };
+        buildAttributeValidators(infoDescriptor);
         buildAttributeValidators(minimalDataDescriptor(AttributeContentType.String, true));
         buildAttributeValidators(minimalDataDescriptor(AttributeContentType.Float, true));
-        const withRegexpConstraint = {
-            type: 'data',
-            contentType: AttributeContentType.Integer,
-            properties: { required: true, label: 'L', readOnly: false, visible: true, list: false, multiSelect: false },
+        const withRegexpConstraint: DataAttributeModel = {
+            ...minimalDataDescriptor(AttributeContentType.Integer, true),
             constraints: [
                 { type: AttributeConstraintType.RegExp, data: '^[0-9]+$', errorMessage: 'Digits' },
                 { type: AttributeConstraintType.Range, data: { from: 1, to: 10 }, errorMessage: 'Range' },
             ],
-        } as any;
+        };
         buildAttributeValidators(withRegexpConstraint);
         getRegexpConstraint(withRegexpConstraint);
 

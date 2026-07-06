@@ -14,8 +14,9 @@ import Button from 'components/Button';
 import Container from 'components/Container';
 import TextInput from 'components/TextInput';
 import Label from 'components/Label';
-import type { AttributeRequestModel } from 'types/attributes';
-import type { ConnectorResponseModel } from 'types/connectors';
+import type { AttributeRequestModel, CustomAttributeModel, DataAttributeModel } from 'types/attributes';
+import { isCustomAttributeModel, isDataAttributeModel } from 'types/attributes';
+import type { ConnectorRequestModel, ConnectorResponseModel } from 'types/connectors';
 import { AuthType, ConnectorStatus, ConnectorVersion, PlatformEnum, Resource } from 'types/openapi';
 
 import {
@@ -41,7 +42,13 @@ type ConnectorFormProps = Readonly<{
     onSuccess?: () => void;
 }>;
 
-interface FormValues {
+type ConnectorConnectInfo = {
+    version?: ConnectorVersion | string;
+    errorMessage?: string;
+    connectorUuid?: string;
+};
+
+type FormValues = {
     uuid: string;
     name: string;
     url: string;
@@ -52,7 +59,7 @@ interface FormValues {
     useProxy?: boolean;
     proxyUuid?: string;
     version: ConnectorVersion;
-}
+};
 
 export default function ConnectorForm({ connectorId, onCancel, onSuccess }: ConnectorFormProps) {
     const dispatch = useDispatch();
@@ -142,9 +149,10 @@ export default function ConnectorForm({ connectorId, onCancel, onSuccess }: Conn
     const buildAuthAttributes = useCallback(
         (values: FormValues): AttributeRequestModel[] => {
             if (!authAttributeDescriptors?.length) return [];
-            const formValues = values as Record<string, unknown>;
+            const formValues: Record<string, unknown> = values;
             return authAttributeDescriptors
-                .filter((descriptor) => {
+                .filter((descriptor): descriptor is DataAttributeModel | CustomAttributeModel => {
+                    if (!isDataAttributeModel(descriptor) && !isCustomAttributeModel(descriptor)) return false;
                     const value = formValues[descriptor.name];
                     return typeof value === 'string' && value !== '';
                 })
@@ -171,19 +179,18 @@ export default function ConnectorForm({ connectorId, onCancel, onSuccess }: Conn
                             authAttributes: buildAuthAttributes(values),
                             customAttributes: collectFormAttributes('customConnector', resourceCustomAttributes, values),
                         },
-                    } as any),
+                    }),
                 );
             } else {
-                dispatch(
-                    connectorActions.createConnector({
-                        name: values.name,
-                        url: values.url,
-                        authType: values.authenticationType as AuthType,
-                        authAttributes: buildAuthAttributes(values),
-                        customAttributes: collectFormAttributes('customConnector', resourceCustomAttributes, values),
-                        version: values.version,
-                    } as any),
-                );
+                const createRequest: ConnectorRequestModel & { version: ConnectorVersion } = {
+                    name: values.name,
+                    url: values.url,
+                    authType: values.authenticationType as AuthType,
+                    authAttributes: buildAuthAttributes(values),
+                    customAttributes: collectFormAttributes('customConnector', resourceCustomAttributes, values),
+                    version: values.version,
+                };
+                dispatch(connectorActions.createConnector(createRequest));
             }
         },
         [editMode, connector, dispatch, resourceCustomAttributes, buildAuthAttributes],
@@ -278,12 +285,12 @@ export default function ConnectorForm({ connectorId, onCancel, onSuccess }: Conn
     const selectedVersion = watchedVersion === ConnectorVersion.V1 ? ConnectorVersion.V1 : ConnectorVersion.V2;
 
     const selectedVersionInfo = useMemo(
-        () => (connectionDetails || []).find((info: any) => info?.version === selectedVersion),
+        () => (connectionDetails || []).find((info: ConnectorConnectInfo) => info?.version === selectedVersion),
         [connectionDetails, selectedVersion],
     );
 
     const selectedVersionErrorMessage = useMemo(() => {
-        const info = selectedVersionInfo as { errorMessage?: string; connectorUuid?: string } | undefined;
+        const info = selectedVersionInfo;
         const raw = info?.errorMessage;
 
         let message: string | undefined;

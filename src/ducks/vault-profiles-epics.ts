@@ -247,13 +247,12 @@ const getVaultProfileAttributes: AppEpic = (action$, state$, deps) => {
         switchMap((action) => {
             const { vaultUuid } = action.payload;
             return deps.apiClients.vaults.listVaultProfileAttributes({ uuid: vaultUuid }).pipe(
-                map((attributes: unknown) => {
-                    const list = Array.isArray(attributes) ? attributes : [];
-                    return slice.actions.getVaultProfileAttributesSuccess({
+                map((attributes) =>
+                    slice.actions.getVaultProfileAttributesSuccess({
                         vaultUuid,
-                        attributes: list.map((attr: any) => transformAttributeDescriptorDtoToModel(attr)),
-                    });
-                }),
+                        attributes: attributes.map((attr) => transformAttributeDescriptorDtoToModel(attr)),
+                    }),
+                ),
                 catchError((err) =>
                     of(
                         slice.actions.getVaultProfileAttributesFailure({

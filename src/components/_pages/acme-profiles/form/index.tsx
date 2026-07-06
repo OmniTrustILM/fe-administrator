@@ -45,7 +45,7 @@ type AcmeProfileFormProps = {
     onSuccess?: () => void;
 };
 
-interface FormValues {
+type FormValues = {
     name: string;
     description: string;
     dnsIpAddress: string;
@@ -62,7 +62,7 @@ interface FormValues {
     owner: string;
     groups: { value: string; label: string }[];
     deletedAttributes: string[];
-}
+} & Record<`__attributes__${string}`, unknown>;
 
 export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: Readonly<AcmeProfileFormProps>) {
     const dispatch = useDispatch();
@@ -124,7 +124,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             previousIdRef.current = undefined;
         }
 
-        if (editMode && acmeProfileSelector?.uuid === id) {
+        if (editMode && acmeProfileSelector && acmeProfileSelector.uuid === id) {
             setAcmeProfile(acmeProfileSelector);
             setRaProfile(acmeProfileSelector.raProfile);
         }
@@ -297,7 +297,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                 const formValues = getValues();
                 Object.keys(formValues).forEach((key) => {
                     if (key.startsWith('__attributes__issuanceAttributes__') || key.startsWith('__attributes__revocationAttributes__')) {
-                        setValue(key as any, undefined);
+                        setValue(key as `__attributes__${string}`, undefined);
                     }
                 });
                 return;
@@ -335,7 +335,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     });
 
     const allFormValues = useWatch({ control });
-    const isEqual = useMemo(() => deepEqual(defaultValues, allFormValues), [defaultValues, allFormValues]);
+    const isEqual = useMemo(() => deepEqual<unknown>(defaultValues, allFormValues), [defaultValues, allFormValues]);
 
     const isSaving = isSubmitting || isCreating || isUpdating;
 

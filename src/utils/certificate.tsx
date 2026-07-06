@@ -38,6 +38,7 @@ export const emptyCertificate: CertificateDetailResponseModel = {
     subjectAlternativeNames: {},
     privateKeyAvailability: false,
     trustedCa: false,
+    hybridCertificate: false,
 };
 
 export function formatPEM(pemString: string, csr?: boolean) {
@@ -62,7 +63,7 @@ export function formatPEM(pemString: string, csr?: boolean) {
     }
 }
 
-export function downloadFile(content: any, fileName: string) {
+export function downloadFile(content: BlobPart, fileName: string) {
     const element = document.createElement('a');
     const file = new Blob([content], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);

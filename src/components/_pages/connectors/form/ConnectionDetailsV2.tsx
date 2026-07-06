@@ -3,8 +3,28 @@ import { useMemo } from 'react';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Badge from 'components/Badge';
 
+type V2InterfaceInfo = {
+    code?: string;
+    version?: string | number;
+    features?: string[];
+};
+
+type V2ConnectorInfo = {
+    name?: string;
+    id?: string;
+    version?: string | number;
+    description?: string;
+    metadata?: Record<string, unknown>;
+};
+
+type ConnectionDetailV2Info = {
+    version?: string;
+    interfaces?: V2InterfaceInfo[];
+    connector?: V2ConnectorInfo;
+};
+
 type Props = Readonly<{
-    connectInfo?: any[];
+    connectInfo?: ConnectionDetailV2Info[];
     errorMessage?: string;
 }>;
 
@@ -36,7 +56,7 @@ const v2InterfacesHeaders: TableHeader[] = [
 
 export default function ConnectionDetailsV2({ connectInfo, errorMessage }: Props) {
     const v2ConnectInfo = useMemo(
-        () => (connectInfo || []).filter((info: any) => Array.isArray(info.interfaces) || info.connector),
+        () => (connectInfo || []).filter((info) => Array.isArray(info.interfaces) || info.connector),
         [connectInfo],
     );
 
@@ -105,7 +125,7 @@ export default function ConnectionDetailsV2({ connectInfo, errorMessage }: Props
             }
         };
 
-        return v2PrimaryInfo.interfaces.map((iface: any) => ({
+        return v2PrimaryInfo.interfaces.map((iface) => ({
             id: `${iface.code}-${iface.version}`,
             columns: [
                 toTitleCase(String(iface.code)),

@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 
 import type { AttributeDescriptorCollectionModel, AttributeDescriptorModel } from 'types/attributes';
 
@@ -13,8 +14,9 @@ import type {
     FunctionGroupModel,
     HealthModel,
 } from 'types/connectors';
-import { type AuthType, ConnectorStatus, type FunctionGroupCode } from 'types/openapi';
+import { type AuthType, type ConnectInfoDto, type ConnectorInfo, ConnectorStatus, type FunctionGroupCode } from 'types/openapi';
 import type { SearchRequestModel } from 'types/certificate';
+import { resetSliceState } from './reducerUtils';
 
 export type State = {
     checkedRows: string[];
@@ -24,11 +26,11 @@ export type State = {
     connectorAttributes?: AttributeDescriptorCollectionModel;
     connectorAuthAttributes?: AttributeDescriptorModel[];
     connectorConnectionDetails?: FunctionGroupModel[];
-    connectInfo?: any[];
-    connectorInfoV2?: any;
+    connectInfo?: ConnectInfoDto[];
+    connectorInfoV2?: ConnectorInfo;
     connectors: ConnectorResponseModel[];
 
-    callbackData: { [key: string]: any };
+    callbackData: { [key: string]: unknown };
 
     deleteErrorMessage: string;
     bulkDeleteErrorMessages: BulkActionModel[];
@@ -110,11 +112,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         setCheckedRows: (state, action: PayloadAction<{ checkedRows: string[] }>) => {
@@ -199,7 +197,7 @@ export const slice = createSlice({
             state.connectorInfoV2 = undefined;
         },
 
-        getConnectorInfoV2Success: (state, action: PayloadAction<{ info: any }>) => {
+        getConnectorInfoV2Success: (state, action: PayloadAction<{ info: ConnectorInfo }>) => {
             state.connectorInfoV2 = action.payload.info;
         },
 
@@ -225,8 +223,8 @@ export const slice = createSlice({
             action: PayloadAction<{ functionGroup: string; kind: string; attributes: AttributeDescriptorModel[] }>,
         ) => {
             state.isFetchingAllAttributes = false;
-            const connectorAttributes = (state.connectorAttributes || {}) as any;
-            const group = connectorAttributes[action.payload.functionGroup] || {};
+            const connectorAttributes: AttributeDescriptorCollectionModel = state.connectorAttributes ?? {};
+            const group = connectorAttributes[action.payload.functionGroup] ?? {};
             group[action.payload.kind] = action.payload.attributes;
             connectorAttributes[action.payload.functionGroup] = group;
             state.connectorAttributes = connectorAttributes;
@@ -411,7 +409,10 @@ export const slice = createSlice({
             state.isConnecting = true;
         },
 
-        connectConnectorSuccess: (state, action: PayloadAction<{ connectionDetails: FunctionGroupModel[]; connectInfo: any[] }>) => {
+        connectConnectorSuccess: (
+            state,
+            action: PayloadAction<{ connectionDetails: FunctionGroupModel[]; connectInfo: ConnectInfoDto[] }>,
+        ) => {
             state.isConnecting = false;
             state.connectorConnectionDetails = action.payload.connectionDetails;
             state.connectInfo = action.payload.connectInfo;
@@ -429,7 +430,7 @@ export const slice = createSlice({
 
         reconnectConnectorSuccess: (
             state,
-            action: PayloadAction<{ uuid: string; functionGroups: FunctionGroupModel[]; connectInfo?: any[] }>,
+            action: PayloadAction<{ uuid: string; functionGroups: FunctionGroupModel[]; connectInfo?: ConnectInfoDto[] }>,
         ) => {
             state.connectorConnectionDetails = action.payload.functionGroups;
             state.connectInfo = action.payload.connectInfo ?? state.connectInfo;
@@ -517,7 +518,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore.connectors;
 
 const checkedRows = createSelector(state, (state) => state.checkedRows);
 

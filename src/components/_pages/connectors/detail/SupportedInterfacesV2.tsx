@@ -2,14 +2,15 @@ import Container from 'components/Container';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Widget from 'components/Widget';
 import Badge from 'components/Badge';
+import type { ConnectorInterfaceDto } from 'types/openapi';
 
 type Props = Readonly<{
-    interfaces?: any[];
+    interfaces?: ConnectorInterfaceDto[];
     isBusy: boolean;
 }>;
 
 export default function SupportedInterfacesV2({ interfaces, isBusy }: Props) {
-    const rows: TableDataRow[] = (interfaces || []).map((iface: any) => {
+    const rows: TableDataRow[] = (interfaces || []).map((iface) => {
         const toTitleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
         const formatFeatureLabel = (feature: string) => {
@@ -36,7 +37,7 @@ export default function SupportedInterfacesV2({ interfaces, isBusy }: Props) {
                 iface.version,
                 iface.features?.length ? (
                     <div key={iface.code} className="flex flex-wrap gap-2">
-                        {iface.features.map((feature: string) => (
+                        {iface.features.map((feature) => (
                             <Badge key={feature} color="secondary">
                                 {formatFeatureLabel(feature)}
                             </Badge>

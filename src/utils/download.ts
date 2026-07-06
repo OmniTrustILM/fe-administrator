@@ -13,7 +13,7 @@ function triggerBlobDownload(blob: Blob, fileName: string) {
     URL.revokeObjectURL(url);
 }
 
-export function downloadFile(content: any, fileName: string, type?: string) {
+export function downloadFile(content: string, fileName: string, type?: string) {
     const element = document.createElement('a');
 
     const byteNumbers = new Array(content.length);

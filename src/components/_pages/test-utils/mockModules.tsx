@@ -1,27 +1,48 @@
+import type { ReactNode } from 'react';
+
 type SelectValueMap = Record<string, unknown>;
 
-export const reduxHooksMockModule = (useDispatchMock: any, useSelectorMock: any) => ({
+type MockButton = {
+    tooltip?: string;
+    icon?: ReactNode;
+    onClick?: () => void;
+};
+
+type MockDialogButton = {
+    body?: ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
+};
+
+type MockTableRow = {
+    id: string | number;
+    columns?: ReactNode[];
+};
+
+type MockSelector = (state: unknown) => unknown;
+
+export const reduxHooksMockModule = (useDispatchMock: () => unknown, useSelectorMock: (selector: MockSelector) => unknown) => ({
     useDispatch: () => useDispatchMock(),
-    useSelector: (selector: any) => useSelectorMock(selector),
+    useSelector: (selector: MockSelector) => useSelectorMock(selector),
 });
 
 export const routerLinkMockModule = () => ({
-    Link: ({ to, children }: any) => <a href={to}>{children}</a>,
+    Link: ({ to, children }: { to: string; children?: ReactNode }) => <a href={to}>{children}</a>,
 });
 
 export const badgeMockModule = () => ({
-    default: ({ children }: any) => <span>{children}</span>,
+    default: ({ children }: { children?: ReactNode }) => <span>{children}</span>,
 });
 
 export const containerMockModule = () => ({
-    default: ({ children }: any) => <div>{children}</div>,
+    default: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
 });
 
 export const widgetMockModule = () => ({
-    default: ({ title, widgetButtons, children }: any) => (
+    default: ({ title, widgetButtons, children }: { title?: string; widgetButtons?: MockButton[]; children?: ReactNode }) => (
         <div data-testid={`widget-${title || 'root'}`}>
-            {(widgetButtons || []).map((button: any) => (
-                <button key={button.tooltip ?? button.icon} title={button.tooltip} onClick={button.onClick}>
+            {(widgetButtons || []).map((button) => (
+                <button key={button.tooltip ?? String(button.icon)} title={button.tooltip} onClick={button.onClick}>
                     {button.icon}
                 </button>
             ))}
@@ -31,14 +52,26 @@ export const widgetMockModule = () => ({
 });
 
 export const dialogMockModule = () => ({
-    default: ({ isOpen, caption, body, buttons, toggle }: any) =>
+    default: ({
+        isOpen,
+        caption,
+        body,
+        buttons,
+        toggle,
+    }: {
+        isOpen?: boolean;
+        caption?: ReactNode;
+        body?: ReactNode;
+        buttons?: MockDialogButton[];
+        toggle?: () => void;
+    }) =>
         isOpen ? (
             <div data-testid="dialog">
                 <div>{caption}</div>
                 <div>{body}</div>
                 <button onClick={toggle}>toggle</button>
-                {(buttons || []).map((button: any) => (
-                    <button key={button.body} onClick={button.onClick} disabled={button.disabled}>
+                {(buttons || []).map((button) => (
+                    <button key={String(button.body)} onClick={button.onClick} disabled={button.disabled}>
                         {button.body}
                     </button>
                 ))}
@@ -47,11 +80,11 @@ export const dialogMockModule = () => ({
 });
 
 export const customTableMockModule = () => ({
-    default: ({ data }: any) => (
+    default: ({ data }: { data?: MockTableRow[] }) => (
         <div>
-            {(data || []).map((row: any) => (
+            {(data || []).map((row) => (
                 <div key={row.id} data-testid={`row-${row.id}`}>
-                    {(row.columns || []).map((column: any, index: number) => (
+                    {(row.columns || []).map((column, index) => (
                         <div key={`${row.id}-col-${index}`}>{column}</div>
                     ))}
                 </div>
@@ -61,10 +94,10 @@ export const customTableMockModule = () => ({
 });
 
 export const widgetButtonsMockModule = () => ({
-    default: ({ buttons }: any) => (
+    default: ({ buttons }: { buttons?: MockButton[] }) => (
         <div>
-            {(buttons || []).map((button: any) => (
-                <button key={button.tooltip ?? button.icon} title={button.tooltip} onClick={button.onClick}>
+            {(buttons || []).map((button) => (
+                <button key={button.tooltip ?? String(button.icon)} title={button.tooltip} onClick={button.onClick}>
                     {button.icon}
                 </button>
             ))}
@@ -73,7 +106,7 @@ export const widgetButtonsMockModule = () => ({
 });
 
 export const createSelectMockModule = (valuesById: SelectValueMap, defaultValue: unknown = 'user-1') => ({
-    default: ({ id, onChange, isMulti }: any) => (
+    default: ({ id, onChange, isMulti }: { id?: string; onChange: (value: unknown) => void; isMulti?: boolean }) => (
         <button
             data-testid={`select-${id}`}
             onClick={() => {

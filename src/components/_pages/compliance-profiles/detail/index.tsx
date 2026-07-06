@@ -11,14 +11,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from '../../../../types/openapi';
+import { ComplianceRuleAvailabilityStatus, PlatformEnum, Resource } from '../../../../types/openapi';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { capitalize } from 'utils/common-utils';
 import TabLayout from 'components/Layout/TabLayout';
-import AttributeViewer from 'components/Attributes/AttributeViewer';
-import type { AttributeResponseModel } from 'types/attributes';
+import AttributeDescriptorViewer from 'components/Attributes/AttributeDescriptorViewer';
+import type { AttributeDescriptorModel } from 'types/attributes';
+import type { TRuleGroupType } from 'types/complianceProfiles';
 import { Info } from 'lucide-react';
 import AssignedRulesAndGroup from 'components/_pages/compliance-profiles/detail/AssignedRulesAndGroup/AssignedRulesAndGroup';
 import AvailableRulesAndGroups from 'components/_pages/compliance-profiles/detail/AvailableRulesAndGroups/AvailableRulesAndGroups';
@@ -52,10 +53,10 @@ export default function ComplianceProfileDetail() {
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
     const [complianceCheck, setComplianceCheck] = useState<boolean>(false);
     const [isEntityDetailMenuOpen, setIsEntityDetailMenuOpen] = useState(false);
-    const [selectedEntityDetails, setSelectedEntityDetails] = useState<any>(null);
+    const [selectedEntityDetails, setSelectedEntityDetails] = useState<TRuleGroupType | null>(null);
     const [groupRuleAttributeData, setGroupRuleAttributeData] = useState<{
         ruleName: string;
-        attributes: AttributeResponseModel[];
+        attributes: AttributeDescriptorModel[];
     } | null>(null);
     const [availableRulesResetFunction, setAvailableRulesResetFunction] = useState<(() => void) | null>(null);
     const [assignedRulesResetFunction, setAssignedRulesResetFunction] = useState<(() => void) | null>(null);
@@ -154,7 +155,9 @@ export default function ComplianceProfileDetail() {
     }, []);
 
     const ruleDetailData: TableDataRow[] = useMemo(() => {
-        const statusColor = getComplianceProfileStatusColor(selectedEntityDetails?.availabilityStatus);
+        const statusColor = selectedEntityDetails?.availabilityStatus
+            ? getComplianceProfileStatusColor(selectedEntityDetails.availabilityStatus)
+            : undefined;
         return [
             { id: 'uuid', columns: ['UUID', selectedEntityDetails?.uuid] },
             { id: 'name', columns: ['Name', selectedEntityDetails?.name] },
@@ -178,10 +181,10 @@ export default function ComplianceProfileDetail() {
                     'Resource',
                     <span key={selectedEntityDetails?.uuid} className="inline-flex items-center gap-1">
                         {selectedEntityDetails?.resource === Resource.CertificateRequests ? (
-                            getEnumLabel(resourceEnum, selectedEntityDetails?.resource) || ''
+                            getEnumLabel(resourceEnum, selectedEntityDetails?.resource ?? '') || ''
                         ) : (
                             <Link to={`../../${selectedEntityDetails?.resource}`}>
-                                {getEnumLabel(resourceEnum, selectedEntityDetails?.resource) || ''}
+                                {getEnumLabel(resourceEnum, selectedEntityDetails?.resource ?? '') || ''}
                             </Link>
                         )}
                         <EnumValueDescription platformEnum={PlatformEnum.Resource} value={selectedEntityDetails?.resource} />
@@ -223,7 +226,9 @@ export default function ComplianceProfileDetail() {
                     'Status',
                     <Badge
                         key={selectedEntityDetails?.uuid}
-                        color={selectedEntityDetails?.availabilityStatus === 'available' ? 'success' : 'danger'}
+                        color={
+                            selectedEntityDetails?.availabilityStatus === ComplianceRuleAvailabilityStatus.Available ? 'success' : 'danger'
+                        }
                     >
                         {capitalize(selectedEntityDetails?.availabilityStatus || '')}
                     </Badge>,
@@ -234,7 +239,7 @@ export default function ComplianceProfileDetail() {
                 columns: [
                     'Resource',
                     <span key={selectedEntityDetails?.uuid} className="inline-flex items-center gap-1">
-                        {getEnumLabel(resourceEnum, selectedEntityDetails?.resource) || ''}
+                        {getEnumLabel(resourceEnum, selectedEntityDetails?.resource ?? '') || ''}
                         <EnumValueDescription platformEnum={PlatformEnum.Resource} value={selectedEntityDetails?.resource} />
                     </span>,
                 ],
@@ -280,7 +285,7 @@ export default function ComplianceProfileDetail() {
                                 onClick={() => {
                                     setGroupRuleAttributeData({
                                         ruleName: rule.name,
-                                        attributes: (rule.attributes as AttributeResponseModel[]) ?? [],
+                                        attributes: (rule.attributes as AttributeDescriptorModel[]) ?? [],
                                     });
                                 }}
                             >
@@ -316,11 +321,11 @@ export default function ComplianceProfileDetail() {
                                 content: (
                                     <>
                                         <CustomTable headers={entityDetailHeaders} data={ruleDetailData} />
-                                        {selectedEntityDetails?.conditionItems && selectedEntityDetails?.conditionItems?.length > 0 && (
+                                        {(selectedEntityDetails?.conditionItems?.length ?? 0) > 0 && (
                                             <>
                                                 <p style={{ margin: '0 0 0 5px', fontWeight: '500', fontSize: '16px' }}>Condition Items</p>
                                                 {renderConditionItems(
-                                                    selectedEntityDetails?.conditionItems,
+                                                    selectedEntityDetails?.conditionItems ?? [],
                                                     availableFilters,
                                                     platformEnums,
                                                     searchGroupEnum,
@@ -332,11 +337,17 @@ export default function ComplianceProfileDetail() {
                                     </>
                                 ),
                             },
-                            ...(selectedEntityDetails?.attributes?.length > 0
+                            ...((selectedEntityDetails?.attributes?.length ?? 0) > 0
                                 ? [
                                       {
                                           title: 'Attributes',
-                                          content: <AttributeViewer attributes={selectedEntityDetails?.attributes} />,
+                                          content: (
+                                              <AttributeDescriptorViewer
+                                                  attributeDescriptors={
+                                                      (selectedEntityDetails?.attributes as AttributeDescriptorModel[]) ?? []
+                                                  }
+                                              />
+                                          ),
                                       },
                                   ]
                                 : []),
@@ -384,9 +395,9 @@ export default function ComplianceProfileDetail() {
         if (selectedEntityDetails?.entityDetails?.entityType === 'group') {
             dispatch(
                 actions.getListComplianceGroupRules({
-                    groupUuid: selectedEntityDetails?.uuid,
-                    connectorUuid: selectedEntityDetails?.entityDetails?.connectorUuid || selectedEntityDetails?.connectorUuid,
-                    kind: selectedEntityDetails?.entityDetails?.kind || selectedEntityDetails?.kind,
+                    groupUuid: selectedEntityDetails.uuid,
+                    connectorUuid: selectedEntityDetails.entityDetails?.connectorUuid || selectedEntityDetails.connectorUuid || '',
+                    kind: selectedEntityDetails.entityDetails?.kind || selectedEntityDetails.kind || '',
                 }),
             );
         }
@@ -514,7 +525,7 @@ export default function ComplianceProfileDetail() {
                         Rule <span style={{ fontWeight: 'bold' }}>{groupRuleAttributeData?.ruleName}</span> attributes
                     </p>
                 }
-                body={<AttributeViewer attributes={groupRuleAttributeData?.attributes ?? []} />}
+                body={<AttributeDescriptorViewer attributeDescriptors={groupRuleAttributeData?.attributes ?? []} />}
                 toggle={() => setGroupRuleAttributeData(null)}
                 buttons={[]}
                 size="lg"

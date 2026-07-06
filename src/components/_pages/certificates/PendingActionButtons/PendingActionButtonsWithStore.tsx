@@ -28,7 +28,7 @@ function ButtonsAndDialogs({ certificate, compact }: Omit<PendingActionButtonsWi
 }
 
 export default function PendingActionButtonsWithStore({ preloadedState, ...props }: PendingActionButtonsWithStoreProps) {
-    const store = createMockStore(preloadedState ? ({ certificates: preloadedState } as any) : undefined);
+    const store = createMockStore(preloadedState ? ({ certificates: preloadedState } as Parameters<typeof createMockStore>[0]) : undefined);
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>

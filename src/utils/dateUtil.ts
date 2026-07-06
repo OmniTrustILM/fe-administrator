@@ -20,7 +20,7 @@ export function durationFormatter(startDate: string | null | undefined, endDate:
     }
 }
 
-export function timeFormatter(date: any): string {
+export function timeFormatter(date: number | string | Date): string {
     try {
         const dateObj = new Date(date);
 
@@ -32,13 +32,13 @@ export function timeFormatter(date: any): string {
         return days > 0 ? `${leading0(days.toString(), 2)}.${hours}:${minutes}:${seconds}` : `${hours}:${minutes}:${seconds}`;
     } catch {
         console.debug('Unable to convert the given time to date object');
-        return date;
+        return String(date);
     }
 }
 
-export function dateFormatter(date: any): string {
+export function dateFormatter(date: number | string | Date | null | undefined): string {
     try {
-        const dateObj = new Date(date);
+        const dateObj = new Date(date as number | string | Date);
 
         const year = dateObj.getFullYear().toString();
         const month = leading0((dateObj.getMonth() + 1).toString(), 2);
@@ -50,7 +50,7 @@ export function dateFormatter(date: any): string {
         return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     } catch {
         console.debug('Unable to convert the given date to date object');
-        return date;
+        return String(date);
     }
 }
 
@@ -63,7 +63,7 @@ export const getStrongFromCronExpression = (cronExpression: string | undefined) 
     return undefined;
 };
 
-export const formatTimeAgo = (input: any) => {
+export const formatTimeAgo = (input: number | string | Date) => {
     const date = input instanceof Date ? input : new Date(input);
     const formatter = new Intl.RelativeTimeFormat('en');
     const ranges = {

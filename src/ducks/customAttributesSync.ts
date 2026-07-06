@@ -1,4 +1,4 @@
-import type { ActionReducerMapBuilder, PayloadAction } from '@reduxjs/toolkit';
+import type { ActionReducerMapBuilder, Draft, PayloadAction } from '@reduxjs/toolkit';
 import type { AttributeResponseModel } from 'types/attributes';
 import type { Resource } from 'types/openapi';
 import { slice as customAttributesSlice } from './customAttributes';
@@ -21,9 +21,9 @@ type ProfileDetail = { uuid: string; customAttributes?: AttributeResponseModel[]
 export function attachCustomAttributesSync<S>(
     builder: ActionReducerMapBuilder<S>,
     resource: Resource,
-    selectProfileDetail: (state: S) => ProfileDetail | undefined,
+    selectProfileDetail: (state: Draft<S>) => ProfileDetail | undefined,
 ): void {
-    const sync = (state: S, action: PayloadAction<CustomAttributesContentPayload>) => {
+    const sync = (state: Draft<S>, action: PayloadAction<CustomAttributesContentPayload>) => {
         const profile = selectProfileDetail(state);
         if (profile && action.payload.resource === resource && profile.uuid === action.payload.resourceUuid) {
             profile.customAttributes = action.payload.customAttributes;

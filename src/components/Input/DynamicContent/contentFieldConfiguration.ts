@@ -2,7 +2,7 @@ import { AttributeContentType } from 'types/openapi';
 import { validateFloat, validateInteger, validateRequired } from 'utils/validators';
 
 export const ContentFieldConfiguration: {
-    [key: string]: { validators?: ((value: any) => undefined | string)[]; type: string; initial: string | boolean | number };
+    [key: string]: { validators?: ((value: unknown) => undefined | string)[]; type: string; initial: string | boolean | number };
 } = {
     [AttributeContentType.Text]: {
         validators: [],

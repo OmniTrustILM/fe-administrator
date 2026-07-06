@@ -10,7 +10,9 @@ import {
     ComplianceStatus,
     PlatformEnum,
 } from 'types/openapi';
-import type { CertificateListResponseModel, CertificateDetailResponseModel } from 'types/certificate';
+import type { CertificateListResponseModel, CertificateDetailResponseModel, SearchFilterModel } from 'types/certificate';
+import type { EnumItemModel } from 'types/enums';
+import type { Dispatch } from 'redux';
 import type { TableDataRow } from 'components/CustomTable';
 import { EnumValueDescription } from 'components/EnumDescription';
 import Tooltip from 'components/Tooltip';
@@ -18,15 +20,17 @@ import CertificateStatus from './CertificateStatus';
 import PendingActionButtons from './PendingActionButtons';
 import type { PendingAction } from './PendingActionButtons/types';
 
+type PlatformEnumMap = { [key: string]: EnumItemModel } | undefined;
+
 export interface BuildCertificateRowColumnsOpts {
     isLinkDisabled: boolean;
     selectCertsOnly: boolean;
-    currentFilters: any;
-    dispatch: any;
+    currentFilters: SearchFilterModel[];
+    dispatch: Dispatch;
     dateFormatter: (d: Date) => string;
     /** Enum map from platform enum selector (e.g. EnumItemDto / EnumItemModel) */
-    certificateTypeEnum: any;
-    getEnumLabel: (e: any, key: string) => string;
+    certificateTypeEnum: PlatformEnumMap;
+    getEnumLabel: (e: PlatformEnumMap, key: string) => string;
     onPendingAction: (action: PendingAction) => void;
 }
 
@@ -80,8 +84,8 @@ function buildIssuerCell(certificate: CertificateListResponseModel, isLinkDisabl
 
 function buildCertTypeCell(
     certificate: CertificateListResponseModel,
-    certificateTypeEnum: any,
-    getEnumLabel: (e: any, k: string) => string,
+    certificateTypeEnum: PlatformEnumMap,
+    getEnumLabel: (e: PlatformEnumMap, k: string) => string,
 ) {
     if (!certificate.certificateType) return '';
     return (
@@ -153,8 +157,8 @@ export function buildCertificateRowColumns(
 
 function buildQcStatementRows(
     qc: NonNullable<CertificateDetailResponseModel['qcStatements']>,
-    qcTypeEnum: any,
-    getEnumLabel: (e: any, key: string) => string,
+    qcTypeEnum: PlatformEnumMap,
+    getEnumLabel: (e: PlatformEnumMap, key: string) => string,
 ): TableDataRow[] {
     const rows: TableDataRow[] = [
         {
@@ -212,9 +216,9 @@ export function buildCertificateDetailBaseRows(
     certificate: CertificateDetailResponseModel,
     validationResult: CertificateValidationResultDto | undefined,
     isCertificateArchived: boolean,
-    enums: { certificateKeyUsage: any; qcType: any },
+    enums: { certificateKeyUsage: PlatformEnumMap; qcType: PlatformEnumMap },
     dateFormatter: (d: Date) => string,
-    getEnumLabel: (e: any, key: string) => string,
+    getEnumLabel: (e: PlatformEnumMap, key: string) => string,
     onPendingAction: (action: PendingAction) => void,
 ): TableDataRow[] {
     const rows: TableDataRow[] = [

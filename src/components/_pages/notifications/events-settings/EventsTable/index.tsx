@@ -15,7 +15,7 @@ import Dialog from 'components/Dialog';
 import { useForm, Controller, FormProvider, useWatch } from 'react-hook-form';
 import Button from 'components/Button';
 import ProgressButton from 'components/ProgressButton';
-import Select from 'components/Select';
+import Select, { type OptionValue } from 'components/Select';
 import { EnumColumnDescription } from 'components/EnumDescription';
 import { Edit } from 'lucide-react';
 import TriggerEditorWidget from 'components/TriggerEditorWidget';
@@ -370,11 +370,12 @@ const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
                                             label="Event"
                                             options={eventOptions}
                                             value={field.value?.value ?? ''}
-                                            onChange={(value: string | number) => {
+                                            onChange={(value: OptionValue | { value: OptionValue; label: string } | null) => {
+                                                if (typeof value !== 'string') return;
                                                 const selectedOption = eventOptions.find((opt) => opt.value === value);
                                                 if (selectedOption) {
                                                     field.onChange(selectedOption);
-                                                    const producedResource = getResourceEventModel(String(value))?.producedResource;
+                                                    const producedResource = getResourceEventModel(value)?.producedResource;
 
                                                     if (producedResource) {
                                                         setValue('resource', {

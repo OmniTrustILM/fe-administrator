@@ -15,7 +15,7 @@ import Container from 'components/Container';
 import Checkbox from 'components/Checkbox';
 import TextInput from 'components/TextInput';
 import type { CustomAttributeCreateRequestModel } from 'types/customAttributes';
-import { AttributeContentType, PlatformEnum, ProtectionLevel } from 'types/openapi';
+import { AttributeContentType, PlatformEnum, ProtectionLevel, type Resource } from 'types/openapi';
 import { validateAlphaNumericWithSpecialChars, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
@@ -49,7 +49,7 @@ export default function CustomAttributeForm({ customAttributeId, onCancel, onSuc
     );
 
     type FormValues = Omit<CustomAttributeCreateRequestModel, 'resources'> & {
-        resources?: Array<{ label: string; value: string }>;
+        resources?: Array<{ label: string; value: Resource }>;
         extensibleList?: boolean;
     };
     const defaultValuesCreate: FormValues = useMemo(
@@ -105,7 +105,7 @@ export default function CustomAttributeForm({ customAttributeId, onCancel, onSuc
 
     const onSubmit = useCallback(
         (values: FormValues) => {
-            const valuesToSubmit = { ...values, resources: values.resources?.map((r: any) => r.value) };
+            const valuesToSubmit = { ...values, resources: values.resources?.map((r) => r.value) };
             if (editMode) {
                 dispatch(
                     actions.updateCustomAttribute({

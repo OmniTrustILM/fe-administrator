@@ -5,12 +5,12 @@ import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 
 export type ReactFlowUITest = {
     flowChartNodes: Array<{ id: string; parentId?: string; hidden?: boolean; position?: { x: number; y: number } }>;
-    flowChartEdges: any[];
+    flowChartEdges: unknown[];
     expandedHiddenNodeId?: string;
 };
 
 export type UserInterfaceTestState = {
-    widgetLocks: any[];
+    widgetLocks: unknown[];
     globalModal: {
         title?: string;
         size: 'sm' | 'md' | 'lg' | 'xl';
@@ -55,42 +55,44 @@ function userInterfaceTestReducer(
     state: UserInterfaceTestState = userInterfaceTestInitialState,
     action: UnknownAction,
 ): UserInterfaceTestState {
-    const a = action as { type: string; payload?: any };
+    const a = action as { type: string; payload?: unknown };
     if (a.type === 'userInterface/showGlobalModal' && a.payload) {
-        return { ...state, globalModal: a.payload };
+        return { ...state, globalModal: a.payload as UserInterfaceTestState['globalModal'] };
     }
     if (a.type === 'userInterface/resetState') {
         return { ...userInterfaceTestInitialState };
     }
     if (a.type === 'userInterface/setInitiateAttributeCallback') {
-        return { ...state, initiateAttributeCallback: a.payload };
+        return { ...state, initiateAttributeCallback: a.payload as boolean | undefined };
     }
     if (a.type === 'userInterface/setAttributeCallbackValue') {
-        return { ...state, attributeCallbackValue: a.payload };
+        return { ...state, attributeCallbackValue: a.payload as string | undefined };
     }
     if (a.type === 'userInterface/clearAttributeCallbackValue') {
         return { ...state, attributeCallbackValue: undefined };
     }
     if (a.type === 'userInterface/updateReactFlowNodes' && a.payload && state.reactFlowUI) {
-        return { ...state, reactFlowUI: { ...state.reactFlowUI, flowChartNodes: a.payload } };
+        return { ...state, reactFlowUI: { ...state.reactFlowUI, flowChartNodes: a.payload as ReactFlowUITest['flowChartNodes'] } };
     }
     if (a.type === 'userInterface/updateReactFlowEdges' && a.payload && state.reactFlowUI) {
-        return { ...state, reactFlowUI: { ...state.reactFlowUI, flowChartEdges: a.payload } };
+        return { ...state, reactFlowUI: { ...state.reactFlowUI, flowChartEdges: a.payload as unknown[] } };
     }
     if (a.type === 'userInterface/setReactFlowUI') {
-        return { ...state, reactFlowUI: a.payload };
+        return { ...state, reactFlowUI: a.payload as ReactFlowUITest | undefined };
     }
     if (a.type === 'userInterface/clearReactFlowUI') {
         return { ...state, reactFlowUI: undefined };
     }
     if (a.type === 'userInterface/setShowHiddenNodes') {
+        const expandedHiddenNodeId = a.payload as string | undefined;
         const reactFlowUI = state.reactFlowUI
-            ? { ...state.reactFlowUI, expandedHiddenNodeId: a.payload }
-            : { flowChartNodes: [], flowChartEdges: [], expandedHiddenNodeId: a.payload };
+            ? { ...state.reactFlowUI, expandedHiddenNodeId }
+            : { flowChartNodes: [], flowChartEdges: [], expandedHiddenNodeId };
         return { ...state, reactFlowUI };
     }
     if (a.type === 'userInterface/deleteNode' && a.payload && state.reactFlowUI) {
-        const flowChartNodes = state.reactFlowUI.flowChartNodes.filter((node) => node.id !== a.payload);
+        const nodeId = a.payload as string;
+        const flowChartNodes = state.reactFlowUI.flowChartNodes.filter((node) => node.id !== nodeId);
         return { ...state, reactFlowUI: { ...state.reactFlowUI, flowChartNodes } };
     }
     return state;
@@ -108,9 +110,9 @@ export type FiltersTestState = {
     filters: Array<{
         entity: number;
         filter: {
-            availableFilters: any[];
-            currentFilters: any[];
-            preservedFilters: any[];
+            availableFilters: unknown[];
+            currentFilters: unknown[];
+            preservedFilters: unknown[];
             isFetchingFilters: boolean;
         };
     }>;
@@ -121,19 +123,23 @@ const filtersTestInitialState: FiltersTestState = {
 };
 
 function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, action: UnknownAction): FiltersTestState {
-    const a = action as { type: string; payload?: any };
+    const a = action as {
+        type: string;
+        payload?: { entity: number; availableFilters?: unknown[]; currentFilters?: unknown[]; preservedFilters?: unknown[] };
+    };
     if (a.type === 'filters/getAvailableFilters') {
         return state;
     }
     if (a.type === 'filters/getAvailableFiltersSuccess' && a.payload) {
-        const idx = state.filters.findIndex((f) => f.entity === a.payload.entity);
+        const payload = a.payload;
+        const idx = state.filters.findIndex((f) => f.entity === payload.entity);
         const filter =
             idx >= 0
                 ? state.filters[idx].filter
                 : { availableFilters: [], currentFilters: [], preservedFilters: [], isFetchingFilters: false };
         const next = {
-            entity: a.payload.entity,
-            filter: { ...filter, availableFilters: a.payload.availableFilters ?? [], isFetchingFilters: false },
+            entity: payload.entity,
+            filter: { ...filter, availableFilters: payload.availableFilters ?? [], isFetchingFilters: false },
         };
         if (idx >= 0) {
             return {
@@ -143,7 +149,8 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         return { filters: [...state.filters, next] };
     }
     if (a.type === 'filters/getAvailableFiltersFailure' && a.payload) {
-        const idx = state.filters.findIndex((f) => f.entity === a.payload.entity);
+        const payload = a.payload;
+        const idx = state.filters.findIndex((f) => f.entity === payload.entity);
         if (idx < 0) return state;
         const f = state.filters[idx];
         return {
@@ -153,12 +160,13 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         };
     }
     if (a.type === 'filters/setCurrentFilters' && a.payload) {
-        const idx = state.filters.findIndex((f) => f.entity === a.payload.entity);
+        const payload = a.payload;
+        const idx = state.filters.findIndex((f) => f.entity === payload.entity);
         const filter =
             idx >= 0
                 ? state.filters[idx].filter
                 : { availableFilters: [], currentFilters: [], preservedFilters: [], isFetchingFilters: false };
-        const next = { entity: a.payload.entity, filter: { ...filter, currentFilters: a.payload.currentFilters ?? [] } };
+        const next = { entity: payload.entity, filter: { ...filter, currentFilters: payload.currentFilters ?? [] } };
         if (idx >= 0) {
             return {
                 filters: state.filters.slice(0, idx).concat([next], state.filters.slice(idx + 1)),
@@ -167,12 +175,13 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         return { filters: [...state.filters, next] };
     }
     if (a.type === 'filters/setPreservedFilters' && a.payload) {
-        const idx = state.filters.findIndex((f) => f.entity === a.payload.entity);
+        const payload = a.payload;
+        const idx = state.filters.findIndex((f) => f.entity === payload.entity);
         const filter =
             idx >= 0
                 ? state.filters[idx].filter
                 : { availableFilters: [], currentFilters: [], preservedFilters: [], isFetchingFilters: false };
-        const next = { entity: a.payload.entity, filter: { ...filter, preservedFilters: a.payload.preservedFilters ?? [] } };
+        const next = { entity: payload.entity, filter: { ...filter, preservedFilters: payload.preservedFilters ?? [] } };
         if (idx >= 0) {
             return {
                 filters: state.filters.slice(0, idx).concat([next], state.filters.slice(idx + 1)),
@@ -188,7 +197,7 @@ function enumsTestReducer(state: EnumsTestState | undefined, _action: UnknownAct
 }
 
 export type InfoTestState = {
-    platformInfo?: any;
+    platformInfo?: unknown;
     isFetching: boolean;
 };
 
@@ -212,7 +221,7 @@ function infoTestReducer(state: InfoTestState | undefined, action: UnknownAction
 }
 
 export type NotificationsTestState = {
-    overviewNotifications: any[];
+    overviewNotifications: unknown[];
     isFetchingOverview: boolean;
 };
 
@@ -229,7 +238,7 @@ export type AuthTestState = {
     profile?: {
         username: string;
         permissions?: {
-            allowedListings?: any[];
+            allowedListings?: unknown[];
         };
     };
 };
@@ -248,9 +257,9 @@ function authTestReducer(state: AuthTestState | undefined, _action: UnknownActio
 }
 
 export type CustomAttributesTestState = {
-    resourceCustomAttributes: any[];
-    resourceCustomAttributesContents: Array<{ resource: string; resourceUuid: string; customAttributes: any[] }>;
-    secondaryResourceCustomAttributes: any[];
+    resourceCustomAttributes: unknown[];
+    resourceCustomAttributesContents: Array<{ resource: string; resourceUuid: string; customAttributes: unknown[] }>;
+    secondaryResourceCustomAttributes: unknown[];
     isFetchingResourceCustomAttributes: boolean;
     isUpdatingContent: boolean;
 };
@@ -267,33 +276,34 @@ function customAttributesTestReducer(
     state: CustomAttributesTestState = customAttributesTestInitialState,
     action: UnknownAction,
 ): CustomAttributesTestState {
-    const a = action as { type: string; payload?: any };
+    const a = action as { type: string; payload?: unknown };
     switch (a.type) {
         case 'customAttributes/listResourceCustomAttributes':
             return { ...state, isFetchingResourceCustomAttributes: true };
         case 'customAttributes/listResourceCustomAttributesSuccess':
             return {
                 ...state,
-                resourceCustomAttributes: a.payload ?? [],
+                resourceCustomAttributes: (a.payload as unknown[]) ?? [],
                 isFetchingResourceCustomAttributes: false,
             };
         case 'customAttributes/listResourceCustomAttributesFailure':
             return { ...state, isFetchingResourceCustomAttributes: false };
         case 'customAttributes/loadCustomAttributeContent': {
-            if (!a.payload) return state;
+            const payload = a.payload as CustomAttributesTestState['resourceCustomAttributesContents'][number] | undefined;
+            if (!payload) return state;
             const loadIdx = state.resourceCustomAttributesContents.findIndex(
-                (c) => c.resource === a.payload.resource && c.resourceUuid === a.payload.resourceUuid,
+                (c) => c.resource === payload.resource && c.resourceUuid === payload.resourceUuid,
             );
             if (loadIdx === -1) {
                 return {
                     ...state,
-                    resourceCustomAttributesContents: [...state.resourceCustomAttributesContents, a.payload],
+                    resourceCustomAttributesContents: [...state.resourceCustomAttributesContents, payload],
                 };
             }
             return {
                 ...state,
                 resourceCustomAttributesContents: state.resourceCustomAttributesContents.map((c, i) =>
-                    i === loadIdx ? { ...c, customAttributes: a.payload.customAttributes } : c,
+                    i === loadIdx ? { ...c, customAttributes: payload.customAttributes } : c,
                 ),
             };
         }
@@ -313,7 +323,7 @@ function customAttributesTestReducer(
 }
 
 export type ConnectorsTestState = {
-    callbackData: { [key: string]: any };
+    callbackData: { [key: string]: unknown };
     isRunningCallback: { [key: string]: boolean };
 };
 
@@ -323,7 +333,7 @@ const connectorsTestInitialState: ConnectorsTestState = {
 };
 
 function connectorsTestReducer(state: ConnectorsTestState = connectorsTestInitialState, action: UnknownAction): ConnectorsTestState {
-    const a = action as { type: string; payload?: any };
+    const a = action as { type: string; payload?: { callbackId: string; data?: unknown } };
     if (a.type === 'connectors/clearCallbackData') {
         return { ...state, callbackData: {} };
     }
@@ -354,7 +364,7 @@ function connectorsTestReducer(state: ConnectorsTestState = connectorsTestInitia
 }
 
 export type SecretsTestState = {
-    syncVaultProfileAttributeDescriptors: any[];
+    syncVaultProfileAttributeDescriptors: unknown[];
     isFetchingSyncVaultProfileAttributes: boolean;
 };
 
@@ -368,7 +378,7 @@ function secretsTestReducer(state: SecretsTestState | undefined, _action: Unknow
 }
 
 export type VaultProfilesTestState = {
-    vaultProfiles: any[];
+    vaultProfiles: unknown[];
 };
 
 const vaultProfilesTestInitialState: VaultProfilesTestState = {
@@ -393,7 +403,18 @@ function tablePaginationTestReducer(
     state: TablePaginationTestState = tablePaginationTestInitialState,
     action: UnknownAction,
 ): TablePaginationTestState {
-    const a = action as { type: string; payload?: any };
+    const a = action as {
+        type: string;
+        payload?: {
+            key?: string;
+            page: number;
+            pageSize: number;
+            search?: string;
+            sortColumn?: string;
+            sortDirection?: 'asc' | 'desc';
+            rootRoute?: string;
+        };
+    };
 
     if (a.type === 'tablePagination/setPagination' && a.payload?.key) {
         return {
@@ -506,21 +527,25 @@ function updatePaging(state: PagingsTestState, entity: number, fn: (p: PagingObj
 }
 
 function pagingsTestReducer(state: PagingsTestState = pagingsTestInitialState, action: UnknownAction): PagingsTestState {
-    const a = action as { type: string; payload?: any };
-    if (a.type === 'pagings/list') return updatePaging(state, a.payload, (p) => ({ ...p, isFetchingList: true }));
+    const a = action as {
+        type: string;
+        payload?: number | { entity: number; totalItems?: number; checkedRows?: string[]; pageNumber?: number; pageSize?: number };
+    };
+    const data = a.payload as { entity: number; totalItems?: number; checkedRows?: string[]; pageNumber?: number; pageSize?: number };
+    if (a.type === 'pagings/list') return updatePaging(state, a.payload as number, (p) => ({ ...p, isFetchingList: true }));
     if (a.type === 'pagings/listSuccess')
-        return updatePaging(state, a.payload?.entity, (p) => ({ ...p, isFetchingList: false, totalItems: a.payload?.totalItems ?? 0 }));
-    if (a.type === 'pagings/listFailure') return updatePaging(state, a.payload, (p) => ({ ...p, isFetchingList: false }));
+        return updatePaging(state, data.entity, (p) => ({ ...p, isFetchingList: false, totalItems: data.totalItems ?? 0 }));
+    if (a.type === 'pagings/listFailure') return updatePaging(state, a.payload as number, (p) => ({ ...p, isFetchingList: false }));
     if (a.type === 'pagings/setCheckedRows')
-        return updatePaging(state, a.payload?.entity, (p) => ({ ...p, checkedRows: a.payload?.checkedRows ?? [] }));
+        return updatePaging(state, data.entity, (p) => ({ ...p, checkedRows: data.checkedRows ?? [] }));
     if (a.type === 'pagings/setPagination')
-        return updatePaging(state, a.payload?.entity, (p) => ({
+        return updatePaging(state, data.entity, (p) => ({
             ...p,
-            pageNumber: a.payload?.pageNumber ?? p.pageNumber,
-            pageSize: a.payload?.pageSize ?? p.pageSize,
+            pageNumber: data.pageNumber ?? p.pageNumber,
+            pageSize: data.pageSize ?? p.pageSize,
         }));
     if (a.type === 'pagings/resetPaging')
-        return updatePaging(state, a.payload?.entity, (p) => ({ ...p, pageNumber: 1, pageSize: 10, checkedRows: [] }));
+        return updatePaging(state, data.entity, (p) => ({ ...p, pageNumber: 1, pageSize: 10, checkedRows: [] }));
     return state;
 }
 
@@ -555,7 +580,7 @@ function certificatesTestReducer(state: CertificatesTestState | undefined, _acti
 }
 
 export type UtilsCertificateTestState = {
-    parsedCertificate: any;
+    parsedCertificate: unknown;
 };
 
 const utilsCertificateTestInitialState: UtilsCertificateTestState = {
@@ -567,7 +592,7 @@ function utilsCertificateTestReducer(state: UtilsCertificateTestState | undefine
 }
 
 export type UtilsActuatorTestState = {
-    health: any;
+    health: unknown;
 };
 
 const utilsActuatorTestInitialState: UtilsActuatorTestState = {
@@ -579,9 +604,9 @@ function utilsActuatorTestReducer(state: UtilsActuatorTestState | undefined, _ac
 }
 
 export type EventHistoryTestState = {
-    eventHistory?: any;
+    eventHistory?: unknown;
     isFetchingEventHistory: boolean;
-    objectEventHistory?: any;
+    objectEventHistory?: unknown;
     isFetchingObjectEventHistory: boolean;
 };
 
@@ -600,7 +625,7 @@ type SigningRecordsDashboardTestState = {
     isFetching: boolean;
     isFetchingSeries: boolean;
     period: string;
-    statistics?: any;
+    statistics?: unknown;
 };
 
 const signingRecordsDashboardTestInitialState: SigningRecordsDashboardTestState = {

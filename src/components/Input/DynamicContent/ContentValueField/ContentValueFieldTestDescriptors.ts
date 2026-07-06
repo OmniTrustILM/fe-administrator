@@ -15,6 +15,7 @@ export function buildDescriptor(overrides: Partial<CustomAttributeModel> = {}): 
     const base: CustomAttributeModel = {
         uuid: 'test-uuid',
         name: 'testAttr',
+        version: 1,
         type: AttributeType.Custom,
         contentType: AttributeContentType.String,
         content: [],

@@ -34,6 +34,7 @@ import {
 } from 'types/openapi';
 import { isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
 import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
+import { transformAttributeDescriptorDtoToModel } from 'ducks/transform/attributes';
 import { validateAlphaNumericWithoutAccents, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
@@ -168,10 +169,10 @@ export default function SigningProfileForm() {
     const signingCertificates = useSelector(signingProfileSelectors.signingCertificates);
     const isFetchingSigningCertificates = useSelector(signingProfileSelectors.isFetchingSigningCertificates);
 
-    const signingOperationAttributeDescriptors = useSelector(signingProfileSelectors.signingOperationAttributeDescriptors);
+    const signingOperationAttributeDescriptorsDto = useSelector(signingProfileSelectors.signingOperationAttributeDescriptors);
     const isFetchingSignatureAttributes = useSelector(signingProfileSelectors.isFetchingSignatureAttributes);
 
-    const signatureFormattingConnectorAttributeDescriptors = useSelector(
+    const signatureFormattingConnectorAttributeDescriptorsDto = useSelector(
         signingProfileSelectors.signatureFormattingConnectorAttributeDescriptors,
     );
     const isFetchingSignatureFormattingConnectorAttributes = useSelector(
@@ -181,6 +182,15 @@ export default function SigningProfileForm() {
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const multipleResourceCustomAttributes = useSelector(
         customAttributesSelectors.multipleResourceCustomAttributes([Resource.SigningProfiles]),
+    );
+
+    const signingOperationAttributeDescriptors = useMemo(
+        () => signingOperationAttributeDescriptorsDto.map(transformAttributeDescriptorDtoToModel),
+        [signingOperationAttributeDescriptorsDto],
+    );
+    const signatureFormattingConnectorAttributeDescriptors = useMemo(
+        () => signatureFormattingConnectorAttributeDescriptorsDto.map(transformAttributeDescriptorDtoToModel),
+        [signatureFormattingConnectorAttributeDescriptorsDto],
     );
 
     // ── Local State ────────────────────────────────────────────────────────────
@@ -273,6 +283,7 @@ export default function SigningProfileForm() {
             workflowType: WORKFLOW_TYPE,
             signatureFormattingConnectorUuid: '',
             qualifiedTimestamp: false,
+            validateTokenSignature: false,
             timeQualityConfigurationUuid: '',
             defaultPolicyId: '',
             allowedDigestAlgorithms: [],
@@ -366,8 +377,9 @@ export default function SigningProfileForm() {
     const showAccuracyWarning =
         Boolean(qualifiedTimestampValue) && selectedTqcAccuracySeconds !== undefined && selectedTqcAccuracySeconds > 1;
     const signingOperationAttributes = useMemo(() => {
-        if (editMode && isStaticKeyManagedSigning(signingProfile?.signingScheme || {})) {
-            return signingProfile?.signingScheme.signingOperationAttributes;
+        const sc = signingProfile?.signingScheme;
+        if (editMode && sc && isStaticKeyManagedSigning(sc)) {
+            return sc.signingOperationAttributes;
         }
         return undefined;
     }, [editMode, signingProfile?.signingScheme]);
@@ -411,7 +423,7 @@ export default function SigningProfileForm() {
                     : [],
             signingScheme: sc?.signingScheme || SigningScheme.Managed,
             managedSigningType: isStaticKeyManagedSigning(sc) ? sc.managedSigningType : ManagedSigningType.StaticKey,
-            certificateUuid: isStaticKeyManagedSigning(sc) ? sc.certificateUuid || (sc as any).certificate?.uuid || '' : '',
+            certificateUuid: isStaticKeyManagedSigning(sc) ? sc.certificate?.uuid || '' : '',
             recordingEnabled: rp?.recordingEnabled ?? false,
             recordRequestMetadata: rp?.recordRequestMetadata ?? false,
             recordSignature: rp?.recordSignature ?? false,
@@ -430,7 +442,7 @@ export default function SigningProfileForm() {
 
             // Restore policy IDs
             const wf = signingProfile?.workflow;
-            const existingPolicies: string[] = isTimestampingWorkflow(wf) ? (wf.allowedPolicyIds ?? []) : [];
+            const existingPolicies: string[] = wf && isTimestampingWorkflow(wf) ? (wf.allowedPolicyIds ?? []) : [];
             setAllowedPolicyIds(existingPolicies.map((p) => ({ id: nextPolicyIdKey.current++, value: p })));
 
             lastResetIdRef.current = id;
@@ -454,13 +466,10 @@ export default function SigningProfileForm() {
         );
     }, [dispatch, signatureFormattingConnectorUuidValue, editMode, id]);
 
-    const signatureFormattingConnectorAttributes = useMemo(
-        () =>
-            editMode && isTimestampingWorkflow(signingProfile?.workflow)
-                ? signingProfile?.workflow.signatureFormattingConnectorAttributes
-                : undefined,
-        [editMode, signingProfile?.workflow],
-    );
+    const signatureFormattingConnectorAttributes = useMemo(() => {
+        const wf = signingProfile?.workflow;
+        return editMode && wf && isTimestampingWorkflow(wf) ? wf.signatureFormattingConnectorAttributes : undefined;
+    }, [editMode, signingProfile?.workflow]);
 
     // ── Policy ID helpers ─────────────────────────────────────────────────────
 
@@ -651,9 +660,8 @@ export default function SigningProfileForm() {
                         options={connectorOptions}
                         placeholder="Select a connector…"
                         isClearable
-                        isLoading={isFetchingConnectors}
+                        disabled={isFetchingConnectors}
                         placement="bottom"
-                        invalid={fieldState.error && fieldState.isTouched}
                         error={getFieldErrorMessage(fieldState)}
                     />
                 )}
@@ -664,7 +672,7 @@ export default function SigningProfileForm() {
                     {signatureFormattingConnectorAttributeDescriptors.length > 0 ? (
                         <AttributeEditor
                             id="signatureFormattingConnectorAttrs"
-                            attributeDescriptors={signatureFormattingConnectorAttributeDescriptors as any}
+                            attributeDescriptors={signatureFormattingConnectorAttributeDescriptors}
                             attributes={signatureFormattingConnectorAttributes}
                         />
                     ) : (
@@ -715,7 +723,6 @@ export default function SigningProfileForm() {
                 rules={buildValidationRules([(value) => (getValues('qualifiedTimestamp') ? validateRequired()(value) : undefined)])}
                 render={({ field, fieldState }) => (
                     <Select
-                        {...field}
                         id="timeQualityConfigurationUuid"
                         required={qualifiedTimestampValue}
                         label={qualifiedTimestampValue ? 'Time Quality Configuration' : 'Time Quality Configuration (optional)'}
@@ -729,9 +736,8 @@ export default function SigningProfileForm() {
                                 : null
                         }
                         onChange={field.onChange}
-                        isLoading={isFetchingTqcList}
+                        disabled={isFetchingTqcList}
                         isClearable
-                        invalid={fieldState.error && fieldState.isTouched}
                         error={getFieldErrorMessage(fieldState)}
                     />
                 )}
@@ -918,10 +924,9 @@ export default function SigningProfileForm() {
                                 onChange={field.onChange}
                                 options={certificateOptions}
                                 placeholder="Select a certificate"
-                                isLoading={isFetchingSigningCertificates}
+                                disabled={isFetchingSigningCertificates}
                                 placement="bottom"
                                 required
-                                invalid={fieldState.error && fieldState.isTouched}
                                 error={getFieldErrorMessage(fieldState)}
                             />
                         )}
@@ -932,7 +937,7 @@ export default function SigningProfileForm() {
                             {signingOperationAttributeDescriptors.length > 0 ? (
                                 <AttributeEditor
                                     id="signingOperationAttrs"
-                                    attributeDescriptors={signingOperationAttributeDescriptors as any}
+                                    attributeDescriptors={signingOperationAttributeDescriptors}
                                     attributes={signingOperationAttributes}
                                 />
                             ) : (

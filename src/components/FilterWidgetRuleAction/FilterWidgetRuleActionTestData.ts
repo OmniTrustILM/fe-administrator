@@ -1,30 +1,39 @@
 import type { SearchFieldListModel } from 'types/certificate';
-import { AttributeContentType, type FilterFieldSource } from 'types/openapi';
+import { AttributeContentType, FilterFieldSource, FilterFieldType } from 'types/openapi';
 
-export function makeSearchFieldList(source: FilterFieldSource, fields: Record<string, any>[]): SearchFieldListModel[] {
-    return [{ filterFieldSource: source, searchFieldData: fields.map((f) => ({ conditions: [], ...f })) }] as SearchFieldListModel[];
+type SearchFieldData = NonNullable<SearchFieldListModel['searchFieldData']>[number];
+
+export function makeSearchFieldList(source: FilterFieldSource, fields: Record<string, unknown>[]): SearchFieldListModel[] {
+    const searchFieldData: SearchFieldData[] = fields.map((f) => ({
+        fieldIdentifier: '',
+        fieldLabel: '',
+        type: FilterFieldType.String,
+        conditions: [],
+        ...f,
+    }));
+    return [{ filterFieldSource: source, searchFieldData }];
 }
 
 export const defaultMockAvailableFilters: SearchFieldListModel[] = [
     {
-        filterFieldSource: 'meta' as const,
+        filterFieldSource: FilterFieldSource.Meta,
         searchFieldData: [
             {
                 fieldIdentifier: 'status',
                 fieldLabel: 'Status',
-                type: 'string' as const,
+                type: FilterFieldType.String,
                 conditions: [],
             },
             {
                 fieldIdentifier: 'enabled',
                 fieldLabel: 'Enabled',
-                type: 'boolean' as const,
+                type: FilterFieldType.Boolean,
                 conditions: [],
             },
             {
                 fieldIdentifier: 'kind',
                 fieldLabel: 'Kind',
-                type: 'list' as const,
+                type: FilterFieldType.List,
                 conditions: [],
                 value: [
                     { uuid: 'k1', name: 'Kind One' },

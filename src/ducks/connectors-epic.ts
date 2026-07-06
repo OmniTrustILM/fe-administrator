@@ -2,7 +2,7 @@ import type { AppEpic } from 'ducks';
 import { EMPTY, type Observable, of } from 'rxjs';
 import { catchError, filter, map, mergeMap, startWith, switchMap } from 'rxjs/operators';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { AuthType, ConnectorVersion } from 'types/openapi';
+import { AuthType, type ConnectorRequestDtoV2, ConnectorVersion, type ConnectorUpdateRequestDtoV2 } from 'types/openapi';
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
@@ -184,7 +184,7 @@ const getConnectorHealth: AppEpic = (action$, state, deps) => {
             deps.apiClients.connectorsV2.checkHealthV2({ uuid: action.payload.uuid }).pipe(
                 map((healthInfo) =>
                     slice.actions.getConnectorHealthSuccess({
-                        health: transformHealthInfoToModel(healthInfo as any),
+                        health: transformHealthInfoToModel(healthInfo),
                     }),
                 ),
                 catchError((error) => of(slice.actions.getConnectorHealthFailure())),
@@ -198,7 +198,7 @@ const createConnector: AppEpic = (action$, state, deps) => {
         filter(slice.actions.createConnector.match),
         switchMap((action) =>
             deps.apiClients.connectorsV2
-                .createConnectorV2({ connectorRequestDtoV2: transformConnectorRequestModelToDto(action.payload) as any })
+                .createConnectorV2({ connectorRequestDtoV2: transformConnectorRequestModelToDto(action.payload) as ConnectorRequestDtoV2 })
                 .pipe(
                     mergeMap((connector) =>
                         of(
@@ -227,7 +227,9 @@ const updateConnector: AppEpic = (action$, state, deps) => {
             deps.apiClients.connectorsV2
                 .editConnectorV2({
                     uuid: action.payload.uuid,
-                    connectorUpdateRequestDtoV2: transformConnectorUpdateRequestModelToDto(action.payload.connectorUpdateRequest) as any,
+                    connectorUpdateRequestDtoV2: transformConnectorUpdateRequestModelToDto(
+                        action.payload.connectorUpdateRequest,
+                    ) as ConnectorUpdateRequestDtoV2,
                 })
                 .pipe(
                     mergeMap((connector) =>
@@ -308,7 +310,7 @@ const connectConnector: AppEpic = (action$, state, deps) => {
                     connectRequestDto: {
                         ...action.payload,
                         authAttributes: action.payload.authAttributes?.map(transformAttributeRequestModelToDto),
-                    } as any,
+                    },
                 })
                 .pipe(
                     map((connection) =>

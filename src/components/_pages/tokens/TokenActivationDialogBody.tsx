@@ -3,7 +3,7 @@ import Spinner from 'components/Spinner';
 
 import { actions, selectors } from 'ducks/tokens';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { type FieldValues, FormProvider, useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from 'components/Button';
 import type { AttributeDescriptorModel, AttributeRequestModel } from 'types/attributes';
@@ -43,7 +43,7 @@ export default function TokenActivationDialogBody({ tokenUuid, visible, onClose 
     );
 
     const onActivateSubmit = useCallback(
-        (values: any) => {
+        (values: FieldValues) => {
             if (!tokenUuid) return;
 
             const activationAttribs: AttributeRequestModel[] =
@@ -73,7 +73,7 @@ export default function TokenActivationDialogBody({ tokenUuid, visible, onClose 
 
     const { handleSubmit, formState, watch } = methods;
 
-    const onSubmit = (values: any) => {
+    const onSubmit = () => {
         const allValues = watch();
         onActivateSubmit(allValues);
     };

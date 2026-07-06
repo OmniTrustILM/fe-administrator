@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default function FlowChartMountWrapper({ flowChartProps, initialStoreState, onStoreReady }: Readonly<Props>) {
-    const store = React.useMemo(() => createMockStore((initialStoreState ?? testInitialState) as any), [initialStoreState]);
+    const store = React.useMemo(() => createMockStore(initialStoreState ?? testInitialState), [initialStoreState]);
 
     React.useEffect(() => {
         onStoreReady?.(store);

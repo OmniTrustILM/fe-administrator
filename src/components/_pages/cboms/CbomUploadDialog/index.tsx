@@ -10,7 +10,7 @@ import { selectors as cbomSelectors } from 'ducks/cbom';
 
 type Props = {
     onCancel: () => void;
-    onUpload: (data: { content: any }) => void;
+    onUpload: (data: { content: Record<string, unknown> }) => void;
     okButtonTitle?: string;
 };
 
@@ -28,15 +28,17 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
     const { handleSubmit, formState } = methods;
 
     const validateCbomContent = useCallback(
-        (parsedContent: any): boolean => {
+        (parsedContent: unknown): parsedContent is Record<string, unknown> => {
             if (!parsedContent || typeof parsedContent !== 'object') {
                 dispatch(alertActions.error('Invalid CBOM content'));
                 return false;
             }
 
+            const record = parsedContent as Record<string, unknown>;
+
             if (
-                'metadata' in parsedContent &&
-                (parsedContent.metadata === null || typeof parsedContent.metadata !== 'object' || Array.isArray(parsedContent.metadata))
+                'metadata' in record &&
+                (record.metadata === null || typeof record.metadata !== 'object' || Array.isArray(record.metadata))
             ) {
                 dispatch(alertActions.error('Failed to upload CBOM: metadata must be an object when provided'));
                 return false;
@@ -60,7 +62,7 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
 
     const onSubmit = useCallback(async () => {
         if (!fileContent) return;
-        let parsed: any;
+        let parsed: unknown;
         try {
             parsed = JSON.parse(fileContent);
             if (!validateCbomContent(parsed)) return;

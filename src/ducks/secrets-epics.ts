@@ -124,7 +124,7 @@ const updateSecret: AppEpic = (action$, state$, deps) => {
             deps.apiClients.secrets
                 .updateSecret({
                     uuid: action.payload.uuid,
-                    secretUpdateRequestDto: action.payload.update as any,
+                    secretUpdateRequestDto: action.payload.update,
                 })
                 .pipe(
                     mergeMap((secret) =>
@@ -200,7 +200,7 @@ const updateSecretObjects: AppEpic = (action$, state$, deps) => {
             deps.apiClients.secrets
                 .updateSecretObjects({
                     uuid: action.payload.uuid,
-                    secretUpdateObjectsDto: action.payload.update as any,
+                    secretUpdateObjectsDto: action.payload.update,
                 })
                 .pipe(
                     mergeMap(() =>

@@ -1,11 +1,12 @@
 import { test, expect } from 'vitest';
+import type { UnknownAction } from '@reduxjs/toolkit';
 
 interface CommonSliceTestOptions<TState> {
-    reducer: (state: TState | undefined, action: any) => TState;
+    reducer: (state: TState | undefined, action: UnknownAction) => TState;
     actions: {
-        resetState: () => any;
-        setCheckedRows: (payload: { checkedRows: string[] }) => any;
-        clearDeleteErrorMessages?: () => any;
+        resetState: () => UnknownAction;
+        setCheckedRows: (payload: { checkedRows: string[] }) => UnknownAction;
+        clearDeleteErrorMessages?: () => UnknownAction;
     };
     initialState: TState;
     dirtyOverrides: Partial<TState>;
@@ -13,7 +14,7 @@ interface CommonSliceTestOptions<TState> {
     deleteErrorAssertions?: (state: TState) => void;
 }
 
-export function runCommonSliceTests<TState extends Record<string, any>>(opts: CommonSliceTestOptions<TState>) {
+export function runCommonSliceTests<TState extends Record<string, unknown>>(opts: CommonSliceTestOptions<TState>) {
     const { reducer, actions, initialState, dirtyOverrides, deleteErrorOverrides, deleteErrorAssertions } = opts;
 
     test('resetState restores initialState', () => {
@@ -23,7 +24,7 @@ export function runCommonSliceTests<TState extends Record<string, any>>(opts: Co
 
     test('setCheckedRows updates checkedRows', () => {
         const next = reducer(initialState, actions.setCheckedRows({ checkedRows: ['a', 'b'] }));
-        expect((next as any).checkedRows).toEqual(['a', 'b']);
+        expect((next as Record<string, unknown>).checkedRows).toEqual(['a', 'b']);
     });
 
     if (actions.clearDeleteErrorMessages && deleteErrorOverrides && deleteErrorAssertions) {

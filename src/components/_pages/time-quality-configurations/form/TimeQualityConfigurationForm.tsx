@@ -17,7 +17,7 @@ import Widget from 'components/Widget';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { actions as tqcActions, selectors as tqcSelectors } from 'ducks/time-quality-configurations';
 
-import { Resource } from 'types/openapi';
+import { Resource, type TimeQualityConfigurationRequestDto } from 'types/openapi';
 import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
 import { getMillisecondsFromIso8601String } from 'utils/duration';
 import {
@@ -154,15 +154,15 @@ export const TimeQualityConfigurationForm = () => {
 
     const onSubmit = useCallback(
         (values: FormValues) => {
-            const requestDto = {
+            const requestDto: TimeQualityConfigurationRequestDto = {
                 name: values.name,
                 accuracy: values.accuracy,
                 ntpServers: values.ntpServers,
-                ntpCheckInterval: values.ntpCheckInterval || undefined,
-                ntpCheckTimeout: values.ntpCheckTimeout || undefined,
+                ntpCheckInterval: values.ntpCheckInterval,
+                ntpCheckTimeout: values.ntpCheckTimeout,
                 ntpSamplesPerServer: values.ntpSamplesPerServer ? Number.parseInt(values.ntpSamplesPerServer, 10) : undefined,
                 ntpServersMinReachable: values.ntpServersMinReachable ? Number.parseInt(values.ntpServersMinReachable, 10) : undefined,
-                maxClockDrift: values.maxClockDrift || undefined,
+                maxClockDrift: values.maxClockDrift,
                 leapSecondGuard: values.leapSecondGuard,
                 customAttributes: collectFormAttributes(
                     'customTimeQualityConfiguration',

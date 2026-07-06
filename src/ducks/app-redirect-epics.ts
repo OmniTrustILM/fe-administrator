@@ -11,11 +11,13 @@ import { slice } from './app-redirect';
 const fetchError: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.fetchError.match),
-        switchMap((action) =>
-            action.payload.error instanceof AjaxError && action.payload.error.status === 401
-                ? EMPTY
-                : of(alertActions.error(extractError(action.payload.error, action.payload.message))),
-        ),
+        switchMap((action) => {
+            const { error, message } = action.payload;
+            if (error instanceof AjaxError && error.status === 401) {
+                return EMPTY;
+            }
+            return of(alertActions.error(error ? extractError(error, message) : message));
+        }),
     );
 };
 

@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type {
     EventHistoryRequestDto,
     PaginationResponseDtoEventHistoryDto,
@@ -57,7 +58,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name] ?? initialState;
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name] ?? initialState;
 
 const eventHistory = createSelector(state, (s) => s.eventHistory);
 const isFetchingEventHistory = createSelector(state, (s) => s.isFetchingEventHistory);

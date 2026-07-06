@@ -28,7 +28,7 @@ import Tooltip from 'components/Tooltip';
 
 type Props = Readonly<{
     profile: ComplianceProfileDtoV2 | undefined;
-    setSelectedEntityDetails: (entityDetails: any) => void;
+    setSelectedEntityDetails: (entityDetails: TRuleGroupType) => void;
     setIsEntityDetailMenuOpen: (isEntityDetailMenuOpen: boolean) => void;
     onReset?: (resetFn: () => void) => void;
 }>;

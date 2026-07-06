@@ -25,7 +25,7 @@ const preloadedState: Parameters<typeof createMockStore>[0] = {
 export type DonutChartWithStoreProps = Readonly<React.ComponentProps<typeof DonutChart>>;
 
 export default function DonutChartWithStore(props: DonutChartWithStoreProps) {
-    const store = createMockStore(preloadedState as any);
+    const store = createMockStore(preloadedState);
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>

@@ -1,5 +1,5 @@
 import cn from 'classnames';
-import Button, { type ButtonColor } from 'components/Button';
+import Button, { type ButtonColor, type Props as ButtonProps } from 'components/Button';
 import Spinner from 'components/Spinner';
 
 type Props = {
@@ -24,14 +24,14 @@ function ProgressButton({
     onClick,
     dataTestId,
 }: Readonly<Props>) {
-    const buttonProps = {
+    const buttonProps: ButtonProps = {
         color,
         disabled: disabled || inProgress,
         onClick,
         className: cn('relative', { 'opacity-50': inProgress }),
         type,
         'data-testid': dataTestId || 'progress-button',
-    } as any;
+    };
 
     return (
         <Button {...buttonProps}>

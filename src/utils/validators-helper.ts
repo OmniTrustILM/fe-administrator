@@ -1,4 +1,4 @@
-import { composeValidators } from './validators';
+import { composeValidators, type FieldValidator } from './validators';
 
 export interface FieldErrorState {
     error?: unknown;
@@ -11,9 +11,9 @@ export function getFieldErrorMessage(fieldState: FieldErrorState, fallback = 'In
     return (fieldState.error as { message?: string })?.message ?? fallback;
 }
 
-export const buildValidationRules = (validators: Array<(value: any) => string | undefined>) => {
+export const buildValidationRules = (validators: FieldValidator[]) => {
     return {
-        validate: (value: any) => {
+        validate: (value: unknown) => {
             const composed = composeValidators(...validators);
             return composed(value);
         },

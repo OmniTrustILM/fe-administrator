@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type { AttributeDescriptorModel, DataAttributeModel } from 'types/attributes';
 import type { SearchRequestModel } from 'types/certificate';
 import type { ConnectorResponseModel } from 'types/connectors';
@@ -284,7 +285,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const overviewNotifications = createSelector(state, (state) => state.overviewNotifications);
 const notifications = createSelector(state, (state) => state.notifications);

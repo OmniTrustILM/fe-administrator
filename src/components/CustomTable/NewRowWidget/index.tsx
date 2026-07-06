@@ -30,7 +30,7 @@ const NewRowWidget = ({ newItemsList, isBusy, onAddClick, immediateAdd, selectHi
             <div className="grow">
                 <Select
                     onChange={(values) => {
-                        setSelectedItems(values || []);
+                        setSelectedItems((values ?? []).map((item) => ({ value: String(item.value), label: item.label })));
                     }}
                     isMulti
                     value={selectedItems}

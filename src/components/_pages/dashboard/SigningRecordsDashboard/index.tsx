@@ -71,7 +71,7 @@ function SigningRecordsDashboard() {
     };
 
     const enumLabel = (platformEnumKey: string, code: string): string => {
-        const enumMap = (platformEnums as any)?.[platformEnumKey];
+        const enumMap = platformEnums?.[platformEnumKey];
         return enumMap?.[code]?.label ?? code;
     };
 

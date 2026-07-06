@@ -66,61 +66,58 @@ export default function SignVerifyData({ tokenUuid, tokenProfileUuid, keyUuid, k
 
     const { handleSubmit, formState, watch } = methods;
 
-    const onSubmit = useCallback(
-        (values: any) => {
-            if (!tokenUuid) return;
+    const onSubmit = useCallback(() => {
+        if (!tokenUuid) return;
 
-            const allValues = watch();
-            const attribs: AttributeRequestModel[] =
-                attributes && attributes.length > 0
-                    ? collectFormAttributes('attributes', [...(attributes ?? []), ...groupAttributesCallbackAttributes], allValues) || []
-                    : [];
-            if (action === 'sign') {
-                dispatch(
-                    actions.signData({
-                        tokenInstanceUuid: tokenUuid,
-                        keyItemUuid: keyItemUuid || '',
-                        uuid: keyUuid || '',
-                        tokenProfileUuid: tokenProfileUuid || '',
-                        request: {
-                            signatureAttributes: attribs,
-                            data: [{ data: fileContent }],
-                        },
-                    }),
-                );
-            } else {
-                dispatch(
-                    actions.verifyData({
-                        tokenInstanceUuid: tokenUuid,
-                        keyItemUuid: keyItemUuid || '',
-                        uuid: keyUuid || '',
-                        tokenProfileUuid: tokenProfileUuid || '',
-                        request: {
-                            signatureAttributes: attribs,
-                            signatures: [{ data: signatureContent }],
-                            data: [{ data: fileContent }],
-                        },
-                    }),
-                );
-            }
+        const allValues = watch();
+        const attribs: AttributeRequestModel[] =
+            attributes && attributes.length > 0
+                ? collectFormAttributes('attributes', [...(attributes ?? []), ...groupAttributesCallbackAttributes], allValues) || []
+                : [];
+        if (action === 'sign') {
+            dispatch(
+                actions.signData({
+                    tokenInstanceUuid: tokenUuid,
+                    keyItemUuid: keyItemUuid || '',
+                    uuid: keyUuid || '',
+                    tokenProfileUuid: tokenProfileUuid || '',
+                    request: {
+                        signatureAttributes: attribs,
+                        data: [{ data: fileContent }],
+                    },
+                }),
+            );
+        } else {
+            dispatch(
+                actions.verifyData({
+                    tokenInstanceUuid: tokenUuid,
+                    keyItemUuid: keyItemUuid || '',
+                    uuid: keyUuid || '',
+                    tokenProfileUuid: tokenProfileUuid || '',
+                    request: {
+                        signatureAttributes: attribs,
+                        signatures: [{ data: signatureContent }],
+                        data: [{ data: fileContent }],
+                    },
+                }),
+            );
+        }
 
-            onClose();
-        },
-        [
-            dispatch,
-            attributes,
-            onClose,
-            tokenUuid,
-            groupAttributesCallbackAttributes,
-            action,
-            keyUuid,
-            keyItemUuid,
-            tokenProfileUuid,
-            fileContent,
-            signatureContent,
-            watch,
-        ],
-    );
+        onClose();
+    }, [
+        dispatch,
+        attributes,
+        onClose,
+        tokenUuid,
+        groupAttributesCallbackAttributes,
+        action,
+        keyUuid,
+        keyItemUuid,
+        tokenProfileUuid,
+        fileContent,
+        signatureContent,
+        watch,
+    ]);
 
     if (!tokenUuid) return <></>;
 

@@ -2,6 +2,7 @@ import type { AppEpic } from 'ducks';
 import { of } from 'rxjs';
 import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import type { AttributeDescriptorDto } from 'types/attributes';
 import { extractError } from 'utils/net';
 import { actions as appRedirectActions } from './app-redirect';
 import { actions as alertActions } from './alerts';
@@ -19,7 +20,7 @@ const listVaults: AppEpic = (action$, state$, deps) => {
         switchMap((action: ReturnType<typeof slice.actions.listVaults>) => {
             store.dispatch(pagingActions.list(EntityType.VAULT));
             return deps.apiClients.vaults.listVaultInstances({ searchRequestDto: transformSearchRequestModelToDto(action.payload) }).pipe(
-                mergeMap((response: any) =>
+                mergeMap((response) =>
                     of(
                         slice.actions.listVaultsSuccess({ items: response.items }),
                         pagingActions.listSuccess({ entity: EntityType.VAULT, totalItems: response.totalItems }),
@@ -46,7 +47,7 @@ const getVaultDetail: AppEpic = (action$, state$, deps) => {
         filter(slice.actions.getVaultDetail.match),
         switchMap((action: ReturnType<typeof slice.actions.getVaultDetail>) =>
             deps.apiClients.vaults.getVaultInstanceDetails({ uuid: action.payload.uuid }).pipe(
-                mergeMap((vault: any) =>
+                mergeMap((vault) =>
                     of(
                         slice.actions.getVaultDetailSuccess({ vault }),
                         userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.VaultDetails),
@@ -72,10 +73,10 @@ const getVaultInstanceAttributes: AppEpic = (action$, state$, deps) => {
             const { connectorUuid } = action.payload;
             return deps.apiClients.vaults.listVaultInstanceAttributes({ connectorUuid }).pipe(
                 map((attributes: unknown) => {
-                    const list = Array.isArray(attributes) ? attributes : [];
+                    const list: unknown[] = Array.isArray(attributes) ? attributes : [];
                     return slice.actions.getVaultInstanceAttributesSuccess({
                         connectorUuid,
-                        attributes: list.map((attr: any) => transformAttributeDescriptorDtoToModel(attr)),
+                        attributes: list.map((attr) => transformAttributeDescriptorDtoToModel(attr as AttributeDescriptorDto)),
                     });
                 }),
                 catchError(() => of(slice.actions.getVaultInstanceAttributesFailure({ connectorUuid }))),
@@ -93,7 +94,7 @@ const createVault: AppEpic = (action$, state$, deps) => {
                     vaultInstanceRequestDto: action.payload.request,
                 })
                 .pipe(
-                    mergeMap((vault: any) =>
+                    mergeMap((vault) =>
                         of(
                             slice.actions.createVaultSuccess({ vault }),
                             slice.actions.listVaults({ pageNumber: 1, itemsPerPage: 10, filters: [] }),
@@ -123,7 +124,7 @@ const updateVault: AppEpic = (action$, state$, deps) => {
                     vaultInstanceUpdateRequestDto: action.payload.request,
                 })
                 .pipe(
-                    mergeMap((vault: any) =>
+                    mergeMap((vault) =>
                         of(slice.actions.updateVaultSuccess({ vault }), slice.actions.getVaultDetail({ uuid: action.payload.uuid })),
                     ),
                     catchError((err) =>

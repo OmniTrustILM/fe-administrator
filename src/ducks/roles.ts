@@ -2,6 +2,8 @@ import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolki
 import type { RoleResponseModel } from 'types/auth';
 import type { RoleDetailModel, RolePermissionsModel, RoleRequestModel, SubjectPermissionsModel } from 'types/roles';
 import type { UserResponseModel } from 'types/users';
+import { resetSliceState } from 'ducks/reducerUtils';
+import type { AppState } from 'ducks';
 
 export type State = {
     rolesListCheckedRows: string[];
@@ -59,11 +61,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         setRolesListCheckedRows: (state, action: PayloadAction<{ checkedRows: string[] }>) => {
@@ -249,7 +247,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const rolesListCheckedRows = createSelector(state, (state) => state.rolesListCheckedRows);
 const permissionsListCheckedRows = createSelector(state, (state) => state.permissionsListCheckedRows);

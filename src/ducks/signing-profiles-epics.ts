@@ -12,7 +12,7 @@ import { selectors, slice } from './signing-profiles';
 import { isTimestampingWorkflow } from 'utils/type-guards';
 import { transformSearchRequestModelToDto } from './transform/certificates';
 import { transformConnectorDtoV2ToModel } from './transform/connectors';
-import { ConnectorInterface, FilterConditionOperator, FilterFieldSource, SigningWorkflowType } from 'types/openapi';
+import { ConnectorInterface, FilterConditionOperator, FilterFieldSource, type ResponseAttribute, SigningWorkflowType } from 'types/openapi';
 import { actions as userInterfaceActions } from './user-interface';
 import { store } from '../App';
 
@@ -413,11 +413,15 @@ const listSignatureFormattingConnectorAttributes: AppEpic = (action$, state$, de
                                 : [];
 
                         const savedContentByUuid = new Map(
-                            savedAttrs.filter((a) => 'content' in a).map((a) => [a.uuid, (a as any).content]),
+                            savedAttrs
+                                .filter((a): a is Extract<ResponseAttribute, { content?: unknown }> => 'content' in a)
+                                .map((a) => [a.uuid, a.content] as const),
                         );
                         const merged = descriptors.map((descriptor) => {
                             const savedContent = savedContentByUuid.get(descriptor.uuid);
-                            return savedContent === undefined ? descriptor : { ...descriptor, content: savedContent };
+                            return savedContent === undefined
+                                ? descriptor
+                                : ({ ...descriptor, content: savedContent } as typeof descriptor);
                         });
 
                         return slice.actions.listSignatureFormattingConnectorAttributesSuccess({ attributeDescriptors: merged });

@@ -5,4 +5,4 @@ export const useSelectorMock = vi.fn();
 
 export const useDispatch = () => useDispatchMock();
 
-export const useSelector = (selector: any) => useSelectorMock(selector);
+export const useSelector = (selector: (state: unknown) => unknown) => useSelectorMock(selector);

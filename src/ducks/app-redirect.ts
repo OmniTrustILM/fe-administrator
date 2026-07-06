@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import { AjaxError } from 'rxjs/ajax';
 
 export type State = {
@@ -51,7 +52,7 @@ export const slice = createSlice({
     },
 });
 
-const selectState = (reduxStore: any): State => reduxStore?.[slice.name];
+const selectState = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const unauthorized = createSelector(selectState, (state) => state.unauthorized);
 const goBack = createSelector(selectState, (state) => state.goBack);

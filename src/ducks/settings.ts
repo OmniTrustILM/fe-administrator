@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type {
     SettingsPlatformModel,
     SettingsLoggingModel,
@@ -127,7 +128,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const platformSettings = createSelector(state, (state: State) => state.platformSettings);
 const isFetchingPlatform = createSelector(state, (state: State) => state.isFetchingPlatform);

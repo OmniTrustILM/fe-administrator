@@ -2,7 +2,7 @@ import { MemoryRouter } from 'react-router';
 import { Provider } from 'react-redux';
 import { createMockStore } from 'utils/test-helpers';
 import CustomAttributeWidget from './index';
-import type { CustomAttributeModel } from 'types/attributes';
+import type { AttributeResponseModel, CustomAttributeModel } from 'types/attributes';
 import { Resource, AttributeType, AttributeContentType } from 'types/openapi';
 
 function minimalDescriptor(overrides: Partial<CustomAttributeModel> = {}): CustomAttributeModel {
@@ -27,7 +27,7 @@ function minimalDescriptor(overrides: Partial<CustomAttributeModel> = {}): Custo
 type HarnessProps = {
     resource?: Resource;
     resourceUuid?: string;
-    attributes?: any;
+    attributes?: AttributeResponseModel[];
     className?: string;
     availableAttributes?: CustomAttributeModel[];
 };
@@ -47,6 +47,7 @@ export default function CustomAttributeWidgetMountHarness({
         customAttributes: {
             resourceCustomAttributes: availableAttributes,
             resourceCustomAttributesContents: [],
+            secondaryResourceCustomAttributes: [],
             isFetchingResourceCustomAttributes: false,
             isUpdatingContent: false,
         },

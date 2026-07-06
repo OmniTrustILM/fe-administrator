@@ -23,12 +23,13 @@ export const renderConditionItems = (
 ) => {
     const { className, variant = 'badge', style } = options;
     const formatSingleValue = (
-        v: any,
+        v: unknown,
         field: SearchFieldModel | undefined,
         platformEnums: Record<string, Record<string, { label: string }>>,
     ): string => {
         if (field?.platformEnum) {
-            return platformEnums[field.platformEnum][v]?.label ?? v;
+            const key = String(v);
+            return platformEnums[field.platformEnum][key]?.label ?? key;
         }
 
         if (field?.attributeContentType === AttributeContentType.Date) {
@@ -39,8 +40,8 @@ export const renderConditionItems = (
             return getFormattedDateTime(v as string);
         }
 
-        if (typeof v === 'object' && v?.name) {
-            return v.name;
+        if (typeof v === 'object' && v !== null && 'name' in v) {
+            return String((v as { name: unknown }).name);
         }
 
         return String(v);

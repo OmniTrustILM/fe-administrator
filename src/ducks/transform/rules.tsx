@@ -274,7 +274,7 @@ export function transformTriggerEventAssociationRequestModelToDto(
 }
 
 interface SelectChangeValue {
-    value: string;
+    value: string | number;
     label: string;
 }
 
@@ -365,8 +365,8 @@ export function useTransformTriggerObjectToNodesAndEdges(
                         disabled={isUpdatingTrigger || (!newActions.length && !newRules.length)}
                         onClick={() => {
                             if (!triggerDetails) return;
-                            const newActionsUuids = newActions.map((newAction) => newAction.value);
-                            const newRulesUuids = newRules.map((newRule) => newRule.value);
+                            const newActionsUuids = newActions.map((newAction) => String(newAction.value));
+                            const newRulesUuids = newRules.map((newRule) => String(newRule.value));
 
                             const previousAndNewActionsUuid = triggerDetails?.actions.map((action) => action.uuid);
                             const previousAndNewRulesUuid = triggerDetails?.rules.map((rule) => rule.uuid);

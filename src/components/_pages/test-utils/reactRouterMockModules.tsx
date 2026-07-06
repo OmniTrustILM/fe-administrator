@@ -1,4 +1,6 @@
-const Link = ({ to, children }: any) => <a href={to}>{children}</a>;
+import type { ReactNode } from 'react';
+
+const Link = ({ to, children }: { to: string; children?: ReactNode }) => <a href={to}>{children}</a>;
 
 export const listRouterMockModule = {
     Link,

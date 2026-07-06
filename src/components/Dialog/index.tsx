@@ -45,7 +45,7 @@ export interface DialogButton {
     key?: string;
     color: ButtonColor;
     body: string | React.ReactNode;
-    onClick: (formData?: any) => void;
+    onClick: (formData?: unknown) => void;
     disabled?: boolean;
     variant?: ButtonVariant;
 }

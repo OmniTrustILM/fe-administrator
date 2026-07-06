@@ -5,11 +5,12 @@ import { createMockStore } from 'utils/test-helpers';
 import GlobalModal from 'components/GlobalModal';
 import { Attribute } from './index';
 import type { DataAttributeModel, InfoAttributeModel, CustomAttributeModel } from 'types/attributes';
+import type { AttributeSelectOption } from 'utils/attributes/attributes';
 
 export type AttributeTestWrapperProps = {
     name: string;
     descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel | undefined;
-    options?: { label: string; value: any }[];
+    options?: AttributeSelectOption[];
     busy?: boolean;
     userInteractedRef?: React.RefObject<boolean>;
     deleteButton?: React.ReactNode;

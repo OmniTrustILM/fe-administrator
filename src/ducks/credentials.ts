@@ -1,3 +1,5 @@
+import { resetSliceState } from 'ducks/reducerUtils';
+import type { AppState } from 'ducks';
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { BulkActionModel, ConnectorResponseModel } from 'types/connectors';
@@ -56,11 +58,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         setCheckedRows: (state, action: PayloadAction<{ checkedRows: string[] }>) => {
@@ -217,7 +215,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const checkedRows = createSelector(state, (state) => state.checkedRows);
 

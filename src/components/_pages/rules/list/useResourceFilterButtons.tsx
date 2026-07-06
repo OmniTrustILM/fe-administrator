@@ -5,7 +5,7 @@ import type { Resource } from 'types/openapi';
 
 type ResourceOption = {
     label: string;
-    value: unknown;
+    value: Resource;
 };
 
 type Params = {

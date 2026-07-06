@@ -461,7 +461,7 @@ export default function ConnectorDetail() {
                     )}
 
                     {connector?.version === ConnectorVersion.V2 && (
-                        <SupportedInterfacesV2 interfaces={(connector as any)?.interfaces} isBusy={isFetchingDetail || isReconnecting} />
+                        <SupportedInterfacesV2 interfaces={connector?.interfaces} isBusy={isFetchingDetail || isReconnecting} />
                     )}
                 </div>
             </Widget>

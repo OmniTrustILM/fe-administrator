@@ -2,7 +2,7 @@ import AttributeEditor from 'components/Attributes/AttributeEditor';
 
 import { actions } from 'ducks/compliance-profiles';
 import { useCallback, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { type FieldValues, FormProvider, useForm } from 'react-hook-form';
 import { useDispatch } from 'react-redux';
 
 import Button from 'components/Button';
@@ -49,7 +49,7 @@ export default function AddRuleWithAttributesDialogBody({
     const { handleSubmit, formState } = methods;
 
     const onSubmit = useCallback(
-        (values: any) => {
+        (values: FieldValues) => {
             if (!complianceProfileUuid) return;
             if (!connectorUuid) return;
 
@@ -58,12 +58,13 @@ export default function AddRuleWithAttributesDialogBody({
                     ? collectFormAttributes('attributes', [...(attributes ?? []), ...groupAttributesCallbackAttributes], values) || []
                     : [];
             dispatch(
-                actions.addRule({
+                actions.updateRule({
                     uuid: complianceProfileUuid,
-                    addRequest: {
+                    complianceProfileRulesPatchRequestDto: {
+                        removal: false,
+                        ruleUuid: ruleUuid,
                         connectorUuid: connectorUuid,
                         kind: kind,
-                        ruleUuid: ruleUuid,
                         attributes: attribs,
                     },
                 }),

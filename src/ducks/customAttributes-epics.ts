@@ -1,4 +1,4 @@
-import type { AppEpic, AppState } from 'ducks';
+import type { AppEpic, AppState, EpicDependencies } from 'ducks';
 import type { UnknownAction } from '@reduxjs/toolkit';
 import { of, forkJoin, type Observable } from 'rxjs';
 import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
@@ -21,7 +21,13 @@ import {
 import { actions as vaultProfileActions } from './vault-profiles';
 import { actions as secretActions } from './secrets';
 import { actions as vaultActions } from './vaults';
-import type { AttributeRequestModel, AttributeResponseDto, AttributeResponseModel } from 'types/attributes';
+import type {
+    AttributeRequestModel,
+    AttributeResponseDto,
+    AttributeResponseModel,
+    BaseAttributeContentDtoV2,
+    BaseAttributeContentDtoV3,
+} from 'types/attributes';
 
 const normalizeAttributeVersion = (version: unknown): AttributeVersion => {
     if (version === AttributeVersion.V3 || version === 'v3' || version === '3' || version === 3) {
@@ -34,18 +40,25 @@ const toAttributeRequestModel = (attribute: AttributeResponseModel): AttributeRe
     const version = normalizeAttributeVersion(attribute.version);
     const content = structuredClone(attribute.content ?? []);
 
+    if (version === AttributeVersion.V3) {
+        return {
+            uuid: attribute.uuid,
+            name: attribute.name,
+            contentType: attribute.contentType,
+            version,
+            content: (content as BaseAttributeContentDtoV3[]).map((item) => ({
+                ...item,
+                contentType: item.contentType ?? attribute.contentType,
+            })),
+        };
+    }
+
     return {
         uuid: attribute.uuid,
         name: attribute.name,
         contentType: attribute.contentType,
         version,
-        content:
-            version === AttributeVersion.V3
-                ? content.map((item: Record<string, unknown>) => ({
-                      ...item,
-                      contentType: item.contentType ?? attribute.contentType,
-                  }))
-                : content,
+        content: content as BaseAttributeContentDtoV2[],
     };
 };
 
@@ -166,7 +179,7 @@ const handleVaultsContentUpdate = (
     operation: ContentOperation,
     payload: ContentActionPayload,
     state: AppState,
-    deps: any,
+    deps: EpicDependencies,
 ): Observable<UnknownAction> => {
     const currentVault = state.vaults.vault;
     const currentAttributes = getVaultCurrentAttributes(state, payload.resourceUuid);
@@ -212,7 +225,7 @@ const handleVaultsContentUpdate = (
             },
         })
         .pipe(
-            mergeMap((vault: any) =>
+            mergeMap((vault) =>
                 of(
                     createContentSuccessAction(operation, payload.resource, payload.resourceUuid, vault.customAttributes ?? []),
                     vaultActions.updateVaultSuccess({ vault }),
@@ -226,7 +239,7 @@ const handleVaultProfilesContentUpdate = (
     operation: ContentOperation,
     payload: ContentActionPayload,
     state: AppState,
-    deps: any,
+    deps: EpicDependencies,
 ): Observable<UnknownAction> => {
     const currentVaultProfile = state.vaultProfiles.vaultProfile;
     const currentAttributes = getVaultProfileCurrentAttributes(state, payload.resourceUuid);
@@ -267,7 +280,7 @@ const handleVaultProfilesContentUpdate = (
             },
         })
         .pipe(
-            mergeMap((profile: any) =>
+            mergeMap((profile) =>
                 of(
                     createContentSuccessAction(operation, payload.resource, payload.resourceUuid, profile.customAttributes ?? []),
                     vaultProfileActions.updateVaultProfileSuccess({ profile }),
@@ -277,7 +290,11 @@ const handleVaultProfilesContentUpdate = (
         );
 };
 
-const handleGenericContentUpdate = (operation: ContentOperation, payload: ContentActionPayload, deps: any): Observable<UnknownAction> => {
+const handleGenericContentUpdate = (
+    operation: ContentOperation,
+    payload: ContentActionPayload,
+    deps: EpicDependencies,
+): Observable<UnknownAction> => {
     const request = {
         resourceName: payload.resource,
         objectUuid: payload.resourceUuid,
@@ -288,7 +305,7 @@ const handleGenericContentUpdate = (operation: ContentOperation, payload: Conten
         operation === 'update'
             ? deps.apiClients.customAttributes.updateAttributeContentForResource({
                   ...request,
-                  attributeContent: payload.content,
+                  attributeContent: payload.content ?? [],
               })
             : deps.apiClients.customAttributes.deleteAttributeContentForResource(request);
 
@@ -302,7 +319,7 @@ const handleSecretsContentUpdate = (
     operation: ContentOperation,
     payload: ContentActionPayload,
     state: AppState,
-    deps: any,
+    deps: EpicDependencies,
 ): Observable<UnknownAction> => {
     const currentSecret = state.secrets.secret;
 
@@ -348,10 +365,10 @@ const handleSecretsContentUpdate = (
                 description: currentSecret.description ?? '',
                 attributes: (currentSecret.attributes ?? []).map(toAttributeRequestModel),
                 customAttributes: nextCustomAttributes.map(toAttributeRequestModel),
-            } as any,
+            },
         })
         .pipe(
-            mergeMap((secret: any) =>
+            mergeMap((secret) =>
                 of(
                     createContentSuccessAction(operation, payload.resource, payload.resourceUuid, secret.customAttributes ?? []),
                     secretActions.updateSecretSuccess({ secret }),
@@ -365,7 +382,7 @@ const handleCustomAttributeContentUpdate = (
     operation: ContentOperation,
     payload: ContentActionPayload,
     state: AppState,
-    deps: any,
+    deps: EpicDependencies,
 ): Observable<UnknownAction> => {
     if (payload.resource === Resource.Vaults) {
         return handleVaultsContentUpdate(operation, payload, state, deps);

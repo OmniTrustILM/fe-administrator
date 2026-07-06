@@ -64,7 +64,7 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
     const updateCredentialSucceeded = useSelector(selectors.updateCredentialSucceeded);
 
     const [groupAttributesCallbackAttributes, setGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
-    const [attributeValuesMap] = useState<Record<string, Record<string, any>>>({});
+    const [attributeValuesMap] = useState<Record<string, Record<string, unknown>>>({});
 
     const [credential, setCredential] = useState<CredentialResponseModel>();
     const [credentialProvider, setCredentialProvider] = useState<ConnectorResponseModel>();
@@ -146,7 +146,7 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
 
     const combinedAttributeValues = useMemo(
         () =>
-            Object.values(attributeValuesMap).reduce<Record<string, any>>((acc, current) => {
+            Object.values(attributeValuesMap).reduce<Record<string, unknown>>((acc, current) => {
                 return { ...acc, ...current };
             }, {}),
         [attributeValuesMap],

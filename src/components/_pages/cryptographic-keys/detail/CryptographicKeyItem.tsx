@@ -8,7 +8,7 @@ import WidgetButtons, { type WidgetButtonProps } from 'components/WidgetButtons'
 
 import { actions, selectors } from 'ducks/cryptographic-keys';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
 
@@ -445,8 +445,8 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
         [keyHistory],
     );
 
-    const additionalInfoEntry = (): any => {
-        const returnList = [];
+    const additionalInfoEntry = (): ReactElement[] | undefined => {
+        const returnList: ReactElement[] = [];
 
         if (!currentInfoId) return;
 

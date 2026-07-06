@@ -77,29 +77,35 @@ interface MultiSelectProps extends BaseProps {
 
 type Props = SingleSelectProps | MultiSelectProps;
 
-const getUuidFromValue = (val: any): string | null => {
-    if (typeof val === 'object' && val !== null) {
-        if (val.uuid && typeof val.uuid === 'string') {
-            return val.uuid;
+const asRecord = (val: unknown): Record<string, unknown> | null =>
+    typeof val === 'object' && val !== null ? (val as Record<string, unknown>) : null;
+
+const getUuidFromValue = (val: unknown): string | null => {
+    const obj = asRecord(val);
+    if (obj) {
+        if (typeof obj.uuid === 'string') {
+            return obj.uuid;
         }
-        if (val.data && typeof val.data === 'object' && val.data.uuid && typeof val.data.uuid === 'string') {
-            return val.data.uuid;
+        const data = asRecord(obj.data);
+        if (data && typeof data.uuid === 'string') {
+            return data.uuid;
         }
     }
     return null;
 };
 
 const getOptionValueString = (val: OptionValue): string => {
-    if (typeof val === 'object' && val !== null) {
-        if ('reference' in val && typeof (val as any).reference === 'string') {
-            return (val as any).reference;
+    const obj = asRecord(val);
+    if (obj) {
+        if ('reference' in obj && typeof obj.reference === 'string') {
+            return obj.reference;
         }
         const uuid = getUuidFromValue(val);
         if (uuid) {
             return uuid;
         }
-        if ('data' in val && (val as any).data !== undefined) {
-            const d = (val as any).data;
+        if ('data' in obj && obj.data !== undefined) {
+            const d = obj.data;
             if (typeof d === 'string' || typeof d === 'number' || typeof d === 'boolean') {
                 return String(d);
             }
@@ -112,22 +118,24 @@ const getOptionValueString = (val: OptionValue): string => {
     return String(val);
 };
 
-const valuesMatch = (val1: any, val2: any): boolean => {
-    if (typeof val1 === 'object' && val1 !== null && typeof val2 === 'string' && val1?.name) {
-        return val1.name === val2;
+const valuesMatch = (val1: unknown, val2: unknown): boolean => {
+    const obj1 = asRecord(val1);
+    const obj2 = asRecord(val2);
+    if (obj1 && typeof val2 === 'string' && obj1.name) {
+        return obj1.name === val2;
     }
-    if (typeof val1 === 'string' && typeof val2 === 'object' && val2?.name) {
-        return val1 === val2.name;
+    if (typeof val1 === 'string' && obj2 && obj2.name) {
+        return val1 === obj2.name;
     }
-    if (typeof val1 !== 'object' || typeof val2 !== 'object' || val1 === null || val2 === null) {
+    if (!obj1 || !obj2) {
         return val1 === val2;
     }
-    if (val1?.reference && val2?.reference) {
-        return val1.reference === val2.reference;
+    if (obj1.reference && obj2.reference) {
+        return obj1.reference === obj2.reference;
     }
-    if ('data' in val1 && 'data' in val2) {
-        const d1 = val1.data;
-        const d2 = val2.data;
+    if ('data' in obj1 && 'data' in obj2) {
+        const d1 = obj1.data;
+        const d2 = obj2.data;
         if (typeof d1 === 'object' && d1 !== null && typeof d2 === 'object' && d2 !== null) {
             return JSON.stringify(d1) === JSON.stringify(d2);
         }
@@ -285,7 +293,7 @@ function Select({
     const selectSingle = useCallback(
         (optValue: OptionValue) => {
             const matched = options.find((opt) => valuesMatch(opt.value, optValue));
-            (onChange as SingleSelectProps['onChange'])(matched ? matched.value : (optValue as any));
+            (onChange as SingleSelectProps['onChange'])(matched ? matched.value : optValue);
             setOpen(false);
         },
         [options, onChange],

@@ -9,7 +9,7 @@ import { keyStatePreloadedState } from '../keyStateStorePreload';
 export type KeyStateCircleWithStoreProps = Readonly<React.ComponentProps<typeof KeyStateCircle>>;
 
 export default function KeyStateCircleWithStore(props: KeyStateCircleWithStoreProps) {
-    const store = createMockStore(keyStatePreloadedState as any);
+    const store = createMockStore(keyStatePreloadedState as Parameters<typeof createMockStore>[0]);
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>

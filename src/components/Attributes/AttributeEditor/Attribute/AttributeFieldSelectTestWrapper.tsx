@@ -30,10 +30,10 @@ export function AttributeFieldSelectTestWrapper({
     });
 
     const onSelectChangeMulti = (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
-        const selected = Array.isArray(newValue) ? newValue : [];
-        const toRawValue = (v: any) => (v && typeof v === 'object' && 'value' in v ? v.value : v);
-        if (selected.some((v: any) => toRawValue(v) === '__add_new__')) {
-            const filtered = selected.filter((v: any) => toRawValue(v) !== '__add_new__').map(toRawValue);
+        const selected: unknown[] = Array.isArray(newValue) ? newValue : [];
+        const toRawValue = (v: unknown) => (v && typeof v === 'object' && 'value' in v ? (v as { value: unknown }).value : v);
+        if (selected.some((v) => toRawValue(v) === '__add_new__')) {
+            const filtered = selected.filter((v) => toRawValue(v) !== '__add_new__').map(toRawValue);
             fieldOnChange(filtered.length > 0 ? filtered : undefined);
             return;
         }

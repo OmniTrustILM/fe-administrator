@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, type ControllerRenderProps, useFormContext } from 'react-hook-form';
 import { getStepValue } from 'utils/common-utils';
 import { getFormattedDateTime } from 'utils/dateUtil';
+import type { FormAttributeContentItem } from 'utils/attributes/attributes';
 import type { BaseAttributeContentModel, CustomAttributeModel } from 'types/attributes';
 import { AttributeContentType } from 'types/openapi';
 import { composeValidators, validateRequired } from 'utils/validators';
@@ -23,11 +24,13 @@ function getValueFieldError(fieldState: { error?: { message?: string }; isTouche
 
 type ValueFieldInputProps = {
     descriptor: CustomAttributeModel;
-    field: { value: any; onChange: (v: any) => void; onBlur: () => void };
+    field: ControllerRenderProps;
     fieldState: { isTouched: boolean; invalid: boolean; error?: { message?: string } };
     fieldStepValue: number | undefined;
     options: { label: string; value: string }[];
 };
+
+type ParseListRawValue = Parameters<typeof parseListValueByContentType>[1];
 
 type ListValueScalar = string | number | boolean;
 
@@ -47,15 +50,18 @@ function ListValueField({ descriptor, field, options, inputClassName }: ListValu
         setShowAddCustom(false);
     }, [descriptor.name, isExtensible]);
 
-    const handleListChange = (v: any) => {
+    const handleListChange = (v: unknown) => {
         if (multiSelect) {
-            const arr = Array.isArray(v) ? v : [];
+            const arr: unknown[] = Array.isArray(v) ? v : [];
             const parsed = arr
-                .map((item: any) => parseListValueByContentType(descriptor.contentType, item?.value ?? item))
+                .map((item) => {
+                    const raw = item && typeof item === 'object' && 'value' in item ? (item as { value: unknown }).value : item;
+                    return parseListValueByContentType(descriptor.contentType, raw as ParseListRawValue);
+                })
                 .filter((x) => x !== undefined);
             field.onChange(parsed.length > 0 ? parsed : undefined);
         } else {
-            const parsed = parseListValueByContentType(descriptor.contentType, v);
+            const parsed = parseListValueByContentType(descriptor.contentType, v as ParseListRawValue);
             field.onChange(parsed ?? '');
         }
     };
@@ -242,7 +248,7 @@ export default function ContentValueField({ descriptor, initialContent, onSubmit
     const fieldStepValue = useMemo(() => getStepValue(descriptor.contentType), [descriptor.contentType]);
 
     const beforeOnSubmit = useCallback(
-        (attributeUuid: string, content: BaseAttributeContentModel[] | undefined) => {
+        (attributeUuid: string, content: FormAttributeContentItem[] | undefined) => {
             if (!content || content.length === 0) {
                 return;
             }
@@ -265,31 +271,31 @@ export default function ContentValueField({ descriptor, initialContent, onSubmit
                 }
             });
 
-            onSubmit(attributeUuid, updatedContent);
+            onSubmit(attributeUuid, updatedContent as BaseAttributeContentModel[]);
         },
         [onSubmit, descriptor.contentType],
     );
 
-    const transformObjectContent = (contentType: AttributeContentType, value: BaseAttributeContentModel) => {
+    const transformObjectContent = (contentType: AttributeContentType, value: FormAttributeContentItem): FormAttributeContentItem => {
         if (contentType === AttributeContentType.Datetime || contentType === AttributeContentType.Date) {
             return { ...value, data: new Date(value.data as string).toISOString() };
         }
         return value;
     };
 
-    const getFieldContent = (input: any) => {
+    const getFieldContent = (input: ControllerRenderProps): FormAttributeContentItem[] | undefined => {
         if (ContentFieldConfiguration[descriptor.contentType].type === 'checkbox') {
             return [{ data: input.value ?? false }];
         }
         if (!input.value && input.value !== 0 && input.value !== false) {
             return undefined;
         }
+        const dataFrom = (v: unknown) => (v != null && typeof v === 'object' && 'value' in v ? (v as { value: unknown }).value : v);
         if (descriptor.properties.list) {
-            const dataFrom = (v: any) => (v != null && typeof v === 'object' && 'value' in v ? v.value : v);
             if (descriptor.properties.multiSelect) {
-                return (input.value || []).map((v: any) => transformObjectContent(descriptor.contentType, { data: dataFrom(v) }));
+                return ((input.value as unknown[]) || []).map((v) => transformObjectContent(descriptor.contentType, { data: dataFrom(v) }));
             } else if (Array.isArray(input.value)) {
-                return input.value.map((v: any) => transformObjectContent(descriptor.contentType, { data: dataFrom(v) }));
+                return (input.value as unknown[]).map((v) => transformObjectContent(descriptor.contentType, { data: dataFrom(v) }));
             } else {
                 return [transformObjectContent(descriptor.contentType, { data: dataFrom(input.value) })];
             }

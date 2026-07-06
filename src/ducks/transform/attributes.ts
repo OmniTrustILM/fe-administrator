@@ -51,10 +51,14 @@ export function transformAttributeMappingModelToDto(attributeMapping: AttributeM
 }
 
 export function transformAttributeDescriptorDtoToModel(attributeDescriptor: AttributeDescriptorDto): AttributeDescriptorModel {
+    // BaseAttributeDto is not discriminated on `type` (it is typed as the full AttributeType enum),
+    // so TypeScript cannot correlate a spread member with the matching AttributeDescriptorModel arm.
+    // The DTO and model differ only in the (structurally compatible) content typing, so the assertion
+    // to the precise model type is sound.
     return {
         ...attributeDescriptor,
-        content: attributeDescriptor?.content ? structuredClone(attributeDescriptor.content) : undefined,
-    };
+        content: attributeDescriptor.content ? structuredClone(attributeDescriptor.content) : undefined,
+    } as AttributeDescriptorModel;
 }
 
 export function transformAttributeDescriptorCollectionDtoToModel(

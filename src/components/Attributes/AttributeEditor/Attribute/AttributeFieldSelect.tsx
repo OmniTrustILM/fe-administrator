@@ -7,17 +7,18 @@ import Button from 'components/Button';
 import { AddCustomValuePanel } from 'components/Input/DynamicContent/AddCustomValuePanel';
 import { Plus } from 'lucide-react';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
+import type { AttributeSelectOption } from 'utils/attributes/attributes';
 import { getSelectValueFromField, buildAttributeValidators, parseListValueByContentType } from './attributeHelpers';
 
 type AttributeFieldSelectProps = {
     name: string;
     descriptor: DataAttributeModel | CustomAttributeModel;
-    options?: { label: string; value: any }[];
+    options?: AttributeSelectOption[];
     busy: boolean;
     deleteButton?: React.ReactNode;
     addNewAttributeValue?: { label: string; value: string; disabled?: boolean };
-    onSelectChangeMulti: (fieldOnChange: (v: any) => void) => (newValue: any) => void;
-    onSelectChangeSingle: (fieldOnChange: (v: any) => void) => (newValue: any) => void;
+    onSelectChangeMulti: (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => void;
+    onSelectChangeSingle: (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => void;
 };
 
 export function AttributeFieldSelect({
@@ -30,13 +31,13 @@ export function AttributeFieldSelect({
     onSelectChangeMulti,
     onSelectChangeSingle,
 }: Readonly<AttributeFieldSelectProps>): React.ReactNode {
-    const { control } = useFormContext<Record<string, any>>();
+    const { control } = useFormContext();
     const [showAddCustom, setShowAddCustom] = useState(false);
     const [singleSelectKey, setSingleSelectKey] = useState(0);
-    const fieldValueRef = useRef<any>(undefined);
+    const fieldValueRef = useRef<unknown>(undefined);
 
     const handleSingleSelectChange = useCallback(
-        (fieldOnChange: (v: any) => void) => (newValue: any) => {
+        (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
             if (newValue === '__add_new__') {
                 onSelectChangeSingle(fieldOnChange)(newValue);
                 if (!fieldValueRef.current) {
@@ -61,16 +62,18 @@ export function AttributeFieldSelect({
                 const invalidClass = fieldState.isTouched && fieldState.invalid ? 'border-red-500' : '';
 
                 const baseOptions = options;
-                let currentValues: any[];
+                let currentValues: unknown[];
                 if (descriptor.properties.multiSelect) {
                     currentValues = Array.isArray(field.value) ? field.value : [];
                 } else {
                     currentValues = field.value != null && field.value !== '' ? [field.value] : [];
                 }
-                const seen = new Set(baseOptions.map((o: { value: any }) => String(o.value)));
-                const extra =
+                const seen = new Set(baseOptions.map((o) => String(o.value)));
+                const extra: AttributeSelectOption[] =
                     descriptor.properties.extensibleList === true
-                        ? currentValues.filter((v: any) => !seen.has(String(v))).map((v: any) => ({ label: String(v), value: v }))
+                        ? currentValues
+                              .filter((v) => !seen.has(String(v)))
+                              .map((v) => ({ label: String(v), value: v as AttributeSelectOption['value'] }))
                         : [];
                 const selectOptionsList = [...baseOptions, ...extra];
                 const selectOptions = addNewAttributeValue

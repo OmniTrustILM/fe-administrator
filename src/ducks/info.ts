@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type { CoreInfoResponseModel } from 'types/info';
 
 export type State = {
@@ -30,7 +31,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name] ?? initialState;
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name] ?? initialState;
 
 const platformInfo = createSelector(state, (state: State) => state.platformInfo);
 const isFetching = createSelector(state, (state: State) => state.isFetching);

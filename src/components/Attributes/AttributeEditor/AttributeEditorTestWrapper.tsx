@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router';
 import { createMockStore } from 'utils/test-helpers';
 import AttributeEditor from './index';
 import type { AttributeDescriptorModel, AttributeResponseModel } from 'types/attributes';
+import type { FunctionGroupCode } from 'types/openapi';
 
 export type AttributeEditorTestWrapperProps = {
     id: string;
@@ -14,7 +15,7 @@ export type AttributeEditorTestWrapperProps = {
     groupAttributesCallbackAttributes?: AttributeDescriptorModel[];
     setGroupAttributesCallbackAttributes?: React.Dispatch<React.SetStateAction<AttributeDescriptorModel[]>>;
     connectorUuid?: string;
-    functionGroupCode?: string;
+    functionGroupCode?: FunctionGroupCode;
     kind?: string;
     withRemoveAction?: boolean;
     preloadedState?: Record<string, unknown>;
@@ -68,7 +69,7 @@ export function AttributeEditorTestWrapper({
                         groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                         setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes ?? (() => {})}
                         connectorUuid={connectorUuid}
-                        functionGroupCode={functionGroupCode as any}
+                        functionGroupCode={functionGroupCode}
                         kind={kind}
                         withRemoveAction={withRemoveAction}
                     />

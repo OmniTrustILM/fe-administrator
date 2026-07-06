@@ -39,7 +39,7 @@ type ScepProfileFormProps = Readonly<{
     onSuccess?: () => void;
 }>;
 
-interface FormValues {
+type FormValues = {
     name: string;
     description: string;
     renewalThreshold: string;
@@ -56,7 +56,7 @@ interface FormValues {
     owner: string;
     groups: { value: string; label: string }[];
     deletedAttributes: string[];
-}
+} & Record<`__attributes__${string}`, unknown>;
 
 export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: ScepProfileFormProps) {
     const dispatch = useDispatch();
@@ -108,7 +108,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
             previousIdRef.current = undefined;
         }
 
-        if (editMode && scepProfileSelector?.uuid === id) {
+        if (editMode && scepProfileSelector && scepProfileSelector.uuid === id) {
             setIntune(scepProfileSelector.enableIntune ?? false);
             setScepProfile(scepProfileSelector);
             setRaProfile(scepProfileSelector.raProfile);
@@ -291,7 +291,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                 const formValues = getValues();
                 Object.keys(formValues).forEach((key) => {
                     if (key.startsWith('__attributes__issuanceAttributes__')) {
-                        setValue(key as any, undefined);
+                        setValue(key as `__attributes__${string}`, undefined);
                     }
                 });
                 return;

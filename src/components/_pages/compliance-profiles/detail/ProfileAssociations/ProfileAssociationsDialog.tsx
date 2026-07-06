@@ -22,6 +22,14 @@ type Props = Readonly<{
     associationsOfComplianceProfile: ResourceObjectDto[];
 }>;
 
+type ProfileAssociationOption = { uuid: string; name: string };
+
+type AssociationFormValues = {
+    resource: Resource | undefined;
+    raProfiles: ProfileAssociationOption | undefined;
+    tokenProfiles: ProfileAssociationOption | undefined;
+};
+
 export default function ProfileAssociationsDialog({ isOpen, onClose, profile, associationsOfComplianceProfile }: Props) {
     const dispatch = useDispatch();
 
@@ -65,13 +73,13 @@ export default function ProfileAssociationsDialog({ isOpen, onClose, profile, as
     }, [onClose]);
 
     const onSubmit = useCallback(
-        (values: any) => {
+        (values: AssociationFormValues) => {
             if (!profile || !selectedResource) return;
-            const selectedValue = values[selectedResource];
+            const selectedValue = values[selectedResource as 'raProfiles' | 'tokenProfiles'];
             dispatch(
                 actions.associateComplianceProfile({
                     uuid: profile.uuid,
-                    resource: values.resource,
+                    resource: selectedResource,
                     associationObjectUuid: selectedValue?.uuid || '',
                     associationObjectName: selectedValue?.name || '',
                 }),
@@ -106,15 +114,10 @@ export default function ProfileAssociationsDialog({ isOpen, onClose, profile, as
     }, [watchedResource, setSelectedResource]);
 
     const handleFormSubmit = useCallback(
-        (values: any) => {
-            if (!profile || !selectedResource) return;
-            const selectedValue = values[selectedResource];
-            onSubmit({
-                resource: values.resource,
-                [selectedResource]: selectedValue,
-            });
+        (values: AssociationFormValues) => {
+            onSubmit(values);
         },
-        [profile, selectedResource, onSubmit],
+        [onSubmit],
     );
 
     const dialogBody = useMemo(
@@ -143,8 +146,8 @@ export default function ProfileAssociationsDialog({ isOpen, onClose, profile, as
                                             const resource = value as Resource | undefined;
                                             field.onChange(resource);
                                             setSelectedResource(resource || null);
-                                            setValue('raProfiles' as any, undefined);
-                                            setValue('tokenProfiles' as any, undefined);
+                                            setValue('raProfiles', undefined);
+                                            setValue('tokenProfiles', undefined);
                                         }}
                                         placeholder="Select the resource to be associated"
                                         showOptionDescriptionInDropdown

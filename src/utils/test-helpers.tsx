@@ -11,13 +11,19 @@ import type { ApiClients } from '../api';
  * @param mockApiClients - Optional mock API clients for epic dependencies
  * @returns Configured Redux store
  */
-function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
     const output = { ...target };
     for (const key in source) {
-        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) && source[key] !== null) {
-            output[key] = deepMerge(target[key] || {}, source[key] as any);
-        } else {
-            output[key] = source[key] as any;
+        const sourceValue = source[key];
+        if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+            const targetValue = target[key];
+            const base =
+                targetValue && typeof targetValue === 'object' && !Array.isArray(targetValue)
+                    ? (targetValue as Record<string, unknown>)
+                    : {};
+            output[key] = deepMerge(base, sourceValue as Partial<Record<string, unknown>>) as T[Extract<keyof T, string>];
+        } else if (sourceValue !== undefined) {
+            output[key] = sourceValue as T[Extract<keyof T, string>];
         }
     }
     return output;
@@ -26,7 +32,7 @@ function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>)
 export function createMockStore(preloadedState?: Partial<ReturnType<typeof testReducers>>, mockApiClients?: ApiClients) {
     const baseState = testInitialState;
 
-    const finalState = preloadedState ? (deepMerge(baseState as any, preloadedState) as ReturnType<typeof testReducers>) : baseState;
+    const finalState = preloadedState ? deepMerge<ReturnType<typeof testReducers>>(baseState, preloadedState) : baseState;
 
     const store = configureStore({
         reducer: testReducers,

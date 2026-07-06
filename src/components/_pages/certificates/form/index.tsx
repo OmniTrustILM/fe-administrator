@@ -160,8 +160,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const [certificate, setCertificate] = useState<CertificateDetailResponseModel | undefined>();
     const [activeRequestTab, setActiveRequestTab] = useState(0);
 
-    const [attributeValuesMap] = useState<Record<string, Record<string, any>>>({});
-    const attributeValuesRef = useRef<Record<string, any>>({});
+    const [attributeValuesMap] = useState<Record<string, Record<string, unknown>>>({});
+    const attributeValuesRef = useRef<Record<string, unknown>>({});
 
     const methods = useForm<CertificateFormValues>({
         mode: 'onChange',
@@ -176,7 +176,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
 
     const combinedAttributeValues = useMemo(
         () =>
-            Object.values(attributeValuesMap).reduce<Record<string, any>>((acc, current) => {
+            Object.values(attributeValuesMap).reduce<Record<string, unknown>>((acc, current) => {
                 return { ...acc, ...current };
             }, {}),
         [attributeValuesMap],

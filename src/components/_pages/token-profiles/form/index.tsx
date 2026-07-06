@@ -43,6 +43,8 @@ interface FormValues {
     token: string;
     usages: { value: KeyUsage; label: string }[];
     enabled: boolean;
+    // Attribute fields are registered dynamically by AttributeEditor.
+    [attributeField: `__attributes__${string}`]: unknown;
 }
 
 export default function TokenProfileForm({
@@ -108,7 +110,7 @@ export default function TokenProfileForm({
     }, [dispatch, editMode, id, tokenId, tokenProfileSelector]);
 
     useEffect(() => {
-        if (editMode && tokenProfileSelector?.uuid === id) {
+        if (editMode && tokenProfileSelector && tokenProfileSelector.uuid === id) {
             setTokenProfile(tokenProfileSelector);
             dispatch(tokensActions.getTokenProfileAttributesDescriptors({ tokenUuid: tokenProfileSelector.tokenInstanceUuid }));
         }
@@ -187,7 +189,7 @@ export default function TokenProfileForm({
             const formValues = getValues();
             Object.keys(formValues).forEach((key) => {
                 if (key.startsWith('__attributes__token-profile__')) {
-                    setValue(key as any, undefined);
+                    setValue(key as `__attributes__${string}`, undefined);
                 }
             });
             dispatch(tokensActions.clearTokenProfileAttributesDescriptors());

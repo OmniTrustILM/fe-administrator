@@ -1,5 +1,5 @@
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, type ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import { Info, SquareMinus } from 'lucide-react';
@@ -374,7 +374,7 @@ function SecretDetail() {
 
     const groupOptions = useMemo(
         () =>
-            (groups ?? []).map((group: any) => ({
+            (groups ?? []).map((group) => ({
                 value: group.uuid,
                 label: group.name,
             })),
@@ -475,7 +475,7 @@ function SecretDetail() {
         const sourceVaultProfileVaultUuid =
             vaultProfiles.find((p) => p.uuid === secret?.sourceVaultProfile?.uuid)?.vaultInstance?.uuid ?? undefined;
 
-        let sourceVaultProfileCell: JSX.Element | string | undefined;
+        let sourceVaultProfileCell: ReactElement | string | undefined;
         if (!secret?.sourceVaultProfile) {
             sourceVaultProfileCell = 'Unassigned';
         } else if (sourceVaultProfileVaultUuid) {
@@ -500,7 +500,7 @@ function SecretDetail() {
                 columns: [
                     'Owner',
                     secret?.owner ? (
-                        <Link to={`/${Resource.Users.toLowerCase()}/detail/${secret.owner.uuid}`}>{(secret.owner as any).name}</Link>
+                        <Link to={`/${Resource.Users.toLowerCase()}/detail/${secret.owner.uuid}`}>{secret.owner.name}</Link>
                     ) : (
                         'Unassigned'
                     ),

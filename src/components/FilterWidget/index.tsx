@@ -49,7 +49,7 @@ function mapFilterToRequestDto(f: SearchFilterModel): SearchFilterRequestDto {
         fieldIdentifier: f.fieldIdentifier,
         condition: f.condition,
         value: Array.isArray(f.value)
-            ? f.value.map((v: any) => (typeof v === 'object' && v !== null && Object.hasOwn(v, 'name') ? v.name : v))
+            ? f.value.map((v: unknown) => (typeof v === 'object' && v !== null && 'name' in v ? (v as { name: unknown }).name : v))
             : f.value,
     };
 }
@@ -109,7 +109,7 @@ function buildFieldLabelMap(fields: FieldData[], attributeContentTypeEnum: Param
 
 interface ObjectValueOptions {
     label: string;
-    value: any;
+    value: OptionValue;
 }
 
 type Props = {
@@ -313,8 +313,8 @@ export default function FilterWidget({
         }
 
         if (Array.isArray(currentFilters[selectedFilter].value)) {
-            const currentValue = currentFilters[selectedFilter]?.value as Array<object>;
-            const newFilterValue = currentValue.map((v: any) => {
+            const currentValue = currentFilters[selectedFilter]?.value as unknown[];
+            const newFilterValue = currentValue.map((v: unknown) => {
                 const value = v;
                 let label: string;
                 if (typeof v === 'string') {
@@ -324,7 +324,8 @@ export default function FilterWidget({
                         label = field.platformEnum ? getEnumLabel(platformEnums[field.platformEnum], v) : v;
                     }
                 } else {
-                    label = v?.name || JSON.stringify(v);
+                    const name = typeof v === 'object' && v !== null && 'name' in v ? (v as { name?: unknown }).name : undefined;
+                    label = name ? String(name) : JSON.stringify(v);
                 }
                 return { label, value };
             });
@@ -380,7 +381,7 @@ export default function FilterWidget({
                 }
                 return field?.type && checkIfFieldTypeIsDate(field.type) ? getFormattedUtc(field.type, filterValue) : filterValue;
             }
-            return Array.isArray(filterValue) ? filterValue.map((v) => v.value) : (filterValue as any).value;
+            return Array.isArray(filterValue) ? filterValue.map((v) => v.value) : (filterValue as { value?: unknown }).value;
         };
         const value = computeValue();
 
@@ -594,17 +595,30 @@ export default function FilterWidget({
         }
         function renderDefaultInput() {
             const isLongValue = objectValueOptions.some((o) => o.label.length > 50);
+            const isDisabled = !filterField || !filterCondition || noValue[filterCondition.value];
+            if (currentField?.multiValue) {
+                return (
+                    <Select
+                        id="valueSelect"
+                        options={objectValueOptions}
+                        isMulti
+                        value={Array.isArray(filterValue) ? (filterValue as { value: string | number; label: string }[]) : []}
+                        onChange={(e) => setFilterValue(e ?? undefined)}
+                        isClearable
+                        isDisabled={isDisabled}
+                        isSearchable
+                        dropdownWidth={isLongValue ? 400 : undefined}
+                    />
+                );
+            }
             return (
                 <Select
                     id="valueSelect"
                     options={objectValueOptions}
                     value={filterValue ?? null}
-                    onChange={(e: any) => {
-                        setFilterValue(e);
-                    }}
-                    isMulti={currentField?.multiValue as any}
+                    onChange={(e) => setFilterValue(e ?? undefined)}
                     isClearable
-                    isDisabled={!filterField || !filterCondition || noValue[filterCondition.value]}
+                    isDisabled={isDisabled}
                     isSearchable
                     dropdownWidth={isLongValue ? 400 : undefined}
                 />
@@ -661,24 +675,26 @@ export default function FilterWidget({
     ]);
 
     function getFilterBadgeValue(f: SearchFilterModel, field: FieldData | undefined): string {
-        function mapArrayValue(v: any): any {
-            if (field?.platformEnum) return platformEnums[field.platformEnum][v]?.label ?? v;
-            if (v?.name) return v.name;
-            if (field?.type && checkIfFieldTypeIsDate(field.type) && checkIfFieldOperatorIsInterval(f.condition)) {
-                return getIso8601StringFromDurationString(v as string);
+        function mapArrayValue(v: unknown): string {
+            if (field?.platformEnum) return String(platformEnums[field.platformEnum][String(v)]?.label ?? v);
+            if (typeof v === 'object' && v !== null && 'name' in v && (v as { name?: unknown }).name) {
+                return String((v as { name: unknown }).name);
             }
-            if (field?.attributeContentType === AttributeContentType.Date) return getFormattedDate(v);
-            if (field?.attributeContentType === AttributeContentType.Datetime) return getFormattedDateTime(v);
-            return v;
+            if (field?.type && checkIfFieldTypeIsDate(field.type) && checkIfFieldOperatorIsInterval(f.condition)) {
+                return getIso8601StringFromDurationString(String(v));
+            }
+            if (field?.attributeContentType === AttributeContentType.Date) return getFormattedDate(String(v));
+            if (field?.attributeContentType === AttributeContentType.Datetime) return getFormattedDateTime(String(v));
+            return String(v);
         }
 
-        function mapValue(): any {
+        function mapValue(): string | number | undefined {
             if (f.value == null || f.value === '') return '';
             if (typeof f.value === 'number') return f.value;
             if (field?.type && checkIfFieldTypeIsDate(field.type) && checkIfFieldOperatorIsInterval(f.condition)) {
-                return getDurationStringFromIso8601String(f.value);
+                return getDurationStringFromIso8601String(String(f.value));
             }
-            if (field?.platformEnum) return platformEnums[field.platformEnum][f.value as unknown as string]?.label;
+            if (field?.platformEnum) return platformEnums[field.platformEnum][String(f.value)]?.label;
             if (
                 field?.attributeContentType === AttributeContentType.Date ||
                 (field?.type === FilterFieldType.Date && field?.attributeContentType !== AttributeContentType.Datetime)

@@ -14,6 +14,7 @@ import Widget from 'components/Widget';
 import RaProfileForm from '../form';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { Resource } from 'types/openapi';
 
 function RaProfileList() {
     const dispatch = useDispatch();
@@ -90,7 +91,7 @@ function RaProfileList() {
     }, [checkedRows, dispatch]);
 
     const onComplianceCheckConfirmed = useCallback(() => {
-        dispatch(actions.checkCompliance({ uuids: checkedRows }));
+        dispatch(actions.checkCompliance({ resource: Resource.RaProfiles, uuids: checkedRows }));
         setComplianceCheck(false);
     }, [checkedRows, dispatch]);
 

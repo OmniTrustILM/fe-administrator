@@ -1,7 +1,9 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type { SearchRequestModel } from 'types/certificate';
-import type { VaultInstanceDetailDto, VaultInstanceDto, VaultInstanceUpdateRequestDto } from 'types/openapi';
+import type { VaultInstanceDetailDto, VaultInstanceDto, VaultInstanceRequestDto, VaultInstanceUpdateRequestDto } from 'types/openapi';
 import type { AttributeDescriptorModel } from 'types/attributes';
+import { resetSliceState } from './reducerUtils';
 
 export type State = {
     vaults: VaultInstanceDto[];
@@ -45,11 +47,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         listVaults: (state, action: PayloadAction<SearchRequestModel>) => {
@@ -105,19 +103,7 @@ export const slice = createSlice({
             state.isFetchingVaultInstanceAttributes = false;
         },
 
-        createVault: (
-            state,
-            action: PayloadAction<{
-                request: {
-                    connectorUuid: string;
-                    interfaceUuid: string;
-                    name: string;
-                    description?: string;
-                    attributes: any[];
-                    customAttributes?: any[];
-                };
-            }>,
-        ) => {
+        createVault: (state, action: PayloadAction<{ request: VaultInstanceRequestDto }>) => {
             state.isCreating = true;
             state.createVaultSucceeded = false;
         },
@@ -167,7 +153,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore.vaults;
 
 const vaults = createSelector(state, (state) => state.vaults);
 const vault = createSelector(state, (state) => state.vault);

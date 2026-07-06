@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type { EntityType } from './filters';
 
 export type State = {
@@ -25,9 +26,9 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name] ?? initialState;
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name] ?? initialState;
 
-const registeredScopes = (reduxStore: any): Record<string, string> => state(reduxStore).byEntity;
+const registeredScopes = (reduxStore: AppState): Record<string, string> => state(reduxStore).byEntity;
 
 export const selectors = {
     state,

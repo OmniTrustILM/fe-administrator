@@ -21,6 +21,8 @@ import { Link, useParams } from 'react-router';
 import LocationForm from '../form';
 import Badge from 'components/Badge';
 import type { AttributeDescriptorModel } from 'types/attributes';
+import type { LocationResponseModel } from 'types/locations';
+import type { RaProfileResponseModel } from 'types/ra-profiles';
 import Button from 'components/Button';
 import { buildValidationRules } from 'utils/validators-helper';
 import { collectFormAttributes, getAttributeContent } from 'utils/attributes/attributes';
@@ -51,7 +53,7 @@ const PushCertificateForm = ({
     setPushDialog,
 }: {
     selectedCerts: string[];
-    location: any;
+    location: LocationResponseModel | undefined;
     pushAttributeDescriptors: AttributeDescriptorModel[];
     pushGroupAttributesCallbackAttributes: AttributeDescriptorModel[];
     setPushGroupAttributesCallbackAttributes: Dispatch<SetStateAction<AttributeDescriptorModel[]>>;
@@ -67,7 +69,7 @@ const PushCertificateForm = ({
     const { handleSubmit, formState, control } = methods;
     const allValues = useWatch({ control });
 
-    const onSubmit = (values: any) => {
+    const onSubmit = () => {
         if (selectedCerts.length === 0 || !location) return;
 
         const attrs = collectFormAttributes(
@@ -127,7 +129,7 @@ const IssueCertificateForm = ({
     isPushingCertificate,
     setIssueDialog,
 }: {
-    location: any;
+    location: LocationResponseModel | undefined;
     issuanceAttributeDescriptors: AttributeDescriptorModel[];
     issueGroupAttributesCallbackAttributes: AttributeDescriptorModel[];
     setIssueGroupAttributesCallbackAttributes: Dispatch<SetStateAction<AttributeDescriptorModel[]>>;
@@ -135,7 +137,7 @@ const IssueCertificateForm = ({
     csrGroupAttributesCallbackAttributes: AttributeDescriptorModel[];
     setCsrGroupAttributesCallbackAttributes: Dispatch<SetStateAction<AttributeDescriptorModel[]>>;
     resourceCustomAttributes: AttributeDescriptorModel[];
-    raProfiles: any[];
+    raProfiles: RaProfileResponseModel[];
     isPushingCertificate: boolean;
     setIssueDialog: (open: boolean) => void;
 }) => {

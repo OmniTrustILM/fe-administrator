@@ -1,4 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
+import { resetSliceState } from 'ducks/reducerUtils';
 import type { TrustedCertificateRequestDto, TrustedCertificateResponseDto } from 'types/trusted-certificates';
 
 export type State = {
@@ -26,11 +28,7 @@ export const slice = createSlice({
 
     reducers: {
         resetState: (state, _action: PayloadAction<void>) => {
-            Object.keys(state).forEach((key) => {
-                if (!Object.hasOwn(initialState, key)) (state as any)[key] = undefined;
-            });
-
-            Object.keys(initialState).forEach((key) => ((state as any)[key] = (initialState as any)[key]));
+            resetSliceState(state, initialState);
         },
 
         listTrustedCertificates: (state, _action: PayloadAction<void>) => {
@@ -98,7 +96,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const trustedCertificates = createSelector(state, (state) => state.trustedCertificates);
 const trustedCertificate = createSelector(state, (state) => state.trustedCertificate);

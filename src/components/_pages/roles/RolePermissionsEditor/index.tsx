@@ -309,7 +309,7 @@ function RolePermissionsEditor({
                 id: action.name,
                 content: action.displayName.toUpperCase(),
                 sortable: false,
-                align: 'center',
+                align: 'center' as const,
                 width: '5em',
             })) || []),
         ],

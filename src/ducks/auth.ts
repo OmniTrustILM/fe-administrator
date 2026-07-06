@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppState } from 'ducks';
 import type { AuthResourceModel, UserDetailModel, UserProfileDetailModel, UserUpdateRequestModel } from 'types/auth';
 import type { NameAndUuidModel } from 'types/locations';
 import type { Resource } from 'types/openapi';
@@ -27,18 +28,6 @@ export const slice = createSlice({
     initialState,
 
     reducers: {
-        /*resetState: (state, action: PayloadAction<void>) => {
-
-         Object.keys(state).forEach(
-            key => { if (!initialState.hasOwnProperty(key) && key !== "profile") (state as any)[key] = undefined; }
-         );
-
-         Object.keys(initialState).forEach(
-            key => (state as any)[key] = (initialState as any)[key]
-         );
-
-      },*/
-
         clearResources: (state, action: PayloadAction<void>) => {
             state.resources = undefined;
         },
@@ -106,7 +95,7 @@ export const slice = createSlice({
     },
 });
 
-const selectState = (reduxStore: any): State => reduxStore?.[slice.name];
+const selectState = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const profile = createSelector(selectState, (state) => state.profile);
 const resources = createSelector(selectState, (state) => state.resources);
