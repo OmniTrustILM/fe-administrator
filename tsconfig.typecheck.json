@@ -1,0 +1,7 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "ignoreDeprecations": "6.0"
+    },
+    "exclude": ["src/types/openapi", "**/*.spec.ts", "**/*.spec.tsx"]
+}

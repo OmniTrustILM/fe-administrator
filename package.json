@@ -50,6 +50,7 @@
         "build": "vite build",
         "serve": "vite preview",
         "lint": "biome check .",
+        "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
         "format": "biome format --write .",
         "format:check": "biome format .",
         "test": "npm run test:all",
