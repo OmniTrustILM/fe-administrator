@@ -8,6 +8,8 @@ import Editor from 'components/Input/CodeEditor/CodeEditor';
 import cn from 'classnames';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import { AttributeContentType } from 'types/openapi';
+import RequestAttributeMappingBadge from 'components/RequestAttributes/RequestAttributeMappingBadge';
+import { getFieldMapping } from 'utils/requestAttributes';
 import { getCodeBlockLanguage } from '../../../../utils/attributes/attributes';
 import { getHighLightedCode } from '../../CodeBlock';
 import {
@@ -208,6 +210,7 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                             {descriptor.properties.label}
                         </Label>
                     )}
+                    {showLabel && <RequestAttributeMappingBadge fieldMapping={getFieldMapping(descriptor)} />}
                     <div className="flex items-center">
                         <StandardInputControl
                             name={name}
