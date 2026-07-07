@@ -1,7 +1,8 @@
 import { test, expect } from '../../../../../playwright/ct-test';
 import { AttributeFieldInputTestWrapper } from './AttributeFieldInputTestWrapper';
 import type { DataAttributeModel } from 'types/attributes';
-import { AttributeContentType } from 'types/openapi';
+import { AttributeContentType, AttributeType, FieldType, ObjectType } from 'types/openapi';
+import type { FieldMapping } from 'types/openapi';
 
 const defaultProperties = {
     label: 'Test Field',
@@ -14,7 +15,7 @@ const defaultProperties = {
 
 function minimalDescriptor(contentType: AttributeContentType, overrides: Partial<DataAttributeModel> = {}): DataAttributeModel {
     return {
-        type: 'Data',
+        type: AttributeType.Data,
         name: 'testField',
         uuid: 'test-uuid',
         contentType,
@@ -224,5 +225,33 @@ test.describe('AttributeFieldInput', () => {
         await expect(input).toBeVisible();
         await expect(input).toHaveAttribute('placeholder', 'Enter My Input');
         await expect(input).toHaveValue('');
+    });
+
+    test('renders the request-attribute mapping badge for a String field with fieldMapping', async ({ mount, page }) => {
+        const fieldMapping = {
+            objectType: ObjectType.X509Certificate,
+            fields: [
+                { fieldType: FieldType.Rdn, rdn: 'CN', order: 1 },
+                { fieldType: FieldType.San, generalNameType: 'dns', order: 2 },
+            ],
+        } as unknown as FieldMapping;
+        const descriptor = minimalDescriptor(AttributeContentType.String, {
+            properties: { ...defaultProperties, label: 'Server FQDN' },
+            fieldMapping,
+        } as any);
+        await mount(<AttributeFieldInputTestWrapper name="testField" descriptor={descriptor} />);
+
+        await expect(page.getByTestId('request-attribute-mapping-badge')).toBeVisible();
+        await expect(page.getByText('→ Subject CN + SAN dNSName')).toBeVisible();
+    });
+
+    test('does not render a mapping badge for a String field without fieldMapping', async ({ mount, page }) => {
+        const descriptor = minimalDescriptor(AttributeContentType.String, {
+            properties: { ...defaultProperties, label: 'Plain Field' },
+        } as any);
+        await mount(<AttributeFieldInputTestWrapper name="testField" descriptor={descriptor} />);
+
+        await expect(page.getByText('Plain Field')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-mapping-badge')).toHaveCount(0);
     });
 });
