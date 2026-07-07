@@ -21,6 +21,7 @@ test.describe('RequestAttributeMappingBadge', () => {
     test('exposes a "Maps to" tooltip title', async ({ mount }) => {
         const component = await mount(<RequestAttributeMappingBadge fieldMapping={mapping([{ fieldType: FieldType.Rdn, rdn: 'O' }])} />);
         await expect(component).toHaveAttribute('title', 'Maps to: Subject O');
+        await expect(component).toHaveAttribute('data-testid', 'request-attribute-mapping-badge');
     });
 
     test('renders nothing when there is no mapping', async ({ mount }) => {
