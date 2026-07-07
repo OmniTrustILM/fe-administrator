@@ -23,12 +23,6 @@ export function getFieldMapping(descriptor: AnyDescriptor): FieldMapping | undef
     return (descriptor as DataAttributeV3).fieldMapping ?? undefined;
 }
 
-/** True when the descriptor is a data attribute with at least one mapped field. */
-export function isRequestAttribute(descriptor: AnyDescriptor): boolean {
-    const fields = getFieldMapping(descriptor)?.fields;
-    return Array.isArray(fields) && fields.length > 0;
-}
-
 function generalNameLabel(value: string): string {
     return GENERAL_NAME_LABELS[value] ?? value;
 }

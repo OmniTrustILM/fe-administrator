@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { AttributeContentType, AttributeType, FieldType, ObjectType } from 'types/openapi';
 import type { FieldMapping } from 'types/openapi';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import { fieldMappingSummary, getFieldMapping, isRequestAttribute } from './requestAttributes';
+import { fieldMappingSummary, getFieldMapping } from './requestAttributes';
 
 // fields carry rdn/generalNameType/extensionOid that the generated TS subtypes omit,
 // so build plain objects and cast to the FieldMapping shape.
@@ -40,21 +40,6 @@ describe('getFieldMapping', () => {
     });
     test('returns undefined for undefined', () => {
         expect(getFieldMapping(undefined)).toBeUndefined();
-    });
-});
-
-describe('isRequestAttribute', () => {
-    test('true when mapping has at least one field', () => {
-        expect(isRequestAttribute(dataDescriptor(mapping([{ fieldType: FieldType.Rdn, rdn: 'CN' }])))).toBe(true);
-    });
-    test('false when fields is empty', () => {
-        expect(isRequestAttribute(dataDescriptor(mapping([])))).toBe(false);
-    });
-    test('false when no mapping', () => {
-        expect(isRequestAttribute(dataDescriptor())).toBe(false);
-    });
-    test('false for non-data attribute', () => {
-        expect(isRequestAttribute(customDescriptor())).toBe(false);
     });
 });
 
