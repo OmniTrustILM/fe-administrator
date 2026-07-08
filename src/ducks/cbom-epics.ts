@@ -5,7 +5,7 @@ import { extractError } from 'utils/net';
 import { alertsSlice } from './alert-slice';
 import { actions as appRedirectActions } from './app-redirect';
 import { EntityType } from './filters';
-import { actions as pagingActions, selectors as pagingSelectors, listParamsAfterDelete } from './paging';
+import { actions as pagingActions, selectors as pagingSelectors, entityListParams, listParamsAfterDelete } from './paging';
 import { slice } from './cbom';
 import {
     transformCbomDtoToModel,
@@ -192,18 +192,22 @@ const deleteCbom: AppEpic = (action$, state, deps) => {
 const bulkDeleteCbom: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.bulkDeleteCbom.match),
-        switchMap((action) =>
-            deps.apiClients.cbomManagement.bulkDeleteCbom({ requestBody: action.payload.uuids }).pipe(
+        switchMap((action) => {
+            // Snapshot paging *before* the delete resolves — PagedList fires an immediate
+            // pre-commit re-fetch on delete whose listSuccess can overwrite totalItems.
+            const paramsBeforeDelete = entityListParams(EntityType.CBOM, state.value);
+            const totalBeforeDelete = pagingSelectors.totalItems(EntityType.CBOM)(state.value);
+
+            return deps.apiClients.cbomManagement.bulkDeleteCbom({ requestBody: action.payload.uuids }).pipe(
                 mergeMap(() => {
-                    const currentPage = pagingSelectors.pageNumber(EntityType.CBOM)(state.value);
-                    const listParams = listParamsAfterDelete(EntityType.CBOM, state.value, action.payload.uuids.length);
+                    const listParams = listParamsAfterDelete(paramsBeforeDelete, totalBeforeDelete, action.payload.uuids.length);
 
                     return of(
                         slice.actions.bulkDeleteCbomSuccess({ uuids: action.payload.uuids }),
                         alertsSlice.actions.success('Selected CBOMs successfully deleted.'),
                         // Only re-align the paging slice when the deletion emptied the current page
                         // and we had to step back; otherwise the re-fetch below is enough.
-                        ...(listParams.pageNumber !== currentPage
+                        ...(listParams.pageNumber !== paramsBeforeDelete.pageNumber
                             ? [
                                   pagingActions.setPagination({
                                       entity: EntityType.CBOM,
@@ -221,8 +225,8 @@ const bulkDeleteCbom: AppEpic = (action$, state, deps) => {
                         alertsSlice.actions.error(extractError(err, 'Failed to bulk delete CBOMs')),
                     ),
                 ),
-            ),
-        ),
+            );
+        }),
     );
 };
 

@@ -406,6 +406,53 @@ describe('signingProfiles epics', () => {
         expect(emitted[3]).toEqual(signingProfileActions.listSigningProfiles({ pageNumber: 1, itemsPerPage: 5, filters: [] }));
     });
 
+    test('bulkDeleteSigningProfiles with partial errors re-fetches the list without a success alert', async () => {
+        // p-1 fails, p-2 is deleted server-side. The reducers no longer splice locally, so the
+        // deleted row must be removed by a re-fetch — but with no success alert.
+        const errors = [{ uuid: 'p-1', name: 'p-1', message: 'In use' }] as any;
+        const state = {
+            pagings: {
+                pagings: [
+                    {
+                        entity: EntityType.SIGNING_PROFILE,
+                        paging: { pageNumber: 1, pageSize: 10, totalItems: 5, checkedRows: [], isFetchingList: false },
+                    },
+                ],
+            },
+            filters: { filters: [{ entity: EntityType.SIGNING_PROFILE, filter: { currentFilters: [] } }] },
+        };
+
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.BulkDelete,
+            signingProfileActions.bulkDeleteSigningProfiles({ uuids: ['p-1', 'p-2'] }),
+            { signingProfiles: { bulkDeleteSigningProfiles: () => of(errors) } },
+            4,
+            state,
+        );
+
+        expect(emitted[0]).toEqual(signingProfileActions.bulkDeleteSigningProfilesSuccess({ uuids: ['p-1', 'p-2'], errors }));
+        expect(emitted.some((a: any) => a.type === signingProfileActions.listSigningProfiles.type)).toBe(true);
+        expect(emitted.some((a: any) => a.type === alertActions.success.type)).toBe(false);
+        expect(emitted.some((a: any) => a.type === pagingActions.setPagination.type)).toBe(false);
+    });
+
+    test('bulkDeleteSigningProfiles with all items failing emits only success (no alert, no re-fetch)', async () => {
+        // Every uuid errored → nothing was deleted, so there is nothing to re-fetch or re-page.
+        const errors = [
+            { uuid: 'p-1', name: 'p-1', message: 'In use' },
+            { uuid: 'p-2', name: 'p-2', message: 'In use' },
+        ] as any;
+
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.BulkDelete,
+            signingProfileActions.bulkDeleteSigningProfiles({ uuids: ['p-1', 'p-2'] }),
+            { signingProfiles: { bulkDeleteSigningProfiles: () => of(errors) } },
+            4,
+        );
+
+        expect(emitted).toEqual([signingProfileActions.bulkDeleteSigningProfilesSuccess({ uuids: ['p-1', 'p-2'], errors })]);
+    });
+
     test('bulkDeleteSigningProfiles failure emits bulkDeleteFailure and fetchError', async () => {
         const err = new Error('bulk delete failed');
         const emitted = await runEpic(

@@ -124,16 +124,23 @@ export function entityListParams(entity: EntityType, stateValue: AppState) {
     };
 }
 
-/**
- * Builds the list-request params to use after deleting `deletedCount` items of `entity`.
- * When the current page would become empty (e.g. all rows on the last page were deleted),
- * steps back to the new last page so the re-fetch lands on a page that still has data.
- */
-export function listParamsAfterDelete(entity: EntityType, stateValue: AppState, deletedCount: number) {
-    const { pageNumber: currentPage, itemsPerPage, filters } = entityListParams(entity, stateValue);
-    const total = totalItems(entity)(stateValue);
+export type EntityListParams = ReturnType<typeof entityListParams>;
 
-    const totalAfterDelete = Math.max(0, total - deletedCount);
+/**
+ * Builds the list-request params to use after deleting `deletedCount` items, given the paging
+ * snapshot captured *before* the delete. When the current page would become empty (e.g. all rows
+ * on the last page were deleted), steps back to the new last page so the re-fetch lands on a page
+ * that still has data.
+ *
+ * The `totalBeforeDelete` snapshot must be read when the delete is dispatched, not when it
+ * resolves: `PagedList.onDeleteConfirmed` fires an immediate (pre-commit) re-fetch on delete whose
+ * `listSuccess` can overwrite `totalItems` with the already-reduced count, so reading it later
+ * would double-subtract `deletedCount` and step back too far.
+ */
+export function listParamsAfterDelete(paramsBeforeDelete: EntityListParams, totalBeforeDelete: number, deletedCount: number) {
+    const { pageNumber: currentPage, itemsPerPage, filters } = paramsBeforeDelete;
+
+    const totalAfterDelete = Math.max(0, totalBeforeDelete - deletedCount);
     const lastPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / Math.max(1, itemsPerPage)));
     const pageNumber = Math.min(currentPage, lastPageAfterDelete);
 

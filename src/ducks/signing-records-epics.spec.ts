@@ -228,8 +228,45 @@ describe('signingRecords epics', () => {
         expect(emitted[3]).toEqual(slice.actions.listSigningRecords({ pageNumber: 1, itemsPerPage: 5, filters: [] }));
     });
 
-    test('bulkDeleteSigningRecords with per-item errors emits success carrying errors and no alert', async () => {
+    test('bulkDeleteSigningRecords with partial errors re-fetches the list without a success alert', async () => {
+        // rec-1 fails, rec-2 is deleted server-side. Since the reducers no longer splice locally,
+        // the deleted row must be removed by a re-fetch — but with no success alert.
         const errors = [{ uuid: 'rec-1', name: 'rec-1', message: 'In use' }] as any;
+        const deps = createDeps({ bulkDeleteSigningRecords: () => of(errors) });
+
+        const state$ = {
+            value: {
+                pagings: {
+                    pagings: [
+                        {
+                            entity: EntityType.SIGNING_RECORD,
+                            paging: { pageNumber: 1, pageSize: 10, totalItems: 5, checkedRows: [], isFetchingList: false },
+                        },
+                    ],
+                },
+                filters: { filters: [{ entity: EntityType.SIGNING_RECORD, filter: { currentFilters: [] } }] },
+            },
+        } as any;
+
+        const output$ = (bulkDeleteSigningRecords as any)(
+            of(slice.actions.bulkDeleteSigningRecords({ uuids: ['rec-1', 'rec-2'] })),
+            state$,
+            deps as any,
+        );
+        const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
+
+        expect(emitted[0]).toEqual(slice.actions.bulkDeleteSigningRecordsSuccess({ uuids: ['rec-1', 'rec-2'], errors }));
+        expect(emitted.some((a: any) => a.type === slice.actions.listSigningRecords.type)).toBe(true);
+        expect(emitted.some((a: any) => a.type === alertsSlice.actions.success.type)).toBe(false);
+        expect(emitted.some((a: any) => a.type === pagingActions.setPagination.type)).toBe(false);
+    });
+
+    test('bulkDeleteSigningRecords with all items failing emits only success (no alert, no re-fetch)', async () => {
+        // Every uuid errored → nothing was deleted, so there is nothing to re-fetch or re-page.
+        const errors = [
+            { uuid: 'rec-1', name: 'rec-1', message: 'In use' },
+            { uuid: 'rec-2', name: 'rec-2', message: 'In use' },
+        ] as any;
         const deps = createDeps({ bulkDeleteSigningRecords: () => of(errors) });
 
         const output$ = (bulkDeleteSigningRecords as any)(
@@ -237,7 +274,7 @@ describe('signingRecords epics', () => {
             of({}) as any,
             deps as any,
         );
-        const emitted = await firstValueFrom(output$.pipe(take(1), toArray()));
+        const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
 
         expect(emitted).toEqual([slice.actions.bulkDeleteSigningRecordsSuccess({ uuids: ['rec-1', 'rec-2'], errors })]);
     });
