@@ -21,9 +21,11 @@ import type {
     CustomAttributeProperties,
     CustomAttributeV3,
     DataAttributeV3,
+    FieldMapping,
     GroupAttributeV3,
     InfoAttributeV3,
     MetadataAttributeV3,
+    ValueSource,
 } from './';
 
 /**

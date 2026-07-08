@@ -36,4 +36,10 @@ export interface AttributeCallback {
      * @memberof AttributeCallback
      */
     mappings: Array<AttributeCallbackMapping>;
+    /**
+     * Names of the attributes this Attributes v2 callback consumes and is triggered by. Marks an NG (Attributes v2) callback; at most one of dependsOn / callbackContext may be set (neither = no callback). Forbidden on RESOURCE attributes. Enforced by Core.
+     * @type {Array<string>}
+     * @memberof AttributeCallback
+     */
+    dependsOn?: Array<string>;
 }

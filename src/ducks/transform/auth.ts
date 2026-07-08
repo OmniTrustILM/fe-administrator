@@ -45,6 +45,7 @@ export function transformRoleResponseDtoToModel(role: RoleResponseDto): RoleResp
 export function transformUserUpdateRequestModelToDto(user: UserUpdateRequestModel): UserUpdateRequestDto {
     return {
         ...user,
+        email: user.email || null,
         customAttributes: user.customAttributes?.map(transformAttributeRequestModelToDto),
-    };
+    } as UserUpdateRequestDto;
 }

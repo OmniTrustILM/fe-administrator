@@ -19,6 +19,8 @@ import type {
     BaseAttributeConstraint,
     BaseAttributeContentDtoV3,
     DataAttributeProperties,
+    FieldMapping,
+    ValueSource,
 } from './';
 
 /**
@@ -93,4 +95,16 @@ export interface DataAttributeV3 {
      * @memberof DataAttributeV3
      */
     schemaVersion: AttributeVersion;
+    /**
+     * Declares which certificate (or other object) fields this attribute\'s value projects into; presence marks this attribute as a certificate request attribute
+     * @type {FieldMapping}
+     * @memberof DataAttributeV3
+     */
+    fieldMapping?: FieldMapping;
+    /**
+     * Declares how Core resolves the content of this attribute; orthogonal to fieldMapping
+     * @type {ValueSource}
+     * @memberof DataAttributeV3
+     */
+    valueSource?: ValueSource;
 }

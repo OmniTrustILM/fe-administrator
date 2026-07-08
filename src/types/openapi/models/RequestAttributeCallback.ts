@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { PaginationRequestDto } from './';
+import type { PaginationRequestDto, RequestAttribute } from './';
 
 /**
  * @export
@@ -60,4 +60,10 @@ export interface RequestAttributeCallback {
      * @memberof RequestAttributeCallback
      */
     pagination?: PaginationRequestDto;
+    /**
+     * Attributes v2 callback values: the dependsOn-named attributes the callback consumes, reference-typed values expanded inline by Core. Used by the NG (Attributes v2) callback path.
+     * @type {Array<RequestAttribute>}
+     * @memberof RequestAttributeCallback
+     */
+    attributes?: Array<RequestAttribute>;
 }

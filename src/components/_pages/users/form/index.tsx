@@ -731,9 +731,11 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
             <Dialog
                 isOpen={certUploadDialog}
                 caption={`Choose Certificate`}
+                size="lg"
                 body={
                     <CertificateUploadDialog
                         okButtonTitle="Choose"
+                        showCustomAttributes={false}
                         onCancel={() => setCertUploadDialog(false)}
                         onUpload={(data) => {
                             setCertToUpload(data.certificate);

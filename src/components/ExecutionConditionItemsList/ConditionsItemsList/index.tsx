@@ -31,11 +31,11 @@ const ConditionsItemsList = ({ conditionItems = [], conditionName, conditionUuid
     if (isLoading) return <Spinner active={isFetchingConditionDetails} />;
 
     return smallerBadges ? (
-        <div className="flex gap-2 items-center">
-            <h6 className="text-gray-500">{`${conditionName}'s Condition Items`}</h6>
-            <div className="flex flex-wrap">
+        <div className="flex flex-col gap-1 w-full min-w-0">
+            <h6 className="text-gray-500 break-words">{`${conditionName}'s Condition Items`}</h6>
+            <div className="flex flex-col gap-1 w-full min-w-0">
                 {renderConditionItems(conditionItems, availableFilters, platformEnums, searchGroupEnum, filterConditionOperatorEnum, {
-                    className: '',
+                    className: 'break-words',
                     variant: 'small',
                 })}
             </div>

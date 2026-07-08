@@ -94,4 +94,13 @@ describe('auth transforms', () => {
         const result = transformUserUpdateRequestModelToDto(model);
         expect(result.customAttributes).toHaveLength(1);
     });
+
+    test('transformUserUpdateRequestModelToDto sends null for a blank email (issue #1800)', () => {
+        expect(transformUserUpdateRequestModelToDto({ email: '' } as any).email).toBeNull();
+        expect(transformUserUpdateRequestModelToDto({ email: undefined } as any).email).toBeNull();
+    });
+
+    test('transformUserUpdateRequestModelToDto keeps a provided email', () => {
+        expect(transformUserUpdateRequestModelToDto({ email: 'a@b.com' } as any).email).toBe('a@b.com');
+    });
 });

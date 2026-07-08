@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
@@ -11,13 +11,17 @@ import ForceDeleteErrorTable from 'components/ForceDeleteErrorTable';
 import Dialog from 'components/Dialog';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import ConnectorForm from '../form';
+import ConnectorCapabilityBadges from './ConnectorCapabilityBadges';
+import ConnectorCapabilitiesMatrix from './ConnectorCapabilitiesMatrix';
 import PagedList from 'components/PagedList/PagedList';
 
 import { EntityType } from 'ducks/filters';
+import { selectors as enumSelectors } from 'ducks/enums';
 import { selectors as pagingSelectors } from 'ducks/paging';
 import type { SearchRequestModel } from 'types/certificate';
+import { PlatformEnum } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { inventoryStatus } from 'utils/connector';
+import { getConnectorCapabilities, inventoryStatus } from 'utils/connector';
 import { featureFlags } from 'utils/feature-flags';
 
 import type { ApiClients } from '../../../../api';
@@ -27,6 +31,10 @@ export default function ConnectorList() {
 
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.CONNECTOR));
     const connectors = useSelector(selectors.connectors);
+
+    const connectorInterfaceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ConnectorInterface));
+    const featureFlagEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.FeatureFlag));
+    const functionGroupCodeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.FunctionGroupCode));
 
     const bulkDeleteErrorMessages = useSelector(selectors.bulkDeleteErrorMessages);
 
@@ -47,6 +55,7 @@ export default function ConnectorList() {
     const [confirmForceDelete, setConfirmForceDelete] = useState<boolean>(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
     const [editingConnectorId, setEditingConnectorId] = useState<string | undefined>(undefined);
+    const [capabilitiesModal, setCapabilitiesModal] = useState<{ caption: string; content: ReactNode } | null>(null);
 
     useEffect(() => {
         setConfirmForceDelete(bulkDeleteErrorMessages.length > 0);
@@ -157,6 +166,17 @@ export default function ConnectorList() {
                 align: 'center',
                 width: '5%',
             },
+            {
+                content: 'Interfaces / Function Groups',
+                id: 'connectorInterfaces',
+                width: '15%',
+            },
+            {
+                content: 'Features / Kinds',
+                id: 'connectorFeatures',
+                width: '15%',
+                minWidth: '180px',
+            },
             ...(featureFlags.isProxiesEnabled
                 ? [
                       {
@@ -187,6 +207,15 @@ export default function ConnectorList() {
             connectors.map((connector) => {
                 const connectorStatus = inventoryStatus(connector.status);
 
+                const { isV2, caption, capabilityLabels, featureLabels } = getConnectorCapabilities(connector, {
+                    interfaceEnum: connectorInterfaceEnum,
+                    featureEnum: featureFlagEnum,
+                    functionGroupEnum: functionGroupCodeEnum,
+                });
+
+                const openCapabilitiesModal = () =>
+                    setCapabilitiesModal({ caption, content: <ConnectorCapabilitiesMatrix connector={connector} /> });
+
                 return {
                     id: connector.uuid,
                     columns: [
@@ -196,6 +225,22 @@ export default function ConnectorList() {
                         <span key="version" style={{ whiteSpace: 'nowrap' }}>
                             {connector.version || '-'}
                         </span>,
+                        <ConnectorCapabilityBadges
+                            key="interfaces"
+                            labels={capabilityLabels}
+                            color="primary"
+                            testIdPrefix={`interfaces-${connector.uuid}`}
+                            overflowTitle={isV2 ? 'Show all interfaces' : 'Show all function groups'}
+                            onOverflowClick={openCapabilitiesModal}
+                        />,
+                        <ConnectorCapabilityBadges
+                            key="features"
+                            labels={featureLabels}
+                            color="secondary"
+                            testIdPrefix={`features-${connector.uuid}`}
+                            overflowTitle={isV2 ? 'Show all features' : 'Show all kinds'}
+                            onOverflowClick={openCapabilitiesModal}
+                        />,
                         ...(featureFlags.isProxiesEnabled
                             ? [
                                   <span key="proxy" style={{ whiteSpace: 'nowrap' }}>
@@ -216,7 +261,7 @@ export default function ConnectorList() {
                     ],
                 };
             }),
-        [connectors],
+        [connectors, connectorInterfaceEnum, featureFlagEnum, functionGroupCodeEnum],
     );
 
     return (
@@ -233,6 +278,16 @@ export default function ConnectorList() {
                 addHidden
                 additionalButtons={buttons}
                 pageWidgetLockName={LockWidgetNameEnum.ConnectorStore}
+            />
+
+            <Dialog
+                isOpen={!!capabilitiesModal}
+                caption={capabilitiesModal?.caption}
+                body={capabilitiesModal?.content}
+                toggle={() => setCapabilitiesModal(null)}
+                size="lg"
+                noBorder
+                buttons={[{ color: 'secondary', variant: 'outline', onClick: () => setCapabilitiesModal(null), body: 'Close' }]}
             />
 
             <Dialog

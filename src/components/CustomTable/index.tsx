@@ -572,6 +572,7 @@ function CustomTable({
                     {...(header.sortable ? { onClick: onColumnSortClick } : {})}
                     style={{
                         ...(header.width ? { width: header.width } : {}),
+                        ...(header.minWidth ? { minWidth: header.minWidth } : {}),
                         ...(header.maxWidth == null ? {} : { maxWidth: `${header.maxWidth}px` }),
                         ...(header.align ? { textAlign: header.align } : {}),
                     }}

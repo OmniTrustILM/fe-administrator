@@ -20,5 +20,6 @@ export enum OidCategory {
     RdnAttributeType = 'rdnAttributeType',
     ExtendedKeyUsage = 'extendedKeyUsage',
     QcStatement = 'qcStatement',
+    CertificateExtension = 'certificateExtension',
     Generic = 'generic',
 }

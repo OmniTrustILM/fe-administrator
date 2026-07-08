@@ -104,6 +104,25 @@ describe('connector transform helpers', () => {
         expect(result.customAttributes).toEqual([]);
     });
 
+    test('transformConnectorDtoV2ToModel maps function groups when present (v1 connectors in the list)', () => {
+        const dtoV2 = {
+            uuid: 'conn-v1',
+            name: 'Connector V1',
+            url: 'https://example.com/v1',
+            status: 'Connected',
+            version: 'v1',
+            functionGroups: [
+                { uuid: 'fg-1', name: 'authorityProvider', functionGroupCode: 'authorityProvider', kinds: ['EJBCA'], endPoints: [] },
+            ],
+        } as any;
+
+        const result = transformConnectorDtoV2ToModel(dtoV2);
+
+        expect(result.functionGroups).toHaveLength(1);
+        expect(result.functionGroups[0].functionGroupCode).toBe('authorityProvider');
+        expect(result.functionGroups[0].kinds).toEqual(['EJBCA']);
+    });
+
     test('transformConnectInfoDtoToFunctionGroups returns transformed groups for v1 shape', () => {
         const functionGroup = {
             functionGroupCode: 'FG',

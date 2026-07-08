@@ -43,9 +43,15 @@ export interface AuthorityInstanceRequestDto {
      */
     connectorUuid: string;
     /**
-     * Authority instance Kind
+     * UUID of the Connector Interface (AUTHORITY) to bind this instance to. Required to select a specific version when the connector exposes more than one AUTHORITY interface (e.g. v2 and v3 side-by-side). When null, the authority targets a legacy v1 connector that declares no connector interface; if such a connector exposes exactly one AUTHORITY interface it is used.
      * @type {string}
      * @memberof AuthorityInstanceRequestDto
      */
-    kind: string;
+    interfaceUuid?: string;
+    /**
+     * Authority instance Kind. Used only by v1 connectors (framework V1), which implement the legacy AttributesController and carry kind in the wire path. v2 connectors ignore it (they dispatch on connector interface).
+     * @type {string}
+     * @memberof AuthorityInstanceRequestDto
+     */
+    kind?: string;
 }

@@ -217,7 +217,7 @@ const issueCertificateNew: AppEpic = (action$, state, deps) => {
         filter(slice.actions.issueCertificateNew.match),
         switchMap((action) =>
             deps.apiClients.clientOperations
-                .issueRequestedCertificate({
+                .issueExistingCertificate({
                     authorityUuid: action.payload.authorityUuid,
                     raProfileUuid: action.payload.raProfileUuid,
                     certificateUuid: action.payload.certificateUuid,

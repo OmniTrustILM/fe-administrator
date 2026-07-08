@@ -1,0 +1,2991 @@
+{
+  "version": "2.13",
+  "children": [
+    {
+      "type": "frame",
+      "id": "H7MEt",
+      "x": 0,
+      "y": 0,
+      "name": "Dialog / Light",
+      "clip": true,
+      "width": 680,
+      "fill": "$color.white",
+      "cornerRadius": 12,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "KKIxb",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "N3glwm",
+              "name": "Title",
+              "fill": "$color.neutral-900",
+              "content": "Dialog",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "qK26F",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Modal dialog built on Radix. Optional circular icon, caption heading, scrollable body, and a right-aligned footer button row. Delete/destroy variants are centered and borderless.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "M5bdnW",
+          "name": "Preview Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "FEcTK",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "PREVIEW",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "XKNgR",
+              "name": "Scrim",
+              "clip": true,
+              "width": "fill_container",
+              "fill": "$color.dialog-scrim",
+              "cornerRadius": 10,
+              "padding": 40,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "S7CYg",
+                  "name": "Default Dialog",
+                  "width": 480,
+                  "fill": "$color.white",
+                  "cornerRadius": 12,
+                  "stroke": "$color.gray-200",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#0000002e",
+                    "offset": {
+                      "x": 0,
+                      "y": 10
+                    },
+                    "blur": 30,
+                    "spread": -5
+                  },
+                  "layout": "vertical",
+                  "padding": [
+                    24,
+                    24,
+                    16,
+                    24
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "KAZGI",
+                      "layoutPosition": "absolute",
+                      "x": 440,
+                      "y": 8,
+                      "name": "Close",
+                      "width": 32,
+                      "height": 32,
+                      "fill": "$color.transparent",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "mCzew",
+                          "name": "X",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "x",
+                          "library": "lucide",
+                          "fill": "$color.gray-500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n2LuGL",
+                      "name": "Dialog Header",
+                      "width": "fill_container",
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        0,
+                        0,
+                        16,
+                        0
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "q818oT",
+                          "name": "Caption",
+                          "fill": "$color.neutral-900",
+                          "content": "Rename signing profile",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "VtM5n",
+                      "name": "Dialog Body",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "padding": [
+                        16,
+                        0
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FqyTn",
+                          "name": "Body Text",
+                          "fill": "$color.gray-500",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter a new name for this signing profile. The change is applied immediately and will be visible to everyone with access.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "xDUQJ",
+                      "name": "Dialog Footer",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "padding": [
+                        16,
+                        0
+                      ],
+                      "justifyContent": "end",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n0xj1U",
+                          "name": "Cancel Button",
+                          "fill": "$color.gray-100",
+                          "cornerRadius": 8,
+                          "gap": 8,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "u99Ow",
+                              "name": "Label",
+                              "fill": "$color.gray-800",
+                              "content": "Cancel",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "imopu",
+                          "name": "Save Button",
+                          "fill": "$color.blue-600",
+                          "cornerRadius": 8,
+                          "gap": 8,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "g98nPP",
+                              "name": "Label",
+                              "fill": "$color.white",
+                              "content": "Save",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "qTTvN",
+          "name": "Icon Variants Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "GQsp0",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "ICON VARIANTS",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "e6a0x",
+              "name": "Variants Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "G5PpV",
+                  "name": "Variants Row 1",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "gse8Y",
+                      "name": "Del Card",
+                      "width": "fill_container",
+                      "fill": "$color.white",
+                      "cornerRadius": 12,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000026",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24,
+                        "spread": -6
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        20,
+                        20,
+                        12,
+                        20
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "VbV8t",
+                          "name": "Del Head",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "E8hMMa",
+                              "name": "Del Circle",
+                              "width": 64,
+                              "height": 64,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "rsIEt",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Del Outer",
+                                  "fill": "$color.red-800-6",
+                                  "width": 64,
+                                  "height": 64
+                                },
+                                {
+                                  "type": "ellipse",
+                                  "id": "P77BY",
+                                  "x": 8,
+                                  "y": 8,
+                                  "name": "Del Inner",
+                                  "fill": "$color.red-800-12",
+                                  "width": 48,
+                                  "height": 48
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "We9uf",
+                                  "x": 20,
+                                  "y": 20,
+                                  "name": "Del Icon",
+                                  "width": 24,
+                                  "height": 24,
+                                  "icon": "trash-2",
+                                  "library": "lucide",
+                                  "fill": "$color.red-800"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "qATRc",
+                              "name": "Del Caption",
+                              "fill": "$color.neutral-900",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Delete profile?",
+                              "textAlign": "center",
+                              "fontFamily": "Inter",
+                              "fontSize": 18,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "loSgo",
+                          "name": "Del BodyWrap",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "wWZx1",
+                              "name": "Del Body",
+                              "fill": "$color.gray-500",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "This action cannot be undone. The signing profile and all of its records will be permanently removed.",
+                              "lineHeight": 1.5,
+                              "textAlign": "center",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "G7BFl",
+                          "name": "Del Foot",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "JBw5B",
+                              "name": "Del Cancel Btn",
+                              "fill": "$color.gray-100",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "M7Nkh",
+                                  "name": "Del Cancel Lbl",
+                                  "fill": "$color.gray-800",
+                                  "content": "Cancel",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "CEKjZ",
+                              "name": "Del Delete Btn",
+                              "fill": "$color.red-500",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "qNSMi",
+                                  "name": "Del Delete Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Delete",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "h3Z0er",
+                      "name": "Warn Card",
+                      "width": "fill_container",
+                      "fill": "$color.white",
+                      "cornerRadius": 12,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000026",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24,
+                        "spread": -6
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        20,
+                        20,
+                        12,
+                        20
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "hJL3G",
+                          "name": "Warn Head",
+                          "width": "fill_container",
+                          "stroke": "$color.gray-200",
+                          "strokeWidth": {
+                            "bottom": 1
+                          },
+                          "strokeAlignment": "inner",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "padding": [
+                            0,
+                            0,
+                            16,
+                            0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "uU792",
+                              "name": "Warn Circle",
+                              "width": 64,
+                              "height": 64,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "L8ZMZ",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Warn Outer",
+                                  "fill": "$color.red-800-6",
+                                  "width": 64,
+                                  "height": 64
+                                },
+                                {
+                                  "type": "ellipse",
+                                  "id": "zkyvt",
+                                  "x": 8,
+                                  "y": 8,
+                                  "name": "Warn Inner",
+                                  "fill": "$color.red-800-12",
+                                  "width": 48,
+                                  "height": 48
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "VB668",
+                                  "x": 20,
+                                  "y": 20,
+                                  "name": "Warn Icon",
+                                  "width": 24,
+                                  "height": 24,
+                                  "icon": "triangle-alert",
+                                  "library": "lucide",
+                                  "fill": "$color.red-800"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "cKPAy",
+                              "name": "Warn Caption",
+                              "fill": "$color.neutral-900",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Certificates in use",
+                              "textAlign": "center",
+                              "fontFamily": "Inter",
+                              "fontSize": 18,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "rah74",
+                          "name": "Warn BodyWrap",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "mZlTY",
+                              "name": "Warn Body",
+                              "fill": "$color.gray-500",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Some certificates are still associated with this entity. Proceeding may affect dependent services.",
+                              "lineHeight": 1.5,
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "VM244",
+                          "name": "Warn Foot",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "DAZGE",
+                              "name": "Warn Cancel Btn",
+                              "fill": "$color.gray-100",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "U69sn",
+                                  "name": "Warn Cancel Lbl",
+                                  "fill": "$color.gray-800",
+                                  "content": "Cancel",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "mgDG1",
+                              "name": "Warn Proceed Btn",
+                              "fill": "$color.red-500",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "lBeL4",
+                                  "name": "Warn Proceed Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Proceed",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ti2RJ",
+                  "name": "Variants Row 2",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Sw4qh",
+                      "name": "Info Card",
+                      "width": "fill_container",
+                      "fill": "$color.white",
+                      "cornerRadius": 12,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000026",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24,
+                        "spread": -6
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        20,
+                        20,
+                        12,
+                        20
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "traZh",
+                          "name": "Info Head",
+                          "width": "fill_container",
+                          "stroke": "$color.gray-200",
+                          "strokeWidth": {
+                            "bottom": 1
+                          },
+                          "strokeAlignment": "inner",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "padding": [
+                            0,
+                            0,
+                            16,
+                            0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "Y0X0Hg",
+                              "name": "Info Circle",
+                              "width": 64,
+                              "height": 64,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "iA4Ds",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Info Outer",
+                                  "fill": "$color.icon-default-6",
+                                  "width": 64,
+                                  "height": 64
+                                },
+                                {
+                                  "type": "ellipse",
+                                  "id": "OP4YN",
+                                  "x": 8,
+                                  "y": 8,
+                                  "name": "Info Inner",
+                                  "fill": "$color.icon-default-12",
+                                  "width": 48,
+                                  "height": 48
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "k6dTPO",
+                                  "x": 20,
+                                  "y": 20,
+                                  "name": "Info Icon",
+                                  "width": 24,
+                                  "height": 24,
+                                  "icon": "info",
+                                  "library": "lucide",
+                                  "fill": "$color.icon-default"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "LXqpS",
+                              "name": "Info Caption",
+                              "fill": "$color.neutral-900",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Update available",
+                              "textAlign": "center",
+                              "fontFamily": "Inter",
+                              "fontSize": 18,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ZciQH",
+                          "name": "Info BodyWrap",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ZJ29O",
+                              "name": "Info Body",
+                              "fill": "$color.gray-500",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "A new connector version is available. Review the changelog before updating to the latest release.",
+                              "lineHeight": 1.5,
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Yqx4o",
+                          "name": "Info Foot",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "T4Y8e",
+                              "name": "Info Cancel Btn",
+                              "fill": "$color.gray-100",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "w8RAwP",
+                                  "name": "Info Cancel Lbl",
+                                  "fill": "$color.gray-800",
+                                  "content": "Cancel",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "Ds7k8",
+                              "name": "Info Got it Btn",
+                              "fill": "$color.blue-600",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "q1j92Y",
+                                  "name": "Info Got it Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Got it",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "bi7cM",
+                      "name": "Succ Card",
+                      "width": "fill_container",
+                      "fill": "$color.white",
+                      "cornerRadius": 12,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000026",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24,
+                        "spread": -6
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        20,
+                        20,
+                        12,
+                        20
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "NgP4s",
+                          "name": "Succ Head",
+                          "width": "fill_container",
+                          "stroke": "$color.gray-200",
+                          "strokeWidth": {
+                            "bottom": 1
+                          },
+                          "strokeAlignment": "inner",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "padding": [
+                            0,
+                            0,
+                            16,
+                            0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "UHB04",
+                              "name": "Succ Circle",
+                              "width": 64,
+                              "height": 64,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "nwas7",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Succ Outer",
+                                  "fill": "$color.teal-100-30",
+                                  "width": 64,
+                                  "height": 64
+                                },
+                                {
+                                  "type": "ellipse",
+                                  "id": "CcB1O",
+                                  "x": 8,
+                                  "y": 8,
+                                  "name": "Succ Inner",
+                                  "fill": "$color.teal-100",
+                                  "width": 48,
+                                  "height": 48
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "Y3aWZM",
+                                  "x": 20,
+                                  "y": 20,
+                                  "name": "Succ Icon",
+                                  "width": 24,
+                                  "height": 24,
+                                  "icon": "check",
+                                  "library": "lucide",
+                                  "fill": "$color.teal-800"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "A0MsA",
+                              "name": "Succ Caption",
+                              "fill": "$color.neutral-900",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Profile created",
+                              "textAlign": "center",
+                              "fontFamily": "Inter",
+                              "fontSize": 18,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "p5OMn",
+                          "name": "Succ BodyWrap",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "JxO9r",
+                              "name": "Succ Body",
+                              "fill": "$color.gray-500",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "The signing profile was created successfully and is now ready to issue certificates.",
+                              "lineHeight": 1.5,
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "t7Z1e",
+                          "name": "Succ Foot",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "eOi62",
+                              "name": "Succ Cancel Btn",
+                              "fill": "$color.gray-100",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "bGLEK",
+                                  "name": "Succ Cancel Lbl",
+                                  "fill": "$color.gray-800",
+                                  "content": "Cancel",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "fpJCm",
+                              "name": "Succ Done Btn",
+                              "fill": "$color.blue-600",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "FatOz",
+                                  "name": "Succ Done Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Done",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vin9T",
+          "name": "Sizes Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "c3CO2",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "SIZES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "X8YnYV",
+              "name": "Sizes List",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "dmYLu",
+                  "name": "Size sm Row",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ccQ3z",
+                      "name": "Size sm Bar",
+                      "width": 200,
+                      "height": 40,
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "rpWUw",
+                          "name": "Size sm Name",
+                          "fill": "$color.neutral-900",
+                          "content": "sm",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "PrfxB",
+                      "name": "Size sm Dim",
+                      "fill": "$color.gray-500",
+                      "content": "max-w-sm · 384px",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "P5PzKA",
+                  "name": "Size md Row",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PNynI",
+                      "name": "Size md Bar",
+                      "width": 267,
+                      "height": 40,
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "aMzPp",
+                          "name": "Size md Name",
+                          "fill": "$color.neutral-900",
+                          "content": "md",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "G5sRG0",
+                      "name": "Size md Dim",
+                      "fill": "$color.gray-500",
+                      "content": "max-w-lg · 512px",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "iark7",
+                  "name": "Size lg Row",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "lMfpX",
+                      "name": "Size lg Bar",
+                      "width": 300,
+                      "height": 40,
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "iUGuW",
+                          "name": "Size lg Name",
+                          "fill": "$color.neutral-900",
+                          "content": "lg",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "A8i0n",
+                      "name": "Size lg Dim",
+                      "fill": "$color.gray-500",
+                      "content": "max-w-xl · 576px",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dQwq3",
+                  "name": "Size xl Row",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "MGhZl",
+                      "name": "Size xl Bar",
+                      "width": 467,
+                      "height": 40,
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "JLkbl",
+                          "name": "Size xl Name",
+                          "fill": "$color.neutral-900",
+                          "content": "xl",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "Jy8l7",
+                      "name": "Size xl Dim",
+                      "fill": "$color.gray-500",
+                      "content": "max-w-4xl · 896px",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "UArgt",
+                  "name": "Size xxl Row",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "tTiB8",
+                      "name": "Size xxl Bar",
+                      "width": 600,
+                      "height": 40,
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "s6Vo4",
+                          "name": "Size xxl Name",
+                          "fill": "$color.neutral-900",
+                          "content": "xxl",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "Pownn",
+                      "name": "Size xxl Dim",
+                      "fill": "$color.gray-500",
+                      "content": "max-w-6xl · 1152px",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "YDmSf",
+      "x": 740,
+      "y": 0,
+      "name": "Dialog / Dark",
+      "clip": true,
+      "width": 680,
+      "fill": "$color.neutral-900",
+      "cornerRadius": 12,
+      "stroke": "$color.neutral-700",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "nKuQP",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "J9hXr",
+              "name": "Title",
+              "fill": "$color.neutral-200",
+              "content": "Dialog",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "hdKK4",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Modal dialog built on Radix. Optional circular icon, caption heading, scrollable body, and a right-aligned footer button row. Delete/destroy variants are centered and borderless.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "G4C1Vr",
+          "name": "Preview Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "bseQF",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "PREVIEW",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "Own8a",
+              "name": "Scrim",
+              "clip": true,
+              "width": "fill_container",
+              "fill": "$color.dialog-scrim",
+              "cornerRadius": 10,
+              "padding": 40,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "NRpbl",
+                  "name": "Default Dialog",
+                  "width": 480,
+                  "fill": "$color.neutral-800",
+                  "cornerRadius": 12,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#0000002e",
+                    "offset": {
+                      "x": 0,
+                      "y": 10
+                    },
+                    "blur": 30,
+                    "spread": -5
+                  },
+                  "layout": "vertical",
+                  "padding": [
+                    24,
+                    24,
+                    16,
+                    24
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Blyd8",
+                      "layoutPosition": "absolute",
+                      "x": 440,
+                      "y": 8,
+                      "name": "Close",
+                      "width": 32,
+                      "height": 32,
+                      "fill": "$color.transparent",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "A1NJw",
+                          "name": "X",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "x",
+                          "library": "lucide",
+                          "fill": "$color.white"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "K3qjM",
+                      "name": "Dialog Header",
+                      "width": "fill_container",
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": [
+                        0,
+                        0,
+                        16,
+                        0
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Gkum9",
+                          "name": "Caption",
+                          "fill": "$color.white",
+                          "content": "Rename signing profile",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "g4q6V",
+                      "name": "Dialog Body",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "padding": [
+                        16,
+                        0
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "dCaCZ",
+                          "name": "Body Text",
+                          "fill": "$color.neutral-300",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Enter a new name for this signing profile. The change is applied immediately and will be visible to everyone with access.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "oIteh",
+                      "name": "Dialog Footer",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "padding": [
+                        16,
+                        0
+                      ],
+                      "justifyContent": "end",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "IGxRH",
+                          "name": "Cancel Button",
+                          "fill": "$color.white-10",
+                          "cornerRadius": 8,
+                          "gap": 8,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "t6Ijhi",
+                              "name": "Label",
+                              "fill": "$color.white",
+                              "content": "Cancel",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "JdGmb",
+                          "name": "Save Button",
+                          "fill": "$color.blue-600",
+                          "cornerRadius": 8,
+                          "gap": 8,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "l7laR",
+                              "name": "Label",
+                              "fill": "$color.white",
+                              "content": "Save",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "I9jyA",
+          "name": "Icon Variants Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "kfpEp",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "ICON VARIANTS",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "UNMR5",
+              "name": "Variants Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "VYYFC",
+                  "name": "Variants Row 1",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "MXrJW",
+                      "name": "Del Card",
+                      "width": "fill_container",
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 12,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000026",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24,
+                        "spread": -6
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        20,
+                        20,
+                        12,
+                        20
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "LbBMZ",
+                          "name": "Del Head",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "roGFC",
+                              "name": "Del Circle",
+                              "width": 64,
+                              "height": 64,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "UOvj9",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Del Outer",
+                                  "fill": "$color.red-800-6",
+                                  "width": 64,
+                                  "height": 64
+                                },
+                                {
+                                  "type": "ellipse",
+                                  "id": "J7IuMQ",
+                                  "x": 8,
+                                  "y": 8,
+                                  "name": "Del Inner",
+                                  "fill": "$color.red-800-12",
+                                  "width": 48,
+                                  "height": 48
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "gXka6",
+                                  "x": 20,
+                                  "y": 20,
+                                  "name": "Del Icon",
+                                  "width": 24,
+                                  "height": 24,
+                                  "icon": "trash-2",
+                                  "library": "lucide",
+                                  "fill": "$color.red-800"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "TPwG6",
+                              "name": "Del Caption",
+                              "fill": "$color.white",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Delete profile?",
+                              "textAlign": "center",
+                              "fontFamily": "Inter",
+                              "fontSize": 18,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "h5pJ3d",
+                          "name": "Del BodyWrap",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "vBtxy",
+                              "name": "Del Body",
+                              "fill": "$color.neutral-300",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "This action cannot be undone. The signing profile and all of its records will be permanently removed.",
+                              "lineHeight": 1.5,
+                              "textAlign": "center",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "EH97h",
+                          "name": "Del Foot",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "GLQPH",
+                              "name": "Del Cancel Btn",
+                              "fill": "$color.white-10",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "HDPKs",
+                                  "name": "Del Cancel Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Cancel",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "p9PKJt",
+                              "name": "Del Delete Btn",
+                              "fill": "$color.red-500",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Xuatk",
+                                  "name": "Del Delete Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Delete",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "yyUEl",
+                      "name": "Warn Card",
+                      "width": "fill_container",
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 12,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000026",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24,
+                        "spread": -6
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        20,
+                        20,
+                        12,
+                        20
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "VR3aZ",
+                          "name": "Warn Head",
+                          "width": "fill_container",
+                          "stroke": "$color.neutral-700",
+                          "strokeWidth": {
+                            "bottom": 1
+                          },
+                          "strokeAlignment": "inner",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "padding": [
+                            0,
+                            0,
+                            16,
+                            0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "fZujz",
+                              "name": "Warn Circle",
+                              "width": 64,
+                              "height": 64,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "FUUpU",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Warn Outer",
+                                  "fill": "$color.red-800-6",
+                                  "width": 64,
+                                  "height": 64
+                                },
+                                {
+                                  "type": "ellipse",
+                                  "id": "NhOTQ",
+                                  "x": 8,
+                                  "y": 8,
+                                  "name": "Warn Inner",
+                                  "fill": "$color.red-800-12",
+                                  "width": 48,
+                                  "height": 48
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "iY1S1",
+                                  "x": 20,
+                                  "y": 20,
+                                  "name": "Warn Icon",
+                                  "width": 24,
+                                  "height": 24,
+                                  "icon": "triangle-alert",
+                                  "library": "lucide",
+                                  "fill": "$color.red-800"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "t6vyq",
+                              "name": "Warn Caption",
+                              "fill": "$color.white",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Certificates in use",
+                              "textAlign": "center",
+                              "fontFamily": "Inter",
+                              "fontSize": 18,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "GDsJO",
+                          "name": "Warn BodyWrap",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "qeSGC",
+                              "name": "Warn Body",
+                              "fill": "$color.neutral-300",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Some certificates are still associated with this entity. Proceeding may affect dependent services.",
+                              "lineHeight": 1.5,
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "cCZX7",
+                          "name": "Warn Foot",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "fzHeH",
+                              "name": "Warn Cancel Btn",
+                              "fill": "$color.white-10",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "lFE4Q",
+                                  "name": "Warn Cancel Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Cancel",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "BPEtc",
+                              "name": "Warn Proceed Btn",
+                              "fill": "$color.red-500",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "RaTGt",
+                                  "name": "Warn Proceed Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Proceed",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dw32c",
+                  "name": "Variants Row 2",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "DH1Kv",
+                      "name": "Info Card",
+                      "width": "fill_container",
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 12,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000026",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24,
+                        "spread": -6
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        20,
+                        20,
+                        12,
+                        20
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "vTKGH",
+                          "name": "Info Head",
+                          "width": "fill_container",
+                          "stroke": "$color.neutral-700",
+                          "strokeWidth": {
+                            "bottom": 1
+                          },
+                          "strokeAlignment": "inner",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "padding": [
+                            0,
+                            0,
+                            16,
+                            0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "J16gBb",
+                              "name": "Info Circle",
+                              "width": 64,
+                              "height": 64,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "d8IRu",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Info Outer",
+                                  "fill": "$color.icon-default-6",
+                                  "width": 64,
+                                  "height": 64
+                                },
+                                {
+                                  "type": "ellipse",
+                                  "id": "u1hw2c",
+                                  "x": 8,
+                                  "y": 8,
+                                  "name": "Info Inner",
+                                  "fill": "$color.icon-default-12",
+                                  "width": 48,
+                                  "height": 48
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "K3iV9V",
+                                  "x": 20,
+                                  "y": 20,
+                                  "name": "Info Icon",
+                                  "width": 24,
+                                  "height": 24,
+                                  "icon": "info",
+                                  "library": "lucide",
+                                  "fill": "$color.icon-default"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "hhkc1",
+                              "name": "Info Caption",
+                              "fill": "$color.white",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Update available",
+                              "textAlign": "center",
+                              "fontFamily": "Inter",
+                              "fontSize": 18,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "tWwWl",
+                          "name": "Info BodyWrap",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "L9KXBa",
+                              "name": "Info Body",
+                              "fill": "$color.neutral-300",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "A new connector version is available. Review the changelog before updating to the latest release.",
+                              "lineHeight": 1.5,
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "v8ziVY",
+                          "name": "Info Foot",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "z17ZL3",
+                              "name": "Info Cancel Btn",
+                              "fill": "$color.white-10",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "wsdml",
+                                  "name": "Info Cancel Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Cancel",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "z0b0p",
+                              "name": "Info Got it Btn",
+                              "fill": "$color.blue-600",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "RsKcB",
+                                  "name": "Info Got it Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Got it",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "rC8o2",
+                      "name": "Succ Card",
+                      "width": "fill_container",
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 12,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000026",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24,
+                        "spread": -6
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        20,
+                        20,
+                        12,
+                        20
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "R1Twi",
+                          "name": "Succ Head",
+                          "width": "fill_container",
+                          "stroke": "$color.neutral-700",
+                          "strokeWidth": {
+                            "bottom": 1
+                          },
+                          "strokeAlignment": "inner",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "padding": [
+                            0,
+                            0,
+                            16,
+                            0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "LU8sS",
+                              "name": "Succ Circle",
+                              "width": 64,
+                              "height": 64,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "JBCku",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Succ Outer",
+                                  "fill": "$color.teal-100-30",
+                                  "width": 64,
+                                  "height": 64
+                                },
+                                {
+                                  "type": "ellipse",
+                                  "id": "csES5",
+                                  "x": 8,
+                                  "y": 8,
+                                  "name": "Succ Inner",
+                                  "fill": "$color.teal-100",
+                                  "width": 48,
+                                  "height": 48
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "S1m4c",
+                                  "x": 20,
+                                  "y": 20,
+                                  "name": "Succ Icon",
+                                  "width": 24,
+                                  "height": 24,
+                                  "icon": "check",
+                                  "library": "lucide",
+                                  "fill": "$color.teal-800"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "fOVyZ",
+                              "name": "Succ Caption",
+                              "fill": "$color.white",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Profile created",
+                              "textAlign": "center",
+                              "fontFamily": "Inter",
+                              "fontSize": 18,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "fsQJk",
+                          "name": "Succ BodyWrap",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "YMMmZ",
+                              "name": "Succ Body",
+                              "fill": "$color.neutral-300",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "The signing profile was created successfully and is now ready to issue certificates.",
+                              "lineHeight": 1.5,
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "OxNrn",
+                          "name": "Succ Foot",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "padding": [
+                            12,
+                            0
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "wLktL",
+                              "name": "Succ Cancel Btn",
+                              "fill": "$color.white-10",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Thpbr",
+                                  "name": "Succ Cancel Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Cancel",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "tgTC3",
+                              "name": "Succ Done Btn",
+                              "fill": "$color.blue-600",
+                              "cornerRadius": 8,
+                              "gap": 8,
+                              "padding": [
+                                9,
+                                13
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "L9zaO",
+                                  "name": "Succ Done Lbl",
+                                  "fill": "$color.white",
+                                  "content": "Done",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "xcuU1",
+          "name": "Sizes Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "MoDq6",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "SIZES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1
+            },
+            {
+              "type": "frame",
+              "id": "Lfk2d",
+              "name": "Sizes List",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "RfFSz",
+                  "name": "Size sm Row",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PA2sv",
+                      "name": "Size sm Bar",
+                      "width": 200,
+                      "height": 40,
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "AGuzj",
+                          "name": "Size sm Name",
+                          "fill": "$color.white",
+                          "content": "sm",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "KeYsV",
+                      "name": "Size sm Dim",
+                      "fill": "$color.gray-500",
+                      "content": "max-w-sm · 384px",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MeyyE",
+                  "name": "Size md Row",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "U70LYR",
+                      "name": "Size md Bar",
+                      "width": 267,
+                      "height": 40,
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "JxLVD",
+                          "name": "Size md Name",
+                          "fill": "$color.white",
+                          "content": "md",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "VdzEB",
+                      "name": "Size md Dim",
+                      "fill": "$color.gray-500",
+                      "content": "max-w-lg · 512px",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "g6wINc",
+                  "name": "Size lg Row",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "QwGtd",
+                      "name": "Size lg Bar",
+                      "width": 300,
+                      "height": 40,
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "A2K6qk",
+                          "name": "Size lg Name",
+                          "fill": "$color.white",
+                          "content": "lg",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "q4Y4X",
+                      "name": "Size lg Dim",
+                      "fill": "$color.gray-500",
+                      "content": "max-w-xl · 576px",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "rQbZ9",
+                  "name": "Size xl Row",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "MSIOL",
+                      "name": "Size xl Bar",
+                      "width": 467,
+                      "height": 40,
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "avOEG",
+                          "name": "Size xl Name",
+                          "fill": "$color.white",
+                          "content": "xl",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "KecMr",
+                      "name": "Size xl Dim",
+                      "fill": "$color.gray-500",
+                      "content": "max-w-4xl · 896px",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "KwBvG",
+                  "name": "Size xxl Row",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "q3rcd",
+                      "name": "Size xxl Bar",
+                      "width": 600,
+                      "height": 40,
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "jAigO",
+                          "name": "Size xxl Name",
+                          "fill": "$color.white",
+                          "content": "xxl",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "H2J7tF",
+                      "name": "Size xxl Dim",
+                      "fill": "$color.gray-500",
+                      "content": "max-w-6xl · 1152px",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color.blue-100": {
+      "type": "color",
+      "value": "#cce5ff"
+    },
+    "color.blue-200": {
+      "type": "color",
+      "value": "#99ccff"
+    },
+    "color.blue-300": {
+      "type": "color",
+      "value": "#66b2ff"
+    },
+    "color.blue-400": {
+      "type": "color",
+      "value": "#3399ff"
+    },
+    "color.blue-50": {
+      "type": "color",
+      "value": "#e6f2ff"
+    },
+    "color.blue-500": {
+      "type": "color",
+      "value": "#0085e6"
+    },
+    "color.blue-600": {
+      "type": "color",
+      "value": "#0073cf"
+    },
+    "color.blue-700": {
+      "type": "color",
+      "value": "#005ba6"
+    },
+    "color.blue-800": {
+      "type": "color",
+      "value": "#004480"
+    },
+    "color.blue-900": {
+      "type": "color",
+      "value": "#002d59"
+    },
+    "color.blue-950": {
+      "type": "color",
+      "value": "#001a33"
+    },
+    "color.dialog-scrim": {
+      "type": "color",
+      "value": "#171717cc"
+    },
+    "color.gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.gray-400": {
+      "type": "color",
+      "value": "#c7c7c7"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-600": {
+      "type": "color",
+      "value": "#b4b4b4"
+    },
+    "color.gray-700": {
+      "type": "color",
+      "value": "#8c8c8c"
+    },
+    "color.gray-800": {
+      "type": "color",
+      "value": "#666666"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.icon-default": {
+      "type": "color",
+      "value": "#6b7280"
+    },
+    "color.icon-default-12": {
+      "type": "color",
+      "value": "#6b72801f"
+    },
+    "color.icon-default-6": {
+      "type": "color",
+      "value": "#6b72800f"
+    },
+    "color.neutral-200": {
+      "type": "color",
+      "value": "#e5e5e5"
+    },
+    "color.neutral-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.neutral-400": {
+      "type": "color",
+      "value": "#a3a3a3"
+    },
+    "color.neutral-500": {
+      "type": "color",
+      "value": "#737373"
+    },
+    "color.neutral-600": {
+      "type": "color",
+      "value": "#525252"
+    },
+    "color.neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "color.neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    },
+    "color.red-100": {
+      "type": "color",
+      "value": "#fee2e2"
+    },
+    "color.red-400": {
+      "type": "color",
+      "value": "#f87171"
+    },
+    "color.red-500": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.red-600": {
+      "type": "color",
+      "value": "#dc2626"
+    },
+    "color.red-800": {
+      "type": "color",
+      "value": "#991b1b"
+    },
+    "color.red-800-12": {
+      "type": "color",
+      "value": "#991b1b1f"
+    },
+    "color.red-800-30": {
+      "type": "color",
+      "value": "#991b1b4d"
+    },
+    "color.red-800-6": {
+      "type": "color",
+      "value": "#991b1b0f"
+    },
+    "color.teal-100": {
+      "type": "color",
+      "value": "#ccfbf1"
+    },
+    "color.teal-100-30": {
+      "type": "color",
+      "value": "#ccfbf14d"
+    },
+    "color.teal-800": {
+      "type": "color",
+      "value": "#115e59"
+    },
+    "color.transparent": {
+      "type": "color",
+      "value": "#00000000"
+    },
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "color.white-10": {
+      "type": "color",
+      "value": "#ffffff1a"
+    },
+    "color.white-20": {
+      "type": "color",
+      "value": "#ffffff33"
+    },
+    "color.yellow-100": {
+      "type": "color",
+      "value": "#fef9c3"
+    },
+    "color.yellow-400": {
+      "type": "color",
+      "value": "#facc15"
+    },
+    "color.yellow-500": {
+      "type": "color",
+      "value": "#eab308"
+    },
+    "color.yellow-600": {
+      "type": "color",
+      "value": "#ca8a04"
+    },
+    "color.yellow-800": {
+      "type": "color",
+      "value": "#854d0e"
+    },
+    "color.yellow-800-30": {
+      "type": "color",
+      "value": "#854d0e4d"
+    }
+  }
+}

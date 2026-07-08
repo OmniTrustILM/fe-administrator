@@ -27,6 +27,7 @@ import type {
     EditRaProfileRequestDto,
     ErrorMessageDto,
     RaProfileAcmeDetailResponseDto,
+    RaProfileCertificateRequestAttributesUpdateDto,
     RaProfileCertificateValidationSettingsUpdateDto,
     RaProfileCmpDetailResponseDto,
     RaProfileDto,
@@ -180,6 +181,12 @@ export interface ListRaProfileRevokeCertificateAttributesRequest {
 
 export interface ListRaProfilesRequest {
     enabled?: boolean;
+}
+
+export interface UpdateRaProfileRequestAttributesConfigurationRequest {
+    authorityUuid: string;
+    raProfileUuid: string;
+    raProfileCertificateRequestAttributesUpdateDto: RaProfileCertificateRequestAttributesUpdateDto;
 }
 
 export interface UpdateRaProfileValidationConfigurationRequest {
@@ -990,6 +997,55 @@ export class RAProfileManagementApi extends BaseAPI {
                 url: '/v1/raProfiles',
                 method: 'GET',
                 query,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Update request-attribute configuration of RA Profile
+     */
+    updateRaProfileRequestAttributesConfiguration({
+        authorityUuid,
+        raProfileUuid,
+        raProfileCertificateRequestAttributesUpdateDto,
+    }: UpdateRaProfileRequestAttributesConfigurationRequest): Observable<RaProfileDto>;
+    updateRaProfileRequestAttributesConfiguration(
+        {
+            authorityUuid,
+            raProfileUuid,
+            raProfileCertificateRequestAttributesUpdateDto,
+        }: UpdateRaProfileRequestAttributesConfigurationRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<RaProfileDto>>;
+    updateRaProfileRequestAttributesConfiguration(
+        {
+            authorityUuid,
+            raProfileUuid,
+            raProfileCertificateRequestAttributesUpdateDto,
+        }: UpdateRaProfileRequestAttributesConfigurationRequest,
+        opts?: OperationOpts,
+    ): Observable<RaProfileDto | AjaxResponse<RaProfileDto>> {
+        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'updateRaProfileRequestAttributesConfiguration');
+        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'updateRaProfileRequestAttributesConfiguration');
+        throwIfNullOrUndefined(
+            raProfileCertificateRequestAttributesUpdateDto,
+            'raProfileCertificateRequestAttributesUpdateDto',
+            'updateRaProfileRequestAttributesConfiguration',
+        );
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<RaProfileDto>(
+            {
+                url: '/v1/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/requestAttributes'
+                    .replace('{authorityUuid}', encodeURI(authorityUuid))
+                    .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
+                method: 'PATCH',
+                headers,
+                body: raProfileCertificateRequestAttributesUpdateDto,
             },
             opts?.responseOpts,
         );

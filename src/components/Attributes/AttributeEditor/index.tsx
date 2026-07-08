@@ -23,7 +23,7 @@ import {
     isInfoAttributeModel,
 } from 'types/attributes';
 import type { CallbackAttributeModel } from 'types/connectors';
-import { AttributeContentType, AttributeValueTarget, type FunctionGroupCode, type Resource } from 'types/openapi';
+import { AttributeContentType, AttributeValueTarget, type ConnectorVersion, type FunctionGroupCode, type Resource } from 'types/openapi';
 import { base64ToUtf8 } from 'utils/common-utils';
 import { Attribute } from './Attribute';
 import CustomAttributeAddSelect from 'components/Attributes/AttributeEditor/CustomAttributeAddSelect';
@@ -64,6 +64,7 @@ export type Props = {
     setGroupAttributesCallbackAttributes?: React.Dispatch<React.SetStateAction<AttributeDescriptorModel[]>>;
     attributes?: AttributeResponseModel[];
     connectorUuid?: string;
+    connectorVersion?: ConnectorVersion;
     functionGroupCode?: FunctionGroupCode;
     kind?: string;
     callbackResource?: Resource;
@@ -76,6 +77,7 @@ function AttributeEditorInner({
     attributeDescriptors,
     attributes = emptyAttributes,
     connectorUuid,
+    connectorVersion,
     functionGroupCode,
     kind,
     callbackResource,
@@ -340,12 +342,13 @@ function AttributeEditorInner({
                               uuid: connectorUuid!,
                               kind: kind!,
                               functionGroup: functionGroupCode!,
+                              version: connectorVersion,
                               requestAttributeCallback: mappings,
                           },
                       }),
             );
         },
-        [callbackParentUuid, callbackResource, connectorUuid, dispatch, functionGroupCode, kind],
+        [callbackParentUuid, callbackResource, connectorUuid, connectorVersion, dispatch, functionGroupCode, kind],
     );
     /* c8 ignore stop */
 

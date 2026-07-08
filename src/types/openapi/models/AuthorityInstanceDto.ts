@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { ResponseAttribute } from './';
+import type { ConnectorInterfaceDto, NameAndUuidDto, ResponseAttribute } from './';
 
 /**
  * @export
@@ -49,21 +49,33 @@ export interface AuthorityInstanceDto {
      */
     status: string;
     /**
-     * UUID of Authority provider
+     * Connector (Authority provider) this instance belongs to
+     * @type {NameAndUuidDto}
+     * @memberof AuthorityInstanceDto
+     */
+    connector: NameAndUuidDto;
+    /**
+     * Connector Interface this Authority instance is bound to; null for legacy v1 connectors, which are identified by kind instead
+     * @type {ConnectorInterfaceDto}
+     * @memberof AuthorityInstanceDto
+     */
+    connectorInterface?: ConnectorInterfaceDto;
+    /**
+     * UUID of Authority provider; deprecated, use connector.uuid instead
      * @type {string}
      * @memberof AuthorityInstanceDto
      */
     connectorUuid?: string;
     /**
-     * Name of Authority provider
+     * Name of Authority provider; deprecated, use connector.name instead
      * @type {string}
      * @memberof AuthorityInstanceDto
      */
     connectorName?: string;
     /**
-     * Authority Instance Kind
+     * Authority instance kind; present for legacy v1 connectors, null for v2/v3 authorities which are identified by connectorInterface
      * @type {string}
      * @memberof AuthorityInstanceDto
      */
-    kind: string;
+    kind?: string;
 }

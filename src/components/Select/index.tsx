@@ -174,6 +174,8 @@ function Select({
 }: Props) {
     const searchInputRef = useRef<HTMLInputElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -231,6 +233,22 @@ function Select({
     useEffect(() => {
         if (open && triggerDisabled) setOpen(false);
     }, [open, triggerDisabled]);
+
+    // Close on outside pointerdown ourselves. Radix defers its own outside-dismiss to the
+    // click event, so opening a modal Dialog on the same click leaves this (non-modal) popover
+    // orphaned on top of the dialog — its deferred dismiss gets swallowed by the dialog layer.
+    // A capture-phase pointerdown fires before the dialog mounts and reliably closes it.
+    useEffect(() => {
+        if (!open) return;
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target as Node | null;
+            if (!target) return;
+            if (wrapperRef.current?.contains(target) || contentRef.current?.contains(target)) return;
+            setOpen(false);
+        };
+        document.addEventListener('pointerdown', handlePointerDown, true);
+        return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+    }, [open]);
 
     // Reset highlight + search when popover opens/closes.
     useEffect(() => {
@@ -435,7 +453,7 @@ function Select({
     return (
         <div data-testid={dataTestId ?? `select-${id}`}>
             {label && <Label htmlFor={id} title={label} required={required} />}
-            <div className={cn('relative', className)} style={minWidth ? { minWidth: `${minWidth}px` } : undefined}>
+            <div ref={wrapperRef} className={cn('relative', className)} style={minWidth ? { minWidth: `${minWidth}px` } : undefined}>
                 <Popover.Root
                     modal={modal}
                     open={open}
@@ -463,6 +481,7 @@ function Select({
 
                     <Popover.Portal>
                         <Popover.Content
+                            ref={contentRef}
                             side={placement ?? 'bottom'}
                             align="start"
                             sideOffset={8}

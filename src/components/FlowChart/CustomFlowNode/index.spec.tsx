@@ -433,7 +433,7 @@ test.describe('CustomFlowNode', () => {
         await expect(page.getByTestId('flow-node-toggle-hidden')).toBeVisible({ timeout: 10000 });
     });
 
-    test('toggleHiddenNodes dispatches setShowHiddenNodes when expanding', async ({ mount, page }) => {
+    test('toggleHiddenNodes reveals children when expanding', async ({ mount, page }) => {
         await mount(
             <CustomFlowNodeMountWrapper
                 nodeProps={buildProps({ id: 'node-1', selected: true, data: { ...defaultData } })}
@@ -543,9 +543,10 @@ test.describe('CustomFlowNode', () => {
                     userInterface: {
                         ...testInitialState.userInterface,
                         reactFlowUI: {
-                            flowChartNodes: [{ id: 'node-1' }, { id: 'child-1', parentId: 'node-1', hidden: true }],
+                            // child already visible → node is in the expanded state
+                            flowChartNodes: [{ id: 'node-1' }, { id: 'child-1', parentId: 'node-1', hidden: false }],
                             flowChartEdges: [],
-                            expandedHiddenNodeId: 'node-1',
+                            expandedHiddenNodeId: undefined,
                         },
                     },
                 }}
@@ -761,7 +762,7 @@ test.describe('CustomFlowNode', () => {
         expect(deleteCalled).toBe(true);
     });
 
-    test('toggleHiddenNodes hides other visible nodes while expanding children', async ({ mount, page }) => {
+    test('toggleHiddenNodes expands this node children independently of other visible nodes', async ({ mount, page }) => {
         await mount(
             <CustomFlowNodeMountWrapper
                 nodeProps={buildProps({ id: 'node-1', selected: true })}

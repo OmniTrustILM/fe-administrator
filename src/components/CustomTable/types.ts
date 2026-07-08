@@ -8,6 +8,7 @@ export interface TableHeader {
     sort?: 'asc' | 'desc';
     sortType?: 'string' | 'numeric' | 'date';
     width?: string;
+    minWidth?: string;
     maxWidth?: number;
 }
 

@@ -26,15 +26,15 @@ export interface ContentSigningWorkflowDto {
      */
     type: SigningWorkflowType;
     /**
-     * Signature Formatter Connector that constructs the data-to-be-signed (DTBS) for Content signing. Present only when ILM-managed signing is used; null for delegated signing.
+     * Signature Formatting Provider that constructs the data-to-be-signed (DTBS) for Content signing. Present only when ILM-managed signing is used; null for delegated signing.
      * @type {NameAndUuidDto}
      * @memberof ContentSigningWorkflowDto
      */
-    signatureFormatterConnector?: NameAndUuidDto;
+    signatureFormattingConnector?: NameAndUuidDto;
     /**
-     * Attributes configured on the Signature Formatter Connector that control DTBS construction for the content signing workflow. Applicable only when ILM-managed signing is used.
+     * Attributes configured on the Signature Formatting Provider that control DTBS construction for the content signing workflow. Applicable only when ILM-managed signing is used.
      * @type {Array<ResponseAttribute>}
      * @memberof ContentSigningWorkflowDto
      */
-    signatureFormatterConnectorAttributes?: Array<ResponseAttribute>;
+    signatureFormattingConnectorAttributes?: Array<ResponseAttribute>;
 }

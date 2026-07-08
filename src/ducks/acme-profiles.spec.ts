@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
+import { Resource } from 'types/openapi';
+import { actions as customAttributesActions } from './customAttributes';
 import reducer, { actions, initialState, selectors } from './acme-profiles';
 
 describe('acme-profiles slice', () => {
@@ -304,6 +306,60 @@ describe('acme-profiles slice', () => {
         const loading = { ...initialState, isBulkDisabling: true } as any;
         const next = reducer(loading, actions.bulkDisableAcmeProfilesFailure({ error: 'err' }));
         expect(next.isBulkDisabling).toBe(false);
+    });
+
+    test('syncs loaded profile custom attributes on remove/update content success', () => {
+        const withDetail = {
+            ...initialState,
+            acmeProfile: { uuid: 'ap-1', customAttributes: [{ uuid: 'ca-1', name: 'foo' }] } as any,
+        };
+
+        const afterRemove = reducer(
+            withDetail,
+            customAttributesActions.removeCustomAttributeContentSuccess({
+                resource: Resource.AcmeProfiles,
+                resourceUuid: 'ap-1',
+                customAttributes: [],
+            }),
+        );
+        expect(afterRemove.acmeProfile?.customAttributes).toHaveLength(0);
+
+        const afterUpdate = reducer(
+            withDetail,
+            customAttributesActions.updateCustomAttributeContentSuccess({
+                resource: Resource.AcmeProfiles,
+                resourceUuid: 'ap-1',
+                customAttributes: [{ uuid: 'ca-2', name: 'bar' }] as any,
+            }),
+        );
+        expect(afterUpdate.acmeProfile?.customAttributes?.[0]?.uuid).toBe('ca-2');
+    });
+
+    test('does not touch profile custom attributes for a different resource or uuid', () => {
+        const withDetail = {
+            ...initialState,
+            acmeProfile: { uuid: 'ap-1', customAttributes: [{ uuid: 'ca-1', name: 'foo' }] } as any,
+        };
+
+        const otherUuid = reducer(
+            withDetail,
+            customAttributesActions.removeCustomAttributeContentSuccess({
+                resource: Resource.AcmeProfiles,
+                resourceUuid: 'ap-other',
+                customAttributes: [],
+            }),
+        );
+        expect(otherUuid.acmeProfile?.customAttributes).toHaveLength(1);
+
+        const otherResource = reducer(
+            withDetail,
+            customAttributesActions.removeCustomAttributeContentSuccess({
+                resource: Resource.ScepProfiles,
+                resourceUuid: 'ap-1',
+                customAttributes: [],
+            }),
+        );
+        expect(otherResource.acmeProfile?.customAttributes).toHaveLength(1);
     });
 });
 

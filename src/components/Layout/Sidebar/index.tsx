@@ -49,15 +49,26 @@ type MenuItemMapping = {
       }
 );
 
+function toTestIdSlug(value: string): string {
+    return value
+        .replace(/^\//, '')
+        .replaceAll('/', '-')
+        .replaceAll(/([a-z0-9])([A-Z])/g, '$1-$2')
+        .toLowerCase();
+}
+
 function SidebarSubmenuItem({
     child,
     index,
     totalCount,
-}: Readonly<{ child: { name: string; link: string }; index: number; totalCount: number }>) {
+    parentSlug,
+}: Readonly<{ child: { name: string; link: string }; index: number; totalCount: number; parentSlug: string }>) {
+    const childSlug = child.link.split('/').findLast(Boolean) ?? toTestIdSlug(child.link);
     return (
         <li className={cn({ 'mb-2': index === totalCount - 1 })}>
             <NavLink
                 to={child.link}
+                data-testid={`sidebar-${parentSlug}-${childSlug}`}
                 className={({ isActive }) =>
                     cn(
                         'font-medium text-sm block px-4 ml-8 py-2 no-underline hover:bg-gray-200 rounded-lg h-[38px] items-center',
@@ -458,10 +469,12 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
             const activePage = location.pathname;
             const isChildActive = childrenKeys.some((child) => child === activePage || activePage.startsWith(`${child}/`));
             const isActive = openMenuItems.includes(mapping._key);
+            const parentSlug = toTestIdSlug(mapping._key);
             return (
                 <li key={mapping.header} className={cn('flex justify-center', { 'flex-col': menuSize !== 'small' })}>
                     <Button
                         variant="transparent"
+                        data-testid={`sidebar-${parentSlug}`}
                         className={cn('!px-4 !py-2 border-none justify-between h-[38px]', {
                             'flex w-full items-center': menuSize !== 'small',
                         })}
@@ -489,7 +502,13 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                         id={mapping._key}
                     >
                         {mapping.children.map((child, index) => (
-                            <SidebarSubmenuItem key={child.name} child={child} index={index} totalCount={mapping.children.length} />
+                            <SidebarSubmenuItem
+                                key={child.name}
+                                child={child}
+                                index={index}
+                                totalCount={mapping.children.length}
+                                parentSlug={parentSlug}
+                            />
                         ))}
                     </ul>
                 </li>
@@ -499,6 +518,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
             <li key={mapping._key} className="flex justify-center">
                 <NavLink
                     to={mapping.headerLink}
+                    data-testid={`sidebar-${toTestIdSlug(mapping.headerLink)}`}
                     onClick={() => {
                         if (menuSize === 'flying') {
                             setMenuSize('small');

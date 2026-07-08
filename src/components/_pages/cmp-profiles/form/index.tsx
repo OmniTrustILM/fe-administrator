@@ -553,6 +553,8 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
     const allFormValues = useWatch({ control });
     const isEqual = useMemo(() => deepEqual(defaultValues, allFormValues), [defaultValues, allFormValues]);
 
+    const isSaving = isSubmitting || isCreating || isUpdating;
+
     const selectedRaProfile = raProfilesOptions.find((raProfile) => raProfile.value.uuid === allFormValues?.raProfileUuid);
 
     return (
@@ -839,16 +841,16 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                 />
                             </div>
                             <Container className="flex-row justify-end modal-footer" gap={4}>
-                                <Button variant="outline" onClick={onCancel} disabled={isSubmitting} type="button">
+                                <Button variant="outline" onClick={onCancel} disabled={isSaving} type="button">
                                     Cancel
                                 </Button>
                                 <ProgressButton
                                     title={editMode ? 'Update' : 'Create'}
                                     inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
-                                    inProgress={isSubmitting}
+                                    inProgress={isSaving}
                                     disabled={
                                         isEqual ||
-                                        isSubmitting ||
+                                        isSaving ||
                                         !isValid ||
                                         isBusy ||
                                         !formValues.requestProtectionMethod ||

@@ -1,0 +1,1852 @@
+{
+  "version": "2.14",
+  "children": [
+    {
+      "type": "frame",
+      "id": "vtdL6",
+      "x": 0,
+      "y": 0,
+      "name": "WidgetLock — Light",
+      "clip": true,
+      "width": 760,
+      "fill": "$color.white",
+      "cornerRadius": 12,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "layout": "vertical",
+      "gap": 34,
+      "padding": [
+        44,
+        40
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "a7AdQ",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "TGSAB",
+              "name": "Title",
+              "fill": "$color.gray-900",
+              "content": "WidgetLock",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "v77gI",
+              "name": "Subtitle",
+              "fill": "$color.gray-700",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Error / empty-state card shown when a widget can't load its content.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Uw4x8",
+          "name": "Section — ANATOMY",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "frame",
+              "id": "qWr4a",
+              "name": "Label Row",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "E3HLk",
+                  "name": "Label",
+                  "fill": "$color.gray-500",
+                  "content": "ANATOMY",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.8
+                },
+                {
+                  "type": "frame",
+                  "id": "Rmp0H",
+                  "name": "Divider",
+                  "width": "fill_container",
+                  "height": 1,
+                  "fill": "$color.gray-200"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "LeMOr",
+              "name": "Lock Card",
+              "width": "fill_container",
+              "fill": "$color.white",
+              "cornerRadius": 12,
+              "stroke": "$color.gray-200",
+              "strokeWidth": 1,
+              "gap": 16,
+              "padding": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "NagEY",
+                  "name": "Icon",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "DTwGN",
+                      "name": "triangle-alert",
+                      "width": 32,
+                      "height": 32,
+                      "icon": "triangle-alert",
+                      "library": "lucide",
+                      "fill": "$color.red-500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vxzsY",
+                  "name": "Text",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "IEWGe",
+                      "name": "Title Row",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "iE2Uz",
+                          "name": "Lock Title",
+                          "fill": "$color.gray-900",
+                          "content": "There was some problem",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "szoAx",
+                      "name": "Lock Text",
+                      "fill": "$color.gray-700",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "There was some issue please try again later",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "whDId",
+              "name": "Caption",
+              "fill": "$color.gray-500",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Danger-colored icon · semibold title · muted body text · card surface with subtle border · centered in a Container.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "JL6IH",
+          "name": "Section — LOCK TYPES",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "frame",
+              "id": "IYBra",
+              "name": "Label Row",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "KXytc",
+                  "name": "Label",
+                  "fill": "$color.gray-500",
+                  "content": "LOCK TYPES",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.8
+                },
+                {
+                  "type": "frame",
+                  "id": "JPfBU",
+                  "name": "Divider",
+                  "width": "fill_container",
+                  "height": 1,
+                  "fill": "$color.gray-200"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "c9tjpv",
+              "name": "Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "YXh1F",
+                  "name": "Row",
+                  "width": "fill_container",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "GPdla",
+                      "name": "Generic",
+                      "width": "fill_container",
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 10,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "fVAFY",
+                          "name": "triangle-alert",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "triangle-alert",
+                          "library": "lucide",
+                          "fill": "$color.red-500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "JyVLj",
+                          "name": "Label",
+                          "fill": "$color.gray-800",
+                          "content": "Generic",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "lpj1D",
+                      "name": "Network",
+                      "width": "fill_container",
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 10,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "QgANL",
+                          "name": "wifi",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "wifi",
+                          "library": "lucide",
+                          "fill": "$color.red-500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "i43m4o",
+                          "name": "Label",
+                          "fill": "$color.gray-800",
+                          "content": "Network",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "eTSiQ",
+                      "name": "Permission",
+                      "width": "fill_container",
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 10,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "iZqpm",
+                          "name": "lock",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "lock",
+                          "library": "lucide",
+                          "fill": "$color.red-500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "gnoUT",
+                          "name": "Label",
+                          "fill": "$color.gray-800",
+                          "content": "Permission",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hiCUj",
+                  "name": "Row",
+                  "width": "fill_container",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "tPrto",
+                      "name": "Client",
+                      "width": "fill_container",
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 10,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "L1zLy",
+                          "name": "house",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "house",
+                          "library": "lucide",
+                          "fill": "$color.red-500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "AANNd",
+                          "name": "Label",
+                          "fill": "$color.gray-800",
+                          "content": "Client",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "EljF8",
+                      "name": "Service Error",
+                      "width": "fill_container",
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 10,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "yrwHl",
+                          "name": "database",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "database",
+                          "library": "lucide",
+                          "fill": "$color.red-500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "UHXvg",
+                          "name": "Label",
+                          "fill": "$color.gray-800",
+                          "content": "Service Error",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "HvA4i",
+                      "name": "Server Error",
+                      "width": "fill_container",
+                      "fill": "$color.gray-100",
+                      "cornerRadius": 10,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "Ud2le",
+                          "name": "server",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "server",
+                          "library": "lucide",
+                          "fill": "$color.red-500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "OMIt4",
+                          "name": "Label",
+                          "fill": "$color.gray-800",
+                          "content": "Server Error",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "TwaGw",
+          "name": "Section — SIZES (ICON)",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "frame",
+              "id": "BFqEK",
+              "name": "Label Row",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Y5aw4",
+                  "name": "Label",
+                  "fill": "$color.gray-500",
+                  "content": "SIZES (ICON)",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.8
+                },
+                {
+                  "type": "frame",
+                  "id": "RVjKM",
+                  "name": "Divider",
+                  "width": "fill_container",
+                  "height": 1,
+                  "fill": "$color.gray-200"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "GhzfN",
+              "name": "Row",
+              "width": "fill_container",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ck4gt",
+                  "name": "small",
+                  "width": "fill_container",
+                  "fill": "$color.gray-100",
+                  "cornerRadius": 10,
+                  "stroke": "$color.gray-200",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 22,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "w5rC9z",
+                      "name": "Icon",
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "uTdZu",
+                          "name": "triangle-alert",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "triangle-alert",
+                          "library": "lucide",
+                          "fill": "$color.red-500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "eJSLD",
+                      "name": "Label",
+                      "fill": "$color.gray-800",
+                      "content": "small · 24px",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ahsnY",
+                  "name": "normal",
+                  "width": "fill_container",
+                  "fill": "$color.gray-100",
+                  "cornerRadius": 10,
+                  "stroke": "$color.gray-200",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 22,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "GESkB",
+                      "name": "Icon",
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "GCYby",
+                          "name": "triangle-alert",
+                          "width": 32,
+                          "height": 32,
+                          "icon": "triangle-alert",
+                          "library": "lucide",
+                          "fill": "$color.red-500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "yn28i",
+                      "name": "Label",
+                      "fill": "$color.gray-800",
+                      "content": "normal · 32px",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "W4JSU",
+                  "name": "large",
+                  "width": "fill_container",
+                  "fill": "$color.gray-100",
+                  "cornerRadius": 10,
+                  "stroke": "$color.gray-200",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 22,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "g5qZB",
+                      "name": "Icon",
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "vpBWI",
+                          "name": "triangle-alert",
+                          "width": 48,
+                          "height": 48,
+                          "icon": "triangle-alert",
+                          "library": "lucide",
+                          "fill": "$color.red-500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "vDeD3",
+                      "name": "Label",
+                      "fill": "$color.gray-800",
+                      "content": "large · 48px",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ND2gF",
+          "name": "Section — EXAMPLES",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "frame",
+              "id": "ZB5ue",
+              "name": "Label Row",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "JiazG",
+                  "name": "Label",
+                  "fill": "$color.gray-500",
+                  "content": "EXAMPLES",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.8
+                },
+                {
+                  "type": "frame",
+                  "id": "AgNFN",
+                  "name": "Divider",
+                  "width": "fill_container",
+                  "height": 1,
+                  "fill": "$color.gray-200"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "aD0lp",
+              "name": "Lock Card",
+              "width": "fill_container",
+              "fill": "$color.white",
+              "cornerRadius": 12,
+              "stroke": "$color.gray-200",
+              "strokeWidth": 1,
+              "gap": 16,
+              "padding": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "xZXgP",
+                  "name": "Icon",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "S9C3nn",
+                      "name": "wifi",
+                      "width": 32,
+                      "height": 32,
+                      "icon": "wifi",
+                      "library": "lucide",
+                      "fill": "$color.red-500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "voVz4",
+                  "name": "Text",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "p5KOM",
+                      "name": "Title Row",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "QFIPR",
+                          "name": "Lock Title",
+                          "fill": "$color.gray-900",
+                          "content": "Connection lost",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "lxt2G",
+                          "name": "Info Button",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "BSXS6",
+                              "name": "info",
+                              "width": 15,
+                              "height": 15,
+                              "icon": "info",
+                              "library": "lucide",
+                              "fill": "$color.gray-500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "NHGwU",
+                      "name": "Lock Text",
+                      "fill": "$color.gray-700",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "We couldn't reach the server. Check your network connection and try again.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "RCaT2",
+              "name": "Note A",
+              "fill": "$color.gray-500",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "With lockDetails → an Info tooltip button appears next to the title.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "mW0AG",
+              "name": "Lock Card",
+              "width": "fill_container",
+              "fill": "$color.white",
+              "cornerRadius": 12,
+              "stroke": "$color.gray-200",
+              "strokeWidth": 1,
+              "gap": 16,
+              "padding": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "DEaxk",
+                  "name": "Icon",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "ctukq",
+                      "name": "lock",
+                      "width": 32,
+                      "height": 32,
+                      "icon": "lock",
+                      "library": "lucide",
+                      "fill": "$color.red-500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "a6C8rE",
+                  "name": "Text",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "oG0uK",
+                      "name": "Title Row",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "KO2Ob",
+                          "name": "Lock Title",
+                          "fill": "$color.gray-900",
+                          "content": "Access denied",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "YjCKx",
+                      "name": "Lock Text",
+                      "fill": "$color.gray-700",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "You don't have permission to view this widget.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "s2dRx",
+      "x": 820,
+      "y": 0,
+      "name": "WidgetLock — Dark",
+      "clip": true,
+      "width": 760,
+      "fill": "$color.neutral-900",
+      "cornerRadius": 12,
+      "stroke": "$color.neutral-700",
+      "strokeWidth": 1,
+      "layout": "vertical",
+      "gap": 34,
+      "padding": [
+        44,
+        40
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "FEMHM",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "ylIdk",
+              "name": "Title",
+              "fill": "$color.white",
+              "content": "WidgetLock",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "a6ZK2C",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Error / empty-state card shown when a widget can't load its content.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Kv1Bf",
+          "name": "Section — ANATOMY",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "frame",
+              "id": "ZXSKf",
+              "name": "Label Row",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tQ1uF",
+                  "name": "Label",
+                  "fill": "$color.neutral-500",
+                  "content": "ANATOMY",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.8
+                },
+                {
+                  "type": "frame",
+                  "id": "a9ZPg",
+                  "name": "Divider",
+                  "width": "fill_container",
+                  "height": 1,
+                  "fill": "$color.neutral-700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "O1FzV",
+              "name": "Lock Card",
+              "width": "fill_container",
+              "fill": "$color.neutral-800",
+              "cornerRadius": 12,
+              "stroke": "$color.neutral-700",
+              "strokeWidth": 1,
+              "gap": 16,
+              "padding": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "E1eiK4",
+                  "name": "Icon",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "Jl1iO",
+                      "name": "triangle-alert",
+                      "width": 32,
+                      "height": 32,
+                      "icon": "triangle-alert",
+                      "library": "lucide",
+                      "fill": "$color.neutral-400"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "f5c7e",
+                  "name": "Text",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "u2q5O6",
+                      "name": "Title Row",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "l9MV4Y",
+                          "name": "Lock Title",
+                          "fill": "$color.neutral-200",
+                          "content": "There was some problem",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "m8kuP",
+                      "name": "Lock Text",
+                      "fill": "$color.neutral-400",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "There was some issue please try again later",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "ZVmi8",
+              "name": "Caption",
+              "fill": "$color.neutral-500",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Danger-colored icon · semibold title · muted body text · card surface with subtle border · centered in a Container.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "q72XkL",
+          "name": "Section — LOCK TYPES",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "frame",
+              "id": "ODRQR",
+              "name": "Label Row",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "RIkdv",
+                  "name": "Label",
+                  "fill": "$color.neutral-500",
+                  "content": "LOCK TYPES",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.8
+                },
+                {
+                  "type": "frame",
+                  "id": "dWfti",
+                  "name": "Divider",
+                  "width": "fill_container",
+                  "height": 1,
+                  "fill": "$color.neutral-700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "t5BZ4M",
+              "name": "Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Z54zg",
+                  "name": "Row",
+                  "width": "fill_container",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ne5QG",
+                      "name": "Generic",
+                      "width": "fill_container",
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 10,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "zoIoz",
+                          "name": "triangle-alert",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "triangle-alert",
+                          "library": "lucide",
+                          "fill": "$color.neutral-400"
+                        },
+                        {
+                          "type": "text",
+                          "id": "GuaEV",
+                          "name": "Label",
+                          "fill": "$color.neutral-300",
+                          "content": "Generic",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "vp4DT",
+                      "name": "Network",
+                      "width": "fill_container",
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 10,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "F3Lb2",
+                          "name": "wifi",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "wifi",
+                          "library": "lucide",
+                          "fill": "$color.neutral-400"
+                        },
+                        {
+                          "type": "text",
+                          "id": "kAk6j",
+                          "name": "Label",
+                          "fill": "$color.neutral-300",
+                          "content": "Network",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "yKa59",
+                      "name": "Permission",
+                      "width": "fill_container",
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 10,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "m4TtJ",
+                          "name": "lock",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "lock",
+                          "library": "lucide",
+                          "fill": "$color.neutral-400"
+                        },
+                        {
+                          "type": "text",
+                          "id": "gWzQN",
+                          "name": "Label",
+                          "fill": "$color.neutral-300",
+                          "content": "Permission",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "GcIwg",
+                  "name": "Row",
+                  "width": "fill_container",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "laGKd",
+                      "name": "Client",
+                      "width": "fill_container",
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 10,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "p5YFB",
+                          "name": "house",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "house",
+                          "library": "lucide",
+                          "fill": "$color.neutral-400"
+                        },
+                        {
+                          "type": "text",
+                          "id": "TdEvY",
+                          "name": "Label",
+                          "fill": "$color.neutral-300",
+                          "content": "Client",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "GpAho",
+                      "name": "Service Error",
+                      "width": "fill_container",
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 10,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "gjdWW",
+                          "name": "database",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "database",
+                          "library": "lucide",
+                          "fill": "$color.neutral-400"
+                        },
+                        {
+                          "type": "text",
+                          "id": "xSsX8",
+                          "name": "Label",
+                          "fill": "$color.neutral-300",
+                          "content": "Service Error",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "i5o4wq",
+                      "name": "Server Error",
+                      "width": "fill_container",
+                      "fill": "$color.neutral-800",
+                      "cornerRadius": 10,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "ZCDkV",
+                          "name": "server",
+                          "width": 26,
+                          "height": 26,
+                          "icon": "server",
+                          "library": "lucide",
+                          "fill": "$color.neutral-400"
+                        },
+                        {
+                          "type": "text",
+                          "id": "MCAcS",
+                          "name": "Label",
+                          "fill": "$color.neutral-300",
+                          "content": "Server Error",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "mXZS8",
+          "name": "Section — SIZES (ICON)",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "frame",
+              "id": "EzeWt",
+              "name": "Label Row",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "desFv",
+                  "name": "Label",
+                  "fill": "$color.neutral-500",
+                  "content": "SIZES (ICON)",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.8
+                },
+                {
+                  "type": "frame",
+                  "id": "GD994",
+                  "name": "Divider",
+                  "width": "fill_container",
+                  "height": 1,
+                  "fill": "$color.neutral-700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "mOIWg",
+              "name": "Row",
+              "width": "fill_container",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "gmdql",
+                  "name": "small",
+                  "width": "fill_container",
+                  "fill": "$color.neutral-800",
+                  "cornerRadius": 10,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 22,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "G36dP",
+                      "name": "Icon",
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "a1KAT",
+                          "name": "triangle-alert",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "triangle-alert",
+                          "library": "lucide",
+                          "fill": "$color.neutral-400"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "B9QOCR",
+                      "name": "Label",
+                      "fill": "$color.neutral-300",
+                      "content": "small · 24px",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "jeaqT",
+                  "name": "normal",
+                  "width": "fill_container",
+                  "fill": "$color.neutral-800",
+                  "cornerRadius": 10,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 22,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Ugoev",
+                      "name": "Icon",
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "ycCOt",
+                          "name": "triangle-alert",
+                          "width": 32,
+                          "height": 32,
+                          "icon": "triangle-alert",
+                          "library": "lucide",
+                          "fill": "$color.neutral-400"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "KqIxQ",
+                      "name": "Label",
+                      "fill": "$color.neutral-300",
+                      "content": "normal · 32px",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "KJ9pz",
+                  "name": "large",
+                  "width": "fill_container",
+                  "fill": "$color.neutral-800",
+                  "cornerRadius": 10,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 22,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PM8J4",
+                      "name": "Icon",
+                      "height": 48,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "qcHKP",
+                          "name": "triangle-alert",
+                          "width": 48,
+                          "height": 48,
+                          "icon": "triangle-alert",
+                          "library": "lucide",
+                          "fill": "$color.neutral-400"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "jzsXK",
+                      "name": "Label",
+                      "fill": "$color.neutral-300",
+                      "content": "large · 48px",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "N9UEUb",
+          "name": "Section — EXAMPLES",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "frame",
+              "id": "x9gVhB",
+              "name": "Label Row",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "qoOwF",
+                  "name": "Label",
+                  "fill": "$color.neutral-500",
+                  "content": "EXAMPLES",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.8
+                },
+                {
+                  "type": "frame",
+                  "id": "AgoNT",
+                  "name": "Divider",
+                  "width": "fill_container",
+                  "height": 1,
+                  "fill": "$color.neutral-700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "FdKIw",
+              "name": "Lock Card",
+              "width": "fill_container",
+              "fill": "$color.neutral-800",
+              "cornerRadius": 12,
+              "stroke": "$color.neutral-700",
+              "strokeWidth": 1,
+              "gap": 16,
+              "padding": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "CLbOU",
+                  "name": "Icon",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "bbnsH",
+                      "name": "wifi",
+                      "width": 32,
+                      "height": 32,
+                      "icon": "wifi",
+                      "library": "lucide",
+                      "fill": "$color.neutral-400"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "AfOs5",
+                  "name": "Text",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Qu0SF",
+                      "name": "Title Row",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "JwsdV",
+                          "name": "Lock Title",
+                          "fill": "$color.neutral-200",
+                          "content": "Connection lost",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "h7EsA",
+                          "name": "Info Button",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "YZp4w",
+                              "name": "info",
+                              "width": 15,
+                              "height": 15,
+                              "icon": "info",
+                              "library": "lucide",
+                              "fill": "$color.neutral-500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "X53mQp",
+                      "name": "Lock Text",
+                      "fill": "$color.neutral-400",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "We couldn't reach the server. Check your network connection and try again.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "lpgG8",
+              "name": "Note A",
+              "fill": "$color.neutral-500",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "With lockDetails → an Info tooltip button appears next to the title.",
+              "lineHeight": 1.4,
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "CQ3yK",
+              "name": "Lock Card",
+              "width": "fill_container",
+              "fill": "$color.neutral-800",
+              "cornerRadius": 12,
+              "stroke": "$color.neutral-700",
+              "strokeWidth": 1,
+              "gap": 16,
+              "padding": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "S92cQ",
+                  "name": "Icon",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "lw4Tz",
+                      "name": "lock",
+                      "width": 32,
+                      "height": 32,
+                      "icon": "lock",
+                      "library": "lucide",
+                      "fill": "$color.neutral-400"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hEJQU",
+                  "name": "Text",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "HgGwz",
+                      "name": "Title Row",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "u6eicY",
+                          "name": "Lock Title",
+                          "fill": "$color.neutral-200",
+                          "content": "Access denied",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "U9zYw",
+                      "name": "Lock Text",
+                      "fill": "$color.neutral-400",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "You don't have permission to view this widget.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "color.transparent": {
+      "type": "color",
+      "value": "#00000000"
+    },
+    "color.gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.gray-400": {
+      "type": "color",
+      "value": "#c7c7c7"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-700": {
+      "type": "color",
+      "value": "#8c8c8c"
+    },
+    "color.gray-800": {
+      "type": "color",
+      "value": "#666666"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.red-500": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.neutral-200": {
+      "type": "color",
+      "value": "#e5e5e5"
+    },
+    "color.neutral-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.neutral-400": {
+      "type": "color",
+      "value": "#a3a3a3"
+    },
+    "color.neutral-500": {
+      "type": "color",
+      "value": "#737373"
+    },
+    "color.neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "color.neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    }
+  },
+  "fileToken": "951e55a0-b82e-4985-a4fa-07a6e867d2ab"
+}

@@ -318,6 +318,8 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
     useRunOnSuccessfulFinish(isCreating, createCredentialSucceeded, onSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateCredentialSucceeded, onSuccess);
 
+    const isSaving = isSubmitting || isCreating || isUpdating;
+
     return (
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -454,14 +456,14 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
                         />
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>
-                            <Button variant="outline" onClick={handleCancel} disabled={isSubmitting} type="button">
+                            <Button variant="outline" onClick={handleCancel} disabled={isSaving} type="button">
                                 Cancel
                             </Button>
                             <ProgressButton
                                 title={submitTitle}
                                 inProgressTitle={inProgressTitle}
-                                inProgress={isSubmitting}
-                                disabled={(editMode ? !isDirty : false) || !isValid}
+                                inProgress={isSaving}
+                                disabled={(editMode ? !isDirty : false) || !isValid || isSaving}
                                 type="submit"
                             />
                         </Container>

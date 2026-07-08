@@ -67,11 +67,17 @@ export interface ScepProfileEditRequestDto {
      */
     includeCaCertificateChain?: boolean;
     /**
-     * Challenge Password for the SCEP Request
+     * Challenge Password for the SCEP Request (write-only).
      * @type {string}
      * @memberof ScepProfileEditRequestDto
      */
     challengePassword?: string;
+    /**
+     * Challenge password protection toggle. Omit to keep the stored password unchanged; true to set a new password (or keep the existing one if left blank); false to remove it.
+     * @type {boolean}
+     * @memberof ScepProfileEditRequestDto
+     */
+    enableChallengePassword?: boolean;
     /**
      * Status of Intune
      * @type {boolean}
@@ -91,7 +97,7 @@ export interface ScepProfileEditRequestDto {
      */
     intuneApplicationId?: string;
     /**
-     * Intune Application Key
+     * Intune Application Key (write-only).
      * @type {string}
      * @memberof ScepProfileEditRequestDto
      */

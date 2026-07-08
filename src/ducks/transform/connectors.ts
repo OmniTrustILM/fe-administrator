@@ -54,7 +54,7 @@ export function transformConnectorDtoV2ToModel(connector: ConnectorDtoV2): Conne
         url: connector.url,
         status: connector.status,
         authType: AuthType.None,
-        functionGroups: [],
+        functionGroups: (connector.functionGroups ?? []).map(transformFunctionGroupDtoToModel),
         authAttributes: [],
         customAttributes: [],
         version: connector.version,

@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { RaProfileCertificateValidationSettingsDto, ResponseAttribute } from './';
+import type { RaProfileCertificateRequestAttributesDto, RaProfileCertificateValidationSettingsDto, ResponseAttribute } from './';
 
 /**
  * @export
@@ -84,4 +84,10 @@ export interface RaProfileDto {
      * @memberof RaProfileDto
      */
     certificateValidationSettings?: RaProfileCertificateValidationSettingsDto;
+    /**
+     * Static certificate-request-attribute set configured for the RA Profile
+     * @type {RaProfileCertificateRequestAttributesDto}
+     * @memberof RaProfileDto
+     */
+    certificateRequestAttributes?: RaProfileCertificateRequestAttributesDto;
 }

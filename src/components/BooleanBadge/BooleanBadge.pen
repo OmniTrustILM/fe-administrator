@@ -1,0 +1,729 @@
+{
+  "version": "2.13",
+  "children": [
+    {
+      "type": "frame",
+      "id": "N71Jwm",
+      "x": 0,
+      "y": 0,
+      "name": "BooleanBadge Light",
+      "clip": true,
+      "width": 680,
+      "fill": "$color.white",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "sXg6H",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "SMhjH",
+              "name": "Title",
+              "fill": "$color.neutral-900",
+              "content": "BooleanBadge",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "x1gdu",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "A Badge wrapper that renders Yes/No from a boolean value, colored success (true) or danger (false).",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "FoRyr",
+          "name": "STATES",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "children": [
+            {
+              "type": "text",
+              "id": "tv686",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "STATES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 0.5
+            },
+            {
+              "type": "frame",
+              "id": "o4C4cJ",
+              "name": "Grid",
+              "gap": 48,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "IWSri",
+                  "name": "Default True",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "U8ylq",
+                      "name": "Badges",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "LdECV",
+                          "name": "True",
+                          "fill": "$color.status-success",
+                          "cornerRadius": 6,
+                          "gap": 6,
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "E0pUzN",
+                              "name": "Label",
+                              "fill": "$color.white",
+                              "content": "Yes",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "gKF8F",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "value = true → Yes",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "LRL6u",
+                  "name": "Default False",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Z8zhTJ",
+                      "name": "Badges",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "HXILL",
+                          "name": "False",
+                          "fill": "$color.status-danger",
+                          "cornerRadius": 6,
+                          "gap": 6,
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "V9knK7",
+                              "name": "Label",
+                              "fill": "$color.white",
+                              "content": "No",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "LpRxH",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "value = false → No",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "AASxG",
+          "name": "INVERTED",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "children": [
+            {
+              "type": "text",
+              "id": "B4ZO3G",
+              "name": "Section Title",
+              "fill": "$color.gray-500",
+              "content": "INVERTED (invertColor)",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 0.5
+            },
+            {
+              "type": "frame",
+              "id": "BUZNh",
+              "name": "Grid",
+              "gap": 48,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "pbxM0",
+                  "name": "Inv True",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "MkIcl",
+                      "name": "Badges",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "KseRp",
+                          "name": "True",
+                          "fill": "$color.status-danger",
+                          "cornerRadius": 6,
+                          "gap": 6,
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ZmN61",
+                              "name": "Label",
+                              "fill": "$color.white",
+                              "content": "Yes",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "FZweA",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "value = true → Yes",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "g8aNO0",
+                  "name": "Inv False",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "YMAra",
+                      "name": "Badges",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ZbdGV",
+                          "name": "False",
+                          "fill": "$color.status-success",
+                          "cornerRadius": 6,
+                          "gap": 6,
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "IX2n7",
+                              "name": "Label",
+                              "fill": "$color.white",
+                              "content": "No",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "fyk3k",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "value = false → No",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "yoGBk",
+      "x": 760,
+      "y": 0,
+      "name": "BooleanBadge Dark",
+      "clip": true,
+      "width": 680,
+      "fill": "$color.neutral-900",
+      "layout": "vertical",
+      "gap": 36,
+      "padding": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "fmnq0",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "GCAKZ",
+              "name": "Title",
+              "fill": "$color.neutral-200",
+              "content": "BooleanBadge",
+              "fontFamily": "Inter",
+              "fontSize": 28,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "N88yl",
+              "name": "Subtitle",
+              "fill": "$color.neutral-400",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "A Badge wrapper that renders Yes/No from a boolean value, colored success (true) or danger (false).",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "tfcDs",
+          "name": "STATES",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "children": [
+            {
+              "type": "text",
+              "id": "cCwfE",
+              "name": "Section Title",
+              "fill": "$color.neutral-400",
+              "content": "STATES",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 0.5
+            },
+            {
+              "type": "frame",
+              "id": "t1AnvL",
+              "name": "Grid",
+              "gap": 48,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "lt1q6",
+                  "name": "Default True",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "V4bwb",
+                      "name": "Badges",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "W98Fy8",
+                          "name": "True",
+                          "fill": "$color.status-success",
+                          "cornerRadius": 6,
+                          "gap": 6,
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "k8ZcCr",
+                              "name": "Label",
+                              "fill": "$color.white",
+                              "content": "Yes",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "rOV4j",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "value = true → Yes",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bEsfe",
+                  "name": "Default False",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PzfwJ",
+                      "name": "Badges",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "IeKfn",
+                          "name": "False",
+                          "fill": "$color.status-danger",
+                          "cornerRadius": 6,
+                          "gap": 6,
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "dYaPo",
+                              "name": "Label",
+                              "fill": "$color.white",
+                              "content": "No",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "rUuzh",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "value = false → No",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "a1KDB",
+          "name": "INVERTED",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "children": [
+            {
+              "type": "text",
+              "id": "HtbDE",
+              "name": "Section Title",
+              "fill": "$color.neutral-400",
+              "content": "INVERTED (invertColor)",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 0.5
+            },
+            {
+              "type": "frame",
+              "id": "nNGf9",
+              "name": "Grid",
+              "gap": 48,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "u8Z1R",
+                  "name": "Inv True",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "mhML7",
+                      "name": "Badges",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "RYxWJ",
+                          "name": "True",
+                          "fill": "$color.status-danger",
+                          "cornerRadius": 6,
+                          "gap": 6,
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "qwidT",
+                              "name": "Label",
+                              "fill": "$color.white",
+                              "content": "Yes",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "Q6Uit",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "value = true → Yes",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "w3jaY",
+                  "name": "Inv False",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "a4cQF",
+                      "name": "Badges",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "VapmB",
+                          "name": "False",
+                          "fill": "$color.status-success",
+                          "cornerRadius": 6,
+                          "gap": 6,
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Tt9q9",
+                              "name": "Label",
+                              "fill": "$color.white",
+                              "content": "No",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "D6emV",
+                      "name": "Caption",
+                      "fill": "$color.neutral-400",
+                      "content": "value = false → No",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color.blue-500": {
+      "type": "color",
+      "value": "#0085e6"
+    },
+    "color.blue-600": {
+      "type": "color",
+      "value": "#0073cf"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.gray-400": {
+      "type": "color",
+      "value": "#c7c7c7"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-600": {
+      "type": "color",
+      "value": "#b4b4b4"
+    },
+    "color.gray-800": {
+      "type": "color",
+      "value": "#666666"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-200": {
+      "type": "color",
+      "value": "#e5e5e5"
+    },
+    "color.neutral-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.neutral-400": {
+      "type": "color",
+      "value": "#a3a3a3"
+    },
+    "color.neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "color.neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    },
+    "color.red-500": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.status-danger": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.status-success": {
+      "type": "color",
+      "value": "#14b8a6"
+    },
+    "color.transparent": {
+      "type": "color",
+      "value": "#00000000"
+    },
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    }
+  }
+}

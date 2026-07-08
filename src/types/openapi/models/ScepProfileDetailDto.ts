@@ -79,6 +79,12 @@ export interface ScepProfileDetailDto {
      */
     enableIntune?: boolean;
     /**
+     * Whether a challenge password is currently set for the SCEP Profile. The password value itself is write-only and never returned; this flag lets clients reflect the current state.
+     * @type {boolean}
+     * @memberof ScepProfileDetailDto
+     */
+    enableChallengePassword: boolean;
+    /**
      * List of Attributes to issue a Certificate
      * @type {Array<ResponseAttribute>}
      * @memberof ScepProfileDetailDto

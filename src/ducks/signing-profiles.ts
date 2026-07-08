@@ -26,8 +26,8 @@ export type State = {
     supportedProtocols: SigningProtocol[];
     signingCertificates: CertificateDto[];
     signingOperationAttributeDescriptors: BaseAttributeDto[];
-    signatureFormatterConnectorAttributeDescriptors: BaseAttributeDto[];
-    signatureFormatterConnectors: ConnectorResponseModel[];
+    signatureFormattingConnectorAttributeDescriptors: BaseAttributeDto[];
+    signatureFormattingConnectors: ConnectorResponseModel[];
     signingRecords?: PaginationResponseDtoSigningRecordListDto;
 
     searchableFields?: SearchFieldDataByGroupDto[];
@@ -39,8 +39,8 @@ export type State = {
     isFetchingSupportedProtocols: boolean;
     isFetchingSigningCertificates: boolean;
     isFetchingSignatureAttributes: boolean;
-    isFetchingSignatureFormatterConnectorAttributes: boolean;
-    isFetchingSignatureFormatterConnectors: boolean;
+    isFetchingSignatureFormattingConnectorAttributes: boolean;
+    isFetchingSignatureFormattingConnectors: boolean;
     isFetchingSigningRecords: boolean;
     isCreating: boolean;
     isDeleting: boolean;
@@ -63,8 +63,8 @@ export const initialState: State = {
     supportedProtocols: [],
     signingCertificates: [],
     signingOperationAttributeDescriptors: [],
-    signatureFormatterConnectorAttributeDescriptors: [],
-    signatureFormatterConnectors: [],
+    signatureFormattingConnectorAttributeDescriptors: [],
+    signatureFormattingConnectors: [],
 
     isFetchingList: false,
     isFetchingDetail: false,
@@ -73,8 +73,8 @@ export const initialState: State = {
     isFetchingSupportedProtocols: false,
     isFetchingSigningCertificates: false,
     isFetchingSignatureAttributes: false,
-    isFetchingSignatureFormatterConnectorAttributes: false,
-    isFetchingSignatureFormatterConnectors: false,
+    isFetchingSignatureFormattingConnectorAttributes: false,
+    isFetchingSignatureFormattingConnectors: false,
     isFetchingSigningRecords: false,
     isCreating: false,
     isDeleting: false,
@@ -390,37 +390,37 @@ export const slice = createSlice({
             state.isFetchingSignatureAttributes = false;
         },
 
-        // Signature formatter connector attribute descriptors
-        listSignatureFormatterConnectorAttributes: (
+        // Signature Formatting Connector attribute descriptors
+        listSignatureFormattingConnectorAttributes: (
             state,
             action: PayloadAction<{ connectorUuid: string; signingProfileUuid?: string }>,
         ) => {
-            state.isFetchingSignatureFormatterConnectorAttributes = true;
-            state.signatureFormatterConnectorAttributeDescriptors = [];
+            state.isFetchingSignatureFormattingConnectorAttributes = true;
+            state.signatureFormattingConnectorAttributeDescriptors = [];
         },
 
-        listSignatureFormatterConnectorAttributesSuccess: (state, action: PayloadAction<{ attributeDescriptors: BaseAttributeDto[] }>) => {
-            state.isFetchingSignatureFormatterConnectorAttributes = false;
-            state.signatureFormatterConnectorAttributeDescriptors = action.payload.attributeDescriptors;
+        listSignatureFormattingConnectorAttributesSuccess: (state, action: PayloadAction<{ attributeDescriptors: BaseAttributeDto[] }>) => {
+            state.isFetchingSignatureFormattingConnectorAttributes = false;
+            state.signatureFormattingConnectorAttributeDescriptors = action.payload.attributeDescriptors;
         },
 
-        listSignatureFormatterConnectorAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
-            state.isFetchingSignatureFormatterConnectorAttributes = false;
+        listSignatureFormattingConnectorAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isFetchingSignatureFormattingConnectorAttributes = false;
         },
 
-        // Signature formatter connectors (filtered by feature)
-        listSignatureFormatterConnectors: (state, action: PayloadAction<{ workflowType: SigningWorkflowType }>) => {
-            state.isFetchingSignatureFormatterConnectors = true;
-            state.signatureFormatterConnectors = [];
+        // Signature Formatting Connectors (filtered by feature)
+        listSignatureFormattingConnectors: (state, action: PayloadAction<{ workflowType: SigningWorkflowType }>) => {
+            state.isFetchingSignatureFormattingConnectors = true;
+            state.signatureFormattingConnectors = [];
         },
 
-        listSignatureFormatterConnectorsSuccess: (state, action: PayloadAction<{ connectors: ConnectorResponseModel[] }>) => {
-            state.isFetchingSignatureFormatterConnectors = false;
-            state.signatureFormatterConnectors = action.payload.connectors;
+        listSignatureFormattingConnectorsSuccess: (state, action: PayloadAction<{ connectors: ConnectorResponseModel[] }>) => {
+            state.isFetchingSignatureFormattingConnectors = false;
+            state.signatureFormattingConnectors = action.payload.connectors;
         },
 
-        listSignatureFormatterConnectorsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
-            state.isFetchingSignatureFormatterConnectors = false;
+        listSignatureFormattingConnectorsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isFetchingSignatureFormattingConnectors = false;
         },
 
         // Signing records
@@ -450,11 +450,11 @@ const tspActivationDetails = createSelector(state, (state) => state.tspActivatio
 const supportedProtocols = createSelector(state, (state) => state.supportedProtocols);
 const signingCertificates = createSelector(state, (state) => state.signingCertificates);
 const signingOperationAttributeDescriptors = createSelector(state, (state) => state.signingOperationAttributeDescriptors);
-const signatureFormatterConnectorAttributeDescriptors = createSelector(
+const signatureFormattingConnectorAttributeDescriptors = createSelector(
     state,
-    (state) => state.signatureFormatterConnectorAttributeDescriptors,
+    (state) => state.signatureFormattingConnectorAttributeDescriptors,
 );
-const signatureFormatterConnectors = createSelector(state, (state) => state.signatureFormatterConnectors);
+const signatureFormattingConnectors = createSelector(state, (state) => state.signatureFormattingConnectors);
 const signingRecords = createSelector(state, (state) => state.signingRecords);
 const searchableFields = createSelector(state, (state) => state.searchableFields);
 const deleteErrorMessage = createSelector(state, (state) => state.deleteErrorMessage);
@@ -467,11 +467,11 @@ const isFetchingTspActivationDetails = createSelector(state, (state) => state.is
 const isFetchingSupportedProtocols = createSelector(state, (state) => state.isFetchingSupportedProtocols);
 const isFetchingSigningCertificates = createSelector(state, (state) => state.isFetchingSigningCertificates);
 const isFetchingSignatureAttributes = createSelector(state, (state) => state.isFetchingSignatureAttributes);
-const isFetchingSignatureFormatterConnectorAttributes = createSelector(
+const isFetchingSignatureFormattingConnectorAttributes = createSelector(
     state,
-    (state) => state.isFetchingSignatureFormatterConnectorAttributes,
+    (state) => state.isFetchingSignatureFormattingConnectorAttributes,
 );
-const isFetchingSignatureFormatterConnectors = createSelector(state, (state) => state.isFetchingSignatureFormatterConnectors);
+const isFetchingSignatureFormattingConnectors = createSelector(state, (state) => state.isFetchingSignatureFormattingConnectors);
 const isFetchingSigningRecords = createSelector(state, (state) => state.isFetchingSigningRecords);
 const isCreating = createSelector(state, (state) => state.isCreating);
 const isDeleting = createSelector(state, (state) => state.isDeleting);
@@ -494,8 +494,8 @@ export const selectors = {
     supportedProtocols,
     signingCertificates,
     signingOperationAttributeDescriptors,
-    signatureFormatterConnectorAttributeDescriptors,
-    signatureFormatterConnectors,
+    signatureFormattingConnectorAttributeDescriptors,
+    signatureFormattingConnectors,
     signingRecords,
     searchableFields,
     isFetchingList,
@@ -505,8 +505,8 @@ export const selectors = {
     isFetchingSupportedProtocols,
     isFetchingSigningCertificates,
     isFetchingSignatureAttributes,
-    isFetchingSignatureFormatterConnectorAttributes,
-    isFetchingSignatureFormatterConnectors,
+    isFetchingSignatureFormattingConnectorAttributes,
+    isFetchingSignatureFormattingConnectors,
     isFetchingSigningRecords,
     isCreating,
     isDeleting,

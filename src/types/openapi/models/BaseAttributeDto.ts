@@ -21,6 +21,8 @@ import type {
     BaseAttributeDtoV2,
     BaseAttributeDtoV3,
     CustomAttributeProperties,
+    FieldMapping,
+    ValueSource,
 } from './';
 
 /**

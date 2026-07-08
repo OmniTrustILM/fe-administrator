@@ -103,6 +103,7 @@ models/AttributeContentType.ts
 models/AttributeDefinitionDto.ts
 models/AttributeMappingDto.ts
 models/AttributeResource.ts
+models/AttributeSetMergeMode.ts
 models/AttributeType.ts
 models/AttributeValueTarget.ts
 models/AttributeVersion.ts
@@ -119,6 +120,7 @@ models/AuthenticationSettingsUpdateDto.ts
 models/AuthorityInstanceDto.ts
 models/AuthorityInstanceRequestDto.ts
 models/AuthorityInstanceUpdateRequestDto.ts
+models/AvailableOperations.ts
 models/BaseAttributeConstraint.ts
 models/BaseAttributeContentDtoV2.ts
 models/BaseAttributeContentDtoV3.ts
@@ -149,15 +151,20 @@ models/CertificateDetailDto.ts
 models/CertificateDownloadResponseDto.ts
 models/CertificateDto.ts
 models/CertificateEventHistoryDto.ts
+models/CertificateExtension.ts
+models/CertificateExtensionOidPropertiesDto.ts
 models/CertificateFormat.ts
 models/CertificateFormatEncoding.ts
 models/CertificateInLocationDto.ts
 models/CertificateKeyUsage.ts
+models/CertificateOperationKind.ts
 models/CertificateProtocol.ts
 models/CertificateProtocolDto.ts
 models/CertificateQcStatementsDto.ts
 models/CertificateRelationType.ts
 models/CertificateRelationsDto.ts
+models/CertificateRequestAttributesSettingsDto.ts
+models/CertificateRequestAttributesSettingsUpdateDto.ts
 models/CertificateRequestDto.ts
 models/CertificateRequestFormat.ts
 models/CertificateResponseDto.ts
@@ -180,6 +187,7 @@ models/CipherDataRequestDto.ts
 models/CipherRequestData.ts
 models/CipherResponseData.ts
 models/ClientCertificateDataResponseDto.ts
+models/ClientCertificateRegistrationRequest.ts
 models/ClientCertificateRekeyRequestDto.ts
 models/ClientCertificateRenewRequestDto.ts
 models/ClientCertificateRequestDto.ts
@@ -323,7 +331,13 @@ models/ExecutionItemDto.ts
 models/ExecutionItemRequestDto.ts
 models/ExecutionRequestDto.ts
 models/ExecutionType.ts
+models/ExtensionMappedField.ts
+models/ExtensionValueEncoding.ts
 models/FeatureFlag.ts
+models/FieldMapping.ts
+models/FieldMappingFieldsInner.ts
+models/FieldSource.ts
+models/FieldType.ts
 models/FileAttributeContentData.ts
 models/FileAttributeContentV2.ts
 models/FileAttributeContentV3.ts
@@ -335,6 +349,7 @@ models/FloatAttributeContentV2.ts
 models/FloatAttributeContentV3.ts
 models/FunctionGroupCode.ts
 models/FunctionGroupDto.ts
+models/GeneralNameType.ts
 models/GenericSecretContent.ts
 models/GlobalMetadataCreateRequestDto.ts
 models/GlobalMetadataDefinitionDetailDto.ts
@@ -379,6 +394,7 @@ models/LoginProviderDto.ts
 models/ManagedSigningRequestSchemeInterface.ts
 models/ManagedSigningSchemeInterface.ts
 models/ManagedSigningType.ts
+models/MappedField.ts
 models/MetadataAttributeProperties.ts
 models/MetadataAttributeV2.ts
 models/MetadataAttributeV3.ts
@@ -405,11 +421,13 @@ models/ObjectAttributeContentV3.ts
 models/ObjectEventHistoryDto.ts
 models/ObjectPermissionsDto.ts
 models/ObjectPermissionsRequestDto.ts
+models/ObjectType.ts
 models/OidCategory.ts
 models/OneTimeKeyManagedSigningDto.ts
 models/OneTimeKeyManagedSigningRequestDto.ts
 models/Operation.ts
 models/OperationResult.ts
+models/OperationSupport.ts
 models/PaginationRequestDto.ts
 models/PaginationResponseDtoCbomDto.ts
 models/PaginationResponseDtoConnectorDtoV2.ts
@@ -444,6 +462,8 @@ models/PushToLocationRequestDto.ts
 models/QcType.ts
 models/RaProfileAcmeDetailResponseDto.ts
 models/RaProfileAssociationRequestDto.ts
+models/RaProfileCertificateRequestAttributesDto.ts
+models/RaProfileCertificateRequestAttributesUpdateDto.ts
 models/RaProfileCertificateValidationSettingsDto.ts
 models/RaProfileCertificateValidationSettingsUpdateDto.ts
 models/RaProfileCmpDetailResponseDto.ts
@@ -456,6 +476,7 @@ models/RangeAttributeConstraintData.ts
 models/RawSigningWorkflowDto.ts
 models/RawSigningWorkflowRequestDto.ts
 models/RdnAttributeTypeOidPropertiesDto.ts
+models/RdnMappedField.ts
 models/RecipientType.ts
 models/RegexpAttributeConstraint.ts
 models/RemoveCertificateDto.ts
@@ -491,6 +512,7 @@ models/RoleRequestDto.ts
 models/RuleDetailDto.ts
 models/RuleDto.ts
 models/RuleRequestDto.ts
+models/SanMappedField.ts
 models/ScepProfileDetailDto.ts
 models/ScepProfileDto.ts
 models/ScepProfileEditRequestDto.ts
@@ -531,6 +553,8 @@ models/SigningRecordListDto.ts
 models/SigningRecordPersistenceMode.ts
 models/SigningRecordPolicyDto.ts
 models/SigningRecordPolicyRequestDto.ts
+models/SigningRecordStatisticsDto.ts
+models/SigningRecordStatisticsPeriod.ts
 models/SigningScheme.ts
 models/SigningSchemeInterface.ts
 models/SigningSchemeRequestInterface.ts
@@ -538,6 +562,7 @@ models/SigningWorkflowType.ts
 models/SimplifiedComplianceProfileDto.ts
 models/SimplifiedRaProfileDto.ts
 models/SimplifiedSigningProfileDto.ts
+models/SourceParam.ts
 models/SourceRecord.ts
 models/StaticKeyManagedSigningDto.ts
 models/StaticKeyManagedSigningRequestDto.ts
@@ -602,6 +627,9 @@ models/UserProfileDetailDto.ts
 models/UserProfilePermissionsDto.ts
 models/UtilsSettingsDto.ts
 models/UuidDto.ts
+models/ValueSource.ts
+models/ValueSourceBindingDto.ts
+models/ValueSourceType.ts
 models/VaultInstanceDetailDto.ts
 models/VaultInstanceDto.ts
 models/VaultInstanceRequestDto.ts

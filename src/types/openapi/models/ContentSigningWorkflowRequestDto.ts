@@ -26,15 +26,15 @@ export interface ContentSigningWorkflowRequestDto {
      */
     type: SigningWorkflowType;
     /**
-     * UUID of the Signature Formatter Connector that constructs the data-to-be-signed (DTBS) for Content signing. Required for ILM-managed signing; must be omitted for delegated signing.
+     * UUID of the Signature Formatting Provider that constructs the data-to-be-signed (DTBS) for Content signing. Required for ILM-managed signing; must be omitted for delegated signing.
      * @type {string}
      * @memberof ContentSigningWorkflowRequestDto
      */
-    signatureFormatterConnectorUuid?: string;
+    signatureFormattingConnectorUuid?: string;
     /**
-     * Attributes for the Signature Formatter Connector that control DTBS construction for the content signing workflow. Applicable only when ILM-managed signing is used.
+     * Attributes for the Signature Formatting Provider that control DTBS construction for the content signing workflow. Applicable only when ILM-managed signing is used.
      * @type {Array<RequestAttribute>}
      * @memberof ContentSigningWorkflowRequestDto
      */
-    signatureFormatterConnectorAttributes?: Array<RequestAttribute>;
+    signatureFormattingConnectorAttributes?: Array<RequestAttribute>;
 }

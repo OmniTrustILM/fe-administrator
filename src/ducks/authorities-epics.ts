@@ -1,7 +1,8 @@
 import type { AppEpic } from 'ducks';
-import { iif, of } from 'rxjs';
+import { forkJoin, iif, of, throwError } from 'rxjs';
+import { AjaxError } from 'rxjs/ajax';
 import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
-import { FunctionGroupCode } from 'types/openapi';
+import { ConnectorInterface, FilterConditionOperator, FilterFieldSource, FunctionGroupCode } from 'types/openapi';
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
@@ -15,7 +16,12 @@ import {
     transformAuthorityResponseDtoToModel,
     transformAuthorityUpdateRequestModelToDto,
 } from './transform/authorities';
-import { transformConnectorResponseDtoToModel } from './transform/connectors';
+import { transformConnectorDtoV2ToModel, transformConnectorResponseDtoToModel } from './transform/connectors';
+import { transformSearchRequestModelToDto } from './transform/certificates';
+
+// The NG connector listing is paginated; authority connectors per environment are far below this,
+// so a single large page is fetched instead of following pagination.
+const NG_CONNECTORS_PAGE_SIZE = 1000;
 
 const listAuthorities: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
@@ -69,12 +75,46 @@ const listAuthorityProviders: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.listAuthorityProviders.match),
         switchMap(() =>
-            deps.apiClients.connectors.listConnectors({ functionGroup: FunctionGroupCode.AuthorityProvider }).pipe(
-                map((providers) =>
-                    slice.actions.listAuthorityProvidersSuccess({
-                        connectors: providers.map(transformConnectorResponseDtoToModel),
-                    }),
-                ),
+            forkJoin({
+                legacy: deps.apiClients.connectors.listConnectors({ functionGroup: FunctionGroupCode.AuthorityProvider }),
+                legacyDeprecated: deps.apiClients.connectors
+                    .listConnectors({ functionGroup: FunctionGroupCode.LegacyAuthorityProvider })
+                    .pipe(catchError((err) => (err instanceof AjaxError && err.status === 404 ? of([]) : throwError(() => err)))),
+                ng: deps.apiClients.connectorsV2
+                    .listConnectorsV2({
+                        searchRequestDto: transformSearchRequestModelToDto({
+                            itemsPerPage: NG_CONNECTORS_PAGE_SIZE,
+                            pageNumber: 1,
+                            filters: [
+                                {
+                                    fieldSource: FilterFieldSource.Property,
+                                    fieldIdentifier: 'CONNECTOR_INTERFACE',
+                                    condition: FilterConditionOperator.Equals,
+                                    value: ConnectorInterface.Authority,
+                                },
+                            ],
+                        }),
+                    })
+                    .pipe(
+                        catchError((err) =>
+                            err instanceof AjaxError && err.status === 404 ? of({ items: [], totalItems: 0 }) : throwError(() => err),
+                        ),
+                    ),
+            }).pipe(
+                map(({ legacy, legacyDeprecated, ng }) => {
+                    const byUuid = new Map(
+                        [...legacy, ...legacyDeprecated].map((connector) => [
+                            connector.uuid,
+                            transformConnectorResponseDtoToModel(connector),
+                        ]),
+                    );
+                    ng.items.forEach((connector) => {
+                        byUuid.set(connector.uuid, transformConnectorDtoV2ToModel(connector));
+                    });
+                    return slice.actions.listAuthorityProvidersSuccess({
+                        connectors: Array.from(byUuid.values()),
+                    });
+                }),
 
                 catchError((err) =>
                     of(
@@ -103,6 +143,38 @@ const getAuthorityProviderAttributesDescriptors: AppEpic = (action$, state, deps
                             attributeDescriptor: attributeDescriptors.map(transformAttributeDescriptorDtoToModel),
                         });
                     }),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.getAuthorityProviderAttributeDescriptorsFailure({
+                                error: extractError(err, 'Failed to get Authority Provider Attribute Descriptor list'),
+                            }),
+                            appRedirectActions.fetchError({
+                                error: err,
+                                message: 'Failed to get Authority Provider Attribute Descriptor list',
+                            }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
+const getAuthorityInstanceAttributesDescriptors: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getAuthorityInstanceAttributesDescriptors.match),
+        switchMap((action) =>
+            deps.apiClients.authorities
+                .listAuthorityInstanceAttributes({
+                    connectorUuid: action.payload.connectorUuid,
+                    interfaceUuid: action.payload.interfaceUuid,
+                })
+                .pipe(
+                    map((attributeDescriptors) =>
+                        slice.actions.getAuthorityProviderAttributesDescriptorsSuccess({
+                            attributeDescriptor: attributeDescriptors.map(transformAttributeDescriptorDtoToModel),
+                        }),
+                    ),
 
                     catchError((err) =>
                         of(
@@ -288,6 +360,7 @@ const epics = [
     getAuthorityDetail,
     listAuthorityProviders,
     getAuthorityProviderAttributesDescriptors,
+    getAuthorityInstanceAttributesDescriptors,
     getRAProfilesAttributesDescriptors,
     createAuthority,
     updateAuthority,
@@ -296,4 +369,5 @@ const epics = [
     bulkForceDeleteAuthority,
 ];
 
+export { listAuthorityProviders, getAuthorityInstanceAttributesDescriptors };
 export default epics;

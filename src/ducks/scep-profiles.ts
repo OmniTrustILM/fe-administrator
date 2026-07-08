@@ -1,4 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { Resource } from 'types/openapi';
+import { attachCustomAttributesSync } from './customAttributesSync';
 import type { CertificateListResponseDto, CertificateListResponseModel } from 'types/certificate';
 import type { BulkActionModel } from 'types/connectors';
 import type {
@@ -312,6 +314,10 @@ export const slice = createSlice({
         bulkDisableScepProfilesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isBulkDisabling = false;
         },
+    },
+
+    extraReducers: (builder) => {
+        attachCustomAttributesSync(builder, Resource.ScepProfiles, (state) => state.scepProfile);
     },
 });
 

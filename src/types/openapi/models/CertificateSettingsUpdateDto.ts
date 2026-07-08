@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { CertificateValidationSettingsUpdateDto } from './';
+import type { CertificateRequestAttributesSettingsUpdateDto, CertificateValidationSettingsUpdateDto } from './';
 
 /**
  * @export
@@ -24,4 +24,10 @@ export interface CertificateSettingsUpdateDto {
      * @memberof CertificateSettingsUpdateDto
      */
     validation?: CertificateValidationSettingsUpdateDto;
+    /**
+     * Platform default request-attribute set
+     * @type {CertificateRequestAttributesSettingsUpdateDto}
+     * @memberof CertificateSettingsUpdateDto
+     */
+    requestAttributes?: CertificateRequestAttributesSettingsUpdateDto;
 }

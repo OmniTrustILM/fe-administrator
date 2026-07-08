@@ -1,4 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { Resource } from 'types/openapi';
+import { attachCustomAttributesSync } from './customAttributesSync';
 import type {
     AcmeProfileAddRequestModel,
     AcmeProfileEditRequestModel,
@@ -295,6 +297,10 @@ export const slice = createSlice({
         bulkDisableAcmeProfilesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isBulkDisabling = false;
         },
+    },
+
+    extraReducers: (builder) => {
+        attachCustomAttributesSync(builder, Resource.AcmeProfiles, (state) => state.acmeProfile);
     },
 });
 

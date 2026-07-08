@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
+import { Resource } from 'types/openapi';
+import { actions as customAttributesActions } from './customAttributes';
 import reducer, { actions, initialState, selectors } from './cmp-profiles';
 
 describe('cmpProfiles slice', () => {
@@ -233,6 +235,60 @@ describe('cmpProfiles slice', () => {
 
         next = reducer({ ...next, isBulkDisabling: true }, actions.bulkDisableCmpProfilesFailure({ error: 'err' }));
         expect(next.isBulkDisabling).toBe(false);
+    });
+
+    test('syncs loaded profile custom attributes on remove/update content success', () => {
+        const withDetail = {
+            ...initialState,
+            cmpProfile: { uuid: 'cp-1', customAttributes: [{ uuid: 'ca-1', name: 'foo' }] } as any,
+        };
+
+        const afterRemove = reducer(
+            withDetail,
+            customAttributesActions.removeCustomAttributeContentSuccess({
+                resource: Resource.CmpProfiles,
+                resourceUuid: 'cp-1',
+                customAttributes: [],
+            }),
+        );
+        expect(afterRemove.cmpProfile?.customAttributes).toHaveLength(0);
+
+        const afterUpdate = reducer(
+            withDetail,
+            customAttributesActions.updateCustomAttributeContentSuccess({
+                resource: Resource.CmpProfiles,
+                resourceUuid: 'cp-1',
+                customAttributes: [{ uuid: 'ca-2', name: 'bar' }] as any,
+            }),
+        );
+        expect(afterUpdate.cmpProfile?.customAttributes?.[0]?.uuid).toBe('ca-2');
+    });
+
+    test('does not touch profile custom attributes for a different resource or uuid', () => {
+        const withDetail = {
+            ...initialState,
+            cmpProfile: { uuid: 'cp-1', customAttributes: [{ uuid: 'ca-1', name: 'foo' }] } as any,
+        };
+
+        const otherUuid = reducer(
+            withDetail,
+            customAttributesActions.removeCustomAttributeContentSuccess({
+                resource: Resource.CmpProfiles,
+                resourceUuid: 'cp-other',
+                customAttributes: [],
+            }),
+        );
+        expect(otherUuid.cmpProfile?.customAttributes).toHaveLength(1);
+
+        const otherResource = reducer(
+            withDetail,
+            customAttributesActions.removeCustomAttributeContentSuccess({
+                resource: Resource.ScepProfiles,
+                resourceUuid: 'cp-1',
+                customAttributes: [],
+            }),
+        );
+        expect(otherResource.cmpProfile?.customAttributes).toHaveLength(1);
     });
 });
 

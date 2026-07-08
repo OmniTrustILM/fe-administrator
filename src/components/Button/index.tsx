@@ -20,7 +20,7 @@ export type Props = {
 };
 
 const baseButton =
-    'inline-flex items-center gap-x-2 text-sm font-medium rounded-lg disabled:opacity-35 disabled:pointer-events-none focus:outline-hidden border';
+    'inline-flex items-center gap-x-2 text-sm font-medium rounded-lg disabled:opacity-35 disabled:pointer-events-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 border';
 
 const buttonClasses = {
     solid: 'py-2.5 px-3.5',

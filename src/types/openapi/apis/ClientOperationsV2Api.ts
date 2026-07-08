@@ -17,10 +17,12 @@ import { BaseAPI, throwIfNullOrUndefined, encodeURI } from '../runtime';
 import type { OperationOpts, HttpHeaders } from '../runtime';
 import type {
     AuthenticationServiceExceptionDto,
+    AvailableOperations,
     BaseAttributeDto,
     CancelPendingCertificateRequestDto,
     CertificateDetailDto,
     ClientCertificateDataResponseDto,
+    ClientCertificateRegistrationRequest,
     ClientCertificateRekeyRequestDto,
     ClientCertificateRenewRequestDto,
     ClientCertificateRevocationDto,
@@ -43,10 +45,16 @@ export interface IssueCertificateRequest {
     clientCertificateSignRequestDto: ClientCertificateSignRequestDto;
 }
 
-export interface IssueRequestedCertificateRequest {
+export interface IssueExistingCertificateRequest {
     authorityUuid: string;
     raProfileUuid: string;
     certificateUuid: string;
+    clientCertificateSignRequestDto?: ClientCertificateSignRequestDto;
+}
+
+export interface ListAvailableOperationsRequest {
+    authorityUuid: string;
+    raProfileUuid: string;
 }
 
 export interface ListIssueCertificateAttributesRequest {
@@ -70,6 +78,12 @@ export interface ManuallyIssueCertificateRequest {
     raProfileUuid: string;
     certificateUuid: string;
     uploadCertificateRequestDto: UploadCertificateRequestDto;
+}
+
+export interface RegisterCertificateRequest {
+    authorityUuid: string;
+    raProfileUuid: string;
+    clientCertificateRegistrationRequest: ClientCertificateRegistrationRequest;
 }
 
 export interface RekeyCertificateRequest {
@@ -188,25 +202,30 @@ export class ClientOperationsV2Api extends BaseAPI {
     }
 
     /**
-     * Trigger issuance for a certificate already in state `REQUESTED`. Used after the certificate request has been created (typically via a protocol such as ACME, SCEP, or CMP) and any approval and compliance flows have completed.
-     * Issue an existing certificate request
+     * Trigger issuance for an existing certificate. Behavior depends on cert state: - `REQUESTED` (no body): the certificate already has a CSR attached (typically from   a protocol layer such as ACME, SCEP, or CMP, or after an approval/compliance cycle).   Issuance is triggered with the existing CSR. - `REGISTERED` (body required): the certificate was pre-registered (v3 authorities with   `CERTIFICATE_REGISTRATION` capability) and is now being finalized with an operator-   supplied CSR. The CSR + sign attributes from the body are attached to the existing   certificate row, then issuance is triggered. The cert\'s identity (subject DN, SAN,   extensions) and connector-supplied metadata from the registration are preserved.
+     * Issue an existing certificate (REQUESTED or REGISTERED)
      */
-    issueRequestedCertificate({
+    issueExistingCertificate({
         authorityUuid,
         raProfileUuid,
         certificateUuid,
-    }: IssueRequestedCertificateRequest): Observable<ClientCertificateDataResponseDto>;
-    issueRequestedCertificate(
-        { authorityUuid, raProfileUuid, certificateUuid }: IssueRequestedCertificateRequest,
+        clientCertificateSignRequestDto,
+    }: IssueExistingCertificateRequest): Observable<ClientCertificateDataResponseDto>;
+    issueExistingCertificate(
+        { authorityUuid, raProfileUuid, certificateUuid, clientCertificateSignRequestDto }: IssueExistingCertificateRequest,
         opts?: OperationOpts,
     ): Observable<AjaxResponse<ClientCertificateDataResponseDto>>;
-    issueRequestedCertificate(
-        { authorityUuid, raProfileUuid, certificateUuid }: IssueRequestedCertificateRequest,
+    issueExistingCertificate(
+        { authorityUuid, raProfileUuid, certificateUuid, clientCertificateSignRequestDto }: IssueExistingCertificateRequest,
         opts?: OperationOpts,
     ): Observable<ClientCertificateDataResponseDto | AjaxResponse<ClientCertificateDataResponseDto>> {
-        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'issueRequestedCertificate');
-        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'issueRequestedCertificate');
-        throwIfNullOrUndefined(certificateUuid, 'certificateUuid', 'issueRequestedCertificate');
+        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'issueExistingCertificate');
+        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'issueExistingCertificate');
+        throwIfNullOrUndefined(certificateUuid, 'certificateUuid', 'issueExistingCertificate');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
 
         return this.request<ClientCertificateDataResponseDto>(
             {
@@ -215,6 +234,35 @@ export class ClientOperationsV2Api extends BaseAPI {
                     .replace('{raProfileUuid}', encodeURI(raProfileUuid))
                     .replace('{certificateUuid}', encodeURI(certificateUuid)),
                 method: 'POST',
+                headers,
+                body: clientCertificateSignRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Returns per-operation support flags (issue/renew/revoke/register) including whether each may complete asynchronously and whether each can be cancelled mid-flight. Operators use this to drive UI affordances and validate flows before invoking them.
+     * List operations supported by this authority/RA profile
+     */
+    listAvailableOperations({ authorityUuid, raProfileUuid }: ListAvailableOperationsRequest): Observable<AvailableOperations>;
+    listAvailableOperations(
+        { authorityUuid, raProfileUuid }: ListAvailableOperationsRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<AvailableOperations>>;
+    listAvailableOperations(
+        { authorityUuid, raProfileUuid }: ListAvailableOperationsRequest,
+        opts?: OperationOpts,
+    ): Observable<AvailableOperations | AjaxResponse<AvailableOperations>> {
+        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'listAvailableOperations');
+        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'listAvailableOperations');
+
+        return this.request<AvailableOperations>(
+            {
+                url: '/v2/operations/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/availableOperations'
+                    .replace('{authorityUuid}', encodeURI(authorityUuid))
+                    .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
+                method: 'GET',
             },
             opts?.responseOpts,
         );
@@ -345,6 +393,44 @@ export class ClientOperationsV2Api extends BaseAPI {
                 method: 'POST',
                 headers,
                 body: uploadCertificateRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Reserves a slot at the CA for a certificate that will be issued later. Returns a tracking handle (in metadata) that can be used to complete the issuance via the standard issue flow.  Only supported on v3 authorities advertising the `CERTIFICATE_REGISTRATION` feature flag. The operation may complete synchronously (200) or asynchronously (202 with status polling).
+     * Pre-register a certificate with the upstream CA
+     */
+    registerCertificate({
+        authorityUuid,
+        raProfileUuid,
+        clientCertificateRegistrationRequest,
+    }: RegisterCertificateRequest): Observable<ClientCertificateDataResponseDto>;
+    registerCertificate(
+        { authorityUuid, raProfileUuid, clientCertificateRegistrationRequest }: RegisterCertificateRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<ClientCertificateDataResponseDto>>;
+    registerCertificate(
+        { authorityUuid, raProfileUuid, clientCertificateRegistrationRequest }: RegisterCertificateRequest,
+        opts?: OperationOpts,
+    ): Observable<ClientCertificateDataResponseDto | AjaxResponse<ClientCertificateDataResponseDto>> {
+        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'registerCertificate');
+        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'registerCertificate');
+        throwIfNullOrUndefined(clientCertificateRegistrationRequest, 'clientCertificateRegistrationRequest', 'registerCertificate');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<ClientCertificateDataResponseDto>(
+            {
+                url: '/v2/operations/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/certificates/register'
+                    .replace('{authorityUuid}', encodeURI(authorityUuid))
+                    .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
+                method: 'POST',
+                headers,
+                body: clientCertificateRegistrationRequest,
             },
             opts?.responseOpts,
         );

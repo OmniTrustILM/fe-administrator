@@ -80,10 +80,22 @@ export default function AuthorityDetail() {
                           id: 'name',
                           columns: ['Name', authority.name],
                       },
-                      {
-                          id: 'kind',
-                          columns: ['Kind', authority.kind],
-                      },
+                      ...(authority.kind
+                          ? [
+                                {
+                                    id: 'kind',
+                                    columns: ['Kind', authority.kind],
+                                },
+                            ]
+                          : []),
+                      ...(authority.connectorInterface
+                          ? [
+                                {
+                                    id: 'connectorInterface',
+                                    columns: ['Connector Interface', `Authority (${authority.connectorInterface.version})`],
+                                },
+                            ]
+                          : []),
                       {
                           id: 'authorityProviderUUID',
                           columns: ['Authority Provider UUID', authority?.connectorUuid ?? ''],

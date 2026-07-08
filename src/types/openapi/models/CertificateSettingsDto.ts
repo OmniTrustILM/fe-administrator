@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { CertificateValidationSettingsDto } from './';
+import type { CertificateRequestAttributesSettingsDto, CertificateValidationSettingsDto } from './';
 
 /**
  * @export
@@ -23,4 +23,9 @@ export interface CertificateSettingsDto {
      * @memberof CertificateSettingsDto
      */
     validation?: CertificateValidationSettingsDto;
+    /**
+     * @type {CertificateRequestAttributesSettingsDto}
+     * @memberof CertificateSettingsDto
+     */
+    requestAttributes?: CertificateRequestAttributesSettingsDto;
 }

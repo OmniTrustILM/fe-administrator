@@ -1,6 +1,8 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { Resource } from 'types/openapi';
 import type { CertificateListResponseModel } from 'types/certificate';
 import type { BulkActionModel } from 'types/connectors';
+import { attachCustomAttributesSync } from './customAttributesSync';
 
 import type {
     // ScepProfileAddRequestModel,
@@ -303,6 +305,10 @@ export const slice = createSlice({
         bulkDisableCmpProfilesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isBulkDisabling = false;
         },
+    },
+
+    extraReducers: (builder) => {
+        attachCustomAttributesSync(builder, Resource.CmpProfiles, (state) => state.cmpProfile);
     },
 });
 

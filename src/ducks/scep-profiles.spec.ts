@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'vitest';
+import { Resource } from 'types/openapi';
+import { actions as customAttributesActions } from './customAttributes';
 import { runCommonSliceTests } from './__tests__/common-slice-tests';
 import reducer, { actions, initialState, selectors } from './scep-profiles';
 
@@ -227,6 +229,60 @@ describe('scep-profiles slice', () => {
 
         const failing = reducer({ ...initialState, isBulkEnabling: true }, actions.bulkEnableScepProfilesFailure({ error: 'err' }));
         expect(failing.isBulkEnabling).toBe(false);
+    });
+
+    test('syncs loaded profile custom attributes on remove/update content success', () => {
+        const withDetail = {
+            ...initialState,
+            scepProfile: { uuid: 'sp-1', customAttributes: [{ uuid: 'ca-1', name: 'foo' }] } as any,
+        };
+
+        const afterRemove = reducer(
+            withDetail,
+            customAttributesActions.removeCustomAttributeContentSuccess({
+                resource: Resource.ScepProfiles,
+                resourceUuid: 'sp-1',
+                customAttributes: [],
+            }),
+        );
+        expect(afterRemove.scepProfile?.customAttributes).toHaveLength(0);
+
+        const afterUpdate = reducer(
+            withDetail,
+            customAttributesActions.updateCustomAttributeContentSuccess({
+                resource: Resource.ScepProfiles,
+                resourceUuid: 'sp-1',
+                customAttributes: [{ uuid: 'ca-2', name: 'bar' }] as any,
+            }),
+        );
+        expect(afterUpdate.scepProfile?.customAttributes?.[0]?.uuid).toBe('ca-2');
+    });
+
+    test('does not touch profile custom attributes for a different resource or uuid', () => {
+        const withDetail = {
+            ...initialState,
+            scepProfile: { uuid: 'sp-1', customAttributes: [{ uuid: 'ca-1', name: 'foo' }] } as any,
+        };
+
+        const otherUuid = reducer(
+            withDetail,
+            customAttributesActions.removeCustomAttributeContentSuccess({
+                resource: Resource.ScepProfiles,
+                resourceUuid: 'sp-other',
+                customAttributes: [],
+            }),
+        );
+        expect(otherUuid.scepProfile?.customAttributes).toHaveLength(1);
+
+        const otherResource = reducer(
+            withDetail,
+            customAttributesActions.removeCustomAttributeContentSuccess({
+                resource: Resource.AcmeProfiles,
+                resourceUuid: 'sp-1',
+                customAttributes: [],
+            }),
+        );
+        expect(otherResource.scepProfile?.customAttributes).toHaveLength(1);
     });
 
     test('bulkDisableScepProfiles / Success disables entries / Failure', () => {

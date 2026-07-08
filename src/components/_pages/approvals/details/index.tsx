@@ -147,7 +147,7 @@ export default function ApprovalDetails() {
                                   <Button
                                       variant="transparent"
                                       title="Go to details"
-                                      className="p-0 ml-1"
+                                      className="!p-1 ml-1"
                                       onClick={() => {
                                           navigate(`../../${approvalDetails.resource}/detail/${approvalDetails.objectUuid}`);
                                       }}
@@ -358,7 +358,7 @@ export default function ApprovalDetails() {
                     caption="Accept approval?"
                     toggle={() => setRecipientApproveDialog(false)}
                     buttons={[
-                        { color: 'secondary', variant: 'outline', onClick: () => setRecipientApproveDialog(false), body: 'Cancel' },
+                        { color: 'primary', variant: 'outline', onClick: () => setRecipientApproveDialog(false), body: 'Cancel' },
                         { color: 'primary', onClick: onApproveRecipient, body: 'Yes, approve' },
                     ]}
                 />
@@ -374,8 +374,8 @@ export default function ApprovalDetails() {
                         </div>
                     }
                     buttons={[
+                        { color: 'primary', variant: 'outline', onClick: () => setRecipientRejectDialog(false), body: 'Cancel' },
                         { color: 'primary', onClick: onRejectRecipient, body: 'Yes, reject' },
-                        { color: 'secondary', variant: 'outline', onClick: () => setRecipientRejectDialog(false), body: 'Cancel' },
                     ]}
                 />
             </Container>

@@ -61,6 +61,7 @@ export type ConnectResponseModel = Omit<ConnectDto, 'functionGroup'> & { functio
 
 export type CallbackConnectorModel = Omit<import('./openapi').CallbackRequest, 'requestAttributeCallback'> & {
     requestAttributeCallback: RequestAttributeCallback;
+    version?: import('./openapi').ConnectorVersion;
 };
 
 export type CallbackResourceModel = Omit<import('./openapi').ResourceCallbackRequest, 'requestAttributeCallback'> & {

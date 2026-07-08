@@ -64,6 +64,20 @@ describe('authorities slice', () => {
         expect(next.isFetchingAuthorityProviderAttributeDescriptors).toBe(false);
     });
 
+    test('getAuthorityInstanceAttributesDescriptors resets descriptors and sets fetching', () => {
+        const state = {
+            ...initialState,
+            authorityProviderAttributeDescriptors: [{ uuid: 'ad1' } as any],
+            isFetchingAuthorityProviderAttributeDescriptors: false,
+        };
+        const next = reducer(
+            state,
+            actions.getAuthorityInstanceAttributesDescriptors({ connectorUuid: 'conn-1', interfaceUuid: 'iface-1' }),
+        );
+        expect(next.isFetchingAuthorityProviderAttributeDescriptors).toBe(true);
+        expect(next.authorityProviderAttributeDescriptors).toEqual([]);
+    });
+
     test('getRAProfilesAttributesDescriptors / success / failure', () => {
         let next = reducer(initialState, actions.getRAProfilesAttributesDescriptors({ authorityUuid: 'au1' }));
         expect(next.isFetchingRAProfilesAttributesDescriptors).toBe(true);

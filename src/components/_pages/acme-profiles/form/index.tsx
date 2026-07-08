@@ -337,6 +337,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     const allFormValues = useWatch({ control });
     const isEqual = useMemo(() => deepEqual(defaultValues, allFormValues), [defaultValues, allFormValues]);
 
+    const isSaving = isSubmitting || isCreating || isUpdating;
+
     const lastResetProfileIdRef = useRef<string | undefined>(undefined);
     const lastResetEditModeRef = useRef<boolean | undefined>(undefined);
 
@@ -735,14 +737,14 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                         />
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>
-                            <Button variant="outline" onClick={onCancel} disabled={isSubmitting} type="button">
+                            <Button variant="outline" onClick={onCancel} disabled={isSaving} type="button">
                                 Cancel
                             </Button>
                             <ProgressButton
                                 title={editMode ? 'Update' : 'Create'}
                                 inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
-                                inProgress={isSubmitting}
-                                disabled={isSubmitting || !isValid || isEqual}
+                                inProgress={isSaving}
+                                disabled={isSaving || !isValid || isEqual}
                                 type="submit"
                             />
                         </Container>

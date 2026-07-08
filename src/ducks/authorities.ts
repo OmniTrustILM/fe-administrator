@@ -111,6 +111,11 @@ export const slice = createSlice({
             state.isFetchingAuthorityProviderAttributeDescriptors = true;
         },
 
+        getAuthorityInstanceAttributesDescriptors: (state, action: PayloadAction<{ connectorUuid: string; interfaceUuid?: string }>) => {
+            state.authorityProviderAttributeDescriptors = [];
+            state.isFetchingAuthorityProviderAttributeDescriptors = true;
+        },
+
         getAuthorityProviderAttributesDescriptorsSuccess: (
             state,
             action: PayloadAction<{ attributeDescriptor: AttributeDescriptorModel[] }>,

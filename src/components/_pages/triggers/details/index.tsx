@@ -497,6 +497,16 @@ const TriggerDetails = () => {
                                         icon: 'fa fa-book',
                                         label: 'Rule',
                                     },
+                                    {
+                                        color: '#a5b4fc',
+                                        icon: 'fa fa-filter',
+                                        label: 'Condition',
+                                    },
+                                    {
+                                        color: '#a5b4fc',
+                                        icon: 'fa fa-cogs',
+                                        label: 'Execution',
+                                    },
                                 ]}
                             />
                         ),

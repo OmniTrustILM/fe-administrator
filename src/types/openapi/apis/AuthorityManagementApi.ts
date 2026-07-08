@@ -14,7 +14,7 @@
 import type { Observable } from 'rxjs';
 import type { AjaxResponse } from 'rxjs/ajax';
 import { BaseAPI, throwIfNullOrUndefined, encodeURI } from '../runtime';
-import type { OperationOpts, HttpHeaders } from '../runtime';
+import type { OperationOpts, HttpHeaders, HttpQuery } from '../runtime';
 import type {
     AuthenticationServiceExceptionDto,
     AuthorityInstanceDto,
@@ -51,6 +51,11 @@ export interface ForceDeleteAuthorityInstancesRequest {
 
 export interface GetAuthorityInstanceRequest {
     uuid: string;
+}
+
+export interface ListAuthorityInstanceAttributesRequest {
+    connectorUuid: string;
+    interfaceUuid?: string;
 }
 
 export interface ListCAsInProfileRequest {
@@ -229,6 +234,40 @@ export class AuthorityManagementApi extends BaseAPI {
             {
                 url: '/v1/authorities/{uuid}'.replace('{uuid}', encodeURI(uuid)),
                 method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Connector-scoped authority attribute schema for a stateless authority connector, keyed by connector UUID.
+     * List authority attributes for a connector
+     */
+    listAuthorityInstanceAttributes({
+        connectorUuid,
+        interfaceUuid,
+    }: ListAuthorityInstanceAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    listAuthorityInstanceAttributes(
+        { connectorUuid, interfaceUuid }: ListAuthorityInstanceAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    listAuthorityInstanceAttributes(
+        { connectorUuid, interfaceUuid }: ListAuthorityInstanceAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        throwIfNullOrUndefined(connectorUuid, 'connectorUuid', 'listAuthorityInstanceAttributes');
+
+        const query: HttpQuery = {};
+
+        if (interfaceUuid != null) {
+            query['interfaceUuid'] = interfaceUuid;
+        }
+
+        return this.request<Array<BaseAttributeDto>>(
+            {
+                url: '/v1/authorities/{connectorUuid}/attributes'.replace('{connectorUuid}', encodeURI(connectorUuid)),
+                method: 'GET',
+                query,
             },
             opts?.responseOpts,
         );

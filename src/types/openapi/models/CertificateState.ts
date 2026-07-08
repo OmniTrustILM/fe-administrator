@@ -22,6 +22,8 @@ export enum CertificateState {
     PendingApproval = 'pending_approval',
     PendingIssue = 'pending_issue',
     PendingRevoke = 'pending_revoke',
+    PendingRegistration = 'pending_registration',
+    Registered = 'registered',
     Failed = 'failed',
     Issued = 'issued',
     Revoked = 'revoked',

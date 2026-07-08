@@ -1,0 +1,1530 @@
+{
+  "version": "2.14",
+  "children": [
+    {
+      "type": "frame",
+      "id": "S9jvrr",
+      "x": 0,
+      "y": 0,
+      "name": "Light",
+      "clip": true,
+      "width": 700,
+      "fill": "$color.white",
+      "cornerRadius": 12,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "layout": "vertical",
+      "gap": 28,
+      "padding": [
+        44,
+        40,
+        40,
+        40
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "bec1M",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "XFac7",
+              "name": "Title",
+              "fill": "$color.gray-900",
+              "content": "Toggletip",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "IR8uW",
+              "name": "Subtitle",
+              "fill": "$color.gray-700",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Click-to-pin info popover — anatomy, placement & examples",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "TrV7i",
+          "name": "Section Divider",
+          "fill": "$color.gray-200",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "dYrtI",
+          "name": "Anatomy",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "text",
+              "id": "j3RGlP",
+              "name": "Section: Anatomy",
+              "fill": "$color.gray-900",
+              "content": "Anatomy",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "qXrC0",
+              "name": "Anatomy Demos",
+              "gap": 56,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "i8hzwe",
+                  "name": "Trigger Part",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Blknh",
+                      "name": "Caption",
+                      "fill": "$color.gray-700",
+                      "content": "Trigger",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "KVDxM",
+                      "name": "Trigger",
+                      "fill": "$color.transparent",
+                      "cornerRadius": 999,
+                      "padding": 3,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "eeitg",
+                          "name": "Info",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "info",
+                          "library": "lucide",
+                          "fill": "$color.gray-800"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bzpRY",
+                  "name": "Panel Part",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "BbWf6",
+                      "name": "Caption",
+                      "fill": "$color.gray-700",
+                      "content": "Panel",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ub8Vv",
+                      "name": "Panel",
+                      "width": 300,
+                      "fill": "$color.white",
+                      "cornerRadius": 8,
+                      "stroke": "$color.gray-200",
+                      "strokeWidth": 1,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "$color.black-12",
+                        "offset": {
+                          "x": 0,
+                          "y": 4
+                        },
+                        "blur": 12
+                      },
+                      "layout": "vertical",
+                      "gap": 5,
+                      "padding": [
+                        12,
+                        28,
+                        12,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "UW5hv",
+                          "name": "Panel Title",
+                          "fill": "$color.gray-900",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "About this field",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "fwo86",
+                          "name": "Panel Body",
+                          "fill": "$color.gray-800",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Longer help text lives here. The panel is dismissible and can wrap up to a small max width.",
+                          "lineHeight": 1.45,
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "AtXTu",
+                          "layoutPosition": "absolute",
+                          "x": 278,
+                          "y": 10,
+                          "name": "Close",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "x",
+                          "library": "lucide",
+                          "fill": "$color.gray-400"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "kED9T",
+                  "name": "Focus Part",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "F6CyO",
+                      "name": "Caption",
+                      "fill": "$color.gray-700",
+                      "content": "Focused",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "jcfJr",
+                      "name": "Trigger Focused",
+                      "fill": "$color.transparent",
+                      "cornerRadius": 999,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "$color.blue-500",
+                        "spread": 2
+                      },
+                      "padding": 3,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "lO23o",
+                          "name": "Info",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "info",
+                          "library": "lucide",
+                          "fill": "$color.gray-800"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "FBfmS",
+          "name": "Section Divider",
+          "fill": "$color.gray-200",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "LaGzw",
+          "name": "Placement",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "text",
+              "id": "P17Bj",
+              "name": "Section: Placement",
+              "fill": "$color.gray-900",
+              "content": "Placement",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "yD0qs",
+              "name": "Placement Demos",
+              "gap": 56,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "adcBy",
+                  "name": "Bottom Demo",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "xeLnX",
+                      "name": "Caption",
+                      "fill": "$color.gray-700",
+                      "content": "Bottom (default)",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "QZxcz",
+                      "name": "Stack",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "dP9WP",
+                          "name": "Trigger",
+                          "fill": "$color.transparent",
+                          "cornerRadius": 999,
+                          "padding": 3,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "B7sFi",
+                              "name": "Info",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "info",
+                              "library": "lucide",
+                              "fill": "$color.gray-800"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "WjUk9",
+                          "name": "Panel",
+                          "width": 300,
+                          "fill": "$color.white",
+                          "cornerRadius": 8,
+                          "stroke": "$color.gray-200",
+                          "strokeWidth": 1,
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "$color.black-12",
+                            "offset": {
+                              "x": 0,
+                              "y": 4
+                            },
+                            "blur": 12
+                          },
+                          "layout": "vertical",
+                          "gap": 5,
+                          "padding": [
+                            12,
+                            28,
+                            12,
+                            12
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "c2h9xd",
+                              "name": "Panel Body",
+                              "fill": "$color.gray-800",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Opens below the trigger with an 8px offset.",
+                              "lineHeight": 1.45,
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "T8okH",
+                              "layoutPosition": "absolute",
+                              "x": 278,
+                              "y": 10,
+                              "name": "Close",
+                              "width": 14,
+                              "height": 14,
+                              "icon": "x",
+                              "library": "lucide",
+                              "fill": "$color.gray-400"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dRrVV",
+                  "name": "Top Demo",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "JcTvQ",
+                      "name": "Caption",
+                      "fill": "$color.gray-700",
+                      "content": "Top",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "p3gjci",
+                      "name": "Stack",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "SusvG",
+                          "name": "Panel",
+                          "width": 300,
+                          "fill": "$color.white",
+                          "cornerRadius": 8,
+                          "stroke": "$color.gray-200",
+                          "strokeWidth": 1,
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "$color.black-12",
+                            "offset": {
+                              "x": 0,
+                              "y": 4
+                            },
+                            "blur": 12
+                          },
+                          "layout": "vertical",
+                          "gap": 5,
+                          "padding": [
+                            12,
+                            28,
+                            12,
+                            12
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "qfs4h",
+                              "name": "Panel Body",
+                              "fill": "$color.gray-800",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Opens above the trigger with an 8px offset.",
+                              "lineHeight": 1.45,
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "II4p9",
+                              "layoutPosition": "absolute",
+                              "x": 278,
+                              "y": 10,
+                              "name": "Close",
+                              "width": 14,
+                              "height": 14,
+                              "icon": "x",
+                              "library": "lucide",
+                              "fill": "$color.gray-400"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "hLoH3",
+                          "name": "Trigger",
+                          "fill": "$color.transparent",
+                          "cornerRadius": 999,
+                          "padding": 3,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "ZkTJg",
+                              "name": "Info",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "info",
+                              "library": "lucide",
+                              "fill": "$color.gray-800"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "IjfsM",
+          "name": "Section Divider",
+          "fill": "$color.gray-200",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "Y2QoOd",
+          "name": "Examples",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "children": [
+            {
+              "type": "text",
+              "id": "IZtqE",
+              "name": "Section: Examples",
+              "fill": "$color.gray-900",
+              "content": "Examples",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "REuOW",
+              "name": "Field Example",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "YLN8e",
+                  "name": "Label Row",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ekrbW",
+                      "name": "Field Label",
+                      "fill": "$color.gray-900",
+                      "content": "API URL",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "kqJLf",
+                      "name": "Trigger",
+                      "fill": "$color.transparent",
+                      "cornerRadius": 999,
+                      "padding": 3,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "RjsKc",
+                          "name": "Info",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "info",
+                          "library": "lucide",
+                          "fill": "$color.gray-800"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "QHPxt",
+                  "name": "Panel",
+                  "width": 300,
+                  "fill": "$color.white",
+                  "cornerRadius": 8,
+                  "stroke": "$color.gray-200",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "$color.black-12",
+                    "offset": {
+                      "x": 0,
+                      "y": 4
+                    },
+                    "blur": 12
+                  },
+                  "layout": "vertical",
+                  "gap": 5,
+                  "padding": [
+                    12,
+                    28,
+                    12,
+                    12
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "n29UCn",
+                      "name": "Panel Title",
+                      "fill": "$color.gray-900",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "About API URL",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "r8CtDM",
+                      "name": "Panel Body",
+                      "fill": "$color.gray-800",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "The base URL of the backend the client connects to, e.g. https://core.example.com/api. Leave blank to use the default.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "icon",
+                      "id": "W5VY2",
+                      "layoutPosition": "absolute",
+                      "x": 278,
+                      "y": 10,
+                      "name": "Close",
+                      "width": 14,
+                      "height": 14,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "$color.gray-400"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "rgeO4",
+      "x": 740,
+      "y": 0,
+      "name": "Dark",
+      "clip": true,
+      "width": 700,
+      "fill": "$color.neutral-900",
+      "cornerRadius": 12,
+      "stroke": "$color.neutral-700",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "layout": "vertical",
+      "gap": 28,
+      "padding": [
+        44,
+        40,
+        40,
+        40
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "BGwPQ",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "eR4Vx",
+              "name": "Title",
+              "fill": "$color.white",
+              "content": "Toggletip",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "TiM89",
+              "name": "Subtitle",
+              "fill": "$color.neutral-300",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Click-to-pin info popover — anatomy, placement & examples",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "zp3mz",
+          "name": "Section Divider",
+          "fill": "$color.neutral-700",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "ovF65",
+          "name": "Anatomy",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "text",
+              "id": "f9ohB",
+              "name": "Section: Anatomy",
+              "fill": "$color.white",
+              "content": "Anatomy",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "OI4fq",
+              "name": "Anatomy Demos",
+              "gap": 56,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "XOlKK",
+                  "name": "Trigger Part",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "i5FjK",
+                      "name": "Caption",
+                      "fill": "$color.neutral-300",
+                      "content": "Trigger",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "h2X4Dc",
+                      "name": "Trigger",
+                      "fill": "$color.transparent",
+                      "cornerRadius": 999,
+                      "padding": 3,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "GIpkk",
+                          "name": "Info",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "info",
+                          "library": "lucide",
+                          "fill": "$color.neutral-300"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "i2Wgf",
+                  "name": "Panel Part",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "zw5rw",
+                      "name": "Caption",
+                      "fill": "$color.neutral-300",
+                      "content": "Panel",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "f8nHER",
+                      "name": "Panel",
+                      "width": 300,
+                      "fill": "$color.neutral-900",
+                      "cornerRadius": 8,
+                      "stroke": "$color.neutral-700",
+                      "strokeWidth": 1,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "$color.black-40",
+                        "offset": {
+                          "x": 0,
+                          "y": 4
+                        },
+                        "blur": 12
+                      },
+                      "layout": "vertical",
+                      "gap": 5,
+                      "padding": [
+                        12,
+                        28,
+                        12,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "aGVOw",
+                          "name": "Panel Title",
+                          "fill": "$color.white",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "About this field",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "VCwh7",
+                          "name": "Panel Body",
+                          "fill": "$color.neutral-200",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Longer help text lives here. The panel is dismissible and can wrap up to a small max width.",
+                          "lineHeight": 1.45,
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "AcnRp",
+                          "layoutPosition": "absolute",
+                          "x": 278,
+                          "y": 10,
+                          "name": "Close",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "x",
+                          "library": "lucide",
+                          "fill": "$color.neutral-500"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MVrDX",
+                  "name": "Focus Part",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "gFByO",
+                      "name": "Caption",
+                      "fill": "$color.neutral-300",
+                      "content": "Focused",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "i7zw5C",
+                      "name": "Trigger Focused",
+                      "fill": "$color.transparent",
+                      "cornerRadius": 999,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "$color.blue-500",
+                        "spread": 2
+                      },
+                      "padding": 3,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "yuhqS",
+                          "name": "Info",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "info",
+                          "library": "lucide",
+                          "fill": "$color.neutral-300"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "CCSGR",
+          "name": "Section Divider",
+          "fill": "$color.neutral-700",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "Z3YJ8v",
+          "name": "Placement",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "text",
+              "id": "HNvCZ",
+              "name": "Section: Placement",
+              "fill": "$color.white",
+              "content": "Placement",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "LMxLc",
+              "name": "Placement Demos",
+              "gap": 56,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "qUroo",
+                  "name": "Bottom Demo",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cd9QF",
+                      "name": "Caption",
+                      "fill": "$color.neutral-300",
+                      "content": "Bottom (default)",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Y9J4Hw",
+                      "name": "Stack",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "lQRIm",
+                          "name": "Trigger",
+                          "fill": "$color.transparent",
+                          "cornerRadius": 999,
+                          "padding": 3,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "cJJsO",
+                              "name": "Info",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "info",
+                              "library": "lucide",
+                              "fill": "$color.neutral-300"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "B9Yu0",
+                          "name": "Panel",
+                          "width": 300,
+                          "fill": "$color.neutral-900",
+                          "cornerRadius": 8,
+                          "stroke": "$color.neutral-700",
+                          "strokeWidth": 1,
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "$color.black-40",
+                            "offset": {
+                              "x": 0,
+                              "y": 4
+                            },
+                            "blur": 12
+                          },
+                          "layout": "vertical",
+                          "gap": 5,
+                          "padding": [
+                            12,
+                            28,
+                            12,
+                            12
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "C1KTbx",
+                              "name": "Panel Body",
+                              "fill": "$color.neutral-200",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Opens below the trigger with an 8px offset.",
+                              "lineHeight": 1.45,
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "C8qPd",
+                              "layoutPosition": "absolute",
+                              "x": 278,
+                              "y": 10,
+                              "name": "Close",
+                              "width": 14,
+                              "height": 14,
+                              "icon": "x",
+                              "library": "lucide",
+                              "fill": "$color.neutral-500"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TRXzT",
+                  "name": "Top Demo",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cQhjJ",
+                      "name": "Caption",
+                      "fill": "$color.neutral-300",
+                      "content": "Top",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "y99YEY",
+                      "name": "Stack",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "bbt5R",
+                          "name": "Panel",
+                          "width": 300,
+                          "fill": "$color.neutral-900",
+                          "cornerRadius": 8,
+                          "stroke": "$color.neutral-700",
+                          "strokeWidth": 1,
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "$color.black-40",
+                            "offset": {
+                              "x": 0,
+                              "y": 4
+                            },
+                            "blur": 12
+                          },
+                          "layout": "vertical",
+                          "gap": 5,
+                          "padding": [
+                            12,
+                            28,
+                            12,
+                            12
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "x6nhhA",
+                              "name": "Panel Body",
+                              "fill": "$color.neutral-200",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Opens above the trigger with an 8px offset.",
+                              "lineHeight": 1.45,
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "R3pcp",
+                              "layoutPosition": "absolute",
+                              "x": 278,
+                              "y": 10,
+                              "name": "Close",
+                              "width": 14,
+                              "height": 14,
+                              "icon": "x",
+                              "library": "lucide",
+                              "fill": "$color.neutral-500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ouDKs",
+                          "name": "Trigger",
+                          "fill": "$color.transparent",
+                          "cornerRadius": 999,
+                          "padding": 3,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "Q0rWjq",
+                              "name": "Info",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "info",
+                              "library": "lucide",
+                              "fill": "$color.neutral-300"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "JIGiR",
+          "name": "Section Divider",
+          "fill": "$color.neutral-700",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "khglc",
+          "name": "Examples",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "children": [
+            {
+              "type": "text",
+              "id": "Pw3mp",
+              "name": "Section: Examples",
+              "fill": "$color.white",
+              "content": "Examples",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "bqj1Z",
+              "name": "Field Example",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "DedPy",
+                  "name": "Label Row",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "uWhFH",
+                      "name": "Field Label",
+                      "fill": "$color.white",
+                      "content": "API URL",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "UEhk0",
+                      "name": "Trigger",
+                      "fill": "$color.transparent",
+                      "cornerRadius": 999,
+                      "padding": 3,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "iWyE9",
+                          "name": "Info",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "info",
+                          "library": "lucide",
+                          "fill": "$color.neutral-300"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ZKe7c",
+                  "name": "Panel",
+                  "width": 300,
+                  "fill": "$color.neutral-900",
+                  "cornerRadius": 8,
+                  "stroke": "$color.neutral-700",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "$color.black-40",
+                    "offset": {
+                      "x": 0,
+                      "y": 4
+                    },
+                    "blur": 12
+                  },
+                  "layout": "vertical",
+                  "gap": 5,
+                  "padding": [
+                    12,
+                    28,
+                    12,
+                    12
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "F9f7cQ",
+                      "name": "Panel Title",
+                      "fill": "$color.white",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "About API URL",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "N9hnj",
+                      "name": "Panel Body",
+                      "fill": "$color.neutral-200",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "The base URL of the backend the client connects to, e.g. https://core.example.com/api. Leave blank to use the default.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "icon",
+                      "id": "BGTTq",
+                      "layoutPosition": "absolute",
+                      "x": 278,
+                      "y": 10,
+                      "name": "Close",
+                      "width": 14,
+                      "height": 14,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "$color.neutral-500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "color.transparent": {
+      "type": "color",
+      "value": "#00000000"
+    },
+    "color.white-10": {
+      "type": "color",
+      "value": "#ffffff1a"
+    },
+    "color.white-20": {
+      "type": "color",
+      "value": "#ffffff33"
+    },
+    "color.black-12": {
+      "type": "color",
+      "value": "#0000001f"
+    },
+    "color.black-40": {
+      "type": "color",
+      "value": "#00000066"
+    },
+    "color.blue-50": {
+      "type": "color",
+      "value": "#e6f2ff"
+    },
+    "color.blue-100": {
+      "type": "color",
+      "value": "#cce5ff"
+    },
+    "color.blue-200": {
+      "type": "color",
+      "value": "#99ccff"
+    },
+    "color.blue-300": {
+      "type": "color",
+      "value": "#66b2ff"
+    },
+    "color.blue-400": {
+      "type": "color",
+      "value": "#3399ff"
+    },
+    "color.blue-500": {
+      "type": "color",
+      "value": "#0085e6"
+    },
+    "color.blue-600": {
+      "type": "color",
+      "value": "#0073cf"
+    },
+    "color.blue-700": {
+      "type": "color",
+      "value": "#005ba6"
+    },
+    "color.blue-800": {
+      "type": "color",
+      "value": "#004480"
+    },
+    "color.blue-900": {
+      "type": "color",
+      "value": "#002d59"
+    },
+    "color.blue-950": {
+      "type": "color",
+      "value": "#001a33"
+    },
+    "color.gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.gray-400": {
+      "type": "color",
+      "value": "#c7c7c7"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-600": {
+      "type": "color",
+      "value": "#b4b4b4"
+    },
+    "color.gray-700": {
+      "type": "color",
+      "value": "#8c8c8c"
+    },
+    "color.gray-800": {
+      "type": "color",
+      "value": "#666666"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-200": {
+      "type": "color",
+      "value": "#e5e5e5"
+    },
+    "color.neutral-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.neutral-400": {
+      "type": "color",
+      "value": "#a3a3a3"
+    },
+    "color.neutral-500": {
+      "type": "color",
+      "value": "#737373"
+    },
+    "color.neutral-600": {
+      "type": "color",
+      "value": "#525252"
+    },
+    "color.neutral-700": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.neutral-800": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "color.neutral-900": {
+      "type": "color",
+      "value": "#171717"
+    },
+    "color.red-100": {
+      "type": "color",
+      "value": "#fee2e2"
+    },
+    "color.red-200": {
+      "type": "color",
+      "value": "#fecaca"
+    },
+    "color.red-400": {
+      "type": "color",
+      "value": "#f87171"
+    },
+    "color.red-500": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "color.red-600": {
+      "type": "color",
+      "value": "#dc2626"
+    },
+    "color.red-800": {
+      "type": "color",
+      "value": "#991b1b"
+    },
+    "color.red-800-30": {
+      "type": "color",
+      "value": "#991b1b4d"
+    },
+    "color.teal-100": {
+      "type": "color",
+      "value": "#ccfbf1"
+    },
+    "color.teal-200": {
+      "type": "color",
+      "value": "#99f6e4"
+    },
+    "color.teal-800": {
+      "type": "color",
+      "value": "#115e59"
+    },
+    "color.yellow-100": {
+      "type": "color",
+      "value": "#fef9c3"
+    },
+    "color.yellow-400": {
+      "type": "color",
+      "value": "#facc15"
+    },
+    "color.yellow-500": {
+      "type": "color",
+      "value": "#eab308"
+    },
+    "color.yellow-600": {
+      "type": "color",
+      "value": "#ca8a04"
+    },
+    "color.yellow-800": {
+      "type": "color",
+      "value": "#854d0e"
+    },
+    "color.yellow-800-30": {
+      "type": "color",
+      "value": "#854d0e4d"
+    }
+  },
+  "fileToken": "057aa22e-c548-41ce-9e93-cba0c8f736d2"
+}

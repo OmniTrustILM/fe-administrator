@@ -21,6 +21,8 @@ import type {
     DataAttributeProperties,
     DataAttributeV2,
     DataAttributeV3,
+    FieldMapping,
+    ValueSource,
 } from './';
 
 /**

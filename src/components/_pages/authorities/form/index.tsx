@@ -22,7 +22,7 @@ import Breadcrumb from 'components/Breadcrumb';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { AuthorityResponseModel } from 'types/authorities';
 import type { ConnectorResponseModel } from 'types/connectors';
-import { FunctionGroupCode, PlatformEnum, Resource } from 'types/openapi';
+import { ConnectorInterface, FunctionGroupCode, PlatformEnum, Resource } from 'types/openapi';
 import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 
 import { collectFormAttributes } from 'utils/attributes/attributes';
@@ -40,7 +40,15 @@ interface FormValues {
     name: string;
     authorityProvider: string;
     storeKind: string;
+    interfaceUuid?: string;
 }
+
+const resolveAuthorityFunctionGroupCode = (connector: ConnectorResponseModel): FunctionGroupCode =>
+    connector.functionGroups.find(
+        (fg) =>
+            fg.functionGroupCode === FunctionGroupCode.AuthorityProvider ||
+            fg.functionGroupCode === FunctionGroupCode.LegacyAuthorityProvider,
+    )?.functionGroupCode ?? connector.functionGroups[0].functionGroupCode;
 
 export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Readonly<AuthorityFormProps>) {
     const dispatch = useDispatch();
@@ -142,21 +150,32 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                 if (authorityProvider?.uuid !== provider.uuid) {
                     setAuthorityProvider(provider);
                 }
-                const descriptorKey = `${authoritySelector.connectorUuid}-${authoritySelector.kind}`;
-                if (
-                    authoritySelector.kind &&
-                    fetchedDescriptorsRef.current !== descriptorKey &&
-                    (!authorityProviderAttributeDescriptors || authorityProviderAttributeDescriptors.length === 0)
-                ) {
-                    const functionGroup = provider.functionGroups[0].functionGroupCode;
-                    fetchedDescriptorsRef.current = descriptorKey;
-                    dispatch(
-                        authorityActions.getAuthorityProviderAttributesDescriptors({
-                            uuid: authoritySelector.connectorUuid,
-                            kind: authoritySelector.kind,
-                            functionGroup,
-                        }),
-                    );
+                const ifaceUuid = authoritySelector.connectorInterface?.uuid;
+                const descriptorsEmpty = !authorityProviderAttributeDescriptors || authorityProviderAttributeDescriptors.length === 0;
+                if (ifaceUuid) {
+                    const descriptorKey = `iface-${authoritySelector.connectorUuid}-${ifaceUuid}`;
+                    if (fetchedDescriptorsRef.current !== descriptorKey && descriptorsEmpty) {
+                        fetchedDescriptorsRef.current = descriptorKey;
+                        dispatch(
+                            authorityActions.getAuthorityInstanceAttributesDescriptors({
+                                connectorUuid: authoritySelector.connectorUuid,
+                                interfaceUuid: ifaceUuid,
+                            }),
+                        );
+                    }
+                } else if (authoritySelector.kind) {
+                    const descriptorKey = `${authoritySelector.connectorUuid}-${authoritySelector.kind}`;
+                    if (fetchedDescriptorsRef.current !== descriptorKey && descriptorsEmpty) {
+                        const functionGroup = resolveAuthorityFunctionGroupCode(provider);
+                        fetchedDescriptorsRef.current = descriptorKey;
+                        dispatch(
+                            authorityActions.getAuthorityProviderAttributesDescriptors({
+                                uuid: authoritySelector.connectorUuid,
+                                kind: authoritySelector.kind,
+                                functionGroup,
+                            }),
+                        );
+                    }
                 }
             } else {
                 dispatch(alertActions.error('Authority provider not found'));
@@ -184,19 +203,39 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
         [authorityProviders],
     );
 
+    const authorityKinds = useMemo(
+        () =>
+            authorityProvider?.functionGroups.find(
+                (fg) =>
+                    fg.functionGroupCode === FunctionGroupCode.AuthorityProvider ||
+                    fg.functionGroupCode === FunctionGroupCode.LegacyAuthorityProvider,
+            )?.kinds ?? [],
+        [authorityProvider],
+    );
+
     const optionsForKinds = useMemo(
         () =>
-            authorityProvider?.functionGroups
-                .find(
-                    (fg) =>
-                        fg.functionGroupCode === FunctionGroupCode.AuthorityProvider ||
-                        fg.functionGroupCode === FunctionGroupCode.LegacyAuthorityProvider,
-                )
-                ?.kinds.map((kind) => ({
-                    label: kind,
-                    value: kind,
-                })) ?? [],
+            authorityKinds.map((kind) => ({
+                label: kind,
+                value: kind,
+            })),
+        [authorityKinds],
+    );
+
+    const authorityInterfaces = useMemo(
+        () => authorityProvider?.interfaces?.filter((iface) => iface.code === ConnectorInterface.Authority) ?? [],
         [authorityProvider],
+    );
+
+    const isNgProvider = editMode ? !!authority?.connectorInterface : authorityInterfaces.length > 0;
+
+    const optionsForInterfaceVersions = useMemo(
+        () =>
+            authorityInterfaces.map((iface) => ({
+                label: `Authority (${iface.version})`,
+                value: iface.uuid,
+            })),
+        [authorityInterfaces],
     );
 
     const defaultValues: FormValues = useMemo(
@@ -204,6 +243,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
             name: editMode ? authority?.name || '' : '',
             authorityProvider: editMode ? authority?.connectorUuid || '' : '',
             storeKind: editMode ? authority?.kind || '' : '',
+            interfaceUuid: editMode ? authority?.connectorInterface?.uuid : undefined,
         }),
         [editMode, authority],
     );
@@ -231,6 +271,13 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
         name: 'storeKind',
     });
 
+    const watchedInterfaceUuid = useWatch({
+        control,
+        name: 'interfaceUuid',
+    });
+
+    const generationSelected = isNgProvider ? watchedInterfaceUuid : watchedStoreKind;
+
     const onAuthorityProviderChange = useCallback(
         (value: string) => {
             if (!value) return;
@@ -245,6 +292,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
             if (!provider) return;
             setAuthorityProvider(provider);
             setValue('storeKind', '');
+            setValue('interfaceUuid', undefined);
         },
         [dispatch, authorityProviders, setValue],
     );
@@ -261,7 +309,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
 
             dispatch(connectorActions.clearCallbackData());
             setGroupAttributesCallbackAttributes([]);
-            const functionGroup = authorityProvider.functionGroups[0].functionGroupCode;
+            const functionGroup = resolveAuthorityFunctionGroupCode(authorityProvider);
             dispatch(
                 authorityActions.getAuthorityProviderAttributesDescriptors({
                     uuid: authorityProvider.uuid,
@@ -279,6 +327,26 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
         }
     }, [watchedStoreKind, authorityProvider, onKindChange, editMode]);
 
+    useEffect(() => {
+        if (editMode || !isNgProvider) return;
+        if (optionsForInterfaceVersions.length > 0) {
+            setValue('interfaceUuid', optionsForInterfaceVersions[0].value, { shouldValidate: true });
+        }
+    }, [editMode, isNgProvider, optionsForInterfaceVersions, setValue]);
+
+    useEffect(() => {
+        if (editMode || !isNgProvider || !authorityProvider || !watchedInterfaceUuid) return;
+        dispatch(authorityActions.clearAuthorityProviderAttributeDescriptors());
+        dispatch(connectorActions.clearCallbackData());
+        setGroupAttributesCallbackAttributes([]);
+        dispatch(
+            authorityActions.getAuthorityInstanceAttributesDescriptors({
+                connectorUuid: authorityProvider.uuid,
+                interfaceUuid: watchedInterfaceUuid,
+            }),
+        );
+    }, [dispatch, editMode, isNgProvider, authorityProvider, watchedInterfaceUuid]);
+
     // Reset form values when authority is loaded in edit mode
     useEffect(() => {
         if (editMode && id && authority?.uuid === id && !isFetchingAuthorityDetail) {
@@ -286,6 +354,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                 name: authority.name || '',
                 authorityProvider: authority.connectorUuid || '',
                 storeKind: authority.kind || '',
+                interfaceUuid: authority.connectorInterface?.uuid,
             };
             reset(newDefaultValues, { keepDefaultValues: false });
         } else if (!editMode) {
@@ -293,6 +362,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                 name: '',
                 authorityProvider: '',
                 storeKind: '',
+                interfaceUuid: undefined,
             });
         }
     }, [editMode, authority, id, reset, isFetchingAuthorityDetail]);
@@ -318,7 +388,8 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                     authorityActions.createAuthority({
                         name: values.name,
                         connectorUuid: values.authorityProvider,
-                        kind: values.storeKind,
+                        kind: values.storeKind || undefined,
+                        interfaceUuid: values.interfaceUuid,
                         attributes: collectFormAttributes(
                             'authority',
                             [...(authorityProviderAttributeDescriptors ?? []), ...groupAttributesCallbackAttributes],
@@ -430,7 +501,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                                     </div>
                                 )}
 
-                                {!editMode && optionsForKinds?.length ? (
+                                {!editMode && !isNgProvider && optionsForKinds.length ? (
                                     <div>
                                         <Controller
                                             name="storeKind"
@@ -462,12 +533,46 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                                     </div>
                                 ) : null}
 
+                                {!editMode && isNgProvider ? (
+                                    <div>
+                                        <Controller
+                                            name="interfaceUuid"
+                                            control={control}
+                                            rules={buildValidationRules([validateRequired()])}
+                                            render={({ field, fieldState }) => (
+                                                <Select
+                                                    id="interfaceVersionSelect"
+                                                    label="Interface Version"
+                                                    value={field.value ?? optionsForInterfaceVersions[0]?.value ?? ''}
+                                                    onChange={field.onChange}
+                                                    options={optionsForInterfaceVersions}
+                                                    placeholder="Select Interface Version"
+                                                    placement="bottom"
+                                                    isDisabled={optionsForInterfaceVersions.length <= 1}
+                                                    error={getFieldErrorMessage(fieldState)}
+                                                />
+                                            )}
+                                        />
+                                    </div>
+                                ) : null}
+
                                 {editMode && authority?.kind ? (
                                     <TextInput
                                         id="storeKind"
                                         type="text"
                                         label="Kind"
                                         value={authority?.kind || ''}
+                                        disabled
+                                        onChange={() => {}}
+                                    />
+                                ) : null}
+
+                                {editMode && authority?.connectorInterface ? (
+                                    <TextInput
+                                        id="interfaceVersion"
+                                        type="text"
+                                        label="Interface Version"
+                                        value={`Authority (${authority.connectorInterface.version})`}
                                         disabled
                                         onChange={() => {}}
                                     />
@@ -481,7 +586,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                                             title: 'Connector Attributes',
                                             content:
                                                 authorityProvider &&
-                                                watchedStoreKind &&
+                                                generationSelected &&
                                                 authorityProviderAttributeDescriptors &&
                                                 authorityProviderAttributeDescriptors.length > 0 ? (
                                                     <AttributeEditor
@@ -489,8 +594,9 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                                                         attributeDescriptors={authorityProviderAttributeDescriptors}
                                                         attributes={authority?.attributes}
                                                         connectorUuid={authorityProvider.uuid}
-                                                        functionGroupCode={FunctionGroupCode.AuthorityProvider}
-                                                        kind={watchedStoreKind}
+                                                        connectorVersion={authorityProvider.version}
+                                                        functionGroupCode={isNgProvider ? undefined : FunctionGroupCode.AuthorityProvider}
+                                                        kind={isNgProvider ? undefined : watchedStoreKind}
                                                         groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                                                         setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                                                     />

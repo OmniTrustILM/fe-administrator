@@ -11,11 +11,11 @@
  * Do not edit the class manually.
  */
 
-import type { RdnAttributeTypeOidPropertiesDto } from './';
+import type { CertificateExtensionOidPropertiesDto, ExtensionValueEncoding, RdnAttributeTypeOidPropertiesDto } from './';
 
 /**
  * @type CustomOidEntryDetailResponseDtoAdditionalProperties
  * Additional properties depending on the OID category
  * @export
  */
-export type CustomOidEntryDetailResponseDtoAdditionalProperties = RdnAttributeTypeOidPropertiesDto;
+export type CustomOidEntryDetailResponseDtoAdditionalProperties = CertificateExtensionOidPropertiesDto | RdnAttributeTypeOidPropertiesDto;

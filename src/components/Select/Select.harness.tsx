@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Select from './index';
+import Dialog from 'components/Dialog';
 
 const BASE_OPTIONS = [
     { value: '1', label: 'Option 1' },
@@ -45,6 +46,20 @@ export function SearchableMultiHarness({ initial = [] as { value: string | numbe
                 dataTestId="sel"
             />
             <div data-testid="value-display">{v === undefined ? 'undefined' : JSON.stringify(v)}</div>
+        </div>
+    );
+}
+
+export function SelectPlusDialogHarness() {
+    const [v, setV] = useState<any>('');
+    const [open, setOpen] = useState(false);
+    return (
+        <div>
+            <Select id="d" value={v} onChange={(nv) => setV(nv)} options={BASE_OPTIONS} dataTestId="sel" />
+            <button type="button" data-testid="open-dialog" onClick={() => setOpen(true)} style={{ position: 'fixed', top: 0, right: 0 }}>
+                Open dialog
+            </button>
+            <Dialog isOpen={open} toggle={() => setOpen(false)} caption="Test dialog" body={<div>hello</div>} />
         </div>
     );
 }

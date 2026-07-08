@@ -462,8 +462,7 @@ const callbackConnector: AppEpic = (action$, state, deps) => {
             const rootState: any = (state as any).value ?? (state as any);
             const connectorsState: any = rootState.connectors;
             const connector = connectorsState?.connectors?.find((c: any) => c.uuid === payload.uuid) ?? connectorsState?.connector;
-            // Fall back to v1 when the connector is not in connectors state (e.g. authority/credential providers)
-            const isV2 = connector?.version === ConnectorVersion.V2;
+            const isV2 = payload.version === ConnectorVersion.V2 || connector?.version === ConnectorVersion.V2;
             const api$ = isV2
                 ? deps.apiClients.callback.callbackV2({
                       uuid: payload.uuid,
