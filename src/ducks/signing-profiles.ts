@@ -245,18 +245,11 @@ export const slice = createSlice({
         bulkDeleteSigningProfilesSuccess: (state, action: PayloadAction<{ uuids: string[]; errors: BulkActionMessageDto[] }>) => {
             state.isBulkDeleting = false;
 
+            // On success the epic re-fetches the list from the server (and steps the page back when the
+            // current page was emptied), so no optimistic list mutation is needed here — we only surface
+            // any per-item failures.
             if (action.payload.errors?.length > 0) {
                 state.bulkDeleteErrorMessages = action.payload.errors;
-                return;
-            }
-
-            action.payload.uuids.forEach((uuid) => {
-                const idx = state.signingProfiles.findIndex((p) => p.uuid === uuid);
-                if (idx >= 0) state.signingProfiles.splice(idx, 1);
-            });
-
-            if (state.signingProfile && action.payload.uuids.includes(state.signingProfile.uuid)) {
-                state.signingProfile = undefined;
             }
         },
 

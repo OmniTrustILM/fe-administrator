@@ -7,7 +7,7 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { EntityType } from './filters';
-import { actions as pagingActions } from './paging';
+import { actions as pagingActions, selectors as pagingSelectors, listParamsAfterDelete } from './paging';
 import { selectors, slice } from './signing-profiles';
 import { isTimestampingWorkflow } from 'utils/type-guards';
 import { transformSearchRequestModelToDto } from './transform/certificates';
@@ -198,12 +198,32 @@ const bulkDeleteSigningProfiles: AppEpic = (action$, state$, deps) => {
         filter(slice.actions.bulkDeleteSigningProfiles.match),
         switchMap((action) =>
             deps.apiClients.signingProfiles.bulkDeleteSigningProfiles({ requestBody: action.payload.uuids }).pipe(
-                mergeMap((errors) =>
-                    of(
-                        slice.actions.bulkDeleteSigningProfilesSuccess({ uuids: action.payload.uuids, errors }),
+                mergeMap((errors) => {
+                    const successAction = slice.actions.bulkDeleteSigningProfilesSuccess({ uuids: action.payload.uuids, errors });
+                    if (errors.length > 0) {
+                        return of(successAction);
+                    }
+
+                    const currentPage = pagingSelectors.pageNumber(EntityType.SIGNING_PROFILE)(state$.value);
+                    const listParams = listParamsAfterDelete(EntityType.SIGNING_PROFILE, state$.value, action.payload.uuids.length);
+
+                    return of(
+                        successAction,
                         alertActions.success('Selected Signing Profiles successfully deleted.'),
-                    ),
-                ),
+                        // Only re-align the paging slice when the deletion emptied the current page
+                        // and we had to step back; otherwise the re-fetch below is enough.
+                        ...(listParams.pageNumber !== currentPage
+                            ? [
+                                  pagingActions.setPagination({
+                                      entity: EntityType.SIGNING_PROFILE,
+                                      pageNumber: listParams.pageNumber,
+                                      pageSize: listParams.itemsPerPage,
+                                  }),
+                              ]
+                            : []),
+                        slice.actions.listSigningProfiles(listParams),
+                    );
+                }),
                 catchError((error) =>
                     of(
                         slice.actions.bulkDeleteSigningProfilesFailure({ error: extractError(error, 'Failed to delete Signing Profiles') }),

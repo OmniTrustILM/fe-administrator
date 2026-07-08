@@ -203,14 +203,15 @@ describe('signingProfiles slice', () => {
         expect(next.bulkDeleteErrorMessages).toEqual([]);
     });
 
-    test('bulkDeleteSigningProfilesSuccess removes items from list and clears matching detail', () => {
+    test('bulkDeleteSigningProfilesSuccess clears isBulkDeleting without optimistically mutating the list', () => {
+        // The epic re-fetches the list from the server on success, so the reducer must NOT splice
+        // items locally (doing so is the "contradictory optimistic-delete tracking" removed from the twin).
         const profiles = [{ uuid: 'p-1' }, { uuid: 'p-2' }] as any[];
         const state = { ...initialState, isBulkDeleting: true, signingProfile: profiles[0], signingProfiles: profiles };
         const next = reducer(state, actions.bulkDeleteSigningProfilesSuccess({ uuids: ['p-1'], errors: [] }));
         expect(next.isBulkDeleting).toBe(false);
-        expect(next.signingProfiles).toHaveLength(1);
-        expect(next.signingProfiles[0].uuid).toBe('p-2');
-        expect(next.signingProfile).toBeUndefined();
+        expect(next.signingProfiles).toHaveLength(2);
+        expect(next.bulkDeleteErrorMessages).toEqual([]);
     });
 
     test('bulkDeleteSigningProfilesSuccess with errors sets bulkDeleteErrorMessages', () => {

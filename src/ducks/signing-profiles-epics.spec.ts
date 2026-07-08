@@ -346,16 +346,64 @@ describe('signingProfiles epics', () => {
         expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
     });
 
-    test('bulkDeleteSigningProfiles success emits bulkDeleteSuccess and alert', async () => {
+    test('bulkDeleteSigningProfiles success (page unchanged) emits success, alert and a re-fetch without setPagination', async () => {
+        // On page 1 with 5 items, deleting 2 still leaves page 1 populated, so the page does not
+        // shift and no setPagination is dispatched — only the re-fetch of the current page.
+        const state = {
+            pagings: {
+                pagings: [
+                    {
+                        entity: EntityType.SIGNING_PROFILE,
+                        paging: { pageNumber: 1, pageSize: 10, totalItems: 5, checkedRows: [], isFetchingList: false },
+                    },
+                ],
+            },
+            filters: {
+                filters: [{ entity: EntityType.SIGNING_PROFILE, filter: { currentFilters: [] } }],
+            },
+        };
+
         const emitted = await runEpic(
             SigningProfilesEpicIndex.BulkDelete,
             signingProfileActions.bulkDeleteSigningProfiles({ uuids: ['p-1', 'p-2'] }),
             {},
-            2,
+            3,
+            state,
         );
 
         expect(emitted[0]).toEqual(signingProfileActions.bulkDeleteSigningProfilesSuccess({ uuids: ['p-1', 'p-2'], errors: [] }));
         expect(emitted[1].type).toBe(alertActions.success.type);
+        expect(emitted[2]).toEqual(signingProfileActions.listSigningProfiles({ pageNumber: 1, itemsPerPage: 10, filters: [] }));
+        expect(emitted.some((a: any) => a.type === pagingActions.setPagination.type)).toBe(false);
+    });
+
+    test('bulkDeleteSigningProfiles success steps back to last valid page when current page becomes empty', async () => {
+        // 10 items total, pageSize 5, user on page 2 (items 6–10). Deleting all 5 leaves 5 total →
+        // only page 1 exists. safePage = min(2, ceil(5/5)=1) = 1, so it steps back and re-fetches page 1.
+        const state = {
+            pagings: {
+                pagings: [
+                    {
+                        entity: EntityType.SIGNING_PROFILE,
+                        paging: { pageNumber: 2, pageSize: 5, totalItems: 10, checkedRows: [], isFetchingList: false },
+                    },
+                ],
+            },
+            filters: {
+                filters: [{ entity: EntityType.SIGNING_PROFILE, filter: { currentFilters: [] } }],
+            },
+        };
+
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.BulkDelete,
+            signingProfileActions.bulkDeleteSigningProfiles({ uuids: ['p1', 'p2', 'p3', 'p4', 'p5'] }),
+            {},
+            4,
+            state,
+        );
+
+        expect(emitted[2]).toEqual(pagingActions.setPagination({ entity: EntityType.SIGNING_PROFILE, pageNumber: 1, pageSize: 5 }));
+        expect(emitted[3]).toEqual(signingProfileActions.listSigningProfiles({ pageNumber: 1, itemsPerPage: 5, filters: [] }));
     });
 
     test('bulkDeleteSigningProfiles failure emits bulkDeleteFailure and fetchError', async () => {
