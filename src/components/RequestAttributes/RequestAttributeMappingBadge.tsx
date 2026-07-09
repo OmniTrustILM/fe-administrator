@@ -1,7 +1,7 @@
 import { Info } from 'lucide-react';
 import type { FieldMapping } from 'types/openapi';
 import Badge from 'components/Badge';
-import { fieldMappingSummary } from 'utils/requestAttributes';
+import { fieldMappingTokens } from 'utils/requestAttributes';
 
 type Props = {
     fieldMapping?: FieldMapping;
@@ -9,15 +9,19 @@ type Props = {
 };
 
 function RequestAttributeMappingBadge({ fieldMapping, dataTestId = 'request-attribute-mapping-badge' }: Readonly<Props>) {
-    const summary = fieldMappingSummary(fieldMapping);
-    if (!summary) return null;
+    const tokens = fieldMappingTokens(fieldMapping);
+    if (tokens.length === 0) return null;
 
-    const tooltip = `Maps to: ${summary.split(' + ').join(', ')}`;
+    const summary = tokens.join(' + ');
+    const tooltip = `Maps to: ${tokens.join(', ')}`;
 
     return (
-        <Badge color="info" size="small" className="mt-1 gap-x-1" title={tooltip} dataTestId={dataTestId}>
+        <Badge color="info" size="small" className="mt-1" title={tooltip} dataTestId={dataTestId}>
             <Info size={12} aria-hidden />
-            <span>→ {summary}</span>
+            <span>
+                <span aria-hidden>→ </span>
+                {summary}
+            </span>
         </Badge>
     );
 }

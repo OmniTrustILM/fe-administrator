@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { AttributeContentType, AttributeType, FieldType, ObjectType } from 'types/openapi';
 import type { FieldMapping } from 'types/openapi';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import { fieldMappingSummary, getFieldMapping } from './requestAttributes';
+import { fieldMappingSummary, fieldMappingTokens, getFieldMapping } from './requestAttributes';
 
 // fields carry rdn/generalNameType/extensionOid that the generated TS subtypes omit,
 // so build plain objects and cast to the FieldMapping shape.
@@ -63,6 +63,16 @@ describe('fieldMappingSummary', () => {
         ]);
         expect(fieldMappingSummary(fm)).toBe('Subject CN + SAN dNSName');
     });
+    test('groups by type before order so per-type order never interleaves types', () => {
+        // order is a per-type index: SAN order 1 must not sort ahead of RDN order 2.
+        const fm = mapping([
+            { fieldType: FieldType.San, generalNameType: 'dns', order: 1 },
+            { fieldType: FieldType.Rdn, rdn: 'OU', order: 2 },
+            { fieldType: FieldType.Rdn, rdn: 'CN', order: 1 },
+            { fieldType: FieldType.Extension, extensionOid: '2.5.29.17', order: 1 },
+        ]);
+        expect(fieldMappingSummary(fm)).toBe('Subject CN + Subject OU + SAN dNSName + Extension 2.5.29.17');
+    });
     test('unknown fieldType falls back to the raw fieldType', () => {
         expect(fieldMappingSummary(mapping([{ fieldType: 'newKind' }]))).toBe('newKind');
     });
@@ -72,5 +82,19 @@ describe('fieldMappingSummary', () => {
     test('undefined / empty mapping renders empty string', () => {
         expect(fieldMappingSummary(undefined)).toBe('');
         expect(fieldMappingSummary(mapping([]))).toBe('');
+    });
+});
+
+describe('fieldMappingTokens', () => {
+    test('returns one token per field, grouped by type', () => {
+        const fm = mapping([
+            { fieldType: FieldType.San, generalNameType: 'dns', order: 1 },
+            { fieldType: FieldType.Rdn, rdn: 'CN', order: 1 },
+        ]);
+        expect(fieldMappingTokens(fm)).toEqual(['Subject CN', 'SAN dNSName']);
+    });
+    test('returns an empty array for undefined / empty mapping', () => {
+        expect(fieldMappingTokens(undefined)).toEqual([]);
+        expect(fieldMappingTokens(mapping([]))).toEqual([]);
     });
 });
