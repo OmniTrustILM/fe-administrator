@@ -645,6 +645,7 @@ export default function SigningProfileForm() {
                     <Select
                         id="signatureFormattingConnector"
                         label="Signature Formatting Connector"
+                        required
                         value={field.value || ''}
                         onChange={field.onChange}
                         options={connectorOptions}
@@ -715,7 +716,8 @@ export default function SigningProfileForm() {
                 render={({ field, fieldState }) => (
                     <Select
                         {...field}
-                        inputId="timeQualityConfigurationUuid"
+                        id="timeQualityConfigurationUuid"
+                        required={qualifiedTimestampValue}
                         label={qualifiedTimestampValue ? 'Time Quality Configuration' : 'Time Quality Configuration (optional)'}
                         placeholder="Select a Time Quality Configuration…"
                         options={timeQualityConfigurations.map((tqc) => ({ value: tqc.uuid, label: tqc.name }))}
@@ -1079,6 +1081,7 @@ export default function SigningProfileForm() {
                                     id="retentionDays"
                                     type="number"
                                     label="Retention (days)"
+                                    required
                                     placeholder="e.g. 365"
                                     invalid={fieldState.error && fieldState.isTouched}
                                     error={getFieldErrorMessage(fieldState)}

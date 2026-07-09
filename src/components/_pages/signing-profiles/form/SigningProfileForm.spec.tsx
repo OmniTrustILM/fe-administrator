@@ -86,3 +86,38 @@ test.describe('SigningProfileForm - Qualified Timestamp / Time Quality Configura
         await expect(page.getByTestId('progress-button')).toBeEnabled();
     });
 });
+
+// Root cause of #1820: fields that are validated as required must also render the red-star
+// required indicator, otherwise the user can't tell why Create stays disabled. Every field with
+// a validateRequired rule must show the asterisk (conditionally-required fields show it only
+// while required).
+test.describe('SigningProfileForm - required-field indicators (#1820)', () => {
+    const TAB_TIMESTAMPING = '2 · Timestamping Properties';
+    const TAB_RECORD_POLICY = '4 · Record Policy';
+
+    test('Signature Formatting Connector label shows the required asterisk', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper />);
+        await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
+        await expect(page.getByTestId('label-signatureFormattingConnector')).toContainText('*');
+    });
+
+    test('Time Quality Configuration shows the required asterisk only while Qualified Timestamp is on', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper />);
+        await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
+
+        // Qualified Timestamp off → optional → no asterisk.
+        await expect(page.getByTestId('label-timeQualityConfigurationUuid')).not.toContainText('*');
+
+        // Qualified Timestamp on → required → asterisk shown.
+        await page.locator('#qualifiedTimestamp').check({ force: true });
+        await expect(page.getByTestId('label-timeQualityConfigurationUuid')).toContainText('*');
+    });
+
+    test('Retention (days) label shows the required asterisk when the field is shown', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper />);
+        await page.getByRole('tab', { name: TAB_RECORD_POLICY }).click();
+        await page.locator('#recordingEnabled').check({ force: true });
+        await page.locator('#retentionIndefinite').uncheck({ force: true });
+        await expect(page.getByTestId('label-retentionDays')).toContainText('*');
+    });
+});
