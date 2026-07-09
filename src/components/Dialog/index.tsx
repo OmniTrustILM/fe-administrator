@@ -200,12 +200,15 @@ export default function Dialog({
                         'flex flex-col p-4 md:p-8 !pb-0 overflow-hidden max-h-[calc(100vh-56px)]',
                     )}
                 >
-                    <RadixDialog.Close asChild>
-                        <Button variant="transparent" title="Close" className="absolute right-2 top-2">
-                            <X size={16} />
-                            <span className="sr-only">Close</span>
-                        </Button>
-                    </RadixDialog.Close>
+                    <div className="absolute right-2 top-2">
+                        <RadixDialog.Close asChild>
+                            <Button variant="transparent" title="Close">
+                                <X size={16} />
+                                <span className="sr-only">Close</span>
+                            </Button>
+                        </RadixDialog.Close>
+                    </div>
+
                     <div
                         className={cn('flex flex-col justify-center dark:border-neutral-700', {
                             'border-b border-gray-200 pb-4': !hideBorders,
