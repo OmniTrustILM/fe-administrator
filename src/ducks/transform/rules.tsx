@@ -326,7 +326,7 @@ export function useTransformTriggerObjectToNodesAndEdges(
                         <div className="w-full">
                             <Select
                                 id="addnewRuleSelect"
-                                className="nodrag"
+                                className="nodrag [&>button]:max-h-32 [&>button]:overflow-y-auto"
                                 placeholder="Add New Rule"
                                 options={rulesOptions}
                                 onChange={(values) => {
@@ -346,7 +346,7 @@ export function useTransformTriggerObjectToNodesAndEdges(
                         <div className="w-full">
                             <Select
                                 id="raProfileSelect"
-                                className="nodrag"
+                                className="nodrag [&>button]:max-h-32 [&>button]:overflow-y-auto"
                                 placeholder="Add New Action"
                                 options={actionOptions}
                                 isMulti

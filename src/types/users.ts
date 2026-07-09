@@ -4,4 +4,7 @@ import type { AddUserRequestDto } from './openapi';
 export type { UserDto as UserResponseDto, UserDto as UserResponseModel } from './openapi';
 
 export type { AddUserRequestDto as UserAddRequestDto } from './openapi';
-export type UserAddRequestModel = Omit<AddUserRequestDto, 'customAttributes'> & { customAttributes?: Array<AttributeRequestModel> };
+export type UserAddRequestModel = Omit<AddUserRequestDto, 'customAttributes' | 'certificateCustomAttributes'> & {
+    customAttributes?: Array<AttributeRequestModel>;
+    certificateCustomAttributes?: Array<AttributeRequestModel>;
+};

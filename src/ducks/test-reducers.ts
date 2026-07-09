@@ -603,6 +603,18 @@ function signingRecordsDashboardTestReducer(
     return state ?? signingRecordsDashboardTestInitialState;
 }
 
+export type RaProfilesTestState = {
+    isUpdating: boolean;
+};
+
+const raProfilesTestInitialState: RaProfilesTestState = {
+    isUpdating: false,
+};
+
+function raProfilesTestReducer(state: RaProfilesTestState | undefined, _action: UnknownAction): RaProfilesTestState {
+    return state ?? raProfilesTestInitialState;
+}
+
 export const testReducers = combineReducers({
     userInterface: userInterfaceTestReducer,
     enums: enumsTestReducer,
@@ -622,6 +634,7 @@ export const testReducers = combineReducers({
     utilsCertificate: utilsCertificateTestReducer,
     utilsActuator: utilsActuatorTestReducer,
     signingRecordsDashboard: signingRecordsDashboardTestReducer,
+    raprofiles: raProfilesTestReducer,
 });
 
 export const testInitialState = {
@@ -643,4 +656,5 @@ export const testInitialState = {
     utilsCertificate: utilsCertificateTestInitialState,
     utilsActuator: utilsActuatorTestInitialState,
     signingRecordsDashboard: signingRecordsDashboardTestInitialState,
+    raprofiles: raProfilesTestInitialState,
 };

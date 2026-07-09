@@ -5,7 +5,7 @@ import { extractError } from 'utils/net';
 import { alertsSlice } from './alert-slice';
 import { actions as appRedirectActions } from './app-redirect';
 import { EntityType } from './filters';
-import { actions as pagingActions } from './paging';
+import { actions as pagingActions, selectors as pagingSelectors, entityListParams, listParamsAfterDelete } from './paging';
 import { slice } from './signing-records';
 import {
     transformPaginationResponseDtoToModel,
@@ -24,29 +24,15 @@ const listSigningRecords: AppEpic = (action$, state, deps) => {
                 deps.apiClients.signingRecords.listSigningRecords({ searchRequestDto: action.payload }).pipe(
                     mergeMap((response) => {
                         const transformedResponse = transformPaginationResponseDtoToModel(response);
-                        const deletedSigningRecordUuids: string[] = (state as any)?.value?.signingRecords?.deletedSigningRecordUuids ?? [];
-                        const deletedSigningRecordUuidsSet = new Set(deletedSigningRecordUuids);
-                        const originalItems = transformedResponse.items ?? [];
-                        const filteredItems =
-                            deletedSigningRecordUuidsSet.size === 0
-                                ? originalItems
-                                : originalItems.filter((item) => !deletedSigningRecordUuidsSet.has(item.uuid));
-                        const removedItemsCount = originalItems.length - filteredItems.length;
-                        const baseTotalItems = transformedResponse.totalItems ?? originalItems.length;
-                        const adjustedTotalItems = Math.max(0, baseTotalItems - removedItemsCount);
-                        const adjustedResponse = {
-                            ...transformedResponse,
-                            items: filteredItems,
-                            totalItems: adjustedTotalItems,
-                        };
+                        const totalItems = transformedResponse.totalItems ?? transformedResponse.items?.length ?? 0;
 
                         return of(
                             slice.actions.listSigningRecordsSuccess({
-                                data: adjustedResponse,
+                                data: transformedResponse,
                             }),
                             pagingActions.listSuccess({
                                 entity: EntityType.SIGNING_RECORD,
-                                totalItems: adjustedTotalItems,
+                                totalItems,
                             }),
                             userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ListOfSigningRecords),
                         );
@@ -142,13 +128,41 @@ const deleteSigningRecord: AppEpic = (action$, state, deps) => {
 const bulkDeleteSigningRecords: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.bulkDeleteSigningRecords.match),
-        switchMap((action) =>
-            deps.apiClients.signingRecords.bulkDeleteSigningRecords({ requestBody: action.payload.uuids }).pipe(
+        switchMap((action) => {
+            // Snapshot paging *before* the delete resolves — PagedList fires an immediate
+            // pre-commit re-fetch on delete whose listSuccess can overwrite totalItems.
+            const paramsBeforeDelete = entityListParams(EntityType.SIGNING_RECORD, state.value);
+            const totalBeforeDelete = pagingSelectors.totalItems(EntityType.SIGNING_RECORD)(state.value);
+
+            return deps.apiClients.signingRecords.bulkDeleteSigningRecords({ requestBody: action.payload.uuids }).pipe(
                 mergeMap((errors) => {
                     const successAction = slice.actions.bulkDeleteSigningRecordsSuccess({ uuids: action.payload.uuids, errors });
-                    return errors.length === 0
-                        ? of(successAction, alertsSlice.actions.success('Selected Signing Records successfully deleted.'))
-                        : of(successAction);
+                    // Per-item failures are reported in `errors`; the rest were deleted server-side.
+                    const deletedCount = action.payload.uuids.length - errors.length;
+                    if (deletedCount === 0) {
+                        return of(successAction);
+                    }
+
+                    const listParams = listParamsAfterDelete(paramsBeforeDelete, totalBeforeDelete, deletedCount);
+
+                    return of(
+                        successAction,
+                        // Success alert only when every selected record was deleted; partial
+                        // failures surface through bulkDeleteErrorMessages instead.
+                        ...(errors.length === 0 ? [alertsSlice.actions.success('Selected Signing Records successfully deleted.')] : []),
+                        // Only re-align the paging slice when the deletion emptied the current page
+                        // and we had to step back; otherwise the re-fetch below is enough.
+                        ...(listParams.pageNumber !== paramsBeforeDelete.pageNumber
+                            ? [
+                                  pagingActions.setPagination({
+                                      entity: EntityType.SIGNING_RECORD,
+                                      pageNumber: listParams.pageNumber,
+                                      pageSize: listParams.itemsPerPage,
+                                  }),
+                              ]
+                            : []),
+                        slice.actions.listSigningRecords(listParams),
+                    );
                 }),
                 catchError((err) =>
                     of(
@@ -158,8 +172,8 @@ const bulkDeleteSigningRecords: AppEpic = (action$, state, deps) => {
                         alertsSlice.actions.error(extractError(err, 'Failed to bulk delete Signing Records')),
                     ),
                 ),
-            ),
-        ),
+            );
+        }),
     );
 };
 

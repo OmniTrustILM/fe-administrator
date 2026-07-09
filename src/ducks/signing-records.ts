@@ -52,6 +52,9 @@ export const slice = createSlice({
         // List Signing Records
         listSigningRecords: (state, action: PayloadAction<SearchRequestDto>) => {
             state.signingRecordsData = undefined;
+            // deletedSigningRecordUuids is a short-lived signal for the detail page (see
+            // deleteSigningRecordSuccess); reset it on every fresh list load so it can't accumulate.
+            state.deletedSigningRecordUuids = [];
             state.isFetchingList = true;
         },
 
@@ -113,6 +116,8 @@ export const slice = createSlice({
 
         deleteSigningRecordSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
             state.isDeleting = false;
+            // Record the deleted uuid so the detail page can detect its own record was deleted
+            // and navigate back to the list (see components/_pages/signing-records/detail).
             if (!state.deletedSigningRecordUuids.includes(action.payload.uuid)) {
                 state.deletedSigningRecordUuids.push(action.payload.uuid);
             }
@@ -139,23 +144,10 @@ export const slice = createSlice({
         bulkDeleteSigningRecordsSuccess: (state, action: PayloadAction<{ uuids: string[]; errors: BulkActionMessageDto[] }>) => {
             state.isBulkDeleting = false;
 
+            // On success the epic re-fetches the list from the server, so no optimistic
+            // list mutation is needed here — we only surface any per-item failures.
             if (action.payload.errors?.length > 0) {
                 state.bulkDeleteErrorMessages = action.payload.errors;
-                return;
-            }
-
-            action.payload.uuids.forEach((uuid) => {
-                if (!state.deletedSigningRecordUuids.includes(uuid)) {
-                    state.deletedSigningRecordUuids.push(uuid);
-                }
-            });
-
-            if (state.signingRecordsData) {
-                const uuidSet = new Set(action.payload.uuids);
-                const previousItemsCount = state.signingRecordsData.items.length;
-                state.signingRecordsData.items = state.signingRecordsData.items.filter((item) => !uuidSet.has(item.uuid));
-                const removedItemsCount = previousItemsCount - state.signingRecordsData.items.length;
-                state.signingRecordsData.totalItems = Math.max(0, (state.signingRecordsData.totalItems ?? 0) - removedItemsCount);
             }
         },
 

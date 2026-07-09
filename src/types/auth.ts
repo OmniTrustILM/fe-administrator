@@ -36,6 +36,7 @@ export type UserProfileDetailModel = Omit<UserProfileDetailDto, 'certificate' | 
     customAttributes?: Array<AttributeResponseModel>;
 };
 
-export type UserUpdateRequestModel = Omit<UpdateUserRequestDto, 'customAttributes'> & {
+export type UserUpdateRequestModel = Omit<UpdateUserRequestDto, 'customAttributes' | 'certificateCustomAttributes'> & {
     customAttributes?: Array<AttributeRequestModel>;
+    certificateCustomAttributes?: Array<AttributeRequestModel>;
 };

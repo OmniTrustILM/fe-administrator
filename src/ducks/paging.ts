@@ -1,6 +1,8 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { WritableDraft } from 'immer/dist/internal';
+import type { AppState } from 'ducks';
 import type { EntityType } from './filters';
+import { selectors as filterSelectors } from './filters';
 
 export type Paging = {
     entity: EntityType;
@@ -99,15 +101,51 @@ export const slice = createSlice({
 const state = (reduxStore: any): State => reduxStore?.[slice.name];
 
 const totalItems = (entity: EntityType) =>
-    createSelector(state, (state) => (state.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).totalItems);
+    createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).totalItems);
 const checkedRows = (entity: EntityType) =>
-    createSelector(state, (state) => (state.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).checkedRows);
+    createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).checkedRows);
 const isFetchingList = (entity: EntityType) =>
-    createSelector(state, (state) => (state.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).isFetchingList);
+    createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).isFetchingList);
 const pageNumber = (entity: EntityType) =>
-    createSelector(state, (state) => (state.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageNumber);
+    createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageNumber);
 const pageSize = (entity: EntityType) =>
-    createSelector(state, (state) => (state.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageSize);
+    createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageSize);
+
+/**
+ * Builds the params for a list request for `entity` from the current redux root state:
+ * the active page, page size and filters. Callers pass the full `AppState` value
+ * (e.g. `state.value` inside an epic).
+ */
+export function entityListParams(entity: EntityType, stateValue: AppState) {
+    return {
+        pageNumber: pageNumber(entity)(stateValue),
+        itemsPerPage: pageSize(entity)(stateValue),
+        filters: filterSelectors.currentFilters(entity)(stateValue),
+    };
+}
+
+export type EntityListParams = ReturnType<typeof entityListParams>;
+
+/**
+ * Builds the list-request params to use after deleting `deletedCount` items, given the paging
+ * snapshot captured *before* the delete. When the current page would become empty (e.g. all rows
+ * on the last page were deleted), steps back to the new last page so the re-fetch lands on a page
+ * that still has data.
+ *
+ * The `totalBeforeDelete` snapshot must be read when the delete is dispatched, not when it
+ * resolves: `PagedList.onDeleteConfirmed` fires an immediate (pre-commit) re-fetch on delete whose
+ * `listSuccess` can overwrite `totalItems` with the already-reduced count, so reading it later
+ * would double-subtract `deletedCount` and step back too far.
+ */
+export function listParamsAfterDelete(paramsBeforeDelete: EntityListParams, totalBeforeDelete: number, deletedCount: number) {
+    const { pageNumber: currentPage, itemsPerPage, filters } = paramsBeforeDelete;
+
+    const totalAfterDelete = Math.max(0, totalBeforeDelete - deletedCount);
+    const lastPageAfterDelete = Math.max(1, Math.ceil(totalAfterDelete / Math.max(1, itemsPerPage)));
+    const pageNumber = Math.min(currentPage, lastPageAfterDelete);
+
+    return { pageNumber, itemsPerPage, filters };
+}
 
 export const selectors = {
     state,

@@ -51,12 +51,24 @@ function CertificateIcon({ size = 24, className }: Readonly<{ size?: number; cla
     );
 }
 
+// Layout of revealed nested nodes. Their `parentId` makes them reactflow subflow children, so the
+// position is RELATIVE to the parent: each child cascades down (step Y) and slightly right (step X)
+// so successive children never overlap each other. When the parent also has its details expanded it
+// grows to w-[600px] and taller, so children are pushed clear of that widened card horizontally.
+const NESTED_NODE_STEP_X = 50;
+const NESTED_NODE_STEP_Y = 150;
+const NESTED_NODE_EXPANDED_X_OFFSET = 620;
+
+const nestedChildPosition = (childIndex: number, parentDetailsExpanded: boolean) => ({
+    x: (parentDetailsExpanded ? NESTED_NODE_EXPANDED_X_OFFSET : 0) + (childIndex + 1) * NESTED_NODE_STEP_X,
+    y: (childIndex + 1) * NESTED_NODE_STEP_Y,
+});
+
 export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, id }: Readonly<EntityNodeProps>) {
     const [isNodeExpanded, setIsNodeExpanded] = useState(data.expandedByDefault ?? false);
     const [addNodeContentCollapse, setAddNodeContentCollapse] = useState(false);
 
     const flowChartNoedesState = useSelector(userInterfaceSelectors.flowChartNodes);
-    const expandedHiddenNodeId = useSelector(userInterfaceSelectors.expandedHiddenNodeId);
 
     const thisNodeState = useMemo(() => {
         return flowChartNoedesState?.find((node) => node?.id === id);
@@ -65,61 +77,55 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
     const hasHiddenChildren = useMemo(() => {
         return flowChartNoedesState?.some((node) => node?.parentId === id && node.hidden !== undefined);
     }, [flowChartNoedesState, id]);
+    // Expansion is tracked per node (via its children's own visibility) rather than a single global id,
+    // so several parents can stay expanded at once.
+    const isExpanded = useMemo(
+        () => flowChartNoedesState?.some((node) => node?.parentId === id && node.hidden === false) ?? false,
+        [flowChartNoedesState, id],
+    );
     const dispatch = useDispatch();
 
     const toggleHiddenNodes = useCallback(() => {
-        if (expandedHiddenNodeId === id) {
-            const updatedNodes = flowChartNoedesState?.map((node) => {
-                if (node?.parentId === id && node.hidden !== undefined) {
-                    return {
-                        ...node,
-                        hidden: true,
-                    };
-                }
-                return node;
-            });
+        // Only this node's own children are touched, so expanding one parent never collapses another.
+        const orderedChildIds = (flowChartNoedesState ?? [])
+            .filter((node) => node?.parentId === id && node.hidden !== undefined)
+            .map((node) => node.id);
 
-            if (updatedNodes) dispatch(userInterfaceActions.updateReactFlowNodes(updatedNodes));
+        const updatedNodes = flowChartNoedesState?.map((node) => {
+            if (node?.parentId !== id || node.hidden === undefined) return node;
 
-            dispatch(userInterfaceActions.setShowHiddenNodes(undefined));
-        } else {
-            const updatedNodes = flowChartNoedesState?.map((node, i) => {
-                const totalNodes = flowChartNoedesState?.filter((node) => node.parentId === id).length || 1; // Total child nodes
+            if (isExpanded) {
+                return { ...node, hidden: true };
+            }
 
-                const multiplier = totalNodes < 3 ? 300 : 200;
-                const nodeRadius = multiplier * (totalNodes * 0.3); // Smaller radius for nodes within a group
-                const nodeAngle = ((2 * Math.PI) / totalNodes) * i;
+            // `parentId` makes this a reactflow subflow child → position is relative to the parent.
+            const childIndex = orderedChildIds.indexOf(node.id);
+            return {
+                ...node,
+                position: nestedChildPosition(childIndex, isNodeExpanded),
+                hidden: false,
+            };
+        });
 
-                if (node?.parentId !== id && node.hidden === false) {
-                    return {
-                        ...node,
-                        hidden: true,
-                    };
-                }
+        if (updatedNodes) dispatch(userInterfaceActions.updateReactFlowNodes(updatedNodes));
+    }, [flowChartNoedesState, dispatch, id, isExpanded, isNodeExpanded]);
 
-                if (node?.parentId === id && node.hidden !== undefined) {
-                    const positionMultiplier = totalNodes < 2 ? 3.5 : 1.75;
-                    const xPosition = nodeRadius * positionMultiplier * Math.cos(nodeAngle);
-                    const xWithExpandedOffset = isNodeExpanded && xPosition > 0 ? xPosition + 350 : xPosition;
-                    const position = {
-                        x: xWithExpandedOffset,
-                        y: nodeRadius * positionMultiplier * Math.sin(nodeAngle),
-                    };
-
-                    return {
-                        ...node,
-                        position: position,
-                        hidden: false,
-                    };
-                }
-                return node;
-            });
-
-            if (updatedNodes) dispatch(userInterfaceActions.updateReactFlowNodes(updatedNodes));
-
-            dispatch(userInterfaceActions.setShowHiddenNodes(id));
-        }
-    }, [flowChartNoedesState, dispatch, id, expandedHiddenNodeId, isNodeExpanded]);
+    // Reposition already-revealed children when the parent's details are toggled: the card resizes,
+    // so re-apply the offset to keep children from sliding under the (now wider) parent, or to pull
+    // them back once the details collapse.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: run only when the details toggle flips
+    useEffect(() => {
+        if (!isExpanded) return;
+        const visibleChildIds = (flowChartNoedesState ?? [])
+            .filter((node) => node?.parentId === id && node.hidden === false)
+            .map((node) => node.id);
+        if (visibleChildIds.length === 0) return;
+        const updatedNodes = (flowChartNoedesState ?? []).map((node) => {
+            if (node?.parentId !== id || node.hidden !== false) return node;
+            return { ...node, position: nestedChildPosition(visibleChildIds.indexOf(node.id), isNodeExpanded) };
+        });
+        dispatch(userInterfaceActions.updateReactFlowNodes(updatedNodes));
+    }, [isNodeExpanded]);
 
     const expandToggle = useCallback(() => {
         setIsNodeExpanded(!isNodeExpanded);
@@ -261,6 +267,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                 {data.otherProperties && (
                                     <Button
                                         color="primary"
+                                        title={isNodeExpanded ? 'Collapse details' : 'Expand details'}
                                         onClick={expandToggle}
                                         className={cn(
                                             '!rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px]',
@@ -273,13 +280,12 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                 )}
 
                                 {hasHiddenChildren ? (
-                                    <span
-                                        data-expanded={expandedHiddenNodeId === id ? 'true' : 'false'}
-                                        data-testid="flow-node-toggle-hidden-wrap"
-                                    >
+                                    <span data-expanded={isExpanded ? 'true' : 'false'} data-testid="flow-node-toggle-hidden-wrap">
                                         <Button
                                             color="primary"
                                             data-testid="flow-node-toggle-hidden"
+                                            title={isExpanded ? 'Hide nested nodes' : 'Show nested nodes'}
+                                            aria-label={isExpanded ? 'Hide nested nodes' : 'Show nested nodes'}
                                             onClick={() => {
                                                 toggleHiddenNodes();
                                             }}
@@ -288,7 +294,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                                 getExpandButtonStatusClasses(),
                                             )}
                                         >
-                                            {expandedHiddenNodeId === id ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            {isExpanded ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </Button>
                                     </span>
                                 ) : null}
@@ -345,13 +351,13 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                             </div>
                         </div>
                     )}
-                    <div className="flex items-center mb-2">
-                        <div className="mr-2">{getIconComponent()}</div>
-                        <h6 className="text-[var(--dark-gray-color)] font-bold text-lg">{data.customNodeCardTitle}</h6>
+                    <div className="flex items-center mb-2 w-full">
+                        <div className="mr-2 shrink-0">{getIconComponent()}</div>
+                        <h6 className="text-[var(--dark-gray-color)] font-bold text-lg min-w-0 break-words">{data.customNodeCardTitle}</h6>
                     </div>
 
                     {data.entityLabel ? (
-                        <div className="flex font-medium text-[#64748b] [&>*]:min-w-0 [&>*]:flex-shrink [&>*]:break-words">
+                        <div className="flex w-full font-medium text-[#64748b] [&>*]:min-w-0 [&>*]:flex-shrink [&>*]:break-words">
                             <h6>Entity Name:</h6>
                             &nbsp;
                             {data.redirectUrl ? (

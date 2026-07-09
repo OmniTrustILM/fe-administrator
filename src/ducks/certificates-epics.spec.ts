@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { UnknownAction } from '@reduxjs/toolkit';
-import { firstValueFrom, of, Subject, throwError } from 'rxjs';
+import { firstValueFrom, of, Subject, throwError, type Observable } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
 
 // Break the certificates-epics → ../App → ../store → ducks/index → certificates-epics cycle
@@ -39,6 +39,7 @@ import { actions as appRedirectActions } from './app-redirect';
 
 const ASSOCIATE_EPIC_INDEX = 3;
 const DEASSOCIATE_EPIC_INDEX = 4;
+const ISSUE_EPIC_INDEX = 8;
 const REVOKE_EPIC_INDEX = 10;
 const MANUALLY_ISSUE_EPIC_INDEX = 13;
 const MANUALLY_CONFIRM_REVOKE_EPIC_INDEX = 14;
@@ -47,6 +48,7 @@ const BULK_UPDATE_RA_PROFILE_EPIC_INDEX = 30;
 const UPLOAD_EPIC_INDEX = 33;
 
 type ClientOpsOverrides = {
+    issueCertificate?: (args: any) => any;
     revokeCertificate?: (args: any) => any;
     manuallyIssueCertificate?: (args: any) => any;
     manuallyConfirmRevoke?: (args: any) => any;
@@ -61,7 +63,7 @@ async function runEpic(
     overrides: ClientOpsOverrides = {},
     takeCount = 4,
 ): Promise<UnknownAction[]> {
-    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => any)[];
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
 
     const minimalCert = {
         uuid: 'cert-1',
@@ -97,7 +99,7 @@ async function runUploadEpic(
     certificatesOverrides: { uploadAsync?: (args: any) => any } = {},
     takeCount = 2,
 ): Promise<UnknownAction[]> {
-    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => any)[];
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
     const deps = {
         apiClients: {
             certificates: {
@@ -116,7 +118,7 @@ async function runAssociateEpic(
     associateCertificates: (args: any) => any = () => of(undefined),
     takeCount = 1,
 ): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
-    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => any)[];
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
     const calls: any[] = [];
     const deps = {
         apiClients: {
@@ -138,7 +140,7 @@ async function runDeassociateEpic(
     removeCertificateAssociation: (args: any) => any = () => of(undefined),
     takeCount = 1,
 ): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
-    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => any)[];
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
     const calls: any[] = [];
     const deps = {
         apiClients: {
@@ -156,6 +158,54 @@ async function runDeassociateEpic(
 }
 
 describe('certificates epics', () => {
+    const issueAction = certificatesActions.issueCertificate({
+        authorityUuid: 'auth-1',
+        raProfileUuid: 'ra-1',
+        signRequest: {} as any,
+    });
+
+    test('issueCertificate emits Success and redirect on success', async () => {
+        const emitted = await runEpic(ISSUE_EPIC_INDEX, issueAction, {
+            issueCertificate: () => of({ uuid: 'cert-1', certificateData: 'data' }),
+        });
+
+        expect(emitted).toHaveLength(2);
+        expect(emitted[0].type).toBe(certificatesActions.issueCertificateSuccess.type);
+        expect(emitted[1].type).toBe(appRedirectActions.redirect.type);
+    });
+
+    test('issueCertificate 422 failure carries the validation-error list and suppresses the generic fetch error', async () => {
+        const emitted = await runEpic(ISSUE_EPIC_INDEX, issueAction, {
+            issueCertificate: () => throwError(() => ({ status: 422, response: ['e1', 'e2'] })),
+        });
+
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0].type).toBe(certificatesActions.issueCertificateFailure.type);
+        expect((emitted[0] as any).payload.validationErrors).toEqual(['e1', 'e2']);
+    });
+
+    test('issueCertificate wrapped 400 policy failure carries the violation lines', async () => {
+        const message =
+            "Failed to submit certificate request: Uploaded certificate request does not satisfy the request-attribute policy of RA profile 'p' \nSubject RDN 'O' is not allowed by the request-attribute set";
+        const emitted = await runEpic(ISSUE_EPIC_INDEX, issueAction, {
+            issueCertificate: () => throwError(() => ({ status: 400, response: { message } })),
+        });
+
+        expect(emitted).toHaveLength(1);
+        expect((emitted[0] as any).payload.validationErrors).toEqual(["Subject RDN 'O' is not allowed by the request-attribute set"]);
+    });
+
+    test('issueCertificate generic failure emits Failure without validation errors and a fetch error', async () => {
+        const emitted = await runEpic(ISSUE_EPIC_INDEX, issueAction, {
+            issueCertificate: () => throwError(() => ({ status: 500, response: { message: 'boom' } })),
+        });
+
+        expect(emitted).toHaveLength(2);
+        expect(emitted[0].type).toBe(certificatesActions.issueCertificateFailure.type);
+        expect((emitted[0] as any).payload.validationErrors).toBeUndefined();
+        expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+    });
+
     test('associateCertificate successor relation sends selected cert as successor and emits Success keyed on current cert', async () => {
         const { emitted, calls } = await runAssociateEpic(
             certificatesActions.associateCertificate({ uuid: 'current-cert', certificateUuid: 'related-cert', relation: 'successor' }),
@@ -391,7 +441,7 @@ describe('certificates epics', () => {
             refetchedCertificates,
             patchResponse = () => of(undefined),
         }: BulkUpdateRunOptions): Promise<UnknownAction[]> {
-            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => any)[];
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
             const action$ = new Subject<UnknownAction>();
             const deps = {
                 apiClients: {
@@ -482,7 +532,7 @@ describe('certificates epics', () => {
         });
 
         test('emits failure action when PATCH itself fails', async () => {
-            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => any)[];
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
             const action$ = new Subject<UnknownAction>();
             const deps = {
                 apiClients: {

@@ -95,6 +95,17 @@ describe('auth transforms', () => {
         expect(result.customAttributes).toHaveLength(1);
     });
 
+    test('transformUserUpdateRequestModelToDto maps certificateCustomAttributes', () => {
+        const model = {
+            uuid: 'user-1',
+            certificateCustomAttributes: [{ name: 'Severity', content: [{ data: 'Critical' }] }],
+        } as any;
+        const result = transformUserUpdateRequestModelToDto(model);
+        expect(result.certificateCustomAttributes).toHaveLength(1);
+
+        expect(transformUserUpdateRequestModelToDto({ uuid: 'user-1' } as any).certificateCustomAttributes).toBeUndefined();
+    });
+
     test('transformUserUpdateRequestModelToDto sends null for a blank email (issue #1800)', () => {
         expect(transformUserUpdateRequestModelToDto({ email: '' } as any).email).toBeNull();
         expect(transformUserUpdateRequestModelToDto({ email: undefined } as any).email).toBeNull();

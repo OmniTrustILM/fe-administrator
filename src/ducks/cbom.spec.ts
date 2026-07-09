@@ -46,15 +46,14 @@ describe('cbom slice', () => {
         expect(next.isFetchingList).toBe(false);
     });
 
-    test('listCbomsSuccess stores payload as-is (filtering handled in epic)', () => {
+    test('listCbomsSuccess stores payload as-is', () => {
         const state = {
             ...initialState,
-            deletedCbomUuids: ['cbom-deleted'],
             isFetchingList: true,
         } as any;
 
         const payload = {
-            items: [{ uuid: 'cbom-deleted' }, { uuid: 'cbom-2' }],
+            items: [{ uuid: 'cbom-1' }, { uuid: 'cbom-2' }],
             totalItems: 2,
             pageNumber: 1,
             itemsPerPage: 10,
@@ -161,13 +160,12 @@ describe('cbom slice', () => {
         expect(next.isDeleting).toBe(false);
         expect(next.cbomsData!.items).toEqual([{ uuid: 'cbom-2' }]);
         expect(next.cbomsData!.totalItems).toBe(1);
-        expect(next.deletedCbomUuids).toContain('cbom-1');
 
         next = reducer({ ...next, isDeleting: true }, actions.deleteCbomFailure({ error: 'err' }));
         expect(next.isDeleting).toBe(false);
     });
 
-    test('bulkDeleteCbom / success / failure updates flags and list data', () => {
+    test('bulkDeleteCbom / success / failure updates flags without mutating list data', () => {
         const state = {
             ...initialState,
             cbomsData: {
@@ -184,9 +182,9 @@ describe('cbom slice', () => {
 
         next = reducer(next, actions.bulkDeleteCbomSuccess({ uuids: ['cbom-1', 'cbom-3'] }));
         expect(next.isBulkDeleting).toBe(false);
-        expect(next.cbomsData!.items).toEqual([{ uuid: 'cbom-2' }]);
-        expect(next.cbomsData!.totalItems).toBe(1);
-        expect(next.deletedCbomUuids).toEqual(expect.arrayContaining(['cbom-1', 'cbom-3']));
+        // Items are not spliced optimistically — the epic triggers a server re-fetch.
+        expect(next.cbomsData!.items).toEqual([{ uuid: 'cbom-1' }, { uuid: 'cbom-2' }, { uuid: 'cbom-3' }]);
+        expect(next.cbomsData!.totalItems).toBe(3);
 
         next = reducer({ ...next, isBulkDeleting: true }, actions.bulkDeleteCbomFailure({ error: 'err' }));
         expect(next.isBulkDeleting).toBe(false);

@@ -85,10 +85,10 @@ describe('cbom epics', () => {
         expect(emitted[3].payload.widgetName).toBe(LockWidgetNameEnum.ListOfCboms);
     });
 
-    test('listCboms success adjusts paging totalItems for locally deleted cboms', async () => {
+    test('listCboms success passes the server response through without local filtering', async () => {
         const searchRequest = { pageNumber: 1, itemsPerPage: 10, filters: [] } as any;
         const response = {
-            items: [{ uuid: 'cbom-deleted' }, { uuid: 'cbom-visible-1' }, { uuid: 'cbom-visible-2' }],
+            items: [{ uuid: 'cbom-1' }, { uuid: 'cbom-2' }, { uuid: 'cbom-3' }],
             totalItems: 3,
             pageNumber: 1,
             itemsPerPage: 10,
@@ -99,19 +99,12 @@ describe('cbom epics', () => {
             listCboms: () => of(response),
         });
 
-        const state$ = { value: { cbom: { deletedCbomUuids: ['cbom-deleted'] } } } as any;
-
-        const output$ = (cbomEpics[0] as any)(of(slice.actions.listCboms(searchRequest)), state$, deps as any);
+        const output$ = (cbomEpics[0] as any)(of(slice.actions.listCboms(searchRequest)), of({}) as any, deps as any);
         const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
-        const adjustedResponse = {
-            ...response,
-            items: [{ uuid: 'cbom-visible-1' }, { uuid: 'cbom-visible-2' }],
-            totalItems: 2,
-        };
 
         expect(emitted[0]).toEqual(pagingActions.list(EntityType.CBOM));
-        expect(emitted[1]).toEqual(slice.actions.listCbomsSuccess({ data: adjustedResponse }));
-        expect(emitted[2]).toEqual(pagingActions.listSuccess({ entity: EntityType.CBOM, totalItems: 2 }));
+        expect(emitted[1]).toEqual(slice.actions.listCbomsSuccess({ data: response }));
+        expect(emitted[2]).toEqual(pagingActions.listSuccess({ entity: EntityType.CBOM, totalItems: 3 }));
         expect(emitted[3]).toEqual(userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ListOfCboms));
     });
 
@@ -337,7 +330,7 @@ describe('cbom epics', () => {
         expect(emitted[1]).toEqual(alertsSlice.actions.error('Failed to delete CBOM. delete failed'));
     });
 
-    test('bulkDeleteCbom success emits bulkDeleteCbomSuccess and success alert', async () => {
+    test('bulkDeleteCbom success (page unchanged) emits success, alert and a re-fetch without setPagination', async () => {
         const uuids = ['u1', 'u2'];
         const deps = createDeps({
             bulkDeleteCbom: ({ requestBody }) => {
@@ -346,13 +339,63 @@ describe('cbom epics', () => {
             },
         });
 
-        const output$ = (cbomEpics[6] as any)(of(slice.actions.bulkDeleteCbom({ uuids })), of({}) as any, deps as any);
-        const emitted = await firstValueFrom(output$.pipe(take(2), toArray()));
+        // On page 1 with 5 items, deleting 2 keeps page 1 populated, so no setPagination is dispatched.
+        const state$ = {
+            value: {
+                pagings: {
+                    pagings: [
+                        {
+                            entity: EntityType.CBOM,
+                            paging: { pageNumber: 1, pageSize: 10, totalItems: 5, checkedRows: [], isFetchingList: false },
+                        },
+                    ],
+                },
+                filters: {
+                    filters: [{ entity: EntityType.CBOM, filter: { currentFilters: [] } }],
+                },
+            },
+        } as any;
 
-        expect(emitted).toEqual([
-            slice.actions.bulkDeleteCbomSuccess({ uuids }),
-            alertsSlice.actions.success('Selected CBOMs successfully deleted.'),
-        ]);
+        const output$ = (cbomEpics[6] as any)(of(slice.actions.bulkDeleteCbom({ uuids })), state$, deps as any);
+        const emitted = await firstValueFrom(output$.pipe(take(3), toArray()));
+
+        expect(emitted[0]).toEqual(slice.actions.bulkDeleteCbomSuccess({ uuids }));
+        expect(emitted[1].type).toBe(alertsSlice.actions.success.type);
+        expect(emitted[2]).toEqual(slice.actions.listCboms({ pageNumber: 1, itemsPerPage: 10, filters: [] }));
+        expect(emitted.some((a: any) => a.type === pagingActions.setPagination.type)).toBe(false);
+    });
+
+    test('bulkDeleteCbom success steps back to last valid page when current page becomes empty', async () => {
+        const deps = createDeps({ bulkDeleteCbom: () => of([]) });
+
+        // 10 items total, pageSize 5, user on page 2 (items 6–10).
+        // Deleting 5 items leaves 5 total → only page 1 exists. safePage = min(2, ceil(5/5)=1) = 1
+        const state$ = {
+            value: {
+                pagings: {
+                    pagings: [
+                        {
+                            entity: EntityType.CBOM,
+                            paging: { pageNumber: 2, pageSize: 5, totalItems: 10, checkedRows: [], isFetchingList: false },
+                        },
+                    ],
+                },
+                filters: {
+                    filters: [{ entity: EntityType.CBOM, filter: { currentFilters: [] } }],
+                },
+            },
+        } as any;
+
+        const output$ = (cbomEpics[6] as any)(
+            of(slice.actions.bulkDeleteCbom({ uuids: ['c1', 'c2', 'c3', 'c4', 'c5'] })),
+            state$,
+            deps as any,
+        );
+        const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
+
+        expect(emitted[0]).toEqual(slice.actions.bulkDeleteCbomSuccess({ uuids: ['c1', 'c2', 'c3', 'c4', 'c5'] }));
+        expect(emitted[2]).toEqual(pagingActions.setPagination({ entity: EntityType.CBOM, pageNumber: 1, pageSize: 5 }));
+        expect(emitted[3]).toEqual(slice.actions.listCboms({ pageNumber: 1, itemsPerPage: 5, filters: [] }));
     });
 
     test('bulkDeleteCbom failure emits bulkDeleteCbomFailure and error alert', async () => {

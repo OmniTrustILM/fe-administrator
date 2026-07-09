@@ -47,5 +47,6 @@ export function transformUserUpdateRequestModelToDto(user: UserUpdateRequestMode
         ...user,
         email: user.email || null,
         customAttributes: user.customAttributes?.map(transformAttributeRequestModelToDto),
+        certificateCustomAttributes: user.certificateCustomAttributes?.map(transformAttributeRequestModelToDto),
     } as UserUpdateRequestDto;
 }

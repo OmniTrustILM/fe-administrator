@@ -24,4 +24,16 @@ describe('users transforms', () => {
         expect(result.customAttributes).toHaveLength(1);
         expect(result.customAttributes![0]).toEqual({ name: 'attr', content: [] });
     });
+
+    test('transformUserAddRequestModelToDto maps certificateCustomAttributes', () => {
+        const model = {
+            username: 'alice',
+            certificateCustomAttributes: [{ name: 'Severity', content: [{ data: 'Critical' }] }],
+        } as any;
+        const result = transformUserAddRequestModelToDto(model);
+        expect(result.certificateCustomAttributes).toHaveLength(1);
+        expect(result.certificateCustomAttributes![0]).toEqual({ name: 'Severity', content: [{ data: 'Critical' }] });
+
+        expect(transformUserAddRequestModelToDto({ username: 'alice' } as any).certificateCustomAttributes).toBeUndefined();
+    });
 });

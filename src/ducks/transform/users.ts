@@ -9,5 +9,6 @@ export function transformUserAddRequestModelToDto(user: UserAddRequestModel): Us
     return {
         ...user,
         customAttributes: user.customAttributes?.map(transformAttributeRequestModelToDto),
+        certificateCustomAttributes: user.certificateCustomAttributes?.map(transformAttributeRequestModelToDto),
     };
 }

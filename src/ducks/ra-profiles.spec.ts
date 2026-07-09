@@ -159,6 +159,35 @@ describe('raProfiles slice', () => {
         expect(next.isUpdating).toBe(false);
     });
 
+    test('updateRaProfileRequestAttributes / success / failure', () => {
+        const existingProfile = { uuid: 'ra-1', name: 'RA Profile', attributes: [{ uuid: 'attr-1' }], customAttributes: [] } as any;
+
+        let next = reducer(
+            { ...initialState, raProfile: existingProfile },
+            actions.updateRaProfileRequestAttributes({
+                profileUuid: 'ra-1',
+                authorityInstanceUuid: 'a-1',
+                requestAttributes: { externalCsrValidationStrict: true },
+            }),
+        );
+        expect(next.isUpdating).toBe(true);
+
+        const updatedProfile = {
+            uuid: 'ra-1',
+            name: 'RA Profile',
+            attributes: [],
+            customAttributes: [],
+            certificateRequestAttributes: { externalCsrValidationStrict: true },
+        } as any;
+        next = reducer(next, actions.updateRaProfileRequestAttributesSuccess({ raProfile: updatedProfile }));
+        expect(next.isUpdating).toBe(false);
+        expect(next.raProfile?.certificateRequestAttributes?.externalCsrValidationStrict).toBe(true);
+        expect(next.raProfile?.attributes).toEqual([{ uuid: 'attr-1' }]);
+
+        next = reducer({ ...next, isUpdating: true }, actions.updateRaProfileRequestAttributesFailure({ error: 'err' }));
+        expect(next.isUpdating).toBe(false);
+    });
+
     test('enableRaProfile / success updates list and detail / failure', () => {
         const items = [{ uuid: 'ra-1', enabled: false } as any];
         const profile = { uuid: 'ra-1', enabled: false } as any;

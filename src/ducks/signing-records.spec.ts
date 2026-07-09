@@ -97,7 +97,7 @@ describe('signingRecords slice', () => {
         expect(next.signingRecordsData?.totalItems).toBe(1);
     });
 
-    test('bulkDeleteSigningRecords success (no errors) removes items and decrements totalItems', () => {
+    test('bulkDeleteSigningRecords success (no errors) leaves items and deleted-uuid tracking untouched', () => {
         const state = {
             ...initialState,
             signingRecordsData: {
@@ -113,9 +113,11 @@ describe('signingRecords slice', () => {
         const next = reducer(state, actions.bulkDeleteSigningRecordsSuccess({ uuids: ['rec-1', 'rec-3'], errors: [] }));
 
         expect(next.isBulkDeleting).toBe(false);
-        expect(next.deletedSigningRecordUuids).toEqual(['rec-1', 'rec-3']);
-        expect(next.signingRecordsData?.items).toEqual([{ uuid: 'rec-2' }]);
-        expect(next.signingRecordsData?.totalItems).toBe(1);
+        // Bulk delete no longer touches the list or the deleted-uuid signal — the epic re-fetches
+        // from the server (deletedSigningRecordUuids is only used by the detail page's single delete).
+        expect(next.deletedSigningRecordUuids).toEqual([]);
+        expect(next.signingRecordsData?.items).toEqual([{ uuid: 'rec-1' }, { uuid: 'rec-2' }, { uuid: 'rec-3' }]);
+        expect(next.signingRecordsData?.totalItems).toBe(3);
         expect(next.bulkDeleteErrorMessages).toEqual([]);
     });
 

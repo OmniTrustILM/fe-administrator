@@ -19,12 +19,6 @@ import type { RequestAttribute } from './';
  */
 export interface AddUserRequestDto {
     /**
-     * Username of the user
-     * @type {string}
-     * @memberof AddUserRequestDto
-     */
-    username: string;
-    /**
      * Description of the user
      * @type {string}
      * @memberof AddUserRequestDto
@@ -49,25 +43,19 @@ export interface AddUserRequestDto {
      */
     email?: string;
     /**
-     * Groups UUIDs of the user
+     * Groups UUIDs of the user. For creation, omit or provide an empty list for no group membership. For updates, omit to leave the current membership unchanged; set to an empty list to remove the user from all groups.
      * @type {Array<string>}
      * @memberof AddUserRequestDto
      */
     groupUuids?: Array<string>;
     /**
-     * Status of the user. True = Enabled, False = Disabled
-     * @type {boolean}
-     * @memberof AddUserRequestDto
-     */
-    enabled?: boolean;
-    /**
-     * Base64 Content of the user certificate
+     * Base64 content of the user certificate
      * @type {string}
      * @memberof AddUserRequestDto
      */
     certificateData?: string;
     /**
-     * UUID of the existing certificate in the Inventory
+     * UUID of the existing certificate in the inventory. Mandatory if certificate data is not provided
      * @type {string}
      * @memberof AddUserRequestDto
      */
@@ -78,6 +66,24 @@ export interface AddUserRequestDto {
      * @memberof AddUserRequestDto
      */
     customAttributes?: Array<RequestAttribute>;
+    /**
+     * List of Custom Attributes set for the user certificate, if a new certificate is uploaded. Ignored if the certificate already exists in the inventory (matched by UUID or fingerprint).
+     * @type {Array<RequestAttribute>}
+     * @memberof AddUserRequestDto
+     */
+    certificateCustomAttributes?: Array<RequestAttribute>;
+    /**
+     * Username of the user
+     * @type {string}
+     * @memberof AddUserRequestDto
+     */
+    username: string;
+    /**
+     * Status of the user. True = Enabled, False = Disabled
+     * @type {boolean}
+     * @memberof AddUserRequestDto
+     */
+    enabled?: boolean;
     /**
      * @type {string}
      * @memberof AddUserRequestDto

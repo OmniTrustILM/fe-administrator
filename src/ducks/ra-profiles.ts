@@ -2,7 +2,7 @@ import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolki
 import type { ProfileApprovalModel } from 'types/approval-profiles';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { BulkActionModel } from 'types/connectors';
-import type { Resource } from 'types/openapi';
+import type { RaProfileCertificateRequestAttributesUpdateDto, Resource } from 'types/openapi';
 import type {
     ComplianceProfileSimplifiedModel,
     RaProfileAcmeDetailResponseModel,
@@ -245,6 +245,30 @@ export const slice = createSlice({
         },
 
         updateRaProfileCertificateValidationFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isUpdating = false;
+        },
+
+        updateRaProfileRequestAttributes: (
+            state,
+            action: PayloadAction<{
+                profileUuid: string;
+                authorityInstanceUuid: string;
+                requestAttributes: RaProfileCertificateRequestAttributesUpdateDto;
+            }>,
+        ) => {
+            state.isUpdating = true;
+        },
+
+        updateRaProfileRequestAttributesSuccess: (state, action: PayloadAction<{ raProfile: RaProfileResponseModel }>) => {
+            state.isUpdating = false;
+            state.raProfile = {
+                ...action.payload.raProfile,
+                attributes: state.raProfile?.attributes ?? action.payload.raProfile.attributes,
+                customAttributes: state.raProfile?.customAttributes ?? action.payload.raProfile.customAttributes,
+            };
+        },
+
+        updateRaProfileRequestAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isUpdating = false;
         },
 

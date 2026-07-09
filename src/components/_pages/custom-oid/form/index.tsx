@@ -2,16 +2,12 @@ import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/oids';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-    type CustomOidEntryRequestDto,
-    type CustomOidEntryUpdateRequestDtoAdditionalProperties,
-    OidCategory,
-    PlatformEnum,
-} from 'types/openapi';
+import { type CustomOidEntryRequestDto, type OidCategory, PlatformEnum } from 'types/openapi';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { validateLength, validateRequired, validateOid, validateOidCode } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import Select from 'components/Select';
+import Switch from 'components/Switch';
 import Button from 'components/Button';
 import Container from 'components/Container';
 import ProgressButton from 'components/ProgressButton';
@@ -20,6 +16,14 @@ import MultipleValueTextInput from 'components/Input/MultipleValueTextInput';
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
 import Label from 'components/Label';
+import {
+    isCertificateExtensionCategory,
+    isRdnAttributeTypeCategory,
+    isRdnProperties,
+    isCertificateExtensionProperties,
+    getExtensionValueEncodingOptions,
+    buildOidAdditionalProperties,
+} from 'utils/oid';
 
 type CustomOIDFormProps = Readonly<{
     oidId?: string;
@@ -34,6 +38,8 @@ interface FormValues {
     category: string;
     code?: string;
     alternativeCode?: string[];
+    defaultCritical?: boolean;
+    valueEncoding?: string;
 }
 
 export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDFormProps) {
@@ -83,20 +89,28 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
 
     const defaultValues: FormValues = useMemo(() => {
         const categoryValue = oid?.category ? oid.category : '';
+        const props = oid?.additionalProperties;
+        const rdnProps = isRdnProperties(props) ? props : undefined;
+        const extProps = isCertificateExtensionProperties(props) ? props : undefined;
 
         return {
             oid: editMode ? oid?.oid || '' : '',
             displayName: editMode ? oid?.displayName || '' : '',
             description: editMode ? oid?.description || '' : '',
             category: categoryValue,
-            code: editMode ? oid?.additionalProperties?.code : undefined,
-            alternativeCode: editMode ? oid?.additionalProperties?.altCodes : undefined,
+            code: editMode ? rdnProps?.code : undefined,
+            alternativeCode: editMode ? rdnProps?.altCodes : undefined,
+            defaultCritical: editMode ? (extProps?.defaultCritical ?? false) : false,
+            valueEncoding: editMode ? extProps?.valueEncoding : undefined,
         };
     }, [oid, editMode]);
 
     const methods = useForm<FormValues>({
         defaultValues,
         mode: 'onChange',
+        // Unregister the fields of the previously-selected category when switching so a hidden,
+        // empty required field (e.g. RDN `code` vs CertExt `valueEncoding`) does not keep isValid false.
+        shouldUnregister: true,
     });
 
     const {
@@ -119,17 +133,13 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
 
     const onSubmit = useCallback(
         (values: FormValues) => {
+            const additionalProperties = buildOidAdditionalProperties(values.category, values);
             const newOID = {
                 oid: values.oid,
                 displayName: values.displayName,
                 description: values.description,
                 category: values.category as OidCategory,
-                ...(values.category === OidCategory.RdnAttributeType && {
-                    additionalProperties: {
-                        code: values.code,
-                        altCodes: values.alternativeCode ?? undefined,
-                    } as CustomOidEntryUpdateRequestDtoAdditionalProperties,
-                }),
+                ...(additionalProperties && { additionalProperties }),
             };
             if (editMode) {
                 dispatch(actions.updateOID({ oid: oidId!, data: newOID }));
@@ -238,7 +248,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                             )}
                         />
 
-                        {watchedCategory === OidCategory.RdnAttributeType && (
+                        {isRdnAttributeTypeCategory(watchedCategory) && (
                             <>
                                 <Controller
                                     name="code"
@@ -272,13 +282,58 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                                                 placeholder="Select or add alternative codes"
                                                 addPlaceholder="Add code"
                                                 initialOptions={
-                                                    editMode && oid?.additionalProperties?.altCodes
+                                                    editMode &&
+                                                    isRdnProperties(oid?.additionalProperties) &&
+                                                    oid.additionalProperties.altCodes
                                                         ? oid.additionalProperties.altCodes.map((code) => ({
                                                               label: code,
                                                               value: code,
                                                           }))
                                                         : []
                                                 }
+                                            />
+                                            {fieldState.error && fieldState.isTouched && (
+                                                <p className="mt-1 text-sm text-red-600">
+                                                    {typeof fieldState.error === 'string'
+                                                        ? fieldState.error
+                                                        : fieldState.error?.message || 'Invalid value'}
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
+                                />
+                            </>
+                        )}
+
+                        {isCertificateExtensionCategory(watchedCategory) && (
+                            <>
+                                <Controller
+                                    name="defaultCritical"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Switch
+                                            id="defaultCritical"
+                                            label="Default Critical"
+                                            checked={field.value ?? false}
+                                            onChange={field.onChange}
+                                        />
+                                    )}
+                                />
+                                <Controller
+                                    name="valueEncoding"
+                                    control={control}
+                                    rules={buildValidationRules([validateRequired()])}
+                                    render={({ field, fieldState }) => (
+                                        <>
+                                            <Select
+                                                id="valueEncodingSelect"
+                                                label="Value Encoding"
+                                                required
+                                                value={field.value || ''}
+                                                onChange={(value) => field.onChange(value)}
+                                                options={getExtensionValueEncodingOptions()}
+                                                placeholder="Select Value Encoding"
+                                                placement="bottom"
                                             />
                                             {fieldState.error && fieldState.isTouched && (
                                                 <p className="mt-1 text-sm text-red-600">

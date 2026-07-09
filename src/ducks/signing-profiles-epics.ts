@@ -7,7 +7,7 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { EntityType } from './filters';
-import { actions as pagingActions } from './paging';
+import { actions as pagingActions, selectors as pagingSelectors, entityListParams, listParamsAfterDelete } from './paging';
 import { selectors, slice } from './signing-profiles';
 import { isTimestampingWorkflow } from 'utils/type-guards';
 import { transformSearchRequestModelToDto } from './transform/certificates';
@@ -196,22 +196,50 @@ const disableSigningProfile: AppEpic = (action$, state$, deps) => {
 const bulkDeleteSigningProfiles: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.bulkDeleteSigningProfiles.match),
-        switchMap((action) =>
-            deps.apiClients.signingProfiles.bulkDeleteSigningProfiles({ requestBody: action.payload.uuids }).pipe(
-                mergeMap((errors) =>
-                    of(
-                        slice.actions.bulkDeleteSigningProfilesSuccess({ uuids: action.payload.uuids, errors }),
-                        alertActions.success('Selected Signing Profiles successfully deleted.'),
-                    ),
-                ),
+        switchMap((action) => {
+            // Snapshot paging *before* the delete resolves — PagedList fires an immediate
+            // pre-commit re-fetch on delete whose listSuccess can overwrite totalItems.
+            const paramsBeforeDelete = entityListParams(EntityType.SIGNING_PROFILE, state$.value);
+            const totalBeforeDelete = pagingSelectors.totalItems(EntityType.SIGNING_PROFILE)(state$.value);
+
+            return deps.apiClients.signingProfiles.bulkDeleteSigningProfiles({ requestBody: action.payload.uuids }).pipe(
+                mergeMap((errors) => {
+                    const successAction = slice.actions.bulkDeleteSigningProfilesSuccess({ uuids: action.payload.uuids, errors });
+                    // Per-item failures are reported in `errors`; the rest were deleted server-side.
+                    const deletedCount = action.payload.uuids.length - errors.length;
+                    if (deletedCount === 0) {
+                        return of(successAction);
+                    }
+
+                    const listParams = listParamsAfterDelete(paramsBeforeDelete, totalBeforeDelete, deletedCount);
+
+                    return of(
+                        successAction,
+                        // Success alert only when every selected profile was deleted; partial
+                        // failures surface through bulkDeleteErrorMessages instead.
+                        ...(errors.length === 0 ? [alertActions.success('Selected Signing Profiles successfully deleted.')] : []),
+                        // Only re-align the paging slice when the deletion emptied the current page
+                        // and we had to step back; otherwise the re-fetch below is enough.
+                        ...(listParams.pageNumber !== paramsBeforeDelete.pageNumber
+                            ? [
+                                  pagingActions.setPagination({
+                                      entity: EntityType.SIGNING_PROFILE,
+                                      pageNumber: listParams.pageNumber,
+                                      pageSize: listParams.itemsPerPage,
+                                  }),
+                              ]
+                            : []),
+                        slice.actions.listSigningProfiles(listParams),
+                    );
+                }),
                 catchError((error) =>
                     of(
                         slice.actions.bulkDeleteSigningProfilesFailure({ error: extractError(error, 'Failed to delete Signing Profiles') }),
                         appRedirectActions.fetchError({ error, message: 'Failed to delete Signing Profiles' }),
                     ),
                 ),
-            ),
-        ),
+            );
+        }),
     );
 };
 

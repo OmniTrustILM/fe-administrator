@@ -43,19 +43,19 @@ export interface UpdateUserRequestDto {
      */
     email?: string;
     /**
-     * Groups UUIDs of the user (set to empty list to remove certificate from all groups)
+     * Groups UUIDs of the user. For creation, omit or provide an empty list for no group membership. For updates, omit to leave the current membership unchanged; set to an empty list to remove the user from all groups.
      * @type {Array<string>}
      * @memberof UpdateUserRequestDto
      */
     groupUuids?: Array<string>;
     /**
-     * Base64 Content of the admin certificate
+     * Base64 content of the user certificate
      * @type {string}
      * @memberof UpdateUserRequestDto
      */
     certificateData?: string;
     /**
-     * UUID of the existing certificate in the Inventory. Mandatory if certificate is not provided
+     * UUID of the existing certificate in the inventory. Mandatory if certificate data is not provided
      * @type {string}
      * @memberof UpdateUserRequestDto
      */
@@ -66,4 +66,10 @@ export interface UpdateUserRequestDto {
      * @memberof UpdateUserRequestDto
      */
     customAttributes?: Array<RequestAttribute>;
+    /**
+     * List of Custom Attributes set for the user certificate, if a new certificate is uploaded. Ignored if the certificate already exists in the inventory (matched by UUID or fingerprint).
+     * @type {Array<RequestAttribute>}
+     * @memberof UpdateUserRequestDto
+     */
+    certificateCustomAttributes?: Array<RequestAttribute>;
 }
