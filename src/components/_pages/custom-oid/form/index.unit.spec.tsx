@@ -14,8 +14,8 @@ vi.mock('react-redux', async () => await import('../../test-utils/reactReduxMock
 let selectValueById: Record<string, unknown> = {};
 
 vi.mock('components/Select', () => ({
-    default: ({ id, onChange }: any) => (
-        <button type="button" data-testid={`select-${id}`} onClick={() => onChange(selectValueById[id])}>
+    default: ({ id, value, onChange }: any) => (
+        <button type="button" data-testid={`select-${id}`} data-value={value ?? ''} onClick={() => onChange(selectValueById[id])}>
             select
         </button>
     ),
@@ -49,7 +49,11 @@ vi.mock('components/Button', () => ({
     ),
 }));
 vi.mock('components/ProgressButton', () => ({
-    default: ({ title, type }: any) => <button type={type ?? 'button'}>{title}</button>,
+    default: ({ title, type, disabled }: any) => (
+        <button type={type ?? 'button'} disabled={disabled}>
+            {title}
+        </button>
+    ),
 }));
 
 function buildState() {
@@ -162,5 +166,62 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
                 },
             }),
         );
+    });
+
+    it('enables submit after switching category from RDN to Certificate Extension', async () => {
+        selectValueById = { categorySelect: OidCategory.RdnAttributeType };
+        await render();
+
+        const setInput = (id: string, val: string) => {
+            const el = container.querySelector<HTMLInputElement>(`[data-testid="input-${id}"]`);
+            const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+            setter?.call(el, val);
+            el?.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+
+        await act(async () => setInput('oid', '2.5.29.37'));
+        await act(async () => setInput('displayName', 'Extended Key Usage'));
+        // Pick RDN → reveals a required `code` field that is left empty.
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="select-categorySelect"]')?.click();
+        });
+        // Switch to Certificate Extension — the now-hidden RDN `code` must no longer block validity.
+        selectValueById.categorySelect = OidCategory.CertificateExtension;
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="select-categorySelect"]')?.click();
+        });
+        // Fill the Certificate Extension required field.
+        selectValueById.valueEncodingSelect = ExtensionValueEncoding.Der;
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="select-valueEncodingSelect"]')?.click();
+        });
+
+        const submit = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Create');
+        expect(submit).toBeDefined();
+        expect((submit as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it('pre-populates Default Critical and Value Encoding in edit mode', async () => {
+        const state = buildState();
+        state.oids.oid = {
+            oid: '2.5.29.37',
+            displayName: 'Extended Key Usage',
+            description: '',
+            category: OidCategory.CertificateExtension,
+            additionalProperties: { defaultCritical: true, valueEncoding: ExtensionValueEncoding.Der },
+        } as any;
+        useSelectorMock.mockImplementation((selector: any) => selector(state));
+
+        await act(async () => {
+            root.render(<CustomOIDForm oidId="2.5.29.37" onCancel={() => {}} />);
+        });
+
+        const critical = container.querySelector<HTMLInputElement>('[data-testid="switch-defaultCritical"]');
+        expect(critical).not.toBeNull();
+        expect(critical?.checked).toBe(true);
+
+        const encoding = container.querySelector<HTMLButtonElement>('[data-testid="select-valueEncodingSelect"]');
+        expect(encoding).not.toBeNull();
+        expect(encoding?.getAttribute('data-value')).toBe(ExtensionValueEncoding.Der);
     });
 });

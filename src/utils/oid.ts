@@ -14,6 +14,9 @@ export const isRdnAttributeTypeCategory = (category?: string): boolean => catego
 export const getExtensionValueEncodingOptions = (): { value: ExtensionValueEncoding; label: string }[] =>
     Object.values(ExtensionValueEncoding).map((value) => ({ value, label: value }));
 
+export const isExtensionValueEncoding = (value?: string): value is ExtensionValueEncoding =>
+    !!value && (Object.values(ExtensionValueEncoding) as string[]).includes(value);
+
 export interface OidFormValues {
     code?: string;
     alternativeCode?: string[];
@@ -32,9 +35,12 @@ export const buildOidAdditionalProperties = (
         };
     }
     if (isCertificateExtensionCategory(category)) {
+        if (!isExtensionValueEncoding(values.valueEncoding)) {
+            return undefined;
+        }
         return {
             defaultCritical: values.defaultCritical ?? false,
-            valueEncoding: values.valueEncoding as ExtensionValueEncoding,
+            valueEncoding: values.valueEncoding,
         };
     }
     return undefined;

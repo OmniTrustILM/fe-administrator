@@ -4,6 +4,7 @@ import {
     isCertificateExtensionCategory,
     isRdnAttributeTypeCategory,
     getExtensionValueEncodingOptions,
+    isExtensionValueEncoding,
     buildOidAdditionalProperties,
     isCertificateExtensionProperties,
     isRdnProperties,
@@ -38,6 +39,16 @@ describe('oid utils', () => {
         });
     });
 
+    describe('isExtensionValueEncoding', () => {
+        test('true only for real enum members', () => {
+            expect(isExtensionValueEncoding(ExtensionValueEncoding.Der)).toBe(true);
+            expect(isExtensionValueEncoding('DER')).toBe(true);
+            expect(isExtensionValueEncoding('not-an-encoding')).toBe(false);
+            expect(isExtensionValueEncoding('')).toBe(false);
+            expect(isExtensionValueEncoding(undefined)).toBe(false);
+        });
+    });
+
     describe('buildOidAdditionalProperties', () => {
         test('RDN → code + altCodes', () => {
             expect(buildOidAdditionalProperties(OidCategory.RdnAttributeType, { code: 'CN', alternativeCode: ['commonName'] })).toEqual({
@@ -63,6 +74,12 @@ describe('oid utils', () => {
             expect(
                 buildOidAdditionalProperties(OidCategory.CertificateExtension, { valueEncoding: ExtensionValueEncoding.OctetString }),
             ).toEqual({ defaultCritical: false, valueEncoding: ExtensionValueEncoding.OctetString });
+        });
+        test('Certificate Extension with missing valueEncoding → undefined (no invalid payload)', () => {
+            expect(buildOidAdditionalProperties(OidCategory.CertificateExtension, { defaultCritical: true })).toBeUndefined();
+        });
+        test('Certificate Extension with a non-enum valueEncoding → undefined', () => {
+            expect(buildOidAdditionalProperties(OidCategory.CertificateExtension, { valueEncoding: 'not-an-encoding' })).toBeUndefined();
         });
         test('unknown category → undefined', () => {
             expect(buildOidAdditionalProperties('somethingElse', { code: 'CN' })).toBeUndefined();

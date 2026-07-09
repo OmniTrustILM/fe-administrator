@@ -108,6 +108,9 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
     const methods = useForm<FormValues>({
         defaultValues,
         mode: 'onChange',
+        // Unregister the fields of the previously-selected category when switching so a hidden,
+        // empty required field (e.g. RDN `code` vs CertExt `valueEncoding`) does not keep isValid false.
+        shouldUnregister: true,
     });
 
     const {
