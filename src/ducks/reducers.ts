@@ -46,6 +46,7 @@ import { slice as signingProfilesSlice } from './signing-profiles';
 import { slice as signingRecordsSlice } from './signing-records';
 import { slice as signingRecordsDashboardSlice } from './signing-records-dashboard';
 import { slice as settingsSlice } from './settings';
+import { slice as raProfileRequestAttributesSlice } from './raProfileRequestAttributes';
 import { slice as dashboardSlice } from './statisticsDashboard';
 import { slice as tokenProfileSlice } from './token-profiles';
 import { slice as tokenSlice } from './tokens';
@@ -102,6 +103,7 @@ export const reducers = combineReducers({
     [customAttributesSlice.name]: customAttributesSlice.reducer,
     [globalMetadataSlice.name]: globalMetadataSlice.reducer,
     [settingsSlice.name]: settingsSlice.reducer,
+    [raProfileRequestAttributesSlice.name]: raProfileRequestAttributesSlice.reducer,
     [schedulerSlice.name]: schedulerSlice.reducer,
     [signingProfilesSlice.name]: signingProfilesSlice.reducer,
     [signingRecordsSlice.name]: signingRecordsSlice.reducer,

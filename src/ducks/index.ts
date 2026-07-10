@@ -46,6 +46,7 @@ import signingProfilesEpics from './signing-profiles-epics';
 import signingRecordsEpics from './signing-records-epics';
 import signingRecordsDashboardEpics from './signing-records-dashboard-epics';
 import settingsEpics from './settings-epics';
+import raProfileRequestAttributesEpics from './raProfileRequestAttributes-epics';
 import startupEpics from './startup-epics';
 import dashboardEpics from './statisticsDashboard-epics';
 import tokenProfileEpics from './token-profiles-epics';
@@ -105,6 +106,7 @@ export const epics = combineEpics(
     ...customAttributesEpics,
     ...globalMetadataEpics,
     ...settingsEpics,
+    ...raProfileRequestAttributesEpics,
     ...schedulerEpics,
     ...signingProfilesEpics,
     ...signingRecordsEpics,

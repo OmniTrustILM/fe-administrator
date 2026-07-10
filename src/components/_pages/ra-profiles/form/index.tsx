@@ -1,5 +1,6 @@
 import AttributeEditor from 'components/Attributes/AttributeEditor';
 import ProgressButton from 'components/ProgressButton';
+import RequestAttributeAuthoringEditor from 'components/RequestAttributes/RequestAttributeAuthoringEditor';
 
 import Widget from 'components/Widget';
 import { actions as authoritiesActions, selectors as authoritiesSelectors } from 'ducks/authorities';
@@ -17,6 +18,14 @@ import type { AttributeDescriptorModel } from 'types/attributes';
 import type { RaProfileResponseModel } from 'types/ra-profiles';
 
 import { collectFormAttributes } from 'utils/attributes/attributes';
+import { actions as requestAttributesActions, selectors as requestAttributesSelectors } from 'ducks/raProfileRequestAttributes';
+import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
+import {
+    buildRaProfileRequestAttributesUpdateDto,
+    emptyAuthoringForm,
+    parseRaProfileRequestAttributesDto,
+    type RequestAttributeAuthoringFormValues,
+} from 'utils/requestAttributeAuthoring';
 
 import { validateAlphaNumericWithSpecialChars, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
@@ -64,6 +73,10 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     const [groupAttributesCallbackAttributes, setGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
 
     const [localProfileModifications, setLocalProfileModifications] = useState<Partial<RaProfileResponseModel>>({});
+
+    const isUpdatingRequestAttributes = useSelector(requestAttributesSelectors.isUpdatingRaProfileSet);
+    const updateRequestAttributesSucceeded = useSelector(requestAttributesSelectors.updateRaProfileSetSucceeded);
+    const [requestAttributesForm, setRequestAttributesForm] = useState<RequestAttributeAuthoringFormValues>(emptyAuthoringForm());
 
     const isBusy = useMemo(
         () => isFetchingDetail || isCreating || isUpdating || isFetchingAuthorityRAProfileAttributes || isFetchingResourceCustomAttributes,
@@ -164,6 +177,45 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
             });
         }
     }, [editMode, raProfile, id, reset, isFetchingDetail, authorityId]);
+
+    // Seed the request-attribute authoring form from the loaded profile (edit mode only).
+    useEffect(() => {
+        if (editMode && raProfileSelector?.uuid === id) {
+            setRequestAttributesForm(parseRaProfileRequestAttributesDto(raProfileSelector.certificateRequestAttributes));
+        } else if (!editMode) {
+            setRequestAttributesForm(emptyAuthoringForm());
+        }
+    }, [editMode, id, raProfileSelector]);
+
+    const connectorAttributeOptions = useMemo(
+        () =>
+            (raProfileAttributeDescriptors ?? []).map((descriptor) => ({
+                value: descriptor.uuid ?? descriptor.name,
+                label: descriptor.properties?.label ?? descriptor.name,
+            })),
+        [raProfileAttributeDescriptors],
+    );
+
+    const refetchRaProfile = useCallback(() => {
+        if (editMode && id && authorityId) {
+            dispatch(raProfilesActions.getRaProfileDetail({ authorityUuid: authorityId, uuid: id }));
+        }
+    }, [dispatch, editMode, id, authorityId]);
+
+    useRunOnSuccessfulFinish(isUpdatingRequestAttributes, updateRequestAttributesSucceeded, refetchRaProfile);
+
+    const onSaveRequestAttributes = useCallback(() => {
+        if (!id) return;
+        const authorityUuid = raProfile?.authorityInstanceUuid || authorityId;
+        if (!authorityUuid) return;
+        dispatch(
+            requestAttributesActions.updateRaProfileRequestAttributes({
+                authorityUuid,
+                raProfileUuid: id,
+                data: buildRaProfileRequestAttributesUpdateDto(requestAttributesForm),
+            }),
+        );
+    }, [dispatch, id, raProfile, authorityId, requestAttributesForm]);
 
     const onAuthorityChange = useCallback(
         (authorityUuid: string) => {
@@ -331,6 +383,33 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                 {
                                     title: 'Custom Attributes',
                                     content: renderCustomAttributesEditor,
+                                },
+                                {
+                                    title: 'Request Attributes',
+                                    content: editMode ? (
+                                        <div className="space-y-4">
+                                            <RequestAttributeAuthoringEditor
+                                                value={requestAttributesForm}
+                                                onChange={setRequestAttributesForm}
+                                                showMergeMode
+                                                connectorAttributeOptions={connectorAttributeOptions}
+                                                disabled={isUpdatingRequestAttributes}
+                                            />
+                                            <Container className="flex-row justify-end" gap={4}>
+                                                <ProgressButton
+                                                    title="Save Request Attributes"
+                                                    inProgressTitle="Saving..."
+                                                    inProgress={isUpdatingRequestAttributes}
+                                                    onClick={onSaveRequestAttributes}
+                                                    type="button"
+                                                />
+                                            </Container>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-500">
+                                            Save the RA Profile first to configure its request attributes.
+                                        </p>
+                                    ),
                                 },
                             ]}
                         />

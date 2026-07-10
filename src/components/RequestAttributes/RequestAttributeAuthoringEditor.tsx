@@ -1,0 +1,491 @@
+import Button from 'components/Button';
+import Checkbox from 'components/Checkbox';
+import Container from 'components/Container';
+import Dialog from 'components/Dialog';
+import RadioRow from 'components/RadioRow';
+import Select from 'components/Select';
+import TextInput from 'components/TextInput';
+import { useCallback, useState } from 'react';
+import {
+    AttributeContentType,
+    AttributeSetMergeMode,
+    ExtensionValueEncoding,
+    FieldType,
+    GeneralNameType,
+    ObjectType,
+    ValueSourceType,
+} from 'types/openapi';
+import {
+    emptyAuthoredAttribute,
+    emptyValueSourceBinding,
+    isAuthoredAttributeValid,
+    isValueSourceBindingValid,
+    type AuthoredAttributeFormValues,
+    type RequestAttributeAuthoringFormValues,
+    type ValueSourceBindingFormValues,
+} from 'utils/requestAttributeAuthoring';
+
+/** Sentinel value for the COLLECTION source that is stubbed until fe#1782 (no enum member yet). */
+const COLLECTION_STUB = '__collection_stub__';
+
+const MERGE_MODE_OPTIONS: { value: AttributeSetMergeMode; label: string }[] = [
+    { value: AttributeSetMergeMode.StaticOnly, label: 'Static only' },
+    { value: AttributeSetMergeMode.ConnectorOnly, label: 'Connector only' },
+    { value: AttributeSetMergeMode.Merge, label: 'Merge' },
+];
+
+const CONTENT_TYPE_OPTIONS = Object.values(AttributeContentType).map((v) => ({
+    value: v,
+    label: v.charAt(0).toUpperCase() + v.slice(1),
+}));
+
+const FIELD_TYPE_LABELS: Record<FieldType, string> = {
+    [FieldType.Rdn]: 'RDN (subject)',
+    [FieldType.San]: 'Subject Alternative Name',
+    [FieldType.Extension]: 'Certificate extension',
+};
+
+const MAPPING_OPTIONS = Object.values(FieldType).map((v) => ({ value: v, label: FIELD_TYPE_LABELS[v] }));
+
+const GENERAL_NAME_TYPE_LABELS: Record<GeneralNameType, string> = {
+    [GeneralNameType.Dns]: 'dNSName',
+    [GeneralNameType.Email]: 'rfc822Name (email)',
+    [GeneralNameType.Ip]: 'iPAddress',
+    [GeneralNameType.Uri]: 'uniformResourceIdentifier',
+    [GeneralNameType.OtherName]: 'otherName',
+    [GeneralNameType.DirectoryName]: 'directoryName',
+    [GeneralNameType.RegisteredId]: 'registeredID',
+};
+
+const GENERAL_NAME_TYPE_OPTIONS = Object.values(GeneralNameType).map((v) => ({ value: v, label: GENERAL_NAME_TYPE_LABELS[v] }));
+
+const ENCODING_OPTIONS = Object.values(ExtensionValueEncoding).map((v) => ({ value: v, label: v }));
+
+const VALUE_SOURCE_OPTIONS = [
+    { value: ValueSourceType.None, label: 'Free input' },
+    { value: ValueSourceType.StaticList, label: 'Static list' },
+    { value: COLLECTION_STUB, label: 'Collection (available in FE-6)', disabled: true },
+];
+
+function valueSourceLabel(type: ValueSourceType): string {
+    return VALUE_SOURCE_OPTIONS.find((o) => o.value === type)?.label ?? 'Free input';
+}
+
+type ConnectorAttributeOption = { value: string; label: string };
+
+type Props = Readonly<{
+    value: RequestAttributeAuthoringFormValues;
+    onChange: (next: RequestAttributeAuthoringFormValues) => void;
+    /** RA-Profile authoring shows the merge-mode selector; the platform default set does not. */
+    showMergeMode?: boolean;
+    disabled?: boolean;
+    /** Optional connector attribute descriptors to pick a binding target from (name/uuid). */
+    connectorAttributeOptions?: ConnectorAttributeOption[];
+    dataTestId?: string;
+}>;
+
+export default function RequestAttributeAuthoringEditor({
+    value,
+    onChange,
+    showMergeMode = false,
+    disabled = false,
+    connectorAttributeOptions,
+    dataTestId = 'request-attribute-authoring',
+}: Props) {
+    const [attrDraft, setAttrDraft] = useState<{ index: number | null; data: AuthoredAttributeFormValues } | null>(null);
+    const [bindingDraft, setBindingDraft] = useState<{ index: number | null; data: ValueSourceBindingFormValues } | null>(null);
+
+    const patch = useCallback((next: Partial<RequestAttributeAuthoringFormValues>) => onChange({ ...value, ...next }), [onChange, value]);
+
+    // -- Merge mode ------------------------------------------------------------
+    const renderMergeMode = () =>
+        showMergeMode ? (
+            <div className="space-y-2" data-testid={`${dataTestId}-merge-mode`}>
+                <p className="text-sm font-medium text-gray-700">Merge mode</p>
+                <Container className="flex-col" gap={2}>
+                    {MERGE_MODE_OPTIONS.map((opt) => (
+                        <RadioRow
+                            key={opt.value}
+                            checked={value.mergeMode === opt.value}
+                            onSelect={() => !disabled && patch({ mergeMode: opt.value })}
+                        >
+                            <span data-testid={`${dataTestId}-merge-${opt.value}`}>{opt.label}</span>
+                        </RadioRow>
+                    ))}
+                </Container>
+            </div>
+        ) : null;
+
+    // -- Authored attributes ---------------------------------------------------
+    const removeAttribute = (index: number) => patch({ attributes: value.attributes.filter((_, i) => i !== index) });
+
+    const saveAttribute = () => {
+        if (!attrDraft) return;
+        const next = [...value.attributes];
+        if (attrDraft.index === null) {
+            next.push(attrDraft.data);
+        } else {
+            next[attrDraft.index] = attrDraft.data;
+        }
+        patch({ attributes: next });
+        setAttrDraft(null);
+    };
+
+    const mappingSummary = (attr: AuthoredAttributeFormValues) => {
+        switch (attr.mappingFieldType) {
+            case FieldType.Rdn:
+                return `→ RDN ${attr.mappingRdnCode || '?'}`;
+            case FieldType.San:
+                return `→ SAN ${attr.mappingGeneralNameType ? GENERAL_NAME_TYPE_LABELS[attr.mappingGeneralNameType] : '?'}`;
+            case FieldType.Extension:
+                return `→ ext ${attr.mappingExtensionOid || '?'}`;
+            default:
+                return 'unmapped';
+        }
+    };
+
+    const renderAttributeList = () => (
+        <div className="space-y-2" data-testid={`${dataTestId}-attributes`}>
+            <p className="text-sm font-medium text-gray-700">Authored attributes</p>
+            {value.attributes.length === 0 ? (
+                <p className="text-sm text-gray-400" data-testid={`${dataTestId}-attributes-empty`}>
+                    No request attributes authored yet.
+                </p>
+            ) : (
+                <ul className="space-y-1">
+                    {value.attributes.map((attr, index) => (
+                        <li
+                            key={attr.uuid ?? `${attr.name}-${index}`}
+                            className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm"
+                            data-testid={`${dataTestId}-attribute-row`}
+                        >
+                            <span className="truncate">
+                                <span className="font-medium">{attr.label || attr.name || '(unnamed)'}</span>
+                                <span className="text-gray-500">
+                                    {' · '}
+                                    {attr.contentType}
+                                    {attr.required ? ' · required' : ''} {mappingSummary(attr)}
+                                    {attr.valueSourceType !== ValueSourceType.None ? ` · ${valueSourceLabel(attr.valueSourceType)}` : ''}
+                                </span>
+                            </span>
+                            <span className="flex shrink-0 gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setAttrDraft({ index, data: { ...attr } })}
+                                    disabled={disabled}
+                                    type="button"
+                                    data-testid={`${dataTestId}-attribute-edit`}
+                                >
+                                    Edit
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    color="danger"
+                                    onClick={() => removeAttribute(index)}
+                                    disabled={disabled}
+                                    type="button"
+                                    data-testid={`${dataTestId}-attribute-remove`}
+                                >
+                                    Remove
+                                </Button>
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <Button
+                variant="outline"
+                onClick={() => setAttrDraft({ index: null, data: emptyAuthoredAttribute() })}
+                disabled={disabled}
+                type="button"
+                data-testid={`${dataTestId}-attribute-add`}
+            >
+                + Add request attribute
+            </Button>
+        </div>
+    );
+
+    const attrValid = !!attrDraft && isAuthoredAttributeValid(attrDraft.data);
+
+    const renderAttributeDialog = () => {
+        if (!attrDraft) return null;
+        const d = attrDraft.data;
+        const set = (p: Partial<AuthoredAttributeFormValues>) => setAttrDraft({ ...attrDraft, data: { ...d, ...p } });
+        return (
+            <div className="space-y-3 text-left" data-testid={`${dataTestId}-attribute-form`}>
+                <TextInput id="ra-attr-name" label="Name" required value={d.name} onChange={(v) => set({ name: v })} />
+                <TextInput id="ra-attr-label" label="Label" required value={d.label} onChange={(v) => set({ label: v })} />
+                <TextInput
+                    id="ra-attr-description"
+                    label="Description"
+                    value={d.description ?? ''}
+                    onChange={(v) => set({ description: v })}
+                />
+                <Select
+                    id="ra-attr-content-type"
+                    label="Content type"
+                    value={d.contentType}
+                    onChange={(v) => set({ contentType: v as AttributeContentType })}
+                    options={CONTENT_TYPE_OPTIONS}
+                />
+                <Container className="flex-row items-center" gap={4}>
+                    <Checkbox id="ra-attr-required" checked={d.required} onChange={(c) => set({ required: c })} label="Required" />
+                    <Checkbox
+                        id="ra-attr-list"
+                        checked={d.list}
+                        onChange={(c) => set({ list: c, multiSelect: c ? d.multiSelect : false })}
+                        label="List"
+                    />
+                    <Checkbox
+                        id="ra-attr-multi"
+                        checked={d.multiSelect}
+                        onChange={(c) => set({ multiSelect: c })}
+                        label="Multi select"
+                        disabled={!d.list}
+                    />
+                </Container>
+                <Select
+                    id="ra-attr-mapping"
+                    label="Mapping target"
+                    value={d.mappingFieldType ?? ''}
+                    onChange={(v) =>
+                        set({ mappingFieldType: (v as FieldType) || undefined, mappingObjectType: ObjectType.X509Certificate })
+                    }
+                    options={MAPPING_OPTIONS}
+                    isClearable
+                    placeholder="Not mapped"
+                />
+                {d.mappingFieldType === FieldType.Rdn && (
+                    <TextInput
+                        id="ra-attr-rdn"
+                        label="RDN code"
+                        required
+                        value={d.mappingRdnCode ?? ''}
+                        onChange={(v) => set({ mappingRdnCode: v })}
+                        placeholder='e.g. "CN" or a dotted OID'
+                    />
+                )}
+                {d.mappingFieldType === FieldType.San && (
+                    <>
+                        <Select
+                            id="ra-attr-general-name-type"
+                            label="SAN type"
+                            required
+                            value={d.mappingGeneralNameType ?? ''}
+                            onChange={(v) => set({ mappingGeneralNameType: (v as GeneralNameType) || undefined })}
+                            options={GENERAL_NAME_TYPE_OPTIONS}
+                            placeholder="Select SAN type"
+                        />
+                        {d.mappingGeneralNameType === GeneralNameType.OtherName && (
+                            <>
+                                <TextInput
+                                    id="ra-attr-othername-oid"
+                                    label="otherName OID"
+                                    required
+                                    value={d.mappingOtherNameOid ?? ''}
+                                    onChange={(v) => set({ mappingOtherNameOid: v })}
+                                />
+                                <Select
+                                    id="ra-attr-othername-encoding"
+                                    label="otherName value encoding"
+                                    required
+                                    value={d.mappingOtherNameEncoding ?? ''}
+                                    onChange={(v) => set({ mappingOtherNameEncoding: (v as ExtensionValueEncoding) || undefined })}
+                                    options={ENCODING_OPTIONS}
+                                    placeholder="Select encoding"
+                                />
+                            </>
+                        )}
+                    </>
+                )}
+                {d.mappingFieldType === FieldType.Extension && (
+                    <>
+                        <TextInput
+                            id="ra-attr-extension-oid"
+                            label="Extension OID"
+                            required
+                            value={d.mappingExtensionOid ?? ''}
+                            onChange={(v) => set({ mappingExtensionOid: v })}
+                            placeholder="dotted-decimal OID"
+                        />
+                        <Checkbox
+                            id="ra-attr-critical-overridable"
+                            checked={d.mappingCriticalOverridable ?? false}
+                            onChange={(c) => set({ mappingCriticalOverridable: c })}
+                            label="Requester may override criticality"
+                        />
+                    </>
+                )}
+                <Select
+                    id="ra-attr-value-source"
+                    label="Value source"
+                    value={d.valueSourceType}
+                    onChange={(v) => {
+                        if (v === COLLECTION_STUB) return; // stubbed until fe#1782
+                        set({ valueSourceType: v as ValueSourceType });
+                    }}
+                    options={VALUE_SOURCE_OPTIONS}
+                />
+            </div>
+        );
+    };
+
+    // -- Value-source bindings -------------------------------------------------
+    const removeBinding = (index: number) => patch({ valueSourceBindings: value.valueSourceBindings.filter((_, i) => i !== index) });
+
+    const saveBinding = () => {
+        if (!bindingDraft) return;
+        const next = [...value.valueSourceBindings];
+        if (bindingDraft.index === null) {
+            next.push(bindingDraft.data);
+        } else {
+            next[bindingDraft.index] = bindingDraft.data;
+        }
+        patch({ valueSourceBindings: next });
+        setBindingDraft(null);
+    };
+
+    const bindingTargetLabel = (b: ValueSourceBindingFormValues) => b.attributeName?.trim() || b.attributeUuid?.trim() || '(no target)';
+
+    const renderBindings = () => (
+        <div className="space-y-2" data-testid={`${dataTestId}-bindings`}>
+            <p className="text-sm font-medium text-gray-700">Value-source bindings</p>
+            <p className="text-xs text-gray-400">Attach a value source onto a connector-supplied attribute by reference (UUID or name).</p>
+            {value.valueSourceBindings.length === 0 ? (
+                <p className="text-sm text-gray-400" data-testid={`${dataTestId}-bindings-empty`}>
+                    No value-source bindings.
+                </p>
+            ) : (
+                <ul className="space-y-1">
+                    {value.valueSourceBindings.map((b, index) => (
+                        <li
+                            key={b.attributeUuid || b.attributeName || index}
+                            className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm"
+                            data-testid={`${dataTestId}-binding-row`}
+                        >
+                            <span className="truncate">
+                                <span className="font-medium">{bindingTargetLabel(b)}</span>
+                                <span className="text-gray-500">{` → ${valueSourceLabel(b.valueSourceType)}`}</span>
+                            </span>
+                            <span className="flex shrink-0 gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setBindingDraft({ index, data: { ...b } })}
+                                    disabled={disabled}
+                                    type="button"
+                                    data-testid={`${dataTestId}-binding-edit`}
+                                >
+                                    Edit
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    color="danger"
+                                    onClick={() => removeBinding(index)}
+                                    disabled={disabled}
+                                    type="button"
+                                    data-testid={`${dataTestId}-binding-remove`}
+                                >
+                                    Remove
+                                </Button>
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <Button
+                variant="outline"
+                onClick={() => setBindingDraft({ index: null, data: emptyValueSourceBinding() })}
+                disabled={disabled}
+                type="button"
+                data-testid={`${dataTestId}-binding-add`}
+            >
+                + Add value-source binding
+            </Button>
+        </div>
+    );
+
+    const bindingValid = !!bindingDraft && isValueSourceBindingValid(bindingDraft.data);
+
+    const renderBindingDialog = () => {
+        if (!bindingDraft) return null;
+        const d = bindingDraft.data;
+        const set = (p: Partial<ValueSourceBindingFormValues>) => setBindingDraft({ ...bindingDraft, data: { ...d, ...p } });
+        return (
+            <div className="space-y-3 text-left" data-testid={`${dataTestId}-binding-form`}>
+                {connectorAttributeOptions && connectorAttributeOptions.length > 0 && (
+                    <Select
+                        id="ra-binding-connector-attr"
+                        label="Connector attribute"
+                        value={d.attributeUuid || ''}
+                        onChange={(v) => {
+                            const opt = connectorAttributeOptions.find((o) => o.value === v);
+                            set({ attributeUuid: opt?.value ?? '', attributeName: opt?.label ?? d.attributeName });
+                        }}
+                        options={connectorAttributeOptions}
+                        isClearable
+                        placeholder="Pick a connector attribute (optional)"
+                    />
+                )}
+                <TextInput
+                    id="ra-binding-uuid"
+                    label="Attribute UUID"
+                    value={d.attributeUuid ?? ''}
+                    onChange={(v) => set({ attributeUuid: v })}
+                />
+                <TextInput
+                    id="ra-binding-name"
+                    label="Attribute name"
+                    value={d.attributeName ?? ''}
+                    onChange={(v) => set({ attributeName: v })}
+                />
+                <Select
+                    id="ra-binding-value-source"
+                    label="Value source"
+                    value={d.valueSourceType}
+                    onChange={(v) => {
+                        if (v === COLLECTION_STUB) return;
+                        set({ valueSourceType: v as ValueSourceType });
+                    }}
+                    options={VALUE_SOURCE_OPTIONS}
+                />
+                {!bindingValid && (
+                    <p className="text-sm text-red-600" data-testid={`${dataTestId}-binding-error`}>
+                        A binding requires either a UUID or a name.
+                    </p>
+                )}
+            </div>
+        );
+    };
+
+    return (
+        <div className="space-y-5" data-testid={dataTestId}>
+            {renderMergeMode()}
+            {renderAttributeList()}
+            {renderBindings()}
+
+            <Dialog
+                isOpen={!!attrDraft}
+                toggle={() => setAttrDraft(null)}
+                size="md"
+                caption={attrDraft?.index === null ? 'Add request attribute' : 'Edit request attribute'}
+                body={renderAttributeDialog()}
+                buttons={[
+                    { key: 'cancel', color: 'secondary', variant: 'outline', body: 'Cancel', onClick: () => setAttrDraft(null) },
+                    { key: 'save', color: 'primary', body: 'Save', disabled: !attrValid, onClick: saveAttribute },
+                ]}
+            />
+
+            <Dialog
+                isOpen={!!bindingDraft}
+                toggle={() => setBindingDraft(null)}
+                size="md"
+                caption={bindingDraft?.index === null ? 'Add value-source binding' : 'Edit value-source binding'}
+                body={renderBindingDialog()}
+                buttons={[
+                    { key: 'cancel', color: 'secondary', variant: 'outline', body: 'Cancel', onClick: () => setBindingDraft(null) },
+                    { key: 'save', color: 'primary', body: 'Save', disabled: !bindingValid, onClick: saveBinding },
+                ]}
+            />
+        </div>
+    );
+}
