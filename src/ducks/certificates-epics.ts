@@ -2,6 +2,7 @@ import type { AppEpic } from 'ducks';
 import { merge, of, race } from 'rxjs';
 import { catchError, filter, map, mergeMap, switchMap, take } from 'rxjs/operators';
 import { extractError } from 'utils/net';
+import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 
@@ -201,12 +202,17 @@ const issueCertificate: AppEpic = (action$, state, deps) => {
                         ),
                     ),
 
-                    catchError((err) =>
-                        of(
-                            slice.actions.issueCertificateFailure({ error: extractError(err, 'Failed to issue certificate') }),
+                    catchError((err) => {
+                        const error = extractError(err, 'Failed to issue certificate');
+                        const validationErrors = extractComplianceErrors(err);
+                        if (validationErrors) {
+                            return of(slice.actions.issueCertificateFailure({ error, validationErrors }));
+                        }
+                        return of(
+                            slice.actions.issueCertificateFailure({ error }),
                             appRedirectActions.fetchError({ error: err, message: 'Failed to issue certificate' }),
-                        ),
-                    ),
+                        );
+                    }),
                 ),
         ),
     );

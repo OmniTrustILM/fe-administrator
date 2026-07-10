@@ -36,7 +36,10 @@ function Switch({
             <div className="flex items-center">
                 <Label
                     htmlFor={id}
-                    className="relative inline-block w-13 h-7 cursor-pointer !block !text-base !font-medium !mb-0 !text-left"
+                    className={cn(
+                        'relative inline-block w-13 h-7 !block !text-base !font-medium !mb-0 !text-left',
+                        disabled ? 'cursor-default' : 'cursor-pointer',
+                    )}
                 >
                     <input
                         type="checkbox"

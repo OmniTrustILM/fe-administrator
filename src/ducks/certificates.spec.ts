@@ -139,6 +139,23 @@ describe('certificates slice', () => {
         expect(next.isIssuing).toBe(false);
     });
 
+    test('issueCertificateFailure stores validation errors and issueCertificate / clearIssueValidationErrors reset them', () => {
+        let next = reducer(
+            { ...initialState, isIssuing: true },
+            actions.issueCertificateFailure({ error: 'err', validationErrors: ['e1', 'e2'] }),
+        );
+        expect(next.issueValidationErrors).toEqual(['e1', 'e2']);
+
+        next = reducer(next, actions.issueCertificate({ authorityUuid: 'auth-1', raProfileUuid: 'ra-1', signRequest: {} as any }));
+        expect(next.issueValidationErrors).toBeUndefined();
+
+        next = reducer({ ...initialState, issueValidationErrors: ['stale'] }, actions.clearIssueValidationErrors());
+        expect(next.issueValidationErrors).toBeUndefined();
+
+        next = reducer({ ...initialState, isIssuing: true }, actions.issueCertificateFailure({ error: 'err' }));
+        expect(next.issueValidationErrors).toBeUndefined();
+    });
+
     test('revokeCertificate / success / failure update isRevoking and remove from list', () => {
         let next = reducer(
             initialState,

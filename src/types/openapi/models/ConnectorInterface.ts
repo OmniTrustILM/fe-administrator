@@ -20,6 +20,7 @@ export enum ConnectorInterface {
     Info = 'info',
     Health = 'health',
     Metrics = 'metrics',
+    Attributes = 'attributes',
     Authority = 'authority',
     Discovery = 'discovery',
     Entity = 'entity',

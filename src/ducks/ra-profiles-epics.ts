@@ -186,6 +186,38 @@ const updateRaProfileCertificateValidation: AppEpic = (action$, state$, deps) =>
     );
 };
 
+const updateRaProfileRequestAttributes: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.updateRaProfileRequestAttributes.match),
+        switchMap((action) =>
+            deps.apiClients.raProfiles
+                .updateRaProfileRequestAttributesConfiguration({
+                    raProfileUuid: action.payload.profileUuid,
+                    authorityUuid: action.payload.authorityInstanceUuid,
+                    raProfileCertificateRequestAttributesUpdateDto: action.payload.requestAttributes,
+                })
+                .pipe(
+                    mergeMap((raProfileDto) =>
+                        of(
+                            slice.actions.updateRaProfileRequestAttributesSuccess({
+                                raProfile: transformRaProfileResponseDtoToModel(raProfileDto),
+                            }),
+                        ),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.updateRaProfileRequestAttributesFailure({
+                                error: extractError(err, 'Failed to update request validation settings'),
+                            }),
+                            alertActions.error(extractError(err, 'Failed to update request validation settings')),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
 const enableRaProfile: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.enableRaProfile.match),
@@ -771,6 +803,7 @@ const epics = [
     createRaProfile,
     updateRaProfile,
     updateRaProfileCertificateValidation,
+    updateRaProfileRequestAttributes,
     enableRaProfile,
     disableRaProfile,
     deleteRaProfile,

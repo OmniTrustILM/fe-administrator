@@ -107,6 +107,7 @@ export type State = {
     isFetchingCertificateChainDownloadContent: boolean;
 
     isIssuing: boolean;
+    issueValidationErrors?: string[];
     isRevoking: boolean;
     isRenewing: boolean;
     isRekeying: boolean;
@@ -333,6 +334,7 @@ export const slice = createSlice({
             }>,
         ) => {
             state.isIssuing = true;
+            state.issueValidationErrors = undefined;
         },
 
         issueCertificateNew: (
@@ -356,8 +358,13 @@ export const slice = createSlice({
             state.isIssuing = false;
         },
 
-        issueCertificateFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+        issueCertificateFailure: (state, action: PayloadAction<{ error: string | undefined; validationErrors?: string[] }>) => {
             state.isIssuing = false;
+            state.issueValidationErrors = action.payload.validationErrors;
+        },
+
+        clearIssueValidationErrors: (state) => {
+            state.issueValidationErrors = undefined;
         },
 
         revokeCertificate: (
@@ -1038,6 +1045,7 @@ const isFetchingHistory = createSelector(state, (state) => state.isFetchingHisto
 const isFetchingLocations = createSelector(state, (state) => state.isFetchingLocations);
 
 const isIssuing = createSelector(state, (state) => state.isIssuing);
+const issueValidationErrors = createSelector(state, (state) => state.issueValidationErrors);
 const isRevoking = createSelector(state, (state) => state.isRevoking);
 const isRenewing = createSelector(state, (state) => state.isRenewing);
 const isRekeying = createSelector(state, (state) => state.isRekeying);
@@ -1105,6 +1113,7 @@ export const selectors = {
     isFetchingLocations,
     isFetchingCertificateChain,
     isIssuing,
+    issueValidationErrors,
     isRevoking,
     isRenewing,
     isRekeying,

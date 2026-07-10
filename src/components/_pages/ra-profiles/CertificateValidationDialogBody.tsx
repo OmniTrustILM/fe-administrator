@@ -229,7 +229,7 @@ export default function CertificateValidationDialogBody({ raProfile, platformSet
                         </>
                     )}
                     <Container className="flex-row justify-end modal-footer" gap={4}>
-                        <Button type="button" variant="outline" color="secondary" disabled={formState.isSubmitting} onClick={onClose}>
+                        <Button type="button" variant="outline" disabled={formState.isSubmitting} onClick={onClose}>
                             Cancel
                         </Button>
                         <ProgressButton

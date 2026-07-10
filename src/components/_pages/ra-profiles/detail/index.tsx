@@ -28,7 +28,13 @@ import AssociateComplianceProfileDialogBody from '../AssociateComplianceProfileD
 import ProtocolActivationDialogBody, { Protocol } from '../ProtocolActivationDialogBody';
 import TabLayout from 'components/Layout/TabLayout';
 import CertificateValidationDialogBody from 'components/_pages/ra-profiles/CertificateValidationDialogBody';
+import RequestValidationDialogBody from 'components/_pages/ra-profiles/RequestValidationDialogBody';
 import { renderExpiringThresholdLabel, renderValidationFrequencyLabel } from 'utils/certificate-validation';
+import {
+    externalCsrValidationModeDescription,
+    externalCsrValidationModeLabel,
+    requestValidationDefaultFormValues,
+} from 'utils/raProfileValidation';
 import EventsTable from 'components/_pages/notifications/events-settings/EventsTable';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
@@ -93,6 +99,7 @@ export default function RaProfileDetail() {
         useState<DeassociateApprovalProfileDialogState>();
 
     const [certificateValidationDialog, setCertificateValidationDialog] = useState<boolean>(false);
+    const [requestValidationDialog, setRequestValidationDialog] = useState<boolean>(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
 
     const isBusy = useMemo(
@@ -412,6 +419,21 @@ export default function RaProfileDetail() {
                 tooltip: 'Edit Validation Settings',
                 onClick: () => {
                     setCertificateValidationDialog(true);
+                },
+            },
+        ],
+        [],
+    );
+
+    const requestValidationButtons: WidgetButtonProps[] = useMemo(
+        () => [
+            {
+                id: 'edit',
+                icon: 'pencil',
+                disabled: false,
+                tooltip: 'Edit Request Validation Settings',
+                onClick: () => {
+                    setRequestValidationDialog(true);
                 },
             },
         ],
@@ -867,6 +889,41 @@ export default function RaProfileDetail() {
         return data;
     }, [raProfile, platformSettings]);
 
+    const requestValidationData: TableDataRow[] = useMemo(() => {
+        if (!raProfile) return [];
+
+        const { usePlatformSettings, strict } = requestValidationDefaultFormValues(
+            raProfile.certificateRequestAttributes?.externalCsrValidationStrict,
+            platformSettings?.certificates?.requestAttributes?.externalCsrValidationStrict,
+        );
+
+        return [
+            {
+                id: 'usePlatformSettings',
+                columns: [
+                    'Platform Validation Settings Used',
+                    <Switch
+                        onChange={() => {}}
+                        key="requestValidationUsePlatformSettings"
+                        checked={usePlatformSettings}
+                        disabled
+                        id="requestValidationUsePlatformSettings"
+                    />,
+                ],
+            },
+            {
+                id: 'requestValidationMode',
+                columns: [
+                    'Request Validation',
+                    <span key="requestValidationMode">
+                        {externalCsrValidationModeLabel(strict)}{' '}
+                        <span className="text-gray-500">({externalCsrValidationModeDescription(strict)})</span>
+                    </span>,
+                ],
+            },
+        ];
+    }, [raProfile, platformSettings]);
+
     return (
         <div>
             {isFetchingProfile ? (
@@ -974,16 +1031,31 @@ export default function RaProfileDetail() {
                                 {
                                     title: 'Validation',
                                     content: (
-                                        <Widget
-                                            title="Certificate Validation Details"
-                                            widgetButtons={certificateValidationButtons}
-                                            titleSize="large"
-                                            refreshAction={getFreshRaProfileDetail}
-                                            widgetLockName={LockWidgetNameEnum.PlatformSettings}
-                                            lockSize="large"
-                                        >
-                                            <CustomTable headers={certificateValidationHeaders} data={certificateValidationData} />
-                                        </Widget>
+                                        <Container className="lg:flex-row">
+                                            <Widget
+                                                title="Certificate Validation Details"
+                                                widgetButtons={certificateValidationButtons}
+                                                titleSize="large"
+                                                refreshAction={getFreshRaProfileDetail}
+                                                widgetLockName={LockWidgetNameEnum.PlatformSettings}
+                                                lockSize="large"
+                                                className="w-full lg:flex-1 lg:min-w-0"
+                                            >
+                                                <CustomTable headers={certificateValidationHeaders} data={certificateValidationData} />
+                                            </Widget>
+                                            <Widget
+                                                title="Request Validation"
+                                                widgetButtons={requestValidationButtons}
+                                                titleSize="large"
+                                                refreshAction={getFreshRaProfileDetail}
+                                                widgetLockName={LockWidgetNameEnum.PlatformSettings}
+                                                lockSize="large"
+                                                className="w-full lg:flex-1 lg:min-w-0"
+                                                dataTestId="request-validation-widget"
+                                            >
+                                                <CustomTable headers={certificateValidationHeaders} data={requestValidationData} />
+                                            </Widget>
+                                        </Container>
                                     ),
                                 },
                                 {
@@ -1145,6 +1217,21 @@ export default function RaProfileDetail() {
                     raProfile: raProfile,
                 })}
                 toggle={() => setCertificateValidationDialog(false)}
+                buttons={[]}
+                size="md"
+            />
+
+            <Dialog
+                isOpen={requestValidationDialog}
+                caption="Edit Request Validation Settings"
+                body={
+                    <RequestValidationDialogBody
+                        platformSettings={platformSettings}
+                        onClose={() => setRequestValidationDialog(false)}
+                        raProfile={raProfile}
+                    />
+                }
+                toggle={() => setRequestValidationDialog(false)}
                 buttons={[]}
                 size="md"
             />
