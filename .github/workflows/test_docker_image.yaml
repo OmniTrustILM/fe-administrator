@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   test:
-    uses: OmniTrustILM/.github/.github/workflows/containers-test.yml@main
+    uses: OmniTrustILM/.github/.github/workflows/containers-test.yml@50f83b9285f0f12ed0b329696a920c811bf8fe23 # main
     with:
       image: ilm/frontend-administrator
       cache-scope: frontend-administrator

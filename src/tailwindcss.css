@@ -1,4 +1,5 @@
 @import 'simplebar-react/dist/simplebar.min.css';
+@import 'tailwindcss';
 
 /* Local Inter variable fonts (replaces Google Fonts) */
 @font-face {
@@ -41,8 +42,6 @@
     --modal-footer-background-color: var(--gray-100);
     --code-color: #be185d;
 }
-
-@import 'tailwindcss';
 
 @theme {
     --color-blue-50: #e6f2ff;
