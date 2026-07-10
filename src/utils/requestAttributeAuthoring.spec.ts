@@ -321,9 +321,44 @@ describe('requestAttributeAuthoring', () => {
             expect(dto.mergeMode).toBe(AttributeSetMergeMode.StaticOnly);
         });
 
-        test('does not send externalCsrValidationStrict (owned by fe#1780)', () => {
-            const dto = buildRaProfileRequestAttributesUpdateDto(emptyAuthoringForm());
-            expect('externalCsrValidationStrict' in dto).toBe(false);
+        test('round-trips externalCsrValidationStrict (Core writes it unconditionally)', () => {
+            // Preserved unchanged so saving the set does not reset the strictness toggle's value.
+            expect(
+                buildRaProfileRequestAttributesUpdateDto({ ...emptyAuthoringForm(), externalCsrValidationStrict: true })
+                    .externalCsrValidationStrict,
+            ).toBe(true);
+            expect(
+                buildRaProfileRequestAttributesUpdateDto({ ...emptyAuthoringForm(), externalCsrValidationStrict: false })
+                    .externalCsrValidationStrict,
+            ).toBe(false);
+            expect(
+                parseRaProfileRequestAttributesDto({ mergeMode: AttributeSetMergeMode.Merge, externalCsrValidationStrict: true })
+                    .externalCsrValidationStrict,
+            ).toBe(true);
+        });
+
+        test('round-trips value-source params on a binding', () => {
+            const form = {
+                ...emptyAuthoringForm(),
+                valueSourceBindings: [{ ...emptyValueSourceBinding(), attributeUuid: 'x', params: [{ attributeName: 'dep' }] }],
+            };
+            const dto = buildRaProfileRequestAttributesUpdateDto(form);
+            expect(dto.valueSourceBindings?.[0].params).toEqual([{ attributeName: 'dep' }]);
+            const back = parseRaProfileRequestAttributesDto({
+                mergeMode: AttributeSetMergeMode.Merge,
+                valueSourceBindings: dto.valueSourceBindings,
+            });
+            expect(back.valueSourceBindings[0].params).toEqual([{ attributeName: 'dep' }]);
+        });
+
+        test('round-trips value-source params on an attribute', () => {
+            const dto = buildAuthoredAttributeDto({
+                ...baseAttr(),
+                valueSourceType: ValueSourceType.StaticList,
+                valueSourceParams: [{ attributeName: 'dep' }],
+            });
+            expect(dto.valueSource?.params).toEqual([{ attributeName: 'dep' }]);
+            expect(parseAuthoredAttributeDto(dto as BaseAttributeDto).valueSourceParams).toEqual([{ attributeName: 'dep' }]);
         });
     });
 

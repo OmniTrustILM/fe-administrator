@@ -16,26 +16,27 @@ import {
     type FieldMapping,
     type RaProfileCertificateRequestAttributesDto,
     type RaProfileCertificateRequestAttributesUpdateDto,
+    type SourceParam,
     type ValueSource,
     type ValueSourceBindingDto,
 } from 'types/openapi';
 import type { FieldMappingModel, MappedFieldModel } from 'types/requestAttributeMapping';
 
 /**
- * Authoring form models and the mapping to/from the pinned request-attribute DTOs
- * (interfaces#731/#730, core#1632). All non-trivial logic lives here so the ducks
- * and the editor stay thin and the mapping is unit-covered.
+ * Authoring form models and the mapping to/from the request-attribute DTOs. All non-trivial
+ * logic lives here so the ducks and the editor stay thin and the mapping is unit-covered.
  *
  * NOTE on scope vs. the generated types:
- *  - The generated `ValueSourceType` enum exposes NONE / STATIC_LIST / CONNECTOR_CALLBACK
- *    only; COLLECTION is absent from the live Core spec, so it is stubbed in the editor
- *    and wired in fe#1782 once Core ships the enum member.
+ *  - The generated `ValueSourceType` enum exposes NONE / STATIC_LIST / CONNECTOR_CALLBACK only;
+ *    COLLECTION is absent from the live Core spec, so it is stubbed in the editor for now.
  *  - The generated field-mapping subtypes collapse to a bare `MappedField`; the granular
- *    fields (RDN code, SAN general-name-type, extension OID) live in the pinned spec but
- *    are dropped by the generator, so we author them through the local `FieldMappingModel`
- *    ([[types/requestAttributeMapping]]) and cast at the api boundary.
- *  - `externalCsrValidationStrict` is owned by fe#1780 and is intentionally never sent
- *    from here; the PATCH is treated as a merge so the field is preserved server-side.
+ *    fields (RDN code, SAN general-name-type, extension OID) live in the spec but are dropped
+ *    by the generator, so we author them through the local `FieldMappingModel` and cast at the
+ *    api boundary.
+ *  - The RA-Profile update is NOT a server-side merge: Core writes `externalCsrValidationStrict`
+ *    unconditionally, so we round-trip the loaded value (owned by the strictness toggle) instead
+ *    of omitting it, which would wipe it. `params` on a value source / binding are likewise
+ *    preserved on round-trip even though this editor has no UI for them yet.
  */
 
 export interface AuthoredAttributeFormValues {
@@ -63,8 +64,10 @@ export interface AuthoredAttributeFormValues {
     mappingCriticalOverridable?: boolean;
     /** How Core resolves the value; NONE = free input. */
     valueSourceType: ValueSourceType;
-    /** Reserved for the COLLECTION source (stubbed until fe#1782). */
+    /** Reserved for the COLLECTION source (stubbed for now). */
     collectionRef?: string;
+    /** Cascading dependency params, preserved on round-trip (no authoring UI yet). */
+    valueSourceParams?: SourceParam[];
 }
 
 export interface ValueSourceBindingFormValues {
@@ -72,21 +75,27 @@ export interface ValueSourceBindingFormValues {
     attributeName?: string;
     valueSourceType: ValueSourceType;
     collectionRef?: string;
+    /** Cascading dependency params, preserved on round-trip (no authoring UI yet). */
+    params?: SourceParam[];
 }
 
 export interface RequestAttributeAuthoringFormValues {
     mergeMode: AttributeSetMergeMode;
     attributes: AuthoredAttributeFormValues[];
     valueSourceBindings: ValueSourceBindingFormValues[];
+    /**
+     * Owned by the strictness toggle (separate feature); carried through unchanged because the
+     * RA-Profile update writes it unconditionally (omitting it would reset it).
+     */
+    externalCsrValidationStrict?: boolean;
 }
 
 export const DEFAULT_MERGE_MODE = AttributeSetMergeMode.Merge;
 
 function generateUuid(): string {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        return crypto.randomUUID();
-    }
-    return `ra-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    // crypto.randomUUID is available in all supported browsers and the test env; using it
+    // (never Math.random) keeps the generated identifier cryptographically sound.
+    return crypto.randomUUID();
 }
 
 export function emptyAuthoredAttribute(): AuthoredAttributeFormValues {
@@ -171,7 +180,11 @@ function buildValueSource(form: AuthoredAttributeFormValues): ValueSource | unde
     if (!form.valueSourceType || form.valueSourceType === ValueSourceType.None) {
         return undefined;
     }
-    return { kind: form.valueSourceType };
+    const source: ValueSource = { kind: form.valueSourceType };
+    if (form.valueSourceParams?.length) {
+        source.params = form.valueSourceParams;
+    }
+    return source;
 }
 
 export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): DataAttributeV3 {
@@ -238,6 +251,7 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
         mappingCriticalOverridable: ext?.criticalOverridable ?? false,
         valueSourceType: view.valueSource?.kind ?? ValueSourceType.None,
         collectionRef: '',
+        valueSourceParams: view.valueSource?.params,
     };
 }
 
@@ -288,6 +302,9 @@ export function buildValueSourceBindingDto(form: ValueSourceBindingFormValues): 
     if (collectionRef) {
         dto.collectionRef = collectionRef;
     }
+    if (form.params?.length) {
+        dto.params = form.params;
+    }
     return dto;
 }
 
@@ -298,6 +315,9 @@ export function buildRaProfileRequestAttributesUpdateDto(
         requestAttributes: form.attributes.map((attr) => buildAuthoredAttributeDto(attr) as BaseAttributeDto),
         mergeMode: form.mergeMode ?? DEFAULT_MERGE_MODE,
         valueSourceBindings: form.valueSourceBindings.filter(isValueSourceBindingValid).map(buildValueSourceBindingDto),
+        // Written unconditionally by Core — round-trip the loaded value so saving the set does not
+        // reset the per-profile strictness owned by the separate toggle.
+        externalCsrValidationStrict: form.externalCsrValidationStrict,
     };
 }
 
@@ -315,7 +335,9 @@ export function parseRaProfileRequestAttributesDto(
             attributeName: binding.attributeName ?? '',
             valueSourceType: binding.valueSourceType ?? ValueSourceType.None,
             collectionRef: binding.collectionRef ?? '',
+            params: binding.params,
         })),
+        externalCsrValidationStrict: dto.externalCsrValidationStrict,
     };
 }
 

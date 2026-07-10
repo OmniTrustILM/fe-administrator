@@ -85,7 +85,7 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: { [slice.name]?: State }): State => reduxStore[slice.name] ?? initialState;
+const state = (reduxStore: { [slice.name]?: State }): State => reduxStore?.[slice.name] ?? initialState;
 
 const raProfileSet = createSelector(state, (state: State) => state.raProfileSet);
 const isUpdatingRaProfileSet = createSelector(state, (state: State) => state.isUpdatingRaProfileSet);

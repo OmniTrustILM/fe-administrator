@@ -192,6 +192,8 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
             (raProfileAttributeDescriptors ?? []).map((descriptor) => ({
                 value: descriptor.uuid ?? descriptor.name,
                 label: descriptor.properties?.label ?? descriptor.name,
+                // Internal attribute name — the binding name-fallback key (not the display label).
+                description: descriptor.name,
             })),
         [raProfileAttributeDescriptors],
     );

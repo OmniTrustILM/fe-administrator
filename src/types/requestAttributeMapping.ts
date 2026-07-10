@@ -3,7 +3,7 @@ import type { ExtensionValueEncoding, FieldSource, FieldType, GeneralNameType, O
 /**
  * Local models for the `fieldMapping` polymorphic subtypes.
  *
- * The Core OpenAPI (interfaces#730) fully specifies these via `allOf`/`oneOf` with a
+ * The Core OpenAPI fully specifies these via `allOf`/`oneOf` with a
  * `fieldType` discriminator, but the `typescript-rxjs` generator collapses the composition
  * and emits `type RdnMappedField = MappedField` — dropping every subtype-specific field.
  * These interfaces mirror the pinned (final) spec so the authoring UI can read/write the

@@ -603,7 +603,33 @@ function signingRecordsDashboardTestReducer(
     return state ?? signingRecordsDashboardTestInitialState;
 }
 
+type RaProfileRequestAttributesTestState = {
+    raProfileSet?: any;
+    isUpdatingRaProfileSet: boolean;
+    updateRaProfileSetSucceeded: boolean;
+    defaultSet?: any;
+    isFetchingDefaultSet: boolean;
+    isUpdatingDefaultSet: boolean;
+    updateDefaultSetSucceeded: boolean;
+};
+
+const raProfileRequestAttributesTestInitialState: RaProfileRequestAttributesTestState = {
+    isUpdatingRaProfileSet: false,
+    updateRaProfileSetSucceeded: false,
+    isFetchingDefaultSet: false,
+    isUpdatingDefaultSet: false,
+    updateDefaultSetSucceeded: false,
+};
+
+function raProfileRequestAttributesTestReducer(
+    state: RaProfileRequestAttributesTestState | undefined,
+    _action: UnknownAction,
+): RaProfileRequestAttributesTestState {
+    return state ?? raProfileRequestAttributesTestInitialState;
+}
+
 export const testReducers = combineReducers({
+    raProfileRequestAttributes: raProfileRequestAttributesTestReducer,
     userInterface: userInterfaceTestReducer,
     enums: enumsTestReducer,
     filters: filtersTestReducer,
@@ -625,6 +651,7 @@ export const testReducers = combineReducers({
 });
 
 export const testInitialState = {
+    raProfileRequestAttributes: raProfileRequestAttributesTestInitialState,
     userInterface: userInterfaceTestInitialState,
     enums: enumsTestInitialState,
     filters: filtersTestInitialState,

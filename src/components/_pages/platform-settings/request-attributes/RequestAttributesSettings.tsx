@@ -43,7 +43,8 @@ export default function RequestAttributesSettings() {
     }, [dispatch, form.attributes]);
 
     const editor = useMemo(
-        () => <RequestAttributeAuthoringEditor value={form} onChange={setForm} disabled={isUpdating} />,
+        // Platform default set: no merge mode and no value-source bindings (not in the platform DTO).
+        () => <RequestAttributeAuthoringEditor value={form} onChange={setForm} showBindings={false} disabled={isUpdating} />,
         [form, isUpdating],
     );
 

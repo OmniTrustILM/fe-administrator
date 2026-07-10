@@ -90,6 +90,61 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         expect(JSON.parse(json ?? '{}').valueSourceBindings[0].attributeName).toBe('datacenter');
     });
 
+    test('hides the value-source bindings section when showBindings is false', async ({ mount }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showBindings={false} />));
+        await expect(component.getByTestId('request-attribute-authoring-bindings')).toHaveCount(0);
+        await expect(component.getByTestId('request-attribute-authoring-attributes')).toBeVisible();
+    });
+
+    test('binding uses the internal attribute name (option description), not the display label', async ({ mount, page }) => {
+        const component = await mount(
+            withProviders(
+                <RequestAttributeAuthoringEditorHarness
+                    connectorAttributeOptions={[{ value: 'uuid-123', label: 'Datacenter (friendly)', description: 'datacenter' }]}
+                />,
+            ),
+        );
+
+        await component.getByTestId('request-attribute-authoring-binding-add').click();
+        await page.getByTestId('select-ra-binding-connector-attr-trigger').click();
+        await page.getByRole('option', { name: 'Datacenter (friendly)' }).click();
+        await page.getByRole('button', { name: 'Save' }).click();
+
+        const binding = JSON.parse((await component.getByTestId('value-json').textContent()) ?? '{}').valueSourceBindings[0];
+        expect(binding.attributeUuid).toBe('uuid-123');
+        expect(binding.attributeName).toBe('datacenter'); // internal name, not "Datacenter (friendly)"
+    });
+
+    test('blocks saving an attribute whose name duplicates an existing one', async ({ mount, page }) => {
+        const initialValue = {
+            mergeMode: 'merge' as const,
+            attributes: [
+                {
+                    uuid: 'u1',
+                    name: 'serverFqdn',
+                    label: 'Server FQDN',
+                    contentType: 'string' as const,
+                    required: false,
+                    readOnly: false,
+                    list: false,
+                    multiSelect: false,
+                    valueSourceType: 'none' as const,
+                },
+            ],
+            valueSourceBindings: [],
+        };
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness initialValue={initialValue} />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('serverFqdn');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Duplicate');
+
+        await expect(page.getByTestId('request-attribute-authoring-attribute-name-duplicate')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+    });
+
     test('removes an authored attribute', async ({ mount }) => {
         const initialValue = {
             mergeMode: 'merge' as const,

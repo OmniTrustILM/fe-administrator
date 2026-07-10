@@ -25,7 +25,7 @@ import {
     type ValueSourceBindingFormValues,
 } from 'utils/requestAttributeAuthoring';
 
-/** Sentinel value for the COLLECTION source that is stubbed until fe#1782 (no enum member yet). */
+/** Sentinel value for the COLLECTION source that is stubbed for now (no enum member yet). */
 const COLLECTION_STUB = '__collection_stub__';
 
 const MERGE_MODE_OPTIONS: { value: AttributeSetMergeMode; label: string }[] = [
@@ -64,20 +64,23 @@ const ENCODING_OPTIONS = Object.values(ExtensionValueEncoding).map((v) => ({ val
 const VALUE_SOURCE_OPTIONS = [
     { value: ValueSourceType.None, label: 'Free input' },
     { value: ValueSourceType.StaticList, label: 'Static list' },
-    { value: COLLECTION_STUB, label: 'Collection (available in FE-6)', disabled: true },
+    { value: COLLECTION_STUB, label: 'Collection (coming soon)', disabled: true },
 ];
 
 function valueSourceLabel(type: ValueSourceType): string {
     return VALUE_SOURCE_OPTIONS.find((o) => o.value === type)?.label ?? 'Free input';
 }
 
-type ConnectorAttributeOption = { value: string; label: string };
+/** `value` = attribute UUID, `label` = human display, `description` = internal attribute name (the binding name-fallback key). */
+type ConnectorAttributeOption = { value: string; label: string; description?: string };
 
 type Props = Readonly<{
     value: RequestAttributeAuthoringFormValues;
     onChange: (next: RequestAttributeAuthoringFormValues) => void;
     /** RA-Profile authoring shows the merge-mode selector; the platform default set does not. */
     showMergeMode?: boolean;
+    /** Value-source bindings are RA-Profile-only; the platform default DTO can't persist them. */
+    showBindings?: boolean;
     disabled?: boolean;
     /** Optional connector attribute descriptors to pick a binding target from (name/uuid). */
     connectorAttributeOptions?: ConnectorAttributeOption[];
@@ -88,6 +91,7 @@ export default function RequestAttributeAuthoringEditor({
     value,
     onChange,
     showMergeMode = false,
+    showBindings = true,
     disabled = false,
     connectorAttributeOptions,
     dataTestId = 'request-attribute-authoring',
@@ -205,7 +209,12 @@ export default function RequestAttributeAuthoringEditor({
         </div>
     );
 
-    const attrValid = !!attrDraft && isAuthoredAttributeValid(attrDraft.data);
+    // A name must be unique within the set (excluding the row being edited).
+    const attrNameDuplicate =
+        !!attrDraft &&
+        !!attrDraft.data.name.trim() &&
+        value.attributes.some((a, i) => i !== attrDraft.index && a.name.trim() === attrDraft.data.name.trim());
+    const attrValid = !!attrDraft && isAuthoredAttributeValid(attrDraft.data) && !attrNameDuplicate;
 
     const renderAttributeDialog = () => {
         if (!attrDraft) return null;
@@ -214,6 +223,11 @@ export default function RequestAttributeAuthoringEditor({
         return (
             <div className="space-y-3 text-left" data-testid={`${dataTestId}-attribute-form`}>
                 <TextInput id="ra-attr-name" label="Name" required value={d.name} onChange={(v) => set({ name: v })} />
+                {attrNameDuplicate && (
+                    <p className="text-sm text-red-600" data-testid={`${dataTestId}-attribute-name-duplicate`}>
+                        An attribute with this name already exists in the set.
+                    </p>
+                )}
                 <TextInput id="ra-attr-label" label="Label" required value={d.label} onChange={(v) => set({ label: v })} />
                 <TextInput
                     id="ra-attr-description"
@@ -321,7 +335,7 @@ export default function RequestAttributeAuthoringEditor({
                     label="Value source"
                     value={d.valueSourceType}
                     onChange={(v) => {
-                        if (v === COLLECTION_STUB) return; // stubbed until fe#1782
+                        if (v === COLLECTION_STUB) return; // stubbed for now
                         set({ valueSourceType: v as ValueSourceType });
                     }}
                     options={VALUE_SOURCE_OPTIONS}
@@ -419,9 +433,15 @@ export default function RequestAttributeAuthoringEditor({
                         value={d.attributeUuid || ''}
                         onChange={(v) => {
                             const opt = connectorAttributeOptions.find((o) => o.value === v);
-                            set({ attributeUuid: opt?.value ?? '', attributeName: opt?.label ?? d.attributeName });
+                            // Bind by UUID (primary) + internal attribute name (fallback key, from the
+                            // option's `description`) — never the display label. Descriptors without a
+                            // real UUID fall back to name-only (their option value equals the name), so
+                            // only store a UUID when it differs from the internal name. Clearing resets both.
+                            const hasRealUuid = !!opt && opt.value !== opt.description;
+                            set({ attributeUuid: hasRealUuid ? opt.value : '', attributeName: opt?.description ?? '' });
                         }}
                         options={connectorAttributeOptions}
+                        showOptionDescriptionInDropdown
                         isClearable
                         placeholder="Pick a connector attribute (optional)"
                     />
@@ -461,7 +481,7 @@ export default function RequestAttributeAuthoringEditor({
         <div className="space-y-5" data-testid={dataTestId}>
             {renderMergeMode()}
             {renderAttributeList()}
-            {renderBindings()}
+            {showBindings && renderBindings()}
 
             <Dialog
                 isOpen={!!attrDraft}

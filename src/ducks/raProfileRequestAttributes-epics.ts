@@ -73,7 +73,12 @@ const updatePlatformDefaultRequestAttributes: AppEpic = (action$, state$, deps) 
                                 ...current,
                                 certificates: {
                                     ...current.certificates,
-                                    requestAttributes: action.payload.data,
+                                    // Spread the existing sub-object first so fields we don't own here
+                                    // (e.g. externalCsrValidationStrict, owned by the strictness toggle) are preserved.
+                                    requestAttributes: {
+                                        ...current.certificates?.requestAttributes,
+                                        ...action.payload.data,
+                                    },
                                 },
                             },
                         })

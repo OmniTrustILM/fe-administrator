@@ -137,9 +137,12 @@ describe('raProfileRequestAttributes epics', () => {
                 },
             });
             expect(out[0].type).toBe(slice.actions.updatePlatformDefaultRequestAttributesSuccess.type);
-            // validation preserved, requestAttributes replaced
+            // validation preserved, requestAttributes replaced, externalCsrValidationStrict preserved
             expect(captured[0].platformSettingsUpdateDto.certificates.validation).toEqual({ enabled: true });
-            expect(captured[0].platformSettingsUpdateDto.certificates.requestAttributes).toEqual({ requestAttributes: [] });
+            expect(captured[0].platformSettingsUpdateDto.certificates.requestAttributes).toEqual({
+                externalCsrValidationStrict: false,
+                requestAttributes: [],
+            });
         });
 
         test('emits failure when the update call fails', async () => {
