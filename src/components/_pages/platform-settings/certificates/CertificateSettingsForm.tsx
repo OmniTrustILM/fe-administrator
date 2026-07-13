@@ -15,6 +15,8 @@ type FormValues = {
     enabled: boolean;
     frequency?: string;
     expiringThreshold?: string;
+    defaultIssuanceWindowDays?: string;
+    maxFailedAttempts?: string;
 };
 
 interface CertificateSettingsFormProps {
@@ -25,6 +27,8 @@ interface CertificateSettingsFormProps {
 const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFormProps) => {
     const DEFAULT_FREQUENCY = '1';
     const DEFAULT_EXPIRING_THRESHOLD = '30';
+    const DEFAULT_ISSUANCE_WINDOW_DAYS = '7';
+    const DEFAULT_MAX_FAILED_ATTEMPTS = '5';
 
     const dispatch = useDispatch();
 
@@ -44,11 +48,19 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
 
     const defaultValues = useMemo(() => {
         const validationSettings = platformSettings?.certificates?.validation;
+        const registrationSettings = platformSettings?.certificates?.registration;
+
+        const registrationDefaults = {
+            defaultIssuanceWindowDays: registrationSettings?.defaultIssuanceWindowDays?.toString() || DEFAULT_ISSUANCE_WINDOW_DAYS,
+            maxFailedAttempts: registrationSettings?.maxFailedAttempts?.toString() || DEFAULT_MAX_FAILED_ATTEMPTS,
+        };
+
         if (!validationSettings) {
             return {
                 enabled: false,
                 expiringThreshold: DEFAULT_EXPIRING_THRESHOLD,
                 frequency: DEFAULT_FREQUENCY,
+                ...registrationDefaults,
             };
         }
 
@@ -56,8 +68,9 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
             enabled: validationSettings.enabled,
             expiringThreshold: validationSettings.expiringThreshold?.toString() || DEFAULT_EXPIRING_THRESHOLD,
             frequency: validationSettings.frequency?.toString() || DEFAULT_FREQUENCY,
+            ...registrationDefaults,
         };
-    }, [platformSettings?.certificates?.validation]);
+    }, [platformSettings?.certificates?.validation, platformSettings?.certificates?.registration]);
 
     const methods = useForm<FormValues>({
         defaultValues,
@@ -92,6 +105,12 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                             enabled: values.enabled,
                             frequency: values.frequency ? Number.parseInt(values.frequency, 10) : undefined,
                             expiringThreshold: values.expiringThreshold ? Number.parseInt(values.expiringThreshold, 10) : undefined,
+                        },
+                        registration: {
+                            defaultIssuanceWindowDays: values.defaultIssuanceWindowDays
+                                ? Number.parseInt(values.defaultIssuanceWindowDays, 10)
+                                : undefined,
+                            maxFailedAttempts: values.maxFailedAttempts ? Number.parseInt(values.maxFailedAttempts, 10) : undefined,
                         },
                     },
                 }),
@@ -165,6 +184,49 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                         </div>
                     </>
                 )}
+                <div>
+                    <h3 className="text-lg font-medium">Registration</h3>
+                </div>
+                <div>
+                    <Controller
+                        name="defaultIssuanceWindowDays"
+                        control={control}
+                        rules={buildValidationRules([validatePositiveInteger()])}
+                        render={({ field, fieldState }) => (
+                            <TextInput
+                                {...field}
+                                id="defaultIssuanceWindowDays"
+                                type="number"
+                                label="Default Issuance Window (days)"
+                                invalid={fieldState.error && fieldState.isTouched}
+                                error={getFieldErrorMessage(fieldState)}
+                            />
+                        )}
+                    />
+                    <p className="text-sm text-gray-500 mt-2">
+                        Default issuance window in days, applied when a pre-registration omits an explicit expiry.
+                    </p>
+                </div>
+                <div>
+                    <Controller
+                        name="maxFailedAttempts"
+                        control={control}
+                        rules={buildValidationRules([validatePositiveInteger()])}
+                        render={({ field, fieldState }) => (
+                            <TextInput
+                                {...field}
+                                id="maxFailedAttempts"
+                                type="number"
+                                label="Max Failed Attempts"
+                                invalid={fieldState.error && fieldState.isTouched}
+                                error={getFieldErrorMessage(fieldState)}
+                            />
+                        )}
+                    />
+                    <p className="text-sm text-gray-500 mt-2">
+                        Maximum failed challenge-verification attempts before the registration authorization locks.
+                    </p>
+                </div>
                 <Container className="flex-row justify-end modal-footer" gap={4}>
                     <Button variant="outline" onClick={onCancel} disabled={isSubmitting || isBusy} type="button">
                         Cancel

@@ -659,6 +659,22 @@ function cryptographicOperationsTestReducer(
     return state ?? cryptographicOperationsTestInitialState;
 }
 
+export type SettingsTestState = {
+    platformSettings?: any;
+    isFetchingPlatform: boolean;
+    isUpdatingPlatform: boolean;
+};
+
+const settingsTestInitialState: SettingsTestState = {
+    platformSettings: undefined,
+    isFetchingPlatform: false,
+    isUpdatingPlatform: false,
+};
+
+function settingsTestReducer(state: SettingsTestState | undefined, _action: UnknownAction): SettingsTestState {
+    return state ?? settingsTestInitialState;
+}
+
 export const testReducers = combineReducers({
     userInterface: userInterfaceTestReducer,
     enums: enumsTestReducer,
@@ -681,6 +697,7 @@ export const testReducers = combineReducers({
     raprofiles: raProfilesTestReducer,
     cryptographicOperations: cryptographicOperationsTestReducer,
     utilsCertificateRequest: utilsCertificateRequestTestReducer,
+    settings: settingsTestReducer,
 });
 
 export const testInitialState = {
@@ -705,4 +722,5 @@ export const testInitialState = {
     raprofiles: raProfilesTestInitialState,
     cryptographicOperations: cryptographicOperationsTestInitialState,
     utilsCertificateRequest: utilsCertificateRequestTestInitialState,
+    settings: settingsTestInitialState,
 };

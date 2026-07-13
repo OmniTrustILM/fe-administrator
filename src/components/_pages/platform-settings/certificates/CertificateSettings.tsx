@@ -25,28 +25,44 @@ const CertificateSettings = ({ platformSettings }: Props) => {
 
     const data: TableDataRow[] = useMemo(() => {
         const validation = platformSettings?.certificates?.validation;
-        if (!validation) return [];
-        const rows = [
-            {
+        const registration = platformSettings?.certificates?.registration;
+        const rows: TableDataRow[] = [];
+
+        if (validation) {
+            rows.push({
                 id: 'enabled',
                 columns: [
                     'Validation Enabled',
                     <Switch key="enabled" id="validationEnabled" disabled checked={validation.enabled} onChange={() => {}} />,
                 ],
-            },
-        ];
-        if (validation.enabled && typeof validation.frequency === 'number' && typeof validation.expiringThreshold === 'number') {
+            });
+            if (validation.enabled && typeof validation.frequency === 'number' && typeof validation.expiringThreshold === 'number') {
+                rows.push(
+                    {
+                        id: 'validationFrequency',
+                        columns: ['Validation Frequency', renderValidationFrequencyLabel(validation.frequency)],
+                    },
+                    {
+                        id: 'expiringThreshold',
+                        columns: ['Expiring Threshold', renderExpiringThresholdLabel(validation.expiringThreshold)],
+                    },
+                );
+            }
+        }
+
+        if (registration) {
             rows.push(
                 {
-                    id: 'validationFrequency',
-                    columns: ['Validation Frequency', renderValidationFrequencyLabel(validation.frequency)],
+                    id: 'defaultIssuanceWindowDays',
+                    columns: ['Default Issuance Window (days)', registration.defaultIssuanceWindowDays?.toString() ?? ''],
                 },
                 {
-                    id: 'expiringThreshold',
-                    columns: ['Expiring Threshold', renderExpiringThresholdLabel(validation.expiringThreshold)],
+                    id: 'maxFailedAttempts',
+                    columns: ['Max Failed Attempts', registration.maxFailedAttempts?.toString() ?? ''],
                 },
             );
         }
+
         return rows;
     }, [platformSettings]);
 
