@@ -560,7 +560,12 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     <Controller
                                         control={control}
                                         name="authorizationSecret"
-                                        rules={{ required: isRegister, minLength: 12, maxLength: 255 }}
+                                        rules={{
+                                            required: isRegister,
+                                            minLength: 12,
+                                            maxLength: 255,
+                                            pattern: /^[\x20-\x7E]+$/,
+                                        }}
                                         render={({ field: { value, onChange }, fieldState }) => (
                                             <TextInput
                                                 id="authorizationSecret"
@@ -605,19 +610,30 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                 noBorder
                                 onlyActiveTabContent={false}
                                 tabs={[
-                                    {
-                                        title: tabTitle('Connector Attributes', issuanceAttributeDescriptors[selectedRaProfileUuid || '']),
-                                        content: (
-                                            <AttributeEditor
-                                                id="issuance_attributes"
-                                                attributeDescriptors={issuanceAttributeDescriptors[selectedRaProfileUuid || ''] || []}
-                                                callbackParentUuid={selectedRaProfile?.authorityInstanceUuid}
-                                                callbackResource={Resource.RaProfiles}
-                                                groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
-                                                setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
-                                            />
-                                        ),
-                                    },
+                                    // Connector Attributes are discarded on register submit (attributes: [] by design),
+                                    // so this tab must stay hidden in Pre-register mode to avoid silently-ignored input.
+                                    ...(!isRegister
+                                        ? [
+                                              {
+                                                  title: tabTitle(
+                                                      'Connector Attributes',
+                                                      issuanceAttributeDescriptors[selectedRaProfileUuid || ''],
+                                                  ),
+                                                  content: (
+                                                      <AttributeEditor
+                                                          id="issuance_attributes"
+                                                          attributeDescriptors={
+                                                              issuanceAttributeDescriptors[selectedRaProfileUuid || ''] || []
+                                                          }
+                                                          callbackParentUuid={selectedRaProfile?.authorityInstanceUuid}
+                                                          callbackResource={Resource.RaProfiles}
+                                                          groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
+                                                          setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
+                                                      />
+                                                  ),
+                                              },
+                                          ]
+                                        : []),
                                     {
                                         title: tabTitle('Custom Attributes', resourceCustomAttributes),
                                         content: (

@@ -42,4 +42,23 @@ test.describe('CertificateForm', () => {
         await expect(page.getByTestId('keySource')).toBeVisible();
         await expect(page.getByTestId('authorizationSecret')).toHaveCount(0);
     });
+
+    test('Issue now mode shows both the Connector Attributes and Custom Attributes tabs', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper />);
+
+        await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
+    });
+
+    test('Pre-register mode hides the Connector Attributes tab (its input is discarded on submit) but keeps Custom Attributes', async ({
+        mount,
+        page,
+    }) => {
+        await mount(<CertificateFormTestWrapper />);
+
+        await page.getByTestId('requestType-register').click();
+
+        await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toHaveCount(0);
+        await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
+    });
 });
