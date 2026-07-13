@@ -97,6 +97,10 @@ export function getCertificateStatusColor(
             return '#eb3f33';
         case CertificateState.Revoked:
             return '#632828';
+        case CertificateState.Registered:
+            return '#8B5CF6';
+        case CertificateState.PendingRegistration:
+            return '#A78BFA';
 
         case CertificateValidationStatus.Valid:
             return '#14B8A6';
@@ -184,6 +188,8 @@ export function useGetStatusText() {
                 case CertificateState.PendingApproval:
                 case CertificateState.PendingIssue:
                 case CertificateState.PendingRevoke:
+                case CertificateState.Registered:
+                case CertificateState.PendingRegistration:
                     return getEnumLabel(certificateStatusEnum, status);
 
                 case CertificateEventHistoryDtoStatusEnum.Success:

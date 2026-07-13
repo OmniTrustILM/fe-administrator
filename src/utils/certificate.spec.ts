@@ -149,6 +149,8 @@ describe('useGetStatusText', () => {
         expect(getText(CertificateState.PendingApproval)).toBe(CertificateState.PendingApproval);
         expect(getText(CertificateState.PendingIssue)).toBe(CertificateState.PendingIssue);
         expect(getText(CertificateState.PendingRevoke)).toBe(CertificateState.PendingRevoke);
+        expect(getText(CertificateState.Registered)).toBe(CertificateState.Registered);
+        expect(getText(CertificateState.PendingRegistration)).toBe(CertificateState.PendingRegistration);
     });
 
     test('returns literal strings for CertificateEventHistoryDtoStatusEnum', async () => {
@@ -188,5 +190,14 @@ describe('useGetStatusText', () => {
         const { useGetStatusText } = await import('./certificate');
         const getText = useGetStatusText();
         expect(getText('completely-unknown' as any)).toBe('Unknown');
+    });
+});
+
+describe('getCertificateStatusColor registration states', () => {
+    test('returns a distinct color for Registered', () => {
+        expect(getCertificateStatusColor(CertificateState.Registered)).toBe('#8B5CF6');
+    });
+    test('returns a distinct color for PendingRegistration', () => {
+        expect(getCertificateStatusColor(CertificateState.PendingRegistration)).toBe('#A78BFA');
     });
 });
