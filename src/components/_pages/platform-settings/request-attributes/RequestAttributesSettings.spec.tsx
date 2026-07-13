@@ -1,6 +1,7 @@
 import { test, expect } from '../../../../../playwright/ct-test';
 import { withProviders } from 'utils/test-helpers';
 import RequestAttributesSettings from './RequestAttributesSettings';
+import RequestAttributesSettingsWithStore from './RequestAttributesSettingsWithStore';
 
 test.describe('RequestAttributesSettings (platform default set)', () => {
     test('renders the default-set editor without merge mode or bindings', async ({ mount, page }) => {
@@ -15,7 +16,10 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
     });
 
     test('authoring an attribute then saving runs the save handler', async ({ mount, page }) => {
-        const component = await mount(withProviders(<RequestAttributesSettings />));
+        // Mount through the WithStore wrapper: it preloads a *defined* platform default set in the
+        // browser so the component's `loaded` guard flips true (the editor + Save are gated until a
+        // successful load, and CT runs no epics to resolve the fetch).
+        const component = await mount(<RequestAttributesSettingsWithStore />);
 
         await component.getByTestId('request-attribute-authoring-attribute-add').click();
         await page.locator('#ra-attr-name').click();
