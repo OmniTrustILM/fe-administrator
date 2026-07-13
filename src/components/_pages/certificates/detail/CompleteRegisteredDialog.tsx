@@ -60,6 +60,7 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
 
     const onSubmit = useCallback(
         (values: CompleteRegisteredFormValues) => {
+            if (!canSubmit) return;
             const combinedValues: Record<string, any> = { ...values };
             const signatureAttrs = isUploadSource
                 ? undefined
@@ -81,7 +82,7 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
             );
             onCancel();
         },
-        [certificate, csrContent, dispatch, isUploadSource, onCancel, signatureAttributeDescriptors],
+        [canSubmit, certificate, csrContent, dispatch, isUploadSource, onCancel, signatureAttributeDescriptors],
     );
 
     return (
