@@ -26,6 +26,7 @@ import { actions as userActions, selectors as userSelectors } from 'ducks/users'
 import { actions as raProfileActions, selectors as raProfileSelectors } from 'ducks/ra-profiles';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import {
+    CertificateRegistrationState,
     CertificateRequestFormat,
     CertificateRevocationReason,
     CertificateState as CertStatus,
@@ -35,6 +36,7 @@ import {
     PlatformEnum,
 } from 'types/openapi';
 import CertificateDownloadForm from './CertificateDownloadForm';
+import CompleteRegisteredDialog from './CompleteRegisteredDialog';
 import Button from 'components/Button';
 import { Trash2 } from 'lucide-react';
 import EditIcon from 'components/icons/EditIcon';
@@ -46,6 +48,16 @@ interface SelectChangeValue {
     value: string;
     label: string;
 }
+
+// There is no platform enum for the pre-registration authorization state — it is not part of the
+// backend's enum registry, so it cannot be resolved via useGetStatusText/getEnumLabel. This is a
+// plain presentational label map.
+const registrationStateLabels: Record<CertificateRegistrationState, string> = {
+    [CertificateRegistrationState.Active]: 'Active',
+    [CertificateRegistrationState.Expired]: 'Expired',
+    [CertificateRegistrationState.Locked]: 'Locked',
+    [CertificateRegistrationState.Closed]: 'Closed',
+};
 
 type Props = Readonly<{
     certificate: CertificateDetailResponseModel | undefined;
@@ -75,6 +87,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
     const [renew, setRenew] = useState(false);
     const [rekey, setRekey] = useState(false);
     const [revoke, setRevoke] = useState(false);
+    const [complete, setComplete] = useState(false);
     const [updateGroup, setUpdateGroup] = useState(false);
     const [updateOwner, setUpdateOwner] = useState(false);
     const [updateRaProfile, setUpdateRaProfile] = useState(false);
@@ -308,6 +321,12 @@ export default function CertificateDetailsContent({ certificate, validationResul
                 onClick: () => setRevoke(true),
             },
             {
+                icon: 'check',
+                disabled: !certificate?.raProfile || certificate?.state !== CertStatus.Registered || isCertificateArchived,
+                tooltip: 'Complete',
+                onClick: () => setComplete(true),
+            },
+            {
                 icon: 'gavel',
                 disabled: !certificate?.raProfile || !certificate?.certificateContent || isCertificateArchived,
                 tooltip: 'Check Compliance',
@@ -476,6 +495,26 @@ export default function CertificateDetailsContent({ certificate, validationResul
         }
         return data;
     }, [certificate?.protocolInfo, certificateProtocol]);
+
+    const registrationData: TableDataRow[] = useMemo(() => {
+        const registration = certificate?.registration;
+        if (!registration) return [];
+
+        return [
+            {
+                id: 'registrationState',
+                columns: ['State', registration.state ? (registrationStateLabels[registration.state] ?? registration.state) : 'n/a'],
+            },
+            {
+                id: 'registrationExpiresAt',
+                columns: ['Expires', registration.expiresAt ? dateFormatter(registration.expiresAt) : 'n/a'],
+            },
+            {
+                id: 'registrationFailedAttempts',
+                columns: ['Failed attempts', registration.failedAttempts ?? 0],
+            },
+        ];
+    }, [certificate?.registration]);
 
     const propertiesHeaders: TableHeader[] = useMemo(
         () => [
@@ -674,6 +713,11 @@ export default function CertificateDetailsContent({ certificate, validationResul
                             <CustomTable headers={protocolHeader} data={protocolData} />
                         </Widget>
                     )}
+                    {certificate?.registration && (
+                        <Widget title="Registration" busy={isBusy} titleSize="large">
+                            <CustomTable headers={detailHeaders} data={registrationData} />
+                        </Widget>
+                    )}
                     <Widget title="Other Properties" busy={isBusy} titleSize="large">
                         <CustomTable headers={propertiesHeaders} data={propertiesData} />
                     </Widget>
@@ -739,6 +783,16 @@ export default function CertificateDetailsContent({ certificate, validationResul
                     { key: 'cancel', color: 'secondary', variant: 'outline', onClick: () => setRevoke(false), body: 'Cancel' },
                     { key: 'revoke', color: 'primary', onClick: onRevoke, body: 'Revoke' },
                 ]}
+                size="lg"
+            />
+
+            <Dialog
+                isOpen={complete}
+                caption="Complete Certificate Registration"
+                body={certificate && <CompleteRegisteredDialog certificate={certificate} onCancel={() => setComplete(false)} />}
+                toggle={() => setComplete(false)}
+                buttons={[]}
+                icon="check"
                 size="lg"
             />
 
