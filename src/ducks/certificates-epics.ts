@@ -7,7 +7,7 @@ import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 
 import * as slice from './certificates';
-import { transformAttributeDescriptorDtoToModel } from './transform/attributes';
+import { transformAttributeDescriptorDtoToModel, transformAttributeRequestModelToDto } from './transform/attributes';
 
 import { store } from '../App';
 import { LockWidgetNameEnum } from 'types/user-interface';
@@ -23,6 +23,7 @@ import {
     transformCertificateHistoryDtoToModel,
     transformCertificateListResponseDtoToModel,
     transformCertificateObjectModelToDto,
+    transformCertificateRegistrationRequestModelToDto,
     transformCertificateRekeyRequestModelToDto,
     transformCertificateRenewRequestModelToDto,
     transformCertificateRevokeRequestModelToDto,
@@ -241,6 +242,75 @@ const issueCertificateNew: AppEpic = (action$, state, deps) => {
                         of(
                             slice.actions.issueCertificateFailure({ error: extractError(err, 'Failed to issue certificate') }),
                             appRedirectActions.fetchError({ error: err, message: 'Failed to issue certificate' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
+const registerCertificate: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.registerCertificate.match),
+        switchMap((action) =>
+            deps.apiClients.clientOperations
+                .registerCertificate({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                    clientCertificateRegistrationRequest: transformCertificateRegistrationRequestModelToDto(action.payload.registerRequest),
+                })
+                .pipe(
+                    mergeMap((operation) =>
+                        of(
+                            slice.actions.registerCertificateSuccess({ uuid: operation.uuid }),
+                            appRedirectActions.redirect({ url: `../certificates/detail/${operation.uuid}` }),
+                            alertActions.success('Certificate pre-registration successfully created'),
+                        ),
+                    ),
+                    catchError((err) => {
+                        const error = extractError(err, 'Failed to register certificate');
+                        const validationErrors = extractComplianceErrors(err);
+                        if (validationErrors) {
+                            return of(slice.actions.registerCertificateFailure({ error, validationErrors }));
+                        }
+                        return of(
+                            slice.actions.registerCertificateFailure({ error }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to register certificate' }),
+                        );
+                    }),
+                ),
+        ),
+    );
+};
+
+const completeRegisteredCertificate: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.completeRegisteredCertificate.match),
+        switchMap((action) =>
+            deps.apiClients.clientOperations
+                .issueExistingCertificate({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                    certificateUuid: action.payload.certificateUuid,
+                    clientCertificateIssueRequestDto: {
+                        request: action.payload.request,
+                        format: action.payload.format,
+                        authorizationSecret: action.payload.authorizationSecret,
+                        attributes: action.payload.attributes?.map(transformAttributeRequestModelToDto) ?? [],
+                    },
+                })
+                .pipe(
+                    mergeMap((operation) =>
+                        of(
+                            slice.actions.issueCertificateSuccess({ uuid: operation.uuid, certificateData: operation.certificateData }),
+                            appRedirectActions.redirect({ url: `../certificates/detail/${operation.uuid}` }),
+                            alertActions.success('Certificate issuance from registration successfully initiated'),
+                        ),
+                    ),
+                    catchError((err) =>
+                        of(
+                            slice.actions.issueCertificateFailure({ error: extractError(err, 'Failed to complete certificate') }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to complete certificate' }),
                         ),
                     ),
                 ),
@@ -1383,6 +1453,8 @@ const epics = [
     getCertificateValidationResult,
     issueCertificate,
     issueCertificateNew,
+    registerCertificate,
+    completeRegisteredCertificate,
     revokeCertificate,
     renewCertificate,
     rekeyCertificate,

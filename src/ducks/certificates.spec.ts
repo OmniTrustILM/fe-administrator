@@ -807,6 +807,39 @@ describe('certificates slice', () => {
         expect(next.confirmingRevokeCertificateUuids).toEqual([]);
         expect(next.cancelingPendingCertificateUuids).toEqual([]);
     });
+
+    test('registerCertificate / success / failure update isRegistering', () => {
+        let next = reducer(
+            initialState,
+            actions.registerCertificate({ authorityUuid: 'a', raProfileUuid: 'r', registerRequest: { attributes: [] } as any }),
+        );
+        expect(next.isRegistering).toBe(true);
+
+        next = reducer(next, actions.registerCertificateSuccess({ uuid: 'new-uuid' }));
+        expect(next.isRegistering).toBe(false);
+
+        next = reducer({ ...next, isRegistering: true }, actions.registerCertificateFailure({ error: 'err', validationErrors: ['e1'] }));
+        expect(next.isRegistering).toBe(false);
+        expect(next.issueValidationErrors).toEqual(['e1']);
+    });
+
+    test('completeRegisteredCertificate sets isIssuing and reuses issueCertificateSuccess/Failure', () => {
+        let next = reducer(
+            initialState,
+            actions.completeRegisteredCertificate({
+                authorityUuid: 'a',
+                raProfileUuid: 'r',
+                certificateUuid: 'cert-1',
+                request: 'BASE64CSR',
+                format: 'PKCS10' as any,
+                authorizationSecret: 'secret',
+            }),
+        );
+        expect(next.isIssuing).toBe(true);
+
+        next = reducer(next, actions.issueCertificateSuccess({ uuid: 'cert-1' }));
+        expect(next.isIssuing).toBe(false);
+    });
 });
 
 describe('certificates selectors', () => {

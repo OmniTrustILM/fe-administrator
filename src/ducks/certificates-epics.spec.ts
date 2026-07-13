@@ -40,12 +40,12 @@ import { actions as appRedirectActions } from './app-redirect';
 const ASSOCIATE_EPIC_INDEX = 3;
 const DEASSOCIATE_EPIC_INDEX = 4;
 const ISSUE_EPIC_INDEX = 8;
-const REVOKE_EPIC_INDEX = 10;
-const MANUALLY_ISSUE_EPIC_INDEX = 13;
-const MANUALLY_CONFIRM_REVOKE_EPIC_INDEX = 14;
-const CANCEL_PENDING_EPIC_INDEX = 15;
-const BULK_UPDATE_RA_PROFILE_EPIC_INDEX = 30;
-const UPLOAD_EPIC_INDEX = 33;
+const REVOKE_EPIC_INDEX = 12;
+const MANUALLY_ISSUE_EPIC_INDEX = 15;
+const MANUALLY_CONFIRM_REVOKE_EPIC_INDEX = 16;
+const CANCEL_PENDING_EPIC_INDEX = 17;
+const BULK_UPDATE_RA_PROFILE_EPIC_INDEX = 32;
+const UPLOAD_EPIC_INDEX = 35;
 
 type ClientOpsOverrides = {
     issueCertificate?: (args: any) => any;

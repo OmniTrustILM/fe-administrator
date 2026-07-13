@@ -1,5 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { AttributeDescriptorModel } from 'types/attributes';
+import type { AttributeDescriptorModel, AttributeRequestModel } from 'types/attributes';
 import type {
     CertificateBulkDeleteRequestModel,
     CertificateBulkDeleteResponseModel,
@@ -11,6 +11,7 @@ import type {
     CertificateHistoryModel,
     CertificateListResponseModel,
     CertificateObjectModel,
+    CertificateRegistrationRequestModel,
     CertificateRekeyRequestModel,
     CertificateRenewRequestModel,
     CertificateRevokeRequestModel,
@@ -25,6 +26,7 @@ import type { LocationResponseModel } from 'types/locations';
 import type {
     ApprovalDto,
     CertificateRelationsDto,
+    CertificateRequestFormat,
     DownloadCertificateChainRequest,
     DownloadCertificateRequest,
     ListCertificateApprovalsRequest,
@@ -108,6 +110,7 @@ export type State = {
 
     isIssuing: boolean;
     issueValidationErrors?: string[];
+    isRegistering: boolean;
     isRevoking: boolean;
     isRenewing: boolean;
     isRekeying: boolean;
@@ -170,6 +173,7 @@ export const initialState: State = {
     isFetchingCertificateChainDownloadContent: false,
 
     isIssuing: false,
+    isRegistering: false,
     isRevoking: false,
     isRenewing: false,
     isRekeying: false,
@@ -365,6 +369,42 @@ export const slice = createSlice({
 
         clearIssueValidationErrors: (state) => {
             state.issueValidationErrors = undefined;
+        },
+
+        registerCertificate: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileUuid: string;
+                registerRequest: CertificateRegistrationRequestModel;
+            }>,
+        ) => {
+            state.isRegistering = true;
+            state.issueValidationErrors = undefined;
+        },
+
+        registerCertificateSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.isRegistering = false;
+        },
+
+        registerCertificateFailure: (state, action: PayloadAction<{ error: string | undefined; validationErrors?: string[] }>) => {
+            state.isRegistering = false;
+            state.issueValidationErrors = action.payload.validationErrors;
+        },
+
+        completeRegisteredCertificate: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileUuid: string;
+                certificateUuid: string;
+                request: string;
+                format: CertificateRequestFormat;
+                authorizationSecret: string;
+                attributes?: Array<AttributeRequestModel>;
+            }>,
+        ) => {
+            state.isIssuing = true;
         },
 
         revokeCertificate: (
@@ -1046,6 +1086,7 @@ const isFetchingLocations = createSelector(state, (state) => state.isFetchingLoc
 
 const isIssuing = createSelector(state, (state) => state.isIssuing);
 const issueValidationErrors = createSelector(state, (state) => state.issueValidationErrors);
+const isRegistering = createSelector(state, (state) => state.isRegistering);
 const isRevoking = createSelector(state, (state) => state.isRevoking);
 const isRenewing = createSelector(state, (state) => state.isRenewing);
 const isRekeying = createSelector(state, (state) => state.isRekeying);
@@ -1114,6 +1155,7 @@ export const selectors = {
     isFetchingCertificateChain,
     isIssuing,
     issueValidationErrors,
+    isRegistering,
     isRevoking,
     isRenewing,
     isRekeying,
