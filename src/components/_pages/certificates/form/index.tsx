@@ -41,15 +41,20 @@ import Select from 'components/Select';
 import Switch from 'components/Switch';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import RadioRow from 'components/RadioRow';
+import TextInput from 'components/TextInput';
 
 type CertificateFormValues = {
     raProfileUuid: string;
+    requestType: 'issue' | 'register';
     uploadCsrSource?: 'external' | 'existing';
     includeAltKey: boolean;
     tokenProfileUuid?: string;
     altTokenProfileUuid?: string;
     keyUuid?: string;
     altKeyUuid?: string;
+    authorizationSecret?: string;
+    expiresAt?: string;
 };
 
 function useDescriptorState() {
@@ -104,6 +109,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         mode: 'onChange',
         defaultValues: {
             raProfileUuid: '',
+            requestType: 'issue',
             includeAltKey: false,
         },
     });
@@ -150,6 +156,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const includeAltKey = useWatch({ control, name: 'includeAltKey' });
     const tokenProfileUuid = useWatch({ control, name: 'tokenProfileUuid' });
     const altTokenProfileUuid = useWatch({ control, name: 'altTokenProfileUuid' });
+    const requestType = useWatch({ control, name: 'requestType' });
+    const isRegister = requestType === 'register';
 
     useEffect(() => {
         if (!selectedRaProfileUuid) {
@@ -168,6 +176,21 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     useEffect(() => {
         setValue('altKeyUuid', undefined);
     }, [altTokenProfileUuid, setValue]);
+
+    useEffect(() => {
+        // Fields belonging to the other mode must not linger and keep the form stuck invalid.
+        if (isRegister) {
+            setValue('uploadCsrSource', undefined);
+            setValue('tokenProfileUuid', undefined);
+            setValue('keyUuid', undefined);
+            setValue('includeAltKey', false);
+            setValue('altTokenProfileUuid', undefined);
+            setValue('altKeyUuid', undefined);
+        } else {
+            setValue('authorizationSecret', undefined);
+            setValue('expiresAt', undefined);
+        }
+    }, [isRegister, setValue]);
 
     const onRaProfileChange = useCallback(
         (raProfileUuid: string) => {
@@ -218,6 +241,26 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                 ...formValues,
                 ...attributeValuesRef.current,
             };
+
+            if (formValues.requestType === 'register') {
+                const csrAttrs = collectFormAttributes('csrAttributes', csrAttributeDescriptors, combinedValues);
+                const customAttrs = collectFormAttributes('customCertificate', resourceCustomAttributes, combinedValues);
+
+                dispatch(
+                    certificateActions.registerCertificate({
+                        raProfileUuid: profile.uuid,
+                        authorityUuid: profile.authorityInstanceUuid,
+                        registerRequest: {
+                            authorizationSecret: formValues.authorizationSecret,
+                            expiresAt: formValues.expiresAt ? new Date(formValues.expiresAt).toISOString() : undefined,
+                            csrAttributes: csrAttrs,
+                            customAttributes: customAttrs,
+                            attributes: [],
+                        },
+                    }),
+                );
+                return;
+            }
 
             const issuanceAttributes = collectFormAttributes(
                 'issuance_attributes',
@@ -301,6 +344,37 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                             <div className="space-y-4">
                                 <Controller
                                     control={control}
+                                    name="requestType"
+                                    render={({ field }) => (
+                                        <div className="space-y-2">
+                                            <RadioRow checked={field.value === 'issue'} onSelect={() => field.onChange('issue')}>
+                                                <span
+                                                    className="font-medium text-[var(--dark-gray-color)] dark:text-white"
+                                                    data-testid="requestType-issue"
+                                                >
+                                                    Issue now
+                                                </span>
+                                                <span className="text-gray-500 dark:text-neutral-400">
+                                                    Submit a certificate request to the authority immediately.
+                                                </span>
+                                            </RadioRow>
+                                            <RadioRow checked={field.value === 'register'} onSelect={() => field.onChange('register')}>
+                                                <span
+                                                    className="font-medium text-[var(--dark-gray-color)] dark:text-white"
+                                                    data-testid="requestType-register"
+                                                >
+                                                    Pre-register
+                                                </span>
+                                                <span className="text-gray-500 dark:text-neutral-400">
+                                                    Register a certificate to be issued later using a challenge secret.
+                                                </span>
+                                            </RadioRow>
+                                        </div>
+                                    )}
+                                />
+
+                                <Controller
+                                    control={control}
                                     name="raProfileUuid"
                                     rules={{ required: true }}
                                     render={({ field: { value, onChange }, fieldState: { error } }) => (
@@ -326,40 +400,43 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     )}
                                 />
 
-                                <Controller
-                                    control={control}
-                                    name="uploadCsrSource"
-                                    rules={{ required: true }}
-                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
-                                        <Select
-                                            id="uploadCsr"
-                                            options={keySourceOptions}
-                                            placeholder="Select Key Source"
-                                            value={value ?? ''}
-                                            label="Key Source"
-                                            required
-                                            onChange={(selected) => {
-                                                const source = (selected ?? '') as 'external' | 'existing';
-                                                onChange(source);
-                                                // Stale validation errors from the other source must not linger.
-                                                dispatch(certificateActions.clearIssueValidationErrors());
-                                                if (source === 'external') {
-                                                    setValue('tokenProfileUuid', undefined);
-                                                    setValue('keyUuid', undefined);
-                                                    setValue('includeAltKey', false);
-                                                    setValue('altTokenProfileUuid', undefined);
-                                                    setValue('altKeyUuid', undefined);
-                                                }
-                                            }}
-                                            error={error && 'Key Source is required'}
-                                        />
-                                    )}
-                                />
+                                {!isRegister && (
+                                    <Controller
+                                        control={control}
+                                        name="uploadCsrSource"
+                                        rules={{ required: !isRegister }}
+                                        render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                            <Select
+                                                id="uploadCsr"
+                                                dataTestId="keySource"
+                                                options={keySourceOptions}
+                                                placeholder="Select Key Source"
+                                                value={value ?? ''}
+                                                label="Key Source"
+                                                required
+                                                onChange={(selected) => {
+                                                    const source = (selected ?? '') as 'external' | 'existing';
+                                                    onChange(source);
+                                                    // Stale validation errors from the other source must not linger.
+                                                    dispatch(certificateActions.clearIssueValidationErrors());
+                                                    if (source === 'external') {
+                                                        setValue('tokenProfileUuid', undefined);
+                                                        setValue('keyUuid', undefined);
+                                                        setValue('includeAltKey', false);
+                                                        setValue('altTokenProfileUuid', undefined);
+                                                        setValue('altKeyUuid', undefined);
+                                                    }
+                                                }}
+                                                error={error && 'Key Source is required'}
+                                            />
+                                        )}
+                                    />
+                                )}
                             </div>
                         </Widget>
 
                         <Widget title="Request Properties" busy={issuingCertificate || isFetchingResourceCustomAttributes}>
-                            {isExternalSource && selectedRaProfile ? (
+                            {!isRegister && isExternalSource && selectedRaProfile ? (
                                 <>
                                     <FileUpload
                                         editable
@@ -388,7 +465,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                 </>
                             ) : null}
 
-                            {isExistingKeySource && selectedRaProfile ? (
+                            {!isRegister && isExistingKeySource && selectedRaProfile ? (
                                 <div className="space-y-4">
                                     <RenderTokenProfile type="normal" name="tokenProfileUuid" />
                                     <RenderRequestKey type="normal" name="keyUuid" tokenProfileField="tokenProfileUuid" />
@@ -420,60 +497,100 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                             <RenderRequestKey type="alt" name="altKeyUuid" tokenProfileField="altTokenProfileUuid" />
                                         </>
                                     ) : null}
-
-                                    {tokenProfileUuid ? (
-                                        <TabLayout
-                                            onlyActiveTabContent={false}
-                                            tabs={[
-                                                {
-                                                    title: tabTitle('Request Attributes', csrAttributeDescriptors),
-                                                    content: (
-                                                        <AttributeEditor
-                                                            id="csrAttributes"
-                                                            attributeDescriptors={csrAttributeDescriptors ?? []}
-                                                            groupAttributesCallbackAttributes={csrAttributesCallbackAttributes}
-                                                            setGroupAttributesCallbackAttributes={setCsrAttributesCallbackAttributes}
-                                                        />
-                                                    ),
-                                                },
-                                                {
-                                                    title: tabTitle('Signature Attributes', signatureAttributeDescriptors),
-                                                    content: (
-                                                        <AttributeEditor
-                                                            id="signatureAttributes"
-                                                            attributeDescriptors={signatureAttributeDescriptors ?? []}
-                                                            groupAttributesCallbackAttributes={signatureAttributesCallbackAttributes}
-                                                            setGroupAttributesCallbackAttributes={setSignatureAttributesCallbackAttributes}
-                                                        />
-                                                    ),
-                                                },
-                                                ...(includeAltKey && altTokenProfileUuid
-                                                    ? [
-                                                          {
-                                                              title: tabTitle(
-                                                                  'Alternative Signature Attributes',
-                                                                  altSignatureAttributeDescriptors,
-                                                              ),
-                                                              content: (
-                                                                  <AttributeEditor
-                                                                      id="altSignatureAttributes"
-                                                                      attributeDescriptors={altSignatureAttributeDescriptors ?? []}
-                                                                      groupAttributesCallbackAttributes={
-                                                                          altSignatureAttributesCallbackAttributes
-                                                                      }
-                                                                      setGroupAttributesCallbackAttributes={
-                                                                          setAltSignatureAttributesCallbackAttributes
-                                                                      }
-                                                                  />
-                                                              ),
-                                                          },
-                                                      ]
-                                                    : []),
-                                            ]}
-                                        />
-                                    ) : null}
                                 </div>
                             ) : null}
+
+                            {/* The identity (Request Attributes) editor is shared by both modes; Signature Attributes
+                                tabs are issue-now only, since Pre-register never handles keys/signing locally. */}
+                            {isRegister || (isExistingKeySource && tokenProfileUuid) ? (
+                                <TabLayout
+                                    onlyActiveTabContent={false}
+                                    tabs={[
+                                        {
+                                            title: tabTitle('Request Attributes', csrAttributeDescriptors),
+                                            content: (
+                                                <AttributeEditor
+                                                    id="csrAttributes"
+                                                    attributeDescriptors={csrAttributeDescriptors ?? []}
+                                                    groupAttributesCallbackAttributes={csrAttributesCallbackAttributes}
+                                                    setGroupAttributesCallbackAttributes={setCsrAttributesCallbackAttributes}
+                                                />
+                                            ),
+                                        },
+                                        ...(!isRegister
+                                            ? [
+                                                  {
+                                                      title: tabTitle('Signature Attributes', signatureAttributeDescriptors),
+                                                      content: (
+                                                          <AttributeEditor
+                                                              id="signatureAttributes"
+                                                              attributeDescriptors={signatureAttributeDescriptors ?? []}
+                                                              groupAttributesCallbackAttributes={signatureAttributesCallbackAttributes}
+                                                              setGroupAttributesCallbackAttributes={
+                                                                  setSignatureAttributesCallbackAttributes
+                                                              }
+                                                          />
+                                                      ),
+                                                  },
+                                              ]
+                                            : []),
+                                        ...(!isRegister && includeAltKey && altTokenProfileUuid
+                                            ? [
+                                                  {
+                                                      title: tabTitle('Alternative Signature Attributes', altSignatureAttributeDescriptors),
+                                                      content: (
+                                                          <AttributeEditor
+                                                              id="altSignatureAttributes"
+                                                              attributeDescriptors={altSignatureAttributeDescriptors ?? []}
+                                                              groupAttributesCallbackAttributes={altSignatureAttributesCallbackAttributes}
+                                                              setGroupAttributesCallbackAttributes={
+                                                                  setAltSignatureAttributesCallbackAttributes
+                                                              }
+                                                          />
+                                                      ),
+                                                  },
+                                              ]
+                                            : []),
+                                    ]}
+                                />
+                            ) : null}
+
+                            {isRegister && (
+                                <div className="space-y-4 mt-4">
+                                    <Controller
+                                        control={control}
+                                        name="authorizationSecret"
+                                        rules={{ required: isRegister, minLength: 12, maxLength: 255 }}
+                                        render={({ field: { value, onChange }, fieldState }) => (
+                                            <TextInput
+                                                id="authorizationSecret"
+                                                dataTestId="authorizationSecret"
+                                                type="password"
+                                                required
+                                                label="Challenge"
+                                                value={value ?? ''}
+                                                onChange={onChange}
+                                                invalid={!!fieldState.error}
+                                                error={fieldState.error ? 'Challenge must be 12–255 printable ASCII characters' : undefined}
+                                            />
+                                        )}
+                                    />
+                                    <Controller
+                                        control={control}
+                                        name="expiresAt"
+                                        render={({ field: { value, onChange } }) => (
+                                            <TextInput
+                                                id="expiresAt"
+                                                dataTestId="expiresAt"
+                                                type="date"
+                                                label="Issuance window (optional)"
+                                                value={value ?? ''}
+                                                onChange={onChange}
+                                            />
+                                        )}
+                                    />
+                                </div>
+                            )}
 
                             {/* Compliance/validation errors apply to any issuance mode, not just external CSR. */}
                             {selectedRaProfile && issueValidationErrors?.length ? (

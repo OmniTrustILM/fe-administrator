@@ -41,7 +41,7 @@ export function RequestValidationDialogBodyTestWrapper({
                     ),
                 preloadedState: {
                     ...testInitialState,
-                    raprofiles: { isUpdating },
+                    raprofiles: { isUpdating, raProfiles: [] },
                 },
             }),
         [isUpdating, onUpdateRequestAttributes],

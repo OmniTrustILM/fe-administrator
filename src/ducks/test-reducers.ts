@@ -528,12 +528,20 @@ export type CertificatesTestState = {
     finalizingIssueCertificateUuids: string[];
     confirmingRevokeCertificateUuids: string[];
     cancelingPendingCertificateUuids: string[];
+    issuanceAttributes: Record<string, any[]>;
+    csrAttributeDescriptors: any[];
+    isIssuing: boolean;
+    issueValidationErrors?: string[];
 };
 
 const certificatesTestInitialState: CertificatesTestState = {
     finalizingIssueCertificateUuids: [],
     confirmingRevokeCertificateUuids: [],
     cancelingPendingCertificateUuids: [],
+    issuanceAttributes: {},
+    csrAttributeDescriptors: [],
+    isIssuing: false,
+    issueValidationErrors: undefined,
 };
 
 function certificatesTestReducer(state: CertificatesTestState | undefined, _action: UnknownAction): CertificatesTestState {
@@ -605,14 +613,50 @@ function signingRecordsDashboardTestReducer(
 
 export type RaProfilesTestState = {
     isUpdating: boolean;
+    raProfiles: any[];
 };
 
 const raProfilesTestInitialState: RaProfilesTestState = {
     isUpdating: false,
+    raProfiles: [],
 };
 
 function raProfilesTestReducer(state: RaProfilesTestState | undefined, _action: UnknownAction): RaProfilesTestState {
     return state ?? raProfilesTestInitialState;
+}
+
+export type UtilsCertificateRequestTestState = {
+    parsedCertificateRequest?: any;
+    parseError?: string;
+};
+
+const utilsCertificateRequestTestInitialState: UtilsCertificateRequestTestState = {
+    parsedCertificateRequest: undefined,
+    parseError: undefined,
+};
+
+function utilsCertificateRequestTestReducer(
+    state: UtilsCertificateRequestTestState | undefined,
+    _action: UnknownAction,
+): UtilsCertificateRequestTestState {
+    return state ?? utilsCertificateRequestTestInitialState;
+}
+
+export type CryptographicOperationsTestState = {
+    signatureAttributeDescriptors: any[];
+    altSignatureAttributeDescriptors: any[];
+};
+
+const cryptographicOperationsTestInitialState: CryptographicOperationsTestState = {
+    signatureAttributeDescriptors: [],
+    altSignatureAttributeDescriptors: [],
+};
+
+function cryptographicOperationsTestReducer(
+    state: CryptographicOperationsTestState | undefined,
+    _action: UnknownAction,
+): CryptographicOperationsTestState {
+    return state ?? cryptographicOperationsTestInitialState;
 }
 
 export const testReducers = combineReducers({
@@ -635,6 +679,8 @@ export const testReducers = combineReducers({
     utilsActuator: utilsActuatorTestReducer,
     signingRecordsDashboard: signingRecordsDashboardTestReducer,
     raprofiles: raProfilesTestReducer,
+    cryptographicOperations: cryptographicOperationsTestReducer,
+    utilsCertificateRequest: utilsCertificateRequestTestReducer,
 });
 
 export const testInitialState = {
@@ -657,4 +703,6 @@ export const testInitialState = {
     utilsActuator: utilsActuatorTestInitialState,
     signingRecordsDashboard: signingRecordsDashboardTestInitialState,
     raprofiles: raProfilesTestInitialState,
+    cryptographicOperations: cryptographicOperationsTestInitialState,
+    utilsCertificateRequest: utilsCertificateRequestTestInitialState,
 };
