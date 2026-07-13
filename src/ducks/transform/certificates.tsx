@@ -22,6 +22,7 @@ import type {
     CertificateListResponseModel,
     CertificateObjectDto,
     CertificateObjectModel,
+    CertificateRegistrationRequestModel,
     CertificateRekeyRequestDto,
     CertificateRekeyRequestModel,
     CertificateRenewRequestDto,
@@ -47,7 +48,7 @@ import type { OtherProperties } from 'types/flowchart';
 import type { LocationResponseModel } from 'types/locations';
 import type { RaProfileResponseModel } from 'types/ra-profiles';
 import type { UserResponseModel } from 'types/users';
-import type { CertificateChainResponseDto, CertificateComplianceCheckDto } from '../../types/openapi';
+import type { CertificateChainResponseDto, CertificateComplianceCheckDto, ClientCertificateRegistrationRequest } from '../../types/openapi';
 import { transformAttributeRequestModelToDto, transformAttributeResponseDtoToModel } from './attributes';
 import { transformCertificateGroupResponseDtoToModel } from './certificateGroups';
 import { transformLocationResponseDtoToModel, transformMetadataDtoToModel } from './locations';
@@ -496,5 +497,16 @@ export function transformCertificateChainDownloadResponseDtoToCertificateChainRe
         ...certificateChain,
         certificates: certificateChain.certificates?.map(transformCertificateDetailResponseDtoToModel),
         completeChain: certificateChain.completeChain,
+    };
+}
+
+export function transformCertificateRegistrationRequestModelToDto(
+    model: CertificateRegistrationRequestModel,
+): ClientCertificateRegistrationRequest {
+    return {
+        ...model,
+        attributes: model.attributes?.map(transformAttributeRequestModelToDto),
+        customAttributes: model.customAttributes?.map(transformAttributeRequestModelToDto),
+        csrAttributes: model.csrAttributes?.map(transformAttributeRequestModelToDto),
     };
 }

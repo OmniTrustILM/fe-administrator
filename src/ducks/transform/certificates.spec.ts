@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, it } from 'vitest';
 import {
     transformSearchFilterModelToDto,
     transformSearchRequestModelToDto,
@@ -22,7 +22,9 @@ import {
     transformCertificateUploadModelToDto,
     transformCertificateComplianceCheckModelToDto,
     transformCertificateChainDownloadResponseDtoToCertificateChainResponseModel,
+    transformCertificateRegistrationRequestModelToDto,
 } from './certificates';
+import { AttributeContentType, AttributeType } from 'types/openapi';
 
 const attrRequestModel = { uuid: 'a1', name: 'attr', contentType: 'STRING', content: [] } as any;
 const attrResponseDto = {
@@ -345,5 +347,28 @@ describe('transformCertificateChainDownloadResponseDtoToCertificateChainResponse
         const input = { completeChain: false, certificates: [certDto] } as any;
         const result = transformCertificateChainDownloadResponseDtoToCertificateChainResponseModel(input);
         expect(result.certificates).toHaveLength(1);
+    });
+});
+
+describe('transformCertificateRegistrationRequestModelToDto', () => {
+    it('maps attribute arrays and passes through scalar fields', () => {
+        const dto = transformCertificateRegistrationRequestModelToDto({
+            authorizationSecret: 'super-secret-1',
+            expiresAt: '2026-08-01T00:00:00Z',
+            attributes: [],
+            csrAttributes: [
+                {
+                    name: 'commonName',
+                    contentType: AttributeContentType.String,
+                    type: AttributeType.Data,
+                    content: [{ data: 'example.com' }],
+                },
+            ],
+            customAttributes: [],
+        });
+        expect(dto.authorizationSecret).toBe('super-secret-1');
+        expect(dto.expiresAt).toBe('2026-08-01T00:00:00Z');
+        expect(dto.csrAttributes).toHaveLength(1);
+        expect(dto.attributes).toEqual([]);
     });
 });
