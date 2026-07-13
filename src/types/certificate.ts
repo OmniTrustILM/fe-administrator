@@ -10,8 +10,8 @@ import type {
     CertificateValidationCheckDto,
     CertificateValidationResultDto,
     CertificateValidationStatus,
+    ClientCertificateIssueRequestDto,
     ClientCertificateRevocationDto,
-    ClientCertificateSignRequestDto,
     MultipleCertificateObjectUpdateDto,
     RemoveCertificateDto,
     SearchFieldDataByGroupDto,
@@ -30,7 +30,7 @@ export type {
     CertificateDetailDto as CertificateDetailResponseDto,
     CertificateDto as CertificateListResponseDto,
     CertificateDto as CertificateListResponseModel,
-    ClientCertificateSignRequestDto as CertificateSignRequestDto,
+    ClientCertificateIssueRequestDto as CertificateSignRequestDto,
     ClientCertificateRevocationDto as CertificateRevokeRequestDto,
     ClientCertificateRenewRequestDto as CertificateRenewRequestDto,
     ClientCertificateRenewRequestDto as CertificateRenewRequestModel,
@@ -90,7 +90,7 @@ export type CertificateDetailResponseModel = Omit<
 };
 
 export type CertificateSignRequestModel = Omit<
-    ClientCertificateSignRequestDto,
+    ClientCertificateIssueRequestDto,
     'attributes | customAttributes | csrAttributes | signatureAttributes'
 > & {
     attributes: Array<AttributeRequestModel>;

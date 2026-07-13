@@ -161,6 +161,10 @@ models/CertificateOperationKind.ts
 models/CertificateProtocol.ts
 models/CertificateProtocolDto.ts
 models/CertificateQcStatementsDto.ts
+models/CertificateRegistrationDetailDto.ts
+models/CertificateRegistrationSettingsDto.ts
+models/CertificateRegistrationSettingsUpdateDto.ts
+models/CertificateRegistrationState.ts
 models/CertificateRelationType.ts
 models/CertificateRelationsDto.ts
 models/CertificateRequestAttributesSettingsDto.ts
@@ -187,12 +191,12 @@ models/CipherDataRequestDto.ts
 models/CipherRequestData.ts
 models/CipherResponseData.ts
 models/ClientCertificateDataResponseDto.ts
+models/ClientCertificateIssueRequestDto.ts
 models/ClientCertificateRegistrationRequest.ts
 models/ClientCertificateRekeyRequestDto.ts
 models/ClientCertificateRenewRequestDto.ts
 models/ClientCertificateRequestDto.ts
 models/ClientCertificateRevocationDto.ts
-models/ClientCertificateSignRequestDto.ts
 models/CmpProfileDetailDto.ts
 models/CmpProfileDto.ts
 models/CmpProfileEditRequestDto.ts

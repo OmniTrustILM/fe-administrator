@@ -17,6 +17,7 @@ import type {
     CertificateKeyUsage,
     CertificateProtocolDto,
     CertificateQcStatementsDto,
+    CertificateRegistrationDetailDto,
     CertificateRequestDto,
     CertificateState,
     CertificateSubjectType,
@@ -252,6 +253,12 @@ export interface CertificateDetailDto {
      * @memberof CertificateDetailDto
      */
     locations?: Array<LocationDto>;
+    /**
+     * Pre-registration authorization status; present only for certificates that were pre-registered
+     * @type {CertificateRegistrationDetailDto}
+     * @memberof CertificateDetailDto
+     */
+    registration?: CertificateRegistrationDetailDto;
     /**
      * Certificate compliance check result. Deprecated, use `complianceResult` property instead.
      * @type {Array<CertificateComplianceResultDto>}

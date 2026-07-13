@@ -192,7 +192,7 @@ const issueCertificate: AppEpic = (action$, state, deps) => {
                 .issueCertificate({
                     authorityUuid: action.payload.authorityUuid,
                     raProfileUuid: action.payload.raProfileUuid,
-                    clientCertificateSignRequestDto: transformCertificateSignRequestModelToDto(action.payload.signRequest),
+                    clientCertificateIssueRequestDto: transformCertificateSignRequestModelToDto(action.payload.signRequest),
                 })
                 .pipe(
                     mergeMap((operation) =>

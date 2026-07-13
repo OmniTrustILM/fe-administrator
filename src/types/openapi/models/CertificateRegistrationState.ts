@@ -12,14 +12,13 @@
  */
 
 /**
+ *
  * @export
- * @interface CertificateComplianceCheckDto
+ * @enum {string}
  */
-export interface CertificateComplianceCheckDto {
-    /**
-     * List of UUIDs of the Certificates
-     * @type {Array<string>}
-     * @memberof CertificateComplianceCheckDto
-     */
-    certificateUuids: Array<string>;
+export enum CertificateRegistrationState {
+    Active = 'active',
+    Expired = 'expired',
+    Locked = 'locked',
+    Closed = 'closed',
 }

@@ -31,13 +31,13 @@ export interface CmpProfileEditRequestDto {
      */
     raProfileUuid?: string;
     /**
-     * List of Attributes to issue Certificate for the associated RA Profile. Required when raProfileUuid is provided
+     * List of Attributes to issue Certificate for the associated RA Profile. Required when RA Profile UUID is provided
      * @type {Array<RequestAttribute>}
      * @memberof CmpProfileEditRequestDto
      */
     issueCertificateAttributes?: Array<RequestAttribute>;
     /**
-     * List of Attributes to revoke Certificate for the associated RA Profile. Required when raProfileUuid is provided
+     * List of Attributes to revoke Certificate for the associated RA Profile. Required when RA Profile UUID is provided
      * @type {Array<RequestAttribute>}
      * @memberof CmpProfileEditRequestDto
      */
@@ -61,13 +61,13 @@ export interface CmpProfileEditRequestDto {
      */
     responseProtectionMethod: ProtectionMethod;
     /**
-     * Shared secret for the CMP Request. Required when requestProtectionMethod is sharedSecret
+     * Shared secret for the CMP Request, used when Protection Method is Shared Secret. Required when creating a CMP Profile. When editing, a blank or omitted value keeps the existing shared secret; a value is required if no shared secret is stored yet.
      * @type {string}
      * @memberof CmpProfileEditRequestDto
      */
     sharedSecret?: string;
     /**
-     * UUID of the Certificate to be used as signing certificate for CMP responses. Required when responseProtectionMethod is signature
+     * UUID of the Certificate to be used as signing certificate for CMP responses. Required when Protection Method is Signature
      * @type {string}
      * @memberof CmpProfileEditRequestDto
      */

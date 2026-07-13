@@ -20,13 +20,13 @@ import type { CertificateExtension, RequestAttribute } from './';
  */
 export interface ClientCertificateRegistrationRequest {
     /**
-     * Subject DN. Optional per RFC 5280 §4.1.2.6: an empty subject is permitted when subject naming information is carried entirely in the Subject Alternative Name extension (in which case the subjectAltName extension MUST be marked critical at issuance). At least one of subjectDn or subjectAltName must be non-empty — enforced by the cross-field {@code subjectIdentificationProvided} constraint.
+     * Subject DN. Optional per RFC 5280 §4.1.2.6: an empty subject is permitted when subject naming information is carried entirely in the Subject Alternative Name extension (in which case the subjectAltName extension MUST be marked critical at issuance). At least one of subjectDn, subjectAltName, or csrAttributes must provide subject identity — enforced by the cross-field {@code subjectIdentificationProvided} constraint.
      * @type {string}
      * @memberof ClientCertificateRegistrationRequest
      */
     subjectDn?: string;
     /**
-     * Subject Alternative Name in RFC 5280 textual form (e.g. DNS:foo,IP:1.2.3.4,email:x@y). SAN MUST be carried here ONLY — do not also include it as OID 2.5.29.17 in extensions[]. Connectors reject duplicate-source requests with VALIDATION_FAILED. Required when subjectDn is empty (see RFC 5280 §4.1.2.6).
+     * Subject Alternative Name in RFC 5280 textual form (e.g. DNS:foo,IP:1.2.3.4,email:x@y). SAN MUST be carried here ONLY — do not also include it as OID 2.5.29.17 in extensions[]. Connectors reject duplicate-source requests with VALIDATION_FAILED. Provides subject identity when subjectDn is empty (see RFC 5280 §4.1.2.6); csrAttributes is a further alternative.
      * @type {string}
      * @memberof ClientCertificateRegistrationRequest
      */
@@ -37,6 +37,12 @@ export interface ClientCertificateRegistrationRequest {
      * @memberof ClientCertificateRegistrationRequest
      */
     extensions?: Array<CertificateExtension>;
+    /**
+     * Structured request-attribute identity content (subject RDNs, SANs, extensions) — the typed alternative to the flat subjectDn/subjectAltName/extensions above, mirroring the issue path. When provided, the platform projects it into the registration identity; the flat subjectDn/subjectAltName/extensions are the simple alternative. Provide the identity via csrAttributes OR the flat fields, not both.
+     * @type {Array<RequestAttribute>}
+     * @memberof ClientCertificateRegistrationRequest
+     */
+    csrAttributes?: Array<RequestAttribute>;
     /**
      * Authority-defined registration attributes (e.g., subject DN template, validity hints).
      * @type {Array<RequestAttribute>}
@@ -55,4 +61,16 @@ export interface ClientCertificateRegistrationRequest {
      * @memberof ClientCertificateRegistrationRequest
      */
     customAttributes?: Array<RequestAttribute>;
+    /**
+     * Authorization secret (challenge) that gates completion of this pre-registered certificate. Write-only and optional — the operator supplies it to opt the registration into challenge-gated issuance; the platform never generates one. Issuing a pre-registered certificate is currently the only challenge-verified completion path; renewal and rekey requests for a certificate with an active registration are rejected (fail-closed) until challenge-gated successor handling is added.
+     * @type {string}
+     * @memberof ClientCertificateRegistrationRequest
+     */
+    authorizationSecret?: string;
+    /**
+     * Optional absolute deadline by which the pre-registered certificate must be issued. When omitted, the platform applies the default registration issuance window.
+     * @type {string}
+     * @memberof ClientCertificateRegistrationRequest
+     */
+    expiresAt?: string;
 }

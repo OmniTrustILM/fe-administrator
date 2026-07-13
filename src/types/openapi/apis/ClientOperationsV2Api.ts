@@ -22,11 +22,11 @@ import type {
     CancelPendingCertificateRequestDto,
     CertificateDetailDto,
     ClientCertificateDataResponseDto,
+    ClientCertificateIssueRequestDto,
     ClientCertificateRegistrationRequest,
     ClientCertificateRekeyRequestDto,
     ClientCertificateRenewRequestDto,
     ClientCertificateRevocationDto,
-    ClientCertificateSignRequestDto,
     ErrorMessageDto,
     RequestAttribute,
     UploadCertificateRequestDto,
@@ -42,14 +42,14 @@ export interface CancelPendingCertificateOperationRequest {
 export interface IssueCertificateRequest {
     authorityUuid: string;
     raProfileUuid: string;
-    clientCertificateSignRequestDto: ClientCertificateSignRequestDto;
+    clientCertificateIssueRequestDto: ClientCertificateIssueRequestDto;
 }
 
 export interface IssueExistingCertificateRequest {
     authorityUuid: string;
     raProfileUuid: string;
     certificateUuid: string;
-    clientCertificateSignRequestDto?: ClientCertificateSignRequestDto;
+    clientCertificateIssueRequestDto?: ClientCertificateIssueRequestDto;
 }
 
 export interface ListAvailableOperationsRequest {
@@ -170,19 +170,19 @@ export class ClientOperationsV2Api extends BaseAPI {
     issueCertificate({
         authorityUuid,
         raProfileUuid,
-        clientCertificateSignRequestDto,
+        clientCertificateIssueRequestDto,
     }: IssueCertificateRequest): Observable<ClientCertificateDataResponseDto>;
     issueCertificate(
-        { authorityUuid, raProfileUuid, clientCertificateSignRequestDto }: IssueCertificateRequest,
+        { authorityUuid, raProfileUuid, clientCertificateIssueRequestDto }: IssueCertificateRequest,
         opts?: OperationOpts,
     ): Observable<AjaxResponse<ClientCertificateDataResponseDto>>;
     issueCertificate(
-        { authorityUuid, raProfileUuid, clientCertificateSignRequestDto }: IssueCertificateRequest,
+        { authorityUuid, raProfileUuid, clientCertificateIssueRequestDto }: IssueCertificateRequest,
         opts?: OperationOpts,
     ): Observable<ClientCertificateDataResponseDto | AjaxResponse<ClientCertificateDataResponseDto>> {
         throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'issueCertificate');
         throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'issueCertificate');
-        throwIfNullOrUndefined(clientCertificateSignRequestDto, 'clientCertificateSignRequestDto', 'issueCertificate');
+        throwIfNullOrUndefined(clientCertificateIssueRequestDto, 'clientCertificateIssueRequestDto', 'issueCertificate');
 
         const headers: HttpHeaders = {
             'Content-Type': 'application/json',
@@ -195,28 +195,28 @@ export class ClientOperationsV2Api extends BaseAPI {
                     .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
                 method: 'POST',
                 headers,
-                body: clientCertificateSignRequestDto,
+                body: clientCertificateIssueRequestDto,
             },
             opts?.responseOpts,
         );
     }
 
     /**
-     * Trigger issuance for an existing certificate. Behavior depends on cert state: - `REQUESTED` (no body): the certificate already has a CSR attached (typically from   a protocol layer such as ACME, SCEP, or CMP, or after an approval/compliance cycle).   Issuance is triggered with the existing CSR. - `REGISTERED` (body required): the certificate was pre-registered (v3 authorities with   `CERTIFICATE_REGISTRATION` capability) and is now being finalized with an operator-   supplied CSR. The CSR + sign attributes from the body are attached to the existing   certificate row, then issuance is triggered. The cert\'s identity (subject DN, SAN,   extensions) and connector-supplied metadata from the registration are preserved.
+     * Trigger issuance for an existing certificate. Behavior depends on cert state: - `REQUESTED` (no body): the certificate already has a CSR attached (typically from   a protocol layer such as ACME, SCEP, or CMP, or after an approval/compliance cycle).   Issuance is triggered with the existing CSR. - `REGISTERED` (body required): the certificate was pre-registered (v3 authorities with   `CERTIFICATE_REGISTRATION` capability) and is now being finalized with an operator-   supplied CSR. The CSR + sign attributes and the authorization secret from the body are attached to the existing   certificate row, then issuance is triggered. The cert\'s identity (subject DN, SAN,   extensions) and connector-supplied metadata from the registration are preserved.
      * Issue an existing certificate (REQUESTED or REGISTERED)
      */
     issueExistingCertificate({
         authorityUuid,
         raProfileUuid,
         certificateUuid,
-        clientCertificateSignRequestDto,
+        clientCertificateIssueRequestDto,
     }: IssueExistingCertificateRequest): Observable<ClientCertificateDataResponseDto>;
     issueExistingCertificate(
-        { authorityUuid, raProfileUuid, certificateUuid, clientCertificateSignRequestDto }: IssueExistingCertificateRequest,
+        { authorityUuid, raProfileUuid, certificateUuid, clientCertificateIssueRequestDto }: IssueExistingCertificateRequest,
         opts?: OperationOpts,
     ): Observable<AjaxResponse<ClientCertificateDataResponseDto>>;
     issueExistingCertificate(
-        { authorityUuid, raProfileUuid, certificateUuid, clientCertificateSignRequestDto }: IssueExistingCertificateRequest,
+        { authorityUuid, raProfileUuid, certificateUuid, clientCertificateIssueRequestDto }: IssueExistingCertificateRequest,
         opts?: OperationOpts,
     ): Observable<ClientCertificateDataResponseDto | AjaxResponse<ClientCertificateDataResponseDto>> {
         throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'issueExistingCertificate');
@@ -235,7 +235,7 @@ export class ClientOperationsV2Api extends BaseAPI {
                     .replace('{certificateUuid}', encodeURI(certificateUuid)),
                 method: 'POST',
                 headers,
-                body: clientCertificateSignRequestDto,
+                body: clientCertificateIssueRequestDto,
             },
             opts?.responseOpts,
         );
