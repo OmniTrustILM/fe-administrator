@@ -409,6 +409,7 @@ export const slice = createSlice({
             }>,
         ) => {
             state.isIssuing = true;
+            state.issueValidationErrors = undefined;
         },
 
         revokeCertificate: (

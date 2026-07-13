@@ -347,7 +347,14 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     name="requestType"
                                     render={({ field }) => (
                                         <div className="space-y-2">
-                                            <RadioRow checked={field.value === 'issue'} onSelect={() => field.onChange('issue')}>
+                                            <RadioRow
+                                                checked={field.value === 'issue'}
+                                                onSelect={() => {
+                                                    field.onChange('issue');
+                                                    // Stale validation/compliance errors from the other mode must not linger.
+                                                    dispatch(certificateActions.clearIssueValidationErrors());
+                                                }}
+                                            >
                                                 <span
                                                     className="font-medium text-[var(--dark-gray-color)] dark:text-white"
                                                     data-testid="requestType-issue"
@@ -358,7 +365,14 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                     Submit a certificate request to the authority immediately.
                                                 </span>
                                             </RadioRow>
-                                            <RadioRow checked={field.value === 'register'} onSelect={() => field.onChange('register')}>
+                                            <RadioRow
+                                                checked={field.value === 'register'}
+                                                onSelect={() => {
+                                                    field.onChange('register');
+                                                    // Stale validation/compliance errors from the other mode must not linger.
+                                                    dispatch(certificateActions.clearIssueValidationErrors());
+                                                }}
+                                            >
                                                 <span
                                                     className="font-medium text-[var(--dark-gray-color)] dark:text-white"
                                                     data-testid="requestType-register"

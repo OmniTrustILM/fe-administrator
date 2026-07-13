@@ -31,6 +31,7 @@ vi.mock('./transform/certificates', () => ({
     transformCertificateResponseDtoToModel: (req: unknown) => req,
     transformCertificateListResponseDtoToModel: (req: unknown) => req,
     transformCertificateUploadModelToDto: (req: unknown) => req,
+    transformCertificateRegistrationRequestModelToDto: (req: unknown) => req,
 }));
 
 import { actions as certificatesActions } from './certificates';
@@ -40,6 +41,7 @@ import { actions as appRedirectActions } from './app-redirect';
 const ASSOCIATE_EPIC_INDEX = 3;
 const DEASSOCIATE_EPIC_INDEX = 4;
 const ISSUE_EPIC_INDEX = 8;
+const REGISTER_EPIC_INDEX = 10;
 const COMPLETE_REGISTERED_EPIC_INDEX = 11;
 const REVOKE_EPIC_INDEX = 12;
 const MANUALLY_ISSUE_EPIC_INDEX = 15;
@@ -158,6 +160,28 @@ async function runDeassociateEpic(
     return { emitted, calls };
 }
 
+async function runRegisterEpic(
+    action: UnknownAction,
+    registerCertificate: (args: any) => any = () => of({ uuid: 'cert-1' }),
+    takeCount = 3,
+): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+    const calls: any[] = [];
+    const deps = {
+        apiClients: {
+            clientOperations: {
+                registerCertificate: (args: any) => {
+                    calls.push(args);
+                    return registerCertificate(args);
+                },
+            },
+        },
+    };
+    const output$ = epics[REGISTER_EPIC_INDEX](of(action), of({}) as any, deps as any);
+    const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
+    return { emitted, calls };
+}
+
 async function runCompleteRegisteredEpic(
     action: UnknownAction,
     issueExistingCertificate: (args: any) => any = () => of({ uuid: 'cert-1' }),
@@ -226,6 +250,64 @@ describe('certificates epics', () => {
         expect(emitted).toHaveLength(2);
         expect(emitted[0].type).toBe(certificatesActions.issueCertificateFailure.type);
         expect((emitted[0] as any).payload.validationErrors).toBeUndefined();
+        expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+    });
+
+    const registerAction = certificatesActions.registerCertificate({
+        authorityUuid: 'auth-1',
+        raProfileUuid: 'ra-1',
+        registerRequest: { authorizationSecret: 'secret', attributes: [] },
+    });
+
+    test('registerCertificate success emits Success, redirect, and a success alert', async () => {
+        const { emitted, calls } = await runRegisterEpic(registerAction, () => of({ uuid: 'cert-1' }));
+
+        expect(calls[0]).toMatchObject({ authorityUuid: 'auth-1', raProfileUuid: 'ra-1' });
+        expect(emitted).toHaveLength(3);
+        expect(emitted[0].type).toBe(certificatesActions.registerCertificateSuccess.type);
+        expect((emitted[0] as any).payload.uuid).toBe('cert-1');
+        expect(emitted[1].type).toBe(appRedirectActions.redirect.type);
+        expect(emitted[2].type).toBe(alertActions.success.type);
+    });
+
+    test('registerCertificate 422 failure carries the validation-error list and suppresses the generic fetch error', async () => {
+        const { emitted } = await runRegisterEpic(registerAction, () => throwError(() => ({ status: 422, response: ['e1', 'e2'] })), 1);
+
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0].type).toBe(certificatesActions.registerCertificateFailure.type);
+        expect((emitted[0] as any).payload.validationErrors).toEqual(['e1', 'e2']);
+    });
+
+    test('registerCertificate generic failure emits Failure without validation errors and a fetch error', async () => {
+        const { emitted } = await runRegisterEpic(
+            registerAction,
+            () => throwError(() => ({ status: 500, response: { message: 'boom' } })),
+            2,
+        );
+
+        expect(emitted).toHaveLength(2);
+        expect(emitted[0].type).toBe(certificatesActions.registerCertificateFailure.type);
+        expect((emitted[0] as any).payload.validationErrors).toBeUndefined();
+        expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+    });
+
+    test('completeRegisteredCertificate failure emits issue Failure and a fetch error', async () => {
+        const { emitted } = await runCompleteRegisteredEpic(
+            certificatesActions.completeRegisteredCertificate({
+                authorityUuid: 'auth-1',
+                raProfileUuid: 'ra-1',
+                certificateUuid: 'cert-1',
+                request: 'BASE64CSR',
+                format: 'PKCS10' as any,
+                authorizationSecret: 'secret',
+                attributes: [],
+            }),
+            () => throwError(() => ({ status: 500, response: { message: 'boom' } })),
+            2,
+        );
+
+        expect(emitted).toHaveLength(2);
+        expect(emitted[0].type).toBe(certificatesActions.issueCertificateFailure.type);
         expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
     });
 

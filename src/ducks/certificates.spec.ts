@@ -823,9 +823,9 @@ describe('certificates slice', () => {
         expect(next.issueValidationErrors).toEqual(['e1']);
     });
 
-    test('completeRegisteredCertificate sets isIssuing and reuses issueCertificateSuccess/Failure', () => {
+    test('completeRegisteredCertificate sets isIssuing, clears stale validation errors, and reuses issueCertificateSuccess/Failure', () => {
         let next = reducer(
-            initialState,
+            { ...initialState, issueValidationErrors: ['stale'] },
             actions.completeRegisteredCertificate({
                 authorityUuid: 'a',
                 raProfileUuid: 'r',
@@ -836,6 +836,7 @@ describe('certificates slice', () => {
             }),
         );
         expect(next.isIssuing).toBe(true);
+        expect(next.issueValidationErrors).toBeUndefined();
 
         next = reducer(next, actions.issueCertificateSuccess({ uuid: 'cert-1' }));
         expect(next.isIssuing).toBe(false);

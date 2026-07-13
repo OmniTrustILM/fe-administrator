@@ -61,6 +61,12 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
     const onSubmit = useCallback(
         (values: CompleteRegisteredFormValues) => {
             if (!canSubmit) return;
+            // A registered cert always has an RA profile (the Complete action is gated on it), but guard
+            // the required identifiers explicitly so we never fire a malformed request with empty UUIDs.
+            const authorityUuid = certificate.raProfile?.authorityInstanceUuid;
+            const raProfileUuid = certificate.raProfile?.uuid;
+            if (!authorityUuid || !raProfileUuid) return;
+
             const combinedValues: Record<string, any> = { ...values };
             const signatureAttrs = isUploadSource
                 ? undefined
@@ -68,8 +74,8 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
 
             dispatch(
                 certificateActions.completeRegisteredCertificate({
-                    authorityUuid: certificate.raProfile?.authorityInstanceUuid ?? '',
-                    raProfileUuid: certificate.raProfile?.uuid ?? '',
+                    authorityUuid,
+                    raProfileUuid,
                     certificateUuid: certificate.uuid,
                     request: isUploadSource ? csrContent : '',
                     format: isUploadSource ? CertificateRequestFormat.Pkcs10 : undefined,
