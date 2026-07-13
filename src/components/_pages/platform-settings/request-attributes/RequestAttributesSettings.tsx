@@ -25,31 +25,41 @@ export default function RequestAttributesSettings() {
     const isUpdating = useSelector(selectors.isUpdatingDefaultSet);
 
     const [form, setForm] = useState<RequestAttributeAuthoringFormValues>(emptyAuthoringForm());
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         dispatch(actions.getPlatformDefaultRequestAttributes());
     }, [dispatch]);
 
+    // Seed the form once, on the undefined → defined transition of the fetched set. Re-seeding on
+    // every `defaultSet` reference change would clobber in-progress edits when a late fetch resolves.
     useEffect(() => {
-        setForm({ ...emptyAuthoringForm(), attributes: parsePlatformDefaultDto(defaultSet) });
-    }, [defaultSet]);
+        if (defaultSet !== undefined && !loaded) {
+            setForm({ ...emptyAuthoringForm(), attributes: parsePlatformDefaultDto(defaultSet) });
+            setLoaded(true);
+        }
+    }, [defaultSet, loaded]);
 
     const onSave = useCallback(() => {
+        // Guard against saving the empty initial form before the fetch has seeded it, which would
+        // PUT requestAttributes: [] and wipe the platform default set (the epic's read-merge only
+        // preserves the sibling externalCsrValidationStrict, not the array).
+        if (!loaded) return;
         dispatch(
             actions.updatePlatformDefaultRequestAttributes({
                 data: buildPlatformDefaultUpdateDto(form.attributes),
             }),
         );
-    }, [dispatch, form.attributes]);
+    }, [dispatch, form.attributes, loaded]);
 
     const editor = useMemo(
         // Platform default set: no merge mode and no value-source bindings (not in the platform DTO).
-        () => <RequestAttributeAuthoringEditor value={form} onChange={setForm} showBindings={false} disabled={isUpdating} />,
-        [form, isUpdating],
+        () => <RequestAttributeAuthoringEditor value={form} onChange={setForm} showBindings={false} disabled={isUpdating || !loaded} />,
+        [form, isUpdating, loaded],
     );
 
     return (
-        <Widget title="Default Request Attributes" titleSize="large" busy={isFetching} noBorder>
+        <Widget title="Default Request Attributes" titleSize="large" busy={isFetching} enableBusyOverlay noBorder>
             <div className="space-y-4">
                 <p className="text-sm text-gray-500">
                     The platform default request-attribute set is the terminal fallback used when an RA Profile does not define its own set.
@@ -60,6 +70,7 @@ export default function RequestAttributesSettings() {
                         title="Save Default Request Attributes"
                         inProgressTitle="Saving..."
                         inProgress={isUpdating}
+                        disabled={!loaded}
                         onClick={onSave}
                         type="button"
                     />

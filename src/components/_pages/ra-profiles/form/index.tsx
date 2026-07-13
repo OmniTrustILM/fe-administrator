@@ -206,8 +206,14 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
 
     useRunOnSuccessfulFinish(isUpdatingRequestAttributes, updateRequestAttributesSucceeded, refetchRaProfile);
 
+    // The authoring form is only trustworthy once it has been seeded from the loaded profile
+    // (see the seed effect above). Until then it holds emptyAuthoringForm(); saving that would
+    // PATCH requestAttributes: [] and wipe the profile's configured set (the epic does no
+    // server-side read-merge).
+    const requestAttributesSeeded = editMode && raProfileSelector?.uuid === id && !isFetchingDetail;
+
     const onSaveRequestAttributes = useCallback(() => {
-        if (!id) return;
+        if (!id || !requestAttributesSeeded) return;
         const authorityUuid = raProfile?.authorityInstanceUuid || authorityId;
         if (!authorityUuid) return;
         dispatch(
@@ -217,7 +223,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                 data: buildRaProfileRequestAttributesUpdateDto(requestAttributesForm),
             }),
         );
-    }, [dispatch, id, raProfile, authorityId, requestAttributesForm]);
+    }, [dispatch, id, raProfile, authorityId, requestAttributesForm, requestAttributesSeeded]);
 
     const onAuthorityChange = useCallback(
         (authorityUuid: string) => {
@@ -395,13 +401,14 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                                 onChange={setRequestAttributesForm}
                                                 showMergeMode
                                                 connectorAttributeOptions={connectorAttributeOptions}
-                                                disabled={isUpdatingRequestAttributes}
+                                                disabled={isUpdatingRequestAttributes || !requestAttributesSeeded}
                                             />
                                             <Container className="flex-row justify-end" gap={4}>
                                                 <ProgressButton
                                                     title="Save Request Attributes"
                                                     inProgressTitle="Saving..."
                                                     inProgress={isUpdatingRequestAttributes}
+                                                    disabled={!requestAttributesSeeded}
                                                     onClick={onSaveRequestAttributes}
                                                     type="button"
                                                 />

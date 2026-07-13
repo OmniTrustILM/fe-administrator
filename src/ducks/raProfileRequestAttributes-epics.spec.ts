@@ -10,12 +10,6 @@ import { AttributeSetMergeMode } from 'types/openapi';
 vi.mock('../App', async () => ({ store: (await import('./epics-test-mocks')).getEpicMocks().appStore }));
 vi.mock('./alerts', async () => ({ actions: (await import('./epics-test-mocks')).getEpicMocks().alertActions }));
 
-enum EpicIndex {
-    UpdateRaProfileRequestAttributes = 0,
-    GetPlatformDefault = 1,
-    UpdatePlatformDefault = 2,
-}
-
 type Clients = {
     raProfiles: {
         updateRaProfileRequestAttributesConfiguration: (args: any) => any;
@@ -58,17 +52,21 @@ function createDeps(overrides: Partial<Clients> = {}) {
     };
 }
 
+type EpicModule = typeof import('./raProfileRequestAttributes-epics');
+type EpicName = 'updateRaProfileRequestAttributes' | 'getPlatformDefaultRequestAttributes' | 'updatePlatformDefaultRequestAttributes';
+
 async function runEpic(
-    epicIndex: number,
+    epicName: EpicName,
     action: any,
     options: { depsOverrides?: Partial<Clients>; takeCount?: number } = {},
 ): Promise<UnknownAction[]> {
-    const { default: epics } = await import('./raProfileRequestAttributes-epics');
+    const epicModule: EpicModule = await import('./raProfileRequestAttributes-epics');
+    const epic = epicModule[epicName];
     const deps = createDeps(options.depsOverrides);
     const takeCount = options.takeCount ?? 1;
     const state$ = of({}) as any;
     state$.value = {};
-    const output$ = (epics as any)[epicIndex](of(action), state$, deps as any);
+    const output$ = epic(of(action) as any, state$, deps as any);
     return firstValueFrom(output$.pipe(take(takeCount), toArray()));
 }
 
@@ -81,13 +79,13 @@ describe('raProfileRequestAttributes epics', () => {
         });
 
         test('emits success with the returned set on 200', async () => {
-            const out = await runEpic(EpicIndex.UpdateRaProfileRequestAttributes, action, { takeCount: 2 });
+            const out = await runEpic('updateRaProfileRequestAttributes', action, { takeCount: 2 });
             expect(out[0].type).toBe(slice.actions.updateRaProfileRequestAttributesSuccess.type);
             expect((out[0] as any).payload.set.mergeMode).toBe(AttributeSetMergeMode.Merge);
         });
 
         test('emits failure on error', async () => {
-            const out = await runEpic(EpicIndex.UpdateRaProfileRequestAttributes, action, {
+            const out = await runEpic('updateRaProfileRequestAttributes', action, {
                 takeCount: 1,
                 depsOverrides: {
                     raProfiles: { updateRaProfileRequestAttributesConfiguration: () => throwError(() => new Error('boom')) },
@@ -99,13 +97,13 @@ describe('raProfileRequestAttributes epics', () => {
 
     describe('getPlatformDefaultRequestAttributes', () => {
         test('extracts certificates.requestAttributes', async () => {
-            const out = await runEpic(EpicIndex.GetPlatformDefault, slice.actions.getPlatformDefaultRequestAttributes());
+            const out = await runEpic('getPlatformDefaultRequestAttributes', slice.actions.getPlatformDefaultRequestAttributes());
             expect(out[0].type).toBe(slice.actions.getPlatformDefaultRequestAttributesSuccess.type);
             expect((out[0] as any).payload.externalCsrValidationStrict).toBe(true);
         });
 
         test('emits failure on error', async () => {
-            const out = await runEpic(EpicIndex.GetPlatformDefault, slice.actions.getPlatformDefaultRequestAttributes(), {
+            const out = await runEpic('getPlatformDefaultRequestAttributes', slice.actions.getPlatformDefaultRequestAttributes(), {
                 depsOverrides: {
                     settings: { getPlatformSettings: () => throwError(() => new Error('x')), updatePlatformSettings: () => of(undefined) },
                 },
@@ -121,7 +119,7 @@ describe('raProfileRequestAttributes epics', () => {
 
         test('merges into existing certificate settings and preserves validation', async () => {
             const captured: any[] = [];
-            const out = await runEpic(EpicIndex.UpdatePlatformDefault, action, {
+            const out = await runEpic('updatePlatformDefaultRequestAttributes', action, {
                 takeCount: 2,
                 depsOverrides: {
                     settings: {
@@ -146,7 +144,7 @@ describe('raProfileRequestAttributes epics', () => {
         });
 
         test('emits failure when the update call fails', async () => {
-            const out = await runEpic(EpicIndex.UpdatePlatformDefault, action, {
+            const out = await runEpic('updatePlatformDefaultRequestAttributes', action, {
                 takeCount: 1,
                 depsOverrides: {
                     settings: {
