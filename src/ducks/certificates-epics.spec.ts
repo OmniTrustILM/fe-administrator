@@ -40,6 +40,7 @@ import { actions as appRedirectActions } from './app-redirect';
 const ASSOCIATE_EPIC_INDEX = 3;
 const DEASSOCIATE_EPIC_INDEX = 4;
 const ISSUE_EPIC_INDEX = 8;
+const COMPLETE_REGISTERED_EPIC_INDEX = 11;
 const REVOKE_EPIC_INDEX = 12;
 const MANUALLY_ISSUE_EPIC_INDEX = 15;
 const MANUALLY_CONFIRM_REVOKE_EPIC_INDEX = 16;
@@ -157,6 +158,28 @@ async function runDeassociateEpic(
     return { emitted, calls };
 }
 
+async function runCompleteRegisteredEpic(
+    action: UnknownAction,
+    issueExistingCertificate: (args: any) => any = () => of({ uuid: 'cert-1' }),
+    takeCount = 3,
+): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+    const calls: any[] = [];
+    const deps = {
+        apiClients: {
+            clientOperations: {
+                issueExistingCertificate: (args: any) => {
+                    calls.push(args);
+                    return issueExistingCertificate(args);
+                },
+            },
+        },
+    };
+    const output$ = epics[COMPLETE_REGISTERED_EPIC_INDEX](of(action), of({}) as any, deps as any);
+    const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
+    return { emitted, calls };
+}
+
 describe('certificates epics', () => {
     const issueAction = certificatesActions.issueCertificate({
         authorityUuid: 'auth-1',
@@ -204,6 +227,56 @@ describe('certificates epics', () => {
         expect(emitted[0].type).toBe(certificatesActions.issueCertificateFailure.type);
         expect((emitted[0] as any).payload.validationErrors).toBeUndefined();
         expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+    });
+
+    test('completeRegisteredCertificate CSR-upload mode forwards request/format without key fields', async () => {
+        const { calls } = await runCompleteRegisteredEpic(
+            certificatesActions.completeRegisteredCertificate({
+                authorityUuid: 'auth-1',
+                raProfileUuid: 'ra-1',
+                certificateUuid: 'cert-1',
+                request: 'BASE64CSR',
+                format: 'PKCS10' as any,
+                authorizationSecret: 'secret',
+                attributes: [],
+            }),
+        );
+
+        expect(calls[0].clientCertificateIssueRequestDto).toEqual({
+            request: 'BASE64CSR',
+            format: 'PKCS10',
+            authorizationSecret: 'secret',
+            attributes: [],
+            tokenProfileUuid: undefined,
+            keyUuid: undefined,
+            signatureAttributes: undefined,
+            csrAttributes: undefined,
+        });
+    });
+
+    test('completeRegisteredCertificate existing-key mode forwards tokenProfileUuid/keyUuid/signatureAttributes with an empty request', async () => {
+        const { emitted, calls } = await runCompleteRegisteredEpic(
+            certificatesActions.completeRegisteredCertificate({
+                authorityUuid: 'auth-1',
+                raProfileUuid: 'ra-1',
+                certificateUuid: 'cert-1',
+                request: '',
+                authorizationSecret: 'secret',
+                attributes: [],
+                tokenProfileUuid: 'token-profile-uuid',
+                keyUuid: 'key-uuid',
+                signatureAttributes: [{ name: 'sig-attr', content: [{ data: 'v' }] } as any],
+            }),
+            () => of({ uuid: 'cert-1' }),
+        );
+
+        expect(calls[0].clientCertificateIssueRequestDto).toMatchObject({
+            request: '',
+            tokenProfileUuid: 'token-profile-uuid',
+            keyUuid: 'key-uuid',
+        });
+        expect(calls[0].clientCertificateIssueRequestDto.signatureAttributes).toEqual([{ name: 'sig-attr', content: [{ data: 'v' }] }]);
+        expect(emitted[0].type).toBe(certificatesActions.issueCertificateSuccess.type);
     });
 
     test('associateCertificate successor relation sends selected cert as successor and emits Success keyed on current cert', async () => {

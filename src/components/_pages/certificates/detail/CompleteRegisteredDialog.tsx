@@ -1,67 +1,155 @@
 import { useCallback, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 
+import AttributeEditor from 'components/Attributes/AttributeEditor';
 import Button from 'components/Button';
 import Container from 'components/Container';
-import TextInput from 'components/TextInput';
 import FileUpload from 'components/Input/FileUpload/FileUpload';
+import Select from 'components/Select';
+import TextInput from 'components/TextInput';
+import RenderRequestKey from 'components/_pages/certificates/form/RenderRequestKey';
+import RenderTokenProfile from 'components/_pages/certificates/form/RenderTokenProfile';
 import { actions as certificateActions } from 'ducks/certificates';
+import { selectors as cryptographyOperationSelectors } from 'ducks/cryptographic-operations';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { CertificateRequestFormat } from 'types/openapi';
+import { collectFormAttributes } from 'utils/attributes/attributes';
 
 type Props = Readonly<{
     certificate: CertificateDetailResponseModel;
     onCancel: () => void;
 }>;
 
+type KeySource = 'upload' | 'existing';
+
+type CompleteRegisteredFormValues = {
+    authorizationSecret: string;
+    keySource: KeySource;
+    tokenProfileUuid?: string;
+    keyUuid?: string;
+};
+
+const keySourceOptions = [
+    { label: 'Upload CSR', value: 'upload' },
+    { label: 'Existing Key', value: 'existing' },
+];
+
 export default function CompleteRegisteredDialog({ certificate, onCancel }: Props) {
     const dispatch = useDispatch();
+    const signatureAttributeDescriptors = useSelector(cryptographyOperationSelectors.signatureAttributeDescriptors);
 
-    // Write-only: the challenge is never displayed back, only forwarded to the completion request.
-    const [authorizationSecret, setAuthorizationSecret] = useState('');
+    // Write-only: the CSR content lives outside the RHF form since FileUpload reports content via a
+    // plain callback (not a Controller) — matching the established pattern in the add-certificate form.
     const [csrContent, setCsrContent] = useState('');
 
-    const canSubmit = !!authorizationSecret && !!csrContent;
+    const methods = useForm<CompleteRegisteredFormValues>({
+        mode: 'onChange',
+        defaultValues: { keySource: 'upload' },
+    });
+    const { control, handleSubmit, setValue } = methods;
 
-    const onSubmit = useCallback(() => {
-        if (!canSubmit) return;
+    const keySource = useWatch({ control, name: 'keySource' });
+    const authorizationSecret = useWatch({ control, name: 'authorizationSecret' });
+    const tokenProfileUuid = useWatch({ control, name: 'tokenProfileUuid' });
+    const keyUuid = useWatch({ control, name: 'keyUuid' });
 
-        dispatch(
-            certificateActions.completeRegisteredCertificate({
-                authorityUuid: certificate.raProfile?.authorityInstanceUuid ?? '',
-                raProfileUuid: certificate.raProfile?.uuid ?? '',
-                certificateUuid: certificate.uuid,
-                request: csrContent,
-                format: CertificateRequestFormat.Pkcs10,
-                authorizationSecret,
-                attributes: [],
-            }),
-        );
-        onCancel();
-    }, [canSubmit, dispatch, certificate, csrContent, authorizationSecret, onCancel]);
+    const isUploadSource = keySource !== 'existing';
+
+    const canSubmit = !!authorizationSecret && (isUploadSource ? !!csrContent : !!tokenProfileUuid && !!keyUuid);
+
+    const onSubmit = useCallback(
+        (values: CompleteRegisteredFormValues) => {
+            const combinedValues: Record<string, any> = { ...values };
+            const signatureAttrs = isUploadSource
+                ? undefined
+                : collectFormAttributes('signatureAttributes', signatureAttributeDescriptors, combinedValues);
+
+            dispatch(
+                certificateActions.completeRegisteredCertificate({
+                    authorityUuid: certificate.raProfile?.authorityInstanceUuid ?? '',
+                    raProfileUuid: certificate.raProfile?.uuid ?? '',
+                    certificateUuid: certificate.uuid,
+                    request: isUploadSource ? csrContent : '',
+                    format: isUploadSource ? CertificateRequestFormat.Pkcs10 : undefined,
+                    authorizationSecret: values.authorizationSecret,
+                    attributes: [],
+                    tokenProfileUuid: isUploadSource ? undefined : values.tokenProfileUuid,
+                    keyUuid: isUploadSource ? undefined : values.keyUuid,
+                    signatureAttributes: signatureAttrs,
+                }),
+            );
+            onCancel();
+        },
+        [certificate, csrContent, dispatch, isUploadSource, onCancel, signatureAttributeDescriptors],
+    );
 
     return (
-        <div className="space-y-4">
-            <TextInput
-                id="completeAuthorizationSecret"
-                dataTestId="completeAuthorizationSecret"
-                type="password"
-                required
-                label="Challenge"
-                value={authorizationSecret}
-                onChange={setAuthorizationSecret}
-            />
+        <FormProvider {...methods}>
+            <form onSubmit={handleSubmit(onSubmit)} noValidate>
+                <div className="space-y-4">
+                    <Controller
+                        control={control}
+                        name="authorizationSecret"
+                        rules={{ required: true }}
+                        render={({ field: { value, onChange } }) => (
+                            <TextInput
+                                id="completeAuthorizationSecret"
+                                dataTestId="completeAuthorizationSecret"
+                                type="password"
+                                required
+                                label="Challenge"
+                                value={value ?? ''}
+                                onChange={onChange}
+                            />
+                        )}
+                    />
 
-            <FileUpload id="completeCsrUpload" fileType="CSR" editable required onFileContentLoaded={setCsrContent} />
+                    <Controller
+                        control={control}
+                        name="keySource"
+                        render={({ field: { value, onChange } }) => (
+                            <Select
+                                id="completeKeySource"
+                                dataTestId="completeKeySource"
+                                options={keySourceOptions}
+                                value={value ?? 'upload'}
+                                label="Key Source"
+                                onChange={(selected) => {
+                                    const source = (selected ?? 'upload') as KeySource;
+                                    onChange(source);
+                                    if (source === 'upload') {
+                                        setValue('tokenProfileUuid', undefined);
+                                        setValue('keyUuid', undefined);
+                                    }
+                                }}
+                            />
+                        )}
+                    />
 
-            <Container className="flex-row justify-end modal-footer" gap={4}>
-                <Button variant="outline" onClick={onCancel}>
-                    Cancel
-                </Button>
-                <Button color="primary" disabled={!canSubmit} onClick={onSubmit} data-testid="completeRegisteredSubmit">
-                    Complete
-                </Button>
-            </Container>
-        </div>
+                    {isUploadSource ? (
+                        <FileUpload id="completeCsrUpload" fileType="CSR" editable required onFileContentLoaded={setCsrContent} />
+                    ) : (
+                        <div className="space-y-4">
+                            <RenderTokenProfile type="normal" name="tokenProfileUuid" />
+                            <RenderRequestKey type="normal" name="keyUuid" tokenProfileField="tokenProfileUuid" />
+
+                            {tokenProfileUuid ? (
+                                <AttributeEditor id="signatureAttributes" attributeDescriptors={signatureAttributeDescriptors ?? []} />
+                            ) : null}
+                        </div>
+                    )}
+
+                    <Container className="flex-row justify-end modal-footer" gap={4}>
+                        <Button variant="outline" onClick={onCancel} type="button">
+                            Cancel
+                        </Button>
+                        <Button color="primary" type="submit" disabled={!canSubmit} data-testid="completeRegisteredSubmit">
+                            Complete
+                        </Button>
+                    </Container>
+                </div>
+            </form>
+        </FormProvider>
     );
 }

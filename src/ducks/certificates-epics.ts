@@ -297,6 +297,10 @@ const completeRegisteredCertificate: AppEpic = (action$, state, deps) => {
                         format: action.payload.format,
                         authorizationSecret: action.payload.authorizationSecret,
                         attributes: action.payload.attributes?.map(transformAttributeRequestModelToDto) ?? [],
+                        tokenProfileUuid: action.payload.tokenProfileUuid,
+                        keyUuid: action.payload.keyUuid,
+                        signatureAttributes: action.payload.signatureAttributes?.map(transformAttributeRequestModelToDto),
+                        csrAttributes: action.payload.csrAttributes?.map(transformAttributeRequestModelToDto),
                     },
                 })
                 .pipe(

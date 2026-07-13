@@ -659,6 +659,36 @@ function cryptographicOperationsTestReducer(
     return state ?? cryptographicOperationsTestInitialState;
 }
 
+// Reducer key must match the real slice.name ('tokenprofiles', lowercase p) so the real
+// token-profiles selectors (used by RenderTokenProfile) can find this state.
+export type TokenProfilesTestState = {
+    tokenProfiles: any[];
+};
+
+const tokenProfilesTestInitialState: TokenProfilesTestState = {
+    tokenProfiles: [],
+};
+
+function tokenProfilesTestReducer(state: TokenProfilesTestState | undefined, _action: UnknownAction): TokenProfilesTestState {
+    return state ?? tokenProfilesTestInitialState;
+}
+
+// Reducer key must match the real slice.name ('cryptographicKeys') so the real
+// cryptographic-keys selectors (used by RenderRequestKey) can find this state.
+export type CryptographicKeysTestState = {
+    cryptographicKeyPairs: any[];
+    altCryptographicKeyPairs: any[];
+};
+
+const cryptographicKeysTestInitialState: CryptographicKeysTestState = {
+    cryptographicKeyPairs: [],
+    altCryptographicKeyPairs: [],
+};
+
+function cryptographicKeysTestReducer(state: CryptographicKeysTestState | undefined, _action: UnknownAction): CryptographicKeysTestState {
+    return state ?? cryptographicKeysTestInitialState;
+}
+
 export type SettingsTestState = {
     platformSettings?: any;
     isFetchingPlatform: boolean;
@@ -698,6 +728,8 @@ export const testReducers = combineReducers({
     cryptographicOperations: cryptographicOperationsTestReducer,
     utilsCertificateRequest: utilsCertificateRequestTestReducer,
     settings: settingsTestReducer,
+    tokenprofiles: tokenProfilesTestReducer,
+    cryptographicKeys: cryptographicKeysTestReducer,
 });
 
 export const testInitialState = {
@@ -723,4 +755,6 @@ export const testInitialState = {
     cryptographicOperations: cryptographicOperationsTestInitialState,
     utilsCertificateRequest: utilsCertificateRequestTestInitialState,
     settings: settingsTestInitialState,
+    tokenprofiles: tokenProfilesTestInitialState,
+    cryptographicKeys: cryptographicKeysTestInitialState,
 };

@@ -399,9 +399,13 @@ export const slice = createSlice({
                 raProfileUuid: string;
                 certificateUuid: string;
                 request: string;
-                format: CertificateRequestFormat;
+                format?: CertificateRequestFormat;
                 authorizationSecret: string;
                 attributes?: Array<AttributeRequestModel>;
+                tokenProfileUuid?: string;
+                keyUuid?: string;
+                signatureAttributes?: Array<AttributeRequestModel>;
+                csrAttributes?: Array<AttributeRequestModel>;
             }>,
         ) => {
             state.isIssuing = true;
