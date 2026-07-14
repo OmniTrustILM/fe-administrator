@@ -25,6 +25,7 @@ import {
     emptyValueSourceBinding,
     hasDuplicateStaticValues,
     isAuthoredAttributeValid,
+    isStaticListSupportedForContentType,
     isValueSourceBindingValid,
     type AuthoredAttributeFormValues,
     type RequestAttributeAuthoringFormValues,
@@ -68,6 +69,9 @@ const VALUE_SOURCE_OPTIONS = [
     { value: ValueSourceType.None, label: 'Free input' },
     { value: ValueSourceType.StaticList, label: 'Static list' },
 ];
+
+// Offered when the content type has no scalar editor — a static list can't be authored there.
+const FREE_INPUT_ONLY_OPTIONS = VALUE_SOURCE_OPTIONS.slice(0, 1);
 
 function valueSourceLabel(type: ValueSourceType): string {
     return VALUE_SOURCE_OPTIONS.find((o) => o.value === type)?.label ?? 'Free input';
@@ -241,16 +245,28 @@ export default function RequestAttributeAuthoringEditor({
                     id="ra-attr-content-type"
                     label="Content type"
                     value={d.contentType}
-                    onChange={(v) => set({ contentType: v as AttributeContentType, staticValues: [] })}
+                    onChange={(v) => {
+                        const contentType = v as AttributeContentType;
+                        // Static list is only authorable for scalar content types; drop back to free
+                        // input if the new type can't carry one, so we never render a missing editor.
+                        const keepStaticList = isStaticListSupportedForContentType(contentType);
+                        set({
+                            contentType,
+                            staticValues: [],
+                            valueSourceType: keepStaticList ? d.valueSourceType : ValueSourceType.None,
+                        });
+                    }}
                     options={CONTENT_TYPE_OPTIONS}
                 />
                 <Container className="flex-row items-center" gap={4}>
                     <Checkbox id="ra-attr-required" checked={d.required} onChange={(c) => set({ required: c })} label="Required" />
                     <Checkbox
                         id="ra-attr-list"
-                        checked={d.list}
+                        checked={d.list || d.valueSourceType === ValueSourceType.StaticList}
                         onChange={(c) => set({ list: c, multiSelect: c ? d.multiSelect : false })}
                         label="List"
+                        // A static list is inherently a list attribute — locked on while it's selected.
+                        disabled={d.valueSourceType === ValueSourceType.StaticList}
                     />
                     <Checkbox
                         id="ra-attr-multi"
@@ -336,8 +352,13 @@ export default function RequestAttributeAuthoringEditor({
                     id="ra-attr-value-source"
                     label="Value source"
                     value={d.valueSourceType}
-                    onChange={(v) => set({ valueSourceType: v as ValueSourceType })}
-                    options={VALUE_SOURCE_OPTIONS}
+                    onChange={(v) => {
+                        const valueSourceType = v as ValueSourceType;
+                        // Selecting a static list forces `list` on (see DTO builder) so the toggle and
+                        // the authored options never disagree.
+                        set({ valueSourceType, ...(valueSourceType === ValueSourceType.StaticList ? { list: true } : {}) });
+                    }}
+                    options={isStaticListSupportedForContentType(d.contentType) ? VALUE_SOURCE_OPTIONS : FREE_INPUT_ONLY_OPTIONS}
                 />
                 {d.valueSourceType === ValueSourceType.StaticList && renderStaticValues(d, set)}
             </div>
@@ -348,14 +369,20 @@ export default function RequestAttributeAuthoringEditor({
     // (ValueSource carries no values); each input is typed by the attribute's content type,
     // mirroring the custom-attribute "Add Content" UI.
     const renderStaticValues = (d: AuthoredAttributeFormValues, set: (p: Partial<AuthoredAttributeFormValues>) => void) => {
-        const inputType = ContentFieldConfiguration[d.contentType].type;
-        const addValue = () => set({ staticValues: [...d.staticValues, ContentFieldConfiguration[d.contentType].initial] });
+        // Guard the lookup: value-source options are already filtered to configured content types, so
+        // this only trips if a content type without a scalar editor slips through — render nothing
+        // rather than dereference a missing configuration.
+        const config = ContentFieldConfiguration[d.contentType];
+        if (!config) return null;
+        const inputType = config.type;
+        const addValue = () => set({ staticValues: [...d.staticValues, config.initial] });
         const setValueAt = (index: number, next: string | number | boolean) =>
             set({ staticValues: d.staticValues.map((v, i) => (i === index ? next : v)) });
         const removeValueAt = (index: number) => set({ staticValues: d.staticValues.filter((_, i) => i !== index) });
         return (
             <div className="space-y-2" data-testid={`${dataTestId}-static-values`}>
-                <Label htmlFor={`${dataTestId}-static-value-add`}>Static list values</Label>
+                {/* Group label for the value rows below — not tied to a single input's id. */}
+                <Label>Static list values</Label>
                 {d.staticValues.map((v, index) => (
                     <div key={index} className="flex items-center gap-2" data-testid={`${dataTestId}-static-value-row`}>
                         <div className="flex-1">

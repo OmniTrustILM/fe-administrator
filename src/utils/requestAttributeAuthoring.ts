@@ -98,6 +98,26 @@ export interface RequestAttributeAuthoringFormValues {
 
 export const DEFAULT_MERGE_MODE = AttributeSetMergeMode.Merge;
 
+/**
+ * Content types a static list can be authored for — the scalar types with a concrete input in the
+ * authoring UI. The remaining types (secret/file/credential/codeblock/object/resource) have no
+ * scalar editor, so a static pick-list is neither meaningful nor renderable for them.
+ */
+export const STATIC_LIST_CONTENT_TYPES: readonly AttributeContentType[] = [
+    AttributeContentType.String,
+    AttributeContentType.Text,
+    AttributeContentType.Integer,
+    AttributeContentType.Float,
+    AttributeContentType.Boolean,
+    AttributeContentType.Date,
+    AttributeContentType.Time,
+    AttributeContentType.Datetime,
+];
+
+export function isStaticListSupportedForContentType(contentType: AttributeContentType): boolean {
+    return STATIC_LIST_CONTENT_TYPES.includes(contentType);
+}
+
 function generateUuid(): string {
     // crypto.randomUUID is available in all supported browsers and the test env; using it
     // (never Math.random) keeps the generated identifier cryptographically sound.
@@ -194,13 +214,39 @@ function buildValueSource(form: AuthoredAttributeFormValues): ValueSource | unde
     return source;
 }
 
+/**
+ * Coerce an authored static value into the runtime type Core expects for the attribute's content
+ * type: numbers for integer/float (the number input can leave the untouched initial `'0'` as a
+ * string), a boolean for boolean, and a trimmed string otherwise — so the persisted `content`
+ * matches the blank/uniqueness rules that compare trimmed.
+ */
+function normalizeStaticContentValue(value: string | number | boolean, contentType: AttributeContentType): string | number | boolean {
+    switch (contentType) {
+        case AttributeContentType.Integer: {
+            const n = typeof value === 'number' ? value : Number.parseInt(String(value).trim(), 10);
+            return Number.isNaN(n) ? 0 : Math.trunc(n);
+        }
+        case AttributeContentType.Float: {
+            const n = typeof value === 'number' ? value : Number.parseFloat(String(value).trim());
+            return Number.isNaN(n) ? 0 : n;
+        }
+        case AttributeContentType.Boolean:
+            return typeof value === 'boolean' ? value : String(value).trim().toLowerCase() === 'true';
+        default:
+            return typeof value === 'string' ? value.trim() : value;
+    }
+}
+
 export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): DataAttributeV3 {
+    // A static list presents a predefined set of options, so it is a list attribute by definition —
+    // force `list` on regardless of the toggle so the DTO does not contradict the content array.
+    const isStaticList = form.valueSourceType === ValueSourceType.StaticList;
     const properties: DataAttributeProperties = {
         label: form.label,
         visible: true,
         required: form.required,
         readOnly: form.readOnly,
-        list: form.list,
+        list: isStaticList ? true : form.list,
         multiSelect: form.multiSelect,
         extensibleList: false,
     };
@@ -225,8 +271,11 @@ export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): Da
     if (valueSource) {
         dto.valueSource = valueSource;
     }
-    if (form.valueSourceType === ValueSourceType.StaticList && form.staticValues.length > 0) {
-        dto.content = form.staticValues.map((data) => ({ data, contentType: form.contentType })) as DataAttributeV3['content'];
+    if (isStaticList && form.staticValues.length > 0) {
+        dto.content = form.staticValues.map((value) => ({
+            data: normalizeStaticContentValue(value, form.contentType),
+            contentType: form.contentType,
+        })) as DataAttributeV3['content'];
     }
     return dto;
 }

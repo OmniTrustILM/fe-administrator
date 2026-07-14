@@ -24,6 +24,7 @@ import {
     emptyValueSourceBinding,
     isAuthoredAttributeMappingValid,
     isAuthoredAttributeValid,
+    isStaticListSupportedForContentType,
     isValueSourceBindingValid,
     parseAuthoredAttributeDto,
     parsePlatformDefaultDto,
@@ -174,6 +175,107 @@ describe('requestAttributeAuthoring', () => {
         test('omits content when STATIC_LIST has no values', () => {
             const dto = buildAuthoredAttributeDto({ ...baseAttr(), valueSourceType: ValueSourceType.StaticList, staticValues: [] });
             expect(dto.content).toBeUndefined();
+        });
+
+        test('forces properties.list on for a STATIC_LIST even when the toggle is off', () => {
+            const dto = buildAuthoredAttributeDto({
+                ...baseAttr(),
+                list: false,
+                valueSourceType: ValueSourceType.StaticList,
+                staticValues: ['prod'],
+            });
+            expect(dto.properties.list).toBe(true);
+        });
+
+        test('leaves properties.list under the toggle when the source is not STATIC_LIST', () => {
+            expect(buildAuthoredAttributeDto({ ...baseAttr(), list: false }).properties.list).toBe(false);
+            expect(buildAuthoredAttributeDto({ ...baseAttr(), list: true }).properties.list).toBe(true);
+        });
+
+        test('trims string static values written to content', () => {
+            const dto = buildAuthoredAttributeDto({
+                ...baseAttr(),
+                contentType: AttributeContentType.String,
+                valueSourceType: ValueSourceType.StaticList,
+                staticValues: ['  prod  ', 'staging'],
+            });
+            expect(dto.content).toEqual([
+                { data: 'prod', contentType: AttributeContentType.String },
+                { data: 'staging', contentType: AttributeContentType.String },
+            ]);
+        });
+
+        test('coerces integer static values to numbers (including the untouched string default)', () => {
+            const dto = buildAuthoredAttributeDto({
+                ...baseAttr(),
+                contentType: AttributeContentType.Integer,
+                valueSourceType: ValueSourceType.StaticList,
+                staticValues: ['0', 3, '  5 '],
+            });
+            expect(dto.content).toEqual([
+                { data: 0, contentType: AttributeContentType.Integer },
+                { data: 3, contentType: AttributeContentType.Integer },
+                { data: 5, contentType: AttributeContentType.Integer },
+            ]);
+            (dto.content ?? []).forEach((item) => {
+                expect(typeof (item as { data: unknown }).data).toBe('number');
+            });
+        });
+
+        test('coerces float static values to numbers', () => {
+            const dto = buildAuthoredAttributeDto({
+                ...baseAttr(),
+                contentType: AttributeContentType.Float,
+                valueSourceType: ValueSourceType.StaticList,
+                staticValues: ['0', '1.5'],
+            });
+            expect(dto.content).toEqual([
+                { data: 0, contentType: AttributeContentType.Float },
+                { data: 1.5, contentType: AttributeContentType.Float },
+            ]);
+        });
+
+        test('coerces boolean static values to booleans', () => {
+            const dto = buildAuthoredAttributeDto({
+                ...baseAttr(),
+                contentType: AttributeContentType.Boolean,
+                valueSourceType: ValueSourceType.StaticList,
+                staticValues: [true, 'false'],
+            });
+            expect(dto.content).toEqual([
+                { data: true, contentType: AttributeContentType.Boolean },
+                { data: false, contentType: AttributeContentType.Boolean },
+            ]);
+        });
+    });
+
+    describe('isStaticListSupportedForContentType', () => {
+        test('true for scalar content types with an authoring input', () => {
+            [
+                AttributeContentType.String,
+                AttributeContentType.Text,
+                AttributeContentType.Integer,
+                AttributeContentType.Float,
+                AttributeContentType.Boolean,
+                AttributeContentType.Date,
+                AttributeContentType.Time,
+                AttributeContentType.Datetime,
+            ].forEach((ct) => {
+                expect(isStaticListSupportedForContentType(ct)).toBe(true);
+            });
+        });
+
+        test('false for content types without a scalar authoring input', () => {
+            [
+                AttributeContentType.Secret,
+                AttributeContentType.File,
+                AttributeContentType.Credential,
+                AttributeContentType.Codeblock,
+                AttributeContentType.Object,
+                AttributeContentType.Resource,
+            ].forEach((ct) => {
+                expect(isStaticListSupportedForContentType(ct)).toBe(false);
+            });
         });
     });
 
