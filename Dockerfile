@@ -22,7 +22,7 @@ FROM nginxinc/nginx-unprivileged:1.31.2-alpine
 # is ever unavailable, keeping the Trivy scan gate reliably green.
 USER root
 RUN apk add --no-cache --upgrade "c-ares>=1.34.8-r0"
-USER nginx
+USER 101
 
 WORKDIR /usr/share/nginx/html
 
