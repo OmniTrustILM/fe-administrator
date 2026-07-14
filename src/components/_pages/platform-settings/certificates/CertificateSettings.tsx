@@ -14,6 +14,7 @@ const CertificateSettings = ({ platformSettings }: Props) => {
             {
                 id: 'setting',
                 content: 'Setting',
+                width: '40%',
             },
             {
                 id: 'value',
