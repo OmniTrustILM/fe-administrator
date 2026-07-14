@@ -280,8 +280,26 @@ export default function CertificateDetailsContent({ certificate, validationResul
         [certificate, isUpdatingTrustedStatus, dispatch],
     );
 
-    const buttons: WidgetButtonProps[] = useMemo(
-        () => [
+    const buttons: WidgetButtonProps[] = useMemo(() => {
+        // Core rejects completion once the registration authorization is no longer Active (Expired/Locked/
+        // Closed) or its issuance window has elapsed, so gate the Complete action on the same conditions.
+        const registration = certificate?.registration;
+        const registrationInactive = !!registration?.state && registration.state !== CertificateRegistrationState.Active;
+        const registrationWindowElapsed = !!registration?.expiresAt && new Date(registration.expiresAt).getTime() < Date.now();
+        const completeDisabled =
+            !certificate?.raProfile ||
+            certificate?.state !== CertStatus.Registered ||
+            isCertificateArchived ||
+            registrationInactive ||
+            registrationWindowElapsed;
+        let completeTooltip = 'Complete';
+        if (registrationInactive) {
+            completeTooltip = `Complete unavailable — registration is ${registrationStateLabels[registration!.state!] ?? registration!.state}`;
+        } else if (registrationWindowElapsed) {
+            completeTooltip = 'Complete unavailable — the issuance window has elapsed';
+        }
+
+        return [
             {
                 icon: 'trash',
                 disabled: false,
@@ -322,8 +340,8 @@ export default function CertificateDetailsContent({ certificate, validationResul
             },
             {
                 icon: 'check',
-                disabled: !certificate?.raProfile || certificate?.state !== CertStatus.Registered || isCertificateArchived,
-                tooltip: 'Complete',
+                disabled: completeDisabled,
+                tooltip: completeTooltip,
                 onClick: () => setComplete(true),
             },
             {
@@ -366,9 +384,8 @@ export default function CertificateDetailsContent({ certificate, validationResul
                     dispatch(actions.unarchiveCertificate({ uuid: certificate?.uuid ?? '' }));
                 },
             },
-        ],
-        [certificate, onComplianceCheck, dispatch, onDownloadClick, copyToClipboard, isCertificateArchived, isArchiving],
-    );
+        ];
+    }, [certificate, onComplianceCheck, dispatch, onDownloadClick, copyToClipboard, isCertificateArchived, isArchiving]);
 
     const detailData: TableDataRow[] = useMemo(() => {
         const certDetail = certificate

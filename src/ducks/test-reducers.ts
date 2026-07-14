@@ -531,6 +531,7 @@ export type CertificatesTestState = {
     issuanceAttributes: Record<string, any[]>;
     csrAttributeDescriptors: any[];
     isIssuing: boolean;
+    isRegistering: boolean;
     issueValidationErrors?: string[];
 };
 
@@ -541,6 +542,7 @@ const certificatesTestInitialState: CertificatesTestState = {
     issuanceAttributes: {},
     csrAttributeDescriptors: [],
     isIssuing: false,
+    isRegistering: false,
     issueValidationErrors: undefined,
 };
 

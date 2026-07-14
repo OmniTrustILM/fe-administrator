@@ -191,7 +191,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                     <Controller
                         name="defaultIssuanceWindowDays"
                         control={control}
-                        rules={buildValidationRules([validatePositiveInteger()])}
+                        rules={buildValidationRules([validateNonZeroInteger(), validatePositiveInteger()])}
                         render={({ field, fieldState }) => (
                             <TextInput
                                 {...field}
@@ -211,7 +211,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                     <Controller
                         name="maxFailedAttempts"
                         control={control}
-                        rules={buildValidationRules([validatePositiveInteger()])}
+                        rules={buildValidationRules([validateNonZeroInteger(), validatePositiveInteger()])}
                         render={({ field, fieldState }) => (
                             <TextInput
                                 {...field}

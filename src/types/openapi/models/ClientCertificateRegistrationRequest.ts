@@ -68,7 +68,7 @@ export interface ClientCertificateRegistrationRequest {
      */
     authorizationSecret?: string;
     /**
-     * Optional absolute deadline by which the pre-registered certificate must be issued. When omitted, the platform applies the default registration issuance window.
+     * Optional absolute deadline by which the completion request must be presented — a valid challenge must be supplied before this instant. It gates the completion request, not the final issuance: when the request is approved or otherwise processed asynchronously, issuance may finalize shortly after the deadline. When omitted, the platform applies the default registration issuance window.
      * @type {string}
      * @memberof ClientCertificateRegistrationRequest
      */

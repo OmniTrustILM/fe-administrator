@@ -1,4 +1,5 @@
 import { test, expect } from '../../../../../playwright/ct-test';
+import { testInitialState } from 'ducks/test-reducers';
 import { CertificateFormTestWrapper } from './CertificateFormTestWrapper';
 
 test.describe('CertificateForm', () => {
@@ -60,5 +61,25 @@ test.describe('CertificateForm', () => {
 
         await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toHaveCount(0);
         await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
+    });
+
+    test('an in-flight registration disables Cancel and puts Create in its progress state (no duplicate submit)', async ({
+        mount,
+        page,
+    }) => {
+        // Register and issue are separate non-idempotent flows; while either is in flight the form must
+        // disable its controls. Here the register flag is set, which the issue flag alone would have missed.
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{
+                    certificates: { ...testInitialState.certificates, isRegistering: true },
+                }}
+            />,
+        );
+
+        await expect(page.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+        const createButton = page.getByRole('button', { name: 'Creating' });
+        await expect(createButton).toBeVisible();
+        await expect(createButton).toBeDisabled();
     });
 });

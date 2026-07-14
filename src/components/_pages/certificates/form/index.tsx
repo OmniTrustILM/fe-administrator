@@ -89,7 +89,11 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const signatureAttributeDescriptors = useSelector(cryptographyOperationSelectors.signatureAttributeDescriptors);
     const altSignatureAttributeDescriptors = useSelector(cryptographyOperationSelectors.altSignatureAttributeDescriptors);
 
-    const issuingCertificate = useSelector(certificateSelectors.isIssuing);
+    const isIssuing = useSelector(certificateSelectors.isIssuing);
+    const isRegistering = useSelector(certificateSelectors.isRegistering);
+    // Register and issue are distinct, non-idempotent flows tracked by separate flags; the form must
+    // treat either as busy so widgets/Cancel/Create disable and duplicate submits are prevented.
+    const issuingCertificate = isIssuing || isRegistering;
     const issueValidationErrors = useSelector(certificateSelectors.issueValidationErrors);
     const parsedCertificateRequest = useSelector(utilsCertificateRequestSelectors.parsedCertificateRequest);
     const parseError = useSelector(utilsCertificateRequestSelectors.parseError);
@@ -597,7 +601,13 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     <Controller
                                         control={control}
                                         name="expiresAt"
-                                        render={({ field: { value, onChange } }) => (
+                                        rules={{
+                                            // The Core contract marks expiresAt @Future; reject past/today dates the
+                                            // native date picker would otherwise permit before Core rejects them.
+                                            validate: (value) =>
+                                                !value || new Date(value) > new Date() || 'Issuance window must be a future date',
+                                        }}
+                                        render={({ field: { value, onChange }, fieldState }) => (
                                             <TextInput
                                                 id="expiresAt"
                                                 dataTestId="expiresAt"
@@ -605,6 +615,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                 label="Issuance window (optional)"
                                                 value={value ?? ''}
                                                 onChange={onChange}
+                                                invalid={!!fieldState.error}
+                                                error={fieldState.error ? 'Issuance window must be a future date' : undefined}
                                             />
                                         )}
                                     />
