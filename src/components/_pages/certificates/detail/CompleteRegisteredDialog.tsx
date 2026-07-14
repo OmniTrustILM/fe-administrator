@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 
@@ -10,7 +10,7 @@ import Select from 'components/Select';
 import TextInput from 'components/TextInput';
 import RenderRequestKey from 'components/_pages/certificates/form/RenderRequestKey';
 import RenderTokenProfile from 'components/_pages/certificates/form/RenderTokenProfile';
-import { actions as certificateActions } from 'ducks/certificates';
+import { actions as certificateActions, selectors as certificateSelectors } from 'ducks/certificates';
 import { selectors as cryptographyOperationSelectors } from 'ducks/cryptographic-operations';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { CertificateRequestFormat } from 'types/openapi';
@@ -38,6 +38,13 @@ const keySourceOptions = [
 export default function CompleteRegisteredDialog({ certificate, onCancel }: Props) {
     const dispatch = useDispatch();
     const signatureAttributeDescriptors = useSelector(cryptographyOperationSelectors.signatureAttributeDescriptors);
+    const csrAttributeDescriptors = useSelector(certificateSelectors.csrAttributeDescriptors);
+
+    // The backend generates the CSR from csrAttributes on the existing-key path, so make sure the
+    // identity (Request Attributes) descriptors are loaded, mirroring the add-certificate form.
+    useEffect(() => {
+        dispatch(certificateActions.getCsrAttributes());
+    }, [dispatch]);
 
     // Write-only: the CSR content lives outside the RHF form since FileUpload reports content via a
     // plain callback (not a Controller) — matching the established pattern in the add-certificate form.
@@ -68,9 +75,12 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
             if (!authorityUuid || !raProfileUuid) return;
 
             const combinedValues: Record<string, any> = { ...values };
+            // On the existing-key path the backend generates and signs the CSR from the selected key plus
+            // the identity in csrAttributes, so both must be sent; the upload path carries a complete CSR.
             const signatureAttrs = isUploadSource
                 ? undefined
                 : collectFormAttributes('signatureAttributes', signatureAttributeDescriptors, combinedValues);
+            const csrAttrs = isUploadSource ? undefined : collectFormAttributes('csrAttributes', csrAttributeDescriptors, combinedValues);
 
             dispatch(
                 certificateActions.completeRegisteredCertificate({
@@ -84,11 +94,12 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
                     tokenProfileUuid: isUploadSource ? undefined : values.tokenProfileUuid,
                     keyUuid: isUploadSource ? undefined : values.keyUuid,
                     signatureAttributes: signatureAttrs,
+                    csrAttributes: csrAttrs,
                 }),
             );
             onCancel();
         },
-        [canSubmit, certificate, csrContent, dispatch, isUploadSource, onCancel, signatureAttributeDescriptors],
+        [canSubmit, certificate, csrAttributeDescriptors, csrContent, dispatch, isUploadSource, onCancel, signatureAttributeDescriptors],
     );
 
     return (
@@ -140,6 +151,9 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
                         <div className="space-y-4">
                             <RenderTokenProfile type="normal" name="tokenProfileUuid" />
                             <RenderRequestKey type="normal" name="keyUuid" tokenProfileField="tokenProfileUuid" />
+
+                            {/* Identity the backend uses to build the CSR from the selected key. */}
+                            <AttributeEditor id="csrAttributes" attributeDescriptors={csrAttributeDescriptors ?? []} />
 
                             {tokenProfileUuid ? (
                                 <AttributeEditor id="signatureAttributes" attributeDescriptors={signatureAttributeDescriptors ?? []} />

@@ -340,7 +340,7 @@ describe('certificates epics', () => {
         });
     });
 
-    test('completeRegisteredCertificate existing-key mode forwards tokenProfileUuid/keyUuid/signatureAttributes with an empty request', async () => {
+    test('completeRegisteredCertificate existing-key mode forwards key + csrAttributes so the backend can generate the CSR from an empty request', async () => {
         const { emitted, calls } = await runCompleteRegisteredEpic(
             certificatesActions.completeRegisteredCertificate({
                 authorityUuid: 'auth-1',
@@ -352,6 +352,7 @@ describe('certificates epics', () => {
                 tokenProfileUuid: 'token-profile-uuid',
                 keyUuid: 'key-uuid',
                 signatureAttributes: [{ name: 'sig-attr', content: [{ data: 'v' }] } as any],
+                csrAttributes: [{ name: 'commonName', content: [{ data: 'example.com' }] } as any],
             }),
             () => of({ uuid: 'cert-1' }),
         );
@@ -362,6 +363,10 @@ describe('certificates epics', () => {
             keyUuid: 'key-uuid',
         });
         expect(calls[0].clientCertificateIssueRequestDto.signatureAttributes).toEqual([{ name: 'sig-attr', content: [{ data: 'v' }] }]);
+        // The backend builds the CSR from these identity attributes, so they must reach the request.
+        expect(calls[0].clientCertificateIssueRequestDto.csrAttributes).toEqual([
+            { name: 'commonName', content: [{ data: 'example.com' }] },
+        ]);
         expect(emitted[0].type).toBe(certificatesActions.issueCertificateSuccess.type);
     });
 
