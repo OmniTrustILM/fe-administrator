@@ -135,97 +135,100 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
     return (
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="mt-2 space-y-4">
-                <Controller
-                    name="enabled"
-                    control={control}
-                    render={({ field }) => (
-                        <Switch id="enabled" checked={field.value} onChange={field.onChange} label="Enable Certificate Validation" />
+                <div className="rounded-xl border border-gray-200 dark:border-neutral-700 p-4 md:p-5 shadow-2xs bg-white dark:bg-neutral-900 space-y-4">
+                    <h3 className="text-lg font-bold text-[var(--dark-gray-color)] dark:text-neutral-200">Validation</h3>
+                    <Controller
+                        name="enabled"
+                        control={control}
+                        render={({ field }) => (
+                            <Switch id="enabled" checked={field.value} onChange={field.onChange} label="Enable Certificate Validation" />
+                        )}
+                    />
+                    {watchedEnabled && (
+                        <>
+                            <div>
+                                <Controller
+                                    name="frequency"
+                                    control={control}
+                                    rules={buildValidationRules([validateNonZeroInteger(), validatePositiveInteger()])}
+                                    render={({ field, fieldState }) => (
+                                        <TextInput
+                                            {...field}
+                                            id="frequency"
+                                            type="number"
+                                            label="Validation Frequency"
+                                            invalid={fieldState.error && fieldState.isTouched}
+                                            error={getFieldErrorMessage(fieldState)}
+                                        />
+                                    )}
+                                />
+                                <p className="text-sm text-gray-500 mt-2">Validation frequency of certificates specified in days.</p>
+                            </div>
+                            <div>
+                                <Controller
+                                    name="expiringThreshold"
+                                    control={control}
+                                    rules={buildValidationRules([validateNonZeroInteger(), validatePositiveInteger()])}
+                                    render={({ field, fieldState }) => (
+                                        <TextInput
+                                            {...field}
+                                            id="expiringThreshold"
+                                            type="number"
+                                            label="Expiring Threshold"
+                                            invalid={fieldState.error && fieldState.isTouched}
+                                            error={getFieldErrorMessage(fieldState)}
+                                        />
+                                    )}
+                                />
+                                <p className="text-sm text-gray-500 mt-2">
+                                    How many days before expiration should certificate's validation status change to Expiring.
+                                </p>
+                            </div>
+                        </>
                     )}
-                />
-                {watchedEnabled && (
-                    <>
-                        <div>
-                            <Controller
-                                name="frequency"
-                                control={control}
-                                rules={buildValidationRules([validateNonZeroInteger(), validatePositiveInteger()])}
-                                render={({ field, fieldState }) => (
-                                    <TextInput
-                                        {...field}
-                                        id="frequency"
-                                        type="number"
-                                        label="Validation Frequency"
-                                        invalid={fieldState.error && fieldState.isTouched}
-                                        error={getFieldErrorMessage(fieldState)}
-                                    />
-                                )}
-                            />
-                            <p className="text-sm text-gray-500 mt-2">Validation frequency of certificates specified in days.</p>
-                        </div>
-                        <div>
-                            <Controller
-                                name="expiringThreshold"
-                                control={control}
-                                rules={buildValidationRules([validateNonZeroInteger(), validatePositiveInteger()])}
-                                render={({ field, fieldState }) => (
-                                    <TextInput
-                                        {...field}
-                                        id="expiringThreshold"
-                                        type="number"
-                                        label="Expiring Threshold"
-                                        invalid={fieldState.error && fieldState.isTouched}
-                                        error={getFieldErrorMessage(fieldState)}
-                                    />
-                                )}
-                            />
-                            <p className="text-sm text-gray-500 mt-2">
-                                How many days before expiration should certificate's validation status change to Expiring.
-                            </p>
-                        </div>
-                    </>
-                )}
-                <div>
-                    <h3 className="text-lg font-medium">Registration</h3>
                 </div>
-                <div>
-                    <Controller
-                        name="defaultIssuanceWindowDays"
-                        control={control}
-                        rules={buildValidationRules([validateNonZeroInteger(), validatePositiveInteger()])}
-                        render={({ field, fieldState }) => (
-                            <TextInput
-                                {...field}
-                                id="defaultIssuanceWindowDays"
-                                type="number"
-                                label="Default Issuance Window (days)"
-                                invalid={fieldState.error && fieldState.isTouched}
-                                error={getFieldErrorMessage(fieldState)}
-                            />
-                        )}
-                    />
-                    <p className="text-sm text-gray-500 mt-2">
-                        Default issuance window in days, applied when a pre-registration omits an explicit expiry.
-                    </p>
-                </div>
-                <div>
-                    <Controller
-                        name="maxFailedAttempts"
-                        control={control}
-                        rules={buildValidationRules([validateNonZeroInteger(), validatePositiveInteger()])}
-                        render={({ field, fieldState }) => (
-                            <TextInput
-                                {...field}
-                                id="maxFailedAttempts"
-                                type="number"
-                                label="Max Failed Attempts"
-                                invalid={fieldState.error && fieldState.isTouched}
-                                error={getFieldErrorMessage(fieldState)}
-                            />
-                        )}
-                    />
-                    <p className="text-sm text-gray-500 mt-2">
-                        Maximum failed challenge-verification attempts before the registration authorization locks.
-                    </p>
+                <div className="rounded-xl border border-gray-200 dark:border-neutral-700 p-4 md:p-5 shadow-2xs bg-white dark:bg-neutral-900 space-y-4">
+                    <h3 className="text-lg font-bold text-[var(--dark-gray-color)] dark:text-neutral-200">Registration</h3>
+                    <div>
+                        <Controller
+                            name="defaultIssuanceWindowDays"
+                            control={control}
+                            rules={buildValidationRules([validateNonZeroInteger(), validatePositiveInteger()])}
+                            render={({ field, fieldState }) => (
+                                <TextInput
+                                    {...field}
+                                    id="defaultIssuanceWindowDays"
+                                    type="number"
+                                    label="Default Issuance Window (days)"
+                                    invalid={fieldState.error && fieldState.isTouched}
+                                    error={getFieldErrorMessage(fieldState)}
+                                />
+                            )}
+                        />
+                        <p className="text-sm text-gray-500 mt-2">
+                            Default issuance window in days, applied when a pre-registration omits an explicit expiry.
+                        </p>
+                    </div>
+                    <div>
+                        <Controller
+                            name="maxFailedAttempts"
+                            control={control}
+                            rules={buildValidationRules([validateNonZeroInteger(), validatePositiveInteger()])}
+                            render={({ field, fieldState }) => (
+                                <TextInput
+                                    {...field}
+                                    id="maxFailedAttempts"
+                                    type="number"
+                                    label="Max Failed Attempts"
+                                    invalid={fieldState.error && fieldState.isTouched}
+                                    error={getFieldErrorMessage(fieldState)}
+                                />
+                            )}
+                        />
+                        <p className="text-sm text-gray-500 mt-2">
+                            Maximum failed challenge-verification attempts before the registration authorization locks.
+                        </p>
+                    </div>
                 </div>
                 <Container className="flex-row justify-end modal-footer" gap={4}>
                     <Button variant="outline" onClick={onCancel} disabled={isSubmitting || isBusy} type="button">
