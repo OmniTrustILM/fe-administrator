@@ -16,7 +16,7 @@ function RequestAttributeMappingBadge({ fieldMapping, dataTestId = 'request-attr
     const tooltip = `Maps to: ${tokens.join(', ')}`;
 
     return (
-        <Badge color="info" size="small" className="mt-1" title={tooltip} dataTestId={dataTestId}>
+        <Badge color="info" size="small" title={tooltip} dataTestId={dataTestId}>
             <Info size={12} aria-hidden />
             <span>
                 <span aria-hidden>→ </span>

@@ -206,11 +206,13 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
             render={({ field, fieldState }) => (
                 <>
                     {showLabel && (
-                        <Label htmlFor={name} required={descriptor.properties.required}>
-                            {descriptor.properties.label}
-                        </Label>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Label htmlFor={name} required={descriptor.properties.required} className="!mb-0">
+                                {descriptor.properties.label}
+                            </Label>
+                            <RequestAttributeMappingBadge fieldMapping={getFieldMapping(descriptor)} />
+                        </div>
                     )}
-                    {showLabel && <RequestAttributeMappingBadge fieldMapping={getFieldMapping(descriptor)} />}
                     <div className="flex items-center">
                         <StandardInputControl
                             name={name}
