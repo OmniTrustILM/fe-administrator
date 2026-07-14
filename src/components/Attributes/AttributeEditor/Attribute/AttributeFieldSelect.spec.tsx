@@ -349,10 +349,7 @@ test.describe('AttributeFieldSelect', () => {
             contentType: AttributeContentType.Object,
             properties: { ...defaultProperties, list: true, extensibleList: true, label: 'PKI Engine' },
         } as any);
-        const currentEngine = {
-            label: 'Legacy Engine',
-            value: { reference: 'Legacy Engine', data: { engineName: 'legacy-pki' } },
-        };
+        const currentEngine = { reference: 'Legacy Engine', data: { engineName: 'legacy-pki' } };
 
         await mount(
             <AttributeFieldSelectTestWrapper
