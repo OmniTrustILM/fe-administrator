@@ -1,12 +1,13 @@
 import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
-import Select from 'components/Select';
+import Select, { getOptionValueString } from 'components/Select';
 import Label from 'components/Label';
 import Button from 'components/Button';
 import { AddCustomValuePanel } from 'components/Input/DynamicContent/AddCustomValuePanel';
 import { Plus } from 'lucide-react';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
+import { AttributeContentType } from 'types/openapi';
 import { getSelectValueFromField, buildAttributeValidators, parseListValueByContentType } from './attributeHelpers';
 
 type AttributeFieldSelectProps = {
@@ -19,6 +20,26 @@ type AttributeFieldSelectProps = {
     onSelectChangeMulti: (fieldOnChange: (v: any) => void) => (newValue: any) => void;
     onSelectChangeSingle: (fieldOnChange: (v: any) => void) => (newValue: any) => void;
 };
+
+function unwrapSelectValue(value: any): any {
+    return value && typeof value === 'object' && 'value' in value ? value.value : value;
+}
+
+function getSelectValueIdentity(value: any): string {
+    return getOptionValueString(unwrapSelectValue(value));
+}
+
+function getExtraOption(value: any): { label: string; value: any } {
+    const rawValue = unwrapSelectValue(value);
+    if (value && typeof value === 'object' && 'label' in value) {
+        return { label: String(value.label), value: rawValue };
+    }
+    if (rawValue && typeof rawValue === 'object') {
+        const label = rawValue.reference ?? rawValue.data?.name ?? rawValue.data?.engineName ?? JSON.stringify(rawValue.data ?? rawValue);
+        return { label: String(label), value: rawValue };
+    }
+    return { label: String(rawValue), value: rawValue };
+}
 
 export function AttributeFieldSelect({
     name,
@@ -67,10 +88,10 @@ export function AttributeFieldSelect({
                 } else {
                     currentValues = field.value != null && field.value !== '' ? [field.value] : [];
                 }
-                const seen = new Set(baseOptions.map((o: { value: any }) => String(o.value)));
+                const seen = new Set(baseOptions.map((o: { value: any }) => getSelectValueIdentity(o.value)));
                 const extra =
                     descriptor.properties.extensibleList === true
-                        ? currentValues.filter((v: any) => !seen.has(String(v))).map((v: any) => ({ label: String(v), value: v }))
+                        ? currentValues.filter((v: any) => !seen.has(getSelectValueIdentity(v))).map(getExtraOption)
                         : [];
                 const selectOptionsList = [...baseOptions, ...extra];
                 const selectOptions = addNewAttributeValue
@@ -124,32 +145,34 @@ export function AttributeFieldSelect({
                             </div>
                             {deleteButton}
                         </div>
-                        {descriptor.properties.extensibleList === true && !descriptor.properties.readOnly && (
-                            <>
-                                {!showAddCustom && (
-                                    <Button
-                                        type="button"
-                                        variant="transparent"
-                                        className="text-blue-600 mt-1"
-                                        onClick={() => setShowAddCustom(true)}
-                                    >
-                                        <Plus size={14} className="mr-1" />
-                                        Add custom value
-                                    </Button>
-                                )}
-                                <AddCustomValuePanel
-                                    open={showAddCustom}
-                                    onClose={() => setShowAddCustom(false)}
-                                    idPrefix={name}
-                                    contentType={descriptor.contentType}
-                                    multiSelect={descriptor.properties.multiSelect}
-                                    readOnly={descriptor.properties.readOnly}
-                                    fieldValue={field.value}
-                                    onFieldChange={field.onChange}
-                                    parseValue={(v) => parseListValueByContentType(descriptor.contentType, v) ?? v}
-                                />
-                            </>
-                        )}
+                        {descriptor.properties.extensibleList === true &&
+                            descriptor.contentType !== AttributeContentType.Object &&
+                            !descriptor.properties.readOnly && (
+                                <>
+                                    {!showAddCustom && (
+                                        <Button
+                                            type="button"
+                                            variant="transparent"
+                                            className="text-blue-600 mt-1"
+                                            onClick={() => setShowAddCustom(true)}
+                                        >
+                                            <Plus size={14} className="mr-1" />
+                                            Add custom value
+                                        </Button>
+                                    )}
+                                    <AddCustomValuePanel
+                                        open={showAddCustom}
+                                        onClose={() => setShowAddCustom(false)}
+                                        idPrefix={name}
+                                        contentType={descriptor.contentType}
+                                        multiSelect={descriptor.properties.multiSelect}
+                                        readOnly={descriptor.properties.readOnly}
+                                        fieldValue={field.value}
+                                        onFieldChange={field.onChange}
+                                        parseValue={(v) => parseListValueByContentType(descriptor.contentType, v) ?? v}
+                                    />
+                                </>
+                            )}
                         {descriptor.properties.visible && (
                             <>
                                 {descriptor.description && (

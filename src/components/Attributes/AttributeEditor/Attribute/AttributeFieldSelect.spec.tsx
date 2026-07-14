@@ -344,6 +344,65 @@ test.describe('AttributeFieldSelect', () => {
         await expect(page.getByRole('option', { name: 'extra' })).toBeVisible();
     });
 
+    test('extensible object list preserves a structured current value not in options', async ({ mount, page }) => {
+        const descriptor = minimalDescriptor({
+            contentType: AttributeContentType.Object,
+            properties: { ...defaultProperties, list: true, extensibleList: true, label: 'PKI Engine' },
+        } as any);
+        const currentEngine = {
+            label: 'Legacy Engine',
+            value: { reference: 'Legacy Engine', data: { engineName: 'legacy-pki' } },
+        };
+
+        await mount(
+            <AttributeFieldSelectTestWrapper
+                name="testSelect"
+                descriptor={descriptor}
+                options={[{ label: 'Known Engine', value: { reference: 'Known Engine', data: { engineName: 'known-pki' } } } as any]}
+                defaultValues={{ testSelect: currentEngine }}
+            />,
+        );
+
+        await page.getByTestId('select-testSelectSelect-trigger').click();
+        await expect(page.getByRole('option', { name: 'Known Engine' })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Legacy Engine' })).toBeVisible();
+    });
+
+    test('extensible object list matches structured values independent of property order', async ({ mount, page }) => {
+        const descriptor = minimalDescriptor({
+            contentType: AttributeContentType.Object,
+            properties: { ...defaultProperties, list: true, extensibleList: true, label: 'PKI Engine' },
+        } as any);
+        const currentEngine = {
+            label: 'Duplicate Engine',
+            value: { data: { engineName: 'known-pki' }, reference: 'Known Engine' },
+        };
+
+        await mount(
+            <AttributeFieldSelectTestWrapper
+                name="testSelect"
+                descriptor={descriptor}
+                options={[{ label: 'Known Engine', value: { reference: 'Known Engine', data: { engineName: 'known-pki' } } } as any]}
+                defaultValues={{ testSelect: currentEngine }}
+            />,
+        );
+
+        await page.getByTestId('select-testSelectSelect-trigger').click();
+        await expect(page.getByRole('option', { name: 'Known Engine' })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Duplicate Engine' })).toHaveCount(0);
+    });
+
+    test('extensible object list does not offer schema-less custom text input', async ({ mount, page }) => {
+        const descriptor = minimalDescriptor({
+            contentType: AttributeContentType.Object,
+            properties: { ...defaultProperties, list: true, extensibleList: true, label: 'PKI Engine' },
+        } as any);
+
+        await mount(<AttributeFieldSelectTestWrapper name="testSelect" descriptor={descriptor} />);
+
+        await expect(page.getByRole('button', { name: 'Add custom value' })).toHaveCount(0);
+    });
+
     test('extensible list multi-select adds extra options for current values not in options', async ({ mount, page }) => {
         const descriptor = minimalDescriptor({
             properties: { ...defaultProperties, multiSelect: true, extensibleList: true, label: 'Extensible Multi' },

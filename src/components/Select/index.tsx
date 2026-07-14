@@ -88,7 +88,7 @@ const getUuidFromValue = (val: any): string | null => {
     return null;
 };
 
-const getOptionValueString = (val: OptionValue): string => {
+export const getOptionValueString = (val: OptionValue): string => {
     if (typeof val === 'object' && val !== null) {
         if ('reference' in val && typeof (val as any).reference === 'string') {
             return (val as any).reference;
