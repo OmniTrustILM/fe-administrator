@@ -67,7 +67,7 @@ export default function RequestAttributesSettings() {
                 {editor}
                 <Container className="flex-row justify-end" gap={4}>
                     <ProgressButton
-                        title="Save Default Request Attributes"
+                        title="Save"
                         inProgressTitle="Saving..."
                         inProgress={isUpdating}
                         disabled={!loaded}

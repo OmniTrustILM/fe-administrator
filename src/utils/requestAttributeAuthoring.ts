@@ -64,6 +64,12 @@ export interface AuthoredAttributeFormValues {
     mappingCriticalOverridable?: boolean;
     /** How Core resolves the value; NONE = free input. */
     valueSourceType: ValueSourceType;
+    /**
+     * Static list options — the values a requester picks from when valueSourceType === STATIC_LIST.
+     * Persisted in the attribute's `content` array (ValueSource itself carries no values). Typed by
+     * `contentType`, mirroring how custom attributes store predefined content.
+     */
+    staticValues: (string | number | boolean)[];
     /** Reserved for the COLLECTION source (stubbed for now). */
     collectionRef?: string;
     /** Cascading dependency params, preserved on round-trip (no authoring UI yet). */
@@ -117,6 +123,7 @@ export function emptyAuthoredAttribute(): AuthoredAttributeFormValues {
         mappingExtensionOid: '',
         mappingCriticalOverridable: false,
         valueSourceType: ValueSourceType.None,
+        staticValues: [],
         collectionRef: '',
     };
 }
@@ -202,7 +209,7 @@ export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): Da
         uuid: form.uuid || generateUuid(),
         name: form.name,
         description: form.description || undefined,
-        version: 1,
+        version: 3,
         type: AttributeType.Data,
         contentType: form.contentType,
         properties,
@@ -217,6 +224,9 @@ export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): Da
     const valueSource = buildValueSource(form);
     if (valueSource) {
         dto.valueSource = valueSource;
+    }
+    if (form.valueSourceType === ValueSourceType.StaticList && form.staticValues.length > 0) {
+        dto.content = form.staticValues.map((data) => ({ data, contentType: form.contentType })) as DataAttributeV3['content'];
     }
     return dto;
 }
@@ -250,6 +260,7 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
         mappingExtensionOid: ext?.extensionOid ?? '',
         mappingCriticalOverridable: ext?.criticalOverridable ?? false,
         valueSourceType: view.valueSource?.kind ?? ValueSourceType.None,
+        staticValues: (view.content ?? []).map((item) => (item as { data: string | number | boolean }).data),
         collectionRef: '',
         valueSourceParams: view.valueSource?.params,
     };
@@ -278,8 +289,41 @@ export function isAuthoredAttributeMappingValid(form: AuthoredAttributeFormValue
     }
 }
 
+/** Normalize a static value for equality comparison — strings compared trimmed, others by value. */
+function normalizeStaticValue(v: string | number | boolean): string {
+    return typeof v === 'string' ? v.trim() : String(v);
+}
+
+/** True when the same value appears more than once (strings compared trimmed). */
+export function hasDuplicateStaticValues(values: (string | number | boolean)[]): boolean {
+    const seen = new Set<string>();
+    for (const v of values) {
+        const key = normalizeStaticValue(v);
+        if (seen.has(key)) {
+            return true;
+        }
+        seen.add(key);
+    }
+    return false;
+}
+
+/**
+ * A STATIC_LIST source needs at least one option, no option may be a blank string, and the
+ * options must be unique.
+ */
+export function isStaticListValid(form: AuthoredAttributeFormValues): boolean {
+    if (form.valueSourceType !== ValueSourceType.StaticList) {
+        return true;
+    }
+    return (
+        form.staticValues.length > 0 &&
+        form.staticValues.every((v) => typeof v !== 'string' || v.trim() !== '') &&
+        !hasDuplicateStaticValues(form.staticValues)
+    );
+}
+
 export function isAuthoredAttributeValid(form: AuthoredAttributeFormValues): boolean {
-    return !!form.name.trim() && !!form.label.trim() && isAuthoredAttributeMappingValid(form);
+    return !!form.name.trim() && !!form.label.trim() && isAuthoredAttributeMappingValid(form) && isStaticListValid(form);
 }
 
 export function isValueSourceBindingValid(form: ValueSourceBindingFormValues): boolean {

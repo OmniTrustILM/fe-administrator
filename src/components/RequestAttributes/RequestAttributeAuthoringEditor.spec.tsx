@@ -72,6 +72,70 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         expect(parsed.attributes[0].mappingRdnCode).toBe('CN');
     });
 
+    test('static list source requires at least one value, then persists the values', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('environment');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+
+        // Pick the static-list value source.
+        await page.getByTestId('select-ra-attr-value-source-trigger').click();
+        await page.getByRole('option', { name: 'Static list' }).click();
+
+        // A static list with no values is invalid → Save disabled.
+        const saveButton = page.getByRole('button', { name: 'Save', exact: true });
+        await expect(saveButton).toBeDisabled();
+
+        // Add two values.
+        await page.getByTestId('request-attribute-authoring-static-value-add').click();
+        await page.locator('#ra-attr-static-value-0').click();
+        await page.locator('#ra-attr-static-value-0').fill('prod');
+        await page.getByTestId('request-attribute-authoring-static-value-add').click();
+        await page.locator('#ra-attr-static-value-1').click();
+        await page.locator('#ra-attr-static-value-1').fill('staging');
+
+        await expect(saveButton).toBeEnabled();
+        await saveButton.click();
+
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toContainText('Static list');
+        const attr = JSON.parse((await component.getByTestId('value-json').textContent()) ?? '{}').attributes[0];
+        expect(attr.valueSourceType).toBe('staticList');
+        expect(attr.staticValues).toEqual(['prod', 'staging']);
+    });
+
+    test('static list rejects duplicate values', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('environment');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+
+        await page.getByTestId('select-ra-attr-value-source-trigger').click();
+        await page.getByRole('option', { name: 'Static list' }).click();
+
+        await page.getByTestId('request-attribute-authoring-static-value-add').click();
+        await page.locator('#ra-attr-static-value-0').click();
+        await page.locator('#ra-attr-static-value-0').fill('prod');
+        await page.getByTestId('request-attribute-authoring-static-value-add').click();
+        await page.locator('#ra-attr-static-value-1').click();
+        await page.locator('#ra-attr-static-value-1').fill('prod');
+
+        // Duplicate → error visible and Save disabled.
+        await expect(page.getByTestId('request-attribute-authoring-static-values-duplicate')).toBeVisible();
+        const saveButton = page.getByRole('button', { name: 'Save', exact: true });
+        await expect(saveButton).toBeDisabled();
+
+        // Make the second value unique → error clears, Save enabled.
+        await page.locator('#ra-attr-static-value-1').fill('staging');
+        await expect(page.getByTestId('request-attribute-authoring-static-values-duplicate')).toHaveCount(0);
+        await expect(saveButton).toBeEnabled();
+    });
+
     test('a binding requires a uuid or name before it can be saved', async ({ mount, page }) => {
         const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
 
@@ -128,6 +192,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
                     readOnly: false,
                     list: false,
                     multiSelect: false,
+                    staticValues: [],
                     valueSourceType: 'none' as const,
                 },
             ],
@@ -158,6 +223,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
                     readOnly: false,
                     list: false,
                     multiSelect: false,
+                    staticValues: [],
                     valueSourceType: 'none' as const,
                 },
             ],

@@ -12,7 +12,7 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await expect(component.getByTestId('request-attribute-authoring-merge-mode')).toHaveCount(0);
         await expect(component.getByTestId('request-attribute-authoring-bindings')).toHaveCount(0);
         await expect(component.getByTestId('request-attribute-authoring-attributes-empty')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Save Default Request Attributes' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
     });
 
     test('authoring an attribute then saving runs the save handler', async ({ mount, page }) => {
@@ -26,12 +26,12 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await page.locator('#ra-attr-name').fill('environment');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
-        await page.getByRole('button', { name: 'Save', exact: true }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
 
         await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toContainText('Environment');
 
         // Save handler builds the platform DTO and dispatches without throwing.
-        await page.getByRole('button', { name: 'Save Default Request Attributes' }).click();
-        await expect(page.getByRole('button', { name: 'Save Default Request Attributes' })).toBeVisible();
+        await page.getByRole('button', { name: 'Save', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
     });
 });

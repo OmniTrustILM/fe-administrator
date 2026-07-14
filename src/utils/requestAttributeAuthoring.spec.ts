@@ -71,6 +71,7 @@ describe('requestAttributeAuthoring', () => {
             const dto = buildAuthoredAttributeDto(baseAttr());
             expect(dto.type).toBe(AttributeType.Data);
             expect(dto.schemaVersion).toBe(AttributeVersion.V3);
+            expect(dto.version).toBe(3);
             expect(dto.name).toBe('serverFqdn');
             expect(dto.contentType).toBe(AttributeContentType.String);
             expect(dto.properties.label).toBe('Server FQDN');
@@ -152,6 +153,28 @@ describe('requestAttributeAuthoring', () => {
             const dto = buildAuthoredAttributeDto({ ...baseAttr(), valueSourceType: ValueSourceType.StaticList });
             expect(dto.valueSource?.kind).toBe(ValueSourceType.StaticList);
         });
+
+        test('writes the static list values into content, typed by contentType', () => {
+            const dto = buildAuthoredAttributeDto({
+                ...baseAttr(),
+                valueSourceType: ValueSourceType.StaticList,
+                staticValues: ['prod', 'staging'],
+            });
+            expect(dto.content).toEqual([
+                { data: 'prod', contentType: AttributeContentType.String },
+                { data: 'staging', contentType: AttributeContentType.String },
+            ]);
+        });
+
+        test('omits content when the value source is not STATIC_LIST', () => {
+            const dto = buildAuthoredAttributeDto({ ...baseAttr(), valueSourceType: ValueSourceType.None, staticValues: ['x'] });
+            expect(dto.content).toBeUndefined();
+        });
+
+        test('omits content when STATIC_LIST has no values', () => {
+            const dto = buildAuthoredAttributeDto({ ...baseAttr(), valueSourceType: ValueSourceType.StaticList, staticValues: [] });
+            expect(dto.content).toBeUndefined();
+        });
     });
 
     describe('parseAuthoredAttributeDto round-trip', () => {
@@ -176,6 +199,17 @@ describe('requestAttributeAuthoring', () => {
             expect(parsed.mappingRdnCode).toBe('CN');
             expect(parsed.valueSourceType).toBe(ValueSourceType.StaticList);
             expect(parsed.uuid).toBe('u1');
+        });
+
+        test('round-trips STATIC_LIST values through content', () => {
+            const parsed = parseAuthoredAttributeDto(
+                buildAuthoredAttributeDto({
+                    ...baseAttr(),
+                    valueSourceType: ValueSourceType.StaticList,
+                    staticValues: ['prod', 'staging'],
+                }) as BaseAttributeDto,
+            );
+            expect(parsed.staticValues).toEqual(['prod', 'staging']);
         });
 
         test('round-trips a SAN otherName mapping', () => {
@@ -250,6 +284,36 @@ describe('requestAttributeAuthoring', () => {
             expect(isAuthoredAttributeValid({ ...baseAttr(), name: '', label: 'X' })).toBe(false);
             expect(isAuthoredAttributeValid({ ...baseAttr(), name: 'x', label: '' })).toBe(false);
             expect(isAuthoredAttributeValid(baseAttr())).toBe(true);
+        });
+
+        test('STATIC_LIST requires at least one value', () => {
+            expect(isAuthoredAttributeValid({ ...baseAttr(), valueSourceType: ValueSourceType.StaticList, staticValues: [] })).toBe(false);
+            expect(isAuthoredAttributeValid({ ...baseAttr(), valueSourceType: ValueSourceType.StaticList, staticValues: ['prod'] })).toBe(
+                true,
+            );
+        });
+
+        test('STATIC_LIST rejects blank string values', () => {
+            expect(isAuthoredAttributeValid({ ...baseAttr(), valueSourceType: ValueSourceType.StaticList, staticValues: ['  '] })).toBe(
+                false,
+            );
+        });
+
+        test('STATIC_LIST rejects duplicate values', () => {
+            expect(
+                isAuthoredAttributeValid({
+                    ...baseAttr(),
+                    valueSourceType: ValueSourceType.StaticList,
+                    staticValues: ['prod', 'prod'],
+                }),
+            ).toBe(false);
+            expect(
+                isAuthoredAttributeValid({
+                    ...baseAttr(),
+                    valueSourceType: ValueSourceType.StaticList,
+                    staticValues: ['prod', 'staging'],
+                }),
+            ).toBe(true);
         });
     });
 

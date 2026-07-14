@@ -2,10 +2,15 @@ import Button from 'components/Button';
 import Checkbox from 'components/Checkbox';
 import Container from 'components/Container';
 import Dialog from 'components/Dialog';
+import { AddCustomValueInput } from 'components/Input/DynamicContent/AddCustomValueInput';
+import { ContentFieldConfiguration } from 'components/Input/DynamicContent';
+import Label from 'components/Label';
 import RadioRow from 'components/RadioRow';
 import Select from 'components/Select';
 import TextInput from 'components/TextInput';
+import { Plus } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { getStepValue } from 'utils/common-utils';
 import {
     AttributeContentType,
     AttributeSetMergeMode,
@@ -18,15 +23,13 @@ import {
 import {
     emptyAuthoredAttribute,
     emptyValueSourceBinding,
+    hasDuplicateStaticValues,
     isAuthoredAttributeValid,
     isValueSourceBindingValid,
     type AuthoredAttributeFormValues,
     type RequestAttributeAuthoringFormValues,
     type ValueSourceBindingFormValues,
 } from 'utils/requestAttributeAuthoring';
-
-/** Sentinel value for the COLLECTION source that is stubbed for now (no enum member yet). */
-const COLLECTION_STUB = '__collection_stub__';
 
 const MERGE_MODE_OPTIONS: { value: AttributeSetMergeMode; label: string }[] = [
     { value: AttributeSetMergeMode.StaticOnly, label: 'Static only' },
@@ -64,7 +67,6 @@ const ENCODING_OPTIONS = Object.values(ExtensionValueEncoding).map((v) => ({ val
 const VALUE_SOURCE_OPTIONS = [
     { value: ValueSourceType.None, label: 'Free input' },
     { value: ValueSourceType.StaticList, label: 'Static list' },
-    { value: COLLECTION_STUB, label: 'Collection (coming soon)', disabled: true },
 ];
 
 function valueSourceLabel(type: ValueSourceType): string {
@@ -239,7 +241,7 @@ export default function RequestAttributeAuthoringEditor({
                     id="ra-attr-content-type"
                     label="Content type"
                     value={d.contentType}
-                    onChange={(v) => set({ contentType: v as AttributeContentType })}
+                    onChange={(v) => set({ contentType: v as AttributeContentType, staticValues: [] })}
                     options={CONTENT_TYPE_OPTIONS}
                 />
                 <Container className="flex-row items-center" gap={4}>
@@ -334,12 +336,72 @@ export default function RequestAttributeAuthoringEditor({
                     id="ra-attr-value-source"
                     label="Value source"
                     value={d.valueSourceType}
-                    onChange={(v) => {
-                        if (v === COLLECTION_STUB) return; // stubbed for now
-                        set({ valueSourceType: v as ValueSourceType });
-                    }}
+                    onChange={(v) => set({ valueSourceType: v as ValueSourceType })}
                     options={VALUE_SOURCE_OPTIONS}
                 />
+                {d.valueSourceType === ValueSourceType.StaticList && renderStaticValues(d, set)}
+            </div>
+        );
+    };
+
+    // The static list options a requester picks from. Stored in the attribute `content` array
+    // (ValueSource carries no values); each input is typed by the attribute's content type,
+    // mirroring the custom-attribute "Add Content" UI.
+    const renderStaticValues = (d: AuthoredAttributeFormValues, set: (p: Partial<AuthoredAttributeFormValues>) => void) => {
+        const inputType = ContentFieldConfiguration[d.contentType].type;
+        const addValue = () => set({ staticValues: [...d.staticValues, ContentFieldConfiguration[d.contentType].initial] });
+        const setValueAt = (index: number, next: string | number | boolean) =>
+            set({ staticValues: d.staticValues.map((v, i) => (i === index ? next : v)) });
+        const removeValueAt = (index: number) => set({ staticValues: d.staticValues.filter((_, i) => i !== index) });
+        return (
+            <div className="space-y-2" data-testid={`${dataTestId}-static-values`}>
+                <Label htmlFor={`${dataTestId}-static-value-add`}>Static list values</Label>
+                {d.staticValues.map((v, index) => (
+                    <div key={index} className="flex items-center gap-2" data-testid={`${dataTestId}-static-value-row`}>
+                        <div className="flex-1">
+                            <AddCustomValueInput
+                                id={`ra-attr-static-value-${index}`}
+                                inputType={inputType}
+                                contentType={d.contentType}
+                                fieldStepValue={getStepValue(inputType)}
+                                value={v}
+                                onChange={(next) => setValueAt(index, next)}
+                                readOnly={disabled}
+                            />
+                        </div>
+                        <Button
+                            variant="outline"
+                            color="danger"
+                            onClick={() => removeValueAt(index)}
+                            disabled={disabled}
+                            type="button"
+                            data-testid={`${dataTestId}-static-value-remove`}
+                        >
+                            Remove
+                        </Button>
+                    </div>
+                ))}
+                {d.staticValues.length === 0 && (
+                    <p className="text-sm text-gray-400" data-testid={`${dataTestId}-static-values-empty`}>
+                        Add at least one value for the static list.
+                    </p>
+                )}
+                {hasDuplicateStaticValues(d.staticValues) && (
+                    <p className="text-sm text-red-600" data-testid={`${dataTestId}-static-values-duplicate`}>
+                        Static list values must be unique.
+                    </p>
+                )}
+                <Button
+                    variant="transparent"
+                    className="text-blue-600"
+                    onClick={addValue}
+                    disabled={disabled}
+                    type="button"
+                    data-testid={`${dataTestId}-static-value-add`}
+                >
+                    <Plus className="w-4 h-4" />
+                    Add value
+                </Button>
             </div>
         );
     };
@@ -462,10 +524,7 @@ export default function RequestAttributeAuthoringEditor({
                     id="ra-binding-value-source"
                     label="Value source"
                     value={d.valueSourceType}
-                    onChange={(v) => {
-                        if (v === COLLECTION_STUB) return;
-                        set({ valueSourceType: v as ValueSourceType });
-                    }}
+                    onChange={(v) => set({ valueSourceType: v as ValueSourceType })}
                     options={VALUE_SOURCE_OPTIONS}
                 />
                 {!bindingValid && (
