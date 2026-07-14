@@ -134,6 +134,18 @@ test.describe('AttributeFieldInput', () => {
         await expect(page.getByText('This is a helpful description.')).toBeVisible();
     });
 
+    test('hides the description when it merely duplicates the label', async ({ mount, page }) => {
+        const descriptor = minimalDescriptor(AttributeContentType.String, {
+            description: 'Common Name',
+            properties: { ...defaultProperties, label: 'Common Name' },
+        } as any);
+        await mount(<AttributeFieldInputTestWrapper name="testField" descriptor={descriptor} />);
+
+        // The label still renders the text, but the redundant description paragraph must not.
+        await expect(page.getByText('Common Name')).toBeVisible();
+        await expect(page.locator('p').filter({ hasText: 'Common Name' })).toHaveCount(0);
+    });
+
     test('renders deleteButton when provided', async ({ mount, page }) => {
         const descriptor = minimalDescriptor(AttributeContentType.String);
         await mount(
