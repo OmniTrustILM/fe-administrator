@@ -7,6 +7,7 @@ import { actions as authoritiesActions, selectors as authoritiesSelectors } from
 import { actions as connectorActions } from 'ducks/connectors';
 import { actions as oidActions, selectors as oidSelectors } from 'ducks/oids';
 
+import { actions as appRedirectActions } from 'ducks/app-redirect';
 import { actions as raProfilesActions, selectors as raProfilesSelectors } from 'ducks/ra-profiles';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
@@ -24,6 +25,7 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import {
     buildRaProfileRequestAttributesUpdateDto,
     emptyAuthoringForm,
+    hasAuthoredRequestAttributes,
     parseRaProfileRequestAttributesDto,
     type RequestAttributeAuthoringFormValues,
 } from 'utils/requestAttributeAuthoring';
@@ -98,6 +100,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     const isFetchingDetail = useSelector(raProfilesSelectors.isFetchingDetail);
     const isCreating = useSelector(raProfilesSelectors.isCreating);
     const isUpdating = useSelector(raProfilesSelectors.isUpdating);
+    const createRaProfileSucceeded = useSelector(raProfilesSelectors.createRaProfileSucceeded);
 
     const [groupAttributesCallbackAttributes, setGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
 
@@ -105,8 +108,12 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
 
     const isUpdatingRequestAttributes = useSelector(requestAttributesSelectors.isUpdatingRaProfileSet);
     const updateRequestAttributesSucceeded = useSelector(requestAttributesSelectors.updateRaProfileSetSucceeded);
+    const updateRequestAttributesFailed = useSelector(requestAttributesSelectors.updateRaProfileSetFailed);
     const [requestAttributesForm, setRequestAttributesForm] = useState<RequestAttributeAuthoringFormValues>(emptyAuthoringForm());
     const [requestAttributesDirty, setRequestAttributesDirty] = useState(false);
+    const createdRaProfileUuid = useSelector(raProfilesSelectors.createdRaProfileUuid);
+    const [pendingCreateAttributes, setPendingCreateAttributes] = useState(false);
+    const pendingCreateAuthorityRef = useRef<string | undefined>(undefined);
 
     const isBusy = useMemo(
         () => isFetchingDetail || isCreating || isUpdating || isFetchingAuthorityRAProfileAttributes || isFetchingResourceCustomAttributes,
@@ -240,6 +247,35 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
 
     useRunOnSuccessfulFinish(isUpdatingRequestAttributes, updateRequestAttributesSucceeded, refetchRaProfile);
 
+    const dispatchCreateRequestAttributes = useCallback(() => {
+        if (!pendingCreateAttributes || !createdRaProfileUuid) return;
+        const authorityUuid = pendingCreateAuthorityRef.current;
+        if (!authorityUuid) return;
+        dispatch(
+            requestAttributesActions.updateRaProfileRequestAttributes({
+                authorityUuid,
+                raProfileUuid: createdRaProfileUuid,
+                data: buildRaProfileRequestAttributesUpdateDto(requestAttributesForm),
+            }),
+        );
+    }, [dispatch, pendingCreateAttributes, createdRaProfileUuid, requestAttributesForm]);
+
+    useRunOnSuccessfulFinish(isCreating, createRaProfileSucceeded, dispatchCreateRequestAttributes);
+
+    const redirectAfterCreateRequestAttributes = useCallback(() => {
+        if (!pendingCreateAttributes || !createdRaProfileUuid) return;
+        setPendingCreateAttributes(false);
+        dispatch(appRedirectActions.redirect({ url: `../raprofiles/detail/${pendingCreateAuthorityRef.current}/${createdRaProfileUuid}` }));
+    }, [dispatch, pendingCreateAttributes, createdRaProfileUuid]);
+
+    useRunOnSuccessfulFinish(isUpdatingRequestAttributes, updateRequestAttributesSucceeded, redirectAfterCreateRequestAttributes);
+
+    useEffect(() => {
+        if (!pendingCreateAttributes || !updateRequestAttributesFailed || !createdRaProfileUuid) return;
+        setPendingCreateAttributes(false);
+        dispatch(appRedirectActions.redirect({ url: `../raprofiles/detail/${pendingCreateAuthorityRef.current}/${createdRaProfileUuid}` }));
+    }, [pendingCreateAttributes, updateRequestAttributesFailed, createdRaProfileUuid, dispatch]);
+
     // The authoring form is only trustworthy once it has been seeded from the loaded profile
     // (see the seed effect above). Until then it holds emptyAuthoringForm(); saving that would
     // PATCH requestAttributes: [] and wipe the profile's configured set (the epic does no
@@ -302,9 +338,13 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                     }),
                 );
             } else {
+                const withRequestAttributes = hasAuthoredRequestAttributes(requestAttributesForm);
+                pendingCreateAuthorityRef.current = values.authority;
+                setPendingCreateAttributes(withRequestAttributes);
                 dispatch(
                     raProfilesActions.createRaProfile({
                         authorityInstanceUuid: values.authority,
+                        deferRedirect: withRequestAttributes,
                         raProfileAddRequest: {
                             name: values.name,
                             description: values.description,
@@ -463,9 +503,20 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                             />
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-gray-500">
-                                            Save the RA Profile first to configure its request attributes.
-                                        </p>
+                                        <div className="space-y-4">
+                                            {!watchedAuthority && (
+                                                <p className="text-sm text-gray-500">
+                                                    Select an authority to configure request attributes.
+                                                </p>
+                                            )}
+                                            <RequestAttributeAuthoringEditor
+                                                value={requestAttributesForm}
+                                                onChange={setRequestAttributesForm}
+                                                showMergeMode
+                                                connectorAttributeOptions={connectorAttributeOptions}
+                                                disabled={!watchedAuthority || isCreating || isUpdatingRequestAttributes}
+                                            />
+                                        </div>
                                     ),
                                 },
                             ]}
@@ -479,7 +530,12 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                 title={editMode ? 'Update' : 'Create'}
                                 inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
                                 inProgress={isSaving}
-                                disabled={(!isDirty && !requestAttributesDirty) || isSaving || !isValid}
+                                disabled={
+                                    (!isDirty && !requestAttributesDirty) ||
+                                    isSaving ||
+                                    !isValid ||
+                                    (!editMode && pendingCreateAttributes)
+                                }
                                 type="submit"
                             />
                         </Container>
