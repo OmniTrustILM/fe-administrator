@@ -126,6 +126,7 @@ function generateUuid(): string {
 
 export function emptyAuthoredAttribute(): AuthoredAttributeFormValues {
     return {
+        uuid: generateUuid(),
         name: '',
         label: '',
         description: '',

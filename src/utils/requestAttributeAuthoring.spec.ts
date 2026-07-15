@@ -62,6 +62,15 @@ describe('requestAttributeAuthoring', () => {
             expect(attr.valueSourceType).toBe(ValueSourceType.None);
         });
 
+        test('emptyAuthoredAttribute carries a stable uuid preserved across repeated builds', () => {
+            const attr = emptyAuthoredAttribute();
+            expect(attr.uuid).toBeTruthy();
+            const first = buildAuthoredAttributeDto({ ...attr, name: 'a', label: 'A' });
+            const second = buildAuthoredAttributeDto({ ...attr, name: 'a', label: 'A' });
+            expect(first.uuid).toBe(attr.uuid);
+            expect(second.uuid).toBe(attr.uuid);
+        });
+
         test('emptyValueSourceBinding defaults to NONE', () => {
             expect(emptyValueSourceBinding().valueSourceType).toBe(ValueSourceType.None);
         });
