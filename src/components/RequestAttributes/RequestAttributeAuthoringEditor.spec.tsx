@@ -25,6 +25,14 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         expect(JSON.parse(json ?? '{}').mergeMode).toBe('staticOnly');
     });
 
+    test('explains each merge mode inline under its option', async ({ mount }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
+
+        await expect(component.getByTestId('request-attribute-authoring-merge-staticOnly-description')).toBeVisible();
+        await expect(component.getByTestId('request-attribute-authoring-merge-connectorOnly-description')).toContainText('connector');
+        await expect(component.getByTestId('request-attribute-authoring-merge-merge-description')).toContainText('combined');
+    });
+
     test('adds an authored attribute through the dialog', async ({ mount, page }) => {
         const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
 
@@ -42,6 +50,27 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         expect(parsed.attributes).toHaveLength(1);
         expect(parsed.attributes[0].name).toBe('serverFqdn');
         expect(parsed.attributes[0].label).toBe('Server FQDN');
+    });
+
+    test('the attribute dialog gives first-time guidance and per-field hints', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+
+        await expect(page.getByTestId('request-attribute-authoring-attribute-form-intro')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-name-hint')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-label-hint')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-mapping-hint')).toContainText('certificate');
+    });
+
+    test('mapping target explains the chosen target', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'RDN (subject)' }).click();
+
+        await expect(page.getByTestId('select-ra-attr-mapping-selected-description')).toBeVisible();
     });
 
     test('authoring a granular RDN mapping requires the RDN code', async ({ mount, page }) => {

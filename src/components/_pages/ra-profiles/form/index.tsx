@@ -212,18 +212,28 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     // server-side read-merge).
     const requestAttributesSeeded = editMode && raProfileSelector?.uuid === id && !isFetchingDetail;
 
-    const onSaveRequestAttributes = useCallback(() => {
-        if (!id || !requestAttributesSeeded) return;
-        const authorityUuid = raProfile?.authorityInstanceUuid || authorityId;
-        if (!authorityUuid) return;
-        dispatch(
-            requestAttributesActions.updateRaProfileRequestAttributes({
-                authorityUuid,
-                raProfileUuid: id,
-                data: buildRaProfileRequestAttributesUpdateDto(requestAttributesForm),
-            }),
-        );
-    }, [dispatch, id, raProfile, authorityId, requestAttributesForm, requestAttributesSeeded]);
+    // Persist on every editor mutation (add / edit / remove / merge mode) so the attribute dialog's
+    // own Save is the only click a user needs — there is no separate form-level Save to confirm the
+    // change again. Guarded on `requestAttributesSeeded`: saving before the form is seeded would
+    // PATCH requestAttributes: [] and wipe the configured set (the epic does no server-side
+    // read-merge). The editor is disabled while a save is in flight, so mutations can't overlap an
+    // in-flight write.
+    const onChangeRequestAttributes = useCallback(
+        (next: RequestAttributeAuthoringFormValues) => {
+            setRequestAttributesForm(next);
+            if (!id || !requestAttributesSeeded) return;
+            const authorityUuid = raProfile?.authorityInstanceUuid || authorityId;
+            if (!authorityUuid) return;
+            dispatch(
+                requestAttributesActions.updateRaProfileRequestAttributes({
+                    authorityUuid,
+                    raProfileUuid: id,
+                    data: buildRaProfileRequestAttributesUpdateDto(next),
+                }),
+            );
+        },
+        [dispatch, id, raProfile, authorityId, requestAttributesSeeded],
+    );
 
     const onAuthorityChange = useCallback(
         (authorityUuid: string) => {
@@ -396,23 +406,14 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                     title: 'Request Attributes',
                                     content: editMode ? (
                                         <div className="space-y-4">
+                                            <p className="text-sm text-gray-500">Changes are saved automatically.</p>
                                             <RequestAttributeAuthoringEditor
                                                 value={requestAttributesForm}
-                                                onChange={setRequestAttributesForm}
+                                                onChange={onChangeRequestAttributes}
                                                 showMergeMode
                                                 connectorAttributeOptions={connectorAttributeOptions}
                                                 disabled={isUpdatingRequestAttributes || !requestAttributesSeeded}
                                             />
-                                            <Container className="flex-row justify-end" gap={4}>
-                                                <ProgressButton
-                                                    title="Save Request Attributes"
-                                                    inProgressTitle="Saving..."
-                                                    inProgress={isUpdatingRequestAttributes}
-                                                    disabled={!requestAttributesSeeded}
-                                                    onClick={onSaveRequestAttributes}
-                                                    type="button"
-                                                />
-                                            </Container>
                                         </div>
                                     ) : (
                                         <p className="text-sm text-gray-500">

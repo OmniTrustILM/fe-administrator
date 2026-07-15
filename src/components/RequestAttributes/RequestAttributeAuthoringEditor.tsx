@@ -32,10 +32,22 @@ import {
     type ValueSourceBindingFormValues,
 } from 'utils/requestAttributeAuthoring';
 
-const MERGE_MODE_OPTIONS: { value: AttributeSetMergeMode; label: string }[] = [
-    { value: AttributeSetMergeMode.StaticOnly, label: 'Static only' },
-    { value: AttributeSetMergeMode.ConnectorOnly, label: 'Connector only' },
-    { value: AttributeSetMergeMode.Merge, label: 'Merge' },
+const MERGE_MODE_OPTIONS: { value: AttributeSetMergeMode; label: string; description: string }[] = [
+    {
+        value: AttributeSetMergeMode.StaticOnly,
+        label: 'Static only',
+        description: 'Only the request attributes configured here are used; connector-supplied attributes are ignored.',
+    },
+    {
+        value: AttributeSetMergeMode.ConnectorOnly,
+        label: 'Connector only',
+        description: 'Only the connector-supplied request attributes are used; the attributes configured here are ignored.',
+    },
+    {
+        value: AttributeSetMergeMode.Merge,
+        label: 'Merge',
+        description: 'The attributes configured here are combined with the connector-supplied attributes into a single set.',
+    },
 ];
 
 const CONTENT_TYPE_OPTIONS = Object.values(AttributeContentType).map((v) => ({
@@ -49,7 +61,17 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = {
     [FieldType.Extension]: 'Certificate extension',
 };
 
-const MAPPING_OPTIONS = Object.values(FieldType).map((v) => ({ value: v, label: FIELD_TYPE_LABELS[v] }));
+const FIELD_TYPE_DESCRIPTIONS: Record<FieldType, string> = {
+    [FieldType.Rdn]: 'A component of the certificate subject name (e.g. CN, O). You must give the RDN code below.',
+    [FieldType.San]: 'A Subject Alternative Name entry (DNS name, email, IP address, …). Pick the SAN type below.',
+    [FieldType.Extension]: 'A certificate extension identified by its OID.',
+};
+
+const MAPPING_OPTIONS = Object.values(FieldType).map((v) => ({
+    value: v,
+    label: FIELD_TYPE_LABELS[v],
+    description: FIELD_TYPE_DESCRIPTIONS[v],
+}));
 
 const GENERAL_NAME_TYPE_LABELS: Record<GeneralNameType, string> = {
     [GeneralNameType.Dns]: 'dNSName',
@@ -66,8 +88,12 @@ const GENERAL_NAME_TYPE_OPTIONS = Object.values(GeneralNameType).map((v) => ({ v
 const ENCODING_OPTIONS = Object.values(ExtensionValueEncoding).map((v) => ({ value: v, label: v }));
 
 const VALUE_SOURCE_OPTIONS = [
-    { value: ValueSourceType.None, label: 'Free input' },
-    { value: ValueSourceType.StaticList, label: 'Static list' },
+    { value: ValueSourceType.None, label: 'Free input', description: 'The requester types any value.' },
+    {
+        value: ValueSourceType.StaticList,
+        label: 'Static list',
+        description: 'The requester picks from a fixed set of values you define below.',
+    },
 ];
 
 // Offered when the content type has no scalar editor — a static list can't be authored there.
@@ -75,6 +101,15 @@ const FREE_INPUT_ONLY_OPTIONS = VALUE_SOURCE_OPTIONS.slice(0, 1);
 
 function valueSourceLabel(type: ValueSourceType): string {
     return VALUE_SOURCE_OPTIONS.find((o) => o.value === type)?.label ?? 'Free input';
+}
+
+/** Inline guidance line rendered beneath a field the shared inputs can't describe themselves. */
+function FieldHint({ children, dataTestId }: Readonly<{ children: React.ReactNode; dataTestId?: string }>) {
+    return (
+        <p className="-mt-1.5 text-xs text-gray-500" data-testid={dataTestId}>
+            {children}
+        </p>
+    );
 }
 
 /** `value` = attribute UUID, `label` = human display, `description` = internal attribute name (the binding name-fallback key). */
@@ -119,7 +154,14 @@ export default function RequestAttributeAuthoringEditor({
                             checked={value.mergeMode === opt.value}
                             onSelect={() => !disabled && patch({ mergeMode: opt.value })}
                         >
-                            <span data-testid={`${dataTestId}-merge-${opt.value}`}>{opt.label}</span>
+                            <span className="flex flex-col gap-0.5">
+                                <span className="font-medium" data-testid={`${dataTestId}-merge-${opt.value}`}>
+                                    {opt.label}
+                                </span>
+                                <span className="text-xs text-gray-500" data-testid={`${dataTestId}-merge-${opt.value}-description`}>
+                                    {opt.description}
+                                </span>
+                            </span>
                         </RadioRow>
                     ))}
                 </Container>
@@ -228,19 +270,33 @@ export default function RequestAttributeAuthoringEditor({
         const set = (p: Partial<AuthoredAttributeFormValues>) => setAttrDraft({ ...attrDraft, data: { ...d, ...p } });
         return (
             <div className="space-y-3 text-left" data-testid={`${dataTestId}-attribute-form`}>
+                <p className="text-sm text-gray-500" data-testid={`${dataTestId}-attribute-form-intro`}>
+                    A request attribute is a value the requester supplies when asking for a certificate through this RA Profile. Define what
+                    it is called, its data type, and — optionally — where its value is placed in the issued certificate.
+                </p>
                 <TextInput id="ra-attr-name" label="Name" required value={d.name} onChange={(v) => set({ name: v })} />
-                {attrNameDuplicate && (
+                {attrNameDuplicate ? (
                     <p className="text-sm text-red-600" data-testid={`${dataTestId}-attribute-name-duplicate`}>
                         An attribute with this name already exists in the set.
                     </p>
+                ) : (
+                    <FieldHint dataTestId={`${dataTestId}-attribute-name-hint`}>
+                        Internal identifier, unique within this set. Not shown to the requester.
+                    </FieldHint>
                 )}
                 <TextInput id="ra-attr-label" label="Label" required value={d.label} onChange={(v) => set({ label: v })} />
+                <FieldHint dataTestId={`${dataTestId}-attribute-label-hint`}>
+                    The name shown to the requester on the request form.
+                </FieldHint>
                 <TextInput
                     id="ra-attr-description"
                     label="Description"
                     value={d.description ?? ''}
                     onChange={(v) => set({ description: v })}
                 />
+                <FieldHint dataTestId={`${dataTestId}-attribute-description-hint`}>
+                    Optional help text shown to the requester explaining what to enter.
+                </FieldHint>
                 <Select
                     id="ra-attr-content-type"
                     label="Content type"
@@ -258,6 +314,9 @@ export default function RequestAttributeAuthoringEditor({
                     }}
                     options={CONTENT_TYPE_OPTIONS}
                 />
+                <FieldHint dataTestId={`${dataTestId}-attribute-content-type-hint`}>
+                    The data type of the value the requester provides.
+                </FieldHint>
                 <Container className="flex-row items-center" gap={4}>
                     <Checkbox id="ra-attr-required" checked={d.required} onChange={(c) => set({ required: c })} label="Required" />
                     <Checkbox
@@ -286,7 +345,12 @@ export default function RequestAttributeAuthoringEditor({
                     options={MAPPING_OPTIONS}
                     isClearable
                     placeholder="Not mapped"
+                    showSelectedDescriptionAsHelp
                 />
+                <FieldHint dataTestId={`${dataTestId}-attribute-mapping-hint`}>
+                    Where this attribute&apos;s value is placed in the issued certificate. Leave it unmapped if the connector or workflow
+                    consumes the value directly.
+                </FieldHint>
                 {d.mappingFieldType === FieldType.Rdn && (
                     <TextInput
                         id="ra-attr-rdn"
@@ -359,7 +423,11 @@ export default function RequestAttributeAuthoringEditor({
                         set({ valueSourceType, ...(valueSourceType === ValueSourceType.StaticList ? { list: true } : {}) });
                     }}
                     options={isStaticListSupportedForContentType(d.contentType) ? VALUE_SOURCE_OPTIONS : FREE_INPUT_ONLY_OPTIONS}
+                    showSelectedDescriptionAsHelp
                 />
+                <FieldHint dataTestId={`${dataTestId}-attribute-value-source-hint`}>
+                    How the requester provides the value — free input, or a fixed list of choices you define.
+                </FieldHint>
                 {d.valueSourceType === ValueSourceType.StaticList && renderStaticValues(d, set)}
             </div>
         );
