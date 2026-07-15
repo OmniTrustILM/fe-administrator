@@ -11,6 +11,7 @@ export type State = {
     raProfileSet?: RaProfileCertificateRequestAttributesDto;
     isUpdatingRaProfileSet: boolean;
     updateRaProfileSetSucceeded: boolean;
+    updateRaProfileSetFailed: boolean;
 
     // Platform default set (/platform CertificateSettings.requestAttributes)
     defaultSet?: CertificateRequestAttributesSettingsDto;
@@ -22,6 +23,7 @@ export type State = {
 export const initialState: State = {
     isUpdatingRaProfileSet: false,
     updateRaProfileSetSucceeded: false,
+    updateRaProfileSetFailed: false,
     isFetchingDefaultSet: false,
     isUpdatingDefaultSet: false,
     updateDefaultSetSucceeded: false,
@@ -41,17 +43,20 @@ export const slice = createSlice({
         ) => {
             state.isUpdatingRaProfileSet = true;
             state.updateRaProfileSetSucceeded = false;
+            state.updateRaProfileSetFailed = false;
         },
 
         updateRaProfileRequestAttributesSuccess: (state, action: PayloadAction<{ set?: RaProfileCertificateRequestAttributesDto }>) => {
             state.isUpdatingRaProfileSet = false;
             state.updateRaProfileSetSucceeded = true;
+            state.updateRaProfileSetFailed = false;
             state.raProfileSet = action.payload.set;
         },
 
         updateRaProfileRequestAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isUpdatingRaProfileSet = false;
             state.updateRaProfileSetSucceeded = false;
+            state.updateRaProfileSetFailed = true;
         },
 
         getPlatformDefaultRequestAttributes: (state, action: PayloadAction<void>) => {
@@ -90,6 +95,7 @@ const state = (reduxStore: { [slice.name]?: State }): State => reduxStore?.[slic
 const raProfileSet = createSelector(state, (state: State) => state.raProfileSet);
 const isUpdatingRaProfileSet = createSelector(state, (state: State) => state.isUpdatingRaProfileSet);
 const updateRaProfileSetSucceeded = createSelector(state, (state: State) => state.updateRaProfileSetSucceeded);
+const updateRaProfileSetFailed = createSelector(state, (state: State) => state.updateRaProfileSetFailed);
 
 const defaultSet = createSelector(state, (state: State) => state.defaultSet);
 const isFetchingDefaultSet = createSelector(state, (state: State) => state.isFetchingDefaultSet);
@@ -101,6 +107,7 @@ export const selectors = {
     raProfileSet,
     isUpdatingRaProfileSet,
     updateRaProfileSetSucceeded,
+    updateRaProfileSetFailed,
     defaultSet,
     isFetchingDefaultSet,
     isUpdatingDefaultSet,
