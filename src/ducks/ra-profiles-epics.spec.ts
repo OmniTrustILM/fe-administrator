@@ -7,7 +7,15 @@ import { actions as alertActions } from './alerts';
 import { actions as raProfilesActions } from './ra-profiles';
 import raProfilesEpics from './ra-profiles-epics';
 
+const CREATE_EPIC_INDEX = 2;
 const UPDATE_REQUEST_ATTRIBUTES_EPIC_INDEX = 5;
+
+async function runCreateEpic(action: UnknownAction, createRaProfile: (args: any) => any) {
+    const epics = raProfilesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+    const deps = { apiClients: { raProfiles: { createRaProfile: (args: any) => createRaProfile(args) } } };
+    const output$ = epics[CREATE_EPIC_INDEX](of(action), of({}) as any, deps as any);
+    return firstValueFrom(output$.pipe(take(4), toArray()));
+}
 
 async function runUpdateRequestAttributesEpic(
     action: UnknownAction,
@@ -64,5 +72,28 @@ describe('ra-profiles epics', () => {
         expect(emitted).toHaveLength(2);
         expect(emitted[0].type).toBe(raProfilesActions.updateRaProfileRequestAttributesFailure.type);
         expect(emitted[1].type).toBe(alertActions.error.type);
+    });
+
+    test('createRaProfile emits Success AND a redirect when deferRedirect is not set', async () => {
+        const action = raProfilesActions.createRaProfile({
+            authorityInstanceUuid: 'auth-1',
+            raProfileAddRequest: { name: 'p', attributes: [] } as any,
+        });
+        const emitted = await runCreateEpic(action, () => of({ uuid: 'ra-9' }));
+        const types = emitted.map((a) => a.type);
+        expect(types).toContain(raProfilesActions.createRaProfileSuccess.type);
+        expect(types.some((t) => t.startsWith('appRedirect/'))).toBe(true);
+    });
+
+    test('createRaProfile with deferRedirect emits Success only (no redirect)', async () => {
+        const action = raProfilesActions.createRaProfile({
+            authorityInstanceUuid: 'auth-1',
+            raProfileAddRequest: { name: 'p', attributes: [] } as any,
+            deferRedirect: true,
+        });
+        const emitted = await runCreateEpic(action, () => of({ uuid: 'ra-9' }));
+        const types = emitted.map((a) => a.type);
+        expect(types).toContain(raProfilesActions.createRaProfileSuccess.type);
+        expect(types.some((t) => t.startsWith('appRedirect/'))).toBe(false);
     });
 });

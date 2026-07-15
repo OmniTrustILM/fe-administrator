@@ -113,6 +113,22 @@ describe('raProfiles slice', () => {
         expect(next.createRaProfileSucceeded).toBe(false);
     });
 
+    test('createRaProfile clears any previously created uuid', () => {
+        const next = reducer(
+            { ...initialState, createdRaProfileUuid: 'old' } as any,
+            actions.createRaProfile({ authorityInstanceUuid: 'auth-1', raProfileAddRequest: { name: 'p', attributes: [] } as any }),
+        );
+        expect(next.isCreating).toBe(true);
+        expect(next.createdRaProfileUuid).toBeNull();
+    });
+
+    test('createRaProfileSuccess stores the created uuid', () => {
+        const next = reducer(initialState, actions.createRaProfileSuccess({ uuid: 'ra-9', authorityInstanceUuid: 'auth-1' }));
+        expect(next.createRaProfileSucceeded).toBe(true);
+        expect(next.createdRaProfileUuid).toBe('ra-9');
+        expect(selectors.createdRaProfileUuid({ raprofiles: next } as any)).toBe('ra-9');
+    });
+
     test('updateRaProfile / success / failure', () => {
         let next = reducer(
             initialState,
