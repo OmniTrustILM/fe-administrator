@@ -145,6 +145,36 @@ test.describe('certificateTableHelpers', () => {
             });
         });
 
+        test('does not throw for a pre-registered certificate without key material', () => {
+            // A certificate in "registered" state has no issued certificate or key yet, so
+            // keySize, publicKeyAlgorithm, serialNumber, notBefore/notAfter are all absent.
+            const preRegisteredCert = {
+                uuid: 'uuid-registered',
+                commonName: 'pre-registered',
+                subjectDn: 'CN=pre-registered',
+                hybridCertificate: false,
+                state: 'registered',
+                validationStatus: 'not_checked',
+                complianceStatus: 'not_checked',
+                privateKeyAvailability: false,
+                archived: false,
+                groups: [],
+                certificateType: CertificateType.X509,
+            } as unknown as CertificateDetailResponseModel;
+
+            const rows = buildCertificateDetailBaseRows(
+                preRegisteredCert,
+                undefined,
+                false,
+                { certificateKeyUsage: {}, qcType: {} },
+                mockDateFormatter,
+                mockGetEnumLabel,
+            );
+
+            const keySizeRow = rows.find((r) => r.id === 'keySize');
+            expect(keySizeRow?.columns[1]).toBe('');
+        });
+
         test('adds hybrid rows when hybridCertificate is true', () => {
             const hybridCert = {
                 ...minimalCertificate,

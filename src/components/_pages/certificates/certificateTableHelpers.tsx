@@ -322,7 +322,7 @@ export function buildCertificateDetailBaseRows(
         },
         { id: 'fingerprint', columns: ['Fingerprint', certificate.fingerprint || ''] },
         { id: 'fingerprintAlgorithm', columns: ['Fingerprint Algorithm', 'SHA256'] },
-        { id: 'keySize', columns: ['Key Size', certificate.keySize.toString()] },
+        { id: 'keySize', columns: ['Key Size', certificate.keySize?.toString() ?? ''] },
     );
     if (certificate.hybridCertificate) {
         rows.push({
