@@ -17,11 +17,12 @@ RUN npm run build
 # production environment
 FROM nginxinc/nginx-unprivileged:1.31.2-alpine
 
-# Patch base-image OS packages for known CVEs (c-ares CVE-2026-33630).
+# Patch base-image OS packages for known CVEs (c-ares CVE-2026-33630;
+# curl/libcurl CVE-2026-5773, CVE-2026-6276).
 # Pin the minimum fixed version so the build fails fast if the patched package
 # is ever unavailable, keeping the Trivy scan gate reliably green.
 USER root
-RUN apk add --no-cache --upgrade "c-ares>=1.34.8-r0"
+RUN apk add --no-cache --upgrade "c-ares>=1.34.8-r0" "curl>=8.20.0-r0" "libcurl>=8.20.0-r0"
 USER 101
 
 WORKDIR /usr/share/nginx/html
