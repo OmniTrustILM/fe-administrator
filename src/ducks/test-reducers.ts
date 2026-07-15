@@ -633,9 +633,15 @@ const raProfileRequestAttributesTestInitialState: RaProfileRequestAttributesTest
 
 function raProfileRequestAttributesTestReducer(
     state: RaProfileRequestAttributesTestState | undefined,
-    _action: UnknownAction,
+    action: UnknownAction,
 ): RaProfileRequestAttributesTestState {
-    return state ?? raProfileRequestAttributesTestInitialState;
+    const current = state ?? raProfileRequestAttributesTestInitialState;
+    // Mirror the real slice's pending flag so CT can observe that a save was dispatched. CT runs no
+    // epics, so the flag stays true — enough to assert the auto-save fired and disabled the editor.
+    if (action.type === 'raProfileRequestAttributes/updatePlatformDefaultRequestAttributes') {
+        return { ...current, isUpdatingDefaultSet: true };
+    }
+    return current;
 }
 
 export type RaProfilesTestState = {

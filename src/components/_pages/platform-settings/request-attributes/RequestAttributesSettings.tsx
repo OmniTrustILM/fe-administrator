@@ -1,5 +1,3 @@
-import Container from 'components/Container';
-import ProgressButton from 'components/ProgressButton';
 import RequestAttributeAuthoringEditor from 'components/RequestAttributes/RequestAttributeAuthoringEditor';
 import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/raProfileRequestAttributes';
@@ -40,22 +38,29 @@ export default function RequestAttributesSettings() {
         }
     }, [defaultSet, loaded]);
 
-    const onSave = useCallback(() => {
-        // Guard against saving the empty initial form before the fetch has seeded it, which would
-        // PUT requestAttributes: [] and wipe the platform default set (the epic's read-merge only
-        // preserves the sibling externalCsrValidationStrict, not the array).
-        if (!loaded) return;
-        dispatch(
-            actions.updatePlatformDefaultRequestAttributes({
-                data: buildPlatformDefaultUpdateDto(form.attributes),
-            }),
-        );
-    }, [dispatch, form.attributes, loaded]);
+    // Persist on every editor mutation (add / edit / remove) so the attribute dialog's own Save is the
+    // only click a user needs — there is no separate form-level Save to confirm the change again.
+    const onChange = useCallback(
+        (next: RequestAttributeAuthoringFormValues) => {
+            setForm(next);
+            // Guard against saving before the fetch has seeded the form, which would PUT
+            // requestAttributes: [] and wipe the platform default set (the epic's read-merge only
+            // preserves the sibling externalCsrValidationStrict, not the array). The editor is disabled
+            // while `isUpdating`, so mutations can't overlap an in-flight write.
+            if (!loaded) return;
+            dispatch(
+                actions.updatePlatformDefaultRequestAttributes({
+                    data: buildPlatformDefaultUpdateDto(next.attributes),
+                }),
+            );
+        },
+        [dispatch, loaded],
+    );
 
     const editor = useMemo(
         // Platform default set: no merge mode and no value-source bindings (not in the platform DTO).
-        () => <RequestAttributeAuthoringEditor value={form} onChange={setForm} showBindings={false} disabled={isUpdating || !loaded} />,
-        [form, isUpdating, loaded],
+        () => <RequestAttributeAuthoringEditor value={form} onChange={onChange} showBindings={false} disabled={isUpdating || !loaded} />,
+        [form, onChange, isUpdating, loaded],
     );
 
     return (
@@ -63,18 +68,9 @@ export default function RequestAttributesSettings() {
             <div className="space-y-4">
                 <p className="text-sm text-gray-500">
                     The platform default request-attribute set is the terminal fallback used when an RA Profile does not define its own set.
+                    Changes are saved automatically.
                 </p>
                 {editor}
-                <Container className="flex-row justify-end" gap={4}>
-                    <ProgressButton
-                        title="Save"
-                        inProgressTitle="Saving..."
-                        inProgress={isUpdating}
-                        disabled={!loaded}
-                        onClick={onSave}
-                        type="button"
-                    />
-                </Container>
             </div>
         </Widget>
     );

@@ -4,7 +4,7 @@ import RequestAttributesSettings from './RequestAttributesSettings';
 import RequestAttributesSettingsWithStore from './RequestAttributesSettingsWithStore';
 
 test.describe('RequestAttributesSettings (platform default set)', () => {
-    test('renders the default-set editor without merge mode or bindings', async ({ mount, page }) => {
+    test('renders the default-set editor without merge mode, bindings, or a form-level Save', async ({ mount, page }) => {
         const component = await mount(withProviders(<RequestAttributesSettings />));
 
         await expect(page.getByText('Default Request Attributes').first()).toBeVisible();
@@ -12,13 +12,14 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await expect(component.getByTestId('request-attribute-authoring-merge-mode')).toHaveCount(0);
         await expect(component.getByTestId('request-attribute-authoring-bindings')).toHaveCount(0);
         await expect(component.getByTestId('request-attribute-authoring-attributes-empty')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
+        // Changes auto-save through the attribute dialog — there is no separate form-level Save button.
+        await expect(page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
     });
 
-    test('authoring an attribute then saving runs the save handler', async ({ mount, page }) => {
+    test('saving an attribute in the dialog persists immediately without a second save', async ({ mount, page }) => {
         // Mount through the WithStore wrapper: it preloads a *defined* platform default set in the
-        // browser so the component's `loaded` guard flips true (the editor + Save are gated until a
-        // successful load, and CT runs no epics to resolve the fetch).
+        // browser so the component's `loaded` guard flips true (the editor is gated until a successful
+        // load, and CT runs no epics to resolve the fetch).
         const component = await mount(<RequestAttributesSettingsWithStore />);
 
         await component.getByTestId('request-attribute-authoring-attribute-add').click();
@@ -28,10 +29,11 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await page.locator('#ra-attr-label').fill('Environment');
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
 
+        // The attribute is added to the list...
         await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toContainText('Environment');
-
-        // Save handler builds the platform DTO and dispatches without throwing.
-        await page.getByRole('button', { name: 'Save', exact: true }).click();
-        await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
+        // ...and that single dialog Save dispatched the platform-default update: the pending flag flips
+        // true (CT runs no epics to resolve it), which disables the editor. No second Save exists.
+        await expect(component.getByTestId('request-attribute-authoring-attribute-add')).toBeDisabled();
+        await expect(page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
     });
 });

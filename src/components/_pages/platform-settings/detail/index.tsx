@@ -35,6 +35,10 @@ export default function PlatformSettingsDetail() {
 
     const handleCloseEditModal = useCallback(() => {
         setIsEditModalOpen(false);
+    }, []);
+
+    const handleSuccessEditModal = useCallback(() => {
+        setIsEditModalOpen(false);
         getFreshPlatformSettings();
     }, [getFreshPlatformSettings]);
 
@@ -72,7 +76,7 @@ export default function PlatformSettingsDetail() {
                 <TabLayout
                     tabUrlParam="tab"
                     noBorder
-                    isLoading={isFetchingPlatform}
+                    isLoading={isFetchingPlatform && !isEditModalOpen}
                     tabs={[
                         {
                             title: 'Utils',
@@ -95,7 +99,7 @@ export default function PlatformSettingsDetail() {
                 toggle={handleCloseEditModal}
                 caption="Edit Platform Settings"
                 size="xl"
-                body={<PlatformSettingsForm onCancel={handleCloseEditModal} onSuccess={handleCloseEditModal} />}
+                body={<PlatformSettingsForm onCancel={handleCloseEditModal} onSuccess={handleSuccessEditModal} />}
             />
         </div>
     );
