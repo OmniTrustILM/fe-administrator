@@ -22,6 +22,7 @@ import {
     emptyAuthoredAttribute,
     emptyAuthoringForm,
     emptyValueSourceBinding,
+    hasAuthoredRequestAttributes,
     isAuthoredAttributeMappingValid,
     isAuthoredAttributeValid,
     isStaticListSupportedForContentType,
@@ -572,6 +573,25 @@ describe('requestAttributeAuthoring', () => {
             const parsed = parsePlatformDefaultDto({ requestAttributes: [buildAuthoredAttributeDto(baseAttr()) as BaseAttributeDto] });
             expect(parsed).toHaveLength(1);
             expect(parsed[0].name).toBe('serverFqdn');
+        });
+    });
+
+    describe('hasAuthoredRequestAttributes', () => {
+        test('empty form → false', () => {
+            expect(hasAuthoredRequestAttributes(emptyAuthoringForm())).toBe(false);
+        });
+        test('empty form with externalCsrValidationStrict → still false', () => {
+            expect(hasAuthoredRequestAttributes({ ...emptyAuthoringForm(), externalCsrValidationStrict: true })).toBe(false);
+        });
+        test('has an authored attribute → true', () => {
+            expect(hasAuthoredRequestAttributes({ ...emptyAuthoringForm(), attributes: [emptyAuthoredAttribute()] })).toBe(true);
+        });
+        test('has a value-source binding → true', () => {
+            expect(hasAuthoredRequestAttributes({ ...emptyAuthoringForm(), valueSourceBindings: [emptyValueSourceBinding()] })).toBe(true);
+        });
+        test('non-default merge mode → true', () => {
+            const other = Object.values(AttributeSetMergeMode).find((m) => m !== DEFAULT_MERGE_MODE)!;
+            expect(hasAuthoredRequestAttributes({ ...emptyAuthoringForm(), mergeMode: other })).toBe(true);
         });
     });
 });
