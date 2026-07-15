@@ -6,6 +6,8 @@ import {
     UseDeviceTypeHarness,
     UseCopyToClipboardHarness,
     UseRunOnSuccessfulFinishHarness,
+    UseRunOnFailedFinishHarness,
+    UseRunOnFinishHarness,
     UseAreDefaultValuesSameHarness,
 } from './common-hooks-harness';
 import { withProviders, createMockStore } from './test-helpers';
@@ -49,6 +51,20 @@ test.describe('useRunOnSuccessfulFinish', () => {
     test('runs callback when loading goes true to false and succeeded is true', async ({ mount, page }) => {
         await mount(<UseRunOnSuccessfulFinishHarness />);
         await expect(page.getByTestId('successful-finish-result')).toHaveText('ran', { timeout: 5000 });
+    });
+});
+
+test.describe('useRunOnFailedFinish', () => {
+    test('runs callback when loading goes true to false and succeeded is false', async ({ mount, page }) => {
+        await mount(<UseRunOnFailedFinishHarness />);
+        await expect(page.getByTestId('failed-finish-result')).toHaveText('ran', { timeout: 5000 });
+    });
+});
+
+test.describe('useRunOnFinish', () => {
+    test('runs callback when loading goes true to false', async ({ mount, page }) => {
+        await mount(<UseRunOnFinishHarness />);
+        await expect(page.getByTestId('finish-result')).toHaveText('ran', { timeout: 5000 });
     });
 });
 

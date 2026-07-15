@@ -21,7 +21,7 @@ import type { RaProfileResponseModel } from 'types/ra-profiles';
 
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { actions as requestAttributesActions, selectors as requestAttributesSelectors } from 'ducks/raProfileRequestAttributes';
-import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
+import { useRunOnFailedFinish, useRunOnFinish, useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import {
     buildRaProfileRequestAttributesUpdateDto,
     emptyAuthoringForm,
@@ -108,7 +108,6 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
 
     const isUpdatingRequestAttributes = useSelector(requestAttributesSelectors.isUpdatingRaProfileSet);
     const updateRequestAttributesSucceeded = useSelector(requestAttributesSelectors.updateRaProfileSetSucceeded);
-    const updateRequestAttributesFailed = useSelector(requestAttributesSelectors.updateRaProfileSetFailed);
     const [requestAttributesForm, setRequestAttributesForm] = useState<RequestAttributeAuthoringFormValues>(emptyAuthoringForm());
     const [requestAttributesDirty, setRequestAttributesDirty] = useState(false);
     const createdRaProfileUuid = useSelector(raProfilesSelectors.createdRaProfileUuid);
@@ -262,19 +261,20 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
 
     useRunOnSuccessfulFinish(isCreating, createRaProfileSucceeded, dispatchCreateRequestAttributes);
 
+    // If the create call itself fails, release the create lock so the user can retry from the open modal.
+    const releaseCreateLock = useCallback(() => setPendingCreateAttributes(false), []);
+    useRunOnFailedFinish(isCreating, createRaProfileSucceeded, releaseCreateLock);
+
+    // Both the PATCH success and failure paths land on the created profile's detail page. Fire on the
+    // PATCH's own finish transition so a failure flag left over from an earlier operation can't redirect
+    // before the create-triggered PATCH has run.
     const redirectAfterCreateRequestAttributes = useCallback(() => {
         if (!pendingCreateAttributes || !createdRaProfileUuid) return;
         setPendingCreateAttributes(false);
         dispatch(appRedirectActions.redirect({ url: `../raprofiles/detail/${pendingCreateAuthorityRef.current}/${createdRaProfileUuid}` }));
     }, [dispatch, pendingCreateAttributes, createdRaProfileUuid]);
 
-    useRunOnSuccessfulFinish(isUpdatingRequestAttributes, updateRequestAttributesSucceeded, redirectAfterCreateRequestAttributes);
-
-    useEffect(() => {
-        if (!pendingCreateAttributes || !updateRequestAttributesFailed || !createdRaProfileUuid) return;
-        setPendingCreateAttributes(false);
-        dispatch(appRedirectActions.redirect({ url: `../raprofiles/detail/${pendingCreateAuthorityRef.current}/${createdRaProfileUuid}` }));
-    }, [pendingCreateAttributes, updateRequestAttributesFailed, createdRaProfileUuid, dispatch]);
+    useRunOnFinish(isUpdatingRequestAttributes, redirectAfterCreateRequestAttributes);
 
     // The authoring form is only trustworthy once it has been seeded from the loaded profile
     // (see the seed effect above). Until then it holds emptyAuthoringForm(); saving that would

@@ -70,16 +70,10 @@ describe('raProfileRequestAttributes slice', () => {
         expect(selectors.isFetchingDefaultSet({} as never)).toBe(false);
     });
 
-    test('updateRaProfileRequestAttributesFailure sets the failed flag', () => {
-        const next = reducer(initialState, actions.updateRaProfileRequestAttributesFailure({ error: 'boom' }));
-        expect(next.updateRaProfileSetFailed).toBe(true);
+    test('updateRaProfileRequestAttributesFailure clears updating and succeeded', () => {
+        const updating = { ...initialState, isUpdatingRaProfileSet: true, updateRaProfileSetSucceeded: true };
+        const next = reducer(updating, actions.updateRaProfileRequestAttributesFailure({ error: 'boom' }));
         expect(next.isUpdatingRaProfileSet).toBe(false);
-        expect(selectors.updateRaProfileSetFailed({ raProfileRequestAttributes: next } as any)).toBe(true);
-    });
-
-    test('updateRaProfileRequestAttributes request clears the failed flag', () => {
-        const dirty = { ...initialState, updateRaProfileSetFailed: true };
-        const next = reducer(dirty, actions.updateRaProfileRequestAttributes({ authorityUuid: 'a', raProfileUuid: 'r', data: {} as any }));
-        expect(next.updateRaProfileSetFailed).toBe(false);
+        expect(next.updateRaProfileSetSucceeded).toBe(false);
     });
 });
