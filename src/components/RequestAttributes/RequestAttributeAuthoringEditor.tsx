@@ -36,12 +36,12 @@ const MERGE_MODE_OPTIONS: { value: AttributeSetMergeMode; label: string; descrip
     {
         value: AttributeSetMergeMode.StaticOnly,
         label: 'Static only',
-        description: 'Only the request attributes configured here are used; connector-supplied attributes are ignored.',
+        description: 'Only the request attributes configured here are used. Connector-supplied attributes are ignored.',
     },
     {
         value: AttributeSetMergeMode.ConnectorOnly,
         label: 'Connector only',
-        description: 'Only the connector-supplied request attributes are used; the attributes configured here are ignored.',
+        description: 'Only the connector-supplied request attributes are used. The attributes configured here are ignored.',
     },
     {
         value: AttributeSetMergeMode.Merge,
