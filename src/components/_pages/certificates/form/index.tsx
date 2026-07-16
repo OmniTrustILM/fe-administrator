@@ -73,6 +73,52 @@ function tabTitle(title: string, descriptors: AttributeDescriptorModel[] | undef
     );
 }
 
+function renderRequestAttributesTabContent(params: {
+    csrAttributeDescriptors: AttributeDescriptorModel[] | undefined | null;
+    csrAttributesCallbackAttributes: AttributeDescriptorModel[];
+    setCsrAttributesCallbackAttributes: React.Dispatch<React.SetStateAction<AttributeDescriptorModel[]>>;
+    isFetchingCsrAttributes: boolean;
+    selectedRaProfileUuid: string | undefined;
+}) {
+    const {
+        csrAttributeDescriptors,
+        csrAttributesCallbackAttributes,
+        setCsrAttributesCallbackAttributes,
+        isFetchingCsrAttributes,
+        selectedRaProfileUuid,
+    } = params;
+
+    if ((csrAttributeDescriptors ?? []).length > 0) {
+        return (
+            <AttributeEditor
+                id="csrAttributes"
+                attributeDescriptors={csrAttributeDescriptors ?? []}
+                groupAttributesCallbackAttributes={csrAttributesCallbackAttributes}
+                setGroupAttributesCallbackAttributes={setCsrAttributesCallbackAttributes}
+            />
+        );
+    }
+    if (isFetchingCsrAttributes) {
+        return (
+            <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-loading">
+                Loading request attributes&hellip;
+            </span>
+        );
+    }
+    if (selectedRaProfileUuid) {
+        return (
+            <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-empty">
+                This RA Profile has no request attributes.
+            </span>
+        );
+    }
+    return (
+        <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-hint">
+            Select an RA Profile to see its request attributes.
+        </span>
+    );
+}
+
 interface CertificateFormProps {
     onCancel?: () => void;
 }
@@ -537,30 +583,13 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     tabs={[
                                         {
                                             title: tabTitle('Request Attributes', csrAttributeDescriptors),
-                                            content:
-                                                (csrAttributeDescriptors ?? []).length > 0 ? (
-                                                    <AttributeEditor
-                                                        id="csrAttributes"
-                                                        attributeDescriptors={csrAttributeDescriptors ?? []}
-                                                        groupAttributesCallbackAttributes={csrAttributesCallbackAttributes}
-                                                        setGroupAttributesCallbackAttributes={setCsrAttributesCallbackAttributes}
-                                                    />
-                                                ) : isFetchingCsrAttributes ? (
-                                                    <span
-                                                        className="text-gray-500 dark:text-neutral-400"
-                                                        data-testid="csrAttributes-loading"
-                                                    >
-                                                        Loading request attributes&hellip;
-                                                    </span>
-                                                ) : selectedRaProfileUuid ? (
-                                                    <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-empty">
-                                                        This RA Profile has no request attributes.
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-hint">
-                                                        Select an RA Profile to see its request attributes.
-                                                    </span>
-                                                ),
+                                            content: renderRequestAttributesTabContent({
+                                                csrAttributeDescriptors,
+                                                csrAttributesCallbackAttributes,
+                                                setCsrAttributesCallbackAttributes,
+                                                isFetchingCsrAttributes,
+                                                selectedRaProfileUuid,
+                                            }),
                                         },
                                         ...(!isRegister
                                             ? [
