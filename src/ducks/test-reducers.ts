@@ -641,21 +641,65 @@ function raProfileRequestAttributesTestReducer(
     if (action.type === 'raProfileRequestAttributes/updatePlatformDefaultRequestAttributes') {
         return { ...current, isUpdatingDefaultSet: true };
     }
+    if (action.type === 'raProfileRequestAttributes/updateRaProfileRequestAttributes') {
+        return { ...current, isUpdatingRaProfileSet: true, updateRaProfileSetSucceeded: false };
+    }
     return current;
 }
 
 export type RaProfilesTestState = {
     isUpdating: boolean;
+    isCreating: boolean;
+    createRaProfileSucceeded: boolean;
+    createdRaProfileUuid: string | null;
     raProfiles: any[];
 };
 
 const raProfilesTestInitialState: RaProfilesTestState = {
     isUpdating: false,
+    isCreating: false,
+    createRaProfileSucceeded: false,
+    createdRaProfileUuid: null,
     raProfiles: [],
 };
 
-function raProfilesTestReducer(state: RaProfilesTestState | undefined, _action: UnknownAction): RaProfilesTestState {
-    return state ?? raProfilesTestInitialState;
+function raProfilesTestReducer(state: RaProfilesTestState | undefined, action: UnknownAction): RaProfilesTestState {
+    const current = state ?? raProfilesTestInitialState;
+    // Mirror the real slice's create lifecycle so CT can drive the create → request-attributes PATCH →
+    // redirect chain: the component's finish-hooks fire on the isCreating true -> false transition, so
+    // the test dispatches these actions to stand in for the (epic-less) create outcome.
+    const a = action as { type: string; payload?: { uuid?: string } };
+    switch (a.type) {
+        case 'raprofiles/createRaProfile':
+            return { ...current, isCreating: true, createRaProfileSucceeded: false, createdRaProfileUuid: null };
+        case 'raprofiles/createRaProfileSuccess':
+            return {
+                ...current,
+                isCreating: false,
+                createRaProfileSucceeded: true,
+                createdRaProfileUuid: a.payload?.uuid ?? null,
+            };
+        case 'raprofiles/createRaProfileFailure':
+            return { ...current, isCreating: false, createRaProfileSucceeded: false, createdRaProfileUuid: null };
+        default:
+            return current;
+    }
+}
+
+type AuthoritiesTestState = {
+    authorities: any[];
+    raProfileAttributeDescriptors?: any[];
+    isFetchingRAProfilesAttributesDescriptors: boolean;
+};
+
+const authoritiesTestInitialState: AuthoritiesTestState = {
+    authorities: [],
+    raProfileAttributeDescriptors: undefined,
+    isFetchingRAProfilesAttributesDescriptors: false,
+};
+
+function authoritiesTestReducer(state: AuthoritiesTestState | undefined, _action: UnknownAction): AuthoritiesTestState {
+    return state ?? authoritiesTestInitialState;
 }
 
 export type UtilsCertificateRequestTestState = {
@@ -759,6 +803,7 @@ export const testReducers = combineReducers({
     utilsActuator: utilsActuatorTestReducer,
     signingRecordsDashboard: signingRecordsDashboardTestReducer,
     raprofiles: raProfilesTestReducer,
+    authorities: authoritiesTestReducer,
     cryptographicOperations: cryptographicOperationsTestReducer,
     utilsCertificateRequest: utilsCertificateRequestTestReducer,
     settings: settingsTestReducer,
@@ -787,6 +832,7 @@ export const testInitialState = {
     utilsActuator: utilsActuatorTestInitialState,
     signingRecordsDashboard: signingRecordsDashboardTestInitialState,
     raprofiles: raProfilesTestInitialState,
+    authorities: authoritiesTestInitialState,
     cryptographicOperations: cryptographicOperationsTestInitialState,
     utilsCertificateRequest: utilsCertificateRequestTestInitialState,
     settings: settingsTestInitialState,

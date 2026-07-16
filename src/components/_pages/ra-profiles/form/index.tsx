@@ -44,6 +44,7 @@ type RaProfileFormProps = Readonly<{
     authorityId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
+    onInFlightChange?: (inFlight: boolean) => void;
 }>;
 
 interface FormValues {
@@ -52,7 +53,13 @@ interface FormValues {
     authority: string;
 }
 
-export default function RaProfileForm({ raProfileId, authorityId: propAuthorityId, onCancel, onSuccess }: RaProfileFormProps) {
+export default function RaProfileForm({
+    raProfileId,
+    authorityId: propAuthorityId,
+    onCancel,
+    onSuccess,
+    onInFlightChange,
+}: RaProfileFormProps) {
     const dispatch = useDispatch();
 
     const oidsByCategory = useSelector(oidSelectors.oidsByCategory);
@@ -276,6 +283,18 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
 
     useRunOnFinish(isUpdatingRequestAttributes, redirectAfterCreateRequestAttributes);
 
+    // The create → request-attributes PATCH → redirect chain runs here in the component. Report the
+    // in-flight window up so the host (the create modal) can block dismissal until it settles —
+    // unmounting mid-chain would drop the PATCH dispatch, creating the profile without its attributes.
+    const createInFlight = useMemo(
+        () => !editMode && (isCreating || pendingCreateAttributes || isUpdatingRequestAttributes),
+        [editMode, isCreating, pendingCreateAttributes, isUpdatingRequestAttributes],
+    );
+
+    useEffect(() => {
+        onInFlightChange?.(createInFlight);
+    }, [onInFlightChange, createInFlight]);
+
     // The authoring form is only trustworthy once it has been seeded from the loaded profile
     // (see the seed effect above). Until then it holds emptyAuthoringForm(); saving that would
     // PATCH requestAttributes: [] and wipe the profile's configured set (the epic does no
@@ -298,6 +317,11 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                 }
             });
             setLocalProfileModifications({ attributes: [] });
+            // Value-source bindings reference the previous authority's connector-attribute descriptor
+            // UUIDs, which are cleared and refetched below. Drop them so stale bindings can't be PATCHed
+            // against the newly selected authority. Authored static attributes are authority-independent
+            // and are preserved.
+            setRequestAttributesForm((prev) => ({ ...prev, valueSourceBindings: [] }));
             dispatch(authoritiesActions.clearRAProfilesAttributesDescriptors());
             dispatch(authoritiesActions.getRAProfilesAttributesDescriptors({ authorityUuid }));
         },
@@ -523,19 +547,14 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                         />
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>
-                            <Button variant="outline" onClick={onCancel} disabled={isSaving} type="button">
+                            <Button variant="outline" onClick={onCancel} disabled={isSaving || createInFlight} type="button">
                                 Cancel
                             </Button>
                             <ProgressButton
                                 title={editMode ? 'Update' : 'Create'}
                                 inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
-                                inProgress={isSaving}
-                                disabled={
-                                    (!isDirty && !requestAttributesDirty) ||
-                                    isSaving ||
-                                    !isValid ||
-                                    (!editMode && pendingCreateAttributes)
-                                }
+                                inProgress={isSaving || createInFlight}
+                                disabled={(!isDirty && !requestAttributesDirty) || isSaving || !isValid || createInFlight}
                                 type="submit"
                             />
                         </Container>
