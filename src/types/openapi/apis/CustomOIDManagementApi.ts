@@ -14,7 +14,7 @@
 import type { Observable } from 'rxjs';
 import type { AjaxResponse } from 'rxjs/ajax';
 import { BaseAPI, throwIfNullOrUndefined, encodeURI } from '../runtime';
-import type { OperationOpts, HttpHeaders } from '../runtime';
+import type { OperationOpts, HttpHeaders, HttpQuery } from '../runtime';
 import type {
     AuthenticationServiceExceptionDto,
     CustomOidEntryDetailResponseDto,
@@ -22,6 +22,7 @@ import type {
     CustomOidEntryRequestDto,
     CustomOidEntryUpdateRequestDto,
     ErrorMessageDto,
+    OidCategory,
     SearchFieldDataByGroupDto,
     SearchRequestDto,
 } from '../models';
@@ -49,6 +50,10 @@ export interface GetCustomOidEntryRequest {
 
 export interface ListCustomOidEntriesRequest {
     searchRequestDto: SearchRequestDto;
+}
+
+export interface ListSystemOidEntriesRequest {
+    category?: OidCategory;
 }
 
 /**
@@ -218,6 +223,34 @@ export class CustomOIDManagementApi extends BaseAPI {
                 method: 'POST',
                 headers,
                 body: searchRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * List built-in system OID entries, optionally filtered by category
+     */
+    listSystemOidEntries({ category }: ListSystemOidEntriesRequest): Observable<Array<CustomOidEntryDetailResponseDto>>;
+    listSystemOidEntries(
+        { category }: ListSystemOidEntriesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<CustomOidEntryDetailResponseDto>>>;
+    listSystemOidEntries(
+        { category }: ListSystemOidEntriesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<CustomOidEntryDetailResponseDto> | AjaxResponse<Array<CustomOidEntryDetailResponseDto>>> {
+        const query: HttpQuery = {};
+
+        if (category != null) {
+            query['category'] = category;
+        }
+
+        return this.request<Array<CustomOidEntryDetailResponseDto>>(
+            {
+                url: '/v1/oids/system',
+                method: 'GET',
+                query,
             },
             opts?.responseOpts,
         );

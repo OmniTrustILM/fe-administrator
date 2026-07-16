@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { OidCategory, ExtensionValueEncoding, type CustomOidEntryDetailResponseDtoAdditionalProperties } from 'types/openapi';
+import type { OIDResponseModel } from 'types/oids';
 import {
     isCertificateExtensionCategory,
     isRdnAttributeTypeCategory,
@@ -8,6 +9,7 @@ import {
     buildOidAdditionalProperties,
     isCertificateExtensionProperties,
     isRdnProperties,
+    toOidSelectOptions,
 } from './oid';
 
 describe('oid utils', () => {
@@ -103,6 +105,45 @@ describe('oid utils', () => {
             expect(isRdnProperties(rdn)).toBe(true);
             expect(isRdnProperties(ext)).toBe(false);
             expect(isRdnProperties(undefined)).toBe(false);
+        });
+    });
+
+    describe('toOidSelectOptions', () => {
+        test('maps oid/displayName/description to value/label/description', () => {
+            const entries: OIDResponseModel[] = [
+                { oid: '2.5.4.3', displayName: 'commonName', description: 'Common Name', category: OidCategory.RdnAttributeType },
+                { oid: '2.5.29.17', displayName: '', category: OidCategory.CertificateExtension },
+            ];
+            expect(toOidSelectOptions(entries)).toEqual([
+                { value: '2.5.4.3', label: 'commonName', description: 'Common Name' },
+                { value: '2.5.29.17', label: '2.5.29.17', description: undefined },
+            ]);
+        });
+        test('empty list → empty options', () => {
+            expect(toOidSelectOptions([])).toEqual([]);
+        });
+        test('whitespace-only displayName falls back to the OID', () => {
+            const entries: OIDResponseModel[] = [{ oid: '2.5.4.3', displayName: '   ', category: OidCategory.RdnAttributeType }];
+            expect(toOidSelectOptions(entries)).toEqual([{ value: '2.5.4.3', label: '2.5.4.3', description: undefined }]);
+        });
+        test('RDN entries expose code + altCodes as aliases; other categories have none', () => {
+            const entries: OIDResponseModel[] = [
+                {
+                    oid: '2.5.4.3',
+                    displayName: 'Common Name',
+                    category: OidCategory.RdnAttributeType,
+                    additionalProperties: { code: 'CN', altCodes: ['commonName'] },
+                },
+                {
+                    oid: '2.5.29.17',
+                    displayName: 'SAN',
+                    category: OidCategory.CertificateExtension,
+                    additionalProperties: { defaultCritical: false, valueEncoding: ExtensionValueEncoding.Der },
+                },
+            ];
+            const options = toOidSelectOptions(entries);
+            expect(options[0].aliases).toEqual(['CN', 'commonName']);
+            expect(options[1].aliases).toBeUndefined();
         });
     });
 });

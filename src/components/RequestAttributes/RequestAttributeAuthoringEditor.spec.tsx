@@ -1,6 +1,8 @@
 import { test, expect } from '../../../playwright/ct-test';
 import { withProviders } from 'utils/test-helpers';
 import RequestAttributeAuthoringEditorHarness from './RequestAttributeAuthoringEditorHarness';
+import { emptyAuthoringForm, emptyAuthoredAttribute } from 'utils/requestAttributeAuthoring';
+import { FieldType, ObjectType } from 'types/openapi';
 
 test.describe('RequestAttributeAuthoringEditor', () => {
     test('shows empty states and the merge-mode selector when enabled', async ({ mount }) => {
@@ -73,8 +75,15 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(page.getByTestId('select-ra-attr-mapping-selected-description')).toBeVisible();
     });
 
-    test('authoring a granular RDN mapping requires the RDN code', async ({ mount, page }) => {
-        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
+    test('authoring a granular RDN mapping requires selecting an RDN', async ({ mount, page }) => {
+        const component = await mount(
+            withProviders(
+                <RequestAttributeAuthoringEditorHarness
+                    showMergeMode
+                    rdnOptions={[{ value: '1.3.6.1.4.1.99999.1', label: 'Common Name' }]}
+                />,
+            ),
+        );
 
         await component.getByTestId('request-attribute-authoring-attribute-add').click();
         await page.locator('#ra-attr-name').click();
@@ -82,23 +91,171 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Common Name');
 
-        // Pick RDN as the mapping target.
         await page.getByTestId('select-ra-attr-mapping-trigger').click();
         await page.getByRole('option', { name: 'RDN (subject)' }).click();
 
-        // A mapped RDN with no code is invalid → Save disabled.
-        const saveButton = page.getByRole('button', { name: 'Save' });
+        const saveButton = page.getByRole('button', { name: 'Save', exact: true });
         await expect(saveButton).toBeDisabled();
 
-        await page.locator('#ra-attr-rdn').click();
-        await page.locator('#ra-attr-rdn').fill('CN');
+        await page.getByTestId('select-ra-attr-rdn-trigger').click();
+        await page.getByRole('option', { name: 'Common Name' }).click();
         await expect(saveButton).toBeEnabled();
         await saveButton.click();
 
-        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toContainText('→ RDN CN');
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toContainText('→ RDN 1.3.6.1.4.1.99999.1');
         const parsed = JSON.parse((await component.getByTestId('value-json').textContent()) ?? '{}');
         expect(parsed.attributes[0].mappingFieldType).toBe('rdn');
-        expect(parsed.attributes[0].mappingRdnCode).toBe('CN');
+        expect(parsed.attributes[0].mappingRdnCode).toBe('1.3.6.1.4.1.99999.1');
+    });
+
+    test('extension target offers a selectable extension list', async ({ mount, page }) => {
+        const component = await mount(
+            withProviders(
+                <RequestAttributeAuthoringEditorHarness
+                    showMergeMode
+                    extensionOptions={[{ value: '1.3.6.1.4.1.99999.2', label: 'Subject Alternative Name' }]}
+                />,
+            ),
+        );
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('san');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('SAN');
+
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Certificate extension' }).click();
+
+        await page.getByTestId('select-ra-attr-extension-oid-trigger').click();
+        await page.getByRole('option', { name: 'Subject Alternative Name' }).click();
+
+        const saveButton = page.getByRole('button', { name: 'Save', exact: true });
+        await saveButton.click();
+
+        const parsed = JSON.parse((await component.getByTestId('value-json').textContent()) ?? '{}');
+        expect(parsed.attributes[0].mappingExtensionOid).toBe('1.3.6.1.4.1.99999.2');
+    });
+
+    test('empty RDN list shows a hint', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode rdnOptions={[]} />));
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'RDN (subject)' }).click();
+        await expect(page.getByTestId('request-attribute-authoring-rdn-empty')).toBeVisible();
+    });
+
+    test('in-flight RDN load suppresses the empty hint until the fetch resolves', async ({ mount, page }) => {
+        const component = await mount(
+            withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode rdnOptions={[]} rdnOptionsLoaded={false} />),
+        );
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'RDN (subject)' }).click();
+        await expect(page.getByTestId('request-attribute-authoring-rdn-empty')).toHaveCount(0);
+    });
+
+    test('failed RDN load shows a distinct error hint instead of the empty hint', async ({ mount, page }) => {
+        const component = await mount(
+            withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode rdnOptions={[]} rdnOptionsError />),
+        );
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'RDN (subject)' }).click();
+        await expect(page.getByTestId('request-attribute-authoring-rdn-error')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-rdn-empty')).toHaveCount(0);
+    });
+
+    test('failed extension load shows a distinct error hint instead of the empty hint', async ({ mount, page }) => {
+        const component = await mount(
+            withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode extensionOptions={[]} extensionOptionsError />),
+        );
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Certificate extension' }).click();
+        await expect(page.getByTestId('request-attribute-authoring-extension-error')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-extension-empty')).toHaveCount(0);
+    });
+
+    test('editing preserves an off-list stored RDN value even when the RDN load errored', async ({ mount, page }) => {
+        const initialValue = {
+            ...emptyAuthoringForm(),
+            attributes: [
+                {
+                    ...emptyAuthoredAttribute(),
+                    name: 'legacy',
+                    label: 'Legacy CN',
+                    mappingFieldType: FieldType.Rdn,
+                    mappingRdnCode: 'CN',
+                    mappingObjectType: ObjectType.X509Certificate,
+                },
+            ],
+        };
+        const component = await mount(
+            withProviders(<RequestAttributeAuthoringEditorHarness initialValue={initialValue as any} rdnOptions={[]} rdnOptionsError />),
+        );
+        await component.getByTestId('request-attribute-authoring-attribute-edit').click();
+        // The synthetic off-list option keeps the Select usable, but the load error is still surfaced
+        // so the user knows the dropdown is missing its fetched entries.
+        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('CN (not in Custom OIDs)');
+        await expect(page.getByTestId('request-attribute-authoring-rdn-error')).toBeVisible();
+    });
+
+    test('editing preserves an off-list stored RDN value', async ({ mount, page }) => {
+        const initialValue = {
+            ...emptyAuthoringForm(),
+            attributes: [
+                {
+                    ...emptyAuthoredAttribute(),
+                    name: 'legacy',
+                    label: 'Legacy CN',
+                    mappingFieldType: FieldType.Rdn,
+                    mappingRdnCode: 'CN',
+                    mappingObjectType: ObjectType.X509Certificate,
+                },
+            ],
+        };
+        const component = await mount(
+            withProviders(
+                <RequestAttributeAuthoringEditorHarness
+                    initialValue={initialValue as any}
+                    rdnOptions={[{ value: '1.3.6.1.4.1.99999.1', label: 'Common Name' }]}
+                />,
+            ),
+        );
+        await component.getByTestId('request-attribute-authoring-attribute-edit').click();
+        // No custom OID lists code `CN` (a standard RDN in the backend SystemOid enum), so the stored
+        // value stays selectable via a synthetic off-list option rather than being silently dropped.
+        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('CN (not in Custom OIDs)');
+    });
+
+    test('reconciles a legacy RDN code against a custom OID that lists it as an alias', async ({ mount, page }) => {
+        const initialValue = {
+            ...emptyAuthoringForm(),
+            attributes: [
+                {
+                    ...emptyAuthoredAttribute(),
+                    name: 'legacy',
+                    label: 'Legacy CN',
+                    mappingFieldType: FieldType.Rdn,
+                    // Stored as the RDN code, not the dotted OID the dropdown now emits.
+                    mappingRdnCode: 'CN',
+                    mappingObjectType: ObjectType.X509Certificate,
+                },
+            ],
+        };
+        const component = await mount(
+            withProviders(
+                <RequestAttributeAuthoringEditorHarness
+                    initialValue={initialValue as any}
+                    rdnOptions={[{ value: '1.3.6.1.4.1.99999.1', label: 'Common Name', aliases: ['CN', 'commonName'] }]}
+                />,
+            ),
+        );
+        await component.getByTestId('request-attribute-authoring-attribute-edit').click();
+        // The alias resolves the stored code to the real option instead of showing it as off-list.
+        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('Common Name');
+        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).not.toContainText('not in Custom OIDs');
     });
 
     test('static list source requires at least one value, then persists the values', async ({ mount, page }) => {

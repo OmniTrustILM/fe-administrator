@@ -5,6 +5,7 @@ import RequestAttributeAuthoringEditor from 'components/RequestAttributes/Reques
 import Widget from 'components/Widget';
 import { actions as authoritiesActions, selectors as authoritiesSelectors } from 'ducks/authorities';
 import { actions as connectorActions } from 'ducks/connectors';
+import { actions as oidActions, selectors as oidSelectors } from 'ducks/oids';
 
 import { actions as raProfilesActions, selectors as raProfilesSelectors } from 'ducks/ra-profiles';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -29,8 +30,9 @@ import {
 
 import { validateAlphaNumericWithSpecialChars, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
+import { toOidSelectOptions } from 'utils/oid';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from '../../../../ducks/customAttributes';
-import { Resource } from '../../../../types/openapi';
+import { Resource, OidCategory } from '../../../../types/openapi';
 import TabLayout from '../../../Layout/TabLayout';
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
@@ -50,6 +52,33 @@ interface FormValues {
 
 export default function RaProfileForm({ raProfileId, authorityId: propAuthorityId, onCancel, onSuccess }: RaProfileFormProps) {
     const dispatch = useDispatch();
+
+    const oidsByCategory = useSelector(oidSelectors.oidsByCategory);
+    const oidsByCategoryError = useSelector(oidSelectors.oidsByCategoryError);
+    const oidsByCategoryLoaded = useSelector(oidSelectors.oidsByCategoryLoaded);
+    const systemOidsByCategory = useSelector(oidSelectors.systemOidsByCategory);
+    const systemOidsError = useSelector(oidSelectors.systemOidsError);
+    const systemOidsLoaded = useSelector(oidSelectors.systemOidsLoaded);
+
+    useEffect(() => {
+        dispatch(oidActions.listOidsByCategory({ category: OidCategory.RdnAttributeType }));
+        dispatch(oidActions.listOidsByCategory({ category: OidCategory.CertificateExtension }));
+        // Standard RDNs (CN, O, OU, …) live in the backend SystemOid enum, not in /v1/oids/list — the
+        // cached system list is merged into the RDN dropdown below. (No system certificateExtension entries.)
+        dispatch(oidActions.listSystemOids());
+    }, [dispatch]);
+
+    // RDN target merges built-in system RDNs with custom ones; the two lists are disjoint by construction
+    // (the backend rejects a custom OID that shadows a system OID), so no dedupe is needed.
+    const rdnOptions = useMemo(
+        () =>
+            toOidSelectOptions([
+                ...(systemOidsByCategory[OidCategory.RdnAttributeType] ?? []),
+                ...(oidsByCategory[OidCategory.RdnAttributeType] ?? []),
+            ]),
+        [systemOidsByCategory, oidsByCategory],
+    );
+    const extensionOptions = useMemo(() => toOidSelectOptions(oidsByCategory[OidCategory.CertificateExtension] ?? []), [oidsByCategory]);
 
     const { id: routeId, authorityId: routeAuthorityId } = useParams();
     const id = raProfileId || routeId;
@@ -424,6 +453,12 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                                 onChange={onChangeRequestAttributes}
                                                 showMergeMode
                                                 connectorAttributeOptions={connectorAttributeOptions}
+                                                rdnOptions={rdnOptions}
+                                                extensionOptions={extensionOptions}
+                                                rdnOptionsError={!!oidsByCategoryError[OidCategory.RdnAttributeType] || systemOidsError}
+                                                extensionOptionsError={!!oidsByCategoryError[OidCategory.CertificateExtension]}
+                                                rdnOptionsLoaded={!!oidsByCategoryLoaded[OidCategory.RdnAttributeType] && systemOidsLoaded}
+                                                extensionOptionsLoaded={!!oidsByCategoryLoaded[OidCategory.CertificateExtension]}
                                                 disabled={isUpdatingRequestAttributes || !requestAttributesSeeded}
                                             />
                                         </div>

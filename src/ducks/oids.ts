@@ -1,10 +1,18 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { SearchRequestModel } from 'types/certificate';
+import type { OidCategory } from 'types/openapi';
 import type { OIDRequestModel, OIDResponseModel, OIDUpdateRequestModel } from 'types/oids';
 
 export type State = {
     oid?: OIDResponseModel;
     oids: OIDResponseModel[];
+    oidsByCategory: Partial<Record<OidCategory, OIDResponseModel[]>>;
+    oidsByCategoryError: Partial<Record<OidCategory, boolean>>;
+    oidsByCategoryLoaded: Partial<Record<OidCategory, boolean>>;
+
+    systemOids: OIDResponseModel[];
+    systemOidsLoaded: boolean;
+    systemOidsError: boolean;
 
     isFetching: boolean;
     isCreating: boolean;
@@ -16,6 +24,13 @@ export type State = {
 
 export const initialState: State = {
     oids: [],
+    oidsByCategory: {},
+    oidsByCategoryError: {},
+    oidsByCategoryLoaded: {},
+
+    systemOids: [],
+    systemOidsLoaded: false,
+    systemOidsError: false,
 
     isFetching: false,
     isCreating: false,
@@ -50,6 +65,41 @@ export const slice = createSlice({
 
         listOIDsFailure: (state, action: PayloadAction<{ error: string }>) => {
             state.isFetching = false;
+        },
+
+        listOidsByCategory: (state, action: PayloadAction<{ category: OidCategory }>) => {
+            state.oidsByCategoryError[action.payload.category] = false;
+            state.oidsByCategoryLoaded[action.payload.category] = false;
+        },
+
+        listOidsByCategorySuccess: (state, action: PayloadAction<{ category: OidCategory; oids: OIDResponseModel[] }>) => {
+            state.oidsByCategory[action.payload.category] = action.payload.oids;
+            state.oidsByCategoryError[action.payload.category] = false;
+            state.oidsByCategoryLoaded[action.payload.category] = true;
+        },
+
+        listOidsByCategoryFailure: (state, action: PayloadAction<{ category: OidCategory; error: string }>) => {
+            state.oidsByCategoryError[action.payload.category] = true;
+            state.oidsByCategoryLoaded[action.payload.category] = true;
+        },
+
+        // The system (built-in) OID list is immutable per release, so it is fetched once and cached.
+        // The request only clears a prior error — it keeps the cached list and its loaded flag so a
+        // repeat dispatch (e.g. a consumer remount) stays a cache hit that the epic skips.
+        listSystemOids: (state, action: PayloadAction<void>) => {
+            state.systemOidsError = false;
+        },
+
+        listSystemOidsSuccess: (state, action: PayloadAction<{ oids: OIDResponseModel[] }>) => {
+            state.systemOids = action.payload.oids;
+            state.systemOidsLoaded = true;
+            state.systemOidsError = false;
+        },
+
+        // Leave loaded false so a later mount retries the fetch; the error flag drives the load-failure hint.
+        listSystemOidsFailure: (state, action: PayloadAction<{ error: string }>) => {
+            state.systemOidsLoaded = false;
+            state.systemOidsError = true;
         },
 
         getOID: (state, action: PayloadAction<{ oid: string }>) => {
@@ -132,10 +182,23 @@ export const slice = createSlice({
     },
 });
 
-const state = (reduxStore: any): State => reduxStore?.[slice.name];
+const state = (reduxStore: any): State => reduxStore?.[slice.name] ?? initialState;
 
 const oids = createSelector(state, (state) => state.oids);
+const oidsByCategory = createSelector(state, (state) => state.oidsByCategory);
+const oidsByCategoryError = createSelector(state, (state) => state.oidsByCategoryError);
+const oidsByCategoryLoaded = createSelector(state, (state) => state.oidsByCategoryLoaded);
 const oid = createSelector(state, (state) => state.oid);
+
+const systemOids = createSelector(state, (state) => state.systemOids);
+const systemOidsLoaded = createSelector(state, (state) => state.systemOidsLoaded);
+const systemOidsError = createSelector(state, (state) => state.systemOidsError);
+const systemOidsByCategory = createSelector(systemOids, (systemOids) =>
+    systemOids.reduce<Partial<Record<OidCategory, OIDResponseModel[]>>>((acc, entry) => {
+        (acc[entry.category] ??= []).push(entry);
+        return acc;
+    }, {}),
+);
 
 const isFetching = createSelector(state, (state) => state.isFetching);
 const isCreating = createSelector(state, (state) => state.isCreating);
@@ -147,7 +210,15 @@ const isDeleting = createSelector(state, (state) => state.isDeleting);
 export const selectors = {
     state,
     oids,
+    oidsByCategory,
+    oidsByCategoryError,
+    oidsByCategoryLoaded,
     oid,
+
+    systemOids,
+    systemOidsLoaded,
+    systemOidsError,
+    systemOidsByCategory,
 
     isFetching,
     isCreating,

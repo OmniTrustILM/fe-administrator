@@ -6,6 +6,7 @@ import {
     type CertificateExtensionOidPropertiesDto,
     type RdnAttributeTypeOidPropertiesDto,
 } from 'types/openapi';
+import type { OIDResponseModel } from 'types/oids';
 
 export const isCertificateExtensionCategory = (category?: string): boolean => category === OidCategory.CertificateExtension;
 
@@ -52,3 +53,15 @@ export const isCertificateExtensionProperties = (
 
 export const isRdnProperties = (props?: CustomOidEntryDetailResponseDtoAdditionalProperties): props is RdnAttributeTypeOidPropertiesDto =>
     !!props && 'code' in props;
+
+export const toOidSelectOptions = (
+    entries: OIDResponseModel[],
+): { value: string; label: string; description?: string; aliases?: string[] }[] =>
+    entries.map((e) => {
+        // RDN entries carry a code (+altCodes); a legacy mapping may store one of those instead of the
+        // dotted OID, so expose them as aliases the dropdown can reconcile back to this option.
+        const aliases = isRdnProperties(e.additionalProperties)
+            ? [e.additionalProperties.code, ...(e.additionalProperties.altCodes ?? [])].filter(Boolean)
+            : undefined;
+        return { value: e.oid, label: e.displayName?.trim() || e.oid, description: e.description, aliases };
+    });

@@ -115,6 +115,89 @@ function FieldHint({ children, dataTestId }: Readonly<{ children: React.ReactNod
 /** `value` = attribute UUID, `label` = human display, `description` = internal attribute name (the binding name-fallback key). */
 type ConnectorAttributeOption = { value: string; label: string; description?: string };
 
+export type OidSelectOption = { value: string; label: string; description?: string; aliases?: string[] };
+
+// Resolve a stored mapping value to the option it belongs to. A legacy value may be an RDN code
+// (e.g. CN) rather than the dotted OID the dropdown now emits, so match aliases too and return the
+// canonical OID. Falls back to the (trimmed) stored value when nothing matches — for the synthetic
+// off-list option below.
+function resolveOidValue(options: OidSelectOption[], current?: string): string | undefined {
+    const trimmed = current?.trim();
+    if (!trimmed || options.some((o) => o.value === trimmed)) return trimmed || undefined;
+    return options.find((o) => o.aliases?.includes(trimmed))?.value ?? trimmed;
+}
+
+// A strict dropdown would silently drop a stored value that isn't in the fetched list
+// (e.g. a standard RDN like CN that lives in the backend SystemOid enum). Keep it selectable.
+function withCurrentValue(options: OidSelectOption[], resolved?: string): OidSelectOption[] {
+    if (!resolved || options.some((o) => o.value === resolved)) return options;
+    return [...options, { value: resolved, label: `${resolved} (not in Custom OIDs)` }];
+}
+
+type OidMappingSelectProps = Readonly<{
+    id: string;
+    label: string;
+    placeholder: string;
+    /** e.g. `${dataTestId}-rdn` — suffixed with `-error` / `-empty` for the hints. */
+    testIdPrefix: string;
+    emptyHint: string;
+    errorHint: string;
+    options: OidSelectOption[];
+    optionsError: boolean;
+    optionsLoaded: boolean;
+    value?: string;
+    onChange: (next?: string) => void;
+    disabled: boolean;
+}>;
+
+function OidMappingSelect({
+    id,
+    label,
+    placeholder,
+    testIdPrefix,
+    emptyHint,
+    errorHint,
+    options,
+    optionsError,
+    optionsLoaded,
+    value,
+    onChange,
+    disabled,
+}: OidMappingSelectProps) {
+    const resolved = resolveOidValue(options, value);
+    const withCurrent = withCurrentValue(options, resolved);
+    return (
+        <>
+            {optionsError && (
+                <p className="text-sm text-red-600" data-testid={`${testIdPrefix}-error`}>
+                    {errorHint}
+                </p>
+            )}
+            {withCurrent.length === 0 ? (
+                !optionsError &&
+                optionsLoaded && (
+                    <p className="text-sm text-gray-400" data-testid={`${testIdPrefix}-empty`}>
+                        {emptyHint}
+                    </p>
+                )
+            ) : (
+                <Select
+                    id={id}
+                    label={label}
+                    required
+                    isSearchable
+                    isClearable
+                    isDisabled={disabled}
+                    value={resolved ?? ''}
+                    onChange={(v) => onChange((v as string) || undefined)}
+                    options={withCurrent}
+                    placeholder={placeholder}
+                />
+            )}
+        </>
+    );
+}
+
 type Props = Readonly<{
     value: RequestAttributeAuthoringFormValues;
     onChange: (next: RequestAttributeAuthoringFormValues) => void;
@@ -125,6 +208,18 @@ type Props = Readonly<{
     disabled?: boolean;
     /** Optional connector attribute descriptors to pick a binding target from (name/uuid). */
     connectorAttributeOptions?: ConnectorAttributeOption[];
+    /** Custom-OID entries (category rdnAttributeType) offered for the RDN mapping target. */
+    rdnOptions?: OidSelectOption[];
+    /** Custom-OID entries (category certificateExtension) offered for the extension mapping target. */
+    extensionOptions?: OidSelectOption[];
+    /** True when the last rdnOptions fetch failed — distinguishes a broken load from a legitimately empty list. */
+    rdnOptionsError?: boolean;
+    /** True when the last extensionOptions fetch failed — distinguishes a broken load from a legitimately empty list. */
+    extensionOptionsError?: boolean;
+    /** True once the rdnOptions fetch has resolved — gates the empty hint so it can't flash while loading. */
+    rdnOptionsLoaded?: boolean;
+    /** True once the extensionOptions fetch has resolved — gates the empty hint so it can't flash while loading. */
+    extensionOptionsLoaded?: boolean;
     dataTestId?: string;
 }>;
 
@@ -135,6 +230,12 @@ export default function RequestAttributeAuthoringEditor({
     showBindings = true,
     disabled = false,
     connectorAttributeOptions,
+    rdnOptions = [],
+    extensionOptions = [],
+    rdnOptionsError = false,
+    extensionOptionsError = false,
+    rdnOptionsLoaded = true,
+    extensionOptionsLoaded = true,
     dataTestId = 'request-attribute-authoring',
 }: Props) {
     const [attrDraft, setAttrDraft] = useState<{ index: number | null; data: AuthoredAttributeFormValues } | null>(null);
@@ -352,13 +453,19 @@ export default function RequestAttributeAuthoringEditor({
                     consumes the value directly.
                 </FieldHint>
                 {d.mappingFieldType === FieldType.Rdn && (
-                    <TextInput
+                    <OidMappingSelect
                         id="ra-attr-rdn"
-                        label="RDN code"
-                        required
-                        value={d.mappingRdnCode ?? ''}
+                        label="RDN"
+                        placeholder="Select an RDN"
+                        testIdPrefix={`${dataTestId}-rdn`}
+                        emptyHint="No RDNs defined under Custom OIDs."
+                        errorHint="Failed to load RDNs from Custom OIDs."
+                        options={rdnOptions}
+                        optionsError={rdnOptionsError}
+                        optionsLoaded={rdnOptionsLoaded}
+                        value={d.mappingRdnCode}
                         onChange={(v) => set({ mappingRdnCode: v })}
-                        placeholder='e.g. "CN" or a dotted OID'
+                        disabled={disabled}
                     />
                 )}
                 {d.mappingFieldType === FieldType.San && (
@@ -396,13 +503,19 @@ export default function RequestAttributeAuthoringEditor({
                 )}
                 {d.mappingFieldType === FieldType.Extension && (
                     <>
-                        <TextInput
+                        <OidMappingSelect
                             id="ra-attr-extension-oid"
-                            label="Extension OID"
-                            required
-                            value={d.mappingExtensionOid ?? ''}
+                            label="Extension"
+                            placeholder="Select an extension"
+                            testIdPrefix={`${dataTestId}-extension`}
+                            emptyHint="No certificate extensions defined under Custom OIDs."
+                            errorHint="Failed to load certificate extensions from Custom OIDs."
+                            options={extensionOptions}
+                            optionsError={extensionOptionsError}
+                            optionsLoaded={extensionOptionsLoaded}
+                            value={d.mappingExtensionOid}
                             onChange={(v) => set({ mappingExtensionOid: v })}
-                            placeholder="dotted-decimal OID"
+                            disabled={disabled}
                         />
                         <Checkbox
                             id="ra-attr-critical-overridable"

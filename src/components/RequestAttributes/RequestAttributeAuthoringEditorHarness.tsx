@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { emptyAuthoringForm, type RequestAttributeAuthoringFormValues } from 'utils/requestAttributeAuthoring';
-import RequestAttributeAuthoringEditor from './RequestAttributeAuthoringEditor';
+import RequestAttributeAuthoringEditor, { type OidSelectOption } from './RequestAttributeAuthoringEditor';
 
 type Props = Readonly<{
     initialValue?: RequestAttributeAuthoringFormValues;
@@ -8,6 +8,12 @@ type Props = Readonly<{
     showBindings?: boolean;
     disabled?: boolean;
     connectorAttributeOptions?: { value: string; label: string; description?: string }[];
+    rdnOptions?: OidSelectOption[];
+    extensionOptions?: OidSelectOption[];
+    rdnOptionsError?: boolean;
+    extensionOptionsError?: boolean;
+    rdnOptionsLoaded?: boolean;
+    extensionOptionsLoaded?: boolean;
 }>;
 
 /** Stateful wrapper so Playwright CT can exercise the controlled editor end-to-end. */
@@ -17,6 +23,12 @@ export default function RequestAttributeAuthoringEditorHarness({
     showBindings,
     disabled,
     connectorAttributeOptions,
+    rdnOptions,
+    extensionOptions,
+    rdnOptionsError,
+    extensionOptionsError,
+    rdnOptionsLoaded,
+    extensionOptionsLoaded,
 }: Props) {
     const [value, setValue] = useState<RequestAttributeAuthoringFormValues>(initialValue ?? emptyAuthoringForm());
     return (
@@ -28,6 +40,12 @@ export default function RequestAttributeAuthoringEditorHarness({
                 showBindings={showBindings}
                 disabled={disabled}
                 connectorAttributeOptions={connectorAttributeOptions}
+                rdnOptions={rdnOptions}
+                extensionOptions={extensionOptions}
+                rdnOptionsError={rdnOptionsError}
+                extensionOptionsError={extensionOptionsError}
+                rdnOptionsLoaded={rdnOptionsLoaded}
+                extensionOptionsLoaded={extensionOptionsLoaded}
             />
             <pre data-testid="value-json">{JSON.stringify(value)}</pre>
         </div>
