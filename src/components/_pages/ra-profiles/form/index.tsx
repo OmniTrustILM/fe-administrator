@@ -77,8 +77,6 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     const isUpdatingRequestAttributes = useSelector(requestAttributesSelectors.isUpdatingRaProfileSet);
     const updateRequestAttributesSucceeded = useSelector(requestAttributesSelectors.updateRaProfileSetSucceeded);
     const [requestAttributesForm, setRequestAttributesForm] = useState<RequestAttributeAuthoringFormValues>(emptyAuthoringForm());
-    // Request attributes live outside react-hook-form, so their edits don't set the form's `isDirty`.
-    // Track it separately to enable the dialog Save and to know whether a save PATCH is needed.
     const [requestAttributesDirty, setRequestAttributesDirty] = useState(false);
 
     const isBusy = useMemo(
@@ -157,6 +155,8 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
         reset,
     } = methods;
 
+    const isSaving = isSubmitting || isCreating || isUpdating || isUpdatingRequestAttributes;
+
     const watchedAuthority = useWatch({
         control,
         name: 'authority',
@@ -217,10 +217,6 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     // server-side read-merge).
     const requestAttributesSeeded = editMode && raProfileSelector?.uuid === id && !isFetchingDetail;
 
-    // Hold editor mutations in local state only; the request-attribute set is persisted together with
-    // the rest of the profile when the dialog's Save button is clicked (see onSubmit), not on every
-    // change. Marking the form dirty enables that Save button, since these edits live outside
-    // react-hook-form and so don't set its own `isDirty`.
     const onChangeRequestAttributes = useCallback((next: RequestAttributeAuthoringFormValues) => {
         setRequestAttributesForm(next);
         setRequestAttributesDirty(true);
@@ -247,9 +243,6 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
         (values: FormValues) => {
             if (editMode) {
                 if (!id) return;
-                // Persist request-attribute edits alongside the profile update. Guarded on
-                // `requestAttributesSeeded` so an unseeded form never PATCHes requestAttributes: []
-                // and wipes the configured set (the epic does no server-side read-merge).
                 if (requestAttributesDirty && requestAttributesSeeded) {
                     const authorityUuid = raProfile?.authorityInstanceUuid || authorityId;
                     if (authorityUuid) {
@@ -374,6 +367,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                         <Select
                                             id="authoritySelect"
                                             label="Select Authority"
+                                            required
                                             value={field.value || ''}
                                             onChange={(value) => {
                                                 field.onChange(value);
@@ -443,14 +437,14 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                         />
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>
-                            <Button variant="outline" onClick={onCancel} disabled={isSubmitting} type="button">
+                            <Button variant="outline" onClick={onCancel} disabled={isSaving} type="button">
                                 Cancel
                             </Button>
                             <ProgressButton
                                 title={editMode ? 'Update' : 'Create'}
                                 inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
-                                inProgress={isSubmitting}
-                                disabled={(!isDirty && !requestAttributesDirty) || isSubmitting || !isValid}
+                                inProgress={isSaving}
+                                disabled={(!isDirty && !requestAttributesDirty) || isSaving || !isValid}
                                 type="submit"
                             />
                         </Container>
