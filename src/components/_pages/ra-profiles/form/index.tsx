@@ -77,6 +77,9 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     const isUpdatingRequestAttributes = useSelector(requestAttributesSelectors.isUpdatingRaProfileSet);
     const updateRequestAttributesSucceeded = useSelector(requestAttributesSelectors.updateRaProfileSetSucceeded);
     const [requestAttributesForm, setRequestAttributesForm] = useState<RequestAttributeAuthoringFormValues>(emptyAuthoringForm());
+    // Request attributes live outside react-hook-form, so their edits don't set the form's `isDirty`.
+    // Track it separately to enable the dialog Save and to know whether a save PATCH is needed.
+    const [requestAttributesDirty, setRequestAttributesDirty] = useState(false);
 
     const isBusy = useMemo(
         () => isFetchingDetail || isCreating || isUpdating || isFetchingAuthorityRAProfileAttributes || isFetchingResourceCustomAttributes,
@@ -182,8 +185,10 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     useEffect(() => {
         if (editMode && raProfileSelector?.uuid === id) {
             setRequestAttributesForm(parseRaProfileRequestAttributesDto(raProfileSelector.certificateRequestAttributes));
+            setRequestAttributesDirty(false);
         } else if (!editMode) {
             setRequestAttributesForm(emptyAuthoringForm());
+            setRequestAttributesDirty(false);
         }
     }, [editMode, id, raProfileSelector]);
 
@@ -212,28 +217,14 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     // server-side read-merge).
     const requestAttributesSeeded = editMode && raProfileSelector?.uuid === id && !isFetchingDetail;
 
-    // Persist on every editor mutation (add / edit / remove / merge mode) so the attribute dialog's
-    // own Save is the only click a user needs — there is no separate form-level Save to confirm the
-    // change again. Guarded on `requestAttributesSeeded`: saving before the form is seeded would
-    // PATCH requestAttributes: [] and wipe the configured set (the epic does no server-side
-    // read-merge). The editor is disabled while a save is in flight, so mutations can't overlap an
-    // in-flight write.
-    const onChangeRequestAttributes = useCallback(
-        (next: RequestAttributeAuthoringFormValues) => {
-            setRequestAttributesForm(next);
-            if (!id || !requestAttributesSeeded) return;
-            const authorityUuid = raProfile?.authorityInstanceUuid || authorityId;
-            if (!authorityUuid) return;
-            dispatch(
-                requestAttributesActions.updateRaProfileRequestAttributes({
-                    authorityUuid,
-                    raProfileUuid: id,
-                    data: buildRaProfileRequestAttributesUpdateDto(next),
-                }),
-            );
-        },
-        [dispatch, id, raProfile, authorityId, requestAttributesSeeded],
-    );
+    // Hold editor mutations in local state only; the request-attribute set is persisted together with
+    // the rest of the profile when the dialog's Save button is clicked (see onSubmit), not on every
+    // change. Marking the form dirty enables that Save button, since these edits live outside
+    // react-hook-form and so don't set its own `isDirty`.
+    const onChangeRequestAttributes = useCallback((next: RequestAttributeAuthoringFormValues) => {
+        setRequestAttributesForm(next);
+        setRequestAttributesDirty(true);
+    }, []);
 
     const onAuthorityChange = useCallback(
         (authorityUuid: string) => {
@@ -256,6 +247,21 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
         (values: FormValues) => {
             if (editMode) {
                 if (!id) return;
+                // Persist request-attribute edits alongside the profile update. Guarded on
+                // `requestAttributesSeeded` so an unseeded form never PATCHes requestAttributes: []
+                // and wipes the configured set (the epic does no server-side read-merge).
+                if (requestAttributesDirty && requestAttributesSeeded) {
+                    const authorityUuid = raProfile?.authorityInstanceUuid || authorityId;
+                    if (authorityUuid) {
+                        dispatch(
+                            requestAttributesActions.updateRaProfileRequestAttributes({
+                                authorityUuid,
+                                raProfileUuid: id,
+                                data: buildRaProfileRequestAttributesUpdateDto(requestAttributesForm),
+                            }),
+                        );
+                    }
+                }
                 dispatch(
                     raProfilesActions.updateRaProfile({
                         profileUuid: id,
@@ -291,7 +297,19 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                 );
             }
         },
-        [dispatch, editMode, id, raProfile, raProfileAttributeDescriptors, groupAttributesCallbackAttributes, resourceCustomAttributes],
+        [
+            dispatch,
+            editMode,
+            id,
+            raProfile,
+            raProfileAttributeDescriptors,
+            groupAttributesCallbackAttributes,
+            resourceCustomAttributes,
+            requestAttributesDirty,
+            requestAttributesSeeded,
+            requestAttributesForm,
+            authorityId,
+        ],
     );
 
     const renderCustomAttributesEditor = useMemo(() => {
@@ -406,7 +424,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                     title: 'Request Attributes',
                                     content: editMode ? (
                                         <div className="space-y-4">
-                                            <p className="text-sm text-gray-500">Changes are saved automatically.</p>
+                                            <p className="text-sm text-gray-500">Changes are saved when you click Update.</p>
                                             <RequestAttributeAuthoringEditor
                                                 value={requestAttributesForm}
                                                 onChange={onChangeRequestAttributes}
@@ -432,7 +450,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                 title={editMode ? 'Update' : 'Create'}
                                 inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
                                 inProgress={isSubmitting}
-                                disabled={!isDirty || isSubmitting || !isValid}
+                                disabled={(!isDirty && !requestAttributesDirty) || isSubmitting || !isValid}
                                 type="submit"
                             />
                         </Container>
