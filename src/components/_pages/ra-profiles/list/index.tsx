@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
@@ -64,7 +64,13 @@ function RaProfileList() {
         setIsAddModalOpen(true);
     }, []);
 
+    // True while the create form is running its create → request-attributes PATCH → redirect chain.
+    // Dismissing the modal during that window would unmount the form and drop the pending PATCH, so
+    // the create-profile Dialog's toggle is blocked until the chain settles.
+    const createInFlightRef = useRef(false);
+
     const handleCloseAddModal = useCallback(() => {
+        if (createInFlightRef.current) return;
         setIsAddModalOpen(false);
         setEditingRaProfileId(undefined);
         setEditingAuthorityId(undefined);
@@ -276,7 +282,16 @@ function RaProfileList() {
                 toggle={handleCloseAddModal}
                 caption={editingRaProfileId ? 'Edit RA Profile' : 'Create RA Profile'}
                 size="xl"
-                body={<RaProfileForm raProfileId={editingRaProfileId} authorityId={editingAuthorityId} onCancel={handleCloseAddModal} />}
+                body={
+                    <RaProfileForm
+                        raProfileId={editingRaProfileId}
+                        authorityId={editingAuthorityId}
+                        onCancel={handleCloseAddModal}
+                        onInFlightChange={(inFlight) => {
+                            createInFlightRef.current = inFlight;
+                        }}
+                    />
+                }
             />
         </>
     );

@@ -51,6 +51,7 @@ export type State = {
 
     isCreating: boolean;
     createRaProfileSucceeded: boolean;
+    createdRaProfileUuid: string | null;
     isDeleting: boolean;
     isBulkDeleting: boolean;
     isUpdating: boolean;
@@ -94,6 +95,7 @@ export const initialState: State = {
     isFetchingAssociatedComplianceProfiles: false,
     isCreating: false,
     createRaProfileSucceeded: false,
+    createdRaProfileUuid: null,
     isDeleting: false,
     isBulkDeleting: false,
     isUpdating: false,
@@ -184,15 +186,18 @@ export const slice = createSlice({
             action: PayloadAction<{
                 authorityInstanceUuid: string;
                 raProfileAddRequest: RaProfileAddRequestModel;
+                deferRedirect?: boolean;
             }>,
         ) => {
             state.isCreating = true;
             state.createRaProfileSucceeded = false;
+            state.createdRaProfileUuid = null;
         },
 
         createRaProfileSuccess: (state, action: PayloadAction<{ uuid: string; authorityInstanceUuid: string }>) => {
             state.isCreating = false;
             state.createRaProfileSucceeded = true;
+            state.createdRaProfileUuid = action.payload.uuid;
         },
 
         createRaProfileFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -715,6 +720,7 @@ const isFetchingScepDetails = createSelector(state, (state: State) => state.isFe
 const isFetchingCmpDetails = createSelector(state, (state: State) => state.isFetchingCmpDetails);
 const isCreating = createSelector(state, (state: State) => state.isCreating);
 const createRaProfileSucceeded = createSelector(state, (state: State) => state.createRaProfileSucceeded);
+const createdRaProfileUuid = createSelector(state, (state: State) => state.createdRaProfileUuid);
 const isDeleting = createSelector(state, (state: State) => state.isDeleting);
 const isBulkDeleting = createSelector(state, (state: State) => state.isBulkDeleting);
 const isUpdating = createSelector(state, (state: State) => state.isUpdating);
@@ -761,6 +767,7 @@ export const selectors = {
     isFetchingCmpDetails,
     isCreating,
     createRaProfileSucceeded,
+    createdRaProfileUuid,
     isDeleting,
     isBulkDeleting,
     isUpdating,

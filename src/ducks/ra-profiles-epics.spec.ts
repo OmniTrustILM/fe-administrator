@@ -7,13 +7,27 @@ import { actions as alertActions } from './alerts';
 import { actions as raProfilesActions } from './ra-profiles';
 import raProfilesEpics from './ra-profiles-epics';
 
-const UPDATE_REQUEST_ATTRIBUTES_EPIC_INDEX = 5;
+type EpicFn = ((action$: any, state$: any, deps: any) => Observable<UnknownAction>) & { name?: string };
+
+// Select an epic by its inferred function name so reordering the exported array can't silently
+// point these tests at the wrong epic.
+function selectEpic(name: string): EpicFn {
+    const epics = raProfilesEpics as EpicFn[];
+    const epic = epics.find((e) => e.name === name);
+    if (!epic) throw new Error(`Epic "${name}" not found in ra-profiles-epics`);
+    return epic;
+}
+
+async function runCreateEpic(action: UnknownAction, createRaProfile: (args: any) => any) {
+    const deps = { apiClients: { raProfiles: { createRaProfile: (args: any) => createRaProfile(args) } } };
+    const output$ = selectEpic('createRaProfile')(of(action), of({}) as any, deps as any);
+    return firstValueFrom(output$.pipe(take(4), toArray()));
+}
 
 async function runUpdateRequestAttributesEpic(
     action: UnknownAction,
     updateRaProfileRequestAttributesConfiguration: (args: any) => any,
 ): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
-    const epics = raProfilesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
     const calls: any[] = [];
     const deps = {
         apiClients: {
@@ -25,7 +39,7 @@ async function runUpdateRequestAttributesEpic(
             },
         },
     };
-    const output$ = epics[UPDATE_REQUEST_ATTRIBUTES_EPIC_INDEX](of(action), of({}) as any, deps as any);
+    const output$ = selectEpic('updateRaProfileRequestAttributes')(of(action), of({}) as any, deps as any);
     const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
     return { emitted, calls };
 }
@@ -64,5 +78,28 @@ describe('ra-profiles epics', () => {
         expect(emitted).toHaveLength(2);
         expect(emitted[0].type).toBe(raProfilesActions.updateRaProfileRequestAttributesFailure.type);
         expect(emitted[1].type).toBe(alertActions.error.type);
+    });
+
+    test('createRaProfile emits Success AND a redirect when deferRedirect is not set', async () => {
+        const action = raProfilesActions.createRaProfile({
+            authorityInstanceUuid: 'auth-1',
+            raProfileAddRequest: { name: 'p', attributes: [] } as any,
+        });
+        const emitted = await runCreateEpic(action, () => of({ uuid: 'ra-9' }));
+        const types = emitted.map((a) => a.type);
+        expect(types).toContain(raProfilesActions.createRaProfileSuccess.type);
+        expect(types.some((t) => t.startsWith('appRedirect/'))).toBe(true);
+    });
+
+    test('createRaProfile with deferRedirect emits Success only (no redirect)', async () => {
+        const action = raProfilesActions.createRaProfile({
+            authorityInstanceUuid: 'auth-1',
+            raProfileAddRequest: { name: 'p', attributes: [] } as any,
+            deferRedirect: true,
+        });
+        const emitted = await runCreateEpic(action, () => of({ uuid: 'ra-9' }));
+        const types = emitted.map((a) => a.type);
+        expect(types).toContain(raProfilesActions.createRaProfileSuccess.type);
+        expect(types.some((t) => t.startsWith('appRedirect/'))).toBe(false);
     });
 });

@@ -6,6 +6,7 @@ type Props = {
     tabs: {
         title: React.ReactNode;
         onClick?: () => void;
+        disabled?: boolean;
     }[];
     selectedTab: number;
     onTabChange: (tab: number) => void;
@@ -23,6 +24,7 @@ function Tabs({ tabs, selectedTab, onTabChange }: Readonly<Props>) {
                         <RadixTabs.Trigger
                             key={typeof tab.title === 'string' ? tab.title : `tab-${index}`}
                             value={String(index)}
+                            disabled={tab.disabled}
                             onClick={() => {
                                 onTabChange(index);
                                 tab.onClick?.();

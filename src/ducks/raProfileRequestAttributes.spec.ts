@@ -69,4 +69,11 @@ describe('raProfileRequestAttributes slice', () => {
         expect(selectors.updateRaProfileSetSucceeded(store)).toBe(true);
         expect(selectors.isFetchingDefaultSet({} as never)).toBe(false);
     });
+
+    test('updateRaProfileRequestAttributesFailure clears updating and succeeded', () => {
+        const updating = { ...initialState, isUpdatingRaProfileSet: true, updateRaProfileSetSucceeded: true };
+        const next = reducer(updating, actions.updateRaProfileRequestAttributesFailure({ error: 'boom' }));
+        expect(next.isUpdatingRaProfileSet).toBe(false);
+        expect(next.updateRaProfileSetSucceeded).toBe(false);
+    });
 });

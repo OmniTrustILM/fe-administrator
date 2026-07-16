@@ -7,6 +7,7 @@ import { actions as authoritiesActions, selectors as authoritiesSelectors } from
 import { actions as connectorActions } from 'ducks/connectors';
 import { actions as oidActions, selectors as oidSelectors } from 'ducks/oids';
 
+import { actions as appRedirectActions } from 'ducks/app-redirect';
 import { actions as raProfilesActions, selectors as raProfilesSelectors } from 'ducks/ra-profiles';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
@@ -20,10 +21,11 @@ import type { RaProfileResponseModel } from 'types/ra-profiles';
 
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { actions as requestAttributesActions, selectors as requestAttributesSelectors } from 'ducks/raProfileRequestAttributes';
-import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
+import { useRunOnFailedFinish, useRunOnFinish, useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import {
     buildRaProfileRequestAttributesUpdateDto,
     emptyAuthoringForm,
+    hasAuthoredRequestAttributes,
     parseRaProfileRequestAttributesDto,
     type RequestAttributeAuthoringFormValues,
 } from 'utils/requestAttributeAuthoring';
@@ -42,6 +44,7 @@ type RaProfileFormProps = Readonly<{
     authorityId?: string;
     onCancel?: () => void;
     onSuccess?: () => void;
+    onInFlightChange?: (inFlight: boolean) => void;
 }>;
 
 interface FormValues {
@@ -50,7 +53,13 @@ interface FormValues {
     authority: string;
 }
 
-export default function RaProfileForm({ raProfileId, authorityId: propAuthorityId, onCancel, onSuccess }: RaProfileFormProps) {
+export default function RaProfileForm({
+    raProfileId,
+    authorityId: propAuthorityId,
+    onCancel,
+    onSuccess,
+    onInFlightChange,
+}: RaProfileFormProps) {
     const dispatch = useDispatch();
 
     const oidsByCategory = useSelector(oidSelectors.oidsByCategory);
@@ -98,6 +107,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     const isFetchingDetail = useSelector(raProfilesSelectors.isFetchingDetail);
     const isCreating = useSelector(raProfilesSelectors.isCreating);
     const isUpdating = useSelector(raProfilesSelectors.isUpdating);
+    const createRaProfileSucceeded = useSelector(raProfilesSelectors.createRaProfileSucceeded);
 
     const [groupAttributesCallbackAttributes, setGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
 
@@ -107,6 +117,9 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
     const updateRequestAttributesSucceeded = useSelector(requestAttributesSelectors.updateRaProfileSetSucceeded);
     const [requestAttributesForm, setRequestAttributesForm] = useState<RequestAttributeAuthoringFormValues>(emptyAuthoringForm());
     const [requestAttributesDirty, setRequestAttributesDirty] = useState(false);
+    const createdRaProfileUuid = useSelector(raProfilesSelectors.createdRaProfileUuid);
+    const [pendingCreateAttributes, setPendingCreateAttributes] = useState(false);
+    const pendingCreateAuthorityRef = useRef<string | undefined>(undefined);
 
     const isBusy = useMemo(
         () => isFetchingDetail || isCreating || isUpdating || isFetchingAuthorityRAProfileAttributes || isFetchingResourceCustomAttributes,
@@ -240,6 +253,48 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
 
     useRunOnSuccessfulFinish(isUpdatingRequestAttributes, updateRequestAttributesSucceeded, refetchRaProfile);
 
+    const dispatchCreateRequestAttributes = useCallback(() => {
+        if (!pendingCreateAttributes || !createdRaProfileUuid) return;
+        const authorityUuid = pendingCreateAuthorityRef.current;
+        if (!authorityUuid) return;
+        dispatch(
+            requestAttributesActions.updateRaProfileRequestAttributes({
+                authorityUuid,
+                raProfileUuid: createdRaProfileUuid,
+                data: buildRaProfileRequestAttributesUpdateDto(requestAttributesForm),
+            }),
+        );
+    }, [dispatch, pendingCreateAttributes, createdRaProfileUuid, requestAttributesForm]);
+
+    useRunOnSuccessfulFinish(isCreating, createRaProfileSucceeded, dispatchCreateRequestAttributes);
+
+    // If the create call itself fails, release the create lock so the user can retry from the open modal.
+    const releaseCreateLock = useCallback(() => setPendingCreateAttributes(false), []);
+    useRunOnFailedFinish(isCreating, createRaProfileSucceeded, releaseCreateLock);
+
+    // Both the PATCH success and failure paths land on the created profile's detail page. Fire on the
+    // PATCH's own finish transition so a failure flag left over from an earlier operation can't redirect
+    // before the create-triggered PATCH has run.
+    const redirectAfterCreateRequestAttributes = useCallback(() => {
+        if (!pendingCreateAttributes || !createdRaProfileUuid) return;
+        setPendingCreateAttributes(false);
+        dispatch(appRedirectActions.redirect({ url: `../raprofiles/detail/${pendingCreateAuthorityRef.current}/${createdRaProfileUuid}` }));
+    }, [dispatch, pendingCreateAttributes, createdRaProfileUuid]);
+
+    useRunOnFinish(isUpdatingRequestAttributes, redirectAfterCreateRequestAttributes);
+
+    // The create → request-attributes PATCH → redirect chain runs here in the component. Report the
+    // in-flight window up so the host (the create modal) can block dismissal until it settles —
+    // unmounting mid-chain would drop the PATCH dispatch, creating the profile without its attributes.
+    const createInFlight = useMemo(
+        () => !editMode && (isCreating || pendingCreateAttributes || isUpdatingRequestAttributes),
+        [editMode, isCreating, pendingCreateAttributes, isUpdatingRequestAttributes],
+    );
+
+    useEffect(() => {
+        onInFlightChange?.(createInFlight);
+    }, [onInFlightChange, createInFlight]);
+
     // The authoring form is only trustworthy once it has been seeded from the loaded profile
     // (see the seed effect above). Until then it holds emptyAuthoringForm(); saving that would
     // PATCH requestAttributes: [] and wipe the profile's configured set (the epic does no
@@ -262,6 +317,11 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                 }
             });
             setLocalProfileModifications({ attributes: [] });
+            // Value-source bindings reference the previous authority's connector-attribute descriptor
+            // UUIDs, which are cleared and refetched below. Drop them so stale bindings can't be PATCHed
+            // against the newly selected authority. Authored static attributes are authority-independent
+            // and are preserved.
+            setRequestAttributesForm((prev) => ({ ...prev, valueSourceBindings: [] }));
             dispatch(authoritiesActions.clearRAProfilesAttributesDescriptors());
             dispatch(authoritiesActions.getRAProfilesAttributesDescriptors({ authorityUuid }));
         },
@@ -302,9 +362,13 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                     }),
                 );
             } else {
+                const withRequestAttributes = hasAuthoredRequestAttributes(requestAttributesForm);
+                pendingCreateAuthorityRef.current = values.authority;
+                setPendingCreateAttributes(withRequestAttributes);
                 dispatch(
                     raProfilesActions.createRaProfile({
                         authorityInstanceUuid: values.authority,
+                        deferRedirect: withRequestAttributes,
                         raProfileAddRequest: {
                             name: values.name,
                             description: values.description,
@@ -425,6 +489,7 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                             tabs={[
                                 {
                                     title: 'Connector Attributes',
+                                    disabled: !watchedAuthority,
                                     content: raProfileAttributeDescriptors ? (
                                         <AttributeEditor
                                             id="ra-profile"
@@ -441,10 +506,12 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                 },
                                 {
                                     title: 'Custom Attributes',
+                                    disabled: !watchedAuthority,
                                     content: renderCustomAttributesEditor,
                                 },
                                 {
                                     title: 'Request Attributes',
+                                    disabled: !watchedAuthority,
                                     content: editMode ? (
                                         <div className="space-y-4">
                                             <p className="text-sm text-gray-500">Changes are saved when you click Update.</p>
@@ -463,23 +530,34 @@ export default function RaProfileForm({ raProfileId, authorityId: propAuthorityI
                                             />
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-gray-500">
-                                            Save the RA Profile first to configure its request attributes.
-                                        </p>
+                                        <div className="space-y-4">
+                                            {!watchedAuthority && (
+                                                <p className="text-sm text-gray-500">
+                                                    Select an authority to configure request attributes.
+                                                </p>
+                                            )}
+                                            <RequestAttributeAuthoringEditor
+                                                value={requestAttributesForm}
+                                                onChange={setRequestAttributesForm}
+                                                showMergeMode
+                                                connectorAttributeOptions={connectorAttributeOptions}
+                                                disabled={!watchedAuthority || isCreating || isUpdatingRequestAttributes}
+                                            />
+                                        </div>
                                     ),
                                 },
                             ]}
                         />
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>
-                            <Button variant="outline" onClick={onCancel} disabled={isSaving} type="button">
+                            <Button variant="outline" onClick={onCancel} disabled={isSaving || createInFlight} type="button">
                                 Cancel
                             </Button>
                             <ProgressButton
                                 title={editMode ? 'Update' : 'Create'}
                                 inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
-                                inProgress={isSaving}
-                                disabled={(!isDirty && !requestAttributesDirty) || isSaving || !isValid}
+                                inProgress={isSaving || createInFlight}
+                                disabled={(!isDirty && !requestAttributesDirty) || isSaving || !isValid || createInFlight}
                                 type="submit"
                             />
                         </Container>

@@ -96,6 +96,41 @@ export function useRunOnSuccessfulFinish(isLoading: boolean, isSucceeded: boolea
     }, [isLoading, isSucceeded, callback]);
 }
 
+/**
+ * Calls `callback` only when async operation finished unsuccessfully.
+ *
+ * Usage pattern:
+ * - `isLoading` goes `true -> false`
+ * - `isSucceeded` is `false` for the same operation
+ */
+export function useRunOnFailedFinish(isLoading: boolean, isSucceeded: boolean, callback?: () => void) {
+    const wasLoading = useRef(isLoading);
+
+    useEffect(() => {
+        if (wasLoading.current && !isLoading && !isSucceeded) {
+            callback?.();
+        }
+        wasLoading.current = isLoading;
+    }, [isLoading, isSucceeded, callback]);
+}
+
+/**
+ * Calls `callback` when an async operation finishes, regardless of outcome.
+ *
+ * Fires on the `isLoading` `true -> false` transition only, so it never triggers
+ * off a success/failure flag left over from an earlier operation.
+ */
+export function useRunOnFinish(isLoading: boolean, callback?: () => void) {
+    const wasLoading = useRef(isLoading);
+
+    useEffect(() => {
+        if (wasLoading.current && !isLoading) {
+            callback?.();
+        }
+        wasLoading.current = isLoading;
+    }, [isLoading, callback]);
+}
+
 export function useAreDefaultValuesSame(defaultValues: Record<string, unknown>) {
     return useCallback((values: Record<string, unknown>) => isObjectSame(values, defaultValues), [defaultValues]);
 }

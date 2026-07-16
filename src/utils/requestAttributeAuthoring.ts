@@ -166,6 +166,14 @@ export function emptyAuthoringForm(): RequestAttributeAuthoringFormValues {
     };
 }
 
+export function hasAuthoredRequestAttributes(form: RequestAttributeAuthoringFormValues): boolean {
+    return (
+        (form.attributes?.length ?? 0) > 0 ||
+        (form.valueSourceBindings?.length ?? 0) > 0 ||
+        (form.mergeMode ?? DEFAULT_MERGE_MODE) !== DEFAULT_MERGE_MODE
+    );
+}
+
 function buildMappedField(form: AuthoredAttributeFormValues): MappedFieldModel | undefined {
     switch (form.mappingFieldType) {
         case FieldType.Rdn:

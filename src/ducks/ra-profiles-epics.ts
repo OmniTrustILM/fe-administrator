@@ -93,9 +93,13 @@ const createRaProfile: AppEpic = (action$, state$, deps) => {
                                 uuid: obj.uuid,
                                 authorityInstanceUuid: action.payload.authorityInstanceUuid,
                             }),
-                            appRedirectActions.redirect({
-                                url: `../raprofiles/detail/${action.payload.authorityInstanceUuid}/${obj.uuid}`,
-                            }),
+                            ...(action.payload.deferRedirect
+                                ? []
+                                : [
+                                      appRedirectActions.redirect({
+                                          url: `../raprofiles/detail/${action.payload.authorityInstanceUuid}/${obj.uuid}`,
+                                      }),
+                                  ]),
                         ),
                     ),
 
