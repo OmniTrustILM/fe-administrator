@@ -1,6 +1,24 @@
 import { test, expect } from '../../../../../playwright/ct-test';
 import { testInitialState } from 'ducks/test-reducers';
+import type { AttributeDescriptorModel } from 'types/attributes';
+import { AttributeContentType, AttributeType } from 'types/openapi';
 import { CertificateFormTestWrapper } from './CertificateFormTestWrapper';
+
+const csrDataDescriptor: AttributeDescriptorModel = {
+    type: AttributeType.Data,
+    name: 'dataField',
+    uuid: 'csr-data-uuid-1',
+    contentType: AttributeContentType.String,
+    properties: { label: 'Data Field', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+} as AttributeDescriptorModel;
+
+// A selectable RA Profile: raProfileOptions filters to profiles that carry an authorityInstanceUuid.
+const selectableRaProfile = {
+    uuid: 'ra-1',
+    name: 'RA One',
+    authorityInstanceUuid: 'auth-1',
+    enabled: true,
+} as any;
 
 test.describe('CertificateForm', () => {
     test('defaults to Issue now: key-source select visible, challenge input absent', async ({ mount, page }) => {
@@ -81,5 +99,80 @@ test.describe('CertificateForm', () => {
         const createButton = page.getByRole('button', { name: 'Creating' });
         await expect(createButton).toBeVisible();
         await expect(createButton).toBeDisabled();
+    });
+
+    test('Request Attributes tab shows the hint (no fields) when no RA Profile is selected', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper />);
+
+        await page.getByTestId('requestType-register').click();
+
+        await expect(page.getByRole('tab', { name: 'Request Attributes' })).toBeVisible();
+        const hint = page.getByTestId('csrAttributes-hint');
+        await expect(hint).toBeVisible();
+        await expect(hint).toContainText('Select an RA Profile to see its request attributes.');
+        await expect(page.getByTestId('text-input-__attributes__csrAttributes__.dataField')).toHaveCount(0);
+    });
+
+    test('Request Attributes tab renders the resolved descriptors as fields (hint gone) when present', async ({ mount, page }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{
+                    certificates: { ...testInitialState.certificates, csrAttributeDescriptors: [csrDataDescriptor] },
+                }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+
+        await expect(page.getByTestId('text-input-__attributes__csrAttributes__.dataField')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('csrAttributes-hint')).toHaveCount(0);
+    });
+
+    test('Request Attributes tab shows a loading affordance (not the select-a-profile hint) while descriptors are being fetched', async ({
+        mount,
+        page,
+    }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{
+                    certificates: { ...testInitialState.certificates, isFetchingCsrAttributes: true },
+                }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+
+        // While the per-profile fetch is in flight the misleading "Select an RA Profile" hint must not show.
+        await expect(page.getByTestId('csrAttributes-loading')).toBeVisible();
+        await expect(page.getByTestId('csrAttributes-hint')).toHaveCount(0);
+        await expect(page.getByTestId('text-input-__attributes__csrAttributes__.dataField')).toHaveCount(0);
+    });
+
+    test('selecting an RA Profile that resolves to no attributes shows the empty message, not the select-a-profile hint', async ({
+        mount,
+        page,
+    }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{
+                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+
+        // Before selection: the hint prompting for a profile.
+        await expect(page.getByTestId('csrAttributes-hint')).toBeVisible();
+
+        // Select the RA Profile — drives onRaProfileChange and the RHF-watched selection.
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+
+        // A profile is now selected but resolves to zero attributes: the message must distinguish this
+        // from "no profile selected" rather than keep telling the user to pick a profile.
+        await expect(page.getByTestId('csrAttributes-empty')).toBeVisible();
+        await expect(page.getByTestId('csrAttributes-empty')).toContainText('This RA Profile has no request attributes.');
+        await expect(page.getByTestId('csrAttributes-hint')).toHaveCount(0);
     });
 });

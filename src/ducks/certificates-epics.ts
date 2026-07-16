@@ -1227,7 +1227,7 @@ const getCsrAttributes: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getCsrAttributes.match),
         switchMap((action) =>
-            deps.apiClients.certificates.getCsrGenerationAttributes().pipe(
+            deps.apiClients.certificates.getCsrGenerationAttributes({ raProfileUuid: action.payload.raProfileUuid }).pipe(
                 map((attributes) =>
                     slice.actions.getCsrAttributesSuccess({
                         csrAttributes: attributes.map((attribute) => transformAttributeDescriptorDtoToModel(attribute)),

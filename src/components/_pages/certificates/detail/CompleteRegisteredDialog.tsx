@@ -41,10 +41,13 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
     const csrAttributeDescriptors = useSelector(certificateSelectors.csrAttributeDescriptors);
 
     // The backend generates the CSR from csrAttributes on the existing-key path, so make sure the
-    // identity (Request Attributes) descriptors are loaded, mirroring the add-certificate form.
+    // identity (Request Attributes) descriptors are loaded for this certificate's RA profile.
     useEffect(() => {
-        dispatch(certificateActions.getCsrAttributes());
-    }, [dispatch]);
+        const raProfileUuid = certificate.raProfile?.uuid;
+        if (raProfileUuid) {
+            dispatch(certificateActions.getCsrAttributes({ raProfileUuid }));
+        }
+    }, [dispatch, certificate.raProfile?.uuid]);
 
     // Write-only: the CSR content lives outside the RHF form since FileUpload reports content via a
     // plain callback (not a Controller) — matching the established pattern in the add-certificate form.

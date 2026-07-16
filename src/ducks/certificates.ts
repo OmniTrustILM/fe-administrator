@@ -915,8 +915,9 @@ export const slice = createSlice({
             state.isCheckingCompliance = false;
         },
 
-        getCsrAttributes: (state, action: PayloadAction<void>) => {
+        getCsrAttributes: (state, action: PayloadAction<{ raProfileUuid: string }>) => {
             state.isFetchingCsrAttributes = true;
+            state.csrAttributeDescriptors = [];
         },
 
         getCsrAttributesSuccess: (state, action: PayloadAction<{ csrAttributes: AttributeDescriptorModel[] }>) => {
@@ -926,6 +927,10 @@ export const slice = createSlice({
 
         getCsrAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingCsrAttributes = false;
+        },
+
+        clearCsrAttributes: (state) => {
+            state.csrAttributeDescriptors = [];
         },
 
         getCertificateContents: (state, action: PayloadAction<{ uuids: string[]; format: string }>) => {
