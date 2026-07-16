@@ -50,6 +50,14 @@ test.describe('RaProfileForm (create mode) request-attributes chain', () => {
         await expect(component.getByTestId('request-attribute-authoring-attribute-add')).toBeEnabled();
     });
 
+    test('attribute tabs are disabled until an authority is selected', async ({ mount, page }) => {
+        await mount(<RaProfileFormCreateWithStore authorityId="" />);
+
+        await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toBeDisabled();
+        await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeDisabled();
+        await expect(page.getByRole('tab', { name: 'Request Attributes' })).toBeDisabled();
+    });
+
     test('empty request-attributes tab: create dispatches with no defer and no follow-up PATCH', async ({ mount, page }) => {
         await mount(<RaProfileFormCreateWithStore />);
 

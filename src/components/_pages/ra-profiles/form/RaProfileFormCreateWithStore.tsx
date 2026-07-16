@@ -11,7 +11,8 @@ import RaProfileForm from './index';
 //    (epic-less) create outcome by dispatching createRaProfileSuccess / createRaProfileFailure.
 // The authority is pre-selected via the `authorityId` prop, so the test needs neither the authorities
 // slice (absent from the CT reducers) nor any Select interaction to enable the request-attributes tab.
-export default function RaProfileFormCreateWithStore() {
+// Pass authorityId="" to exercise the no-authority state where the attribute tabs are disabled.
+export default function RaProfileFormCreateWithStore({ authorityId = 'auth-1' }: { authorityId?: string }) {
     const capturedActions: UnknownAction[] = [];
     (window as unknown as { __raProfileActions__: UnknownAction[] }).__raProfileActions__ = capturedActions;
 
@@ -29,7 +30,7 @@ export default function RaProfileFormCreateWithStore() {
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/raprofiles/add']}>
-                <RaProfileForm authorityId="auth-1" />
+                <RaProfileForm authorityId={authorityId} />
             </MemoryRouter>
         </Provider>
     );

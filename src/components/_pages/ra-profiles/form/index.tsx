@@ -489,6 +489,7 @@ export default function RaProfileForm({
                             tabs={[
                                 {
                                     title: 'Connector Attributes',
+                                    disabled: !watchedAuthority,
                                     content: raProfileAttributeDescriptors ? (
                                         <AttributeEditor
                                             id="ra-profile"
@@ -505,10 +506,12 @@ export default function RaProfileForm({
                                 },
                                 {
                                     title: 'Custom Attributes',
+                                    disabled: !watchedAuthority,
                                     content: renderCustomAttributesEditor,
                                 },
                                 {
                                     title: 'Request Attributes',
+                                    disabled: !watchedAuthority,
                                     content: editMode ? (
                                         <div className="space-y-4">
                                             <p className="text-sm text-gray-500">Changes are saved when you click Update.</p>
