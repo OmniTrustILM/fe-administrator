@@ -271,8 +271,8 @@ export default function RequestAttributeAuthoringEditor({
         return (
             <div className="space-y-3 text-left" data-testid={`${dataTestId}-attribute-form`}>
                 <p className="text-sm text-gray-500" data-testid={`${dataTestId}-attribute-form-intro`}>
-                    A request attribute is a value the requester supplies when asking for a certificate through this RA Profile. Define what
-                    it is called, its data type, and — optionally — where its value is placed in the issued certificate.
+                    A request attribute is a value the requester supplies when asking for a certificate. Define what it is called, its data
+                    type, and — optionally — where its value is placed in the issued certificate.
                 </p>
                 <TextInput id="ra-attr-name" label="Name" required value={d.name} onChange={(v) => set({ name: v })} />
                 {attrNameDuplicate ? (
