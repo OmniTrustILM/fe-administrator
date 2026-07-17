@@ -363,7 +363,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                     className="font-medium text-[var(--dark-gray-color)] dark:text-white"
                                                     data-testid="requestType-issue"
                                                 >
-                                                    Request
+                                                    Request now
                                                 </span>
                                                 <span className="text-gray-500 dark:text-neutral-400">
                                                     Submit a certificate request to the authority immediately.

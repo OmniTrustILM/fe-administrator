@@ -3,10 +3,10 @@ import { testInitialState } from 'ducks/test-reducers';
 import { CertificateFormTestWrapper } from './CertificateFormTestWrapper';
 
 test.describe('CertificateForm', () => {
-    test('request mode radio is labelled "Request"', async ({ mount, page }) => {
+    test('request mode radio is labelled "Request now"', async ({ mount, page }) => {
         await mount(<CertificateFormTestWrapper />);
 
-        await expect(page.getByTestId('requestType-issue')).toHaveText('Request');
+        await expect(page.getByTestId('requestType-issue')).toHaveText('Request now');
     });
 
     test('defaults to Request mode: key-source select visible, challenge input absent', async ({ mount, page }) => {
