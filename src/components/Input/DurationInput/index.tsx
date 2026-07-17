@@ -66,7 +66,7 @@ const DurationInput = ({ id, label, value, onChange, onBlur, required, invalid, 
                 )}
             />
             {error && <p className="text-xs text-red-600 mt-0.5">{error}</p>}
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-700">
                 Format: days (d), hours (h), minutes (m), seconds (s), milliseconds (ms) — e.g. 1d 12h or 30m 15s 500ms
             </p>
         </div>

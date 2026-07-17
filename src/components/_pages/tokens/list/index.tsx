@@ -198,6 +198,7 @@ function TokenList() {
             <Widget
                 title="Token Store"
                 busy={isBusy && (!isFetching || tokens.length > 0)}
+                disableRefresh={isBusy}
                 widgetLockName={LockWidgetNameEnum.TokenStore}
                 widgetButtons={buttons}
                 titleSize="large"

@@ -124,6 +124,7 @@ export default function ApprovalProfilesList() {
             dataTestId="approval-profiles-list-widget"
             title="List of Approval Profiles"
             busy={isBusy && (!isFetchingList || profileApprovalList.length > 0)}
+            disableRefresh={isBusy}
             widgetLockName={LockWidgetNameEnum.ListOfApprovalProfiles}
             widgetButtons={buttons}
             titleSize="large"

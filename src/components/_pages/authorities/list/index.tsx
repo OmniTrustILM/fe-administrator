@@ -156,6 +156,7 @@ function AuthorityList() {
             <Widget
                 title="Authority Store"
                 busy={isBusy && (!isFetching || authorities.length > 0)}
+                disableRefresh={isBusy}
                 widgetLockName={LockWidgetNameEnum.AuthorityStore}
                 widgetButtons={buttons}
                 titleSize="large"

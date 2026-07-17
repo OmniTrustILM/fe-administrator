@@ -187,6 +187,7 @@ export default function AcmeAccountList() {
             <Widget
                 title="List of ACME Accounts"
                 busy={isBusy && (!isFetching || acmeAccounts.length > 0)}
+                disableRefresh={isBusy}
                 widgetLockName={LockWidgetNameEnum.ListOfACMEAccounts}
                 widgetButtons={buttons}
                 titleSize="large"

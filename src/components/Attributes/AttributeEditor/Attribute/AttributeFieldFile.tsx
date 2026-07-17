@@ -76,7 +76,7 @@ export function AttributeFieldFile({
                         />
 
                         {descriptor.description && (
-                            <p className="text-xs text-gray-400 mt-1 dark:text-neutral-400">{descriptor.description}</p>
+                            <p className="text-xs text-gray-700 mt-1 dark:text-neutral-400">{descriptor.description}</p>
                         )}
                     </div>
                     <div className="w-52 ml-4">

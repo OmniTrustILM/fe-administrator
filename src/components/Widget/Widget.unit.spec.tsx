@@ -118,3 +118,50 @@ describe('Widget reset-view action', () => {
         expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'tablePagination/clearPaginationByPath' }));
     });
 });
+
+describe('Widget refresh action disabled state', () => {
+    let container: HTMLDivElement;
+    let root: Root;
+
+    const render = async (element: React.ReactElement) => {
+        await act(async () => {
+            root.render(element);
+        });
+    };
+
+    beforeEach(() => {
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        root = createRoot(container);
+
+        mockPathname = '/certificates';
+        mockState = pristineState();
+        useDispatchMock.mockReturnValue(vi.fn());
+        useSelectorMock.mockImplementation((selector: any) => selector(mockState));
+    });
+
+    afterEach(async () => {
+        await act(async () => {
+            root.unmount();
+        });
+        container.remove();
+        vi.clearAllMocks();
+    });
+
+    const refreshButton = () => container.querySelector('[data-testid="refresh-icon"]') as HTMLButtonElement | null;
+
+    it('enables the refresh button when neither busy nor disableRefresh is set', async () => {
+        await render(<Widget title="Idle" refreshAction={() => {}} />);
+        expect(refreshButton()!.disabled).toBe(false);
+    });
+
+    it('disables the refresh button via disableRefresh even when busy is false', async () => {
+        await render(<Widget title="Fetching" refreshAction={() => {}} busy={false} disableRefresh />);
+        expect(refreshButton()!.disabled).toBe(true);
+    });
+
+    it('disables the refresh button while busy', async () => {
+        await render(<Widget title="Busy" refreshAction={() => {}} busy />);
+        expect(refreshButton()!.disabled).toBe(true);
+    });
+});

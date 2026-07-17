@@ -156,6 +156,7 @@ const ExecutionsList = () => {
                 refreshAction={getFreshListActionGroups}
                 resetViewAction={canReset ? resetView : undefined}
                 busy={isBusy && (!isFetchingList || executions.length > 0)}
+                disableRefresh={isBusy}
                 widgetButtons={buttons}
                 widgetInfoCard={{
                     title: 'Information',

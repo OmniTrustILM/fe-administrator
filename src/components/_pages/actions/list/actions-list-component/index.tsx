@@ -137,6 +137,7 @@ const ActionsList = () => {
                 titleSize="large"
                 title="Actions"
                 busy={isBusy && (!isFetchingList || actionsList.length > 0)}
+                disableRefresh={isBusy}
                 refreshAction={getFreshList}
                 resetViewAction={canReset ? resetView : undefined}
                 widgetButtons={buttons}

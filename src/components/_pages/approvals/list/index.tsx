@@ -218,6 +218,7 @@ export default function ApprovalsList() {
                             <Widget
                                 title="My Approvals"
                                 busy={isBusy && (!isFetching || userApprovals.length > 0)}
+                                disableRefresh={isBusy}
                                 widgetButtons={buttons}
                                 titleSize="large"
                                 refreshAction={listUserApprovals}
@@ -257,6 +258,7 @@ export default function ApprovalsList() {
                             <Widget
                                 title="List of Approvals"
                                 busy={isBusy && (!isFetching || approvals.length > 0)}
+                                disableRefresh={isBusy}
                                 widgetButtons={buttons}
                                 widgetLockName={LockWidgetNameEnum.ListOfApprovals}
                                 titleSize="large"

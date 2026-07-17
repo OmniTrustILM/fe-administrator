@@ -203,6 +203,7 @@ const TriggerList = () => {
                 refreshAction={getFreshList}
                 resetViewAction={canReset ? resetView : undefined}
                 busy={isBusy && (!isFetchingList || triggers.length > 0)}
+                disableRefresh={isBusy}
                 widgetButtons={buttons}
                 widgetInfoCard={{
                     title: 'Information',

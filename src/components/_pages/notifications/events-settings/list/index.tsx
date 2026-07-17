@@ -134,6 +134,7 @@ const EventsList = () => {
             widgetLockName={LockWidgetNameEnum.EventSettings}
             lockSize="large"
             busy={isBusy && !isInitialLoad}
+            disableRefresh={isBusy}
             widgetInfoCard={{
                 title: 'Information',
                 description: 'When an Event is produced, assigned Triggers are fired',

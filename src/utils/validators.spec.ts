@@ -327,6 +327,11 @@ describe('validators', () => {
             expect(validateAlphaNumericWithSpecialChars()(`sadasd asdasd 'asdasd'`)).toBeUndefined();
         });
 
+        test('should accept dot-separated FQDN-style names', () => {
+            expect(validateAlphaNumericWithSpecialChars()('ca.example.com')).toBeUndefined();
+            expect(validateAlphaNumericWithSpecialChars()('My Root CA v2.0')).toBeUndefined();
+        });
+
         test('should reject invalid format', () => {
             expect(validateAlphaNumericWithSpecialChars()('invalid@char')).toBeTruthy();
             expect(validateAlphaNumericWithSpecialChars()('-abc')).toBeTruthy();

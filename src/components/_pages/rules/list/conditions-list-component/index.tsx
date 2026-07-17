@@ -152,6 +152,7 @@ const ConditionsList = () => {
                 refreshAction={getFreshListConditionGroups}
                 resetViewAction={canReset ? resetView : undefined}
                 busy={isBusy && (!isFetchingList || conditions.length > 0)}
+                disableRefresh={isBusy}
                 widgetButtons={buttons}
                 widgetInfoCard={{
                     title: 'Information',

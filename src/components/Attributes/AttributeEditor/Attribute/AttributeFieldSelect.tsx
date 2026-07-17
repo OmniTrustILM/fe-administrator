@@ -153,7 +153,7 @@ export function AttributeFieldSelect({
                         {descriptor.properties.visible && (
                             <>
                                 {descriptor.description && (
-                                    <p className="text-xs text-gray-400 mt-1 dark:text-neutral-400">{descriptor.description}</p>
+                                    <p className="text-xs text-gray-700 mt-1 dark:text-neutral-400">{descriptor.description}</p>
                                 )}
                                 {fieldState.isTouched && fieldState.invalid && (
                                     <div className="mt-1 text-sm text-red-600">

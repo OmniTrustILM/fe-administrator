@@ -46,12 +46,12 @@ test.describe('EvaluationDetailsDialog', () => {
         await expect(page.getByText('Reason message A')).toBeVisible();
     });
 
-    test('renders execution record with Skipped result and reason', async ({ mount, page }) => {
+    test('renders execution record with Failed result and reason', async ({ mount, page }) => {
         await mount(
             withProviders(<EvaluationDetailsDialog isOpen={true} onClose={() => {}} objectLabel="yahoo.com" trigger={baseTrigger} />),
         );
         await expect(page.getByText('set custom attribute "department"')).toBeVisible();
-        await expect(page.getByText('Skipped', { exact: true })).toBeVisible();
+        await expect(page.getByText('Failed', { exact: true })).toBeVisible();
         await expect(page.getByText('Reason message B')).toBeVisible();
     });
 

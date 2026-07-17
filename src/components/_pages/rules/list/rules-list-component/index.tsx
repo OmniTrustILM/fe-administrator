@@ -140,6 +140,7 @@ const RulesList = () => {
                 refreshAction={getFreshList}
                 resetViewAction={canReset ? resetView : undefined}
                 busy={isBusy && (!isFetchingList || rules.length > 0)}
+                disableRefresh={isBusy}
                 widgetButtons={buttons}
                 widgetInfoCard={{
                     title: 'Information',

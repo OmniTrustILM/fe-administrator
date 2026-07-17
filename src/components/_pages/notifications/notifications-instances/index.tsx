@@ -132,6 +132,7 @@ const NotificationInstanceList = () => {
                 title="Notification Store"
                 refreshAction={getFreshNotificationInstances}
                 busy={isBusy && (!isFetchingNotificationInstances || notificationInstances.length > 0)}
+                disableRefresh={isBusy}
                 widgetButtons={buttons}
                 widgetLockName={LockWidgetNameEnum.NotificationStore}
             >
