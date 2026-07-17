@@ -269,6 +269,22 @@ test.describe('AttributeEditor', () => {
         await expect(input).toHaveValue('defaultValue');
     });
 
+    test('read-only attribute with a default value is pre-filled and locked', async ({ mount, page }) => {
+        const descriptors: AttributeDescriptorModel[] = [
+            dataDescriptor({
+                name: 'readOnlyDefault',
+                uuid: 'readonly-default-uuid',
+                properties: { label: 'Read Only Default', required: false, readOnly: true, list: false, multiSelect: false } as any,
+                content: [{ data: 'lockedValue' }] as any,
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
+        const input = page.getByTestId('text-input-__attributes__testEditor__.readOnlyDefault');
+        await expect(input).toBeVisible({ timeout: 10000 });
+        await expect(input).toHaveValue('lockedValue');
+        await expect(input).toBeDisabled();
+    });
+
     test('Boolean required with no value shows false', async ({ mount, page }) => {
         const descriptors: AttributeDescriptorModel[] = [
             dataDescriptor({

@@ -592,9 +592,10 @@ function AttributeEditorInner({
             } else if (
                 descriptor.content &&
                 descriptor.content.length > 0 &&
-                (!setDefaultOnRequiredValuesOnly || descriptor.properties.required)
+                (!setDefaultOnRequiredValuesOnly || descriptor.properties.required || descriptor.properties.readOnly)
             ) {
-                // This acts as a fallback for the case when the attribute has no value, but has a default value in the descriptor
+                // This acts as a fallback for the case when the attribute has no value, but has a default value in the
+                // descriptor. Read-only attributes are always seeded so a locked field shows its predefined default.
                 const firstDescriptorContent = descriptor.content[0] as any;
                 formAttributeValue = firstDescriptorContent?.data ?? firstDescriptorContent?.reference;
             }
