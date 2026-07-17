@@ -103,15 +103,6 @@ function valueSourceLabel(type: ValueSourceType): string {
     return VALUE_SOURCE_OPTIONS.find((o) => o.value === type)?.label ?? 'Free input';
 }
 
-/** Inline guidance line rendered beneath a field the shared inputs can't describe themselves. */
-function FieldHint({ children, dataTestId }: Readonly<{ children: React.ReactNode; dataTestId?: string }>) {
-    return (
-        <p className="-mt-1.5 text-xs text-gray-500" data-testid={dataTestId}>
-            {children}
-        </p>
-    );
-}
-
 /** `value` = attribute UUID, `label` = human display, `description` = internal attribute name (the binding name-fallback key). */
 type ConnectorAttributeOption = { value: string; label: string; description?: string };
 
@@ -377,36 +368,39 @@ export default function RequestAttributeAuthoringEditor({
         const set = (p: Partial<AuthoredAttributeFormValues>) => setAttrDraft({ ...attrDraft, data: { ...d, ...p } });
         return (
             <div className="space-y-3 text-left" data-testid={`${dataTestId}-attribute-form`}>
-                <p className="text-sm text-gray-500" data-testid={`${dataTestId}-attribute-form-intro`}>
-                    A request attribute is a value the requester supplies when asking for a certificate. Define what it is called, its data
-                    type, and — optionally — where its value is placed in the issued certificate.
-                </p>
-                <TextInput id="ra-attr-name" label="Name" required value={d.name} onChange={(v) => set({ name: v })} />
-                {attrNameDuplicate ? (
+                <TextInput
+                    id="ra-attr-name"
+                    label="Name"
+                    labelTooltip="Internal identifier, unique within this set. Not shown to the requester."
+                    placeholder="e.g. environment"
+                    required
+                    value={d.name}
+                    onChange={(v) => set({ name: v })}
+                />
+                {attrNameDuplicate && (
                     <p className="text-sm text-red-600" data-testid={`${dataTestId}-attribute-name-duplicate`}>
                         An attribute with this name already exists in the set.
                     </p>
-                ) : (
-                    <FieldHint dataTestId={`${dataTestId}-attribute-name-hint`}>
-                        Internal identifier, unique within this set. Not shown to the requester.
-                    </FieldHint>
                 )}
-                <TextInput id="ra-attr-label" label="Label" required value={d.label} onChange={(v) => set({ label: v })} />
-                <FieldHint dataTestId={`${dataTestId}-attribute-label-hint`}>
-                    The name shown to the requester on the request form.
-                </FieldHint>
+                <TextInput
+                    id="ra-attr-label"
+                    label="Label"
+                    placeholder="e.g. Environment"
+                    required
+                    value={d.label}
+                    onChange={(v) => set({ label: v })}
+                />
                 <TextInput
                     id="ra-attr-description"
                     label="Description"
+                    placeholder="e.g. Target deployment environment"
                     value={d.description ?? ''}
                     onChange={(v) => set({ description: v })}
                 />
-                <FieldHint dataTestId={`${dataTestId}-attribute-description-hint`}>
-                    Optional help text shown to the requester explaining what to enter.
-                </FieldHint>
                 <Select
                     id="ra-attr-content-type"
                     label="Content type"
+                    labelTooltip="The data type of the value the requester provides."
                     value={d.contentType}
                     onChange={(v) => {
                         const contentType = v as AttributeContentType;
@@ -421,9 +415,6 @@ export default function RequestAttributeAuthoringEditor({
                     }}
                     options={CONTENT_TYPE_OPTIONS}
                 />
-                <FieldHint dataTestId={`${dataTestId}-attribute-content-type-hint`}>
-                    The data type of the value the requester provides.
-                </FieldHint>
                 <Container className="flex-row items-center" gap={4}>
                     <Checkbox id="ra-attr-required" checked={d.required} onChange={(c) => set({ required: c })} label="Required" />
                     <Checkbox
@@ -446,6 +437,7 @@ export default function RequestAttributeAuthoringEditor({
                 <Select
                     id="ra-attr-mapping"
                     label="Mapping target"
+                    labelTooltip="Where this attribute's value is placed in the issued certificate: an RDN (subject) component, a Subject Alternative Name, or a certificate extension. Leave it unmapped if the connector or workflow consumes the value directly."
                     value={d.mappingFieldType ?? ''}
                     onChange={(v) =>
                         set({ mappingFieldType: (v as FieldType) || undefined, mappingObjectType: ObjectType.X509Certificate })
@@ -453,12 +445,7 @@ export default function RequestAttributeAuthoringEditor({
                     options={MAPPING_OPTIONS}
                     isClearable
                     placeholder="Not mapped"
-                    showSelectedDescriptionAsHelp
                 />
-                <FieldHint dataTestId={`${dataTestId}-attribute-mapping-hint`}>
-                    Where this attribute&apos;s value is placed in the issued certificate. Leave it unmapped if the connector or workflow
-                    consumes the value directly.
-                </FieldHint>
                 {d.mappingFieldType === FieldType.Rdn && (
                     <OidMappingSelect
                         id="ra-attr-rdn"
@@ -535,6 +522,7 @@ export default function RequestAttributeAuthoringEditor({
                 <Select
                     id="ra-attr-value-source"
                     label="Value source"
+                    labelTooltip="How the requester provides the value: free input (they type any value) or a static list (they pick from a fixed set of values you define)."
                     value={d.valueSourceType}
                     onChange={(v) => {
                         const valueSourceType = v as ValueSourceType;
@@ -546,11 +534,7 @@ export default function RequestAttributeAuthoringEditor({
                         });
                     }}
                     options={isStaticListSupportedForContentType(d.contentType) ? VALUE_SOURCE_OPTIONS : FREE_INPUT_ONLY_OPTIONS}
-                    showSelectedDescriptionAsHelp
                 />
-                <FieldHint dataTestId={`${dataTestId}-attribute-value-source-hint`}>
-                    How the requester provides the value — free input, or a fixed list of choices you define.
-                </FieldHint>
                 {d.valueSourceType === ValueSourceType.StaticList && renderStaticValues(d, set)}
                 {d.valueSourceType === ValueSourceType.None && renderFreeInputDefault(d, set)}
             </div>
@@ -632,7 +616,9 @@ export default function RequestAttributeAuthoringEditor({
         if (!config) return null;
         return (
             <div className="space-y-2" data-testid={`${dataTestId}-default-value-block`}>
-                <Label>Default value</Label>
+                <Label labelTooltip="Optional. Pre-fills the field on the request form; the requester can change it unless Read Only is set.">
+                    Default value
+                </Label>
                 <AddCustomValueInput
                     id="ra-attr-default-value"
                     inputType={config.type}
@@ -642,9 +628,6 @@ export default function RequestAttributeAuthoringEditor({
                     onChange={(next) => set({ defaultValue: next })}
                     readOnly={disabled}
                 />
-                <FieldHint dataTestId={`${dataTestId}-default-value-hint`}>
-                    Optional. Pre-fills the field on the request form; the requester can change it unless Read Only is set.
-                </FieldHint>
             </div>
         );
     };

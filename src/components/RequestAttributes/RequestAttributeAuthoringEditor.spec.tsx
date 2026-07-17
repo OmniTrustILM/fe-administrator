@@ -54,25 +54,26 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         expect(parsed.attributes[0].label).toBe('Server FQDN');
     });
 
-    test('the attribute dialog gives first-time guidance and per-field hints', async ({ mount, page }) => {
+    test('the attribute dialog surfaces per-field guidance via label tooltips', async ({ mount, page }) => {
         const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
 
         await component.getByTestId('request-attribute-authoring-attribute-add').click();
 
-        await expect(page.getByTestId('request-attribute-authoring-attribute-form-intro')).toBeVisible();
-        await expect(page.getByTestId('request-attribute-authoring-attribute-name-hint')).toBeVisible();
-        await expect(page.getByTestId('request-attribute-authoring-attribute-label-hint')).toBeVisible();
-        await expect(page.getByTestId('request-attribute-authoring-attribute-mapping-hint')).toContainText('certificate');
+        // Guidance now lives in an info icon next to the field label, not in inline hint paragraphs.
+        await expect(page.getByTestId('label-tooltip-ra-attr-name')).toBeVisible();
+        await expect(page.getByTestId('label-tooltip-ra-attr-mapping')).toBeVisible();
+        // Label and Description are self-explanatory, so they carry no tooltip.
+        await expect(page.getByTestId('label-tooltip-ra-attr-label')).toHaveCount(0);
+        await expect(page.getByTestId('label-tooltip-ra-attr-description')).toHaveCount(0);
     });
 
-    test('mapping target explains the chosen target', async ({ mount, page }) => {
+    test('hovering a field label tooltip reveals its guidance', async ({ mount, page }) => {
         const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
 
         await component.getByTestId('request-attribute-authoring-attribute-add').click();
-        await page.getByTestId('select-ra-attr-mapping-trigger').click();
-        await page.getByRole('option', { name: 'RDN (subject)' }).click();
+        await page.getByTestId('label-tooltip-ra-attr-mapping').hover();
 
-        await expect(page.getByTestId('select-ra-attr-mapping-selected-description')).toBeVisible();
+        await expect(page.getByRole('tooltip')).toContainText('certificate');
     });
 
     test('authoring a granular RDN mapping requires selecting an RDN', async ({ mount, page }) => {

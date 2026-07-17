@@ -46,6 +46,7 @@ interface BaseProps {
     placeholder?: string;
     disabled?: boolean;
     label?: string;
+    labelTooltip?: string;
     isDisabled?: boolean;
     placement?: 'top' | 'bottom';
     isClearable?: boolean;
@@ -159,6 +160,7 @@ function Select({
     className,
     placeholder = 'Select...',
     label,
+    labelTooltip,
     isDisabled,
     placement,
     isMulti = false,
@@ -452,7 +454,7 @@ function Select({
 
     return (
         <div data-testid={dataTestId ?? `select-${id}`}>
-            {label && <Label htmlFor={id} title={label} required={required} />}
+            {label && <Label htmlFor={id} title={label} required={required} labelTooltip={labelTooltip} />}
             <div ref={wrapperRef} className={cn('relative', className)} style={minWidth ? { minWidth: `${minWidth}px` } : undefined}>
                 <Popover.Root
                     modal={modal}

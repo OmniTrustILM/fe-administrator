@@ -19,6 +19,7 @@ type Props = {
     invalid?: boolean;
     error?: string;
     label?: string;
+    labelTooltip?: string;
     className?: string;
     required?: boolean;
     buttonRight?: ReactNode;
@@ -36,6 +37,7 @@ function TextInput({
     invalid = false,
     error,
     label,
+    labelTooltip,
     className,
     required = false,
     buttonRight,
@@ -74,7 +76,7 @@ function TextInput({
         return (
             <>
                 {label && (
-                    <Label htmlFor={id} required={required}>
+                    <Label htmlFor={id} required={required} labelTooltip={labelTooltip}>
                         {label}
                     </Label>
                 )}
@@ -97,7 +99,7 @@ function TextInput({
         return (
             <>
                 {label && (
-                    <Label htmlFor={id} required={required}>
+                    <Label htmlFor={id} required={required} labelTooltip={labelTooltip}>
                         {label}
                     </Label>
                 )}
@@ -126,7 +128,7 @@ function TextInput({
     return (
         <>
             {label && (
-                <Label htmlFor={id} required={required}>
+                <Label htmlFor={id} required={required} labelTooltip={labelTooltip}>
                     {label}
                 </Label>
             )}
