@@ -463,9 +463,13 @@ export function parseRaProfileRequestAttributesDto(
     };
 }
 
-export function buildPlatformDefaultUpdateDto(attributes: AuthoredAttributeFormValues[]): CertificateRequestAttributesSettingsUpdateDto {
+export function buildPlatformDefaultUpdateDto(
+    attributes: AuthoredAttributeFormValues[],
+    externalCsrValidationStrict?: boolean,
+): CertificateRequestAttributesSettingsUpdateDto {
     return {
         requestAttributes: attributes.map((attr) => buildAuthoredAttributeDto(attr) as BaseAttributeDto),
+        externalCsrValidationStrict,
     };
 }
 

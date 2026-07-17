@@ -633,3 +633,15 @@ describe('requestAttributeAuthoring', () => {
         });
     });
 });
+
+describe('buildPlatformDefaultUpdateDto strict flag', () => {
+    it('includes externalCsrValidationStrict in the update DTO', () => {
+        const dto = buildPlatformDefaultUpdateDto([], true);
+        expect(dto.externalCsrValidationStrict).toBe(true);
+    });
+
+    it('carries false through so toggling strictness off persists', () => {
+        const dto = buildPlatformDefaultUpdateDto([], false);
+        expect(dto.externalCsrValidationStrict).toBe(false);
+    });
+});

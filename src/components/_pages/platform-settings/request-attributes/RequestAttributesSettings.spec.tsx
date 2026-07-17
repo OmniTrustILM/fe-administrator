@@ -36,4 +36,16 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await expect(component.getByTestId('request-attribute-authoring-attribute-add')).toBeDisabled();
         await expect(page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
     });
+
+    test('reflects the preloaded strict validation flag', async ({ mount, page }) => {
+        await mount(<RequestAttributesSettingsWithStore strict />);
+
+        await expect(page.getByTestId('switch-externalCsrValidationStrict-input')).toBeChecked();
+    });
+
+    test('strict validation switch is off when the platform default is unset', async ({ mount, page }) => {
+        await mount(<RequestAttributesSettingsWithStore />);
+
+        await expect(page.getByTestId('switch-externalCsrValidationStrict-input')).not.toBeChecked();
+    });
 });

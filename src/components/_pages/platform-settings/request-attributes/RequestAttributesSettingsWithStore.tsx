@@ -9,14 +9,12 @@ import RequestAttributesSettings from './RequestAttributesSettings';
 // resolves on its own; a browser-side preloaded store is the supported way to reach the loaded
 // state (mirrors SigningRecordsDashboardWithStore). Creating the store inside this component
 // keeps it in the browser context — a store built in the Node test body does not transfer.
-const preloadedState = {
-    raProfileRequestAttributes: {
-        defaultSet: { requestAttributes: [] },
-    },
-} as any;
-
-export default function RequestAttributesSettingsWithStore() {
-    const store = createMockStore(preloadedState);
+export default function RequestAttributesSettingsWithStore({ strict }: Readonly<{ strict?: boolean }>) {
+    const store = createMockStore({
+        raProfileRequestAttributes: {
+            defaultSet: { requestAttributes: [], externalCsrValidationStrict: strict },
+        },
+    } as any);
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/platformsettings/request-attributes']}>
