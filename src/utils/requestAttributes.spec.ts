@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import { AttributeContentType, AttributeType, FieldType, ObjectType } from 'types/openapi';
 import type { FieldMapping } from 'types/openapi';
 import type { AttributeDescriptorModel } from 'types/attributes';
@@ -96,5 +96,17 @@ describe('fieldMappingTokens', () => {
     test('returns an empty array for undefined / empty mapping', () => {
         expect(fieldMappingTokens(undefined)).toEqual([]);
         expect(fieldMappingTokens(mapping([]))).toEqual([]);
+    });
+});
+
+describe('fieldMappingTokens RDN code resolution', () => {
+    const mapping = { objectType: 'x509Certificate', fields: [{ fieldType: 'rdn', rdn: '2.5.4.3' }] } as any;
+
+    it('renders the resolved RDN code when a map is supplied', () => {
+        expect(fieldMappingTokens(mapping, { '2.5.4.3': 'CN' })).toEqual(['Subject CN']);
+    });
+
+    it('falls back to the raw OID when the map has no entry', () => {
+        expect(fieldMappingTokens(mapping, {})).toEqual(['Subject 2.5.4.3']);
     });
 });

@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import { OidCategory, ExtensionValueEncoding, type CustomOidEntryDetailResponseDtoAdditionalProperties } from 'types/openapi';
 import type { OIDResponseModel } from 'types/oids';
 import {
@@ -10,6 +10,7 @@ import {
     isCertificateExtensionProperties,
     isRdnProperties,
     toOidSelectOptions,
+    buildRdnCodeByOid,
 } from './oid';
 
 describe('oid utils', () => {
@@ -171,5 +172,15 @@ describe('oid utils', () => {
             expect(opt.label).toBe('Basic Constraints');
             expect(opt.code).toBeUndefined();
         });
+    });
+});
+
+describe('buildRdnCodeByOid', () => {
+    it('maps RDN OIDs to their codes and skips non-RDN entries', () => {
+        const map = buildRdnCodeByOid([
+            { oid: '2.5.4.3', additionalProperties: { code: 'CN' } } as any,
+            { oid: '2.5.29.19', additionalProperties: { valueEncoding: 'BASE64' } } as any,
+        ]);
+        expect(map).toEqual({ '2.5.4.3': 'CN' });
     });
 });

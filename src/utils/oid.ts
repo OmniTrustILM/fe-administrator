@@ -67,3 +67,13 @@ export const toOidSelectOptions = (
         const name = e.displayName?.trim() || e.oid;
         return { value: e.oid, label: code ? `${name} (${code})` : name, description: e.description, aliases, code };
     });
+
+export const buildRdnCodeByOid = (entries: OIDResponseModel[]): Record<string, string> => {
+    const map: Record<string, string> = {};
+    for (const e of entries) {
+        if (isRdnProperties(e.additionalProperties) && e.additionalProperties.code) {
+            map[e.oid] = e.additionalProperties.code;
+        }
+    }
+    return map;
+};
