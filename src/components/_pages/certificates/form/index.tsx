@@ -385,9 +385,12 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const submitHandler = useCallback(
         (event: React.SyntheticEvent<HTMLFormElement>) => {
             event.preventDefault();
+            if (isFetchingCsrAttributes) {
+                return;
+            }
             handleSubmit(onSubmit)(event);
         },
-        [handleSubmit, onSubmit],
+        [handleSubmit, isFetchingCsrAttributes, onSubmit],
     );
 
     return (
@@ -743,7 +746,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     title="Create"
                                     inProgressTitle="Creating"
                                     inProgress={issuingCertificate}
-                                    disabled={!formState.isValid}
+                                    disabled={!formState.isValid || isFetchingCsrAttributes}
                                 />
                             </div>
                         </Container>

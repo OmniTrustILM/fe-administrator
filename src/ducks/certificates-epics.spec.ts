@@ -766,5 +766,31 @@ describe('certificates epics', () => {
             expect((emitted[0] as any).payload.error).toContain('boom');
             expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
         });
+
+        test('cancels the in-flight fetch when the RA Profile is cleared before the response resolves', async () => {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const action$ = new Subject<UnknownAction>();
+            const response$ = new Subject<any>();
+            const deps = {
+                apiClients: {
+                    certificates: { getCsrGenerationAttributes: () => response$ },
+                },
+            };
+
+            const output$ = epics[GET_CSR_ATTRIBUTES_EPIC_INDEX](action$, of({}) as any, deps as any);
+            const emitted: UnknownAction[] = [];
+            const subscription = output$.subscribe((action) => emitted.push(action));
+
+            action$.next(certificatesActions.getCsrAttributes({ raProfileUuid: 'ra-1' }));
+            action$.next(certificatesActions.clearCsrAttributes());
+            // A late response must be ignored now that the fetch has been unsubscribed.
+            response$.next([{ uuid: 'csr-attr-1' }]);
+            response$.complete();
+
+            await Promise.resolve();
+
+            expect(emitted).toEqual([]);
+            subscription.unsubscribe();
+        });
     });
 });
