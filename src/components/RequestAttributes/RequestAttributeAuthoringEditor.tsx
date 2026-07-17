@@ -415,25 +415,6 @@ export default function RequestAttributeAuthoringEditor({
                     }}
                     options={CONTENT_TYPE_OPTIONS}
                 />
-                <Container className="flex-row items-center" gap={4}>
-                    <Checkbox id="ra-attr-required" checked={d.required} onChange={(c) => set({ required: c })} label="Required" />
-                    <Checkbox
-                        id="ra-attr-list"
-                        checked={d.list || d.valueSourceType === ValueSourceType.StaticList}
-                        onChange={(c) => set({ list: c, multiSelect: c ? d.multiSelect : false })}
-                        label="List"
-                        // A static list is inherently a list attribute — locked on while it's selected.
-                        disabled={d.valueSourceType === ValueSourceType.StaticList}
-                    />
-                    <Checkbox
-                        id="ra-attr-multi"
-                        checked={d.multiSelect}
-                        onChange={(c) => set({ multiSelect: c })}
-                        label="Multi select"
-                        disabled={!d.list}
-                    />
-                    <Checkbox id="ra-attr-readonly" checked={d.readOnly} onChange={(c) => set({ readOnly: c })} label="Read Only" />
-                </Container>
                 <Select
                     id="ra-attr-mapping"
                     label="Mapping target"
@@ -527,14 +508,47 @@ export default function RequestAttributeAuthoringEditor({
                     onChange={(v) => {
                         const valueSourceType = v as ValueSourceType;
                         // Selecting a static list forces `list` on (see DTO builder) so the toggle and
-                        // the authored options never disagree.
+                        // the authored options never disagree; List and Read Only are mutually exclusive, so clear it.
+                        // Free input is a single typed value, so it clears the list/multi-select toggles.
                         set({
                             valueSourceType,
-                            ...(valueSourceType === ValueSourceType.StaticList ? { list: true } : {}),
+                            ...(valueSourceType === ValueSourceType.StaticList
+                                ? { list: true, readOnly: false }
+                                : { list: false, multiSelect: false }),
                         });
                     }}
                     options={isStaticListSupportedForContentType(d.contentType) ? VALUE_SOURCE_OPTIONS : FREE_INPUT_ONLY_OPTIONS}
                 />
+                <div className="space-y-2">
+                    <Label>Properties</Label>
+                    <Container className="flex-row items-center" gap={4}>
+                        <Checkbox id="ra-attr-required" checked={d.required} onChange={(c) => set({ required: c })} label="Required" />
+                        {/* List/Multi select apply to a static list only; free input is a single typed value. */}
+                        {d.valueSourceType === ValueSourceType.StaticList && (
+                            <>
+                                <Checkbox
+                                    id="ra-attr-list"
+                                    checked={d.list || d.valueSourceType === ValueSourceType.StaticList}
+                                    onChange={(c) => set({ list: c, multiSelect: c ? d.multiSelect : false })}
+                                    label="List"
+                                    // A static list is inherently a list attribute — locked on while it's selected.
+                                    disabled={d.valueSourceType === ValueSourceType.StaticList}
+                                />
+                                <Checkbox
+                                    id="ra-attr-multi"
+                                    checked={d.multiSelect}
+                                    onChange={(c) => set({ multiSelect: c })}
+                                    label="Multi select"
+                                    disabled={!d.list}
+                                />
+                            </>
+                        )}
+                        {/* Read Only applies to free input only (lock the single value to its default). */}
+                        {d.valueSourceType === ValueSourceType.None && (
+                            <Checkbox id="ra-attr-readonly" checked={d.readOnly} onChange={(c) => set({ readOnly: c })} label="Read Only" />
+                        )}
+                    </Container>
+                </div>
                 {d.valueSourceType === ValueSourceType.StaticList && renderStaticValues(d, set)}
                 {d.valueSourceType === ValueSourceType.None && renderFreeInputDefault(d, set)}
             </div>

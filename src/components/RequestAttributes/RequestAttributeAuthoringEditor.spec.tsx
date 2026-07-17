@@ -327,8 +327,8 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
 
-        await expect(page.locator('#ra-attr-list')).not.toBeChecked();
-        await expect(page.locator('#ra-attr-list')).toBeEnabled();
+        // Free input (default) does not offer the List checkbox at all.
+        await expect(page.locator('#ra-attr-list')).toHaveCount(0);
 
         await page.getByTestId('select-ra-attr-value-source-trigger').click();
         await page.getByRole('option', { name: 'Static list' }).click();
@@ -534,7 +534,30 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(page.getByTestId('value-json')).toContainText('"readOnly":true');
     });
 
-    test('Read Only persists when the Value source is a Static list', async ({ mount, page }) => {
+    test('Free input value source shows Read Only and hides List/Multi select', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+
+        // Free input is the default value source.
+        await expect(page.locator('#ra-attr-readonly')).toBeVisible();
+        await expect(page.locator('#ra-attr-list')).toHaveCount(0);
+        await expect(page.locator('#ra-attr-multi')).toHaveCount(0);
+    });
+
+    test('Static list value source shows List/Multi select and hides Read Only', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-value-source-trigger').click();
+        await page.getByRole('option', { name: 'Static list' }).click();
+
+        await expect(page.locator('#ra-attr-list')).toBeVisible();
+        await expect(page.locator('#ra-attr-multi')).toBeVisible();
+        await expect(page.locator('#ra-attr-readonly')).toHaveCount(0);
+    });
+
+    test('selecting a Static list value source clears Read Only', async ({ mount, page }) => {
         await mount(<RequestAttributeAuthoringEditorHarness />);
 
         await page.getByTestId('request-attribute-authoring-attribute-add').click();
@@ -553,7 +576,31 @@ test.describe('RequestAttributeAuthoringEditor', () => {
 
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
 
-        await expect(page.getByTestId('value-json')).toContainText('"readOnly":true');
+        await expect(page.getByTestId('value-json')).toContainText('"readOnly":false');
         await expect(page.getByTestId('value-json')).toContainText('"valueSourceType":"staticList"');
+    });
+
+    test('switching from Static list to Free input hides List/Multi and clears the list flag', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+
+        // Static list forces List on and shows the checkbox...
+        await page.getByTestId('select-ra-attr-value-source-trigger').click();
+        await page.getByRole('option', { name: 'Static list' }).click();
+        await expect(page.locator('#ra-attr-list')).toBeChecked();
+
+        // ...switching to Free input hides List/Multi and clears the flag in the emitted form.
+        await page.getByTestId('select-ra-attr-value-source-trigger').click();
+        await page.getByRole('option', { name: 'Free input' }).click();
+        await expect(page.locator('#ra-attr-list')).toHaveCount(0);
+        await expect(page.locator('#ra-attr-multi')).toHaveCount(0);
+
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+        await expect(page.getByTestId('value-json')).toContainText('"list":false');
     });
 });
