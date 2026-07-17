@@ -548,6 +548,7 @@ export default function RequestAttributeAuthoringEditor({
                     How the requester provides the value — free input, or a fixed list of choices you define.
                 </FieldHint>
                 {d.valueSourceType === ValueSourceType.StaticList && renderStaticValues(d, set)}
+                {d.valueSourceType === ValueSourceType.None && renderFreeInputDefault(d, set)}
             </div>
         );
     };
@@ -616,6 +617,30 @@ export default function RequestAttributeAuthoringEditor({
                     <Plus className="w-4 h-4" />
                     Add value
                 </Button>
+            </div>
+        );
+    };
+
+    // Optional default for a free-input attribute (valueSourceType === NONE). One scalar input typed by
+    // the content type; persisted like a single-entry static list. Non-scalar types have no editor.
+    const renderFreeInputDefault = (d: AuthoredAttributeFormValues, set: (p: Partial<AuthoredAttributeFormValues>) => void) => {
+        const config = ContentFieldConfiguration[d.contentType];
+        if (!config) return null;
+        return (
+            <div className="space-y-2" data-testid={`${dataTestId}-default-value-block`}>
+                <Label>Default value</Label>
+                <AddCustomValueInput
+                    id="ra-attr-default-value"
+                    inputType={config.type}
+                    contentType={d.contentType}
+                    fieldStepValue={getStepValue(config.type)}
+                    value={d.defaultValue ?? config.initial}
+                    onChange={(next) => set({ defaultValue: next })}
+                    readOnly={disabled}
+                />
+                <FieldHint dataTestId={`${dataTestId}-default-value-hint`}>
+                    Optional. Pre-fills the field on the request form; the requester can change it unless Read Only is set.
+                </FieldHint>
             </div>
         );
     };

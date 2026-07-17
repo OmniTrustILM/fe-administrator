@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import {
     AttributeContentType,
     AttributeSetMergeMode,
@@ -573,6 +573,44 @@ describe('requestAttributeAuthoring', () => {
             const parsed = parsePlatformDefaultDto({ requestAttributes: [buildAuthoredAttributeDto(baseAttr()) as BaseAttributeDto] });
             expect(parsed).toHaveLength(1);
             expect(parsed[0].name).toBe('serverFqdn');
+        });
+    });
+
+    describe('free-input default value <-> content round-trip', () => {
+        it('serialises a free-input default value into a single content entry', () => {
+            const dto = buildAuthoredAttributeDto({
+                ...emptyAuthoredAttribute(),
+                name: 'env',
+                label: 'Environment',
+                contentType: AttributeContentType.String,
+                valueSourceType: ValueSourceType.None,
+                defaultValue: 'prod',
+            });
+            expect(dto.content).toEqual([{ data: 'prod', contentType: AttributeContentType.String }]);
+        });
+
+        it('omits content when the free-input default value is blank', () => {
+            const dto = buildAuthoredAttributeDto({
+                ...emptyAuthoredAttribute(),
+                name: 'env',
+                label: 'Environment',
+                valueSourceType: ValueSourceType.None,
+                defaultValue: '   ',
+            });
+            expect(dto.content).toBeUndefined();
+        });
+
+        it('parses a free-input content entry back into defaultValue', () => {
+            const form = parseAuthoredAttributeDto({
+                uuid: 'u1',
+                name: 'env',
+                type: AttributeType.Data,
+                contentType: AttributeContentType.String,
+                properties: { label: 'Environment' },
+                content: [{ data: 'prod' }],
+            } as any);
+            expect(form.valueSourceType).toBe(ValueSourceType.None);
+            expect(form.defaultValue).toBe('prod');
         });
     });
 

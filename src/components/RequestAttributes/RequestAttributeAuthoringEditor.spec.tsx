@@ -503,4 +503,19 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(row).toContainText('→ RDN CN');
         await expect(row).not.toContainText('2.5.4.3');
     });
+
+    test('free-input default value serialises into the emitted form content', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+        await page.locator('#ra-attr-default-value').click();
+        await page.locator('#ra-attr-default-value').fill('prod');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(page.getByTestId('value-json')).toContainText('"defaultValue":"prod"');
+    });
 });
