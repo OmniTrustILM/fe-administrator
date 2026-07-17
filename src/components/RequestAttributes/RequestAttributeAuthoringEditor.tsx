@@ -538,8 +538,11 @@ export default function RequestAttributeAuthoringEditor({
                     onChange={(v) => {
                         const valueSourceType = v as ValueSourceType;
                         // Selecting a static list forces `list` on (see DTO builder) so the toggle and
-                        // the authored options never disagree.
-                        set({ valueSourceType, ...(valueSourceType === ValueSourceType.StaticList ? { list: true } : {}) });
+                        // the authored options never disagree; Read Only is free-input-only, so clear it.
+                        set({
+                            valueSourceType,
+                            ...(valueSourceType === ValueSourceType.StaticList ? { list: true, readOnly: false } : {}),
+                        });
                     }}
                     options={isStaticListSupportedForContentType(d.contentType) ? VALUE_SOURCE_OPTIONS : FREE_INPUT_ONLY_OPTIONS}
                     showSelectedDescriptionAsHelp
@@ -625,22 +628,29 @@ export default function RequestAttributeAuthoringEditor({
     // the content type; persisted like a single-entry static list. Non-scalar types have no editor.
     const renderFreeInputDefault = (d: AuthoredAttributeFormValues, set: (p: Partial<AuthoredAttributeFormValues>) => void) => {
         const config = ContentFieldConfiguration[d.contentType];
-        if (!config) return null;
         return (
             <div className="space-y-2" data-testid={`${dataTestId}-default-value-block`}>
-                <Label>Default value</Label>
-                <AddCustomValueInput
-                    id="ra-attr-default-value"
-                    inputType={config.type}
-                    contentType={d.contentType}
-                    fieldStepValue={getStepValue(config.type)}
-                    value={d.defaultValue ?? config.initial}
-                    onChange={(next) => set({ defaultValue: next })}
-                    readOnly={disabled}
-                />
-                <FieldHint dataTestId={`${dataTestId}-default-value-hint`}>
-                    Optional. Pre-fills the field on the request form; the requester can change it unless Read Only is set.
+                <Checkbox id="ra-attr-readonly" checked={d.readOnly} onChange={(c) => set({ readOnly: c })} label="Read Only" />
+                <FieldHint dataTestId={`${dataTestId}-readonly-hint`}>
+                    The value is fixed to the default and the requester cannot change it.
                 </FieldHint>
+                {config && (
+                    <>
+                        <Label>Default value</Label>
+                        <AddCustomValueInput
+                            id="ra-attr-default-value"
+                            inputType={config.type}
+                            contentType={d.contentType}
+                            fieldStepValue={getStepValue(config.type)}
+                            value={d.defaultValue ?? config.initial}
+                            onChange={(next) => set({ defaultValue: next })}
+                            readOnly={disabled}
+                        />
+                        <FieldHint dataTestId={`${dataTestId}-default-value-hint`}>
+                            Optional. Pre-fills the field on the request form; the requester can change it unless Read Only is set.
+                        </FieldHint>
+                    </>
+                )}
             </div>
         );
     };
