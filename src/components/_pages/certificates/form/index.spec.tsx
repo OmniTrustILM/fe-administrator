@@ -3,7 +3,13 @@ import { testInitialState } from 'ducks/test-reducers';
 import { CertificateFormTestWrapper } from './CertificateFormTestWrapper';
 
 test.describe('CertificateForm', () => {
-    test('defaults to Issue now: key-source select visible, challenge input absent', async ({ mount, page }) => {
+    test('request mode radio is labelled "Request"', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper />);
+
+        await expect(page.getByTestId('requestType-issue')).toHaveText('Request');
+    });
+
+    test('defaults to Request mode: key-source select visible, challenge input absent', async ({ mount, page }) => {
         await mount(<CertificateFormTestWrapper />);
 
         await expect(page.getByTestId('keySource')).toBeVisible();
@@ -32,7 +38,7 @@ test.describe('CertificateForm', () => {
         await expect(page.getByTestId('label-authorizationSecret').locator('.text-red-500')).toBeVisible();
     });
 
-    test('switching back to Issue now restores the key-source select and hides the challenge input', async ({ mount, page }) => {
+    test('switching back to Request mode restores the key-source select and hides the challenge input', async ({ mount, page }) => {
         await mount(<CertificateFormTestWrapper />);
 
         await page.getByTestId('requestType-register').click();
@@ -44,7 +50,7 @@ test.describe('CertificateForm', () => {
         await expect(page.getByTestId('authorizationSecret')).toHaveCount(0);
     });
 
-    test('Issue now mode shows both the Connector Attributes and Custom Attributes tabs', async ({ mount, page }) => {
+    test('Request mode shows both the Connector Attributes and Custom Attributes tabs', async ({ mount, page }) => {
         await mount(<CertificateFormTestWrapper />);
 
         await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toBeVisible();
