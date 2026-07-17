@@ -146,4 +146,30 @@ describe('oid utils', () => {
             expect(options[1].aliases).toBeUndefined();
         });
     });
+
+    describe('toOidSelectOptions RDN code label', () => {
+        test('appends the RDN code in brackets and exposes it as `code`', () => {
+            const [opt] = toOidSelectOptions([
+                {
+                    oid: '2.5.4.3',
+                    displayName: 'Common Name',
+                    additionalProperties: { code: 'CN' },
+                } as any,
+            ]);
+            expect(opt.label).toBe('Common Name (CN)');
+            expect(opt.code).toBe('CN');
+        });
+
+        test('leaves non-RDN (extension) options without a code and unbracketed', () => {
+            const [opt] = toOidSelectOptions([
+                {
+                    oid: '2.5.29.19',
+                    displayName: 'Basic Constraints',
+                    additionalProperties: { valueEncoding: 'BASE64' },
+                } as any,
+            ]);
+            expect(opt.label).toBe('Basic Constraints');
+            expect(opt.code).toBeUndefined();
+        });
+    });
 });

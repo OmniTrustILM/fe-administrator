@@ -56,12 +56,14 @@ export const isRdnProperties = (props?: CustomOidEntryDetailResponseDtoAdditiona
 
 export const toOidSelectOptions = (
     entries: OIDResponseModel[],
-): { value: string; label: string; description?: string; aliases?: string[] }[] =>
+): { value: string; label: string; description?: string; aliases?: string[]; code?: string }[] =>
     entries.map((e) => {
         // RDN entries carry a code (+altCodes); a legacy mapping may store one of those instead of the
         // dotted OID, so expose them as aliases the dropdown can reconcile back to this option.
+        const code = isRdnProperties(e.additionalProperties) ? e.additionalProperties.code : undefined;
         const aliases = isRdnProperties(e.additionalProperties)
             ? [e.additionalProperties.code, ...(e.additionalProperties.altCodes ?? [])].filter(Boolean)
             : undefined;
-        return { value: e.oid, label: e.displayName?.trim() || e.oid, description: e.description, aliases };
+        const name = e.displayName?.trim() || e.oid;
+        return { value: e.oid, label: code ? `${name} (${code})` : name, description: e.description, aliases, code };
     });

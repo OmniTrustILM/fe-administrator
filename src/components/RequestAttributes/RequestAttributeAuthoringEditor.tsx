@@ -115,7 +115,7 @@ function FieldHint({ children, dataTestId }: Readonly<{ children: React.ReactNod
 /** `value` = attribute UUID, `label` = human display, `description` = internal attribute name (the binding name-fallback key). */
 type ConnectorAttributeOption = { value: string; label: string; description?: string };
 
-export type OidSelectOption = { value: string; label: string; description?: string; aliases?: string[] };
+export type OidSelectOption = { value: string; label: string; description?: string; aliases?: string[]; code?: string };
 
 // Resolve a stored mapping value to the option it belongs to. A legacy value may be an RDN code
 // (e.g. CN) rather than the dotted OID the dropdown now emits, so match aliases too and return the
