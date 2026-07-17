@@ -519,7 +519,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(page.getByTestId('value-json')).toContainText('"defaultValue":"prod"');
     });
 
-    test('free-input Read Only checkbox toggles the readOnly flag in the emitted form', async ({ mount, page }) => {
+    test('Read Only checkbox toggles the readOnly flag in the emitted form', async ({ mount, page }) => {
         await mount(<RequestAttributeAuthoringEditorHarness />);
 
         await page.getByTestId('request-attribute-authoring-attribute-add').click();
@@ -533,7 +533,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(page.getByTestId('value-json')).toContainText('"readOnly":true');
     });
 
-    test('switching Value source to Static list clears the Read Only flag', async ({ mount, page }) => {
+    test('Read Only persists when the Value source is a Static list', async ({ mount, page }) => {
         await mount(<RequestAttributeAuthoringEditorHarness />);
 
         await page.getByTestId('request-attribute-authoring-attribute-add').click();
@@ -552,7 +552,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
 
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
 
-        await expect(page.getByTestId('value-json')).toContainText('"readOnly":false');
+        await expect(page.getByTestId('value-json')).toContainText('"readOnly":true');
         await expect(page.getByTestId('value-json')).toContainText('"valueSourceType":"staticList"');
     });
 });
