@@ -532,4 +532,27 @@ test.describe('RequestAttributeAuthoringEditor', () => {
 
         await expect(page.getByTestId('value-json')).toContainText('"readOnly":true');
     });
+
+    test('switching Value source to Static list clears the Read Only flag', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+        await page.locator('#ra-attr-readonly').check();
+
+        await page.getByTestId('select-ra-attr-value-source-trigger').click();
+        await page.getByRole('option', { name: 'Static list' }).click();
+
+        await page.getByTestId('request-attribute-authoring-static-value-add').click();
+        await page.locator('#ra-attr-static-value-0').click();
+        await page.locator('#ra-attr-static-value-0').fill('prod');
+
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(page.getByTestId('value-json')).toContainText('"readOnly":false');
+        await expect(page.getByTestId('value-json')).toContainText('"valueSourceType":"staticList"');
+    });
 });
