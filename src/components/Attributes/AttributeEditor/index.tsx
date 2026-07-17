@@ -285,7 +285,7 @@ function AttributeEditorInner({
             };
 
             if (isDataAttributeModel(descriptor) || isGroupAttributeModel(descriptor)) {
-                descriptor.attributeCallback?.mappings.forEach((mapping) => {
+                (descriptor.attributeCallback?.mappings ?? []).forEach((mapping) => {
                     let value = mapping.value || getCurrentFromMappingValue(mapping);
                     if (typeof value === 'object' && value !== null) {
                         // Resolve dot path from mapping.from (e.g. "endEntityProfile.data.id" -> extract value at data.id)

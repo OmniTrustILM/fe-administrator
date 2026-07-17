@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { merge, of, race } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, take } from 'rxjs/operators';
+import { catchError, filter, map, mergeMap, switchMap, take, takeUntil } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { actions as alertActions } from './alerts';
@@ -1227,7 +1227,7 @@ const getCsrAttributes: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getCsrAttributes.match),
         switchMap((action) =>
-            deps.apiClients.certificates.getCsrGenerationAttributes().pipe(
+            deps.apiClients.certificates.getCsrGenerationAttributes({ raProfileUuid: action.payload.raProfileUuid }).pipe(
                 map((attributes) =>
                     slice.actions.getCsrAttributesSuccess({
                         csrAttributes: attributes.map((attribute) => transformAttributeDescriptorDtoToModel(attribute)),
@@ -1240,6 +1240,9 @@ const getCsrAttributes: AppEpic = (action$, state, deps) => {
                         appRedirectActions.fetchError({ error: err, message: 'Failed to get CSR generation attributes' }),
                     ),
                 ),
+
+                // Cancel the in-flight fetch if the user clears the RA Profile.
+                takeUntil(action$.pipe(filter(slice.actions.clearCsrAttributes.match))),
             ),
         ),
     );

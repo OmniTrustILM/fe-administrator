@@ -55,7 +55,6 @@ type props = {
 export default function CertificateRekeyDialog({ onCancel, certificate }: Readonly<props>) {
     const dispatch = useDispatch();
 
-    const isFetchingCsrAttributes = useSelector(certificateSelectors.isFetchingIssuanceAttributes);
     const isFetchingSignatureAttributes = useSelector(cryptographyOperationSelectors.isFetchingSignatureAttributes);
     const signatureAttributeDescriptors = useSelector(cryptographyOperationSelectors.signatureAttributeDescriptors);
     const altSignatureAttributeDescriptors = useSelector(cryptographyOperationSelectors.altSignatureAttributeDescriptors);
@@ -92,7 +91,6 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
     }, [parsedCertificateRequest]);
 
     useEffect(() => {
-        dispatch(certificateActions.getCsrAttributes());
         dispatch(tokenProfileActions.listTokenProfiles({ enabled: true }));
         if (certificate?.key?.tokenProfileUuid) {
             dispatch(keyActions.listCryptographicKeyPairs({ tokenProfileUuid: certificate.key.tokenProfileUuid }));
@@ -313,7 +311,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="space-y-4">
-                    <Widget noBorder busy={rekeying || isFetchingCsrAttributes || isFetchingSignatureAttributes}>
+                    <Widget noBorder busy={rekeying || isFetchingSignatureAttributes}>
                         <Controller
                             name="uploadCsr"
                             control={control}

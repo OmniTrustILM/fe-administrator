@@ -358,3 +358,30 @@ test.describe('AttributeEditor NG (dependsOn) callbacks', () => {
         await expect(page.getByTestId('spinner')).toHaveCount(0);
     });
 });
+
+test.describe('AttributeEditor legacy callback with missing mappings (#1882)', () => {
+    const legacyCallbackNoMappings = (): DataAttributeModel =>
+        dataDescriptor({
+            name: 'endpoint',
+            uuid: 'legacy-nomap-uuid',
+            properties: { label: 'Endpoint', required: false, readOnly: false, visible: true, list: false, multiSelect: false } as any,
+            attributeCallback: { callbackMethod: 'GET' } as any,
+        });
+
+    test('renders and fires the callback without throwing when mappings is undefined', async ({ mount, page }) => {
+        const pageErrors: string[] = [];
+        page.on('pageerror', (error) => pageErrors.push(error.message));
+
+        await mount(
+            <AttributeEditorTestWrapper
+                id={editorId}
+                attributeDescriptors={[legacyCallbackNoMappings()]}
+                connectorUuid="conn-1"
+                kind="k"
+            />,
+        );
+
+        await expect(page.getByTestId('spinner')).toBeVisible({ timeout: 10000 });
+        expect(pageErrors.filter((message) => message.includes('forEach'))).toHaveLength(0);
+    });
+});

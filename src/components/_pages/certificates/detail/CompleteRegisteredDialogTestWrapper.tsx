@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { useMemo } from 'react';
 import { Provider } from 'react-redux';
+import { MemoryRouter } from 'react-router';
 
 import { testInitialState, testReducers } from 'ducks/test-reducers';
 import type { CertificateDetailResponseModel } from 'types/certificate';
@@ -42,7 +43,9 @@ export function CompleteRegisteredDialogTestWrapper({ onCancel = () => {}, prelo
 
     return (
         <Provider store={store}>
-            <CompleteRegisteredDialog certificate={testCertificate} onCancel={onCancel} />
+            <MemoryRouter>
+                <CompleteRegisteredDialog certificate={testCertificate} onCancel={onCancel} />
+            </MemoryRouter>
         </Provider>
     );
 }

@@ -530,6 +530,7 @@ export type CertificatesTestState = {
     cancelingPendingCertificateUuids: string[];
     issuanceAttributes: Record<string, any[]>;
     csrAttributeDescriptors: any[];
+    isFetchingCsrAttributes: boolean;
     isIssuing: boolean;
     isRegistering: boolean;
     issueValidationErrors?: string[];
@@ -541,6 +542,7 @@ const certificatesTestInitialState: CertificatesTestState = {
     cancelingPendingCertificateUuids: [],
     issuanceAttributes: {},
     csrAttributeDescriptors: [],
+    isFetchingCsrAttributes: false,
     isIssuing: false,
     isRegistering: false,
     issueValidationErrors: undefined,

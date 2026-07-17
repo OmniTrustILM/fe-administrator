@@ -240,6 +240,7 @@ export default function AdministratorsList() {
             <Widget
                 title="List of CMP Profiles"
                 busy={isBusy && (!isFetching || cmpProfiles.length > 0)}
+                disableRefresh={isBusy}
                 widgetLockName={LockWidgetNameEnum.ListOfCMPProfiles}
                 widgetButtons={buttons}
                 titleSize="large"

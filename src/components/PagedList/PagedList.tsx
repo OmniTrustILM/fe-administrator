@@ -237,6 +237,7 @@ function PagedList({
             <Widget
                 title={title}
                 busy={isBusy || (isFetchingList && data.length > 0)}
+                disableRefresh={isBusy || isFetchingList}
                 enableBusyOverlay
                 widgetLockName={pageWidgetLockName}
                 refreshAction={getFreshData}

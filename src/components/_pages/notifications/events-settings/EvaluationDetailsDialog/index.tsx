@@ -35,7 +35,7 @@ export default function EvaluationDetailsDialog({ isOpen, onClose, objectLabel, 
             const executionRows: Row[] = record.execution
                 ? [
                       { label: 'Action', value: record.execution.name },
-                      { label: 'Result', value: 'Skipped' },
+                      { label: 'Result', value: 'Failed' },
                   ]
                 : [];
             const reasonRows: Row[] = record.message ? [{ label: 'Reason', value: record.message }] : [];

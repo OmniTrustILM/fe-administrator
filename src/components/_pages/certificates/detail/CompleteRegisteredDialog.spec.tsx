@@ -1,5 +1,16 @@
 import { test, expect } from '../../../../../playwright/ct-test';
+import { testInitialState } from 'ducks/test-reducers';
+import type { AttributeDescriptorModel } from 'types/attributes';
+import { AttributeContentType, AttributeType } from 'types/openapi';
 import { CompleteRegisteredDialogTestWrapper } from './CompleteRegisteredDialogTestWrapper';
+
+const csrDataDescriptor: AttributeDescriptorModel = {
+    type: AttributeType.Data,
+    name: 'dataField',
+    uuid: 'csr-data-uuid-1',
+    contentType: AttributeContentType.String,
+    properties: { label: 'Data Field', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+} as AttributeDescriptorModel;
 
 test.describe('CompleteRegisteredDialog', () => {
     test('renders the Challenge input and CSR upload input', async ({ mount, page }) => {
@@ -60,5 +71,25 @@ test.describe('CompleteRegisteredDialog', () => {
         await page.getByRole('option', { name: 'Test Token Profile' }).click();
 
         await expect(page.getByTestId('select-keyUuid-trigger')).toBeVisible();
+    });
+
+    test('existing-key path renders the resolved request-attribute descriptors as fields', async ({ mount, page }) => {
+        // The dialog loads the RA profile's request attributes (getCsrAttributes) and, on the existing-key
+        // path, renders them so the backend can build the CSR from the selected key plus this identity.
+        await mount(
+            <CompleteRegisteredDialogTestWrapper
+                preloadedState={{
+                    certificates: { ...testInitialState.certificates, csrAttributeDescriptors: [csrDataDescriptor] },
+                }}
+            />,
+        );
+
+        // Not shown on the CSR-upload (default) path.
+        await expect(page.getByTestId('text-input-__attributes__csrAttributes__.dataField')).toHaveCount(0);
+
+        await page.getByTestId('completeKeySource-trigger').click();
+        await page.getByRole('option', { name: 'Existing Key' }).click();
+
+        await expect(page.getByTestId('text-input-__attributes__csrAttributes__.dataField')).toBeVisible({ timeout: 15000 });
     });
 });

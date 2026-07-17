@@ -254,6 +254,7 @@ function TokenProfileList() {
             <Widget
                 title="List of Token Profiles"
                 busy={isBusy && (!isFetching || tokenProfiles.length > 0)}
+                disableRefresh={isBusy}
                 widgetLockName={LockWidgetNameEnum.ListOfTokenProfiles}
                 widgetButtons={buttons}
                 titleSize="large"

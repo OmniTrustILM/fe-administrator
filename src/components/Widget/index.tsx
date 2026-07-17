@@ -30,6 +30,7 @@ type Props = {
     className?: string;
     children?: React.ReactNode | React.ReactNode[];
     busy?: boolean;
+    disableRefresh?: boolean;
     widgetLockName?: LockWidgetNameEnum | LockWidgetNameEnum[];
     refreshAction?: () => void;
     resetViewAction?: () => void;
@@ -55,6 +56,7 @@ function Widget({
     className,
     children = [],
     busy = false,
+    disableRefresh = false,
     widgetLockName,
     refreshAction,
     resetViewAction,
@@ -115,7 +117,7 @@ function Widget({
                 variant="transparent"
                 title="Refresh"
                 aria-label="Refresh"
-                disabled={busy || !!widgetLock}
+                disabled={busy || disableRefresh || !!widgetLock}
             >
                 <RefreshCw size={16} />
             </Button>

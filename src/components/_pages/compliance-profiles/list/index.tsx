@@ -190,6 +190,7 @@ export default function AdministratorsList() {
             <Widget
                 title="List of Compliance Profiles"
                 busy={isBusy && (!isFetching || complianceProfiles.length > 0)}
+                disableRefresh={isBusy}
                 widgetLockName={LockWidgetNameEnum.ListOfComplianceProfiles}
                 widgetButtons={buttons}
                 titleSize="large"

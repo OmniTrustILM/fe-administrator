@@ -32,9 +32,9 @@ vi.mock('components/FilterWidget', () => ({
 }));
 
 vi.mock('components/Widget', () => ({
-    default: ({ widgetButtons, refreshAction, resetViewAction, hideWidgetButtons, children }: any) => (
+    default: ({ widgetButtons, refreshAction, resetViewAction, hideWidgetButtons, busy, disableRefresh, children }: any) => (
         <div>
-            <button type="button" data-testid="refresh" onClick={refreshAction}>
+            <button type="button" data-testid="refresh" disabled={Boolean(busy || disableRefresh)} onClick={refreshAction}>
                 refresh
             </button>
             {resetViewAction && (
@@ -357,6 +357,25 @@ describe('PagedList unit coverage', () => {
 
         const disabledState = container.querySelector(`[data-testid="${testId}"]`) as HTMLElement;
         expect(disabledState.textContent).toBe('true');
+    });
+
+    it('keeps the refresh button enabled when idle', async () => {
+        await renderPagedList();
+
+        const refreshButton = container.querySelector('[data-testid="refresh"]') as HTMLButtonElement;
+        expect(refreshButton.disabled).toBe(false);
+    });
+
+    it('disables the refresh button while a fetch is in progress with an empty list', async () => {
+        // First render with data so hasLoadedOnce becomes true and the skeleton is not shown on refetch
+        await renderPagedList({ data: rows });
+
+        mockState.pagings.pagings[0].paging.isFetchingList = true;
+        await renderPagedList({ data: [] });
+
+        const refreshButton = container.querySelector('[data-testid="refresh"]') as HTMLButtonElement;
+        expect(refreshButton).toBeTruthy();
+        expect(refreshButton.disabled).toBe(true);
     });
 
     it('renders additional buttons alongside built-in buttons', async () => {

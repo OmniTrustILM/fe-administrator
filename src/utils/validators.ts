@@ -48,10 +48,10 @@ export const validateAlphaNumericWithoutAccents = () => {
 };
 
 export const validateAlphaNumericWithSpecialChars = () => {
-    const word = String.raw`'?[a-zA-Z0-9À-ž]+(?:[\-/_'][a-zA-Z0-9À-ž]+)*'?`;
+    const word = String.raw`'?[a-zA-Z0-9À-ž]+(?:[\-/_'.][a-zA-Z0-9À-ž]+)*'?`;
     return validatePattern(
         new RegExp(`^${word}(?: ${word})*$`),
-        'Value can only contain numbers or letters, optionally wrapped in apostrophes, separated by a space, dash, apostrophe, slash or underscore',
+        'Value can only contain numbers or letters, optionally wrapped in apostrophes, separated by a space, dash, apostrophe, slash, underscore or dot',
     );
 };
 

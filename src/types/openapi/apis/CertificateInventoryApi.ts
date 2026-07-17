@@ -116,6 +116,10 @@ export interface GetCertificateValidationResultRequest {
     uuid: string;
 }
 
+export interface GetCsrGenerationAttributesRequest {
+    raProfileUuid?: string;
+}
+
 export interface ListCertificateApprovalsRequest {
     uuid: string;
     itemsPerPage?: number;
@@ -600,15 +604,29 @@ export class CertificateInventoryApi extends BaseAPI {
     }
 
     /**
+     * Returns the request-attribute definitions available for building a certificate request. Without `raProfileUuid`: the editable platform default request-attribute set. With `raProfileUuid`: the resolved request-attribute set for that RA profile.
      * Get CSR Generation Attributes
      */
-    getCsrGenerationAttributes(): Observable<Array<BaseAttributeDto>>;
-    getCsrGenerationAttributes(opts?: OperationOpts): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
-    getCsrGenerationAttributes(opts?: OperationOpts): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+    getCsrGenerationAttributes({ raProfileUuid }: GetCsrGenerationAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    getCsrGenerationAttributes(
+        { raProfileUuid }: GetCsrGenerationAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    getCsrGenerationAttributes(
+        { raProfileUuid }: GetCsrGenerationAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        const query: HttpQuery = {};
+
+        if (raProfileUuid != null) {
+            query['raProfileUuid'] = raProfileUuid;
+        }
+
         return this.request<Array<BaseAttributeDto>>(
             {
                 url: '/v1/certificates/csr/attributes',
                 method: 'GET',
+                query,
             },
             opts?.responseOpts,
         );

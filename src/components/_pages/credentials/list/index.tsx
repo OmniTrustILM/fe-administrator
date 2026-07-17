@@ -153,6 +153,7 @@ function CredentialList() {
             <Widget
                 title="Credential Store"
                 busy={isBusy && (!isFetching || credentials.length > 0)}
+                disableRefresh={isBusy}
                 widgetLockName={LockWidgetNameEnum.CredentialStore}
                 widgetButtons={buttons}
                 titleSize="large"

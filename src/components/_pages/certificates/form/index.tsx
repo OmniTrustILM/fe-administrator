@@ -73,6 +73,52 @@ function tabTitle(title: string, descriptors: AttributeDescriptorModel[] | undef
     );
 }
 
+function renderRequestAttributesTabContent(params: {
+    csrAttributeDescriptors: AttributeDescriptorModel[] | undefined | null;
+    csrAttributesCallbackAttributes: AttributeDescriptorModel[];
+    setCsrAttributesCallbackAttributes: React.Dispatch<React.SetStateAction<AttributeDescriptorModel[]>>;
+    isFetchingCsrAttributes: boolean;
+    selectedRaProfileUuid: string | undefined;
+}) {
+    const {
+        csrAttributeDescriptors,
+        csrAttributesCallbackAttributes,
+        setCsrAttributesCallbackAttributes,
+        isFetchingCsrAttributes,
+        selectedRaProfileUuid,
+    } = params;
+
+    if ((csrAttributeDescriptors ?? []).length > 0) {
+        return (
+            <AttributeEditor
+                id="csrAttributes"
+                attributeDescriptors={csrAttributeDescriptors ?? []}
+                groupAttributesCallbackAttributes={csrAttributesCallbackAttributes}
+                setGroupAttributesCallbackAttributes={setCsrAttributesCallbackAttributes}
+            />
+        );
+    }
+    if (isFetchingCsrAttributes) {
+        return (
+            <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-loading">
+                Loading request attributes&hellip;
+            </span>
+        );
+    }
+    if (selectedRaProfileUuid) {
+        return (
+            <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-empty">
+                This RA Profile has no request attributes.
+            </span>
+        );
+    }
+    return (
+        <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-hint">
+            Select an RA Profile to see its request attributes.
+        </span>
+    );
+}
+
 interface CertificateFormProps {
     onCancel?: () => void;
 }
@@ -86,6 +132,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const csrAttributeDescriptors = useSelector(certificateSelectors.csrAttributeDescriptors);
+    const isFetchingCsrAttributes = useSelector(certificateSelectors.isFetchingCsrAttributes);
     const signatureAttributeDescriptors = useSelector(cryptographyOperationSelectors.signatureAttributeDescriptors);
     const altSignatureAttributeDescriptors = useSelector(cryptographyOperationSelectors.altSignatureAttributeDescriptors);
 
@@ -134,13 +181,15 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
 
     useEffect(() => {
         dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Certificates));
-        dispatch(certificateActions.getCsrAttributes());
         dispatch(raProfileActions.listRaProfiles());
         dispatch(tokenProfileActions.listTokenProfiles({ enabled: true }));
         dispatch(connectorActions.clearCallbackData());
         dispatch(utilsCertificateRequestActions.reset());
         dispatch(utilsActuatorActions.health());
         dispatch(certificateActions.clearIssueValidationErrors());
+        // Request attributes are resolved per RA profile; start from a clean slate so descriptors left in
+        // the shared store by a prior visit (or the Complete/Rekey dialogs) don't render before selection.
+        dispatch(certificateActions.clearCsrAttributes());
     }, [dispatch]);
 
     useEffect(() => {
@@ -200,6 +249,14 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         (raProfileUuid: string) => {
             // Validation errors belong to the previous profile's request — drop them on any change.
             dispatch(certificateActions.clearIssueValidationErrors());
+            if (raProfileUuid) {
+                dispatch(certificateActions.getCsrAttributes({ raProfileUuid }));
+            } else {
+                dispatch(certificateActions.clearCsrAttributes());
+            }
+            // Callback-produced request-attribute fields belong to the previous profile — reset them on every
+            // change (the issuance branch does the same below via setGroupAttributesCallbackAttributes).
+            setCsrAttributesCallbackAttributes([]);
             const profile = raProfiles.find((p) => p.uuid === raProfileUuid);
             if (!profile?.authorityInstanceUuid) return;
             dispatch(connectorActions.clearCallbackData());
@@ -211,7 +268,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                 }),
             );
         },
-        [dispatch, raProfiles, setGroupAttributesCallbackAttributes],
+        [dispatch, raProfiles, setGroupAttributesCallbackAttributes, setCsrAttributesCallbackAttributes],
     );
 
     const raProfileOptions = useMemo(
@@ -328,9 +385,12 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const submitHandler = useCallback(
         (event: React.SyntheticEvent<HTMLFormElement>) => {
             event.preventDefault();
+            if (isFetchingCsrAttributes) {
+                return;
+            }
             handleSubmit(onSubmit)(event);
         },
-        [handleSubmit, onSubmit],
+        [handleSubmit, isFetchingCsrAttributes, onSubmit],
     );
 
     return (
@@ -526,14 +586,13 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     tabs={[
                                         {
                                             title: tabTitle('Request Attributes', csrAttributeDescriptors),
-                                            content: (
-                                                <AttributeEditor
-                                                    id="csrAttributes"
-                                                    attributeDescriptors={csrAttributeDescriptors ?? []}
-                                                    groupAttributesCallbackAttributes={csrAttributesCallbackAttributes}
-                                                    setGroupAttributesCallbackAttributes={setCsrAttributesCallbackAttributes}
-                                                />
-                                            ),
+                                            content: renderRequestAttributesTabContent({
+                                                csrAttributeDescriptors,
+                                                csrAttributesCallbackAttributes,
+                                                setCsrAttributesCallbackAttributes,
+                                                isFetchingCsrAttributes,
+                                                selectedRaProfileUuid,
+                                            }),
                                         },
                                         ...(!isRegister
                                             ? [
@@ -687,7 +746,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     title="Create"
                                     inProgressTitle="Creating"
                                     inProgress={issuingCertificate}
-                                    disabled={!formState.isValid}
+                                    disabled={!formState.isValid || isFetchingCsrAttributes}
                                 />
                             </div>
                         </Container>

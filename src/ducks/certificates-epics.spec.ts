@@ -719,4 +719,78 @@ describe('certificates epics', () => {
             expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
         });
     });
+
+    describe('getCsrAttributes', () => {
+        const GET_CSR_ATTRIBUTES_EPIC_INDEX = 39;
+
+        async function runGetCsrAttributesEpic(
+            action: UnknownAction,
+            getCsrGenerationAttributes: (args: any) => Observable<any> = () => of([]),
+            takeCount = 1,
+        ): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const calls: any[] = [];
+            const deps = {
+                apiClients: {
+                    certificates: {
+                        getCsrGenerationAttributes: (args: any) => {
+                            calls.push(args);
+                            return getCsrGenerationAttributes(args);
+                        },
+                    },
+                },
+            };
+            const output$ = epics[GET_CSR_ATTRIBUTES_EPIC_INDEX](of(action), of({}) as any, deps as any);
+            const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
+            return { emitted, calls };
+        }
+
+        test('forwards raProfileUuid to the client and maps descriptors on success', async () => {
+            const { emitted, calls } = await runGetCsrAttributesEpic(certificatesActions.getCsrAttributes({ raProfileUuid: 'ra-1' }), () =>
+                of([{ uuid: 'csr-attr-1' }]),
+            );
+
+            expect(calls).toEqual([{ raProfileUuid: 'ra-1' }]);
+            expect(emitted[0].type).toBe(certificatesActions.getCsrAttributesSuccess.type);
+            expect((emitted[0] as any).payload.csrAttributes).toEqual([{ uuid: 'csr-attr-1' }]);
+        });
+
+        test('emits failure action and fetchError redirect when the client fails', async () => {
+            const { emitted } = await runGetCsrAttributesEpic(
+                certificatesActions.getCsrAttributes({ raProfileUuid: 'ra-1' }),
+                () => throwError(() => new Error('boom')),
+                2,
+            );
+
+            expect(emitted[0].type).toBe(certificatesActions.getCsrAttributesFailure.type);
+            expect((emitted[0] as any).payload.error).toContain('boom');
+            expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+        });
+
+        test('cancels the in-flight fetch when the RA Profile is cleared before the response resolves', async () => {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const action$ = new Subject<UnknownAction>();
+            const response$ = new Subject<any>();
+            const deps = {
+                apiClients: {
+                    certificates: { getCsrGenerationAttributes: () => response$ },
+                },
+            };
+
+            const output$ = epics[GET_CSR_ATTRIBUTES_EPIC_INDEX](action$, of({}) as any, deps as any);
+            const emitted: UnknownAction[] = [];
+            const subscription = output$.subscribe((action) => emitted.push(action));
+
+            action$.next(certificatesActions.getCsrAttributes({ raProfileUuid: 'ra-1' }));
+            action$.next(certificatesActions.clearCsrAttributes());
+            // A late response must be ignored now that the fetch has been unsubscribed.
+            response$.next([{ uuid: 'csr-attr-1' }]);
+            response$.complete();
+
+            await Promise.resolve();
+
+            expect(emitted).toEqual([]);
+            subscription.unsubscribe();
+        });
+    });
 });

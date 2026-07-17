@@ -580,9 +580,11 @@ describe('certificates slice', () => {
         expect(next.isCheckingCompliance).toBe(false);
     });
 
-    test('getCsrAttributes / success / failure update csrAttributeDescriptors', () => {
-        let next = reducer(initialState, actions.getCsrAttributes());
+    test('getCsrAttributes clears stale descriptors on fetch start, success populates, clearCsrAttributes empties', () => {
+        const seeded = { ...initialState, csrAttributeDescriptors: [{ uuid: 'stale-attr' }] as any };
+        let next = reducer(seeded, actions.getCsrAttributes({ raProfileUuid: 'ra-1' }));
         expect(next.isFetchingCsrAttributes).toBe(true);
+        expect(next.csrAttributeDescriptors).toEqual([]);
 
         const attrs = [{ uuid: 'csr-attr-1' }] as any;
         next = reducer(next, actions.getCsrAttributesSuccess({ csrAttributes: attrs }));
@@ -591,6 +593,9 @@ describe('certificates slice', () => {
 
         next = reducer({ ...next, isFetchingCsrAttributes: true }, actions.getCsrAttributesFailure({ error: 'err' }));
         expect(next.isFetchingCsrAttributes).toBe(false);
+
+        next = reducer(next, actions.clearCsrAttributes());
+        expect(next.csrAttributeDescriptors).toEqual([]);
     });
 
     test('getCertificateContents / success / failure update isFetchingContents', () => {

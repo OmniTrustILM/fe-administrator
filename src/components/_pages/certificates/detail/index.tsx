@@ -353,7 +353,6 @@ export default function CertificateDetail() {
         if (!id || isPushingCertificate || isRemovingCertificate) return;
 
         dispatch(actions.listCertificateLocations({ uuid: id }));
-        dispatch(locationActions.listLocations({}));
     }, [dispatch, isPushingCertificate, isRemovingCertificate, id]);
 
     const getFreshApprovalList = useCallback(() => {
@@ -457,16 +456,21 @@ export default function CertificateDetail() {
 
         setConfirmRemove(false);
 
+        const entityUuidByLocation = new Map(certLocations?.map((l) => [l.uuid, l.entityInstanceUuid]));
+
         locationsCheckedRows.forEach((uuid) => {
+            const entityUuid = entityUuidByLocation.get(uuid);
+            if (!entityUuid) return;
+
             dispatch(
                 locationActions.removeCertificate({
                     certificateUuid: certificate.uuid,
                     locationUuid: uuid,
-                    entityUuid: locationToEntityMap[uuid],
+                    entityUuid,
                 }),
             );
         });
-    }, [dispatch, certificate, locationsCheckedRows, locationToEntityMap]);
+    }, [dispatch, certificate, locationsCheckedRows, certLocations]);
 
     const buttonsLocations: WidgetButtonProps[] = useMemo(
         () => [
@@ -475,6 +479,7 @@ export default function CertificateDetail() {
                 disabled: isCertificateArchived,
                 tooltip: 'Push to location',
                 onClick: () => {
+                    dispatch(locationActions.listLocations({}));
                     setSelectLocationsCheckedRows([]);
                     setAddCertToLocation(true);
                 },
@@ -488,7 +493,7 @@ export default function CertificateDetail() {
                 },
             },
         ],
-        [locationsCheckedRows.length, isCertificateArchived],
+        [locationsCheckedRows.length, isCertificateArchived, dispatch],
     );
 
     const historyHeaders: TableHeader[] = useMemo(

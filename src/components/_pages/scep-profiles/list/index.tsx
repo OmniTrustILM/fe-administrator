@@ -231,6 +231,7 @@ export default function ScepProfiles() {
                 dataTestId="scep-profiles-list-widget"
                 title="List of SCEP Profiles"
                 busy={isBusy && (!isFetching || scepProfiles.length > 0)}
+                disableRefresh={isBusy}
                 widgetLockName={LockWidgetNameEnum.ListOfSCEPProfiles}
                 widgetButtons={buttons}
                 titleSize="large"

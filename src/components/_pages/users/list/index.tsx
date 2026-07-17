@@ -262,6 +262,7 @@ export default function UsersList() {
             <Widget
                 title="List of Users"
                 busy={isBusy && (!isFetching || users.length > 0)}
+                disableRefresh={isBusy}
                 enableBusyOverlay
                 widgetLockName={LockWidgetNameEnum.ListOfUsers}
                 widgetButtons={buttons}
