@@ -372,7 +372,7 @@ export default function RequestAttributeAuthoringEditor({
                     id="ra-attr-name"
                     label="Name"
                     labelTooltip="Internal identifier, unique within this set. Not shown to the requester."
-                    placeholder="e.g. environment"
+                    placeholder="Enter name"
                     required
                     value={d.name}
                     onChange={(v) => set({ name: v })}
@@ -385,7 +385,7 @@ export default function RequestAttributeAuthoringEditor({
                 <TextInput
                     id="ra-attr-label"
                     label="Label"
-                    placeholder="e.g. Environment"
+                    placeholder="Enter label"
                     required
                     value={d.label}
                     onChange={(v) => set({ label: v })}
@@ -393,7 +393,7 @@ export default function RequestAttributeAuthoringEditor({
                 <TextInput
                     id="ra-attr-description"
                     label="Description"
-                    placeholder="e.g. Target deployment environment"
+                    placeholder="Enter description"
                     value={d.description ?? ''}
                     onChange={(v) => set({ description: v })}
                 />
@@ -627,6 +627,7 @@ export default function RequestAttributeAuthoringEditor({
                     value={d.defaultValue ?? config.initial}
                     onChange={(next) => set({ defaultValue: next })}
                     readOnly={disabled}
+                    placeholder="Enter default value"
                 />
             </div>
         );

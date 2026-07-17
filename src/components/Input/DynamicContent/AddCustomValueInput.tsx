@@ -16,6 +16,7 @@ type Props = {
     onChange: (v: string | number | boolean) => void;
     readOnly: boolean;
     inputClassName?: string;
+    placeholder?: string;
 };
 
 export function AddCustomValueInput({
@@ -27,6 +28,7 @@ export function AddCustomValueInput({
     onChange,
     readOnly,
     inputClassName = defaultInputClassName,
+    placeholder,
 }: Readonly<Props>): React.ReactNode {
     if (inputType === 'datetime-local') {
         let dateVal = typeof value === 'string' && value ? value : undefined;
@@ -52,6 +54,7 @@ export function AddCustomValueInput({
                 value={value === '' ? '' : Number(value)}
                 onChange={handleNumberChange}
                 disabled={readOnly}
+                placeholder={placeholder}
             />
         );
     }
@@ -65,6 +68,7 @@ export function AddCustomValueInput({
             value={String(value ?? '')}
             onChange={(v) => onChange(v)}
             disabled={readOnly}
+            placeholder={placeholder}
         />
     );
 }
