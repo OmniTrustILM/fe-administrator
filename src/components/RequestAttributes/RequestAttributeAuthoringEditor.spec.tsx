@@ -478,4 +478,29 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await component.getByTestId('request-attribute-authoring-attribute-remove').click();
         await expect(component.getByTestId('request-attribute-authoring-attributes-empty')).toBeVisible();
     });
+
+    test('configured-attribute summary shows the RDN code, not the OID, for a system RDN', async ({ mount, page }) => {
+        const initialValue = {
+            ...emptyAuthoringForm(),
+            attributes: [
+                {
+                    ...emptyAuthoredAttribute(),
+                    name: 'cn',
+                    label: 'Common Name',
+                    mappingFieldType: FieldType.Rdn,
+                    mappingRdnCode: '2.5.4.3',
+                },
+            ],
+        };
+        await mount(
+            <RequestAttributeAuthoringEditorHarness
+                initialValue={initialValue}
+                rdnOptions={[{ value: '2.5.4.3', label: 'Common Name (CN)', code: 'CN' }]}
+            />,
+        );
+
+        const row = page.getByTestId('request-attribute-authoring-attribute-row');
+        await expect(row).toContainText('→ RDN CN');
+        await expect(row).not.toContainText('2.5.4.3');
+    });
 });

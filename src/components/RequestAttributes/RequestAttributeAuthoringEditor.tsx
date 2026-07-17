@@ -284,10 +284,16 @@ export default function RequestAttributeAuthoringEditor({
         setAttrDraft(null);
     };
 
+    const rdnCodeDisplay = (stored?: string) => {
+        const v = stored?.trim();
+        if (!v) return '?';
+        return rdnOptions.find((o) => o.value === v)?.code ?? v;
+    };
+
     const mappingSummary = (attr: AuthoredAttributeFormValues) => {
         switch (attr.mappingFieldType) {
             case FieldType.Rdn:
-                return `→ RDN ${attr.mappingRdnCode || '?'}`;
+                return `→ RDN ${rdnCodeDisplay(attr.mappingRdnCode)}`;
             case FieldType.San:
                 return `→ SAN ${attr.mappingGeneralNameType ? GENERAL_NAME_TYPE_LABELS[attr.mappingGeneralNameType] : '?'}`;
             case FieldType.Extension:
