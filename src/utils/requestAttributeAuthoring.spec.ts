@@ -612,6 +612,19 @@ describe('requestAttributeAuthoring', () => {
             expect(form.valueSourceType).toBe(ValueSourceType.None);
             expect(form.defaultValue).toBe('prod');
         });
+
+        it('does not leak a free-input default into staticValues', () => {
+            const form = parseAuthoredAttributeDto({
+                uuid: 'u1',
+                name: 'env',
+                type: AttributeType.Data,
+                contentType: AttributeContentType.String,
+                properties: { label: 'Environment' },
+                content: [{ data: 'prod' }],
+            } as any);
+            expect(form.defaultValue).toBe('prod');
+            expect(form.staticValues).toEqual([]);
+        });
     });
 
     describe('hasAuthoredRequestAttributes', () => {

@@ -520,6 +520,39 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(page.getByTestId('value-json')).toContainText('"defaultValue":"prod"');
     });
 
+    test('free-input default value starts empty (not the content-type initial) for a numeric type', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-content-type-trigger').click();
+        await page.getByRole('option', { name: 'Integer', exact: true }).click();
+
+        // The numeric editor has no id, so scope to the default-value block. It must start blank rather
+        // than pre-filled with the content-type initial ('0'), which would be indistinguishable from an
+        // intentional default of 0.
+        await expect(page.getByTestId('request-attribute-authoring-default-value-block').locator('input')).toHaveValue('');
+    });
+
+    test('changing the content type clears an entered free-input default value', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+        await page.locator('#ra-attr-default-value').click();
+        await page.locator('#ra-attr-default-value').fill('prod');
+
+        await page.getByTestId('select-ra-attr-content-type-trigger').click();
+        await page.getByRole('option', { name: 'Integer', exact: true }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        // The default entered under String must not survive the type switch and serialise as a
+        // wrong-typed (NaN) content entry.
+        await expect(page.getByTestId('value-json')).not.toContainText('"defaultValue"');
+    });
+
     test('Read Only checkbox toggles the readOnly flag in the emitted form', async ({ mount, page }) => {
         await mount(<RequestAttributeAuthoringEditorHarness />);
 

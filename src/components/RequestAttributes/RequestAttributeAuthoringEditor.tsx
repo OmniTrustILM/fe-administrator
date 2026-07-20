@@ -407,9 +407,12 @@ export default function RequestAttributeAuthoringEditor({
                         // Static list is only authorable for scalar content types; drop back to free
                         // input if the new type can't carry one, so we never render a missing editor.
                         const keepStaticList = isStaticListSupportedForContentType(contentType);
+                        // Drop both the static list and any free-input default — a value entered under
+                        // the old type would otherwise survive and serialise as a wrong-typed content entry.
                         set({
                             contentType,
                             staticValues: [],
+                            defaultValue: undefined,
                             valueSourceType: keepStaticList ? d.valueSourceType : ValueSourceType.None,
                         });
                     }}
@@ -497,6 +500,7 @@ export default function RequestAttributeAuthoringEditor({
                             checked={d.mappingCriticalOverridable ?? false}
                             onChange={(c) => set({ mappingCriticalOverridable: c })}
                             label="Requester may override criticality"
+                            disabled={disabled}
                         />
                     </>
                 )}
@@ -522,7 +526,13 @@ export default function RequestAttributeAuthoringEditor({
                 <div className="space-y-2">
                     <Label>Properties</Label>
                     <Container className="flex-row items-center" gap={4}>
-                        <Checkbox id="ra-attr-required" checked={d.required} onChange={(c) => set({ required: c })} label="Required" />
+                        <Checkbox
+                            id="ra-attr-required"
+                            checked={d.required}
+                            onChange={(c) => set({ required: c })}
+                            label="Required"
+                            disabled={disabled}
+                        />
                         {/* List/Multi select apply to a static list only; free input is a single typed value. */}
                         {d.valueSourceType === ValueSourceType.StaticList && (
                             <>
@@ -532,20 +542,26 @@ export default function RequestAttributeAuthoringEditor({
                                     onChange={(c) => set({ list: c, multiSelect: c ? d.multiSelect : false })}
                                     label="List"
                                     // A static list is inherently a list attribute — locked on while it's selected.
-                                    disabled={d.valueSourceType === ValueSourceType.StaticList}
+                                    disabled={disabled || d.valueSourceType === ValueSourceType.StaticList}
                                 />
                                 <Checkbox
                                     id="ra-attr-multi"
                                     checked={d.multiSelect}
                                     onChange={(c) => set({ multiSelect: c })}
                                     label="Multi select"
-                                    disabled={!d.list}
+                                    disabled={disabled || !d.list}
                                 />
                             </>
                         )}
                         {/* Read Only applies to free input only (lock the single value to its default). */}
                         {d.valueSourceType === ValueSourceType.None && (
-                            <Checkbox id="ra-attr-readonly" checked={d.readOnly} onChange={(c) => set({ readOnly: c })} label="Read Only" />
+                            <Checkbox
+                                id="ra-attr-readonly"
+                                checked={d.readOnly}
+                                onChange={(c) => set({ readOnly: c })}
+                                label="Read Only"
+                                disabled={disabled}
+                            />
                         )}
                     </Container>
                 </div>
@@ -638,7 +654,7 @@ export default function RequestAttributeAuthoringEditor({
                     inputType={config.type}
                     contentType={d.contentType}
                     fieldStepValue={getStepValue(config.type)}
-                    value={d.defaultValue ?? config.initial}
+                    value={d.defaultValue ?? ''}
                     onChange={(next) => set({ defaultValue: next })}
                     readOnly={disabled}
                     placeholder="Enter default value"

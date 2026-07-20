@@ -315,6 +315,7 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
     const rdn = firstField && firstField.fieldType === FieldType.Rdn ? firstField : undefined;
     const san = firstField && firstField.fieldType === FieldType.San ? firstField : undefined;
     const ext = firstField && firstField.fieldType === FieldType.Extension ? firstField : undefined;
+    const valueSourceKind = view.valueSource?.kind ?? ValueSourceType.None;
     return {
         uuid: view.uuid,
         name: view.name ?? '',
@@ -333,10 +334,15 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
         mappingOtherNameEncoding: san?.otherNameValueEncoding,
         mappingExtensionOid: ext?.extensionOid ?? '',
         mappingCriticalOverridable: ext?.criticalOverridable ?? false,
-        valueSourceType: view.valueSource?.kind ?? ValueSourceType.None,
-        staticValues: (view.content ?? []).map((item) => (item as { data: string | number | boolean }).data),
+        valueSourceType: valueSourceKind,
+        // A free-input default is stored in `content` too, so only lift `content` into `staticValues`
+        // for an actual static list — otherwise a free-input default leaks into the static-list editor.
+        staticValues:
+            valueSourceKind === ValueSourceType.StaticList
+                ? (view.content ?? []).map((item) => (item as { data: string | number | boolean }).data)
+                : [],
         defaultValue:
-            (view.valueSource?.kind ?? ValueSourceType.None) === ValueSourceType.None
+            valueSourceKind === ValueSourceType.None
                 ? (view.content?.[0] as { data?: string | number | boolean } | undefined)?.data
                 : undefined,
         collectionRef: '',
