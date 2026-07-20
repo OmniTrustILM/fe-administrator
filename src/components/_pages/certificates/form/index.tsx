@@ -562,7 +562,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
 
                         <Widget title="Request Properties" busy={issuingCertificate || isFetchingResourceCustomAttributes}>
                             {!isRegister && isExternalSource && selectedRaProfile ? (
-                                <>
+                                <div className="mb-4">
                                     <FileUpload
                                         editable
                                         required
@@ -587,7 +587,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     />
 
                                     {certificate && <CertificateAttributes csr certificate={certificate} />}
-                                </>
+                                </div>
                             ) : null}
 
                             {!isRegister && isExistingKeySource && selectedRaProfile ? (
