@@ -33,6 +33,15 @@ const certificateGroup = {
     name: 'Group One',
 } as any;
 
+const customAttrDescriptor: AttributeDescriptorModel = {
+    type: AttributeType.Custom,
+    name: 'customField',
+    uuid: 'custom-uuid-1',
+    contentType: AttributeContentType.String,
+    // required so the editor renders an editable input directly (optional custom attrs hide behind an add-control).
+    properties: { label: 'Custom Field', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
+} as AttributeDescriptorModel;
+
 test.describe('CertificateForm', () => {
     test('request mode radio is labelled "Request now"', async ({ mount, page }) => {
         await mount(<CertificateFormTestWrapper />);
@@ -255,5 +264,101 @@ test.describe('CertificateForm', () => {
         await page.getByTestId('select-registerGroups-trigger').click();
         await page.getByRole('option', { name: 'Group One' }).click();
         await expect(page.getByTestId('select-registerGroups-trigger')).toContainText('Group One');
+    });
+
+    test('Owner (optional) can be cleared back to empty after a selection', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper preloadedState={{ users: { ...testInitialState.users, users: [ownerUser] } }} />);
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByRole('tab', { name: 'Ownership' }).click();
+
+        await page.getByTestId('select-registerOwner-trigger').click();
+        await page.getByRole('option', { name: 'Jane Doe (jdoe)' }).click();
+        await expect(page.getByTestId('select-registerOwner-trigger')).toContainText('Jane Doe (jdoe)');
+
+        // Optional owner must be resettable to empty (omitting ownerUuid means the registering user owns it).
+        await page.getByTestId('select-registerOwner-clear').click();
+        await expect(page.getByTestId('select-registerOwner-trigger')).toContainText('Select Owner');
+    });
+
+    test('Custom Attributes values survive an Issue<->Pre-register mode switch', async ({ mount, page }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{
+                    customAttributes: { ...testInitialState.customAttributes, resourceCustomAttributes: [customAttrDescriptor] },
+                }}
+            />,
+        );
+
+        const customField = page.getByTestId('text-input-__attributes__customCertificate__.customField');
+
+        await page.getByRole('tab', { name: 'Custom Attributes' }).click();
+        // Text inputs are readonly-until-focus (anti-autofill), so focus before filling.
+        await customField.click();
+        await customField.fill('keep-me');
+        await expect(customField).toHaveValue('keep-me');
+
+        // Toggle to Pre-register and back — the shared, always-mounted Custom Attributes editor must not remount/clear.
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('requestType-issue').click();
+
+        await page.getByRole('tab', { name: 'Custom Attributes' }).click();
+        await expect(page.getByTestId('text-input-__attributes__customCertificate__.customField')).toHaveValue('keep-me');
+    });
+
+    async function fillRegisterBasics(page: import('@playwright/test').Page) {
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+        await page.getByTestId('authorizationSecret').fill('challenge-secret');
+    }
+
+    test('registerCertificate payload includes selected owner/groups', async ({ mount, page }) => {
+        const dispatched: { type: string; payload?: any }[] = [];
+
+        await mount(
+            <CertificateFormTestWrapper
+                onAction={(a) => dispatched.push(a)}
+                preloadedState={{
+                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                    users: { ...testInitialState.users, users: [ownerUser] },
+                    certificateGroups: { ...testInitialState.certificateGroups, certificateGroups: [certificateGroup] },
+                }}
+            />,
+        );
+
+        await fillRegisterBasics(page);
+        await page.getByRole('tab', { name: 'Ownership' }).click();
+        await page.getByTestId('select-registerOwner-trigger').click();
+        await page.getByRole('option', { name: 'Jane Doe (jdoe)' }).click();
+        await page.getByTestId('select-registerGroups-trigger').click();
+        await page.getByRole('option', { name: 'Group One' }).click();
+
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        await expect.poll(() => dispatched.find((a) => a.type === 'certificates/registerCertificate')).toBeTruthy();
+        const action = dispatched.find((a) => a.type === 'certificates/registerCertificate');
+        expect(action?.payload.registerRequest.ownerUuid).toBe('user-1');
+        expect(action?.payload.registerRequest.groupUuids).toEqual(['group-1']);
+    });
+
+    test('registerCertificate payload omits owner/groups when left empty', async ({ mount, page }) => {
+        const dispatched: { type: string; payload?: any }[] = [];
+
+        await mount(
+            <CertificateFormTestWrapper
+                onAction={(a) => dispatched.push(a)}
+                preloadedState={{ raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] } }}
+            />,
+        );
+
+        await fillRegisterBasics(page);
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        await expect.poll(() => dispatched.find((a) => a.type === 'certificates/registerCertificate')).toBeTruthy();
+        const action = dispatched.find((a) => a.type === 'certificates/registerCertificate');
+        // Empty selections must be omitted (undefined) so issuance won't overwrite existing owner/groups.
+        expect(action?.payload.registerRequest.ownerUuid).toBeUndefined();
+        expect(action?.payload.registerRequest.groupUuids).toBeUndefined();
     });
 });

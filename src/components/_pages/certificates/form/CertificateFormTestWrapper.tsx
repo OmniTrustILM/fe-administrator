@@ -10,6 +10,7 @@ import CertificateForm from './index';
 export type CertificateFormTestWrapperProps = Readonly<{
     onCancel?: () => void;
     preloadedState?: Partial<ReturnType<typeof testReducers>>;
+    onAction?: (action: { type: string; payload?: unknown }) => void;
 }>;
 
 /**
@@ -19,15 +20,19 @@ export type CertificateFormTestWrapperProps = Readonly<{
  * throws. Building the store inside the mounted component (as done here) avoids that entirely.
  * See RequestValidationDialogBodyTestWrapper.tsx for the established precedent.
  */
-export function CertificateFormTestWrapper({ onCancel, preloadedState }: CertificateFormTestWrapperProps) {
+export function CertificateFormTestWrapper({ onCancel, preloadedState, onAction }: CertificateFormTestWrapperProps) {
     const store = useMemo(
         () =>
             configureStore({
                 reducer: testReducers,
-                middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
+                middleware: (getDefaultMiddleware) =>
+                    getDefaultMiddleware({ serializableCheck: false }).concat((_store) => (next) => (action) => {
+                        onAction?.(action as { type: string; payload?: unknown });
+                        return next(action);
+                    }),
                 preloadedState: { ...testInitialState, ...preloadedState },
             }),
-        [preloadedState],
+        [preloadedState, onAction],
     );
 
     return (
