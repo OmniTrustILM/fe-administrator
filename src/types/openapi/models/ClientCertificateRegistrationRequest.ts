@@ -62,6 +62,18 @@ export interface ClientCertificateRegistrationRequest {
      */
     customAttributes?: Array<RequestAttribute>;
     /**
+     * Optional UUID of the user to set as the certificate owner at registration. When omitted, the registering user becomes the owner. The value set here is preserved when the pre-registered certificate is later issued.
+     * @type {string}
+     * @memberof ClientCertificateRegistrationRequest
+     */
+    ownerUuid?: string;
+    /**
+     * Optional set of group UUIDs to associate with the certificate at registration. When provided, it replaces any existing group set. The groups set here are preserved when the pre-registered certificate is later issued.
+     * @type {Array<string>}
+     * @memberof ClientCertificateRegistrationRequest
+     */
+    groupUuids?: Array<string>;
+    /**
      * Authorization secret (challenge) that gates completion of this pre-registered certificate. Write-only and optional — the operator supplies it to opt the registration into challenge-gated issuance; the platform never generates one. Issuing a pre-registered certificate is currently the only challenge-verified completion path; renewal and rekey requests for a certificate with an active registration are rejected (fail-closed) until challenge-gated successor handling is added.
      * @type {string}
      * @memberof ClientCertificateRegistrationRequest

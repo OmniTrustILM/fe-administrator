@@ -8,6 +8,8 @@ import { actions as connectorActions } from 'ducks/connectors';
 import { selectors as cryptographyOperationSelectors } from 'ducks/cryptographic-operations';
 import { actions as raProfileActions, selectors as raProfileSelectors } from 'ducks/ra-profiles';
 import { actions as tokenProfileActions } from 'ducks/token-profiles';
+import { actions as userActions, selectors as userSelectors } from 'ducks/users';
+import { actions as certificateGroupActions, selectors as certificateGroupSelectors } from 'ducks/certificateGroups';
 import type * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -55,6 +57,8 @@ type CertificateFormValues = {
     altKeyUuid?: string;
     authorizationSecret?: string;
     expiresAt?: string;
+    ownerUuid?: string;
+    groupUuids?: string[];
 };
 
 function useDescriptorState() {
@@ -128,6 +132,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const navigate = useNavigate();
 
     const raProfiles = useSelector(raProfileSelectors.raProfiles);
+    const users = useSelector(userSelectors.users);
+    const certificateGroups = useSelector(certificateGroupSelectors.certificateGroups);
     const issuanceAttributeDescriptors = useSelector(certificateSelectors.issuanceAttributes);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
@@ -183,6 +189,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Certificates));
         dispatch(raProfileActions.listRaProfiles());
         dispatch(tokenProfileActions.listTokenProfiles({ enabled: true }));
+        dispatch(userActions.list());
+        dispatch(certificateGroupActions.listGroups());
         dispatch(connectorActions.clearCallbackData());
         dispatch(utilsCertificateRequestActions.reset());
         dispatch(utilsActuatorActions.health());
@@ -242,6 +250,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         } else {
             setValue('authorizationSecret', undefined);
             setValue('expiresAt', undefined);
+            setValue('ownerUuid', undefined);
+            setValue('groupUuids', undefined);
         }
     }, [isRegister, setValue]);
 
@@ -282,6 +292,17 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         [raProfiles],
     );
 
+    const ownerOptions = useMemo(
+        () =>
+            users.map((user) => ({
+                label: `${user.firstName ? user.firstName + ' ' : ''}${user.lastName ? user.lastName + ' ' : ''}(${user.username})`,
+                value: user.uuid,
+            })),
+        [users],
+    );
+
+    const groupOptions = useMemo(() => certificateGroups.map((group) => ({ label: group.name, value: group.uuid })), [certificateGroups]);
+
     const keySourceOptions = useMemo(
         () => [
             { label: 'External', value: 'external' },
@@ -317,6 +338,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                             csrAttributes: csrAttrs,
                             customAttributes: customAttrs,
                             attributes: [],
+                            ownerUuid: formValues.ownerUuid || undefined,
+                            groupUuids: formValues.groupUuids?.length ? formValues.groupUuids : undefined,
                         },
                     }),
                 );
@@ -676,6 +699,35 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                 onChange={onChange}
                                                 invalid={!!fieldState.error}
                                                 error={fieldState.error ? 'Issuance window must be a future date' : undefined}
+                                            />
+                                        )}
+                                    />
+                                    <Controller
+                                        control={control}
+                                        name="ownerUuid"
+                                        render={({ field: { value, onChange } }) => (
+                                            <Select
+                                                id="registerOwner"
+                                                options={ownerOptions}
+                                                placeholder="Select Owner"
+                                                value={value ?? ''}
+                                                label="Owner (optional)"
+                                                onChange={(selected) => onChange((selected ?? undefined) as string | undefined)}
+                                            />
+                                        )}
+                                    />
+                                    <Controller
+                                        control={control}
+                                        name="groupUuids"
+                                        render={({ field: { value, onChange } }) => (
+                                            <Select
+                                                id="registerGroups"
+                                                isMulti
+                                                options={groupOptions}
+                                                placeholder="Select Groups"
+                                                value={groupOptions.filter((option) => value?.includes(option.value))}
+                                                label="Groups (optional)"
+                                                onChange={(selected) => onChange((selected ?? []).map((option) => option.value as string))}
                                             />
                                         )}
                                     />

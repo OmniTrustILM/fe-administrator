@@ -37,7 +37,7 @@ export interface AttributeCallback {
      */
     mappings: Array<AttributeCallbackMapping>;
     /**
-     * Names of the attributes this Attributes v2 callback consumes and is triggered by. Marks an NG (Attributes v2) callback; at most one of dependsOn / callbackContext may be set (neither = no callback). Forbidden on RESOURCE attributes. Enforced by Core.
+     * Names of the attributes, within this same form, whose values this Attributes v2 callback consumes and is triggered by. Providing this field — even as an empty list — marks the callback as an Attributes v2 callback; an empty list means the callback fires once when the form opens (it depends on no other field). At most one of dependsOn or callbackContext may be set; a callback with neither field set defines no callback. Not allowed on RESOURCE attributes. These rules are enforced by the platform.
      * @type {Array<string>}
      * @memberof AttributeCallback
      */

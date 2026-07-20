@@ -784,6 +784,34 @@ function settingsTestReducer(state: SettingsTestState | undefined, _action: Unkn
     return state ?? settingsTestInitialState;
 }
 
+// Reducer key must match the real slice.name ('users') so the real user selectors
+// (used by the certificate form's optional owner field) can find this state.
+export type UsersTestState = {
+    users: any[];
+};
+
+const usersTestInitialState: UsersTestState = {
+    users: [],
+};
+
+function usersTestReducer(state: UsersTestState | undefined, _action: UnknownAction): UsersTestState {
+    return state ?? usersTestInitialState;
+}
+
+// Reducer key must match the real slice.name ('certificateGroups') so the real
+// certificate-group selectors (used by the certificate form's optional groups field) can find this state.
+export type CertificateGroupsTestState = {
+    certificateGroups: any[];
+};
+
+const certificateGroupsTestInitialState: CertificateGroupsTestState = {
+    certificateGroups: [],
+};
+
+function certificateGroupsTestReducer(state: CertificateGroupsTestState | undefined, _action: UnknownAction): CertificateGroupsTestState {
+    return state ?? certificateGroupsTestInitialState;
+}
+
 export const testReducers = combineReducers({
     raProfileRequestAttributes: raProfileRequestAttributesTestReducer,
     userInterface: userInterfaceTestReducer,
@@ -811,6 +839,8 @@ export const testReducers = combineReducers({
     settings: settingsTestReducer,
     tokenprofiles: tokenProfilesTestReducer,
     cryptographicKeys: cryptographicKeysTestReducer,
+    users: usersTestReducer,
+    certificateGroups: certificateGroupsTestReducer,
 });
 
 export const testInitialState = {
@@ -840,4 +870,6 @@ export const testInitialState = {
     settings: settingsTestInitialState,
     tokenprofiles: tokenProfilesTestInitialState,
     cryptographicKeys: cryptographicKeysTestInitialState,
+    users: usersTestInitialState,
+    certificateGroups: certificateGroupsTestInitialState,
 };

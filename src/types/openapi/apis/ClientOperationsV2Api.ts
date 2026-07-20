@@ -399,8 +399,8 @@ export class ClientOperationsV2Api extends BaseAPI {
     }
 
     /**
-     * Reserves a slot at the CA for a certificate that will be issued later. Returns a tracking handle (in metadata) that can be used to complete the issuance via the standard issue flow.  Only supported on v3 authorities advertising the `CERTIFICATE_REGISTRATION` feature flag. The operation may complete synchronously (200) or asynchronously (202 with status polling).
-     * Pre-register a certificate with the upstream CA
+     * Pre-registers a certificate that will be issued later; the response carries the pre-registered certificate\'s UUID, and completion runs through the standard issue flow.  When the authority\'s connector supports registration (a v3 connector advertising the `CERTIFICATE_REGISTRATION` feature flag), the registration is made with the upstream CA; otherwise the certificate is pre-registered at the platform level with no connector call — a platform-level pre-registration does not imply a CA-side end-entity exists. Connector-side completion may be asynchronous; it is tracked server-side and finished through the issue flow.
+     * Pre-register a certificate
      */
     registerCertificate({
         authorityUuid,

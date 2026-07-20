@@ -20,6 +20,19 @@ const selectableRaProfile = {
     enabled: true,
 } as any;
 
+const ownerUser = {
+    uuid: 'user-1',
+    username: 'jdoe',
+    firstName: 'Jane',
+    lastName: 'Doe',
+    enabled: true,
+} as any;
+
+const certificateGroup = {
+    uuid: 'group-1',
+    name: 'Group One',
+} as any;
+
 test.describe('CertificateForm', () => {
     test('defaults to Issue now: key-source select visible, challenge input absent', async ({ mount, page }) => {
         await mount(<CertificateFormTestWrapper />);
@@ -174,5 +187,48 @@ test.describe('CertificateForm', () => {
         await expect(page.getByTestId('csrAttributes-empty')).toBeVisible();
         await expect(page.getByTestId('csrAttributes-empty')).toContainText('This RA Profile has no request attributes.');
         await expect(page.getByTestId('csrAttributes-hint')).toHaveCount(0);
+    });
+
+    test('Pre-register mode shows optional Owner and Groups fields', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper />);
+
+        await page.getByTestId('requestType-register').click();
+
+        await expect(page.getByTestId('select-registerOwner-trigger')).toBeVisible();
+        await expect(page.getByTestId('select-registerGroups-trigger')).toBeVisible();
+
+        // Both are optional: no required (red-star) indicator on their labels.
+        await expect(page.getByTestId('label-registerOwner').locator('.text-red-500')).toHaveCount(0);
+        await expect(page.getByTestId('label-registerGroups').locator('.text-red-500')).toHaveCount(0);
+    });
+
+    test('Issue now mode does not show the Owner or Groups fields', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper />);
+
+        await expect(page.getByTestId('select-registerOwner-trigger')).toHaveCount(0);
+        await expect(page.getByTestId('select-registerGroups-trigger')).toHaveCount(0);
+    });
+
+    test('Owner field lists users; Groups field is multi-select and lists groups', async ({ mount, page }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{
+                    users: { ...testInitialState.users, users: [ownerUser] },
+                    certificateGroups: { ...testInitialState.certificateGroups, certificateGroups: [certificateGroup] },
+                }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+
+        await page.getByTestId('select-registerOwner-trigger').click();
+        await expect(page.getByRole('option', { name: 'Jane Doe (jdoe)' })).toBeVisible();
+        await page.getByRole('option', { name: 'Jane Doe (jdoe)' }).click();
+        await expect(page.getByTestId('select-registerOwner-trigger')).toContainText('Jane Doe (jdoe)');
+
+        // Groups is a multi-select: selecting a group keeps the listbox open for further choices.
+        await page.getByTestId('select-registerGroups-trigger').click();
+        await page.getByRole('option', { name: 'Group One' }).click();
+        await expect(page.getByTestId('select-registerGroups-trigger')).toContainText('Group One');
     });
 });
