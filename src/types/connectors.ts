@@ -59,9 +59,19 @@ export type ConnectRequestModel = Omit<ConnectRequestDto, 'authAttributes'> & { 
 
 export type ConnectResponseModel = Omit<ConnectDto, 'functionGroup'> & { functionGroup: FunctionGroupModel };
 
-export type CallbackConnectorModel = Omit<import('./openapi').CallbackRequest, 'requestAttributeCallback'> & {
+export type CallbackConnectorModel = Omit<
+    import('./openapi').CallbackRequest,
+    'requestAttributeCallback' | 'functionGroup' | 'kind' | 'uuid'
+> & {
     requestAttributeCallback: RequestAttributeCallback;
     version?: import('./openapi').ConnectorVersion;
+    // The editor may render before a connector is picked; the epic rejects the callback when uuid is absent.
+    uuid?: string;
+    // Only legacy (v1) callbacks address the connector by functionGroup/kind; interface-based ones have neither.
+    functionGroup?: string;
+    kind?: string;
+    // Connector-interface row UUID, sent by parent-less NG forms to pin the callback to an interface version.
+    interfaceUuid?: string;
 };
 
 export type CallbackResourceModel = Omit<import('./openapi').ResourceCallbackRequest, 'requestAttributeCallback'> & {

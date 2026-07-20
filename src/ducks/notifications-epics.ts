@@ -177,7 +177,6 @@ export const listNotificationProviders: AppEpic = (action$, state, deps) => {
                 ),
             ),
         ),
-        catchError((error) => of(appRedirectActions.fetchError({ error: error, message: 'Failed to get Entity Provider list' }))),
         map((action) => action as UnknownAction),
     );
 };

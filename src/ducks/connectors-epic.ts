@@ -473,38 +473,53 @@ const callbackConnector: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.callbackConnector.match),
         mergeMap((action) => {
-            const { callbackConnector: payload } = action.payload;
-            const requestAttributeCallback = transformCallbackAttributeModelToDto(payload.requestAttributeCallback);
-            // Guard against missing UUID (would produce /v1/connectors/undefined/... URLs)
-            if (!payload.uuid) {
-                return of(slice.actions.callbackFailure({ callbackId: action.payload.callbackId }));
+            const { callbackConnector: payload, callbackId } = action.payload;
+            try {
+                const requestAttributeCallback = transformCallbackAttributeModelToDto(payload.requestAttributeCallback);
+                // Guard against missing UUID (would produce /v1/connectors/undefined/... URLs)
+                if (!payload.uuid) {
+                    return of(slice.actions.callbackFailure({ callbackId }));
+                }
+                const rootState: any = (state as any).value ?? (state as any);
+                const connectorsState: any = rootState.connectors;
+                const connector = connectorsState?.connectors?.find((c: any) => c.uuid === payload.uuid) ?? connectorsState?.connector;
+                // An interfaceUuid exists only on interface-based connectors, so it pins the route on its own:
+                // parent-less NG forms carry no kind/functionGroup for the version lookup to fall back on.
+                const isV2 =
+                    !!payload.interfaceUuid || payload.version === ConnectorVersion.V2 || connector?.version === ConnectorVersion.V2;
+                const isStale = staleGuard(state, callbackId);
+
+                let api$: Observable<object>;
+                if (isV2) {
+                    api$ = deps.apiClients.callback.callbackV2({
+                        uuid: payload.uuid,
+                        requestAttributeCallback: payload.interfaceUuid
+                            ? { ...requestAttributeCallback, interfaceUuid: payload.interfaceUuid }
+                            : requestAttributeCallback,
+                    });
+                } else if (payload.functionGroup && payload.kind) {
+                    api$ = deps.apiClients.callback.callback({
+                        uuid: payload.uuid,
+                        functionGroup: payload.functionGroup,
+                        kind: payload.kind,
+                        requestAttributeCallback,
+                    });
+                } else {
+                    // The v1 route requires both; without them the client throws synchronously.
+                    return of(slice.actions.callbackFailure({ callbackId }));
+                }
+
+                return api$.pipe(toCallbackActions(callbackId, isStale, 'Connector callback failure'));
+            } catch (error) {
+                // Contain synchronous throws to this one action. Letting them reach a catchError on the
+                // outer stream would unsubscribe action$ and permanently stop the epic, so every later
+                // callback would hang with isRunningCallback stuck true.
+                return of(
+                    slice.actions.callbackFailure({ callbackId }),
+                    appRedirectActions.fetchError({ error, message: 'Failed to perform connector callback' }),
+                );
             }
-            const rootState: any = (state as any).value ?? (state as any);
-            const connectorsState: any = rootState.connectors;
-            const connector = connectorsState?.connectors?.find((c: any) => c.uuid === payload.uuid) ?? connectorsState?.connector;
-            const isV2 = payload.version === ConnectorVersion.V2 || connector?.version === ConnectorVersion.V2;
-            const isStale = staleGuard(state, action.payload.callbackId);
-            const api$ = isV2
-                ? deps.apiClients.callback.callbackV2({
-                      uuid: payload.uuid,
-                      requestAttributeCallback,
-                  })
-                : deps.apiClients.callback.callback({
-                      uuid: payload.uuid,
-                      functionGroup: payload.functionGroup,
-                      kind: payload.kind,
-                      requestAttributeCallback,
-                  });
-
-            return api$.pipe(toCallbackActions(action.payload.callbackId, isStale, 'Connector callback failure'));
         }),
-
-        catchError((error) =>
-            of(
-                slice.actions.callbackFailure({ callbackId: '' }),
-                appRedirectActions.fetchError({ error, message: 'Failed to perform connector callback' }),
-            ),
-        ),
     );
 };
 
@@ -512,23 +527,25 @@ const callbackResource: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.callbackResource.match),
         mergeMap((action) => {
-            const isStale = staleGuard(state, action.payload.callbackId);
-            return deps.apiClients.callback
-                .resourceCallback({
-                    ...action.payload.callbackResource,
-                    requestAttributeCallback: transformCallbackAttributeModelToDto(
-                        action.payload.callbackResource.requestAttributeCallback,
-                    ),
-                })
-                .pipe(toCallbackActions(action.payload.callbackId, isStale, 'Resource callback failure'));
+            const { callbackId } = action.payload;
+            try {
+                const isStale = staleGuard(state, callbackId);
+                return deps.apiClients.callback
+                    .resourceCallback({
+                        ...action.payload.callbackResource,
+                        requestAttributeCallback: transformCallbackAttributeModelToDto(
+                            action.payload.callbackResource.requestAttributeCallback,
+                        ),
+                    })
+                    .pipe(toCallbackActions(callbackId, isStale, 'Resource callback failure'));
+            } catch (error) {
+                // See callbackConnector: a throw reaching the outer stream would kill this epic for good.
+                return of(
+                    slice.actions.callbackFailure({ callbackId }),
+                    appRedirectActions.fetchError({ error, message: 'Failed to perform resource callback' }),
+                );
+            }
         }),
-
-        catchError((error) =>
-            of(
-                slice.actions.callbackFailure({ callbackId: '' }),
-                appRedirectActions.fetchError({ error, message: 'Failed to perform resource callback' }),
-            ),
-        ),
     );
 };
 

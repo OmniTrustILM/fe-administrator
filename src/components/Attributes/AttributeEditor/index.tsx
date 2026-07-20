@@ -82,6 +82,7 @@ export type Props = {
     connectorVersion?: ConnectorVersion;
     functionGroupCode?: FunctionGroupCode;
     kind?: string;
+    interfaceUuid?: string;
     callbackResource?: Resource;
     callbackParentUuid?: string;
     withRemoveAction?: boolean;
@@ -95,6 +96,7 @@ function AttributeEditorInner({
     connectorVersion,
     functionGroupCode,
     kind,
+    interfaceUuid,
     callbackResource,
     callbackParentUuid,
     groupAttributesCallbackAttributes = emptyGroupAttributesCallbackAttributes,
@@ -354,16 +356,17 @@ function AttributeEditorInner({
                     : connectorActions.callbackConnector({
                           callbackId: formAttributeName,
                           callbackConnector: {
-                              uuid: connectorUuid!,
-                              kind: kind!,
-                              functionGroup: functionGroupCode!,
+                              uuid: connectorUuid,
+                              kind,
+                              functionGroup: functionGroupCode,
+                              interfaceUuid,
                               version: connectorVersion,
                               requestAttributeCallback: mappings,
                           },
                       }),
             );
         },
-        [callbackParentUuid, callbackResource, connectorUuid, connectorVersion, dispatch, functionGroupCode, kind],
+        [callbackParentUuid, callbackResource, connectorUuid, connectorVersion, dispatch, functionGroupCode, interfaceUuid, kind],
     );
     /* c8 ignore stop */
 

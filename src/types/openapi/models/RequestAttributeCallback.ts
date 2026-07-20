@@ -25,6 +25,12 @@ export interface RequestAttributeCallback {
      */
     uuid?: string;
     /**
+     * Connector-interface row UUID the form was listed under. Identifies the interface version the callback belongs to for parent-less (Attributes v2) forms.
+     * @type {string}
+     * @memberof RequestAttributeCallback
+     */
+    interfaceUuid?: string;
+    /**
      * Name of the Attribute
      * @type {string}
      * @memberof RequestAttributeCallback

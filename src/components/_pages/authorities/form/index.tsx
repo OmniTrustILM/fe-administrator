@@ -597,6 +597,11 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                                                         connectorVersion={authorityProvider.version}
                                                         functionGroupCode={isNgProvider ? undefined : FunctionGroupCode.AuthorityProvider}
                                                         kind={isNgProvider ? undefined : watchedStoreKind}
+                                                        interfaceUuid={
+                                                            isNgProvider
+                                                                ? (watchedInterfaceUuid ?? authority?.connectorInterface?.uuid)
+                                                                : undefined
+                                                        }
                                                         groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                                                         setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                                                     />
