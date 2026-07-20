@@ -728,7 +728,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                                           options={ownerOptions}
                                                                           placeholder="Select Owner"
                                                                           value={value ?? ''}
-                                                                          label="Owner (optional)"
+                                                                          label="Owner"
                                                                           onChange={(selected) =>
                                                                               onChange((selected ?? undefined) as string | undefined)
                                                                           }
@@ -747,7 +747,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                                           value={groupOptions.filter((option) =>
                                                                               value?.includes(option.value),
                                                                           )}
-                                                                          label="Groups (optional)"
+                                                                          label="Groups"
                                                                           onChange={(selected) =>
                                                                               onChange(
                                                                                   (selected ?? []).map((option) => option.value as string),
