@@ -591,7 +591,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                             ) : null}
 
                             {!isRegister && isExistingKeySource && selectedRaProfile ? (
-                                <div className="space-y-4">
+                                <div className="space-y-4 mb-4">
                                     <RenderTokenProfile type="normal" name="tokenProfileUuid" />
                                     <RenderRequestKey type="normal" name="keyUuid" tokenProfileField="tokenProfileUuid" />
 
