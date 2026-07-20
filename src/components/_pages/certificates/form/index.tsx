@@ -601,8 +601,60 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                 </div>
                             ) : null}
 
+                            {isRegister && (
+                                <div className="space-y-4 mb-4">
+                                    <Controller
+                                        control={control}
+                                        name="authorizationSecret"
+                                        rules={{
+                                            required: isRegister,
+                                            minLength: 12,
+                                            maxLength: 255,
+                                            pattern: /^[\x20-\x7E]+$/,
+                                        }}
+                                        render={({ field: { value, onChange }, fieldState }) => (
+                                            <TextInput
+                                                id="authorizationSecret"
+                                                dataTestId="authorizationSecret"
+                                                type="password"
+                                                required
+                                                label="Challenge"
+                                                value={value ?? ''}
+                                                onChange={onChange}
+                                                invalid={!!fieldState.error}
+                                                error={fieldState.error ? 'Challenge must be 12–255 printable ASCII characters' : undefined}
+                                            />
+                                        )}
+                                    />
+                                    <Controller
+                                        control={control}
+                                        name="expiresAt"
+                                        rules={{
+                                            // The Core contract marks expiresAt @Future; reject past/today dates the
+                                            // native date picker would otherwise permit before Core rejects them.
+                                            validate: (value) =>
+                                                !value || new Date(value) > new Date() || 'Issuance window must be a future date',
+                                        }}
+                                        render={({ field: { value, onChange }, fieldState }) => (
+                                            <TextInput
+                                                id="expiresAt"
+                                                dataTestId="expiresAt"
+                                                type="date"
+                                                label="Issuance window (optional)"
+                                                value={value ?? ''}
+                                                onChange={onChange}
+                                                invalid={!!fieldState.error}
+                                                error={fieldState.error ? 'Issuance window must be a future date' : undefined}
+                                            />
+                                        )}
+                                    />
+                                </div>
+                            )}
+
                             {/* The identity (Request Attributes) editor is shared by both modes; Signature Attributes
-                                tabs are issue-now only, since Pre-register never handles keys/signing locally. */}
+                                tabs are issue-now only, since Pre-register never handles keys/signing locally. In
+                                Pre-register mode this strip also carries Custom Attributes and the Ownership (owner +
+                                groups) fields, so those metadata collections sit together with the identity. */}
                             {isRegister || (isExistingKeySource && tokenProfileUuid) ? (
                                 <TabLayout
                                     onlyActiveTabContent={false}
@@ -651,88 +703,67 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                   },
                                               ]
                                             : []),
+                                        ...(isRegister
+                                            ? [
+                                                  {
+                                                      title: tabTitle('Custom Attributes', resourceCustomAttributes),
+                                                      content: (
+                                                          <AttributeEditor
+                                                              id="customCertificate"
+                                                              attributeDescriptors={resourceCustomAttributes}
+                                                              attributes={selectedRaProfile?.customAttributes}
+                                                          />
+                                                      ),
+                                                  },
+                                                  {
+                                                      title: 'Ownership',
+                                                      content: (
+                                                          <div className="space-y-4">
+                                                              <Controller
+                                                                  control={control}
+                                                                  name="ownerUuid"
+                                                                  render={({ field: { value, onChange } }) => (
+                                                                      <Select
+                                                                          id="registerOwner"
+                                                                          options={ownerOptions}
+                                                                          placeholder="Select Owner"
+                                                                          value={value ?? ''}
+                                                                          label="Owner (optional)"
+                                                                          onChange={(selected) =>
+                                                                              onChange((selected ?? undefined) as string | undefined)
+                                                                          }
+                                                                      />
+                                                                  )}
+                                                              />
+                                                              <Controller
+                                                                  control={control}
+                                                                  name="groupUuids"
+                                                                  render={({ field: { value, onChange } }) => (
+                                                                      <Select
+                                                                          id="registerGroups"
+                                                                          isMulti
+                                                                          options={groupOptions}
+                                                                          placeholder="Select Groups"
+                                                                          value={groupOptions.filter((option) =>
+                                                                              value?.includes(option.value),
+                                                                          )}
+                                                                          label="Groups (optional)"
+                                                                          onChange={(selected) =>
+                                                                              onChange(
+                                                                                  (selected ?? []).map((option) => option.value as string),
+                                                                              )
+                                                                          }
+                                                                      />
+                                                                  )}
+                                                              />
+                                                          </div>
+                                                      ),
+                                                  },
+                                              ]
+                                            : []),
                                     ]}
                                 />
                             ) : null}
-
-                            {isRegister && (
-                                <div className="space-y-4 mt-4">
-                                    <Controller
-                                        control={control}
-                                        name="authorizationSecret"
-                                        rules={{
-                                            required: isRegister,
-                                            minLength: 12,
-                                            maxLength: 255,
-                                            pattern: /^[\x20-\x7E]+$/,
-                                        }}
-                                        render={({ field: { value, onChange }, fieldState }) => (
-                                            <TextInput
-                                                id="authorizationSecret"
-                                                dataTestId="authorizationSecret"
-                                                type="password"
-                                                required
-                                                label="Challenge"
-                                                value={value ?? ''}
-                                                onChange={onChange}
-                                                invalid={!!fieldState.error}
-                                                error={fieldState.error ? 'Challenge must be 12–255 printable ASCII characters' : undefined}
-                                            />
-                                        )}
-                                    />
-                                    <Controller
-                                        control={control}
-                                        name="expiresAt"
-                                        rules={{
-                                            // The Core contract marks expiresAt @Future; reject past/today dates the
-                                            // native date picker would otherwise permit before Core rejects them.
-                                            validate: (value) =>
-                                                !value || new Date(value) > new Date() || 'Issuance window must be a future date',
-                                        }}
-                                        render={({ field: { value, onChange }, fieldState }) => (
-                                            <TextInput
-                                                id="expiresAt"
-                                                dataTestId="expiresAt"
-                                                type="date"
-                                                label="Issuance window (optional)"
-                                                value={value ?? ''}
-                                                onChange={onChange}
-                                                invalid={!!fieldState.error}
-                                                error={fieldState.error ? 'Issuance window must be a future date' : undefined}
-                                            />
-                                        )}
-                                    />
-                                    <Controller
-                                        control={control}
-                                        name="ownerUuid"
-                                        render={({ field: { value, onChange } }) => (
-                                            <Select
-                                                id="registerOwner"
-                                                options={ownerOptions}
-                                                placeholder="Select Owner"
-                                                value={value ?? ''}
-                                                label="Owner (optional)"
-                                                onChange={(selected) => onChange((selected ?? undefined) as string | undefined)}
-                                            />
-                                        )}
-                                    />
-                                    <Controller
-                                        control={control}
-                                        name="groupUuids"
-                                        render={({ field: { value, onChange } }) => (
-                                            <Select
-                                                id="registerGroups"
-                                                isMulti
-                                                options={groupOptions}
-                                                placeholder="Select Groups"
-                                                value={groupOptions.filter((option) => value?.includes(option.value))}
-                                                label="Groups (optional)"
-                                                onChange={(selected) => onChange((selected ?? []).map((option) => option.value as string))}
-                                            />
-                                        )}
-                                    />
-                                </div>
-                            )}
 
                             {/* Compliance/validation errors apply to any issuance mode, not just external CSR. */}
                             {selectedRaProfile && issueValidationErrors?.length ? (
@@ -742,48 +773,45 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                             ) : null}
                         </Widget>
 
-                        <Widget busy={issuingCertificate || isFetchingResourceCustomAttributes}>
-                            <TabLayout
-                                noBorder
-                                onlyActiveTabContent={false}
-                                tabs={[
-                                    // Connector Attributes are discarded on register submit (attributes: [] by design),
-                                    // so this tab must stay hidden in Pre-register mode to avoid silently-ignored input.
-                                    ...(!isRegister
-                                        ? [
-                                              {
-                                                  title: tabTitle(
-                                                      'Connector Attributes',
-                                                      issuanceAttributeDescriptors[selectedRaProfileUuid || ''],
-                                                  ),
-                                                  content: (
-                                                      <AttributeEditor
-                                                          id="issuance_attributes"
-                                                          attributeDescriptors={
-                                                              issuanceAttributeDescriptors[selectedRaProfileUuid || ''] || []
-                                                          }
-                                                          callbackParentUuid={selectedRaProfile?.uuid}
-                                                          callbackResource={Resource.Certificates}
-                                                          groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
-                                                          setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
-                                                      />
-                                                  ),
-                                              },
-                                          ]
-                                        : []),
-                                    {
-                                        title: tabTitle('Custom Attributes', resourceCustomAttributes),
-                                        content: (
-                                            <AttributeEditor
-                                                id="customCertificate"
-                                                attributeDescriptors={resourceCustomAttributes}
-                                                attributes={selectedRaProfile?.customAttributes}
-                                            />
-                                        ),
-                                    },
-                                ]}
-                            />
-                        </Widget>
+                        {/* Issue-now keeps Connector + Custom Attributes here. Pre-register folds Custom Attributes
+                            into the Request Properties strip (next to Ownership) and discards Connector Attributes,
+                            so this widget is not rendered in register mode. */}
+                        {!isRegister && (
+                            <Widget busy={issuingCertificate || isFetchingResourceCustomAttributes}>
+                                <TabLayout
+                                    noBorder
+                                    onlyActiveTabContent={false}
+                                    tabs={[
+                                        {
+                                            title: tabTitle(
+                                                'Connector Attributes',
+                                                issuanceAttributeDescriptors[selectedRaProfileUuid || ''],
+                                            ),
+                                            content: (
+                                                <AttributeEditor
+                                                    id="issuance_attributes"
+                                                    attributeDescriptors={issuanceAttributeDescriptors[selectedRaProfileUuid || ''] || []}
+                                                    callbackParentUuid={selectedRaProfile?.uuid}
+                                                    callbackResource={Resource.Certificates}
+                                                    groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
+                                                    setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
+                                                />
+                                            ),
+                                        },
+                                        {
+                                            title: tabTitle('Custom Attributes', resourceCustomAttributes),
+                                            content: (
+                                                <AttributeEditor
+                                                    id="customCertificate"
+                                                    attributeDescriptors={resourceCustomAttributes}
+                                                    attributes={selectedRaProfile?.customAttributes}
+                                                />
+                                            ),
+                                        },
+                                    ]}
+                                />
+                            </Widget>
+                        )}
                         <Container className="flex-row justify-end modal-footer" gap={4}>
                             <div className="flex gap-2">
                                 <Button

@@ -189,10 +189,27 @@ test.describe('CertificateForm', () => {
         await expect(page.getByTestId('csrAttributes-hint')).toHaveCount(0);
     });
 
-    test('Pre-register mode shows optional Owner and Groups fields', async ({ mount, page }) => {
+    test('Pre-register mode groups fields into Request Attributes / Custom Attributes / Ownership tabs, Challenge stays inline', async ({
+        mount,
+        page,
+    }) => {
         await mount(<CertificateFormTestWrapper />);
 
         await page.getByTestId('requestType-register').click();
+
+        await expect(page.getByRole('tab', { name: 'Request Attributes' })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Ownership' })).toBeVisible();
+
+        // The required Challenge is inline (not hidden behind a tab), visible without any tab click.
+        await expect(page.getByTestId('authorizationSecret')).toBeVisible();
+    });
+
+    test('Pre-register Ownership tab shows optional Owner and Groups fields', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper />);
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByRole('tab', { name: 'Ownership' }).click();
 
         await expect(page.getByTestId('select-registerOwner-trigger')).toBeVisible();
         await expect(page.getByTestId('select-registerGroups-trigger')).toBeVisible();
@@ -207,6 +224,7 @@ test.describe('CertificateForm', () => {
 
         await expect(page.getByTestId('select-registerOwner-trigger')).toHaveCount(0);
         await expect(page.getByTestId('select-registerGroups-trigger')).toHaveCount(0);
+        await expect(page.getByRole('tab', { name: 'Ownership' })).toHaveCount(0);
     });
 
     test('Owner field lists users; Groups field is multi-select and lists groups', async ({ mount, page }) => {
@@ -220,6 +238,7 @@ test.describe('CertificateForm', () => {
         );
 
         await page.getByTestId('requestType-register').click();
+        await page.getByRole('tab', { name: 'Ownership' }).click();
 
         await page.getByTestId('select-registerOwner-trigger').click();
         await expect(page.getByRole('option', { name: 'Jane Doe (jdoe)' })).toBeVisible();
