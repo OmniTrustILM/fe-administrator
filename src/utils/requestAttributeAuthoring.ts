@@ -70,6 +70,8 @@ export interface AuthoredAttributeFormValues {
      * `contentType`, mirroring how custom attributes store predefined content.
      */
     staticValues: (string | number | boolean)[];
+    /** Free-input default (valueSourceType === NONE) — pre-fills the field. Persisted as a single `content` entry. */
+    defaultValue?: string | number | boolean;
     /** Reserved for the COLLECTION source (stubbed for now). */
     collectionRef?: string;
     /** Cascading dependency params, preserved on round-trip (no authoring UI yet). */
@@ -145,6 +147,7 @@ export function emptyAuthoredAttribute(): AuthoredAttributeFormValues {
         mappingCriticalOverridable: false,
         valueSourceType: ValueSourceType.None,
         staticValues: [],
+        defaultValue: undefined,
         collectionRef: '',
     };
 }
@@ -246,6 +249,12 @@ function normalizeStaticContentValue(value: string | number | boolean, contentTy
     }
 }
 
+/** True when a free-input attribute (valueSourceType === NONE) has a non-blank default value to persist. */
+function hasFreeInputDefault(form: AuthoredAttributeFormValues): boolean {
+    const v = form.defaultValue;
+    return v !== undefined && (typeof v !== 'string' || v.trim() !== '');
+}
+
 export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): DataAttributeV3 {
     // A static list presents a predefined set of options, so it is a list attribute by definition —
     // force `list` on regardless of the toggle so the DTO does not contradict the content array.
@@ -285,6 +294,13 @@ export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): Da
             data: normalizeStaticContentValue(value, form.contentType),
             contentType: form.contentType,
         })) as DataAttributeV3['content'];
+    } else if (form.valueSourceType === ValueSourceType.None && hasFreeInputDefault(form)) {
+        dto.content = [
+            {
+                data: normalizeStaticContentValue(form.defaultValue as string | number | boolean, form.contentType),
+                contentType: form.contentType,
+            },
+        ] as DataAttributeV3['content'];
     }
     return dto;
 }
@@ -299,6 +315,7 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
     const rdn = firstField && firstField.fieldType === FieldType.Rdn ? firstField : undefined;
     const san = firstField && firstField.fieldType === FieldType.San ? firstField : undefined;
     const ext = firstField && firstField.fieldType === FieldType.Extension ? firstField : undefined;
+    const valueSourceKind = view.valueSource?.kind ?? ValueSourceType.None;
     return {
         uuid: view.uuid,
         name: view.name ?? '',
@@ -317,8 +334,17 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
         mappingOtherNameEncoding: san?.otherNameValueEncoding,
         mappingExtensionOid: ext?.extensionOid ?? '',
         mappingCriticalOverridable: ext?.criticalOverridable ?? false,
-        valueSourceType: view.valueSource?.kind ?? ValueSourceType.None,
-        staticValues: (view.content ?? []).map((item) => (item as { data: string | number | boolean }).data),
+        valueSourceType: valueSourceKind,
+        // A free-input default is stored in `content` too, so only lift `content` into `staticValues`
+        // for an actual static list — otherwise a free-input default leaks into the static-list editor.
+        staticValues:
+            valueSourceKind === ValueSourceType.StaticList
+                ? (view.content ?? []).map((item) => (item as { data: string | number | boolean }).data)
+                : [],
+        defaultValue:
+            valueSourceKind === ValueSourceType.None
+                ? (view.content?.[0] as { data?: string | number | boolean } | undefined)?.data
+                : undefined,
         collectionRef: '',
         valueSourceParams: view.valueSource?.params,
     };
@@ -443,9 +469,13 @@ export function parseRaProfileRequestAttributesDto(
     };
 }
 
-export function buildPlatformDefaultUpdateDto(attributes: AuthoredAttributeFormValues[]): CertificateRequestAttributesSettingsUpdateDto {
+export function buildPlatformDefaultUpdateDto(
+    attributes: AuthoredAttributeFormValues[],
+    externalCsrValidationStrict?: boolean,
+): CertificateRequestAttributesSettingsUpdateDto {
     return {
         requestAttributes: attributes.map((attr) => buildAuthoredAttributeDto(attr) as BaseAttributeDto),
+        externalCsrValidationStrict,
     };
 }
 

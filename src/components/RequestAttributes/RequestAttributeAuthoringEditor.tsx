@@ -103,19 +103,10 @@ function valueSourceLabel(type: ValueSourceType): string {
     return VALUE_SOURCE_OPTIONS.find((o) => o.value === type)?.label ?? 'Free input';
 }
 
-/** Inline guidance line rendered beneath a field the shared inputs can't describe themselves. */
-function FieldHint({ children, dataTestId }: Readonly<{ children: React.ReactNode; dataTestId?: string }>) {
-    return (
-        <p className="-mt-1.5 text-xs text-gray-500" data-testid={dataTestId}>
-            {children}
-        </p>
-    );
-}
-
 /** `value` = attribute UUID, `label` = human display, `description` = internal attribute name (the binding name-fallback key). */
 type ConnectorAttributeOption = { value: string; label: string; description?: string };
 
-export type OidSelectOption = { value: string; label: string; description?: string; aliases?: string[] };
+export type OidSelectOption = { value: string; label: string; description?: string; aliases?: string[]; code?: string };
 
 // Resolve a stored mapping value to the option it belongs to. A legacy value may be an RDN code
 // (e.g. CN) rather than the dotted OID the dropdown now emits, so match aliases too and return the
@@ -284,10 +275,16 @@ export default function RequestAttributeAuthoringEditor({
         setAttrDraft(null);
     };
 
+    const rdnCodeDisplay = (stored?: string) => {
+        const v = stored?.trim();
+        if (!v) return '?';
+        return rdnOptions.find((o) => o.value === v)?.code ?? v;
+    };
+
     const mappingSummary = (attr: AuthoredAttributeFormValues) => {
         switch (attr.mappingFieldType) {
             case FieldType.Rdn:
-                return `→ RDN ${attr.mappingRdnCode || '?'}`;
+                return `→ RDN ${rdnCodeDisplay(attr.mappingRdnCode)}`;
             case FieldType.San:
                 return `→ SAN ${attr.mappingGeneralNameType ? GENERAL_NAME_TYPE_LABELS[attr.mappingGeneralNameType] : '?'}`;
             case FieldType.Extension:
@@ -371,74 +368,60 @@ export default function RequestAttributeAuthoringEditor({
         const set = (p: Partial<AuthoredAttributeFormValues>) => setAttrDraft({ ...attrDraft, data: { ...d, ...p } });
         return (
             <div className="space-y-3 text-left" data-testid={`${dataTestId}-attribute-form`}>
-                <p className="text-sm text-gray-500" data-testid={`${dataTestId}-attribute-form-intro`}>
-                    A request attribute is a value the requester supplies when asking for a certificate. Define what it is called, its data
-                    type, and — optionally — where its value is placed in the issued certificate.
-                </p>
-                <TextInput id="ra-attr-name" label="Name" required value={d.name} onChange={(v) => set({ name: v })} />
-                {attrNameDuplicate ? (
+                <TextInput
+                    id="ra-attr-name"
+                    label="Name"
+                    labelTooltip="Internal identifier, unique within this set. Not shown to the requester."
+                    placeholder="Enter name"
+                    required
+                    value={d.name}
+                    onChange={(v) => set({ name: v })}
+                />
+                {attrNameDuplicate && (
                     <p className="text-sm text-red-600" data-testid={`${dataTestId}-attribute-name-duplicate`}>
                         An attribute with this name already exists in the set.
                     </p>
-                ) : (
-                    <FieldHint dataTestId={`${dataTestId}-attribute-name-hint`}>
-                        Internal identifier, unique within this set. Not shown to the requester.
-                    </FieldHint>
                 )}
-                <TextInput id="ra-attr-label" label="Label" required value={d.label} onChange={(v) => set({ label: v })} />
-                <FieldHint dataTestId={`${dataTestId}-attribute-label-hint`}>
-                    The name shown to the requester on the request form.
-                </FieldHint>
+                <TextInput
+                    id="ra-attr-label"
+                    label="Label"
+                    placeholder="Enter label"
+                    required
+                    value={d.label}
+                    onChange={(v) => set({ label: v })}
+                />
                 <TextInput
                     id="ra-attr-description"
                     label="Description"
+                    placeholder="Enter description"
                     value={d.description ?? ''}
                     onChange={(v) => set({ description: v })}
                 />
-                <FieldHint dataTestId={`${dataTestId}-attribute-description-hint`}>
-                    Optional help text shown to the requester explaining what to enter.
-                </FieldHint>
                 <Select
                     id="ra-attr-content-type"
                     label="Content type"
+                    labelTooltip="The data type of the value the requester provides."
                     value={d.contentType}
                     onChange={(v) => {
                         const contentType = v as AttributeContentType;
                         // Static list is only authorable for scalar content types; drop back to free
                         // input if the new type can't carry one, so we never render a missing editor.
                         const keepStaticList = isStaticListSupportedForContentType(contentType);
+                        // Drop both the static list and any free-input default — a value entered under
+                        // the old type would otherwise survive and serialise as a wrong-typed content entry.
                         set({
                             contentType,
                             staticValues: [],
+                            defaultValue: undefined,
                             valueSourceType: keepStaticList ? d.valueSourceType : ValueSourceType.None,
                         });
                     }}
                     options={CONTENT_TYPE_OPTIONS}
                 />
-                <FieldHint dataTestId={`${dataTestId}-attribute-content-type-hint`}>
-                    The data type of the value the requester provides.
-                </FieldHint>
-                <Container className="flex-row items-center" gap={4}>
-                    <Checkbox id="ra-attr-required" checked={d.required} onChange={(c) => set({ required: c })} label="Required" />
-                    <Checkbox
-                        id="ra-attr-list"
-                        checked={d.list || d.valueSourceType === ValueSourceType.StaticList}
-                        onChange={(c) => set({ list: c, multiSelect: c ? d.multiSelect : false })}
-                        label="List"
-                        // A static list is inherently a list attribute — locked on while it's selected.
-                        disabled={d.valueSourceType === ValueSourceType.StaticList}
-                    />
-                    <Checkbox
-                        id="ra-attr-multi"
-                        checked={d.multiSelect}
-                        onChange={(c) => set({ multiSelect: c })}
-                        label="Multi select"
-                        disabled={!d.list}
-                    />
-                </Container>
                 <Select
                     id="ra-attr-mapping"
                     label="Mapping target"
+                    labelTooltip="Where this attribute's value is placed in the issued certificate: an RDN (subject) component, a Subject Alternative Name, or a certificate extension. Leave it unmapped if the connector or workflow consumes the value directly."
                     value={d.mappingFieldType ?? ''}
                     onChange={(v) =>
                         set({ mappingFieldType: (v as FieldType) || undefined, mappingObjectType: ObjectType.X509Certificate })
@@ -446,12 +429,7 @@ export default function RequestAttributeAuthoringEditor({
                     options={MAPPING_OPTIONS}
                     isClearable
                     placeholder="Not mapped"
-                    showSelectedDescriptionAsHelp
                 />
-                <FieldHint dataTestId={`${dataTestId}-attribute-mapping-hint`}>
-                    Where this attribute&apos;s value is placed in the issued certificate. Leave it unmapped if the connector or workflow
-                    consumes the value directly.
-                </FieldHint>
                 {d.mappingFieldType === FieldType.Rdn && (
                     <OidMappingSelect
                         id="ra-attr-rdn"
@@ -522,26 +500,73 @@ export default function RequestAttributeAuthoringEditor({
                             checked={d.mappingCriticalOverridable ?? false}
                             onChange={(c) => set({ mappingCriticalOverridable: c })}
                             label="Requester may override criticality"
+                            disabled={disabled}
                         />
                     </>
                 )}
                 <Select
                     id="ra-attr-value-source"
                     label="Value source"
+                    labelTooltip="How the requester provides the value: free input (they type any value) or a static list (they pick from a fixed set of values you define)."
                     value={d.valueSourceType}
                     onChange={(v) => {
                         const valueSourceType = v as ValueSourceType;
                         // Selecting a static list forces `list` on (see DTO builder) so the toggle and
-                        // the authored options never disagree.
-                        set({ valueSourceType, ...(valueSourceType === ValueSourceType.StaticList ? { list: true } : {}) });
+                        // the authored options never disagree; List and Read Only are mutually exclusive, so clear it.
+                        // Free input is a single typed value, so it clears the list/multi-select toggles.
+                        set({
+                            valueSourceType,
+                            ...(valueSourceType === ValueSourceType.StaticList
+                                ? { list: true, readOnly: false }
+                                : { list: false, multiSelect: false }),
+                        });
                     }}
                     options={isStaticListSupportedForContentType(d.contentType) ? VALUE_SOURCE_OPTIONS : FREE_INPUT_ONLY_OPTIONS}
-                    showSelectedDescriptionAsHelp
                 />
-                <FieldHint dataTestId={`${dataTestId}-attribute-value-source-hint`}>
-                    How the requester provides the value — free input, or a fixed list of choices you define.
-                </FieldHint>
+                <div className="space-y-2">
+                    <Label>Properties</Label>
+                    <Container className="flex-row items-center" gap={4}>
+                        <Checkbox
+                            id="ra-attr-required"
+                            checked={d.required}
+                            onChange={(c) => set({ required: c })}
+                            label="Required"
+                            disabled={disabled}
+                        />
+                        {/* List/Multi select apply to a static list only; free input is a single typed value. */}
+                        {d.valueSourceType === ValueSourceType.StaticList && (
+                            <>
+                                <Checkbox
+                                    id="ra-attr-list"
+                                    checked={d.list || d.valueSourceType === ValueSourceType.StaticList}
+                                    onChange={(c) => set({ list: c, multiSelect: c ? d.multiSelect : false })}
+                                    label="List"
+                                    // A static list is inherently a list attribute — locked on while it's selected.
+                                    disabled={disabled || d.valueSourceType === ValueSourceType.StaticList}
+                                />
+                                <Checkbox
+                                    id="ra-attr-multi"
+                                    checked={d.multiSelect}
+                                    onChange={(c) => set({ multiSelect: c })}
+                                    label="Multi select"
+                                    disabled={disabled || !d.list}
+                                />
+                            </>
+                        )}
+                        {/* Read Only applies to free input only (lock the single value to its default). */}
+                        {d.valueSourceType === ValueSourceType.None && (
+                            <Checkbox
+                                id="ra-attr-readonly"
+                                checked={d.readOnly}
+                                onChange={(c) => set({ readOnly: c })}
+                                label="Read Only"
+                                disabled={disabled}
+                            />
+                        )}
+                    </Container>
+                </div>
                 {d.valueSourceType === ValueSourceType.StaticList && renderStaticValues(d, set)}
+                {d.valueSourceType === ValueSourceType.None && renderFreeInputDefault(d, set)}
             </div>
         );
     };
@@ -610,6 +635,30 @@ export default function RequestAttributeAuthoringEditor({
                     <Plus className="w-4 h-4" />
                     Add value
                 </Button>
+            </div>
+        );
+    };
+
+    // Optional default for a free-input attribute (valueSourceType === NONE). One scalar input typed by
+    // the content type; persisted like a single-entry static list. Non-scalar types have no editor.
+    const renderFreeInputDefault = (d: AuthoredAttributeFormValues, set: (p: Partial<AuthoredAttributeFormValues>) => void) => {
+        const config = ContentFieldConfiguration[d.contentType];
+        if (!config) return null;
+        return (
+            <div className="space-y-2" data-testid={`${dataTestId}-default-value-block`}>
+                <Label labelTooltip="Optional. Pre-fills the field on the request form; the requester can change it unless Read Only is set.">
+                    Default value
+                </Label>
+                <AddCustomValueInput
+                    id="ra-attr-default-value"
+                    inputType={config.type}
+                    contentType={d.contentType}
+                    fieldStepValue={getStepValue(config.type)}
+                    value={d.defaultValue ?? ''}
+                    onChange={(next) => set({ defaultValue: next })}
+                    readOnly={disabled}
+                    placeholder="Enter default value"
+                />
             </div>
         );
     };
@@ -753,7 +802,7 @@ export default function RequestAttributeAuthoringEditor({
             <Dialog
                 isOpen={!!attrDraft}
                 toggle={() => setAttrDraft(null)}
-                size="md"
+                size="lg"
                 caption={attrDraft?.index === null ? 'Add request attribute' : 'Edit request attribute'}
                 body={renderAttributeDialog()}
                 buttons={[

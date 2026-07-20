@@ -1,4 +1,5 @@
 import RequestAttributeAuthoringEditor from 'components/RequestAttributes/RequestAttributeAuthoringEditor';
+import Switch from 'components/Switch';
 import Widget from 'components/Widget';
 import { actions as oidActions, selectors as oidSelectors } from 'ducks/oids';
 import { actions, selectors } from 'ducks/raProfileRequestAttributes';
@@ -66,7 +67,11 @@ export default function RequestAttributesSettings() {
     // every `defaultSet` reference change would clobber in-progress edits when a late fetch resolves.
     useEffect(() => {
         if (defaultSet !== undefined && !loaded) {
-            setForm({ ...emptyAuthoringForm(), attributes: parsePlatformDefaultDto(defaultSet) });
+            setForm({
+                ...emptyAuthoringForm(),
+                attributes: parsePlatformDefaultDto(defaultSet),
+                externalCsrValidationStrict: defaultSet?.externalCsrValidationStrict,
+            });
             setLoaded(true);
         }
     }, [defaultSet, loaded]);
@@ -83,7 +88,7 @@ export default function RequestAttributesSettings() {
             if (!loaded) return;
             dispatch(
                 actions.updatePlatformDefaultRequestAttributes({
-                    data: buildPlatformDefaultUpdateDto(next.attributes),
+                    data: buildPlatformDefaultUpdateDto(next.attributes, next.externalCsrValidationStrict),
                 }),
             );
         },
@@ -127,6 +132,13 @@ export default function RequestAttributesSettings() {
                     The platform default request-attribute set is the terminal fallback used when an RA Profile does not define its own set.
                     Changes are saved automatically.
                 </p>
+                <Switch
+                    id="externalCsrValidationStrict"
+                    label="Strict external CSR validation"
+                    checked={form.externalCsrValidationStrict ?? false}
+                    onChange={(c) => onChange({ ...form, externalCsrValidationStrict: c })}
+                    disabled={isUpdating || !loaded}
+                />
                 {editor}
             </div>
         </Widget>

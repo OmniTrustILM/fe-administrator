@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import { OidCategory, ExtensionValueEncoding, type CustomOidEntryDetailResponseDtoAdditionalProperties } from 'types/openapi';
 import type { OIDResponseModel } from 'types/oids';
 import {
@@ -10,6 +10,7 @@ import {
     isCertificateExtensionProperties,
     isRdnProperties,
     toOidSelectOptions,
+    buildRdnCodeByOid,
 } from './oid';
 
 describe('oid utils', () => {
@@ -145,5 +146,41 @@ describe('oid utils', () => {
             expect(options[0].aliases).toEqual(['CN', 'commonName']);
             expect(options[1].aliases).toBeUndefined();
         });
+    });
+
+    describe('toOidSelectOptions RDN code label', () => {
+        test('appends the RDN code in brackets and exposes it as `code`', () => {
+            const [opt] = toOidSelectOptions([
+                {
+                    oid: '2.5.4.3',
+                    displayName: 'Common Name',
+                    additionalProperties: { code: 'CN' },
+                } as any,
+            ]);
+            expect(opt.label).toBe('Common Name (CN)');
+            expect(opt.code).toBe('CN');
+        });
+
+        test('leaves non-RDN (extension) options without a code and unbracketed', () => {
+            const [opt] = toOidSelectOptions([
+                {
+                    oid: '2.5.29.19',
+                    displayName: 'Basic Constraints',
+                    additionalProperties: { valueEncoding: 'BASE64' },
+                } as any,
+            ]);
+            expect(opt.label).toBe('Basic Constraints');
+            expect(opt.code).toBeUndefined();
+        });
+    });
+});
+
+describe('buildRdnCodeByOid', () => {
+    it('maps RDN OIDs to their codes and skips non-RDN entries', () => {
+        const map = buildRdnCodeByOid([
+            { oid: '2.5.4.3', additionalProperties: { code: 'CN' } } as any,
+            { oid: '2.5.29.19', additionalProperties: { valueEncoding: 'BASE64' } } as any,
+        ]);
+        expect(map).toEqual({ '2.5.4.3': 'CN' });
     });
 });

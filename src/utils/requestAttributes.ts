@@ -32,11 +32,12 @@ function generalNameLabel(value: string): string {
     return GENERAL_NAME_LABELS[value as GeneralNameType] ?? value;
 }
 
-function fieldToken(field: MappedField): string {
+function fieldToken(field: MappedField, rdnCodeByOid: Record<string, string> = {}): string {
     switch (field?.fieldType) {
         case FieldType.Rdn: {
             const rdn = (field as { rdn?: string }).rdn;
-            return rdn ? `Subject ${rdn}` : 'Subject';
+            const code = rdn ? (rdnCodeByOid[rdn] ?? rdn) : undefined;
+            return code ? `Subject ${code}` : 'Subject';
         }
         case FieldType.San: {
             const generalNameType = (field as { generalNameType?: string }).generalNameType;
@@ -62,7 +63,7 @@ function typeRank(field: MappedField): number {
  * because `order` is a per-type index. This is the single source both the badge summary and
  * its tooltip build on, so their delimiters can never drift apart.
  */
-export function fieldMappingTokens(fieldMapping: FieldMapping | undefined): string[] {
+export function fieldMappingTokens(fieldMapping: FieldMapping | undefined, rdnCodeByOid: Record<string, string> = {}): string[] {
     const fields = fieldMapping?.fields;
     if (!Array.isArray(fields) || fields.length === 0) return [];
     return [...(fields as MappedField[])]
@@ -71,11 +72,11 @@ export function fieldMappingTokens(fieldMapping: FieldMapping | undefined): stri
             if (byType !== 0) return byType;
             return (a?.order ?? Number.MAX_SAFE_INTEGER) - (b?.order ?? Number.MAX_SAFE_INTEGER);
         })
-        .map((field) => fieldToken(field))
+        .map((field) => fieldToken(field, rdnCodeByOid))
         .filter((token) => token.length > 0);
 }
 
 /** Human summary of where the value lands, e.g. "Subject CN + SAN dNSName". */
-export function fieldMappingSummary(fieldMapping: FieldMapping | undefined): string {
-    return fieldMappingTokens(fieldMapping).join(' + ');
+export function fieldMappingSummary(fieldMapping: FieldMapping | undefined, rdnCodeByOid: Record<string, string> = {}): string {
+    return fieldMappingTokens(fieldMapping, rdnCodeByOid).join(' + ');
 }

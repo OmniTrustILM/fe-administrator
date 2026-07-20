@@ -54,25 +54,26 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         expect(parsed.attributes[0].label).toBe('Server FQDN');
     });
 
-    test('the attribute dialog gives first-time guidance and per-field hints', async ({ mount, page }) => {
+    test('the attribute dialog surfaces per-field guidance via label tooltips', async ({ mount, page }) => {
         const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
 
         await component.getByTestId('request-attribute-authoring-attribute-add').click();
 
-        await expect(page.getByTestId('request-attribute-authoring-attribute-form-intro')).toBeVisible();
-        await expect(page.getByTestId('request-attribute-authoring-attribute-name-hint')).toBeVisible();
-        await expect(page.getByTestId('request-attribute-authoring-attribute-label-hint')).toBeVisible();
-        await expect(page.getByTestId('request-attribute-authoring-attribute-mapping-hint')).toContainText('certificate');
+        // Guidance now lives in an info icon next to the field label, not in inline hint paragraphs.
+        await expect(page.getByTestId('label-tooltip-ra-attr-name')).toBeVisible();
+        await expect(page.getByTestId('label-tooltip-ra-attr-mapping')).toBeVisible();
+        // Label and Description are self-explanatory, so they carry no tooltip.
+        await expect(page.getByTestId('label-tooltip-ra-attr-label')).toHaveCount(0);
+        await expect(page.getByTestId('label-tooltip-ra-attr-description')).toHaveCount(0);
     });
 
-    test('mapping target explains the chosen target', async ({ mount, page }) => {
+    test('hovering a field label tooltip reveals its guidance', async ({ mount, page }) => {
         const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
 
         await component.getByTestId('request-attribute-authoring-attribute-add').click();
-        await page.getByTestId('select-ra-attr-mapping-trigger').click();
-        await page.getByRole('option', { name: 'RDN (subject)' }).click();
+        await page.getByTestId('label-tooltip-ra-attr-mapping').hover();
 
-        await expect(page.getByTestId('select-ra-attr-mapping-selected-description')).toBeVisible();
+        await expect(page.getByRole('tooltip')).toContainText('certificate');
     });
 
     test('authoring a granular RDN mapping requires selecting an RDN', async ({ mount, page }) => {
@@ -326,8 +327,8 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
 
-        await expect(page.locator('#ra-attr-list')).not.toBeChecked();
-        await expect(page.locator('#ra-attr-list')).toBeEnabled();
+        // Free input (default) does not offer the List checkbox at all.
+        await expect(page.locator('#ra-attr-list')).toHaveCount(0);
 
         await page.getByTestId('select-ra-attr-value-source-trigger').click();
         await page.getByRole('option', { name: 'Static list' }).click();
@@ -477,5 +478,162 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
         await component.getByTestId('request-attribute-authoring-attribute-remove').click();
         await expect(component.getByTestId('request-attribute-authoring-attributes-empty')).toBeVisible();
+    });
+
+    test('configured-attribute summary shows the RDN code, not the OID, for a system RDN', async ({ mount, page }) => {
+        const initialValue = {
+            ...emptyAuthoringForm(),
+            attributes: [
+                {
+                    ...emptyAuthoredAttribute(),
+                    name: 'cn',
+                    label: 'Common Name',
+                    mappingFieldType: FieldType.Rdn,
+                    mappingRdnCode: '2.5.4.3',
+                },
+            ],
+        };
+        await mount(
+            <RequestAttributeAuthoringEditorHarness
+                initialValue={initialValue}
+                rdnOptions={[{ value: '2.5.4.3', label: 'Common Name (CN)', code: 'CN' }]}
+            />,
+        );
+
+        const row = page.getByTestId('request-attribute-authoring-attribute-row');
+        await expect(row).toContainText('→ RDN CN');
+        await expect(row).not.toContainText('2.5.4.3');
+    });
+
+    test('free-input default value serialises into the emitted form content', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+        await page.locator('#ra-attr-default-value').click();
+        await page.locator('#ra-attr-default-value').fill('prod');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(page.getByTestId('value-json')).toContainText('"defaultValue":"prod"');
+    });
+
+    test('free-input default value starts empty (not the content-type initial) for a numeric type', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-content-type-trigger').click();
+        await page.getByRole('option', { name: 'Integer', exact: true }).click();
+
+        // The numeric editor has no id, so scope to the default-value block. It must start blank rather
+        // than pre-filled with the content-type initial ('0'), which would be indistinguishable from an
+        // intentional default of 0.
+        await expect(page.getByTestId('request-attribute-authoring-default-value-block').locator('input')).toHaveValue('');
+    });
+
+    test('changing the content type clears an entered free-input default value', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+        await page.locator('#ra-attr-default-value').click();
+        await page.locator('#ra-attr-default-value').fill('prod');
+
+        await page.getByTestId('select-ra-attr-content-type-trigger').click();
+        await page.getByRole('option', { name: 'Integer', exact: true }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        // The default entered under String must not survive the type switch and serialise as a
+        // wrong-typed (NaN) content entry.
+        await expect(page.getByTestId('value-json')).not.toContainText('"defaultValue"');
+    });
+
+    test('Read Only checkbox toggles the readOnly flag in the emitted form', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+        await page.locator('#ra-attr-readonly').check();
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(page.getByTestId('value-json')).toContainText('"readOnly":true');
+    });
+
+    test('Free input value source shows Read Only and hides List/Multi select', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+
+        // Free input is the default value source.
+        await expect(page.locator('#ra-attr-readonly')).toBeVisible();
+        await expect(page.locator('#ra-attr-list')).toHaveCount(0);
+        await expect(page.locator('#ra-attr-multi')).toHaveCount(0);
+    });
+
+    test('Static list value source shows List/Multi select and hides Read Only', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-value-source-trigger').click();
+        await page.getByRole('option', { name: 'Static list' }).click();
+
+        await expect(page.locator('#ra-attr-list')).toBeVisible();
+        await expect(page.locator('#ra-attr-multi')).toBeVisible();
+        await expect(page.locator('#ra-attr-readonly')).toHaveCount(0);
+    });
+
+    test('selecting a Static list value source clears Read Only', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+        await page.locator('#ra-attr-readonly').check();
+
+        await page.getByTestId('select-ra-attr-value-source-trigger').click();
+        await page.getByRole('option', { name: 'Static list' }).click();
+
+        await page.getByTestId('request-attribute-authoring-static-value-add').click();
+        await page.locator('#ra-attr-static-value-0').click();
+        await page.locator('#ra-attr-static-value-0').fill('prod');
+
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(page.getByTestId('value-json')).toContainText('"readOnly":false');
+        await expect(page.getByTestId('value-json')).toContainText('"valueSourceType":"staticList"');
+    });
+
+    test('switching from Static list to Free input hides List/Multi and clears the list flag', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+
+        // Static list forces List on and shows the checkbox...
+        await page.getByTestId('select-ra-attr-value-source-trigger').click();
+        await page.getByRole('option', { name: 'Static list' }).click();
+        await expect(page.locator('#ra-attr-list')).toBeChecked();
+
+        // ...switching to Free input hides List/Multi and clears the flag in the emitted form.
+        await page.getByTestId('select-ra-attr-value-source-trigger').click();
+        await page.getByRole('option', { name: 'Free input' }).click();
+        await expect(page.locator('#ra-attr-list')).toHaveCount(0);
+        await expect(page.locator('#ra-attr-multi')).toHaveCount(0);
+
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+        await expect(page.getByTestId('value-json')).toContainText('"list":false');
     });
 });

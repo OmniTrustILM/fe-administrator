@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import {
     AttributeContentType,
     AttributeSetMergeMode,
@@ -576,6 +576,57 @@ describe('requestAttributeAuthoring', () => {
         });
     });
 
+    describe('free-input default value <-> content round-trip', () => {
+        it('serialises a free-input default value into a single content entry', () => {
+            const dto = buildAuthoredAttributeDto({
+                ...emptyAuthoredAttribute(),
+                name: 'env',
+                label: 'Environment',
+                contentType: AttributeContentType.String,
+                valueSourceType: ValueSourceType.None,
+                defaultValue: 'prod',
+            });
+            expect(dto.content).toEqual([{ data: 'prod', contentType: AttributeContentType.String }]);
+        });
+
+        it('omits content when the free-input default value is blank', () => {
+            const dto = buildAuthoredAttributeDto({
+                ...emptyAuthoredAttribute(),
+                name: 'env',
+                label: 'Environment',
+                valueSourceType: ValueSourceType.None,
+                defaultValue: '   ',
+            });
+            expect(dto.content).toBeUndefined();
+        });
+
+        it('parses a free-input content entry back into defaultValue', () => {
+            const form = parseAuthoredAttributeDto({
+                uuid: 'u1',
+                name: 'env',
+                type: AttributeType.Data,
+                contentType: AttributeContentType.String,
+                properties: { label: 'Environment' },
+                content: [{ data: 'prod' }],
+            } as any);
+            expect(form.valueSourceType).toBe(ValueSourceType.None);
+            expect(form.defaultValue).toBe('prod');
+        });
+
+        it('does not leak a free-input default into staticValues', () => {
+            const form = parseAuthoredAttributeDto({
+                uuid: 'u1',
+                name: 'env',
+                type: AttributeType.Data,
+                contentType: AttributeContentType.String,
+                properties: { label: 'Environment' },
+                content: [{ data: 'prod' }],
+            } as any);
+            expect(form.defaultValue).toBe('prod');
+            expect(form.staticValues).toEqual([]);
+        });
+    });
+
     describe('hasAuthoredRequestAttributes', () => {
         test('empty form → false', () => {
             expect(hasAuthoredRequestAttributes(emptyAuthoringForm())).toBe(false);
@@ -593,5 +644,17 @@ describe('requestAttributeAuthoring', () => {
             const other = Object.values(AttributeSetMergeMode).find((m) => m !== DEFAULT_MERGE_MODE)!;
             expect(hasAuthoredRequestAttributes({ ...emptyAuthoringForm(), mergeMode: other })).toBe(true);
         });
+    });
+});
+
+describe('buildPlatformDefaultUpdateDto strict flag', () => {
+    it('includes externalCsrValidationStrict in the update DTO', () => {
+        const dto = buildPlatformDefaultUpdateDto([], true);
+        expect(dto.externalCsrValidationStrict).toBe(true);
+    });
+
+    it('carries false through so toggling strictness off persists', () => {
+        const dto = buildPlatformDefaultUpdateDto([], false);
+        expect(dto.externalCsrValidationStrict).toBe(false);
     });
 });
