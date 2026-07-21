@@ -311,15 +311,20 @@ const completeRegisteredCertificate: AppEpic = (action$, state, deps) => {
                             alertActions.success('Certificate issuance from registration successfully initiated'),
                         ),
                     ),
-                    catchError((err) =>
-                        of(
-                            slice.actions.issueCertificateFailure({ error: extractError(err, 'Failed to complete certificate') }),
-                            // Do not refetch detail here: getCertificateDetail nulls certificateDetail, which unmounts
-                            // the still-open Complete Registration dialog and discards everything the user typed. The
-                            // dialog stays open showing the error inline so the user can correct the challenge and retry.
+                    catchError((err) => {
+                        const error = extractError(err, 'Failed to complete certificate');
+                        const validationErrors = extractComplianceErrors(err);
+                        // Do not refetch detail here: getCertificateDetail nulls certificateDetail, which unmounts
+                        // the still-open Complete Registration dialog and discards everything the user typed. The
+                        // dialog stays open showing the error inline so the user can correct the challenge and retry.
+                        if (validationErrors) {
+                            return of(slice.actions.issueCertificateFailure({ error, validationErrors }));
+                        }
+                        return of(
+                            slice.actions.issueCertificateFailure({ error }),
                             appRedirectActions.fetchError({ error: err, message: 'Failed to complete certificate' }),
-                        ),
-                    ),
+                        );
+                    }),
                 ),
         ),
     );

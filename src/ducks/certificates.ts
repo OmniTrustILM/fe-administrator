@@ -370,7 +370,7 @@ export const slice = createSlice({
             state.issueErrorMessage = action.payload.error;
         },
 
-        clearIssueValidationErrors: (state) => {
+        clearIssueErrors: (state) => {
             state.issueValidationErrors = undefined;
             state.issueErrorMessage = undefined;
         },

@@ -62,9 +62,9 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
     // Start each session with a clean slate so a stale error from a previous attempt never lingers,
     // and clear it again on unmount.
     useEffect(() => {
-        dispatch(certificateActions.clearIssueValidationErrors());
+        dispatch(certificateActions.clearIssueErrors());
         return () => {
-            dispatch(certificateActions.clearIssueValidationErrors());
+            dispatch(certificateActions.clearIssueErrors());
         };
     }, [dispatch]);
 
@@ -89,7 +89,9 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
 
     const onSubmit = useCallback(
         (values: CompleteRegisteredFormValues) => {
-            if (!canSubmit) return;
+            // Guard against duplicate dispatches while a request is in flight — the disabled button only
+            // blocks clicks, but Enter/programmatic submit can still fire.
+            if (!canSubmit || isIssuing) return;
             // A registered cert always has an RA profile (the Complete action is gated on it), but guard
             // the required identifiers explicitly so we never fire a malformed request with empty UUIDs.
             const authorityUuid = certificate.raProfile?.authorityInstanceUuid;
@@ -122,7 +124,7 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
             // Do not close here: on success the epic redirects to the issued certificate (unmounting this
             // dialog); on failure the dialog stays open with the entered values so the user can correct and retry.
         },
-        [canSubmit, certificate, csrAttributeDescriptors, csrContent, dispatch, isUploadSource, signatureAttributeDescriptors],
+        [canSubmit, certificate, csrAttributeDescriptors, csrContent, dispatch, isIssuing, isUploadSource, signatureAttributeDescriptors],
     );
 
     const submissionErrors = [...new Set([...(issueErrorMessage ? [issueErrorMessage] : []), ...(issueValidationErrors ?? [])])];

@@ -193,7 +193,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         dispatch(connectorActions.clearCallbackData());
         dispatch(utilsCertificateRequestActions.reset());
         dispatch(utilsActuatorActions.health());
-        dispatch(certificateActions.clearIssueValidationErrors());
+        dispatch(certificateActions.clearIssueErrors());
         // Request attributes are resolved per RA profile; start from a clean slate so descriptors left in
         // the shared store by a prior visit (or the Complete/Rekey dialogs) don't render before selection.
         dispatch(certificateActions.clearCsrAttributes());
@@ -266,7 +266,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const onRaProfileChange = useCallback(
         (raProfileUuid: string) => {
             // Validation errors belong to the previous profile's request — drop them on any change.
-            dispatch(certificateActions.clearIssueValidationErrors());
+            dispatch(certificateActions.clearIssueErrors());
             if (raProfileUuid) {
                 dispatch(certificateActions.getCsrAttributes({ raProfileUuid }));
             } else {
@@ -463,7 +463,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                 onSelect={() => {
                                                     field.onChange('issue');
                                                     // Stale validation/compliance errors from the other mode must not linger.
-                                                    dispatch(certificateActions.clearIssueValidationErrors());
+                                                    dispatch(certificateActions.clearIssueErrors());
                                                 }}
                                             >
                                                 <span
@@ -481,7 +481,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                 onSelect={() => {
                                                     field.onChange('register');
                                                     // Stale validation/compliance errors from the other mode must not linger.
-                                                    dispatch(certificateActions.clearIssueValidationErrors());
+                                                    dispatch(certificateActions.clearIssueErrors());
                                                 }}
                                             >
                                                 <span
@@ -543,7 +543,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                     const source = (selected ?? '') as 'external' | 'existing';
                                                     onChange(source);
                                                     // Stale validation errors from the other source must not linger.
-                                                    dispatch(certificateActions.clearIssueValidationErrors());
+                                                    dispatch(certificateActions.clearIssueErrors());
                                                     if (source === 'external') {
                                                         setValue('tokenProfileUuid', undefined);
                                                         setValue('keyUuid', undefined);
@@ -570,11 +570,11 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         error={parseError}
                                         onContentChange={() => {
                                             dispatch(utilsCertificateRequestActions.reset());
-                                            dispatch(certificateActions.clearIssueValidationErrors());
+                                            dispatch(certificateActions.clearIssueErrors());
                                         }}
                                         onFileContentLoaded={(uploadedContent) => {
                                             setFileContent(uploadedContent);
-                                            dispatch(certificateActions.clearIssueValidationErrors());
+                                            dispatch(certificateActions.clearIssueErrors());
                                             if (health) {
                                                 dispatch(
                                                     utilsCertificateRequestActions.parseCertificateRequest({

@@ -291,23 +291,38 @@ describe('certificates epics', () => {
         expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
     });
 
-    test('completeRegisteredCertificate failure emits issue Failure and a fetch error, without refetching detail', async () => {
+    const completeRegisteredFailureAction = certificatesActions.completeRegisteredCertificate({
+        authorityUuid: 'auth-1',
+        raProfileUuid: 'ra-1',
+        certificateUuid: 'cert-1',
+        request: 'BASE64CSR',
+        format: 'PKCS10' as any,
+        authorizationSecret: 'secret',
+        attributes: [],
+    });
+
+    test('completeRegisteredCertificate 422 failure carries the validation-error list, suppresses the fetch error, and does not refetch detail', async () => {
         const { emitted } = await runCompleteRegisteredEpic(
-            certificatesActions.completeRegisteredCertificate({
-                authorityUuid: 'auth-1',
-                raProfileUuid: 'ra-1',
-                certificateUuid: 'cert-1',
-                request: 'BASE64CSR',
-                format: 'PKCS10' as any,
-                authorizationSecret: 'secret',
-                attributes: [],
-            }),
+            completeRegisteredFailureAction,
             () => throwError(() => ({ status: 422, response: { message: 'challenge rejected' } })),
+            1,
+        );
+
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0].type).toBe(certificatesActions.issueCertificateFailure.type);
+        expect((emitted[0] as any).payload.validationErrors).toEqual(['challenge rejected']);
+    });
+
+    test('completeRegisteredCertificate generic failure emits Failure and a fetch error, without refetching detail', async () => {
+        const { emitted } = await runCompleteRegisteredEpic(
+            completeRegisteredFailureAction,
+            () => throwError(() => ({ status: 500, response: { message: 'boom' } })),
             2,
         );
 
         expect(emitted).toHaveLength(2);
         expect(emitted[0].type).toBe(certificatesActions.issueCertificateFailure.type);
+        expect((emitted[0] as any).payload.validationErrors).toBeUndefined();
         expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
         // Must NOT refetch detail: getCertificateDetail nulls certificateDetail, which unmounts the still-open
         // Complete Registration dialog and discards everything the user typed.
