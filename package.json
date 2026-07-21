@@ -115,6 +115,8 @@
         "js-yaml": "$js-yaml",
         "shell-quote": "^1.8.4",
         "esbuild": "^0.28.1",
+        "brace-expansion@2": "2.1.2",
+        "ws@8": "8.21.1",
         "nyc": {
             "istanbul-lib-processinfo": {
                 "uuid": "^14.0.0"
