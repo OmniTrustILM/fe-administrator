@@ -40,6 +40,9 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
     const signatureAttributeDescriptors = useSelector(cryptographyOperationSelectors.signatureAttributeDescriptors);
     const csrAttributeDescriptors = useSelector(certificateSelectors.csrAttributeDescriptors);
     const isFetchingCsrAttributes = useSelector(certificateSelectors.isFetchingCsrAttributes);
+    const isIssuing = useSelector(certificateSelectors.isIssuing);
+    const issueErrorMessage = useSelector(certificateSelectors.issueErrorMessage);
+    const issueValidationErrors = useSelector(certificateSelectors.issueValidationErrors);
 
     // The backend generates the CSR from csrAttributes on the existing-key path, so make sure the
     // identity (Request Attributes) descriptors are loaded for this certificate's RA profile.
@@ -55,6 +58,15 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
             dispatch(certificateActions.clearCsrAttributes());
         };
     }, [dispatch, certificate.raProfile?.uuid]);
+
+    // Start each session with a clean slate so a stale error from a previous attempt never lingers,
+    // and clear it again on unmount.
+    useEffect(() => {
+        dispatch(certificateActions.clearIssueValidationErrors());
+        return () => {
+            dispatch(certificateActions.clearIssueValidationErrors());
+        };
+    }, [dispatch]);
 
     // Write-only: the CSR content lives outside the RHF form since FileUpload reports content via a
     // plain callback (not a Controller) — matching the established pattern in the add-certificate form.
@@ -107,15 +119,32 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
                     csrAttributes: csrAttrs,
                 }),
             );
-            onCancel();
+            // Do not close here: on success the epic redirects to the issued certificate (unmounting this
+            // dialog); on failure the dialog stays open with the entered values so the user can correct and retry.
         },
-        [canSubmit, certificate, csrAttributeDescriptors, csrContent, dispatch, isUploadSource, onCancel, signatureAttributeDescriptors],
+        [canSubmit, certificate, csrAttributeDescriptors, csrContent, dispatch, isUploadSource, signatureAttributeDescriptors],
     );
+
+    const submissionErrors = [...new Set([...(issueErrorMessage ? [issueErrorMessage] : []), ...(issueValidationErrors ?? [])])];
 
     return (
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 <div className="space-y-4">
+                    {submissionErrors.length > 0 && (
+                        <div
+                            className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-800/10"
+                            data-testid="completeRegisteredError"
+                            role="alert"
+                        >
+                            <ul className="list-disc space-y-1 ps-5 text-sm text-red-700 dark:text-red-500">
+                                {submissionErrors.map((error) => (
+                                    <li key={error}>{error}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     <Controller
                         control={control}
                         name="authorizationSecret"
@@ -181,8 +210,8 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
                         <Button variant="outline" onClick={onCancel} type="button">
                             Cancel
                         </Button>
-                        <Button color="primary" type="submit" disabled={!canSubmit} data-testid="completeRegisteredSubmit">
-                            Complete
+                        <Button color="primary" type="submit" disabled={!canSubmit || isIssuing} data-testid="completeRegisteredSubmit">
+                            {isIssuing ? 'Completing…' : 'Complete'}
                         </Button>
                     </Container>
                 </div>

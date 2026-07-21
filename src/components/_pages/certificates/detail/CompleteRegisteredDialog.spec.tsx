@@ -73,6 +73,48 @@ test.describe('CompleteRegisteredDialog', () => {
         await expect(page.getByTestId('select-keyUuid-trigger')).toBeVisible();
     });
 
+    test('keeps the modal open after submitting instead of closing optimistically', async ({ mount, page }) => {
+        await mount(<CompleteRegisteredDialogTestWrapper />);
+
+        await page.locator('#completeAuthorizationSecret').fill('super-secret-challenge');
+        await page.locator('#completeCsrUpload__fileUpload__fileContent').fill('LS0tLS1CRUdJTi=');
+        await page.getByTestId('completeRegisteredSubmit').click();
+
+        // The dialog must not close on submit — closing happens only on success (via redirect) or cancel.
+        await expect(page.getByTestId('dialog-closed')).toHaveCount(0);
+        await expect(page.locator('#completeAuthorizationSecret')).toBeVisible();
+        await expect(page.locator('#completeAuthorizationSecret')).toHaveValue('super-secret-challenge');
+    });
+
+    test('surfaces the backend error inline when completion fails', async ({ mount, page }) => {
+        await mount(
+            <CompleteRegisteredDialogTestWrapper
+                preloadedState={{
+                    certificates: { ...testInitialState.certificates, issueErrorMessage: 'Invalid authorization secret' },
+                }}
+            />,
+        );
+
+        const errorPanel = page.getByTestId('completeRegisteredError');
+        await expect(errorPanel).toBeVisible();
+        await expect(errorPanel).toContainText('Invalid authorization secret');
+    });
+
+    test('disables the Complete button and shows progress while issuing', async ({ mount, page }) => {
+        await mount(
+            <CompleteRegisteredDialogTestWrapper
+                preloadedState={{ certificates: { ...testInitialState.certificates, isIssuing: true } }}
+            />,
+        );
+
+        await page.locator('#completeAuthorizationSecret').fill('super-secret-challenge');
+        await page.locator('#completeCsrUpload__fileUpload__fileContent').fill('LS0tLS1CRUdJTi=');
+
+        const submitButton = page.getByTestId('completeRegisteredSubmit');
+        await expect(submitButton).toBeDisabled();
+        await expect(submitButton).toContainText('Completing');
+    });
+
     test('existing-key path renders the resolved request-attribute descriptors as fields', async ({ mount, page }) => {
         // The dialog loads the RA profile's request attributes (getCsrAttributes) and, on the existing-key
         // path, renders them so the backend can build the CSR from the selected key plus this identity.

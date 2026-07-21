@@ -110,6 +110,7 @@ export type State = {
 
     isIssuing: boolean;
     issueValidationErrors?: string[];
+    issueErrorMessage?: string;
     isRegistering: boolean;
     isRevoking: boolean;
     isRenewing: boolean;
@@ -339,6 +340,7 @@ export const slice = createSlice({
         ) => {
             state.isIssuing = true;
             state.issueValidationErrors = undefined;
+            state.issueErrorMessage = undefined;
         },
 
         issueCertificateNew: (
@@ -365,10 +367,12 @@ export const slice = createSlice({
         issueCertificateFailure: (state, action: PayloadAction<{ error: string | undefined; validationErrors?: string[] }>) => {
             state.isIssuing = false;
             state.issueValidationErrors = action.payload.validationErrors;
+            state.issueErrorMessage = action.payload.error;
         },
 
         clearIssueValidationErrors: (state) => {
             state.issueValidationErrors = undefined;
+            state.issueErrorMessage = undefined;
         },
 
         registerCertificate: (
@@ -410,6 +414,7 @@ export const slice = createSlice({
         ) => {
             state.isIssuing = true;
             state.issueValidationErrors = undefined;
+            state.issueErrorMessage = undefined;
         },
 
         revokeCertificate: (
@@ -1097,6 +1102,7 @@ const isFetchingLocations = createSelector(state, (state) => state.isFetchingLoc
 
 const isIssuing = createSelector(state, (state) => state.isIssuing);
 const issueValidationErrors = createSelector(state, (state) => state.issueValidationErrors);
+const issueErrorMessage = createSelector(state, (state) => state.issueErrorMessage);
 const isRegistering = createSelector(state, (state) => state.isRegistering);
 const isRevoking = createSelector(state, (state) => state.isRevoking);
 const isRenewing = createSelector(state, (state) => state.isRenewing);
@@ -1166,6 +1172,7 @@ export const selectors = {
     isFetchingCertificateChain,
     isIssuing,
     issueValidationErrors,
+    issueErrorMessage,
     isRegistering,
     isRevoking,
     isRenewing,

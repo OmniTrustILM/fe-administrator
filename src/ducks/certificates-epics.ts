@@ -314,9 +314,9 @@ const completeRegisteredCertificate: AppEpic = (action$, state, deps) => {
                     catchError((err) =>
                         of(
                             slice.actions.issueCertificateFailure({ error: extractError(err, 'Failed to complete certificate') }),
-                            // A failed challenge may still increment failedAttempts or flip the registration to
-                            // Locked/Expired server-side, so refetch detail to keep the displayed state accurate.
-                            slice.actions.getCertificateDetail({ uuid: action.payload.certificateUuid }),
+                            // Do not refetch detail here: getCertificateDetail nulls certificateDetail, which unmounts
+                            // the still-open Complete Registration dialog and discards everything the user typed. The
+                            // dialog stays open showing the error inline so the user can correct the challenge and retry.
                             appRedirectActions.fetchError({ error: err, message: 'Failed to complete certificate' }),
                         ),
                     ),

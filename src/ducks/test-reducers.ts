@@ -534,6 +534,7 @@ export type CertificatesTestState = {
     isIssuing: boolean;
     isRegistering: boolean;
     issueValidationErrors?: string[];
+    issueErrorMessage?: string;
 };
 
 const certificatesTestInitialState: CertificatesTestState = {
@@ -546,6 +547,7 @@ const certificatesTestInitialState: CertificatesTestState = {
     isIssuing: false,
     isRegistering: false,
     issueValidationErrors: undefined,
+    issueErrorMessage: undefined,
 };
 
 function certificatesTestReducer(state: CertificatesTestState | undefined, _action: UnknownAction): CertificatesTestState {

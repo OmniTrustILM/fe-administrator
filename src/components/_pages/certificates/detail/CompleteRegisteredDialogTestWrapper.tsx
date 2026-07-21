@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
@@ -41,10 +41,21 @@ export function CompleteRegisteredDialogTestWrapper({ onCancel = () => {}, prelo
         [preloadedState],
     );
 
+    // Mirror the real parent (CertificateDetailsContent): onCancel closes the dialog and unmounts its body.
+    const [open, setOpen] = useState(true);
+    const handleCancel = () => {
+        setOpen(false);
+        onCancel();
+    };
+
     return (
         <Provider store={store}>
             <MemoryRouter>
-                <CompleteRegisteredDialog certificate={testCertificate} onCancel={onCancel} />
+                {open ? (
+                    <CompleteRegisteredDialog certificate={testCertificate} onCancel={handleCancel} />
+                ) : (
+                    <div data-testid="dialog-closed" />
+                )}
             </MemoryRouter>
         </Provider>
     );

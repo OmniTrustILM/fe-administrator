@@ -291,7 +291,7 @@ describe('certificates epics', () => {
         expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
     });
 
-    test('completeRegisteredCertificate failure emits issue Failure, refetches detail, and a fetch error', async () => {
+    test('completeRegisteredCertificate failure emits issue Failure and a fetch error, without refetching detail', async () => {
         const { emitted } = await runCompleteRegisteredEpic(
             certificatesActions.completeRegisteredCertificate({
                 authorityUuid: 'auth-1',
@@ -303,16 +303,15 @@ describe('certificates epics', () => {
                 attributes: [],
             }),
             () => throwError(() => ({ status: 422, response: { message: 'challenge rejected' } })),
-            3,
+            2,
         );
 
-        expect(emitted).toHaveLength(3);
+        expect(emitted).toHaveLength(2);
         expect(emitted[0].type).toBe(certificatesActions.issueCertificateFailure.type);
-        // A rejected challenge can bump failedAttempts / flip the registration state server-side, so the
-        // epic must refetch detail to keep the displayed registration state accurate.
-        expect(emitted[1].type).toBe(certificatesActions.getCertificateDetail.type);
-        expect((emitted[1] as any).payload.uuid).toBe('cert-1');
-        expect(emitted[2].type).toBe(appRedirectActions.fetchError.type);
+        expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+        // Must NOT refetch detail: getCertificateDetail nulls certificateDetail, which unmounts the still-open
+        // Complete Registration dialog and discards everything the user typed.
+        expect(emitted.some((a) => a.type === certificatesActions.getCertificateDetail.type)).toBe(false);
     });
 
     test('completeRegisteredCertificate CSR-upload mode forwards request/format without key fields', async () => {

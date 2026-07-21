@@ -78,6 +78,10 @@ Tailwind CSS 4 with Preline UI components. The main CSS entry is `src/tailwindcs
 
 Prettier enforced via ESLint: 4-space indent, 140-char line width, single quotes, trailing commas everywhere, semicolons required.
 
+## Git & Pull Requests
+
+- Do NOT put a PR number or issue number in the PR title. Describe the change itself. (Referencing the issue in the PR body, e.g. "Closes #NNNN", is fine.)
+
 ## Environment Variables (Runtime)
 
 Injected via `window.__ENV__` at runtime (not build time):
