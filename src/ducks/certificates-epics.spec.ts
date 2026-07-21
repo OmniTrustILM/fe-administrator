@@ -301,7 +301,7 @@ describe('certificates epics', () => {
         attributes: [],
     });
 
-    test('completeRegisteredCertificate 422 failure carries the validation-error list, suppresses the fetch error, and does not refetch detail', async () => {
+    test('completeRegisteredCertificate 422 failure carries the validation-error list for the inline panel', async () => {
         const { emitted } = await runCompleteRegisteredEpic(
             completeRegisteredFailureAction,
             () => throwError(() => ({ status: 422, response: { message: 'challenge rejected' } })),
@@ -313,19 +313,19 @@ describe('certificates epics', () => {
         expect((emitted[0] as any).payload.validationErrors).toEqual(['challenge rejected']);
     });
 
-    test('completeRegisteredCertificate generic failure emits Failure and a fetch error, without refetching detail', async () => {
+    test('completeRegisteredCertificate failure emits only the inline Failure — no toast, no detail refetch', async () => {
         const { emitted } = await runCompleteRegisteredEpic(
             completeRegisteredFailureAction,
             () => throwError(() => ({ status: 500, response: { message: 'boom' } })),
-            2,
+            1,
         );
 
-        expect(emitted).toHaveLength(2);
+        // The dialog renders the error inline and stays open, so it is the single source of truth: no
+        // global fetchError toast, and no getCertificateDetail refetch (which would unmount the dialog).
+        expect(emitted).toHaveLength(1);
         expect(emitted[0].type).toBe(certificatesActions.issueCertificateFailure.type);
         expect((emitted[0] as any).payload.validationErrors).toBeUndefined();
-        expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
-        // Must NOT refetch detail: getCertificateDetail nulls certificateDetail, which unmounts the still-open
-        // Complete Registration dialog and discards everything the user typed.
+        expect(emitted.some((a) => a.type === appRedirectActions.fetchError.type)).toBe(false);
         expect(emitted.some((a) => a.type === certificatesActions.getCertificateDetail.type)).toBe(false);
     });
 

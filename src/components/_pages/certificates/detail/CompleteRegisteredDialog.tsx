@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 
@@ -67,6 +67,18 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
             dispatch(certificateActions.clearIssueErrors());
         };
     }, [dispatch]);
+
+    // Close explicitly once a submission succeeds rather than relying on the success redirect to unmount
+    // us: when the issued certificate keeps the pre-registration's uuid the redirect is a same-URL no-op,
+    // which would leave the dialog open and re-submittable. A true→false isIssuing transition with no error
+    // is a confirmed success.
+    const wasIssuing = useRef(false);
+    useEffect(() => {
+        if (wasIssuing.current && !isIssuing && !issueErrorMessage && (issueValidationErrors ?? []).length === 0) {
+            onCancel();
+        }
+        wasIssuing.current = isIssuing;
+    }, [isIssuing, issueErrorMessage, issueValidationErrors, onCancel]);
 
     // Write-only: the CSR content lives outside the RHF form since FileUpload reports content via a
     // plain callback (not a Controller) — matching the established pattern in the add-certificate form.

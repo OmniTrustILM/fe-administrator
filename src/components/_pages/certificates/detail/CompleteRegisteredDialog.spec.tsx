@@ -86,6 +86,25 @@ test.describe('CompleteRegisteredDialog', () => {
         await expect(page.locator('#completeAuthorizationSecret')).toHaveValue('super-secret-challenge');
     });
 
+    test('closes explicitly on a confirmed success instead of relying on the redirect', async ({ mount, page }) => {
+        // Start mid-request; when isIssuing flips false with no error the completion succeeded and the
+        // dialog must close itself — the success redirect is a same-URL no-op when the issued certificate
+        // keeps the pre-registration uuid, so it cannot be relied on to unmount the dialog.
+        await mount(
+            <CompleteRegisteredDialogTestWrapper
+                preloadedState={{ certificates: { ...testInitialState.certificates, isIssuing: true } }}
+            />,
+        );
+
+        await expect(page.getByTestId('dialog-closed')).toHaveCount(0);
+
+        await page.getByTestId('simulate-success').click();
+
+        // The wrapper swaps the dialog body for an (empty) dialog-closed marker once onCancel fires.
+        await expect(page.getByTestId('dialog-closed')).toBeAttached();
+        await expect(page.getByTestId('completeRegisteredSubmit')).toHaveCount(0);
+    });
+
     test('surfaces the backend error inline when completion fails', async ({ mount, page }) => {
         await mount(
             <CompleteRegisteredDialogTestWrapper

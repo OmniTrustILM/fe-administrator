@@ -221,6 +221,14 @@ export default function CertificateDetailsContent({ certificate, validationResul
         setGroups(certificatePreselectedGroups || []);
     }, [certificate?.groups]);
 
+    const onCloseCompleteRegistration = useCallback(() => {
+        setComplete(false);
+        // On failure the dialog stays open without refetching (a refetch would unmount it), so the
+        // registration state shown here (failedAttempts / lock) can be stale by the time it closes.
+        // Refresh it on dismiss so the detail reflects whatever the backend recorded on the last attempt.
+        getFreshCertificateDetail();
+    }, [getFreshCertificateDetail]);
+
     const onCancelOwnerUpdate = useCallback(() => {
         setUpdateOwner(false);
         setOwnerUuid(undefined);
@@ -806,8 +814,8 @@ export default function CertificateDetailsContent({ certificate, validationResul
             <Dialog
                 isOpen={complete}
                 caption="Complete Certificate Registration"
-                body={certificate && <CompleteRegisteredDialog certificate={certificate} onCancel={() => setComplete(false)} />}
-                toggle={() => setComplete(false)}
+                body={certificate && <CompleteRegisteredDialog certificate={certificate} onCancel={onCloseCompleteRegistration} />}
+                toggle={onCloseCompleteRegistration}
                 buttons={[]}
                 icon="check"
                 size="lg"
