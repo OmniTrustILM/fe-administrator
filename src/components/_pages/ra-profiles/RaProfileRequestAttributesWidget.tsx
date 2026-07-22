@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RaProfileCertificateRequestAttributesDto } from 'types/openapi';
 import { OidCategory } from 'types/openapi';
+import { isGroupAttributeModel } from 'types/attributes';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { toOidSelectOptions } from 'utils/oid';
 import {
@@ -62,7 +63,6 @@ export default function RaProfileRequestAttributesWidget({
         }
     }, [dispatch, authorityUuid]);
 
-    // Re-seed the authoring form whenever the persisted set changes (e.g. after a post-save refetch).
     useEffect(() => {
         setForm(parseRaProfileRequestAttributesDto(certificateRequestAttributes));
         setDirty(false);
@@ -81,13 +81,12 @@ export default function RaProfileRequestAttributesWidget({
         () =>
             (raProfileAttributeDescriptors ?? []).map((descriptor) => ({
                 value: descriptor.uuid ?? descriptor.name,
-                label: (descriptor as Record<string, any>).properties?.label ?? descriptor.name,
+                label: !isGroupAttributeModel(descriptor) ? (descriptor.properties?.label ?? descriptor.name) : descriptor.name,
                 description: descriptor.name,
             })),
         [raProfileAttributeDescriptors],
     );
 
-    // The note reflects the persisted set, not live edits, so it stays put while an admin authors a new set.
     const showPlatformDefaultNote = useMemo(
         () => !hasAuthoredRequestAttributes(parseRaProfileRequestAttributesDto(certificateRequestAttributes)),
         [certificateRequestAttributes],
