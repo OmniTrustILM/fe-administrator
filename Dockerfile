@@ -15,7 +15,7 @@ COPY index.html vite.config.js tsconfig.json ./
 RUN npm run build
 
 # production environment
-FROM nginxinc/nginx-unprivileged:1.31.2-alpine
+FROM nginxinc/nginx-unprivileged:1.31.3-alpine
 
 # Patch base-image OS packages for known CVEs (c-ares CVE-2026-33630;
 # curl/libcurl CVE-2026-5773, CVE-2026-6276).
