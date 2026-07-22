@@ -74,7 +74,7 @@ function DonutChart({
     const [chartDiameter, setChartDiameter] = useState(isFixedChartSize ? 100 : 200);
     const totalCharsOverBase = Math.max(totalText.length - 3, 0);
     const normalizedDiameter = Math.max(chartDiameter, isFixedChartSize ? 90 : 110);
-    const overlayWidth = Math.round(normalizedDiameter * 0.68);
+    const overlayWidth = Math.round(chartDiameter * 0.68);
     const totalValueFontSize = Math.max(
         isFixedChartSize ? 12 : 14,
         Math.min(isFixedChartSize ? 30 : 40, Math.round(normalizedDiameter * (isFixedChartSize ? 0.28 : 0.2) - totalCharsOverBase * 2.2)),
@@ -129,7 +129,7 @@ function DonutChart({
             <div className={layoutClassName}>
                 <div ref={chartContainerRef} className={chartContainerClassName} data-testid="donut-chart-container">
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <PieChart width={normalizedDiameter} height={normalizedDiameter}>
+                        <PieChart width={chartDiameter} height={chartDiameter}>
                             <Pie
                                 data={pieData}
                                 dataKey="value"
