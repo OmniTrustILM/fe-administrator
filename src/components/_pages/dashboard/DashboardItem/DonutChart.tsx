@@ -68,7 +68,6 @@ function DonutChart({
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const chartLabels = labels;
     const chartColors = colorOptions?.colors || getDefaultColors();
     const isFixedChartSize = chartSize === 'fixed';
     const [chartDiameter, setChartDiameter] = useState(isFixedChartSize ? 100 : 200);
@@ -118,7 +117,7 @@ function DonutChart({
         };
     }, []);
 
-    const pieData = chartLabels.map((label, index) => ({
+    const pieData = labels.map((label, index) => ({
         label,
         value: Number(values[index] ?? 0),
         color: chartColors[index] || '#6B7280',
@@ -142,8 +141,8 @@ function DonutChart({
                                 stroke="none"
                                 isAnimationActive
                             >
-                                {pieData.map((entry) => (
-                                    <Cell key={entry.label} fill={entry.color} />
+                                {pieData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>
                             <Tooltip content={<DonutTooltip />} />
@@ -172,7 +171,7 @@ function DonutChart({
                                     : 'space-y-1.5 h-full w-full overflow-y-auto'
                             }
                         >
-                            {chartLabels.map((label, index) => (
+                            {labels.map((label, index) => (
                                 <button
                                     type="button"
                                     key={label}
@@ -181,7 +180,7 @@ function DonutChart({
                                     }`}
                                     onClick={() => {
                                         if (!interactiveLegend) return;
-                                        dispatch(actions.setCurrentFilters({ entity, currentFilters: onLegendClick(index, chartLabels) }));
+                                        dispatch(actions.setCurrentFilters({ entity, currentFilters: onLegendClick(index, labels) }));
                                         navigate(redirect);
                                     }}
                                 >

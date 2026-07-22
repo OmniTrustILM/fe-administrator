@@ -45,16 +45,26 @@ test.describe('TimeSeriesChart', () => {
         const component = await mount(
             <TimeSeriesChartNavHarness title="Signings over Time" data={data} entity={EntityType.SIGNING_RECORD} onSetFilter={() => []} />,
         );
-        // Let the chart lay out (recharts computes activeTooltipIndex from geometry).
-        await page.waitForTimeout(1000);
         const surface = component.locator('.recharts-surface').first();
+        await expect(surface).toBeVisible();
         const box = await surface.boundingBox();
         if (!box) throw new Error('chart surface not found');
-        const cx = box.x + box.width / 2;
-        const cy = box.y + box.height / 2;
-        await page.mouse.move(cx, cy);
-        await page.waitForTimeout(200);
-        await page.mouse.click(cx, cy);
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        const activeDot = page.locator('.recharts-active-dot');
+        await expect(activeDot).toBeVisible();
+        await activeDot.click();
         await expect(page.getByTestId('landed-on-redirect')).toBeVisible();
+    });
+
+    test('clicking empty plot space does not navigate', async ({ mount, page }) => {
+        const component = await mount(
+            <TimeSeriesChartNavHarness title="Signings over Time" data={data} entity={EntityType.SIGNING_RECORD} onSetFilter={() => []} />,
+        );
+        const surface = component.locator('.recharts-surface').first();
+        await expect(surface).toBeVisible();
+        const box = await surface.boundingBox();
+        if (!box) throw new Error('chart surface not found');
+        await page.mouse.click(box.x + 3, box.y + 3);
+        await expect(page.getByTestId('landed-on-redirect')).toHaveCount(0);
     });
 });

@@ -66,6 +66,30 @@ function TimeSeriesChart({
         navigate(redirect);
     };
 
+    const renderActiveDot = ({ cx, cy, index }: { cx?: number; cy?: number; index?: number }) => {
+        if (cx == null || cy == null || typeof index !== 'number') return <g />;
+        const activate = () => handleBucketClick(index);
+        return (
+            // biome-ignore lint/a11y/useSemanticElements: <button> is invalid inside SVG; role="button" on <g> is the accessible fit for this chart-point click affordance
+            <g
+                role="button"
+                tabIndex={0}
+                aria-label="Filter to this time bucket"
+                cursor="pointer"
+                onClick={activate}
+                onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        activate();
+                    }
+                }}
+            >
+                <circle cx={cx} cy={cy} r={12} fill="transparent" />
+                <circle cx={cx} cy={cy} r={4} fill={color} stroke="#fff" strokeWidth={1} />
+            </g>
+        );
+    };
+
     return (
         <Widget title={title} titleBoldness="bold" className="col-span-full" busy={isLoading}>
             <div className="flex justify-end mb-2">
@@ -89,16 +113,7 @@ function TimeSeriesChart({
                 </div>
             </div>
             <ResponsiveContainer width="100%" height={260}>
-                <AreaChart
-                    data={chartData}
-                    margin={{ top: 8, right: 16, bottom: 0, left: 0 }}
-                    onClick={(state) => {
-                        const rawIndex = (state as { activeTooltipIndex?: number | string | null })?.activeTooltipIndex;
-                        if (rawIndex == null) return;
-                        const index = Number(rawIndex);
-                        if (Number.isInteger(index) && index >= 0) handleBucketClick(index);
-                    }}
-                >
+                <AreaChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
                     <defs>
                         <linearGradient id="timeSeriesGradient" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor={color} stopOpacity={0.4} />
@@ -129,7 +144,7 @@ function TimeSeriesChart({
                         stroke={color}
                         strokeWidth={2}
                         fill="url(#timeSeriesGradient)"
-                        activeDot={{ r: 4, cursor: 'pointer' }}
+                        activeDot={renderActiveDot}
                         isAnimationActive
                     />
                 </AreaChart>

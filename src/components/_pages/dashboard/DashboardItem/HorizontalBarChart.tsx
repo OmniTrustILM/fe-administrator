@@ -18,6 +18,24 @@ type Props = Readonly<{
     colorOptions?: ColorOptions;
 }>;
 
+type YAxisTickProps = Readonly<{
+    x?: number;
+    y?: number;
+    payload?: { value?: string };
+    maxChars?: number;
+}>;
+
+function YAxisTick({ x, y, payload, maxChars = 12 }: YAxisTickProps) {
+    const full = payload?.value ?? '';
+    const text = full.length > maxChars ? `${full.slice(0, Math.max(1, maxChars - 1))}…` : full;
+    return (
+        <text x={x} y={y} dy={4} textAnchor="end" fontSize={12} fill="currentColor">
+            <title>{full}</title>
+            {text}
+        </text>
+    );
+}
+
 function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, overflowCount, topN = 10, colorOptions }: Props) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -25,11 +43,14 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
     const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
     const shown = sorted.slice(0, topN);
     const labels = shown.map(([label]) => label);
-    const values = shown.map(([, value]) => value);
     const colors = colorOptions?.colors ?? getDonutChartColorsByRandomNumberOfOptions(labels.length).colors;
     const remaining = (overflowCount ?? labels.length) - labels.length;
 
     const chartData = shown.map(([label, value], index) => ({ label, value, color: colors[index] ?? '#6B7280' }));
+
+    const longestLabel = labels.reduce((max, label) => Math.max(max, label.length), 0);
+    const yAxisWidth = Math.min(180, Math.max(80, longestLabel * 7 + 8));
+    const yAxisMaxChars = Math.max(6, Math.floor((yAxisWidth - 8) / 7));
 
     const handleBarClick = (index: number) => {
         if (index < 0 || index >= labels.length) return;
@@ -52,20 +73,20 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
                     <YAxis
                         type="category"
                         dataKey="label"
-                        width={80}
-                        tick={{ fontSize: 12 }}
+                        width={yAxisWidth}
+                        tick={<YAxisTick maxChars={yAxisMaxChars} />}
                         axisLine={false}
                         tickLine={false}
                         interval={0}
                     />
                     <Tooltip
                         cursor={{ fill: 'transparent' }}
-                        formatter={(value: number) => [String(value), 'Signings']}
+                        formatter={(value: number) => [String(value), 'Count']}
                         contentStyle={{ fontSize: 12 }}
                     />
                     <Bar dataKey="value" radius={[0, 2, 2, 0]} isAnimationActive onClick={(_entry, index) => handleBarClick(index)}>
-                        {chartData.map((entry) => (
-                            <Cell key={entry.label} fill={entry.color} cursor="pointer" />
+                        {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} cursor="pointer" />
                         ))}
                     </Bar>
                 </BarChart>
