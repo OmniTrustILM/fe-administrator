@@ -1,5 +1,6 @@
 import { test, expect } from '../../../../../playwright/ct-test';
 import TimeSeriesChartWithStore from './TimeSeriesChartWithStore';
+import TimeSeriesChartNavHarness from './TimeSeriesChartNavHarness';
 import { EntityType } from 'ducks/filters';
 import { SigningRecordStatisticsPeriod } from 'types/openapi';
 
@@ -38,5 +39,22 @@ test.describe('TimeSeriesChart', () => {
         await component.getByRole('button', { name: '7d' }).click();
         await expect(component.getByRole('button', { name: '7d' })).toHaveClass(/text-white/);
         await expect(component.getByRole('button', { name: '24h' })).not.toHaveClass(/text-white/);
+    });
+
+    test('clicking a data point drills down (navigates to the redirect)', async ({ mount, page }) => {
+        const component = await mount(
+            <TimeSeriesChartNavHarness title="Signings over Time" data={data} entity={EntityType.SIGNING_RECORD} onSetFilter={() => []} />,
+        );
+        // Let the chart lay out (recharts computes activeTooltipIndex from geometry).
+        await page.waitForTimeout(1000);
+        const surface = component.locator('.recharts-surface').first();
+        const box = await surface.boundingBox();
+        if (!box) throw new Error('chart surface not found');
+        const cx = box.x + box.width / 2;
+        const cy = box.y + box.height / 2;
+        await page.mouse.move(cx, cy);
+        await page.waitForTimeout(200);
+        await page.mouse.click(cx, cy);
+        await expect(page.getByTestId('landed-on-redirect')).toBeVisible();
     });
 });

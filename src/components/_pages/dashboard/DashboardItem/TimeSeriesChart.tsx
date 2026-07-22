@@ -1,8 +1,8 @@
 import Widget from 'components/Widget';
 import { type EntityType, actions as filterActions } from 'ducks/filters';
-import ReactApexChart from 'react-apexcharts';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { SigningRecordStatisticsPeriod } from 'types/openapi';
 import type { SearchFilterModel } from 'types/certificate';
 import type { ColorOptions } from './DonutChart';
@@ -41,15 +41,15 @@ function TimeSeriesChart({
     const navigate = useNavigate();
 
     const isoKeys = Object.keys(data);
-    const values = isoKeys.map((k) => data[k]);
     const isHourly = period === SigningRecordStatisticsPeriod._24h;
     const color = colorOptions?.colors?.[0] ?? '#1473b5';
 
-    const categories = isoKeys.map((iso) => {
+    const chartData = isoKeys.map((iso) => {
         const d = new Date(iso);
-        return isHourly
+        const label = isHourly
             ? d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
             : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        return { iso, label, value: data[iso] };
     });
 
     const bucketEndIso = (index: number): string => {
@@ -64,29 +64,6 @@ function TimeSeriesChart({
         const filters = onSetFilter(isoKeys[index], bucketEndIso(index));
         dispatch(filterActions.setCurrentFilters({ entity, currentFilters: filters }));
         navigate(redirect);
-    };
-
-    const options: ApexCharts.ApexOptions = {
-        chart: {
-            type: 'area',
-            toolbar: { show: false },
-            zoom: { enabled: false },
-            events: {
-                markerClick: (_e, _ctx, { dataPointIndex }: any) => handleBucketClick(dataPointIndex),
-                dataPointSelection: (_e, _ctx, { dataPointIndex }: any) => handleBucketClick(dataPointIndex),
-            },
-        },
-        colors: [color],
-        dataLabels: { enabled: false },
-        stroke: { curve: 'smooth', width: 2 },
-        fill: {
-            type: 'gradient',
-            gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 90, 100] },
-        },
-        xaxis: { categories, tickAmount: Math.min(categories.length, 12), labels: { rotate: 0, hideOverlappingLabels: true } },
-        yaxis: { labels: { formatter: (v: number) => String(Math.round(v)) } },
-        grid: { borderColor: 'var(--border-color, #e5e7eb)', strokeDashArray: 4 },
-        tooltip: { x: { show: true } },
     };
 
     return (
@@ -111,7 +88,52 @@ function TimeSeriesChart({
                     ))}
                 </div>
             </div>
-            <ReactApexChart options={options} series={[{ name: 'Signings', data: values }]} type="area" height={260} width="100%" />
+            <ResponsiveContainer width="100%" height={260}>
+                <AreaChart
+                    data={chartData}
+                    margin={{ top: 8, right: 16, bottom: 0, left: 0 }}
+                    onClick={(state) => {
+                        const rawIndex = (state as { activeTooltipIndex?: number | string | null })?.activeTooltipIndex;
+                        if (rawIndex == null) return;
+                        const index = Number(rawIndex);
+                        if (Number.isInteger(index) && index >= 0) handleBucketClick(index);
+                    }}
+                >
+                    <defs>
+                        <linearGradient id="timeSeriesGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+                            <stop offset="90%" stopColor={color} stopOpacity={0.05} />
+                            <stop offset="100%" stopColor={color} stopOpacity={0.05} />
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="var(--border-color, #e5e7eb)" strokeDasharray="4" />
+                    <XAxis
+                        dataKey="label"
+                        interval="preserveStartEnd"
+                        minTickGap={24}
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <YAxis
+                        tickFormatter={(value: number) => String(Math.round(value))}
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={32}
+                    />
+                    <Tooltip cursor={{ stroke: color, strokeDasharray: '4' }} contentStyle={{ fontSize: 12 }} />
+                    <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke={color}
+                        strokeWidth={2}
+                        fill="url(#timeSeriesGradient)"
+                        activeDot={{ r: 4, cursor: 'pointer' }}
+                        isAnimationActive
+                    />
+                </AreaChart>
+            </ResponsiveContainer>
         </Widget>
     );
 }

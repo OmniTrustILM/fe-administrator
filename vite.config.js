@@ -36,7 +36,7 @@ export default defineConfig(async ({ mode }) => {
                                 test: /[\\/]node_modules[\\/](@reduxjs|react-redux|redux|redux-observable|rxjs|reselect|immer)[\\/]/,
                             },
                             { name: 'reactflow-vendor', test: /[\\/]node_modules[\\/](reactflow|@reactflow|dagre|graphlib)[\\/]/ },
-                            { name: 'apexcharts-vendor', test: /[\\/]node_modules[\\/](apexcharts|react-apexcharts)[\\/]/ },
+                            { name: 'recharts-vendor', test: /[\\/]node_modules[\\/](recharts|victory-vendor|d3-[^\\/]+)[\\/]/ },
                             {
                                 name: 'editor-vendor',
                                 test: /[\\/]node_modules[\\/](highlight\.js|marked|react-simple-code-editor|html-react-parser|dompurify)[\\/]/,

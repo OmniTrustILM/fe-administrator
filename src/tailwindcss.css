@@ -110,12 +110,6 @@ table .table-badge {
     white-space: nowrap;
 }
 
-.apexcharts-custom-tooltip {
-    border: none !important;
-    outline: none !important;
-    padding: 0 !important;
-}
-
 .react-flow__controls {
     background: transparent;
     border: none;

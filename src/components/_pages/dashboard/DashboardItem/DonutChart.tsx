@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import Widget from 'components/Widget';
 import { type EntityType, actions } from 'ducks/filters';
-import ReactApexChart from 'react-apexcharts';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router';
+import { Cell, Pie, PieChart, Tooltip } from 'recharts';
 import SimpleBar from 'simplebar-react';
 import type { SearchFilterModel } from 'types/certificate';
 import type { DashboardDict } from 'types/statisticsDashboard';
@@ -27,6 +27,26 @@ type Props = Readonly<{
     shrinkOnSmallScreen?: boolean;
 }>;
 
+type DonutTooltipProps = Readonly<{
+    active?: boolean;
+    payload?: { name?: string; value?: number; payload?: { color?: string } }[];
+}>;
+
+function DonutTooltip({ active, payload }: DonutTooltipProps) {
+    if (!active || !payload?.length) return null;
+    const { name, value, payload: entry } = payload[0];
+    return (
+        <div className="py-1 px-2 bg-[var(--tooltip-background-color)] text-xs font-medium text-white shadow-2xs dark:bg-neutral-700 border-[var(--tooltip-background-color)]">
+            <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry?.color }} />
+                <span>
+                    {name}: {value}
+                </span>
+            </div>
+        </div>
+    );
+}
+
 function DonutChart({
     title,
     colorOptions,
@@ -48,76 +68,13 @@ function DonutChart({
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const options: ApexCharts.ApexOptions = {
-        labels: labels,
-        fill: {
-            type: 'solid',
-        },
-        dataLabels: {
-            enabled: false,
-            formatter: (val: any, opts: any) => opts.w.config.series[opts.seriesIndex],
-        },
-        chart: {
-            width: '100%',
-            height: '100%',
-            toolbar: {
-                show: false,
-            },
-        },
-        legend: {
-            show: false,
-        },
-        plotOptions: {
-            pie: {
-                expandOnClick: false,
-            },
-        },
-        tooltip: {
-            enabled: true,
-            custom: ({ series, seriesIndex, dataPointIndex, w }: any) => {
-                const label = w.globals.labels[seriesIndex];
-                const value = series[seriesIndex];
-                const color = w.globals.colors[seriesIndex];
-
-                return `
-                    <div class="py-1 px-2 bg-[var(--tooltip-background-color)] text-xs font-medium text-white shadow-2xs dark:bg-neutral-700 border-[var(--tooltip-background-color)]">
-                        <div class="flex items-center gap-2">
-                            <div class="w-2 h-2 rounded-full" style="background-color: ${color}"></div>
-                            <span>${label}: ${value}</span>
-                        </div>
-                    </div>
-                `;
-            },
-            style: {
-                fontSize: '14px',
-                fontFamily: 'inherit',
-            },
-            theme: 'light',
-            cssClass: 'apexcharts-custom-tooltip',
-        },
-        markers: {
-            size: 4,
-            hover: {
-                sizeOffset: 0,
-            },
-        },
-        states: {
-            active: {
-                filter: {
-                    type: 'none',
-                },
-            },
-        },
-    };
-
-    const chartLabels = useGetLabels(data);
+    const chartLabels = labels;
     const chartColors = colorOptions?.colors || getDefaultColors();
     const isFixedChartSize = chartSize === 'fixed';
     const [chartDiameter, setChartDiameter] = useState(isFixedChartSize ? 100 : 200);
-    const [overlayCenter, setOverlayCenter] = useState({ x: 0, y: 0 });
-    const [overlayWidth, setOverlayWidth] = useState(Math.round((isFixedChartSize ? 100 : 200) * 0.68));
     const totalCharsOverBase = Math.max(totalText.length - 3, 0);
     const normalizedDiameter = Math.max(chartDiameter, isFixedChartSize ? 90 : 110);
+    const overlayWidth = Math.round(normalizedDiameter * 0.68);
     const totalValueFontSize = Math.max(
         isFixedChartSize ? 12 : 14,
         Math.min(isFixedChartSize ? 30 : 40, Math.round(normalizedDiameter * (isFixedChartSize ? 0.28 : 0.2) - totalCharsOverBase * 2.2)),
@@ -144,27 +101,6 @@ function DonutChart({
         const container = chartContainerRef.current;
         if (!container || typeof ResizeObserver === 'undefined') return;
 
-        const updateOverlayMetrics = () => {
-            const containerRect = container.getBoundingClientRect();
-            if (containerRect.width <= 0 || containerRect.height <= 0) return;
-
-            const pieElement = container.querySelector('.apexcharts-pie') as SVGGraphicsElement | null;
-            const svgElement = container.querySelector('svg') as SVGSVGElement | null;
-            const targetRect = pieElement?.getBoundingClientRect() ?? svgElement?.getBoundingClientRect() ?? containerRect;
-
-            const targetDiameter = Math.min(targetRect.width, targetRect.height);
-            const nextCenterX = targetRect.left - containerRect.left + targetRect.width / 2;
-            const nextCenterY = targetRect.top - containerRect.top + targetRect.height / 2;
-
-            if (Number.isFinite(nextCenterX) && Number.isFinite(nextCenterY)) {
-                setOverlayCenter({ x: Math.round(nextCenterX), y: Math.round(nextCenterY) });
-            }
-
-            if (Number.isFinite(targetDiameter) && targetDiameter > 0) {
-                setOverlayWidth(Math.round(targetDiameter * 0.68));
-            }
-        };
-
         const observer = new ResizeObserver((entries) => {
             const entry = entries[0];
             if (!entry) return;
@@ -173,32 +109,50 @@ function DonutChart({
             if (!Number.isFinite(nextDiameter) || nextDiameter <= 0) return;
 
             setChartDiameter(Math.round(nextDiameter));
-            updateOverlayMetrics();
         });
 
         observer.observe(container);
 
-        const raf = requestAnimationFrame(updateOverlayMetrics);
-        const delayedUpdate = globalThis.setTimeout(updateOverlayMetrics, 120);
-
         return () => {
             observer.disconnect();
-            cancelAnimationFrame(raf);
-            globalThis.clearTimeout(delayedUpdate);
         };
-    }, [chartSize, shrinkOnSmallScreen]);
+    }, []);
 
-    options.colors = chartColors;
+    const pieData = chartLabels.map((label, index) => ({
+        label,
+        value: Number(values[index] ?? 0),
+        color: chartColors[index] || '#6B7280',
+    }));
 
     return (
         <Widget title={title} titleBoldness="bold" className="flex-1">
             <div className={layoutClassName}>
                 <div ref={chartContainerRef} className={chartContainerClassName} data-testid="donut-chart-container">
-                    <ReactApexChart options={options} series={values} type="donut" height="100%" width="100%" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <PieChart width={normalizedDiameter} height={normalizedDiameter}>
+                            <Pie
+                                data={pieData}
+                                dataKey="value"
+                                nameKey="label"
+                                innerRadius="70%"
+                                outerRadius="100%"
+                                startAngle={90}
+                                endAngle={-270}
+                                paddingAngle={1}
+                                stroke="none"
+                                isAnimationActive
+                            >
+                                {pieData.map((entry) => (
+                                    <Cell key={entry.label} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <Tooltip content={<DonutTooltip />} />
+                        </PieChart>
+                    </div>
                     {showCenterLabel && (
                         <div
-                            className="pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center"
-                            style={{ left: `${overlayCenter.x}px`, top: `${overlayCenter.y}px`, width: `${overlayWidth}px` }}
+                            className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+                            style={{ margin: 'auto', width: `${overlayWidth}px` }}
                         >
                             <span className="font-semibold leading-none text-center" style={{ fontSize: `${totalValueFontSize}px` }}>
                                 {total}
