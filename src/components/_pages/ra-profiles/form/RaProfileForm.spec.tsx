@@ -50,6 +50,17 @@ test.describe('RaProfileForm (create mode) request-attributes chain', () => {
         await expect(component.getByTestId('request-attribute-authoring-attribute-add')).toBeEnabled();
     });
 
+    test('hides the merge-mode selector and value-source bindings section', async ({ mount, page }) => {
+        const component = await mount(<RaProfileFormCreateWithStore />);
+
+        await page.getByRole('tab', { name: 'Request Attributes' }).click();
+
+        // Editor is mounted (authority pre-selected) — so an absent section is a genuine hide, not an unmounted editor.
+        await expect(component.getByTestId('request-attribute-authoring-attributes-empty')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-merge-mode')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-bindings')).toHaveCount(0);
+    });
+
     test('attribute tabs are disabled until an authority is selected', async ({ mount, page }) => {
         await mount(<RaProfileFormCreateWithStore authorityId="" />);
 

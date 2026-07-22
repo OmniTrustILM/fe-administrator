@@ -25,7 +25,9 @@ import { useRunOnFailedFinish, useRunOnFinish, useRunOnSuccessfulFinish } from '
 import {
     buildRaProfileRequestAttributesUpdateDto,
     emptyAuthoringForm,
+    gateMergeModeAndBindings,
     hasAuthoredRequestAttributes,
+    MERGE_MODE_AND_BINDINGS_ENABLED,
     parseRaProfileRequestAttributesDto,
     type RequestAttributeAuthoringFormValues,
 } from 'utils/requestAttributeAuthoring';
@@ -226,7 +228,9 @@ export default function RaProfileForm({
     // Seed the request-attribute authoring form from the loaded profile (edit mode only).
     useEffect(() => {
         if (editMode && raProfileSelector?.uuid === id) {
-            setRequestAttributesForm(parseRaProfileRequestAttributesDto(raProfileSelector.certificateRequestAttributes));
+            setRequestAttributesForm(
+                gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(raProfileSelector.certificateRequestAttributes)),
+            );
             setRequestAttributesDirty(false);
         } else if (!editMode) {
             setRequestAttributesForm(emptyAuthoringForm());
@@ -261,7 +265,7 @@ export default function RaProfileForm({
             requestAttributesActions.updateRaProfileRequestAttributes({
                 authorityUuid,
                 raProfileUuid: createdRaProfileUuid,
-                data: buildRaProfileRequestAttributesUpdateDto(requestAttributesForm),
+                data: buildRaProfileRequestAttributesUpdateDto(gateMergeModeAndBindings(requestAttributesForm)),
             }),
         );
     }, [dispatch, pendingCreateAttributes, createdRaProfileUuid, requestAttributesForm]);
@@ -339,7 +343,7 @@ export default function RaProfileForm({
                             requestAttributesActions.updateRaProfileRequestAttributes({
                                 authorityUuid,
                                 raProfileUuid: id,
-                                data: buildRaProfileRequestAttributesUpdateDto(requestAttributesForm),
+                                data: buildRaProfileRequestAttributesUpdateDto(gateMergeModeAndBindings(requestAttributesForm)),
                             }),
                         );
                     }
@@ -518,7 +522,8 @@ export default function RaProfileForm({
                                             <RequestAttributeAuthoringEditor
                                                 value={requestAttributesForm}
                                                 onChange={onChangeRequestAttributes}
-                                                showMergeMode
+                                                showMergeMode={MERGE_MODE_AND_BINDINGS_ENABLED}
+                                                showBindings={MERGE_MODE_AND_BINDINGS_ENABLED}
                                                 connectorAttributeOptions={connectorAttributeOptions}
                                                 rdnOptions={rdnOptions}
                                                 extensionOptions={extensionOptions}
@@ -539,7 +544,8 @@ export default function RaProfileForm({
                                             <RequestAttributeAuthoringEditor
                                                 value={requestAttributesForm}
                                                 onChange={setRequestAttributesForm}
-                                                showMergeMode
+                                                showMergeMode={MERGE_MODE_AND_BINDINGS_ENABLED}
+                                                showBindings={MERGE_MODE_AND_BINDINGS_ENABLED}
                                                 connectorAttributeOptions={connectorAttributeOptions}
                                                 disabled={!watchedAuthority || isCreating || isUpdatingRequestAttributes}
                                             />
