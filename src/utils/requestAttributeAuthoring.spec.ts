@@ -22,6 +22,7 @@ import {
     emptyAuthoredAttribute,
     emptyAuthoringForm,
     emptyValueSourceBinding,
+    gateMergeModeAndBindings,
     hasAuthoredRequestAttributes,
     isAuthoredAttributeMappingValid,
     isAuthoredAttributeValid,
@@ -46,13 +47,13 @@ const baseAttr = (): AuthoredAttributeFormValues => ({
 
 describe('requestAttributeAuthoring', () => {
     describe('defaults', () => {
-        test('DEFAULT_MERGE_MODE is MERGE', () => {
-            expect(DEFAULT_MERGE_MODE).toBe(AttributeSetMergeMode.Merge);
+        test('DEFAULT_MERGE_MODE is STATIC_ONLY', () => {
+            expect(DEFAULT_MERGE_MODE).toBe(AttributeSetMergeMode.StaticOnly);
         });
 
-        test('emptyAuthoringForm starts with MERGE and empty lists', () => {
+        test('emptyAuthoringForm starts with STATIC_ONLY and empty lists', () => {
             const form = emptyAuthoringForm();
-            expect(form.mergeMode).toBe(AttributeSetMergeMode.Merge);
+            expect(form.mergeMode).toBe(AttributeSetMergeMode.StaticOnly);
             expect(form.attributes).toEqual([]);
             expect(form.valueSourceBindings).toEqual([]);
         });
@@ -476,7 +477,7 @@ describe('requestAttributeAuthoring', () => {
     });
 
     describe('buildRaProfileRequestAttributesUpdateDto', () => {
-        test('defaults merge mode to MERGE and drops invalid bindings', () => {
+        test('defaults merge mode to STATIC_ONLY and drops invalid bindings', () => {
             const form = {
                 ...emptyAuthoringForm(),
                 attributes: [baseAttr()],
@@ -486,15 +487,15 @@ describe('requestAttributeAuthoring', () => {
                 ],
             };
             const dto = buildRaProfileRequestAttributesUpdateDto(form);
-            expect(dto.mergeMode).toBe(AttributeSetMergeMode.Merge);
+            expect(dto.mergeMode).toBe(AttributeSetMergeMode.StaticOnly);
             expect(dto.requestAttributes).toHaveLength(1);
             expect(dto.valueSourceBindings).toHaveLength(1);
             expect(dto.valueSourceBindings?.[0].attributeUuid).toBe('good');
         });
 
         test('honours a chosen merge mode', () => {
-            const dto = buildRaProfileRequestAttributesUpdateDto({ ...emptyAuthoringForm(), mergeMode: AttributeSetMergeMode.StaticOnly });
-            expect(dto.mergeMode).toBe(AttributeSetMergeMode.StaticOnly);
+            const dto = buildRaProfileRequestAttributesUpdateDto({ ...emptyAuthoringForm(), mergeMode: AttributeSetMergeMode.Merge });
+            expect(dto.mergeMode).toBe(AttributeSetMergeMode.Merge);
         });
 
         test('round-trips externalCsrValidationStrict (Core writes it unconditionally)', () => {
@@ -539,9 +540,9 @@ describe('requestAttributeAuthoring', () => {
     });
 
     describe('parseRaProfileRequestAttributesDto', () => {
-        test('returns MERGE defaults for undefined input', () => {
+        test('returns STATIC_ONLY defaults for undefined input', () => {
             const form = parseRaProfileRequestAttributesDto(undefined);
-            expect(form.mergeMode).toBe(AttributeSetMergeMode.Merge);
+            expect(form.mergeMode).toBe(AttributeSetMergeMode.StaticOnly);
             expect(form.attributes).toEqual([]);
             expect(form.valueSourceBindings).toEqual([]);
         });
@@ -643,6 +644,20 @@ describe('requestAttributeAuthoring', () => {
         test('non-default merge mode → true', () => {
             const other = Object.values(AttributeSetMergeMode).find((m) => m !== DEFAULT_MERGE_MODE)!;
             expect(hasAuthoredRequestAttributes({ ...emptyAuthoringForm(), mergeMode: other })).toBe(true);
+        });
+    });
+
+    describe('gateMergeModeAndBindings', () => {
+        test('forces Static only and drops bindings while the feature is disabled', () => {
+            const gated = gateMergeModeAndBindings({
+                ...emptyAuthoringForm(),
+                mergeMode: AttributeSetMergeMode.Merge,
+                attributes: [baseAttr()],
+                valueSourceBindings: [{ ...emptyValueSourceBinding(), attributeUuid: 'x' }],
+            });
+            expect(gated.mergeMode).toBe(AttributeSetMergeMode.StaticOnly);
+            expect(gated.valueSourceBindings).toEqual([]);
+            expect(gated.attributes).toHaveLength(1);
         });
     });
 });

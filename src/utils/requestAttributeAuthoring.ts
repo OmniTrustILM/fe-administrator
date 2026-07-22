@@ -98,7 +98,14 @@ export interface RequestAttributeAuthoringFormValues {
     externalCsrValidationStrict?: boolean;
 }
 
-export const DEFAULT_MERGE_MODE = AttributeSetMergeMode.Merge;
+/**
+ * Merge modes and value-source bindings are hidden until the connector request-attribute
+ * handling improvements land on the backend (fe#1908). Flip to `true` to re-enable both the
+ * RA-Profile merge-mode selector and the value-source bindings section — nothing else changes.
+ */
+export const MERGE_MODE_AND_BINDINGS_ENABLED = false;
+
+export const DEFAULT_MERGE_MODE = AttributeSetMergeMode.StaticOnly;
 
 /**
  * Content types a static list can be authored for — the scalar types with a concrete input in the
@@ -167,6 +174,11 @@ export function emptyAuthoringForm(): RequestAttributeAuthoringFormValues {
         attributes: [],
         valueSourceBindings: [],
     };
+}
+
+export function gateMergeModeAndBindings(form: RequestAttributeAuthoringFormValues): RequestAttributeAuthoringFormValues {
+    if (MERGE_MODE_AND_BINDINGS_ENABLED) return form;
+    return { ...form, mergeMode: AttributeSetMergeMode.StaticOnly, valueSourceBindings: [] };
 }
 
 export function hasAuthoredRequestAttributes(form: RequestAttributeAuthoringFormValues): boolean {
