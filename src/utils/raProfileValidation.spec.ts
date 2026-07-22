@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
+import { AttributeSetMergeMode } from 'types/openapi';
+
 import {
     extractComplianceErrors,
     externalCsrValidationModeDescription,
@@ -77,12 +79,12 @@ describe('requestValidationFormValuesToUpdateDto', () => {
         expect(dto.externalCsrValidationStrict).toBeNull();
     });
 
-    test('echoes the current definitions, merge mode and bindings so the replace-style update does not wipe them', () => {
+    test('coerces merge mode to Static only and drops bindings while the feature is hidden, but echoes request attributes', () => {
         const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: false, strict: true }, currentConfiguration);
         expect(dto).toEqual({
             requestAttributes: [{ uuid: 'attr-1' }],
-            mergeMode: 'merge',
-            valueSourceBindings: [{ attributeName: 'cn' }],
+            mergeMode: AttributeSetMergeMode.StaticOnly,
+            valueSourceBindings: [],
             externalCsrValidationStrict: true,
         });
     });
@@ -91,15 +93,15 @@ describe('requestValidationFormValuesToUpdateDto', () => {
         const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: true, strict: false }, currentConfiguration);
         expect(JSON.parse(JSON.stringify(dto))).toEqual({
             requestAttributes: [{ uuid: 'attr-1' }],
-            mergeMode: 'merge',
-            valueSourceBindings: [{ attributeName: 'cn' }],
+            mergeMode: AttributeSetMergeMode.StaticOnly,
+            valueSourceBindings: [],
             externalCsrValidationStrict: null,
         });
     });
 
-    test('omits the echoed fields when there is no current configuration', () => {
+    test('omits requestAttributes but still coerces merge mode and bindings when there is no current configuration', () => {
         const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: true, strict: false });
-        expect(JSON.stringify(dto)).toBe('{"externalCsrValidationStrict":null}');
+        expect(JSON.stringify(dto)).toBe('{"mergeMode":"staticOnly","valueSourceBindings":[],"externalCsrValidationStrict":null}');
     });
 });
 
