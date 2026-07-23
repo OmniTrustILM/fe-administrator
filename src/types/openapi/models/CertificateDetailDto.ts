@@ -308,6 +308,18 @@ export interface CertificateDetailDto {
      */
     revokeAttributes?: Array<ResponseAttribute>;
     /**
+     * List of register attributes: the connector\'s register-operation attributes submitted when the certificate was pre-registered
+     * @type {Array<ResponseAttribute>}
+     * @memberof CertificateDetailDto
+     */
+    registerAttributes?: Array<ResponseAttribute>;
+    /**
+     * List of request attributes submitted at registration: the operator-supplied request-attribute values that shaped the pre-registered identity
+     * @type {Array<ResponseAttribute>}
+     * @memberof CertificateDetailDto
+     */
+    registrationRequestAttributes?: Array<ResponseAttribute>;
+    /**
      * List of related certificates
      * @type {Array<CertificateDto>}
      * @memberof CertificateDetailDto
