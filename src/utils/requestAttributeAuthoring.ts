@@ -186,8 +186,16 @@ export function emptyAuthoringForm(): RequestAttributeAuthoringFormValues {
     };
 }
 
-export function gateMergeModeAndBindings(form: RequestAttributeAuthoringFormValues): RequestAttributeAuthoringFormValues {
-    if (MERGE_MODE_AND_BINDINGS_ENABLED) return form;
+/**
+ * While the feature is hidden (fe#1908) every save path coerces the form to `DEFAULT_MERGE_MODE`
+ * and drops all value-source bindings; once re-enabled the form passes through unchanged. `enabled`
+ * defaults to the flag and is a seam so tests can exercise the re-enabled path.
+ */
+export function gateMergeModeAndBindings(
+    form: RequestAttributeAuthoringFormValues,
+    enabled: boolean = MERGE_MODE_AND_BINDINGS_ENABLED,
+): RequestAttributeAuthoringFormValues {
+    if (enabled) return form;
     return { ...form, mergeMode: DEFAULT_MERGE_MODE, valueSourceBindings: [] };
 }
 

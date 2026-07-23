@@ -103,6 +103,23 @@ describe('requestValidationFormValuesToUpdateDto', () => {
         const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: true, strict: false });
         expect(JSON.stringify(dto)).toBe('{"mergeMode":"staticOnly","valueSourceBindings":[],"externalCsrValidationStrict":null}');
     });
+
+    test('round-trips merge mode and bindings once the feature is re-enabled', () => {
+        const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: false, strict: true }, currentConfiguration, true);
+        expect(dto).toEqual({
+            requestAttributes: [{ uuid: 'attr-1' }],
+            mergeMode: 'merge',
+            valueSourceBindings: [{ attributeName: 'cn' }],
+            externalCsrValidationStrict: true,
+        });
+    });
+
+    test('leaves merge mode and bindings undefined when re-enabled with no current configuration', () => {
+        const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: true, strict: false }, undefined, true);
+        expect(dto.mergeMode).toBeUndefined();
+        expect(dto.valueSourceBindings).toBeUndefined();
+        expect(dto.externalCsrValidationStrict).toBeNull();
+    });
 });
 
 describe('extractComplianceErrors', () => {
