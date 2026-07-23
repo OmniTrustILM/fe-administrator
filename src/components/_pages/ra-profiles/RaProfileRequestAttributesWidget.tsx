@@ -60,15 +60,15 @@ export default function RaProfileRequestAttributesWidget({
     }, [dispatch]);
 
     useEffect(() => {
-        if (authorityUuid) {
+        if (MERGE_MODE_AND_BINDINGS_ENABLED && authorityUuid) {
             dispatch(authoritiesActions.getRAProfilesAttributesDescriptors({ authorityUuid }));
         }
     }, [dispatch, authorityUuid]);
 
     useEffect(() => {
+        if (dirty) return;
         setForm(gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes)));
-        setDirty(false);
-    }, [certificateRequestAttributes]);
+    }, [certificateRequestAttributes, dirty]);
 
     const rdnOptions = useMemo(
         () =>
@@ -81,11 +81,13 @@ export default function RaProfileRequestAttributesWidget({
     const extensionOptions = useMemo(() => toOidSelectOptions(oidsByCategory[OidCategory.CertificateExtension] ?? []), [oidsByCategory]);
     const connectorAttributeOptions = useMemo(
         () =>
-            (raProfileAttributeDescriptors ?? []).map((descriptor) => ({
-                value: descriptor.uuid ?? descriptor.name,
-                label: !isGroupAttributeModel(descriptor) ? (descriptor.properties?.label ?? descriptor.name) : descriptor.name,
-                description: descriptor.name,
-            })),
+            MERGE_MODE_AND_BINDINGS_ENABLED
+                ? (raProfileAttributeDescriptors ?? []).map((descriptor) => ({
+                      value: descriptor.uuid ?? descriptor.name,
+                      label: !isGroupAttributeModel(descriptor) ? (descriptor.properties?.label ?? descriptor.name) : descriptor.name,
+                      description: descriptor.name,
+                  }))
+                : [],
         [raProfileAttributeDescriptors],
     );
 

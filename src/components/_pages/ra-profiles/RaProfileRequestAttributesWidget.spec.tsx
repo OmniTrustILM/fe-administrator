@@ -37,3 +37,18 @@ test('Save is disabled until the form is edited', async ({ mount, page }) => {
     await mount(<RaProfileRequestAttributesWidgetWithStore />);
     await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
 });
+
+test('Save becomes enabled after adding a request attribute', async ({ mount, page }) => {
+    await mount(<RaProfileRequestAttributesWidgetWithStore />);
+
+    await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    await page.getByTestId('request-attribute-authoring-attribute-add').click();
+    await page.locator('#ra-attr-name').click();
+    await page.locator('#ra-attr-name').fill('commonName');
+    await page.locator('#ra-attr-label').click();
+    await page.locator('#ra-attr-label').fill('Common Name');
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
+
+    await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
+});
