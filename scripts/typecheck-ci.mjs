@@ -14,6 +14,7 @@
  * the build.
  */
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 
 // Exact tsc diagnostic paths (everything before the first `(`) that are known,
 // tracked debt. Keep this list minimal and justified; do not use prefixes.
@@ -26,9 +27,12 @@ const KNOWN_DEBT = new Set([
     'playwright-ct.config.ts',
 ]);
 
-const res = spawnSync('npx', ['tsc', '--noEmit', '-p', 'tsconfig.typecheck.json'], {
+// Resolve the tsc binary from node_modules and run it with the current Node executable
+// (both absolute paths) so the command never relies on PATH resolution.
+const require = createRequire(import.meta.url);
+const tscBin = require.resolve('typescript/bin/tsc');
+const res = spawnSync(process.execPath, [tscBin, '--noEmit', '-p', 'tsconfig.typecheck.json'], {
     encoding: 'utf8',
-    shell: process.platform === 'win32',
 });
 
 // Guard against a false green when tsc never actually ran (missing binary, spawn
@@ -56,7 +60,10 @@ if (res.status !== 0 && errorLines.length === 0) {
 // (e.g. a global TS error) yields a non-matching key and is treated as a real error.
 const pathOf = (line) => {
     const paren = line.indexOf('(');
-    return paren === -1 ? line : line.slice(0, paren);
+    const path = paren === -1 ? line : line.slice(0, paren);
+    // tsc emits backslash-separated paths on Windows; normalise so the forward-slash
+    // KNOWN_DEBT entries match regardless of platform.
+    return path.replaceAll('\\', '/');
 };
 const prodErrors = errorLines.filter((line) => !KNOWN_DEBT.has(pathOf(line)));
 const ignoredCount = errorLines.length - prodErrors.length;

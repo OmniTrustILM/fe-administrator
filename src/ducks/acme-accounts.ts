@@ -41,7 +41,7 @@ export const slice = createSlice({
     initialState,
 
     reducers: {
-        resetSate: (state, action: PayloadAction<void>) => {
+        resetState: (state, action: PayloadAction<void>) => {
             resetSliceState(state, initialState);
         },
 

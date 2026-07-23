@@ -7,9 +7,9 @@ describe('acmeAccounts slice', () => {
         expect(reducer(undefined, { type: 'unknown' })).toEqual(initialState);
     });
 
-    test('resetSate restores initialState', () => {
+    test('resetState restores initialState', () => {
         const dirty = { ...initialState, isFetchingList: true } as any;
-        expect(reducer(dirty, actions.resetSate())).toEqual(initialState);
+        expect(reducer(dirty, actions.resetState())).toEqual(initialState);
     });
 
     test('setCheckedRows', () => {
