@@ -12,7 +12,9 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { toOidSelectOptions } from 'utils/oid';
 import {
     buildRaProfileRequestAttributesUpdateDto,
+    gateMergeModeAndBindings,
     hasAuthoredRequestAttributes,
+    MERGE_MODE_AND_BINDINGS_ENABLED,
     parseRaProfileRequestAttributesDto,
     type RequestAttributeAuthoringFormValues,
 } from 'utils/requestAttributeAuthoring';
@@ -47,7 +49,7 @@ export default function RaProfileRequestAttributesWidget({
     const updateSucceeded = useSelector(requestAttributesSelectors.updateRaProfileSetSucceeded);
 
     const [form, setForm] = useState<RequestAttributeAuthoringFormValues>(() =>
-        parseRaProfileRequestAttributesDto(certificateRequestAttributes),
+        gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes)),
     );
     const [dirty, setDirty] = useState(false);
 
@@ -64,7 +66,7 @@ export default function RaProfileRequestAttributesWidget({
     }, [dispatch, authorityUuid]);
 
     useEffect(() => {
-        setForm(parseRaProfileRequestAttributesDto(certificateRequestAttributes));
+        setForm(gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes)));
         setDirty(false);
     }, [certificateRequestAttributes]);
 
@@ -88,7 +90,7 @@ export default function RaProfileRequestAttributesWidget({
     );
 
     const showPlatformDefaultNote = useMemo(
-        () => !hasAuthoredRequestAttributes(parseRaProfileRequestAttributesDto(certificateRequestAttributes)),
+        () => !hasAuthoredRequestAttributes(gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes))),
         [certificateRequestAttributes],
     );
 
@@ -108,7 +110,7 @@ export default function RaProfileRequestAttributesWidget({
             requestAttributesActions.updateRaProfileRequestAttributes({
                 authorityUuid,
                 raProfileUuid,
-                data: buildRaProfileRequestAttributesUpdateDto(form),
+                data: buildRaProfileRequestAttributesUpdateDto(gateMergeModeAndBindings(form)),
             }),
         );
     }, [dispatch, authorityUuid, raProfileUuid, form]);
@@ -124,7 +126,8 @@ export default function RaProfileRequestAttributesWidget({
             <RequestAttributeAuthoringEditor
                 value={form}
                 onChange={onChange}
-                showMergeMode
+                showMergeMode={MERGE_MODE_AND_BINDINGS_ENABLED}
+                showBindings={MERGE_MODE_AND_BINDINGS_ENABLED}
                 connectorAttributeOptions={connectorAttributeOptions}
                 rdnOptions={rdnOptions}
                 extensionOptions={extensionOptions}
