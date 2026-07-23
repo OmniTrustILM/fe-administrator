@@ -36,7 +36,10 @@ import type { FieldMappingModel, MappedFieldModel } from 'types/requestAttribute
  *  - The RA-Profile update is NOT a server-side merge: Core writes `externalCsrValidationStrict`
  *    unconditionally, so we round-trip the loaded value (owned by the strictness toggle) instead
  *    of omitting it, which would wipe it. `params` on a value source / binding are likewise
- *    preserved on round-trip even though this editor has no UI for them yet.
+ *    preserved on round-trip even though this editor has no UI for them yet — except that while
+ *    `MERGE_MODE_AND_BINDINGS_ENABLED` is off, `gateMergeModeAndBindings` intentionally drops the
+ *    whole `valueSourceBindings` array (and its params) on save, so binding round-tripping only
+ *    applies once the feature is re-enabled.
  */
 
 export interface AuthoredAttributeFormValues {
@@ -83,7 +86,11 @@ export interface ValueSourceBindingFormValues {
     attributeName?: string;
     valueSourceType: ValueSourceType;
     collectionRef?: string;
-    /** Cascading dependency params, preserved on round-trip (no authoring UI yet). */
+    /**
+     * Cascading dependency params, preserved on round-trip (no authoring UI yet) — but only while
+     * MERGE_MODE_AND_BINDINGS_ENABLED is on; when it is off, gateMergeModeAndBindings drops the
+     * entire binding (params included) on save.
+     */
     params?: SourceParam[];
 }
 
@@ -101,7 +108,10 @@ export interface RequestAttributeAuthoringFormValues {
 /**
  * Merge modes and value-source bindings are hidden until the connector request-attribute
  * handling improvements land on the backend (fe#1908). Flip to `true` to re-enable both the
- * RA-Profile merge-mode selector and the value-source bindings section — nothing else changes.
+ * RA-Profile merge-mode selector and the value-source bindings section, and to stop
+ * `gateMergeModeAndBindings` from coercing saved values. It does NOT change the default merge
+ * mode: `DEFAULT_MERGE_MODE` below is Static only regardless of this flag (it was `Merge` before
+ * fe#1908), so re-enabling the UI does not restore the previous `Merge` default on its own.
  */
 export const MERGE_MODE_AND_BINDINGS_ENABLED = false;
 
