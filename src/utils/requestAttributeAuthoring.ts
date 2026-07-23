@@ -178,7 +178,7 @@ export function emptyAuthoringForm(): RequestAttributeAuthoringFormValues {
 
 export function gateMergeModeAndBindings(form: RequestAttributeAuthoringFormValues): RequestAttributeAuthoringFormValues {
     if (MERGE_MODE_AND_BINDINGS_ENABLED) return form;
-    return { ...form, mergeMode: AttributeSetMergeMode.StaticOnly, valueSourceBindings: [] };
+    return { ...form, mergeMode: DEFAULT_MERGE_MODE, valueSourceBindings: [] };
 }
 
 export function hasAuthoredRequestAttributes(form: RequestAttributeAuthoringFormValues): boolean {

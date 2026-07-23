@@ -1,6 +1,5 @@
 import type { RaProfileCertificateRequestAttributesDto, RaProfileCertificateRequestAttributesUpdateDto } from 'types/openapi';
-import { AttributeSetMergeMode } from 'types/openapi';
-import { MERGE_MODE_AND_BINDINGS_ENABLED } from 'utils/requestAttributeAuthoring';
+import { DEFAULT_MERGE_MODE, MERGE_MODE_AND_BINDINGS_ENABLED } from 'utils/requestAttributeAuthoring';
 
 export type RequestValidationFormValues = {
     usePlatformSettings: boolean;
@@ -36,7 +35,7 @@ export function requestValidationFormValuesToUpdateDto(
 ): RaProfileCertificateRequestAttributesUpdateDto {
     return {
         requestAttributes: currentConfiguration?.requestAttributes,
-        mergeMode: MERGE_MODE_AND_BINDINGS_ENABLED ? currentConfiguration?.mergeMode : AttributeSetMergeMode.StaticOnly,
+        mergeMode: MERGE_MODE_AND_BINDINGS_ENABLED ? currentConfiguration?.mergeMode : DEFAULT_MERGE_MODE,
         valueSourceBindings: MERGE_MODE_AND_BINDINGS_ENABLED ? currentConfiguration?.valueSourceBindings : [],
         // `null` means "inherit the platform default", but the generated model types this field as
         // `boolean | undefined` (the spec omits `nullable`). Narrow the cast to just this field so the

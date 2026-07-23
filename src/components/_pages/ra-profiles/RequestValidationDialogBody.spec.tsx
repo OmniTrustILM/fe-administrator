@@ -101,7 +101,7 @@ test.describe('RequestValidationDialogBody', () => {
         expect(updates[0]).toMatchObject({
             profileUuid: 'ra-uuid-1',
             authorityInstanceUuid: 'authority-uuid-1',
-            requestAttributes: { externalCsrValidationStrict: true, mergeMode: AttributeSetMergeMode.Merge },
+            requestAttributes: { externalCsrValidationStrict: true, mergeMode: AttributeSetMergeMode.StaticOnly },
         });
         expect(closed).toBe(true);
     });
