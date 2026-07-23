@@ -89,10 +89,7 @@ export default function RaProfileRequestAttributesWidget({
         [raProfileAttributeDescriptors],
     );
 
-    const showPlatformDefaultNote = useMemo(
-        () => !hasAuthoredRequestAttributes(gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes))),
-        [certificateRequestAttributes],
-    );
+    const showPlatformDefaultNote = useMemo(() => !hasAuthoredRequestAttributes(form), [form]);
 
     const onChange = useCallback((next: RequestAttributeAuthoringFormValues) => {
         setForm(next);

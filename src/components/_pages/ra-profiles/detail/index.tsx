@@ -54,6 +54,9 @@ export default function RaProfileDetail() {
     const { id, authorityId } = useParams();
 
     const raProfile = useSelector(raProfilesSelectors.raProfile);
+
+    const routeAuthorityUuid = authorityId && authorityId !== 'unknown' && authorityId !== 'undefined' ? authorityId : undefined;
+    const requestAttributesAuthorityUuid = raProfile?.authorityInstanceUuid ?? routeAuthorityUuid;
     const acmeDetails = useSelector(raProfilesSelectors.acmeDetails);
     const scepDetails = useSelector(raProfilesSelectors.scepDetails);
     const cmpDetails = useSelector(raProfilesSelectors.cmpDetails);
@@ -1028,7 +1031,7 @@ export default function RaProfileDetail() {
                                                     />
                                                 )}
                                             </Container>
-                                            {raProfile && (
+                                            {raProfile && requestAttributesAuthorityUuid && (
                                                 <Widget
                                                     title="Request Attributes"
                                                     titleSize="large"
@@ -1038,7 +1041,7 @@ export default function RaProfileDetail() {
                                                     dataTestId="ra-profile-request-attributes-widget-card"
                                                 >
                                                     <RaProfileRequestAttributesWidget
-                                                        authorityUuid={raProfile.authorityInstanceUuid ?? ''}
+                                                        authorityUuid={requestAttributesAuthorityUuid}
                                                         raProfileUuid={raProfile.uuid}
                                                         certificateRequestAttributes={raProfile.certificateRequestAttributes}
                                                         onSaved={getFreshRaProfileDetail}

@@ -1,17 +1,12 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { testInitialState, testReducers } from 'ducks/test-reducers';
 import { Provider } from 'react-redux';
 import type { RaProfileCertificateRequestAttributesDto } from 'types/openapi';
+import { createMockStore } from 'utils/test-helpers';
 import RaProfileRequestAttributesWidget from './RaProfileRequestAttributesWidget';
 
 export default function RaProfileRequestAttributesWidgetWithStore({
     certificateRequestAttributes,
 }: Readonly<{ certificateRequestAttributes?: RaProfileCertificateRequestAttributesDto }>) {
-    const store = configureStore({
-        reducer: testReducers,
-        middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
-        preloadedState: testInitialState,
-    });
+    const store = createMockStore();
 
     return (
         <Provider store={store}>
