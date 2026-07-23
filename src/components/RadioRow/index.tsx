@@ -6,9 +6,10 @@ type Props = {
     children: React.ReactNode;
     maxWidth?: number;
     disabled?: boolean;
+    name?: string;
 };
 
-export default function RadioRow({ checked, onSelect, children, maxWidth, disabled }: Readonly<Props>) {
+export default function RadioRow({ checked, onSelect, children, maxWidth, disabled, name }: Readonly<Props>) {
     return (
         <div style={{ maxWidth: maxWidth ?? '100%' }} className="mx-auto w-full">
             <label
@@ -21,6 +22,7 @@ export default function RadioRow({ checked, onSelect, children, maxWidth, disabl
             >
                 <input
                     type="radio"
+                    name={name}
                     checked={checked}
                     onChange={onSelect}
                     disabled={disabled}

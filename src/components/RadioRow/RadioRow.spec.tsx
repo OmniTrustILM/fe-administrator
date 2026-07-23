@@ -72,6 +72,26 @@ test.describe('RadioRow', () => {
         await expect(component).toHaveCSS('max-width', '300px');
     });
 
+    test('should disable the radio and apply disabled styles when disabled', async ({ mount }) => {
+        const component = await mount(
+            <RadioRow checked={false} onSelect={() => {}} disabled>
+                Option
+            </RadioRow>,
+        );
+        await expect(component.getByRole('radio')).toBeDisabled();
+        await expect(component.locator('label')).toHaveClass(/cursor-not-allowed/);
+        await expect(component.locator('label')).toHaveClass(/opacity-60/);
+    });
+
+    test('should forward the name prop to the radio input', async ({ mount }) => {
+        const component = await mount(
+            <RadioRow checked={false} onSelect={() => {}} name="csr-validation">
+                Option
+            </RadioRow>,
+        );
+        await expect(component.getByRole('radio')).toHaveAttribute('name', 'csr-validation');
+    });
+
     test('should render multiple children', async ({ mount }) => {
         const component = await mount(
             <RadioRow checked={false} onSelect={() => {}}>

@@ -132,9 +132,7 @@ export default function RequestValidationDialogBody({ raProfile, platformSetting
                             <Controller
                                 name="strict"
                                 control={control}
-                                render={({ field }) => (
-                                    <ExternalCsrValidationRadio strict={field.value} onChange={field.onChange} disabled={isUpdating} />
-                                )}
+                                render={({ field }) => <ExternalCsrValidationRadio strict={field.value} onChange={field.onChange} />}
                             />
                         </div>
                     )}
