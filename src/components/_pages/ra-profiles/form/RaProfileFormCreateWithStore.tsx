@@ -1,4 +1,4 @@
-import { configureStore, type UnknownAction } from '@reduxjs/toolkit';
+import { configureStore, type Middleware, type UnknownAction } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import { testInitialState, testReducers } from 'ducks/test-reducers';
@@ -16,13 +16,13 @@ export default function RaProfileFormCreateWithStore({ authorityId = 'auth-1' }:
     const capturedActions: UnknownAction[] = [];
     (window as unknown as { __raProfileActions__: UnknownAction[] }).__raProfileActions__ = capturedActions;
 
+    const captureMiddleware: Middleware = () => (next) => (action) => {
+        capturedActions.push(action as UnknownAction);
+        return next(action);
+    };
     const store = configureStore({
         reducer: testReducers,
-        middleware: (getDefaultMiddleware) =>
-            getDefaultMiddleware({ serializableCheck: false }).concat(() => (next) => (action) => {
-                capturedActions.push(action as UnknownAction);
-                return next(action);
-            }),
+        middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(captureMiddleware),
         preloadedState: testInitialState,
     });
     (window as unknown as { __raProfileStore__: typeof store }).__raProfileStore__ = store;

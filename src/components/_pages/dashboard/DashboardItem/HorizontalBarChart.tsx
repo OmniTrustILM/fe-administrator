@@ -81,7 +81,7 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
                     />
                     <Tooltip
                         cursor={{ fill: 'transparent' }}
-                        formatter={(value: number) => [String(value), 'Count']}
+                        formatter={(value) => [String(value), 'Count']}
                         contentStyle={{ fontSize: 12 }}
                     />
                     <Bar dataKey="value" radius={[0, 2, 2, 0]} isAnimationActive onClick={(_entry, index) => handleBarClick(index)}>

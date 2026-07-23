@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, type Middleware, type UnknownAction } from '@reduxjs/toolkit';
 import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
@@ -26,26 +26,23 @@ export function RequestValidationDialogBodyTestWrapper({
     onUpdateRequestAttributes,
     onClose = () => {},
 }: RequestValidationDialogBodyTestWrapperProps) {
-    const store = useMemo(
-        () =>
-            configureStore({
-                reducer: testReducers,
-                middleware: (getDefaultMiddleware) =>
-                    getDefaultMiddleware({ serializableCheck: false }).concat(
-                        (_store: any) => (next: (arg0: any) => any) => (action: any) => {
-                            if (action.type === raProfilesActions.updateRaProfileRequestAttributes.type) {
-                                onUpdateRequestAttributes?.(action.payload);
-                            }
-                            return next(action);
-                        },
-                    ),
-                preloadedState: {
-                    ...testInitialState,
-                    raprofiles: { isUpdating, raProfiles: [] },
-                },
-            }),
-        [isUpdating, onUpdateRequestAttributes],
-    );
+    const store = useMemo(() => {
+        const captureMiddleware: Middleware = () => (next) => (action) => {
+            const typed = action as UnknownAction;
+            if (typed.type === raProfilesActions.updateRaProfileRequestAttributes.type) {
+                onUpdateRequestAttributes?.(typed.payload);
+            }
+            return next(action);
+        };
+        return configureStore({
+            reducer: testReducers,
+            middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(captureMiddleware),
+            preloadedState: {
+                ...testInitialState,
+                raprofiles: { isUpdating, isCreating: false, createRaProfileSucceeded: false, createdRaProfileUuid: null, raProfiles: [] },
+            },
+        });
+    }, [isUpdating, onUpdateRequestAttributes]);
 
     return (
         <Provider store={store}>

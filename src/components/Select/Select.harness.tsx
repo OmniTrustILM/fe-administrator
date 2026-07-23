@@ -54,7 +54,7 @@ export function SearchableMultiHarness({ initial = [] as { value: string | numbe
 }
 
 export function SelectPlusDialogHarness() {
-    const [v, setV] = useState<any>('');
+    const [v, setV] = useState<SingleValueState>('');
     const [open, setOpen] = useState(false);
     return (
         <div>

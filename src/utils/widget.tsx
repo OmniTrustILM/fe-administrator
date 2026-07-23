@@ -43,7 +43,7 @@ export function createWidgetDetailHeaders(): TableHeader[] {
     ];
 }
 
-export function createTableDataRow(label: string, value: string | null | undefined): TableDataRow {
+export function createTableDataRow(label: string, value: React.ReactNode): TableDataRow {
     return {
         id: label.toLowerCase().replaceAll(/[^a-z0-9]/g, ''),
         columns: [label, value ?? ''],

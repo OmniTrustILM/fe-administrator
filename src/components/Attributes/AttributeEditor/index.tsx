@@ -682,7 +682,7 @@ function AttributeEditorInner({
             const depDescriptors = mounted.filter((d) => dependsOn.includes(d.name));
             const currentValues = collectFormAttributes(id, depDescriptors, formValues);
             const hasValue = (attribute: (typeof currentValues)[number]) =>
-                attribute.content.some((item: any) => item?.reference != null || (item?.data != null && item?.data !== ''));
+                attribute.content.some((item) => item?.reference != null || (item?.data != null && item?.data !== ''));
             const presentValues = currentValues.filter(hasValue);
             if (presentValues.length !== dependsOn.length) return undefined;
 
@@ -1078,7 +1078,12 @@ function AttributeEditorInner({
             const nonDescriptorCallbackValues = callbackData[callbackId].filter((v: unknown) => !isDescriptorValue(v));
             const callbackContentOpts =
                 nonDescriptorCallbackValues.length > 0
-                    ? { [callbackId]: nonDescriptorCallbackValues.map((value: any) => ({ label: contentItemLabel(value), value })) }
+                    ? {
+                          [callbackId]: nonDescriptorCallbackValues.map((value) => ({
+                              label: contentItemLabel(value as { reference?: string; data?: unknown }),
+                              value,
+                          })),
+                      }
                     : {};
 
             // multiple effects can modify opts during single render call

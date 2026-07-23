@@ -159,17 +159,24 @@ export const getAttributeContent = (contentType: AttributeContentType, content: 
  * the raw option object, which may carry expanded content Core resolved for display. Empty picker
  * stubs keep their empty data so stripEmptyResourceContent can drop them.
  */
-const getResourceFormValue = (item: any) => {
-    const source: any = item && typeof item === 'object' && 'value' in item ? item.value : item;
+const getResourceFormValue = (item: unknown): FormAttributeContentItem => {
+    const source = item && typeof item === 'object' && 'value' in item ? (item as { value?: unknown }).value : item;
     if (source && typeof source === 'object' && ('data' in source || 'reference' in source)) {
-        const rawData = source.data;
+        const src = source as { data?: unknown; reference?: unknown };
+        const rawData = src.data;
         const data =
-            rawData && typeof rawData === 'object' ? { resource: rawData.resource, uuid: rawData.uuid, name: rawData.name } : rawData;
-        const reference = source.reference;
-        return reference != null && reference !== '' ? { data, reference } : { data };
+            rawData && typeof rawData === 'object'
+                ? {
+                      resource: (rawData as { resource?: unknown }).resource,
+                      uuid: (rawData as { uuid?: unknown }).uuid,
+                      name: (rawData as { name?: unknown }).name,
+                  }
+                : rawData;
+        const reference = src.reference;
+        return reference != null && reference !== '' ? { data, reference: reference as string } : { data };
     }
     if (source && typeof source === 'object') {
-        const { resource, uuid, name } = source;
+        const { resource, uuid, name } = source as { resource?: unknown; uuid?: unknown; name?: unknown };
         return uuid || name ? { data: { resource, uuid, name } } : { data: '' };
     }
     return { data: source };

@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, type Middleware } from '@reduxjs/toolkit';
 import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
@@ -21,19 +21,17 @@ export type CertificateFormTestWrapperProps = Readonly<{
  * See RequestValidationDialogBodyTestWrapper.tsx for the established precedent.
  */
 export function CertificateFormTestWrapper({ onCancel, preloadedState, onAction }: CertificateFormTestWrapperProps) {
-    const store = useMemo(
-        () =>
-            configureStore({
-                reducer: testReducers,
-                middleware: (getDefaultMiddleware) =>
-                    getDefaultMiddleware({ serializableCheck: false }).concat((_store) => (next) => (action) => {
-                        onAction?.(action as { type: string; payload?: unknown });
-                        return next(action);
-                    }),
-                preloadedState: { ...testInitialState, ...preloadedState },
-            }),
-        [preloadedState, onAction],
-    );
+    const store = useMemo(() => {
+        const onActionMiddleware: Middleware = () => (next) => (action) => {
+            onAction?.(action as { type: string; payload?: unknown });
+            return next(action);
+        };
+        return configureStore({
+            reducer: testReducers,
+            middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(onActionMiddleware),
+            preloadedState: { ...testInitialState, ...preloadedState },
+        });
+    }, [preloadedState, onAction]);
 
     return (
         <Provider store={store}>
