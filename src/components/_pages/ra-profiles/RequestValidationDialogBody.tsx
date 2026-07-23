@@ -11,12 +11,11 @@ import Switch from 'components/Switch';
 import Container from 'components/Container';
 import Label from 'components/Label';
 import ProgressButton from 'components/ProgressButton';
-import RadioRow from 'components/RadioRow';
+import ExternalCsrValidationRadio from 'components/RequestAttributes/ExternalCsrValidationRadio';
 import { useAreDefaultValuesSame } from 'utils/common-hooks';
 import type { SettingsPlatformModel } from 'types/settings';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import {
-    externalCsrValidationModeDescription,
     externalCsrValidationModeLabel,
     requestValidationDefaultFormValues,
     requestValidationFormValuesToUpdateDto,
@@ -133,32 +132,7 @@ export default function RequestValidationDialogBody({ raProfile, platformSetting
                             <Controller
                                 name="strict"
                                 control={control}
-                                render={({ field }) => (
-                                    <>
-                                        <RadioRow checked={field.value} onSelect={() => field.onChange(true)}>
-                                            <span
-                                                className="font-medium text-[var(--dark-gray-color)] dark:text-white"
-                                                data-testid="request-validation-strict"
-                                            >
-                                                {externalCsrValidationModeLabel(true)}
-                                            </span>
-                                            <span className="text-gray-500 dark:text-neutral-400">
-                                                {externalCsrValidationModeDescription(true)}
-                                            </span>
-                                        </RadioRow>
-                                        <RadioRow checked={!field.value} onSelect={() => field.onChange(false)}>
-                                            <span
-                                                className="font-medium text-[var(--dark-gray-color)] dark:text-white"
-                                                data-testid="request-validation-lenient"
-                                            >
-                                                {externalCsrValidationModeLabel(false)}
-                                            </span>
-                                            <span className="text-gray-500 dark:text-neutral-400">
-                                                {externalCsrValidationModeDescription(false)}
-                                            </span>
-                                        </RadioRow>
-                                    </>
-                                )}
+                                render={({ field }) => <ExternalCsrValidationRadio strict={field.value} onChange={field.onChange} />}
                             />
                         </div>
                     )}

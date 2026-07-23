@@ -1,5 +1,6 @@
+import ExternalCsrValidationRadio from 'components/RequestAttributes/ExternalCsrValidationRadio';
+import Label from 'components/Label';
 import RequestAttributeAuthoringEditor from 'components/RequestAttributes/RequestAttributeAuthoringEditor';
-import Switch from 'components/Switch';
 import Widget from 'components/Widget';
 import { actions as oidActions, selectors as oidSelectors } from 'ducks/oids';
 import { actions, selectors } from 'ducks/raProfileRequestAttributes';
@@ -132,13 +133,14 @@ export default function RequestAttributesSettings() {
                     The platform default request-attribute set is the terminal fallback used when an RA Profile does not define its own set.
                     Changes are saved automatically.
                 </p>
-                <Switch
-                    id="externalCsrValidationStrict"
-                    label="Strict external CSR validation"
-                    checked={form.externalCsrValidationStrict ?? false}
-                    onChange={(c) => onChange({ ...form, externalCsrValidationStrict: c })}
-                    disabled={isUpdating || !loaded}
-                />
+                <div className="space-y-2">
+                    <Label className="!text-base">Request validation</Label>
+                    <ExternalCsrValidationRadio
+                        strict={form.externalCsrValidationStrict ?? false}
+                        onChange={(c) => onChange({ ...form, externalCsrValidationStrict: c })}
+                        disabled={isUpdating || !loaded}
+                    />
+                </div>
                 {editor}
             </div>
         </Widget>
