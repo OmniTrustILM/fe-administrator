@@ -734,8 +734,58 @@ describe('certificates epics', () => {
         });
     });
 
+    describe('getRegisterAttributes', () => {
+        const GET_REGISTER_ATTRIBUTES_EPIC_INDEX = 37;
+
+        async function runGetRegisterAttributesEpic(
+            action: UnknownAction,
+            listRegisterCertificateAttributes: (args: any) => Observable<any> = () => of([]),
+            takeCount = 1,
+        ): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const calls: any[] = [];
+            const deps = {
+                apiClients: {
+                    clientOperations: {
+                        listRegisterCertificateAttributes: (args: any) => {
+                            calls.push(args);
+                            return listRegisterCertificateAttributes(args);
+                        },
+                    },
+                },
+            };
+            const output$ = epics[GET_REGISTER_ATTRIBUTES_EPIC_INDEX](of(action), of({}) as any, deps as any);
+            const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
+            return { emitted, calls };
+        }
+
+        test('forwards authorityUuid and raProfileUuid to the client and maps descriptors on success', async () => {
+            const { emitted, calls } = await runGetRegisterAttributesEpic(
+                certificatesActions.getRegisterAttributes({ raProfileUuid: 'ra-1', authorityUuid: 'auth-1' }),
+                () => of([{ uuid: 'reg-attr-1' }]),
+            );
+
+            expect(calls).toEqual([{ authorityUuid: 'auth-1', raProfileUuid: 'ra-1' }]);
+            expect(emitted[0].type).toBe(certificatesActions.getRegisterAttributesSuccess.type);
+            expect((emitted[0] as any).payload.raProfileUuid).toBe('ra-1');
+            expect((emitted[0] as any).payload.registerAttributes).toEqual([{ uuid: 'reg-attr-1' }]);
+        });
+
+        test('emits failure action and fetchError redirect when the client fails', async () => {
+            const { emitted } = await runGetRegisterAttributesEpic(
+                certificatesActions.getRegisterAttributes({ raProfileUuid: 'ra-1', authorityUuid: 'auth-1' }),
+                () => throwError(() => new Error('boom')),
+                2,
+            );
+
+            expect(emitted[0].type).toBe(certificatesActions.getRegisterAttributesFailure.type);
+            expect((emitted[0] as any).payload.error).toContain('boom');
+            expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+        });
+    });
+
     describe('getCsrAttributes', () => {
-        const GET_CSR_ATTRIBUTES_EPIC_INDEX = 39;
+        const GET_CSR_ATTRIBUTES_EPIC_INDEX = 40;
 
         async function runGetCsrAttributesEpic(
             action: UnknownAction,

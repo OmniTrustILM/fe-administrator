@@ -348,11 +348,25 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const showOwnershipTab = isRegister;
     const showRegisterConnectorTab = isRegister && (registerAttributeDescriptors[selectedRaProfileUuid || '']?.length ?? 0) > 0;
 
+    // TabLayout indexes into the visible (non-hidden) tab subset, so this must match the number of
+    // tabs rendered. Custom Attributes is always visible; the rest are gated by their show* flags.
+    const visibleRequestTabCount =
+        1 +
+        [
+            showRequestAttributesTab,
+            showSignatureTab,
+            showAltSignatureTab,
+            showOwnershipTab,
+            showConnectorTab,
+            showRegisterConnectorTab,
+        ].filter(Boolean).length;
+
     useEffect(() => {
-        // Reset to the first visible tab whenever the visible tab set changes, so a carried-over index
-        // never lands the user on a different tab than the one they had selected.
-        setActiveRequestTab(0);
-    }, [showRequestAttributesTab, showSignatureTab, showAltSignatureTab, showConnectorTab, showOwnershipTab, showRegisterConnectorTab]);
+        // Fall back to the first tab only when the selected index no longer exists (e.g. a mode switch
+        // shrinks the visible set). A tab appearing/disappearing after the selected one — such as the
+        // async-loaded register Connector Attributes tab — must not yank the user off a still-visible tab.
+        setActiveRequestTab((current) => (current >= visibleRequestTabCount ? 0 : current));
+    }, [visibleRequestTabCount]);
 
     const submitCallback = useCallback(
         (formValues: CertificateFormValues) => {
