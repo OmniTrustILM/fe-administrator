@@ -1,4 +1,3 @@
-import ProgressButton from 'components/ProgressButton';
 import RequestAttributeAuthoringEditor from 'components/RequestAttributes/RequestAttributeAuthoringEditor';
 import { actions as authoritiesActions, selectors as authoritiesSelectors } from 'ducks/authorities';
 import { actions as oidActions, selectors as oidSelectors } from 'ducks/oids';
@@ -93,26 +92,26 @@ export default function RaProfileRequestAttributesWidget({
 
     const showPlatformDefaultNote = useMemo(() => !hasAuthoredRequestAttributes(form), [form]);
 
-    const onChange = useCallback((next: RequestAttributeAuthoringFormValues) => {
-        setForm(next);
-        setDirty(true);
-    }, []);
+    const onChange = useCallback(
+        (next: RequestAttributeAuthoringFormValues) => {
+            setForm(next);
+            setDirty(true);
+            dispatch(
+                requestAttributesActions.updateRaProfileRequestAttributes({
+                    authorityUuid,
+                    raProfileUuid,
+                    data: buildRaProfileRequestAttributesUpdateDto(gateMergeModeAndBindings(next)),
+                }),
+            );
+        },
+        [dispatch, authorityUuid, raProfileUuid],
+    );
 
     const clearDirtyAndRefetch = useCallback(() => {
         setDirty(false);
         onSaved?.();
     }, [onSaved]);
     useRunOnSuccessfulFinish(isUpdating, updateSucceeded, clearDirtyAndRefetch);
-
-    const onSave = useCallback(() => {
-        dispatch(
-            requestAttributesActions.updateRaProfileRequestAttributes({
-                authorityUuid,
-                raProfileUuid,
-                data: buildRaProfileRequestAttributesUpdateDto(gateMergeModeAndBindings(form)),
-            }),
-        );
-    }, [dispatch, authorityUuid, raProfileUuid, form]);
 
     return (
         <div className="space-y-4" data-testid="ra-profile-request-attributes-widget">
@@ -136,16 +135,6 @@ export default function RaProfileRequestAttributesWidget({
                 extensionOptionsLoaded={!!oidsByCategoryLoaded[OidCategory.CertificateExtension]}
                 disabled={disabled || isUpdating}
             />
-            <div className="flex justify-end">
-                <ProgressButton
-                    title="Save"
-                    inProgressTitle="Saving..."
-                    inProgress={isUpdating}
-                    disabled={!dirty || isUpdating || disabled}
-                    onClick={onSave}
-                    type="button"
-                />
-            </div>
         </div>
     );
 }

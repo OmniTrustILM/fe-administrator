@@ -33,15 +33,15 @@ test('still shows the platform-defaults note for a bindings-only profile while b
     await expect(page.getByTestId('request-attributes-platform-default-note')).toBeVisible();
 });
 
-test('Save is disabled until the form is edited', async ({ mount, page }) => {
+test('renders no widget-level Save button', async ({ mount, page }) => {
     await mount(<RaProfileRequestAttributesWidgetWithStore />);
-    await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Save' })).toHaveCount(0);
 });
 
-test('Save becomes enabled after adding a request attribute', async ({ mount, page }) => {
+test('saving in the dialog adds the request attribute to the list immediately', async ({ mount, page }) => {
     await mount(<RaProfileRequestAttributesWidgetWithStore />);
 
-    await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await expect(page.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
 
     await page.getByTestId('request-attribute-authoring-attribute-add').click();
     await page.locator('#ra-attr-name').click();
@@ -50,5 +50,6 @@ test('Save becomes enabled after adding a request attribute', async ({ mount, pa
     await page.locator('#ra-attr-label').fill('Common Name');
     await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
 
-    await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
+    await expect(page.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Save' })).toHaveCount(0);
 });
