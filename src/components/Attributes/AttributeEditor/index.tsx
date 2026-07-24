@@ -75,6 +75,16 @@ const contentItemLabel = (value: { reference?: string; data?: unknown } | null |
     return String(data);
 };
 
+/**
+ * A descriptor carries a configured default value when it holds content and is neither a list nor a
+ * RESOURCE — for those `content` is the set of selectable options, not a value to pre-fill.
+ */
+const hasDefaultValue = (descriptor: CustomAttributeModel): boolean =>
+    !descriptor.properties.list &&
+    descriptor.contentType !== AttributeContentType.Resource &&
+    Array.isArray(descriptor.content) &&
+    descriptor.content.length > 0;
+
 export type Props = {
     id: string;
     attributeDescriptors: AttributeDescriptorModel[];
@@ -383,14 +393,15 @@ function AttributeEditorInner({
     /* c8 ignore stop */
 
     /*
-     * Get non-required custom attributes, without a value assigned
+     * Get non-required custom attributes, without a value assigned and without a default value.
+     * An attribute with a default value is rendered right away so its default is visible and editable.
      */
     const initiallyHiddenCustomAttributeDescriptors = useMemo(
         () =>
             attributeDescriptors.filter((descriptor) => {
                 if (isCustomAttributeModel(descriptor)) {
                     const attribute = attributes.find((el) => el.name === descriptor.name);
-                    return !descriptor.properties.required && !attribute?.content;
+                    return !descriptor.properties.required && !attribute?.content && !hasDefaultValue(descriptor);
                 }
                 return false;
             }),
@@ -529,7 +540,6 @@ function AttributeEditorInner({
             descriptor: DataAttributeModel | CustomAttributeModel,
             attribute: AttributeResponseModel | undefined,
             formAttributeName: string,
-            setDefaultOnRequiredValuesOnly: boolean,
             forceDefaultDescriptorValue: boolean,
             wasDeletedLocally: boolean = false,
         ) => {
@@ -604,13 +614,10 @@ function AttributeEditorInner({
             } else if (appliedContent) {
                 const firstApplied = appliedContent[0] as { reference?: string; data?: unknown } | undefined;
                 formAttributeValue = firstApplied?.reference ?? firstApplied?.data;
-            } else if (
-                descriptor.content &&
-                descriptor.content.length > 0 &&
-                (!setDefaultOnRequiredValuesOnly || descriptor.properties.required || descriptor.properties.readOnly)
-            ) {
+            } else if (descriptor.content && descriptor.content.length > 0) {
                 // This acts as a fallback for the case when the attribute has no value, but has a default value in the
-                // descriptor. Read-only attributes are always seeded so a locked field shows its predefined default.
+                // descriptor. The default is seeded regardless of the required/read-only properties, so an optional
+                // editable field also opens pre-filled with its configured default (see Issue: #1906).
                 const firstDescriptorContent = descriptor.content[0] as { reference?: string; data?: unknown } | undefined;
                 formAttributeValue = firstDescriptorContent?.data ?? firstDescriptorContent?.reference;
             }
@@ -770,7 +777,9 @@ function AttributeEditorInner({
         setPrevAttributes(attributes);
         setShownCustomAttributes(
             attributeDescriptors.filter(
-                (descriptor) => isCustomAttributeModel(descriptor) && attributes.some((attr) => attr.uuid === descriptor.uuid),
+                (descriptor) =>
+                    isCustomAttributeModel(descriptor) &&
+                    (attributes.some((attr) => attr.uuid === descriptor.uuid) || hasDefaultValue(descriptor)),
             ),
         );
 
@@ -797,7 +806,6 @@ function AttributeEditorInner({
                         descriptor,
                         attribute,
                         formAttributeName,
-                        true,
                         // If the attribute has been set more than once, consider it not being initial update call, so set the default value instead (see Issue: #915)
                         userInteractedRef.current,
                         // Check if this attribute was deleted locally
@@ -851,14 +859,7 @@ function AttributeEditorInner({
 
                 // Only set the value for attributes whose value was not yet modified
                 if (!getObjectPropertyValue(formValues, formAttributeName)) {
-                    setAttributeFormValue(
-                        descriptor,
-                        attribute,
-                        formAttributeName,
-                        false,
-                        false,
-                        reAddedAttributes.includes(descriptor.name),
-                    );
+                    setAttributeFormValue(descriptor, attribute, formAttributeName, false, reAddedAttributes.includes(descriptor.name));
                 }
             }
         });

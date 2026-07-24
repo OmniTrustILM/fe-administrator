@@ -285,6 +285,101 @@ test.describe('AttributeEditor', () => {
         await expect(input).toBeDisabled();
     });
 
+    test('optional editable attribute with a default value is pre-filled', async ({ mount, page }) => {
+        const descriptors: AttributeDescriptorModel[] = [
+            dataDescriptor({
+                name: 'optionalDefault',
+                uuid: 'optional-default-uuid',
+                properties: { label: 'Optional Default', required: false, readOnly: false, list: false, multiSelect: false } as any,
+                content: [{ data: 'suggestedValue' }] as any,
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
+        const input = page.getByTestId('text-input-__attributes__testEditor__.optionalDefault');
+        await expect(input).toBeVisible({ timeout: 10000 });
+        await expect(input).toHaveValue('suggestedValue');
+        await expect(input).toBeEnabled();
+    });
+
+    test('optional custom attribute with a default value is shown pre-filled instead of being hidden', async ({ mount, page }) => {
+        const descriptors: AttributeDescriptorModel[] = [
+            customDescriptor({
+                name: 'customDefault',
+                uuid: 'custom-default-uuid',
+                properties: { label: 'Custom Default', required: false, readOnly: false, list: false, multiSelect: false } as any,
+                content: [{ data: 'customDefaultValue' }] as any,
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
+        const input = page.getByTestId('text-input-__attributes__testEditor__.customDefault');
+        await expect(input).toBeVisible({ timeout: 10000 });
+        await expect(input).toHaveValue('customDefaultValue');
+        await expect(input).toBeEnabled();
+        // it is already shown, so the selector must not offer it again
+        await expect(page.getByText('Show custom attribute')).toHaveCount(0);
+    });
+
+    test('attribute value takes precedence over the descriptor default', async ({ mount, page }) => {
+        const descriptors: AttributeDescriptorModel[] = [
+            customDescriptor({
+                name: 'customDefault',
+                uuid: 'custom-default-uuid',
+                properties: { label: 'Custom Default', required: false, readOnly: false, list: false, multiSelect: false } as any,
+                content: [{ data: 'customDefaultValue' }] as any,
+            }),
+        ];
+        const attributes = [{ name: 'customDefault', uuid: 'custom-default-uuid', content: [{ data: 'storedValue' }] }] as any[];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} attributes={attributes} />);
+        const input = page.getByTestId('text-input-__attributes__testEditor__.customDefault');
+        await expect(input).toBeVisible({ timeout: 15000 });
+        await expect(input).toHaveValue('storedValue');
+    });
+
+    test('optional custom attribute without a default value stays hidden', async ({ mount, page }) => {
+        const descriptors: AttributeDescriptorModel[] = [
+            customDescriptor({
+                name: 'customNoDefault',
+                uuid: 'custom-no-default-uuid',
+                properties: { label: 'Custom No Default', required: false, readOnly: false, list: false, multiSelect: false } as any,
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
+        await expect(page.getByText('Show custom attribute')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('text-input-__attributes__testEditor__.customNoDefault')).toHaveCount(0);
+    });
+
+    test('list custom attribute options are not treated as a default value', async ({ mount, page }) => {
+        const descriptors: AttributeDescriptorModel[] = [
+            customDescriptor({
+                name: 'customList',
+                uuid: 'custom-list-uuid',
+                properties: { label: 'Custom List', required: false, readOnly: false, list: true, multiSelect: false } as any,
+                content: [{ data: 'first' }, { data: 'second' }] as any,
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
+        await expect(page.getByText('Show custom attribute')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('select-__attributes__testEditor__.customList')).toHaveCount(0);
+    });
+
+    test('RESOURCE custom attribute options are not treated as a default value', async ({ mount, page }) => {
+        const descriptors: AttributeDescriptorModel[] = [
+            customDescriptor({
+                name: 'customResource',
+                uuid: 'custom-resource-uuid',
+                contentType: AttributeContentType.Resource,
+                properties: { label: 'Custom Resource', required: false, readOnly: false, list: false, multiSelect: false } as any,
+                content: [
+                    { reference: 'Group A', data: { uuid: 'a' } },
+                    { reference: 'Group B', data: { uuid: 'b' } },
+                ] as any,
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
+        await expect(page.getByText('Show custom attribute')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('select-__attributes__testEditor__.customResource')).toHaveCount(0);
+    });
+
     test('Boolean required with no value shows false', async ({ mount, page }) => {
         const descriptors: AttributeDescriptorModel[] = [
             dataDescriptor({
