@@ -367,6 +367,44 @@ test.describe('CertificateForm', () => {
         expect(action?.payload.registerRequest.groupUuids).toEqual(['group-1']);
     });
 
+    test('registerCertificate payload includes the entered register-attribute value', async ({ mount, page }) => {
+        const registerDescriptor: AttributeDescriptorModel = {
+            type: AttributeType.Data,
+            name: 'regField',
+            uuid: 'register-data-uuid-2',
+            contentType: AttributeContentType.String,
+            properties: { label: 'Register Field', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
+        } as AttributeDescriptorModel;
+
+        const dispatched: { type: string; payload?: any }[] = [];
+
+        await mount(
+            <CertificateFormTestWrapper
+                onAction={(a) => dispatched.push(a)}
+                preloadedState={{
+                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                    certificates: { ...testInitialState.certificates, registerAttributes: { 'ra-1': [registerDescriptor] } },
+                }}
+            />,
+        );
+
+        await fillRegisterBasics(page);
+        await page.getByRole('tab', { name: 'Connector Attributes' }).click();
+
+        const regAttrInput = page.getByTestId('text-input-__attributes__register_attributes__.regField');
+        await regAttrInput.click();
+        await regAttrInput.fill('register-value');
+        await expect(regAttrInput).toHaveValue('register-value');
+
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        await expect.poll(() => dispatched.find((a) => a.type === 'certificates/registerCertificate')).toBeTruthy();
+        const action = dispatched.find((a) => a.type === 'certificates/registerCertificate');
+        const attrs = action?.payload.registerRequest.attributes as { name: string; content?: { data?: unknown }[] }[] | undefined;
+        const regAttr = attrs?.find((a) => a.name === 'regField');
+        expect(regAttr?.content?.[0]?.data).toBe('register-value');
+    });
+
     test('registerCertificate payload omits owner/groups when left empty', async ({ mount, page }) => {
         const dispatched: { type: string; payload?: any }[] = [];
 
