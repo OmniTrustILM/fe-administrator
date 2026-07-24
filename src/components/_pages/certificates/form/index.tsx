@@ -346,7 +346,9 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const showAltSignatureTab = !isRegister && includeAltKey && !!altTokenProfileUuid;
     const showConnectorTab = !isRegister;
     const showOwnershipTab = isRegister;
-    const showRegisterConnectorTab = isRegister && (registerAttributeDescriptors[selectedRaProfileUuid || '']?.length ?? 0) > 0;
+    // Shown for the whole Pre-register mode (mirrors the Issue-mode Connector Attributes tab), even when
+    // the CA defines no register attributes — the tab then renders an empty editor rather than vanishing.
+    const showRegisterConnectorTab = isRegister;
 
     // TabLayout indexes into the visible (non-hidden) tab subset, so this must match the number of
     // tabs rendered. Custom Attributes is always visible; the rest are gated by their show* flags.

@@ -97,7 +97,7 @@ test.describe('CertificateForm', () => {
         await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
     });
 
-    test('Pre-register mode hides the Connector Attributes tab when the RA profile has no register attributes, keeps Custom Attributes', async ({
+    test('Pre-register mode always shows the Connector Attributes tab, matching Issue mode, even with no register attributes', async ({
         mount,
         page,
     }) => {
@@ -105,7 +105,7 @@ test.describe('CertificateForm', () => {
 
         await page.getByTestId('requestType-register').click();
 
-        await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toHaveCount(0);
+        await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toBeVisible();
         await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
     });
 
