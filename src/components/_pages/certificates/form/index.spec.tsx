@@ -107,6 +107,30 @@ test.describe('CertificateForm', () => {
 
         await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toBeVisible();
         await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
+
+        // No RA Profile selected yet: the tab shows the select-a-profile hint.
+        await page.getByRole('tab', { name: 'Connector Attributes' }).click();
+        await expect(page.getByTestId('register_attributes-hint')).toBeVisible();
+    });
+
+    test('Pre-register Connector Attributes tab shows an empty-state message when the selected RA profile has no register attributes', async ({
+        mount,
+        page,
+    }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{
+                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+
+        await page.getByRole('tab', { name: 'Connector Attributes' }).click();
+        await expect(page.getByTestId('register_attributes-empty')).toBeVisible();
     });
 
     test('Pre-register mode shows the Connector Attributes tab when the RA profile has register attributes', async ({ mount, page }) => {

@@ -123,6 +123,56 @@ function renderRequestAttributesTabContent(params: {
     );
 }
 
+function renderRegisterAttributesTabContent(params: {
+    registerAttributeDescriptors: AttributeDescriptorModel[] | undefined | null;
+    registerAttributesCallbackAttributes: AttributeDescriptorModel[];
+    setRegisterAttributesCallbackAttributes: React.Dispatch<React.SetStateAction<AttributeDescriptorModel[]>>;
+    isFetchingRegisterAttributes: boolean;
+    selectedRaProfileUuid: string | undefined;
+    callbackParentUuid: string | undefined;
+}) {
+    const {
+        registerAttributeDescriptors,
+        registerAttributesCallbackAttributes,
+        setRegisterAttributesCallbackAttributes,
+        isFetchingRegisterAttributes,
+        selectedRaProfileUuid,
+        callbackParentUuid,
+    } = params;
+
+    if ((registerAttributeDescriptors ?? []).length > 0) {
+        return (
+            <AttributeEditor
+                id="register_attributes"
+                attributeDescriptors={registerAttributeDescriptors ?? []}
+                callbackParentUuid={callbackParentUuid}
+                callbackResource={Resource.Certificates}
+                groupAttributesCallbackAttributes={registerAttributesCallbackAttributes}
+                setGroupAttributesCallbackAttributes={setRegisterAttributesCallbackAttributes}
+            />
+        );
+    }
+    if (isFetchingRegisterAttributes) {
+        return (
+            <span className="text-gray-500 dark:text-neutral-400" data-testid="register_attributes-loading">
+                Loading connector attributes&hellip;
+            </span>
+        );
+    }
+    if (selectedRaProfileUuid) {
+        return (
+            <span className="text-gray-500 dark:text-neutral-400" data-testid="register_attributes-empty">
+                This RA Profile has no connector attributes.
+            </span>
+        );
+    }
+    return (
+        <span className="text-gray-500 dark:text-neutral-400" data-testid="register_attributes-hint">
+            Select an RA Profile to see its connector attributes.
+        </span>
+    );
+}
+
 interface CertificateFormProps {
     onCancel?: () => void;
 }
@@ -136,6 +186,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const certificateGroups = useSelector(certificateGroupSelectors.certificateGroups);
     const issuanceAttributeDescriptors = useSelector(certificateSelectors.issuanceAttributes);
     const registerAttributeDescriptors = useSelector(certificateSelectors.registerAttributes);
+    const isFetchingRegisterAttributes = useSelector(certificateSelectors.isFetchingRegisterAttributes);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const csrAttributeDescriptors = useSelector(certificateSelectors.csrAttributeDescriptors);
@@ -825,16 +876,14 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     {
                                         title: tabTitle('Connector Attributes', registerAttributeDescriptors[selectedRaProfileUuid || '']),
                                         hidden: !showRegisterConnectorTab,
-                                        content: (
-                                            <AttributeEditor
-                                                id="register_attributes"
-                                                attributeDescriptors={registerAttributeDescriptors[selectedRaProfileUuid || ''] || []}
-                                                callbackParentUuid={selectedRaProfile?.uuid}
-                                                callbackResource={Resource.Certificates}
-                                                groupAttributesCallbackAttributes={registerAttributesCallbackAttributes}
-                                                setGroupAttributesCallbackAttributes={setRegisterAttributesCallbackAttributes}
-                                            />
-                                        ),
+                                        content: renderRegisterAttributesTabContent({
+                                            registerAttributeDescriptors: registerAttributeDescriptors[selectedRaProfileUuid || ''],
+                                            registerAttributesCallbackAttributes,
+                                            setRegisterAttributesCallbackAttributes,
+                                            isFetchingRegisterAttributes,
+                                            selectedRaProfileUuid,
+                                            callbackParentUuid: selectedRaProfile?.uuid,
+                                        }),
                                     },
                                 ]}
                             />
