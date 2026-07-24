@@ -135,6 +135,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const users = useSelector(userSelectors.users);
     const certificateGroups = useSelector(certificateGroupSelectors.certificateGroups);
     const issuanceAttributeDescriptors = useSelector(certificateSelectors.issuanceAttributes);
+    const registerAttributeDescriptors = useSelector(certificateSelectors.registerAttributes);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const csrAttributeDescriptors = useSelector(certificateSelectors.csrAttributeDescriptors);
@@ -156,6 +157,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const [csrAttributesCallbackAttributes, setCsrAttributesCallbackAttributes] = useDescriptorState();
     const [signatureAttributesCallbackAttributes, setSignatureAttributesCallbackAttributes] = useDescriptorState();
     const [altSignatureAttributesCallbackAttributes, setAltSignatureAttributesCallbackAttributes] = useDescriptorState();
+    const [registerAttributesCallbackAttributes, setRegisterAttributesCallbackAttributes] = useDescriptorState();
     const [fileContent, setFileContent] = useState<string>('');
     const [certificate, setCertificate] = useState<CertificateDetailResponseModel | undefined>();
     const [activeRequestTab, setActiveRequestTab] = useState(0);
@@ -279,14 +281,27 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             if (!profile?.authorityInstanceUuid) return;
             dispatch(connectorActions.clearCallbackData());
             setGroupAttributesCallbackAttributes([]);
+            setRegisterAttributesCallbackAttributes([]);
             dispatch(
                 certificateActions.getIssuanceAttributes({
                     raProfileUuid: profile.uuid,
                     authorityUuid: profile.authorityInstanceUuid,
                 }),
             );
+            dispatch(
+                certificateActions.getRegisterAttributes({
+                    raProfileUuid: profile.uuid,
+                    authorityUuid: profile.authorityInstanceUuid,
+                }),
+            );
         },
-        [dispatch, raProfiles, setGroupAttributesCallbackAttributes, setCsrAttributesCallbackAttributes],
+        [
+            dispatch,
+            raProfiles,
+            setGroupAttributesCallbackAttributes,
+            setCsrAttributesCallbackAttributes,
+            setRegisterAttributesCallbackAttributes,
+        ],
     );
 
     const raProfileOptions = useMemo(
@@ -331,12 +346,13 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const showAltSignatureTab = !isRegister && includeAltKey && !!altTokenProfileUuid;
     const showConnectorTab = !isRegister;
     const showOwnershipTab = isRegister;
+    const showRegisterConnectorTab = isRegister && (registerAttributeDescriptors[selectedRaProfileUuid || '']?.length ?? 0) > 0;
 
     useEffect(() => {
         // Reset to the first visible tab whenever the visible tab set changes, so a carried-over index
         // never lands the user on a different tab than the one they had selected.
         setActiveRequestTab(0);
-    }, [showRequestAttributesTab, showSignatureTab, showAltSignatureTab, showConnectorTab, showOwnershipTab]);
+    }, [showRequestAttributesTab, showSignatureTab, showAltSignatureTab, showConnectorTab, showOwnershipTab, showRegisterConnectorTab]);
 
     const submitCallback = useCallback(
         (formValues: CertificateFormValues) => {
@@ -351,6 +367,11 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             if (formValues.requestType === 'register') {
                 const csrAttrs = collectFormAttributes('csrAttributes', csrAttributeDescriptors, combinedValues);
                 const customAttrs = collectFormAttributes('customCertificate', resourceCustomAttributes, combinedValues);
+                const registerAttrs = collectFormAttributes(
+                    'register_attributes',
+                    [...(registerAttributeDescriptors[profile.uuid] ?? []), ...registerAttributesCallbackAttributes],
+                    combinedValues,
+                );
 
                 dispatch(
                     certificateActions.registerCertificate({
@@ -361,7 +382,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                             expiresAt: formValues.expiresAt ? new Date(formValues.expiresAt).toISOString() : undefined,
                             csrAttributes: csrAttrs,
                             customAttributes: customAttrs,
-                            attributes: [],
+                            attributes: registerAttrs,
                             ownerUuid: formValues.ownerUuid || undefined,
                             groupUuids: formValues.groupUuids?.length ? formValues.groupUuids : undefined,
                         },
@@ -417,6 +438,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             groupAttributesCallbackAttributes,
             issuanceAttributeDescriptors,
             raProfiles,
+            registerAttributeDescriptors,
+            registerAttributesCallbackAttributes,
             resourceCustomAttributes,
             signatureAttributeDescriptors,
         ],
@@ -768,8 +791,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         ),
                                     },
                                     {
-                                        // Connector Attributes are discarded on register submit (attributes: [] by design),
-                                        // so this tab is hidden in Pre-register mode to avoid silently-ignored input.
+                                        // Issue-only: this tab's descriptors come from getIssuanceAttributes, which is
+                                        // unrelated to the register-mode Connector Attributes tab below.
                                         title: tabTitle('Connector Attributes', issuanceAttributeDescriptors[selectedRaProfileUuid || '']),
                                         hidden: !showConnectorTab,
                                         content: (
@@ -780,6 +803,20 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                 callbackResource={Resource.Certificates}
                                                 groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                                                 setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
+                                            />
+                                        ),
+                                    },
+                                    {
+                                        title: tabTitle('Connector Attributes', registerAttributeDescriptors[selectedRaProfileUuid || '']),
+                                        hidden: !showRegisterConnectorTab,
+                                        content: (
+                                            <AttributeEditor
+                                                id="register_attributes"
+                                                attributeDescriptors={registerAttributeDescriptors[selectedRaProfileUuid || ''] || []}
+                                                callbackParentUuid={selectedRaProfile?.uuid}
+                                                callbackResource={Resource.Certificates}
+                                                groupAttributesCallbackAttributes={registerAttributesCallbackAttributes}
+                                                setGroupAttributesCallbackAttributes={setRegisterAttributesCallbackAttributes}
                                             />
                                         ),
                                     },

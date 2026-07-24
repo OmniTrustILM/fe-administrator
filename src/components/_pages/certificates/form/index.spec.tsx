@@ -97,7 +97,7 @@ test.describe('CertificateForm', () => {
         await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
     });
 
-    test('Pre-register mode hides the Connector Attributes tab (its input is discarded on submit) but keeps Custom Attributes', async ({
+    test('Pre-register mode hides the Connector Attributes tab when the RA profile has no register attributes, keeps Custom Attributes', async ({
         mount,
         page,
     }) => {
@@ -107,6 +107,31 @@ test.describe('CertificateForm', () => {
 
         await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toHaveCount(0);
         await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
+    });
+
+    test('Pre-register mode shows the Connector Attributes tab when the RA profile has register attributes', async ({ mount, page }) => {
+        const registerDescriptor: AttributeDescriptorModel = {
+            type: AttributeType.Data,
+            name: 'regField',
+            uuid: 'register-data-uuid-1',
+            contentType: AttributeContentType.String,
+            properties: { label: 'Register Field', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+        } as AttributeDescriptorModel;
+
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{
+                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                    certificates: { ...testInitialState.certificates, registerAttributes: { 'ra-1': [registerDescriptor] } },
+                }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+
+        await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toBeVisible();
     });
 
     test('an in-flight registration disables Cancel and puts Create in its progress state (no duplicate submit)', async ({
