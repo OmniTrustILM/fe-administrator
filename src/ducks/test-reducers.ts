@@ -1,4 +1,5 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
+import type { AttributeDescriptorModel } from 'types/attributes';
 
 // IMPORTANT: This file is used ONLY in component tests (Playwright CT).
 // It must NOT import the real duck modules
@@ -560,6 +561,9 @@ export type CertificatesTestState = {
     isRegistering: boolean;
     issueValidationErrors?: string[];
     issueErrorMessage?: string;
+    revocationAttributes: AttributeDescriptorModel[];
+    isFetchingRevocationAttributes: boolean;
+    isRevoking: boolean;
 };
 
 const certificatesTestInitialState: CertificatesTestState = {
@@ -573,6 +577,9 @@ const certificatesTestInitialState: CertificatesTestState = {
     isRegistering: false,
     issueValidationErrors: undefined,
     issueErrorMessage: undefined,
+    revocationAttributes: [],
+    isFetchingRevocationAttributes: false,
+    isRevoking: false,
 };
 
 function certificatesTestReducer(state: CertificatesTestState | undefined, _action: UnknownAction): CertificatesTestState {
