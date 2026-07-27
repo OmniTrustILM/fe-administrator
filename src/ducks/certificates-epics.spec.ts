@@ -37,18 +37,29 @@ vi.mock('./transform/certificates', () => ({
 import { actions as certificatesActions } from './certificates';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
+import certificatesEpics from './certificates-epics';
 
-const ASSOCIATE_EPIC_INDEX = 3;
-const DEASSOCIATE_EPIC_INDEX = 4;
-const ISSUE_EPIC_INDEX = 8;
-const REGISTER_EPIC_INDEX = 10;
-const COMPLETE_REGISTERED_EPIC_INDEX = 11;
-const REVOKE_EPIC_INDEX = 12;
-const MANUALLY_ISSUE_EPIC_INDEX = 15;
-const MANUALLY_CONFIRM_REVOKE_EPIC_INDEX = 16;
-const CANCEL_PENDING_EPIC_INDEX = 17;
-const BULK_UPDATE_RA_PROFILE_EPIC_INDEX = 32;
-const UPLOAD_EPIC_INDEX = 35;
+// Resolve epics by function name rather than by position — inserting an epic anywhere in the array
+// would otherwise silently shift every index below it and break unrelated tests.
+function findEpicIndex(name: string) {
+    const index = (certificatesEpics as { name: string }[]).findIndex((epic) => epic.name === name);
+    if (index === -1) throw new Error(`Epic "${name}" not found in certificates-epics`);
+    return index;
+}
+
+const ASSOCIATE_EPIC_INDEX = findEpicIndex('associateCertificate');
+const DEASSOCIATE_EPIC_INDEX = findEpicIndex('deassociateCertificate');
+const ISSUE_EPIC_INDEX = findEpicIndex('issueCertificate');
+const REGISTER_EPIC_INDEX = findEpicIndex('registerCertificate');
+const COMPLETE_REGISTERED_EPIC_INDEX = findEpicIndex('completeRegisteredCertificate');
+const REVOKE_EPIC_INDEX = findEpicIndex('revokeCertificate');
+const MANUALLY_ISSUE_EPIC_INDEX = findEpicIndex('manuallyIssueCertificate');
+const MANUALLY_CONFIRM_REVOKE_EPIC_INDEX = findEpicIndex('manuallyConfirmRevoke');
+const CANCEL_PENDING_EPIC_INDEX = findEpicIndex('cancelPendingCertificateOperation');
+const BULK_UPDATE_RA_PROFILE_EPIC_INDEX = findEpicIndex('bulkUpdateRaProfile');
+const UPLOAD_EPIC_INDEX = findEpicIndex('uploadCertificate');
+const GET_REGISTER_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getRegisterAttributes');
+const GET_CSR_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getCsrAttributes');
 
 type ClientOpsOverrides = {
     issueCertificate?: (args: any) => any;
@@ -57,8 +68,6 @@ type ClientOpsOverrides = {
     manuallyConfirmRevoke?: (args: any) => any;
     cancelPendingCertificateOperation?: (args: any) => any;
 };
-
-import certificatesEpics from './certificates-epics';
 
 async function runEpic(
     epicIndex: number,
@@ -735,8 +744,6 @@ describe('certificates epics', () => {
     });
 
     describe('getRegisterAttributes', () => {
-        const GET_REGISTER_ATTRIBUTES_EPIC_INDEX = 37;
-
         async function runGetRegisterAttributesEpic(
             action: UnknownAction,
             listRegisterCertificateAttributes: (args: any) => Observable<any> = () => of([]),
@@ -780,13 +787,13 @@ describe('certificates epics', () => {
 
             expect(emitted[0].type).toBe(certificatesActions.getRegisterAttributesFailure.type);
             expect((emitted[0] as any).payload.error).toContain('boom');
+            // The reducer needs the profile uuid to drop that profile's now-stale descriptors.
+            expect((emitted[0] as any).payload.raProfileUuid).toBe('ra-1');
             expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
         });
     });
 
     describe('getCsrAttributes', () => {
-        const GET_CSR_ATTRIBUTES_EPIC_INDEX = 40;
-
         async function runGetCsrAttributesEpic(
             action: UnknownAction,
             getCsrGenerationAttributes: (args: any) => Observable<any> = () => of([]),

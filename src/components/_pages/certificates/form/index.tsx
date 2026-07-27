@@ -211,7 +211,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const [registerAttributesCallbackAttributes, setRegisterAttributesCallbackAttributes] = useDescriptorState();
     const [fileContent, setFileContent] = useState<string>('');
     const [certificate, setCertificate] = useState<CertificateDetailResponseModel | undefined>();
-    const [activeRequestTab, setActiveRequestTab] = useState(0);
+    const [activeRequestTabKey, setActiveRequestTabKey] = useState<string>('request-attributes');
 
     const [attributeValuesMap] = useState<Record<string, Record<string, unknown>>>({});
     const attributeValuesRef = useRef<Record<string, unknown>>({});
@@ -401,25 +401,9 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     // the CA defines no register attributes — the tab then renders an empty editor rather than vanishing.
     const showRegisterConnectorTab = isRegister;
 
-    // TabLayout indexes into the visible (non-hidden) tab subset, so this must match the number of
-    // tabs rendered. Custom Attributes is always visible; the rest are gated by their show* flags.
-    const visibleRequestTabCount =
-        1 +
-        [
-            showRequestAttributesTab,
-            showSignatureTab,
-            showAltSignatureTab,
-            showOwnershipTab,
-            showConnectorTab,
-            showRegisterConnectorTab,
-        ].filter(Boolean).length;
-
-    useEffect(() => {
-        // Fall back to the first tab only when the selected index no longer exists (e.g. a mode switch
-        // shrinks the visible set). A tab appearing/disappearing after the selected one — such as the
-        // async-loaded register Connector Attributes tab — must not yank the user off a still-visible tab.
-        setActiveRequestTab((current) => (current >= visibleRequestTabCount ? 0 : current));
-    }, [visibleRequestTabCount]);
+    // Submitting before the descriptors land would collect an empty attribute set and silently drop
+    // required connector/CSR attributes, so block submission while either fetch is in flight.
+    const isFetchingRequestAttributes = isFetchingCsrAttributes || (isRegister && isFetchingRegisterAttributes);
 
     const submitCallback = useCallback(
         (formValues: CertificateFormValues) => {
@@ -522,12 +506,12 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const submitHandler = useCallback(
         (event: React.SyntheticEvent<HTMLFormElement>) => {
             event.preventDefault();
-            if (isFetchingCsrAttributes) {
+            if (isFetchingRequestAttributes) {
                 return;
             }
             handleSubmit(onSubmit)(event);
         },
-        [handleSubmit, isFetchingCsrAttributes, onSubmit],
+        [handleSubmit, isFetchingRequestAttributes, onSubmit],
     );
 
     return (
@@ -766,11 +750,12 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                             )}
 
                             <TabLayout
-                                selectedTab={activeRequestTab}
-                                onTabChange={setActiveRequestTab}
+                                selectedTabKey={activeRequestTabKey}
+                                onTabKeyChange={setActiveRequestTabKey}
                                 onlyActiveTabContent={false}
                                 tabs={[
                                     {
+                                        tabKey: 'request-attributes',
                                         title: tabTitle('Request Attributes', csrAttributeDescriptors),
                                         hidden: !showRequestAttributesTab,
                                         content: renderRequestAttributesTabContent({
@@ -782,6 +767,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         }),
                                     },
                                     {
+                                        tabKey: 'signature-attributes',
                                         title: tabTitle('Signature Attributes', signatureAttributeDescriptors),
                                         hidden: !showSignatureTab,
                                         content: (
@@ -794,6 +780,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         ),
                                     },
                                     {
+                                        tabKey: 'alt-signature-attributes',
                                         title: tabTitle('Alternative Signature Attributes', altSignatureAttributeDescriptors),
                                         hidden: !showAltSignatureTab,
                                         content: (
@@ -808,6 +795,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     {
                                         // Never hidden: kept mounted in both modes so a mode switch can't remount and
                                         // clear entered custom-attribute values.
+                                        tabKey: 'custom-attributes',
                                         title: tabTitle('Custom Attributes', resourceCustomAttributes),
                                         content: (
                                             <AttributeEditor
@@ -818,6 +806,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         ),
                                     },
                                     {
+                                        tabKey: 'ownership',
                                         title: 'Ownership',
                                         hidden: !showOwnershipTab,
                                         content: (
@@ -859,7 +848,9 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     },
                                     {
                                         // Issue-only: this tab's descriptors come from getIssuanceAttributes, which is
-                                        // unrelated to the register-mode Connector Attributes tab below.
+                                        // unrelated to the register-mode Connector Attributes tab below. Both tabs share
+                                        // the same display title, so they need distinct keys to stay distinct subtrees.
+                                        tabKey: 'issuance-connector-attributes',
                                         title: tabTitle('Connector Attributes', issuanceAttributeDescriptors[selectedRaProfileUuid || '']),
                                         hidden: !showConnectorTab,
                                         content: (
@@ -874,6 +865,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         ),
                                     },
                                     {
+                                        tabKey: 'register-connector-attributes',
                                         title: tabTitle('Connector Attributes', registerAttributeDescriptors[selectedRaProfileUuid || '']),
                                         hidden: !showRegisterConnectorTab,
                                         content: renderRegisterAttributesTabContent({
@@ -910,7 +902,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     title="Create"
                                     inProgressTitle="Creating"
                                     inProgress={issuingCertificate}
-                                    disabled={!formState.isValid || isFetchingCsrAttributes}
+                                    disabled={!formState.isValid || isFetchingRequestAttributes}
                                 />
                             </div>
                         </Container>

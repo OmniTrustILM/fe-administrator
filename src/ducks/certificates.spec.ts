@@ -565,8 +565,20 @@ describe('certificates slice', () => {
         expect(next.isFetchingRegisterAttributes).toBe(false);
         expect(next.registerAttributes['ra-1']).toEqual(attrs);
 
-        next = reducer({ ...next, isFetchingRegisterAttributes: true }, actions.getRegisterAttributesFailure({ error: 'err' }));
+        next = reducer(
+            { ...next, isFetchingRegisterAttributes: true },
+            actions.getRegisterAttributesFailure({ raProfileUuid: 'ra-1', error: 'err' }),
+        );
         expect(next.isFetchingRegisterAttributes).toBe(false);
+        expect(next.registerAttributes['ra-1']).toBeUndefined();
+    });
+
+    test('getRegisterAttributesFailure leaves other profiles descriptors intact', () => {
+        const attrs = [{ uuid: 'attr-1' }] as any;
+        const loaded = reducer(initialState, actions.getRegisterAttributesSuccess({ raProfileUuid: 'ra-2', registerAttributes: attrs }));
+
+        const next = reducer(loaded, actions.getRegisterAttributesFailure({ raProfileUuid: 'ra-1', error: 'err' }));
+        expect(next.registerAttributes['ra-2']).toEqual(attrs);
     });
 
     test('getRevocationAttributes / success / failure update revocationAttributes', () => {

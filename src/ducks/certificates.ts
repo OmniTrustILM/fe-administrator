@@ -906,8 +906,14 @@ export const slice = createSlice({
             state.registerAttributes[action.payload.raProfileUuid] = action.payload.registerAttributes;
         },
 
-        getRegisterAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+        getRegisterAttributesFailure: (state, action: PayloadAction<{ raProfileUuid?: string; error: string | undefined }>) => {
             state.isFetchingRegisterAttributes = false;
+            // Drop any previously loaded descriptors for this profile: keeping them would let the form
+            // render a stale editor (or the "no connector attributes" empty state) as if the load had
+            // succeeded, and submit an attribute set that doesn't match the authority.
+            if (action.payload.raProfileUuid) {
+                delete state.registerAttributes[action.payload.raProfileUuid];
+            }
         },
 
         getRevocationAttributes: (state, action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {

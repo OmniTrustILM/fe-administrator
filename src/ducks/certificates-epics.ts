@@ -1192,7 +1192,10 @@ const getRegisterAttributes: AppEpic = (action$, state, deps) => {
 
                     catchError((err) =>
                         of(
-                            slice.actions.getRegisterAttributesFailure({ error: extractError(err, 'Failed to get register attributes') }),
+                            slice.actions.getRegisterAttributesFailure({
+                                raProfileUuid: action.payload.raProfileUuid,
+                                error: extractError(err, 'Failed to get register attributes'),
+                            }),
                             appRedirectActions.fetchError({ error: err, message: 'Failed to get register attributes' }),
                         ),
                     ),

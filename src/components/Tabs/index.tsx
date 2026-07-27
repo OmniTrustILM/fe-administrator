@@ -4,6 +4,7 @@ import SimpleBar from 'simplebar-react';
 
 type Props = {
     tabs: {
+        tabKey?: string;
         title: React.ReactNode;
         onClick?: () => void;
         disabled?: boolean;
@@ -22,7 +23,7 @@ function Tabs({ tabs, selectedTab, onTabChange }: Readonly<Props>) {
                 <RadixTabs.List className="flex gap-x-1" aria-label="Tabs">
                     {tabs.map((tab, index) => (
                         <RadixTabs.Trigger
-                            key={typeof tab.title === 'string' ? tab.title : `tab-${index}`}
+                            key={tab.tabKey ?? (typeof tab.title === 'string' ? tab.title : `tab-${index}`)}
                             value={String(index)}
                             disabled={tab.disabled}
                             onClick={() => {

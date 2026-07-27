@@ -429,6 +429,38 @@ test.describe('CertificateForm', () => {
         expect(regAttr?.content?.[0]?.data).toBe('register-value');
     });
 
+    test('Create stays disabled while register attributes are still loading, even once CSR attributes have resolved', async ({
+        mount,
+        page,
+    }) => {
+        const dispatched: { type: string; payload?: any }[] = [];
+
+        await mount(
+            <CertificateFormTestWrapper
+                onAction={(a) => dispatched.push(a)}
+                preloadedState={{
+                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                    // CSR attributes have already resolved; only the register fetch is still in flight.
+                    certificates: {
+                        ...testInitialState.certificates,
+                        isFetchingCsrAttributes: false,
+                        isFetchingRegisterAttributes: true,
+                    },
+                }}
+            />,
+        );
+
+        await fillRegisterBasics(page);
+
+        // Submitting now would collect an empty register-attribute set and silently drop required
+        // connector attributes, so the button must stay disabled until the descriptors land.
+        const createButton = page.getByRole('button', { name: 'Create' });
+        await expect(createButton).toBeDisabled();
+
+        await createButton.click({ force: true });
+        await expect.poll(() => dispatched.filter((a) => a.type === 'certificates/registerCertificate')).toHaveLength(0);
+    });
+
     test('registerCertificate payload omits owner/groups when left empty', async ({ mount, page }) => {
         const dispatched: { type: string; payload?: any }[] = [];
 
