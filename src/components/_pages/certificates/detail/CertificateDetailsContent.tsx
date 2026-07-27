@@ -11,6 +11,7 @@ import Badge from 'components/Badge';
 import Asn1Dialog from '../Asn1Dialog/Asn1Dialog';
 import CertificateRenewDialog from '../CertificateRenewDialog';
 import CertificateRekeyDialog from '../CertificateRekeyDialog';
+import CertificateRevokeDialog from '../CertificateRevokeDialog';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
@@ -19,7 +20,7 @@ import { useCopyToClipboard } from 'utils/common-hooks';
 import { dateFormatter } from 'utils/dateUtil';
 import { actions, selectors } from 'ducks/certificates';
 import { actions as userInterfaceActions } from 'ducks/user-interface';
-import { selectors as enumSelectors, getEnumLabel, getEnumDescription } from 'ducks/enums';
+import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumValueDescription } from 'components/EnumDescription';
 import { actions as certificateGroupActions, selectors as groupSelectors } from 'ducks/certificateGroups';
 import { actions as userActions, selectors as userSelectors } from 'ducks/users';
@@ -28,7 +29,6 @@ import type { CertificateDetailResponseModel } from 'types/certificate';
 import {
     CertificateRegistrationState,
     CertificateRequestFormat,
-    CertificateRevocationReason,
     CertificateState as CertStatus,
     CertificateSubjectType,
     type CertificateValidationResultDto,
@@ -73,7 +73,6 @@ export default function CertificateDetailsContent({ certificate, validationResul
     const groupsList = useSelector(groupSelectors.certificateGroups);
     const raProfiles = useSelector(raProfileSelectors.raProfiles);
     const users = useSelector(userSelectors.users);
-    const certificateRevocationReason = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateRevocationReason));
     const certificateKeyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateKeyUsage));
     const qcTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.QcType));
     const certificateProtocol = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateProtocol));
@@ -97,25 +96,11 @@ export default function CertificateDetailsContent({ certificate, validationResul
     const [ownerUuid, setOwnerUuid] = useState<string>();
     const [raProfile, setRaProfile] = useState<string>();
     const [raProfileAuthorityUuid, setRaProfileAuthorityUuid] = useState<string>();
-    const [revokeReason, setRevokeReason] = useState<CertificateRevocationReason>();
 
-    const [certificateRevokeReasonOptions, setCertificateRevokeReasonOptions] = useState<{ label: string; value: string }[]>([]);
     const [userOptions, setUserOptions] = useState<{ label: string; value: string }[]>([]);
     const [raProfileOptions, setRaProfileOptions] = useState<{ label: string; value: string }[]>([]);
 
     const isCertificateArchived = !!certificate?.archived;
-
-    useEffect(() => {
-        if (!certificateRevocationReason) return;
-        const options = Object.keys(certificateRevocationReason)
-            .map((key) => ({
-                value: certificateRevocationReason[key].code,
-                label: certificateRevocationReason[key].label,
-                description: getEnumDescription(certificateRevocationReason, certificateRevocationReason[key].code),
-            }))
-            .sort((a, b) => a.label.localeCompare(b.label));
-        setCertificateRevokeReasonOptions(options);
-    }, [certificateRevocationReason]);
 
     useEffect(() => {
         setUserOptions(
@@ -180,19 +165,6 @@ export default function CertificateDetailsContent({ certificate, validationResul
         dispatch(actions.deleteCertificate({ uuid: certificate.uuid }));
         setConfirmDelete(false);
     }, [certificate, dispatch]);
-
-    const onRevoke = useCallback(() => {
-        if (!certificate) return;
-        dispatch(
-            actions.revokeCertificate({
-                uuid: certificate.uuid,
-                revokeRequest: { reason: revokeReason || CertificateRevocationReason.Unspecified, attributes: [] },
-                raProfileUuid: certificate.raProfile?.uuid || '',
-                authorityUuid: certificate.raProfile?.authorityInstanceUuid || '',
-            }),
-        );
-        setRevoke(false);
-    }, [certificate, dispatch, revokeReason]);
 
     const onRenew = useCallback(
         (data: { fileContent?: string }) => {
@@ -795,24 +767,10 @@ export default function CertificateDetailsContent({ certificate, validationResul
             <Dialog
                 isOpen={revoke}
                 caption={`Revoke Certificate`}
-                body={
-                    <Select
-                        id="revokeReason"
-                        options={certificateRevokeReasonOptions}
-                        placeholder={`Select Revocation Reason`}
-                        value={revokeReason || ''}
-                        onChange={(value) => setRevokeReason(value as CertificateRevocationReason)}
-                        label="Revocation Reason"
-                        showOptionDescriptionInDropdown
-                        showSelectedDescriptionAsHelp
-                    />
-                }
+                body={certificate ? <CertificateRevokeDialog certificate={certificate} onClose={() => setRevoke(false)} /> : null}
                 toggle={() => setRevoke(false)}
                 icon="minus"
-                buttons={[
-                    { key: 'cancel', color: 'secondary', variant: 'outline', onClick: () => setRevoke(false), body: 'Cancel' },
-                    { key: 'revoke', color: 'primary', onClick: onRevoke, body: 'Revoke' },
-                ]}
+                buttons={[]}
                 size="lg"
             />
 

@@ -592,6 +592,17 @@ describe('certificates slice', () => {
 
         next = reducer({ ...next, isFetchingRevocationAttributes: true }, actions.getRevocationAttributesFailure({ error: 'err' }));
         expect(next.isFetchingRevocationAttributes).toBe(false);
+        expect(next.revocationAttributes).toEqual([]);
+    });
+
+    test('clearRevocationAttributes resets revocationAttributes and the fetching flag', () => {
+        const attrs = [{ uuid: 'attr-2' }] as any;
+        const populated = { ...initialState, revocationAttributes: attrs, isFetchingRevocationAttributes: true };
+
+        const next = reducer(populated, actions.clearRevocationAttributes());
+
+        expect(next.revocationAttributes).toEqual([]);
+        expect(next.isFetchingRevocationAttributes).toBe(false);
     });
 
     test('checkCompliance / success / failure update isCheckingCompliance', () => {
