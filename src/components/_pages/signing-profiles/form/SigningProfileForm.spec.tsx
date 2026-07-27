@@ -87,6 +87,55 @@ test.describe('SigningProfileForm - Qualified Timestamp / Time Quality Configura
     });
 });
 
+// Regression for issue #1927: Allowed TSA Policy IDs lived in component-local state, outside
+// react-hook-form, so adding or removing one never marked the form dirty and the Update button
+// stayed disabled until some other field was touched.
+test.describe('SigningProfileForm - Allowed TSA Policy IDs mark the form dirty (#1927)', () => {
+    const TAB_TIMESTAMPING = '2 · Timestamping Properties';
+
+    test('Update enables after adding an Allowed TSA Policy ID', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+
+        // Baseline: an untouched edit form is not dirty, so Update is disabled.
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+
+        await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
+        const policyInput = page.locator('#policyIdInput');
+        await policyInput.focus();
+        await policyInput.fill('1.2.3.4.6');
+        await page.getByRole('button', { name: 'Add', exact: true }).click();
+
+        await expect(page.getByText('1.2.3.4.6')).toBeVisible();
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+    });
+
+    test('Update enables after removing an Allowed TSA Policy ID', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+
+        await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
+        await page.getByRole('button', { name: 'Remove 1.2.3.4.5' }).click();
+
+        await expect(page.getByText('No policies added. All policy IDs will be accepted.')).toBeVisible();
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+    });
+
+    test('Update disables again when the policy IDs are restored to their loaded value', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+        await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
+
+        await page.getByRole('button', { name: 'Remove 1.2.3.4.5' }).click();
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+
+        const policyInput = page.locator('#policyIdInput');
+        await policyInput.focus();
+        await policyInput.fill('1.2.3.4.5');
+        await page.getByRole('button', { name: 'Add', exact: true }).click();
+
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+    });
+});
+
 // Root cause of #1820: fields that are validated as required must also render the red-star
 // required indicator, otherwise the user can't tell why Create stays disabled. Every field with
 // a validateRequired rule must show the asterisk (conditionally-required fields show it only

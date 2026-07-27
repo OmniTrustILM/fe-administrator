@@ -1,9 +1,10 @@
 import { combineReducers, configureStore, type Reducer } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { useMemo } from 'react';
 import connectorsReducer from 'ducks/connectors';
 import userInterfaceReducer from 'ducks/user-interface';
+import { ManagedSigningType, SigningRecordPersistenceMode, SigningScheme, SigningWorkflowType } from 'types/openapi';
 import SigningProfileForm from './SigningProfileForm';
 
 // Identity reducer for building a lightweight, inert test store (no epics, reducers are no-ops).
@@ -12,14 +13,48 @@ const identity =
     (state) =>
         state ?? initial;
 
-export function SigningProfileFormTestWrapper() {
+const EDIT_UUID = 'sp1';
+
+const existingSigningProfile = {
+    uuid: EDIT_UUID,
+    name: 'ExistingProfile',
+    description: 'An existing timestamping profile',
+    enabled: true,
+    workflow: {
+        type: SigningWorkflowType.Timestamping,
+        signatureFormattingConnector: { uuid: 'c1', name: 'PAdES Connector' },
+        signatureFormattingConnectorAttributes: [],
+        qualifiedTimestamp: false,
+        validateTokenSignature: false,
+        defaultPolicyId: '1.2.3.4',
+        allowedPolicyIds: ['1.2.3.4.5'],
+        allowedDigestAlgorithms: [],
+    },
+    signingScheme: {
+        signingScheme: SigningScheme.Managed,
+        managedSigningType: ManagedSigningType.StaticKey,
+        certificate: { uuid: 'cert1', commonName: 'Signing Cert', serialNumber: '123' },
+        signingOperationAttributes: [],
+    },
+    recordPolicy: {
+        recordingEnabled: false,
+        recordRequestMetadata: false,
+        recordSignature: false,
+        recordSignedDocument: false,
+        recordDtbs: false,
+        persistenceMode: SigningRecordPersistenceMode.DeferredDurable,
+    },
+    customAttributes: [],
+};
+
+export function SigningProfileFormTestWrapper({ editMode = false }: { editMode?: boolean } = {}) {
     const store = useMemo(
         () =>
             configureStore({
                 reducer: combineReducers({
                     enums: identity({ platformEnums: {} }),
                     signingProfiles: identity({
-                        signingProfile: undefined,
+                        signingProfile: editMode ? existingSigningProfile : undefined,
                         isFetchingDetail: false,
                         isCreating: false,
                         isUpdating: false,
@@ -49,13 +84,16 @@ export function SigningProfileFormTestWrapper() {
                 }),
                 middleware: (getDefault) => getDefault({ serializableCheck: false }),
             }),
-        [],
+        [editMode],
     );
 
     return (
         <Provider store={store}>
-            <MemoryRouter initialEntries={['/signingprofiles/create']}>
-                <SigningProfileForm />
+            <MemoryRouter initialEntries={[editMode ? `/signingprofiles/edit/${EDIT_UUID}` : '/signingprofiles/add']}>
+                <Routes>
+                    <Route path="/signingprofiles/add" element={<SigningProfileForm />} />
+                    <Route path="/signingprofiles/edit/:id" element={<SigningProfileForm />} />
+                </Routes>
             </MemoryRouter>
         </Provider>
     );

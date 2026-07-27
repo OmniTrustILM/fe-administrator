@@ -83,11 +83,6 @@ const digestAlgorithmOptions = Object.values(DigestAlgorithm).map((v) => ({ valu
 
 // ─── Form Values ──────────────────────────────────────────────────────────────
 
-interface AllowedPolicyIdEntry {
-    id: number;
-    value: string;
-}
-
 interface FormValues {
     name: string;
     description: string;
@@ -99,6 +94,7 @@ interface FormValues {
     validateTokenSignature: boolean;
     timeQualityConfigurationUuid: string;
     defaultPolicyId: string;
+    allowedPolicyIds: string[];
     allowedDigestAlgorithms: { value: DigestAlgorithm; label: string }[];
     // Tab 3 – Signing scheme
     signingScheme: SigningScheme;
@@ -195,9 +191,7 @@ export default function SigningProfileForm() {
 
     // ── Local State ────────────────────────────────────────────────────────────
     const [activeTab, setActiveTab] = useState(0);
-    const [allowedPolicyIds, setAllowedPolicyIds] = useState<AllowedPolicyIdEntry[]>([]);
     const [policyIdInput, setPolicyIdInput] = useState('');
-    const nextPolicyIdKey = useRef(0);
 
     // ── Busy ───────────────────────────────────────────────────────────────────
 
@@ -286,6 +280,7 @@ export default function SigningProfileForm() {
             validateTokenSignature: false,
             timeQualityConfigurationUuid: '',
             defaultPolicyId: '',
+            allowedPolicyIds: [],
             allowedDigestAlgorithms: [],
             signingScheme: SigningScheme.Managed,
             managedSigningType: ManagedSigningType.StaticKey,
@@ -325,6 +320,7 @@ export default function SigningProfileForm() {
     const certificateUuidValue = useWatch({ control, name: 'certificateUuid' });
     const signatureFormattingConnectorUuidValue = useWatch({ control, name: 'signatureFormattingConnectorUuid' });
     const timeQualityConfigurationUuidValue = useWatch({ control, name: 'timeQualityConfigurationUuid' });
+    const allowedPolicyIdsValue = useWatch({ control, name: 'allowedPolicyIds' });
     const recordingEnabledValue = useWatch({ control, name: 'recordingEnabled' });
     const retentionIndefiniteValue = useWatch({ control, name: 'retentionIndefinite' });
     const persistenceModeValue = useWatch({ control, name: 'persistenceMode' });
@@ -417,6 +413,7 @@ export default function SigningProfileForm() {
             validateTokenSignature: isTimestampingWorkflow(wf) ? (wf.validateTokenSignature ?? false) : false,
             timeQualityConfigurationUuid: isTimestampingWorkflow(wf) ? wf.timeQualityConfiguration?.uuid || '' : '',
             defaultPolicyId: isTimestampingWorkflow(wf) ? wf.defaultPolicyId || '' : '',
+            allowedPolicyIds: isTimestampingWorkflow(wf) ? (wf.allowedPolicyIds ?? []) : [],
             allowedDigestAlgorithms:
                 isTimestampingWorkflow(wf) && wf.allowedDigestAlgorithms
                     ? wf.allowedDigestAlgorithms.map((d: DigestAlgorithm) => ({ value: d, label: d }))
@@ -439,15 +436,9 @@ export default function SigningProfileForm() {
     useEffect(() => {
         if (valuesToReset && lastResetIdRef.current !== id) {
             reset(valuesToReset);
-
-            // Restore policy IDs
-            const wf = signingProfile?.workflow;
-            const existingPolicies: string[] = wf && isTimestampingWorkflow(wf) ? (wf.allowedPolicyIds ?? []) : [];
-            setAllowedPolicyIds(existingPolicies.map((p) => ({ id: nextPolicyIdKey.current++, value: p })));
-
             lastResetIdRef.current = id;
         }
-    }, [valuesToReset, id, reset, signingProfile]);
+    }, [valuesToReset, id, reset]);
 
     // ── Fetch signature attribute descriptors when certificate changes ─────────
 
@@ -473,16 +464,28 @@ export default function SigningProfileForm() {
 
     // ── Policy ID helpers ─────────────────────────────────────────────────────
 
+    // The list is a regular form field so that adding or removing an entry marks the form dirty
+    // and enables Update; shouldDirty/shouldValidate keep isDirty and isValid in sync. (issue #1927)
+    const setPolicyIdsDirty = useCallback(
+        (next: string[]) => {
+            setValue('allowedPolicyIds', next, { shouldDirty: true, shouldValidate: true });
+        },
+        [setValue],
+    );
+
     const addPolicyId = useCallback(() => {
         const trimmed = policyIdInput.trim();
         if (!trimmed) return;
-        setAllowedPolicyIds((prev) => [...prev, { id: nextPolicyIdKey.current++, value: trimmed }]);
+        setPolicyIdsDirty([...getValues('allowedPolicyIds'), trimmed]);
         setPolicyIdInput('');
-    }, [policyIdInput]);
+    }, [policyIdInput, getValues, setPolicyIdsDirty]);
 
-    const removePolicyId = useCallback((id: number) => {
-        setAllowedPolicyIds((prev) => prev.filter((p) => p.id !== id));
-    }, []);
+    const removePolicyId = useCallback(
+        (index: number) => {
+            setPolicyIdsDirty(getValues('allowedPolicyIds').filter((_, i) => i !== index));
+        },
+        [getValues, setPolicyIdsDirty],
+    );
 
     // ── Submit ────────────────────────────────────────────────────────────────
 
@@ -509,7 +512,7 @@ export default function SigningProfileForm() {
                 validateTokenSignature: values.validateTokenSignature,
                 timeQualityConfigurationUuid: values.timeQualityConfigurationUuid || undefined,
                 defaultPolicyId: values.defaultPolicyId || undefined,
-                allowedPolicyIds: allowedPolicyIds.map((p) => p.value),
+                allowedPolicyIds: values.allowedPolicyIds,
                 allowedDigestAlgorithms: (values.allowedDigestAlgorithms ?? []).map((d) => d.value),
             };
 
@@ -551,7 +554,6 @@ export default function SigningProfileForm() {
             dispatch,
             editMode,
             id,
-            allowedPolicyIds,
             multipleResourceCustomAttributes,
             signingOperationAttributeDescriptors,
             signatureFormattingConnectorAttributeDescriptors,
@@ -792,27 +794,26 @@ export default function SigningProfileForm() {
                         Add
                     </Button>
                 </div>
-                {allowedPolicyIds.length > 0 && (
+                {allowedPolicyIdsValue.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
-                        {allowedPolicyIds.map((entry) => (
+                        {allowedPolicyIdsValue.map((policyId, index) => (
                             <span
-                                key={entry.id}
+                                key={`${policyId}-${index}`}
                                 className="inline-flex items-center gap-x-1 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full"
                             >
-                                {entry.value}
+                                {policyId}
                                 <button
                                     type="button"
                                     className="ml-1 text-blue-500 hover:text-blue-700"
-                                    onClick={() => removePolicyId(entry.id)}
-                                    aria-label={`Remove ${entry.value}`}
+                                    onClick={() => removePolicyId(index)}
+                                    aria-label={`Remove ${policyId}`}
                                 >
                                     ×
                                 </button>
                             </span>
                         ))}
                     </div>
-                )}
-                {allowedPolicyIds.length === 0 && (
+                ) : (
                     <p className="text-xs text-gray-400">No policies added. All policy IDs will be accepted.</p>
                 )}
             </div>
