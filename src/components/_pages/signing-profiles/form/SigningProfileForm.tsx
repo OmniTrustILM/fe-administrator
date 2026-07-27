@@ -732,6 +732,18 @@ export default function SigningProfileForm() {
             <Controller
                 name="defaultPolicyId"
                 control={control}
+                // Mirrors the backend @ValidOid on defaultPolicyId and the class-level
+                // @ValidDefaultPolicyId cross-field constraint, so Update reports the problem here
+                // instead of deferring to a 400. Read the list through getValues rather than a
+                // render-time closure, because a Controller's `rules` prop is captured once.
+                rules={buildValidationRules([
+                    validateOid(),
+                    (value) => {
+                        const allowed = getValues('allowedPolicyIds');
+                        if (!value || allowed.length === 0 || allowed.includes(String(value))) return undefined;
+                        return 'Default policy ID must be among the allowed policy IDs';
+                    },
+                ])}
                 render={({ field, fieldState }) => (
                     <TextInput
                         {...field}
@@ -739,8 +751,11 @@ export default function SigningProfileForm() {
                         type="text"
                         label="Default TSA Policy ID (OID format)"
                         placeholder="e.g. 1.2.3.4.5"
-                        invalid={fieldState.error && fieldState.isTouched}
-                        error={getFieldErrorMessage(fieldState)}
+                        // Not gated on isTouched: the cross-field rule can be broken by editing the
+                        // Allowed list instead, and a disabled Update with no visible reason was the
+                        // root cause of #1820. An empty value never errors, so a pristine form is clean.
+                        invalid={!!fieldState.error}
+                        error={fieldState.error?.message}
                     />
                 )}
             />
@@ -753,7 +768,9 @@ export default function SigningProfileForm() {
                 <Controller
                     name="allowedPolicyIds"
                     control={control}
-                    rules={buildValidationRules([validateOid()])}
+                    // deps re-runs the defaultPolicyId cross-field rule whenever the list changes,
+                    // since that rule's outcome depends on this field's value.
+                    rules={{ ...buildValidationRules([validateOid()]), deps: ['defaultPolicyId'] }}
                     render={({ field, fieldState }) => (
                         <>
                             <HostnameListInput

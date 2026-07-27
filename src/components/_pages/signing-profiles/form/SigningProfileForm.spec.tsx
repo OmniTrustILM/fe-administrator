@@ -141,6 +141,37 @@ test.describe('SigningProfileForm - Allowed TSA Policy IDs mark the form dirty (
         await expect(page.getByTestId('progress-button')).toBeDisabled();
     });
 
+    // Mirrors the backend class-level @ValidDefaultPolicyId on TimestampingWorkflowRequestDto:
+    // when defaultPolicyId is set and allowedPolicyIds is non-empty, the default must be a member.
+    // Without a client-side mirror the newly-enabled Update button would produce a 400.
+    test('Update is blocked with a visible reason when the default policy ID leaves the allowed list', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+        await openLoadedTimestampingTab(page);
+
+        // The loaded default is the only allowed entry; adding a second one keeps it a member.
+        await page.locator('#policyIdInput').fill(ADDED_POLICY_ID);
+        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+
+        // Removing the default from the list breaks the constraint, so Update must go back to
+        // disabled — and must say why, rather than silently staying dead.
+        await page.getByRole('button', { name: `Remove ${EXISTING_POLICY_ID}` }).click();
+
+        await expect(page.getByText('Default policy ID must be among the allowed policy IDs')).toBeVisible();
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+    });
+
+    test('Emptying the allowed list lifts the default-policy-ID constraint', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+        await openLoadedTimestampingTab(page);
+
+        // An empty allowed list accepts every policy ID, so the backend rule does not apply.
+        await page.getByRole('button', { name: `Remove ${EXISTING_POLICY_ID}` }).click();
+
+        await expect(page.getByText('Default policy ID must be among the allowed policy IDs')).toHaveCount(0);
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+    });
+
     test('A malformed OID is rejected instead of being added and dirtying the form', async ({ mount, page }) => {
         await mount(<SigningProfileFormTestWrapper editMode />);
         await openLoadedTimestampingTab(page);
