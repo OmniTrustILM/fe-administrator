@@ -1,5 +1,6 @@
 import { test, expect } from 'playwright/ct-test';
 import { SigningProfileFormTestWrapper } from './SigningProfileFormTestWrapper';
+import { ADDED_POLICY_ID, EXISTING_POLICY_ID } from './signingProfileFormFixtures';
 
 // Regression for issue #1820: the Create button must not stay disabled when Qualified
 // Timestamp is toggled on (making Time Quality Configuration required) and then back off
@@ -91,30 +92,37 @@ test.describe('SigningProfileForm - Qualified Timestamp / Time Quality Configura
 // react-hook-form, so adding or removing one never marked the form dirty and the Update button
 // stayed disabled until some other field was touched.
 test.describe('SigningProfileForm - Allowed TSA Policy IDs mark the form dirty (#1927)', () => {
+    type Page = import('@playwright/test').Page;
+
     const TAB_TIMESTAMPING = '2 · Timestamping Properties';
+
+    // Opens the Timestamping tab and waits for the loaded policy chip, so the assertions that
+    // follow are made against a form that has actually been reset from the store.
+    async function openLoadedTimestampingTab(page: Page) {
+        await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
+        await expect(page.getByRole('button', { name: `Remove ${EXISTING_POLICY_ID}` })).toBeVisible();
+    }
 
     test('Update enables after adding an Allowed TSA Policy ID', async ({ mount, page }) => {
         await mount(<SigningProfileFormTestWrapper editMode />);
+        await openLoadedTimestampingTab(page);
 
-        // Baseline: an untouched edit form is not dirty, so Update is disabled.
+        // Baseline: the loaded edit form is not dirty, so Update is disabled.
         await expect(page.getByTestId('progress-button')).toBeDisabled();
 
-        await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
-        const policyInput = page.locator('#policyIdInput');
-        await policyInput.focus();
-        await policyInput.fill('1.2.3.4.6');
+        await page.locator('#policyIdInput').fill(ADDED_POLICY_ID);
         await page.getByRole('button', { name: 'Add', exact: true }).click();
 
-        await expect(page.getByText('1.2.3.4.6')).toBeVisible();
+        await expect(page.getByRole('button', { name: `Remove ${ADDED_POLICY_ID}` })).toBeVisible();
         await expect(page.getByTestId('progress-button')).toBeEnabled();
     });
 
     test('Update enables after removing an Allowed TSA Policy ID', async ({ mount, page }) => {
         await mount(<SigningProfileFormTestWrapper editMode />);
+        await openLoadedTimestampingTab(page);
         await expect(page.getByTestId('progress-button')).toBeDisabled();
 
-        await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
-        await page.getByRole('button', { name: 'Remove 1.2.3.4.5' }).click();
+        await page.getByRole('button', { name: `Remove ${EXISTING_POLICY_ID}` }).click();
 
         await expect(page.getByText('No policies added. All policy IDs will be accepted.')).toBeVisible();
         await expect(page.getByTestId('progress-button')).toBeEnabled();
@@ -122,16 +130,26 @@ test.describe('SigningProfileForm - Allowed TSA Policy IDs mark the form dirty (
 
     test('Update disables again when the policy IDs are restored to their loaded value', async ({ mount, page }) => {
         await mount(<SigningProfileFormTestWrapper editMode />);
-        await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
+        await openLoadedTimestampingTab(page);
 
-        await page.getByRole('button', { name: 'Remove 1.2.3.4.5' }).click();
+        await page.getByRole('button', { name: `Remove ${EXISTING_POLICY_ID}` }).click();
         await expect(page.getByTestId('progress-button')).toBeEnabled();
 
-        const policyInput = page.locator('#policyIdInput');
-        await policyInput.focus();
-        await policyInput.fill('1.2.3.4.5');
+        await page.locator('#policyIdInput').fill(EXISTING_POLICY_ID);
         await page.getByRole('button', { name: 'Add', exact: true }).click();
 
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+    });
+
+    test('A malformed OID is rejected instead of being added and dirtying the form', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+        await openLoadedTimestampingTab(page);
+
+        await page.locator('#policyIdInput').fill('not-an-oid');
+        await page.getByRole('button', { name: 'Add', exact: true }).click();
+
+        await expect(page.getByText('Must be a dot-separated numeric OID (e.g. 1.2.840.113549.1.1.11)')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Remove not-an-oid' })).toHaveCount(0);
         await expect(page.getByTestId('progress-button')).toBeDisabled();
     });
 });

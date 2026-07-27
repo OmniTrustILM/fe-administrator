@@ -4,8 +4,18 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { useMemo } from 'react';
 import connectorsReducer from 'ducks/connectors';
 import userInterfaceReducer from 'ducks/user-interface';
-import { ManagedSigningType, SigningRecordPersistenceMode, SigningScheme, SigningWorkflowType } from 'types/openapi';
+import {
+    CertificateRelationType,
+    CertificateState,
+    CertificateType,
+    ManagedSigningType,
+    SigningRecordPersistenceMode,
+    SigningScheme,
+    SigningWorkflowType,
+    type SigningProfileDto,
+} from 'types/openapi';
 import SigningProfileForm from './SigningProfileForm';
+import { EXISTING_POLICY_ID } from './signingProfileFormFixtures';
 
 // Identity reducer for building a lightweight, inert test store (no epics, reducers are no-ops).
 const identity =
@@ -15,10 +25,11 @@ const identity =
 
 const EDIT_UUID = 'sp1';
 
-const existingSigningProfile = {
+const existingSigningProfile: SigningProfileDto = {
     uuid: EDIT_UUID,
     name: 'ExistingProfile',
     description: 'An existing timestamping profile',
+    version: 1,
     enabled: true,
     workflow: {
         type: SigningWorkflowType.Timestamping,
@@ -26,14 +37,23 @@ const existingSigningProfile = {
         signatureFormattingConnectorAttributes: [],
         qualifiedTimestamp: false,
         validateTokenSignature: false,
-        defaultPolicyId: '1.2.3.4',
-        allowedPolicyIds: ['1.2.3.4.5'],
+        defaultPolicyId: EXISTING_POLICY_ID,
+        allowedPolicyIds: [EXISTING_POLICY_ID],
         allowedDigestAlgorithms: [],
     },
     signingScheme: {
         signingScheme: SigningScheme.Managed,
         managedSigningType: ManagedSigningType.StaticKey,
-        certificate: { uuid: 'cert1', commonName: 'Signing Cert', serialNumber: '123' },
+        certificate: {
+            uuid: 'cert1',
+            commonName: 'Signing Cert',
+            serialNumber: '123',
+            certificateType: CertificateType.X509,
+            state: CertificateState.Issued,
+            relationType: CertificateRelationType.Renewal,
+            subjectDn: 'CN=Signing Cert',
+            publicKeyAlgorithm: 'RSA',
+        },
         signingOperationAttributes: [],
     },
     recordPolicy: {
@@ -47,7 +67,7 @@ const existingSigningProfile = {
     customAttributes: [],
 };
 
-export function SigningProfileFormTestWrapper({ editMode = false }: { editMode?: boolean } = {}) {
+export function SigningProfileFormTestWrapper({ editMode = false }: Readonly<{ editMode?: boolean }>) {
     const store = useMemo(
         () =>
             configureStore({

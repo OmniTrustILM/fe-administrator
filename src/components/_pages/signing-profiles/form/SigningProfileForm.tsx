@@ -7,6 +7,7 @@ import AttributeEditor from 'components/Attributes/AttributeEditor';
 import Breadcrumb from 'components/Breadcrumb';
 import Button from 'components/Button';
 import Container from 'components/Container';
+import HostnameListInput from 'components/Input/HostnameListInput';
 import ProgressButton from 'components/ProgressButton';
 import { TriangleAlert } from 'lucide-react';
 import Select from 'components/Select';
@@ -35,7 +36,7 @@ import {
 import { isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
 import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
 import { transformAttributeDescriptorDtoToModel } from 'ducks/transform/attributes';
-import { validateAlphaNumericWithoutAccents, validateLength, validateRequired } from 'utils/validators';
+import { validateAlphaNumericWithoutAccents, validateLength, validateOid, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
 // ─── Label Helpers ────────────────────────────────────────────────────────────
@@ -191,7 +192,6 @@ export default function SigningProfileForm() {
 
     // ── Local State ────────────────────────────────────────────────────────────
     const [activeTab, setActiveTab] = useState(0);
-    const [policyIdInput, setPolicyIdInput] = useState('');
 
     // ── Busy ───────────────────────────────────────────────────────────────────
 
@@ -320,7 +320,6 @@ export default function SigningProfileForm() {
     const certificateUuidValue = useWatch({ control, name: 'certificateUuid' });
     const signatureFormattingConnectorUuidValue = useWatch({ control, name: 'signatureFormattingConnectorUuid' });
     const timeQualityConfigurationUuidValue = useWatch({ control, name: 'timeQualityConfigurationUuid' });
-    const allowedPolicyIdsValue = useWatch({ control, name: 'allowedPolicyIds' });
     const recordingEnabledValue = useWatch({ control, name: 'recordingEnabled' });
     const retentionIndefiniteValue = useWatch({ control, name: 'retentionIndefinite' });
     const persistenceModeValue = useWatch({ control, name: 'persistenceMode' });
@@ -461,31 +460,6 @@ export default function SigningProfileForm() {
         const wf = signingProfile?.workflow;
         return editMode && wf && isTimestampingWorkflow(wf) ? wf.signatureFormattingConnectorAttributes : undefined;
     }, [editMode, signingProfile?.workflow]);
-
-    // ── Policy ID helpers ─────────────────────────────────────────────────────
-
-    // The list is a regular form field so that adding or removing an entry marks the form dirty
-    // and enables Update; shouldDirty/shouldValidate keep isDirty and isValid in sync. (issue #1927)
-    const setPolicyIdsDirty = useCallback(
-        (next: string[]) => {
-            setValue('allowedPolicyIds', next, { shouldDirty: true, shouldValidate: true });
-        },
-        [setValue],
-    );
-
-    const addPolicyId = useCallback(() => {
-        const trimmed = policyIdInput.trim();
-        if (!trimmed) return;
-        setPolicyIdsDirty([...getValues('allowedPolicyIds'), trimmed]);
-        setPolicyIdInput('');
-    }, [policyIdInput, getValues, setPolicyIdsDirty]);
-
-    const removePolicyId = useCallback(
-        (index: number) => {
-            setPolicyIdsDirty(getValues('allowedPolicyIds').filter((_, i) => i !== index));
-        },
-        [getValues, setPolicyIdsDirty],
-    );
 
     // ── Submit ────────────────────────────────────────────────────────────────
 
@@ -771,51 +745,32 @@ export default function SigningProfileForm() {
                 )}
             />
 
-            <div>
-                <label htmlFor="policyIdInput" className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="flex flex-col gap-1">
+                <label htmlFor="policyIdInput" className="block text-sm font-medium text-gray-700">
                     Allowed TSA Policy IDs
                 </label>
-                <div className="flex gap-x-2 mb-2">
-                    <input
-                        id="policyIdInput"
-                        type="text"
-                        className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter an OID and press Add"
-                        value={policyIdInput}
-                        onChange={(e) => setPolicyIdInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                addPolicyId();
-                            }
-                        }}
-                    />
-                    <Button type="button" variant="outline" onClick={addPolicyId} disabled={!policyIdInput.trim()}>
-                        Add
-                    </Button>
-                </div>
-                {allowedPolicyIdsValue.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                        {allowedPolicyIdsValue.map((policyId, index) => (
-                            <span
-                                key={`${policyId}-${index}`}
-                                className="inline-flex items-center gap-x-1 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full"
-                            >
-                                {policyId}
-                                <button
-                                    type="button"
-                                    className="ml-1 text-blue-500 hover:text-blue-700"
-                                    onClick={() => removePolicyId(index)}
-                                    aria-label={`Remove ${policyId}`}
-                                >
-                                    ×
-                                </button>
-                            </span>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-xs text-gray-400">No policies added. All policy IDs will be accepted.</p>
-                )}
+                {/* A registered field, so adding or removing an entry marks the form dirty and enables Update (issue #1927) */}
+                <Controller
+                    name="allowedPolicyIds"
+                    control={control}
+                    rules={buildValidationRules([validateOid()])}
+                    render={({ field, fieldState }) => (
+                        <>
+                            <HostnameListInput
+                                id="policyIdInput"
+                                values={field.value}
+                                onValuesChange={field.onChange}
+                                placeholder="Enter an OID and press Add"
+                                validateValue={validateOid()}
+                                invalid={!!fieldState.error}
+                            />
+                            {fieldState.error && <p className="text-xs text-red-600 mt-0.5">{fieldState.error.message}</p>}
+                            {field.value.length === 0 && (
+                                <p className="text-xs text-gray-400">No policies added. All policy IDs will be accepted.</p>
+                            )}
+                        </>
+                    )}
+                />
             </div>
 
             <Controller
