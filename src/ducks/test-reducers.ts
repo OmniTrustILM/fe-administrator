@@ -850,7 +850,9 @@ function certificateGroupsTestReducer(state: CertificateGroupsTestState | undefi
 
 // Reducer key must match the real slice.name ('discoveries') so the real discovery selectors
 // (used by the discovered certificates widget) can find this state. Every getDiscoveryCertificates
-// request is recorded so tests can assert which query params the widget sent.
+// request is recorded so tests can assert which query params the widget sent; apart from that the
+// request/success transitions mirror the real reducer (src/ducks/discoveries.ts), so tests seed rows
+// by dispatching getDiscoveryCertificatesSuccess rather than by preloading them.
 export type DiscoveryCertificatesRequestTest = {
     uuid: string;
     itemsPerPage?: number;
@@ -874,9 +876,21 @@ const discoveriesTestInitialState: DiscoveriesTestState = {
 };
 
 function discoveriesTestReducer(state: DiscoveriesTestState = discoveriesTestInitialState, action: UnknownAction): DiscoveriesTestState {
-    const a = action as { type: string; payload?: DiscoveryCertificatesRequestTest };
+    const a = action as { type: string; payload?: unknown };
     if (a.type === 'discoveries/getDiscoveryCertificates' && a.payload) {
-        return { ...state, certificatesRequests: [...state.certificatesRequests, a.payload] };
+        return {
+            ...state,
+            discoveryCertificates: undefined,
+            isFetchingDiscoveryCertificates: true,
+            certificatesRequests: [...state.certificatesRequests, a.payload as DiscoveryCertificatesRequestTest],
+        };
+    }
+    if (a.type === 'discoveries/getDiscoveryCertificatesSuccess') {
+        return {
+            ...state,
+            discoveryCertificates: a.payload as DiscoveriesTestState['discoveryCertificates'],
+            isFetchingDiscoveryCertificates: false,
+        };
     }
     return state;
 }

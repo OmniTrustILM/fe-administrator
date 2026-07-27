@@ -6,6 +6,7 @@ test.describe('DiscoveryCertificates', () => {
         await mount(<DiscoveryCertificatesWithStore />);
 
         const probe = page.getByTestId('certificates-request-probe');
+        await expect(probe).toHaveAttribute('data-request-count', '1');
         await expect(probe).toHaveAttribute('data-newly-discovered', 'undefined');
     });
 
@@ -51,6 +52,37 @@ test.describe('DiscoveryCertificates', () => {
 
         await expect(component.getByRole('tab', { name: 'Existing' })).toHaveAttribute('aria-selected', 'true');
         await expect(page.getByTestId('certificates-request-probe')).toHaveAttribute('data-newly-discovered', 'false');
+    });
+
+    test('falls back to the All tab and its filter for an unknown URL param value', async ({ mount, page }) => {
+        const component = await mount(
+            <DiscoveryCertificatesWithStore initialEntries={['/discoveries/detail/discovery-1?discoveredCerts=bogus']} />,
+        );
+
+        await expect(component.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('certificates-request-probe')).toHaveAttribute('data-newly-discovered', 'undefined');
+    });
+
+    test('renders the returned certificates and an empty table when a tab has no results', async ({ mount, page }) => {
+        const populated = await mount(<DiscoveryCertificatesWithStore />);
+        await expect(populated.getByRole('cell', { name: 'discovered.example.com' })).toBeVisible();
+        await populated.unmount();
+
+        await mount(<DiscoveryCertificatesWithStore certificates={{ totalItems: 0, certificates: [] }} />);
+        await expect(page.getByTestId('certificates-request-probe')).toHaveAttribute('data-newly-discovered', 'undefined');
+        await expect(page.locator('tbody tr')).toHaveCount(0);
+    });
+
+    test('does not carry one tab page number over to another tab', async ({ mount, page }) => {
+        const component = await mount(<DiscoveryCertificatesWithStore certificates={{ totalItems: 25, certificates: [] }} />);
+        const probe = page.getByTestId('certificates-request-probe');
+
+        await page.getByTestId('pagination-next').click();
+        await expect(probe).toHaveAttribute('data-page-number', '2');
+
+        await component.getByRole('tab', { name: 'New' }).click();
+        await expect(probe).toHaveAttribute('data-newly-discovered', 'true');
+        await expect(probe).toHaveAttribute('data-page-number', '1');
     });
 
     test('shows the trigger columns only on the New tab', async ({ mount, page }) => {

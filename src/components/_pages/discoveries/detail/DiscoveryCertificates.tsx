@@ -6,7 +6,7 @@ import Dialog from 'components/Dialog';
 import { actions, selectors } from 'ducks/discoveries';
 import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useLocation, useSearchParams } from 'react-router';
 import Button from 'components/Button';
 
 import type { TriggerHistorySummaryModel } from 'types/rules';
@@ -35,6 +35,7 @@ export default function DiscoveryCertificates({ id, triggerHistorySummary }: Pro
     const discoveryCertificates = useSelector(selectors.discoveryCertificates);
     const isFetchingDiscoveryCertificates = useSelector(selectors.isFetchingDiscoveryCertificates);
 
+    const { pathname } = useLocation();
     const [searchParams] = useSearchParams();
     const activeTab = TABS.find((tab) => tab.tabKey === searchParams.get(TAB_URL_PARAM)) ?? TABS[0];
     const newlyDiscovered = activeTab.newlyDiscovered;
@@ -159,7 +160,12 @@ export default function DiscoveryCertificates({ id, triggerHistorySummary }: Pro
 
     const pagedTable = (
         <PagedCustomTable
+            // Remounting is what re-issues onReloadData with the new newlyDiscovered value:
+            // PagedCustomTable holds onReloadData in a ref and only re-fetches on [pageSize, pageNumber].
             key={activeTab.tabKey}
+            // The tab lives in the query string, so the default pathname-only pagination key would be
+            // shared by all three tabs and a tab switch would restore the previous tab's page number.
+            stateKey={`${pathname}:${activeTab.tabKey}`}
             headers={discoveryCertificatesHeaders}
             data={discoveryCertificatesData}
             totalItems={discoveryCertificates?.totalItems}
