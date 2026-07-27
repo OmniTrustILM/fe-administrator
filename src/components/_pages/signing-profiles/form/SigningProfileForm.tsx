@@ -7,6 +7,7 @@ import AttributeEditor from 'components/Attributes/AttributeEditor';
 import Breadcrumb from 'components/Breadcrumb';
 import Button from 'components/Button';
 import Container from 'components/Container';
+import HostnameListInput from 'components/Input/HostnameListInput';
 import ProgressButton from 'components/ProgressButton';
 import { TriangleAlert } from 'lucide-react';
 import Select from 'components/Select';
@@ -35,7 +36,7 @@ import {
 import { isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
 import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
 import { transformAttributeDescriptorDtoToModel } from 'ducks/transform/attributes';
-import { validateAlphaNumericWithoutAccents, validateLength, validateRequired } from 'utils/validators';
+import { validateAlphaNumericWithoutAccents, validateLength, validateOid, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
 // ─── Label Helpers ────────────────────────────────────────────────────────────
@@ -83,11 +84,6 @@ const digestAlgorithmOptions = Object.values(DigestAlgorithm).map((v) => ({ valu
 
 // ─── Form Values ──────────────────────────────────────────────────────────────
 
-interface AllowedPolicyIdEntry {
-    id: number;
-    value: string;
-}
-
 interface FormValues {
     name: string;
     description: string;
@@ -99,6 +95,7 @@ interface FormValues {
     validateTokenSignature: boolean;
     timeQualityConfigurationUuid: string;
     defaultPolicyId: string;
+    allowedPolicyIds: string[];
     allowedDigestAlgorithms: { value: DigestAlgorithm; label: string }[];
     // Tab 3 – Signing scheme
     signingScheme: SigningScheme;
@@ -195,9 +192,6 @@ export default function SigningProfileForm() {
 
     // ── Local State ────────────────────────────────────────────────────────────
     const [activeTab, setActiveTab] = useState(0);
-    const [allowedPolicyIds, setAllowedPolicyIds] = useState<AllowedPolicyIdEntry[]>([]);
-    const [policyIdInput, setPolicyIdInput] = useState('');
-    const nextPolicyIdKey = useRef(0);
 
     // ── Busy ───────────────────────────────────────────────────────────────────
 
@@ -286,6 +280,7 @@ export default function SigningProfileForm() {
             validateTokenSignature: false,
             timeQualityConfigurationUuid: '',
             defaultPolicyId: '',
+            allowedPolicyIds: [],
             allowedDigestAlgorithms: [],
             signingScheme: SigningScheme.Managed,
             managedSigningType: ManagedSigningType.StaticKey,
@@ -417,6 +412,7 @@ export default function SigningProfileForm() {
             validateTokenSignature: isTimestampingWorkflow(wf) ? (wf.validateTokenSignature ?? false) : false,
             timeQualityConfigurationUuid: isTimestampingWorkflow(wf) ? wf.timeQualityConfiguration?.uuid || '' : '',
             defaultPolicyId: isTimestampingWorkflow(wf) ? wf.defaultPolicyId || '' : '',
+            allowedPolicyIds: isTimestampingWorkflow(wf) ? (wf.allowedPolicyIds ?? []) : [],
             allowedDigestAlgorithms:
                 isTimestampingWorkflow(wf) && wf.allowedDigestAlgorithms
                     ? wf.allowedDigestAlgorithms.map((d: DigestAlgorithm) => ({ value: d, label: d }))
@@ -439,15 +435,9 @@ export default function SigningProfileForm() {
     useEffect(() => {
         if (valuesToReset && lastResetIdRef.current !== id) {
             reset(valuesToReset);
-
-            // Restore policy IDs
-            const wf = signingProfile?.workflow;
-            const existingPolicies: string[] = wf && isTimestampingWorkflow(wf) ? (wf.allowedPolicyIds ?? []) : [];
-            setAllowedPolicyIds(existingPolicies.map((p) => ({ id: nextPolicyIdKey.current++, value: p })));
-
             lastResetIdRef.current = id;
         }
-    }, [valuesToReset, id, reset, signingProfile]);
+    }, [valuesToReset, id, reset]);
 
     // ── Fetch signature attribute descriptors when certificate changes ─────────
 
@@ -470,19 +460,6 @@ export default function SigningProfileForm() {
         const wf = signingProfile?.workflow;
         return editMode && wf && isTimestampingWorkflow(wf) ? wf.signatureFormattingConnectorAttributes : undefined;
     }, [editMode, signingProfile?.workflow]);
-
-    // ── Policy ID helpers ─────────────────────────────────────────────────────
-
-    const addPolicyId = useCallback(() => {
-        const trimmed = policyIdInput.trim();
-        if (!trimmed) return;
-        setAllowedPolicyIds((prev) => [...prev, { id: nextPolicyIdKey.current++, value: trimmed }]);
-        setPolicyIdInput('');
-    }, [policyIdInput]);
-
-    const removePolicyId = useCallback((id: number) => {
-        setAllowedPolicyIds((prev) => prev.filter((p) => p.id !== id));
-    }, []);
 
     // ── Submit ────────────────────────────────────────────────────────────────
 
@@ -509,7 +486,7 @@ export default function SigningProfileForm() {
                 validateTokenSignature: values.validateTokenSignature,
                 timeQualityConfigurationUuid: values.timeQualityConfigurationUuid || undefined,
                 defaultPolicyId: values.defaultPolicyId || undefined,
-                allowedPolicyIds: allowedPolicyIds.map((p) => p.value),
+                allowedPolicyIds: values.allowedPolicyIds,
                 allowedDigestAlgorithms: (values.allowedDigestAlgorithms ?? []).map((d) => d.value),
             };
 
@@ -551,7 +528,6 @@ export default function SigningProfileForm() {
             dispatch,
             editMode,
             id,
-            allowedPolicyIds,
             multipleResourceCustomAttributes,
             signingOperationAttributeDescriptors,
             signatureFormattingConnectorAttributeDescriptors,
@@ -756,6 +732,18 @@ export default function SigningProfileForm() {
             <Controller
                 name="defaultPolicyId"
                 control={control}
+                // Mirrors the backend @ValidOid on defaultPolicyId and the class-level
+                // @ValidDefaultPolicyId cross-field constraint, so Update reports the problem here
+                // instead of deferring to a 400. Read the list through getValues rather than a
+                // render-time closure, because a Controller's `rules` prop is captured once.
+                rules={buildValidationRules([
+                    validateOid(),
+                    (value) => {
+                        const allowed = getValues('allowedPolicyIds');
+                        if (!value || allowed.length === 0 || allowed.includes(String(value))) return undefined;
+                        return 'Default policy ID must be among the allowed policy IDs';
+                    },
+                ])}
                 render={({ field, fieldState }) => (
                     <TextInput
                         {...field}
@@ -763,58 +751,43 @@ export default function SigningProfileForm() {
                         type="text"
                         label="Default TSA Policy ID (OID format)"
                         placeholder="e.g. 1.2.3.4.5"
-                        invalid={fieldState.error && fieldState.isTouched}
-                        error={getFieldErrorMessage(fieldState)}
+                        // Not gated on isTouched: the cross-field rule can be broken by editing the
+                        // Allowed list instead, and a disabled Update with no visible reason was the
+                        // root cause of #1820. An empty value never errors, so a pristine form is clean.
+                        invalid={!!fieldState.error}
+                        error={fieldState.error?.message}
                     />
                 )}
             />
 
-            <div>
-                <label htmlFor="policyIdInput" className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="flex flex-col gap-1">
+                <label htmlFor="policyIdInput" className="block text-sm font-medium text-gray-700">
                     Allowed TSA Policy IDs
                 </label>
-                <div className="flex gap-x-2 mb-2">
-                    <input
-                        id="policyIdInput"
-                        type="text"
-                        className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter an OID and press Add"
-                        value={policyIdInput}
-                        onChange={(e) => setPolicyIdInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                addPolicyId();
-                            }
-                        }}
-                    />
-                    <Button type="button" variant="outline" onClick={addPolicyId} disabled={!policyIdInput.trim()}>
-                        Add
-                    </Button>
-                </div>
-                {allowedPolicyIds.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                        {allowedPolicyIds.map((entry) => (
-                            <span
-                                key={entry.id}
-                                className="inline-flex items-center gap-x-1 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full"
-                            >
-                                {entry.value}
-                                <button
-                                    type="button"
-                                    className="ml-1 text-blue-500 hover:text-blue-700"
-                                    onClick={() => removePolicyId(entry.id)}
-                                    aria-label={`Remove ${entry.value}`}
-                                >
-                                    ×
-                                </button>
-                            </span>
-                        ))}
-                    </div>
-                )}
-                {allowedPolicyIds.length === 0 && (
-                    <p className="text-xs text-gray-400">No policies added. All policy IDs will be accepted.</p>
-                )}
+                {/* A registered field, so adding or removing an entry marks the form dirty and enables Update (issue #1927) */}
+                <Controller
+                    name="allowedPolicyIds"
+                    control={control}
+                    // deps re-runs the defaultPolicyId cross-field rule whenever the list changes,
+                    // since that rule's outcome depends on this field's value.
+                    rules={{ ...buildValidationRules([validateOid()]), deps: ['defaultPolicyId'] }}
+                    render={({ field, fieldState }) => (
+                        <>
+                            <HostnameListInput
+                                id="policyIdInput"
+                                values={field.value}
+                                onValuesChange={field.onChange}
+                                placeholder="Enter an OID and press Add"
+                                validateValue={validateOid()}
+                                invalid={!!fieldState.error}
+                            />
+                            {fieldState.error && <p className="text-xs text-red-600 mt-0.5">{fieldState.error.message}</p>}
+                            {field.value.length === 0 && (
+                                <p className="text-xs text-gray-400">No policies added. All policy IDs will be accepted.</p>
+                            )}
+                        </>
+                    )}
+                />
             </div>
 
             <Controller

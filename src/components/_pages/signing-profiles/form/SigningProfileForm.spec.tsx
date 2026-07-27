@@ -1,5 +1,6 @@
 import { test, expect } from 'playwright/ct-test';
 import { SigningProfileFormTestWrapper } from './SigningProfileFormTestWrapper';
+import { ADDED_POLICY_ID, EXISTING_POLICY_ID } from './signingProfileFormFixtures';
 
 // Regression for issue #1820: the Create button must not stay disabled when Qualified
 // Timestamp is toggled on (making Time Quality Configuration required) and then back off
@@ -84,6 +85,103 @@ test.describe('SigningProfileForm - Qualified Timestamp / Time Quality Configura
         // Turning Qualified Timestamp off makes Time Quality Configuration optional again.
         await page.locator('#qualifiedTimestamp').uncheck({ force: true });
         await expect(page.getByTestId('progress-button')).toBeEnabled();
+    });
+});
+
+// Regression for issue #1927: Allowed TSA Policy IDs lived in component-local state, outside
+// react-hook-form, so adding or removing one never marked the form dirty and the Update button
+// stayed disabled until some other field was touched.
+test.describe('SigningProfileForm - Allowed TSA Policy IDs mark the form dirty (#1927)', () => {
+    type Page = import('@playwright/test').Page;
+
+    const TAB_TIMESTAMPING = '2 · Timestamping Properties';
+
+    // Opens the Timestamping tab and waits for the loaded policy chip, so the assertions that
+    // follow are made against a form that has actually been reset from the store.
+    async function openLoadedTimestampingTab(page: Page) {
+        await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
+        await expect(page.getByRole('button', { name: `Remove ${EXISTING_POLICY_ID}` })).toBeVisible();
+    }
+
+    test('Update enables after adding an Allowed TSA Policy ID', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+        await openLoadedTimestampingTab(page);
+
+        // Baseline: the loaded edit form is not dirty, so Update is disabled.
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+
+        await page.locator('#policyIdInput').fill(ADDED_POLICY_ID);
+        await page.getByRole('button', { name: 'Add', exact: true }).click();
+
+        await expect(page.getByRole('button', { name: `Remove ${ADDED_POLICY_ID}` })).toBeVisible();
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+    });
+
+    test('Update enables after removing an Allowed TSA Policy ID', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+        await openLoadedTimestampingTab(page);
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+
+        await page.getByRole('button', { name: `Remove ${EXISTING_POLICY_ID}` }).click();
+
+        await expect(page.getByText('No policies added. All policy IDs will be accepted.')).toBeVisible();
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+    });
+
+    test('Update disables again when the policy IDs are restored to their loaded value', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+        await openLoadedTimestampingTab(page);
+
+        await page.getByRole('button', { name: `Remove ${EXISTING_POLICY_ID}` }).click();
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+
+        await page.locator('#policyIdInput').fill(EXISTING_POLICY_ID);
+        await page.getByRole('button', { name: 'Add', exact: true }).click();
+
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+    });
+
+    // Mirrors the backend class-level @ValidDefaultPolicyId on TimestampingWorkflowRequestDto:
+    // when defaultPolicyId is set and allowedPolicyIds is non-empty, the default must be a member.
+    // Without a client-side mirror the newly-enabled Update button would produce a 400.
+    test('Update is blocked with a visible reason when the default policy ID leaves the allowed list', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+        await openLoadedTimestampingTab(page);
+
+        // The loaded default is the only allowed entry; adding a second one keeps it a member.
+        await page.locator('#policyIdInput').fill(ADDED_POLICY_ID);
+        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+
+        // Removing the default from the list breaks the constraint, so Update must go back to
+        // disabled — and must say why, rather than silently staying dead.
+        await page.getByRole('button', { name: `Remove ${EXISTING_POLICY_ID}` }).click();
+
+        await expect(page.getByText('Default policy ID must be among the allowed policy IDs')).toBeVisible();
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+    });
+
+    test('Emptying the allowed list lifts the default-policy-ID constraint', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+        await openLoadedTimestampingTab(page);
+
+        // An empty allowed list accepts every policy ID, so the backend rule does not apply.
+        await page.getByRole('button', { name: `Remove ${EXISTING_POLICY_ID}` }).click();
+
+        await expect(page.getByText('Default policy ID must be among the allowed policy IDs')).toHaveCount(0);
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+    });
+
+    test('A malformed OID is rejected instead of being added and dirtying the form', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper editMode />);
+        await openLoadedTimestampingTab(page);
+
+        await page.locator('#policyIdInput').fill('not-an-oid');
+        await page.getByRole('button', { name: 'Add', exact: true }).click();
+
+        await expect(page.getByText('Must be a dot-separated numeric OID (e.g. 1.2.840.113549.1.1.11)')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Remove not-an-oid' })).toHaveCount(0);
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
     });
 });
 
