@@ -22,8 +22,9 @@ const KNOWN_DEBT = new Set([
     // Generated OpenAPI client is stale vs the current spec (imports RequestAttributeDto,
     // now RequestAttribute). Leaks into the graph via src/api.ts. Fix = regenerate types.
     'src/types/openapi/apis/TokenInstanceControllerApi.ts',
-    // Root Playwright config, tripped only by the deprecated node10 moduleResolution +
-    // package "exports" maps resolving '@tailwindcss/vite'. Tooling, not app code.
+    // Root Playwright config, tripped only because '@playwright/experimental-ct-core'
+    // nests its own copy of vite, so its `Plugin` type differs from the root vite's.
+    // Tooling, not app code.
     'playwright-ct.config.ts',
 ]);
 
