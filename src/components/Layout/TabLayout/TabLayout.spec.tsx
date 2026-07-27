@@ -1,5 +1,6 @@
 import { test, expect } from '../../../../playwright/ct-test';
 import TabLayoutWithStore from './TabLayoutWithStore';
+import TabLayoutKeySelectionWithStore from './TabLayoutKeySelectionWithStore';
 
 test.describe('TabLayout', () => {
     test('should render tabs and active tab content', async ({ mount }) => {
@@ -140,6 +141,35 @@ test.describe('TabLayout', () => {
             const search = await component.getByTestId('location-probe').getAttribute('data-search');
             expect(search).toContain('foo=bar');
             expect(search).toContain('tab=flow');
+        });
+    });
+
+    test.describe('selectedTabKey', () => {
+        test('keeps the selected tab when a tab before it becomes visible', async ({ mount, page }) => {
+            const component = await mount(<TabLayoutKeySelectionWithStore />);
+
+            await component.getByRole('tab', { name: 'Gamma' }).click();
+            await expect(page.getByTestId('selected-key')).toHaveText('gamma');
+            await expect(component.getByTestId('gamma')).toBeVisible();
+
+            // Alpha is inserted at position 0, shifting Gamma from index 1 to index 2. Because the
+            // selection is tracked by key, the user must stay on Gamma rather than being moved.
+            await page.getByTestId('toggle-first-tab').click();
+            await expect(component.getByRole('tab', { name: 'Alpha' })).toBeVisible();
+            await expect(page.getByTestId('selected-key')).toHaveText('gamma');
+            await expect(component.getByTestId('gamma')).toBeVisible();
+        });
+
+        test('falls back to the first visible tab when the selected tab is hidden', async ({ mount, page }) => {
+            const component = await mount(<TabLayoutKeySelectionWithStore />);
+
+            await page.getByTestId('toggle-first-tab').click();
+            await component.getByRole('tab', { name: 'Alpha' }).click();
+            await expect(component.getByTestId('alpha')).toBeVisible();
+
+            await page.getByTestId('toggle-first-tab').click();
+            await expect(component.getByRole('tab', { name: 'Alpha' })).toHaveCount(0);
+            await expect(component.getByTestId('beta')).toBeVisible();
         });
     });
 });

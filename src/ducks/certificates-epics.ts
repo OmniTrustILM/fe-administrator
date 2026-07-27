@@ -1173,6 +1173,37 @@ const getIssuanceAttributes: AppEpic = (action$, state, deps) => {
     );
 };
 
+const getRegisterAttributes: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getRegisterAttributes.match),
+        switchMap((action) =>
+            deps.apiClients.clientOperations
+                .listRegisterCertificateAttributes({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                })
+                .pipe(
+                    map((attributes) =>
+                        slice.actions.getRegisterAttributesSuccess({
+                            raProfileUuid: action.payload.raProfileUuid,
+                            registerAttributes: attributes.map((attribute) => transformAttributeDescriptorDtoToModel(attribute)),
+                        }),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.getRegisterAttributesFailure({
+                                raProfileUuid: action.payload.raProfileUuid,
+                                error: extractError(err, 'Failed to get register attributes'),
+                            }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to get register attributes' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
 const getRevocationAttributes: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getRevocationAttributes.match),
@@ -1494,6 +1525,7 @@ const epics = [
     bulkDelete,
     uploadCertificate,
     getIssuanceAttributes,
+    getRegisterAttributes,
     getRevocationAttributes,
     checkCompliance,
     getCsrAttributes,

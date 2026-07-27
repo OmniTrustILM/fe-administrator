@@ -97,7 +97,7 @@ test.describe('CertificateForm', () => {
         await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
     });
 
-    test('Pre-register mode hides the Connector Attributes tab (its input is discarded on submit) but keeps Custom Attributes', async ({
+    test('Pre-register mode always shows the Connector Attributes tab, matching Issue mode, even with no register attributes', async ({
         mount,
         page,
     }) => {
@@ -105,8 +105,57 @@ test.describe('CertificateForm', () => {
 
         await page.getByTestId('requestType-register').click();
 
-        await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toHaveCount(0);
+        await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toBeVisible();
         await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
+
+        // No RA Profile selected yet: the tab shows the select-a-profile hint.
+        await page.getByRole('tab', { name: 'Connector Attributes' }).click();
+        await expect(page.getByTestId('register_attributes-hint')).toBeVisible();
+    });
+
+    test('Pre-register Connector Attributes tab shows an empty-state message when the selected RA profile has no register attributes', async ({
+        mount,
+        page,
+    }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{
+                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+
+        await page.getByRole('tab', { name: 'Connector Attributes' }).click();
+        await expect(page.getByTestId('register_attributes-empty')).toBeVisible();
+    });
+
+    test('Pre-register mode shows the Connector Attributes tab when the RA profile has register attributes', async ({ mount, page }) => {
+        const registerDescriptor: AttributeDescriptorModel = {
+            type: AttributeType.Data,
+            name: 'regField',
+            uuid: 'register-data-uuid-1',
+            contentType: AttributeContentType.String,
+            properties: { label: 'Register Field', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+        } as AttributeDescriptorModel;
+
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{
+                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                    certificates: { ...testInitialState.certificates, registerAttributes: { 'ra-1': [registerDescriptor] } },
+                }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+
+        await expect(page.getByRole('tab', { name: 'Connector Attributes' })).toBeVisible();
     });
 
     test('an in-flight registration disables Cancel and puts Create in its progress state (no duplicate submit)', async ({
@@ -340,6 +389,76 @@ test.describe('CertificateForm', () => {
         const action = dispatched.find((a) => a.type === 'certificates/registerCertificate');
         expect(action?.payload.registerRequest.ownerUuid).toBe('user-1');
         expect(action?.payload.registerRequest.groupUuids).toEqual(['group-1']);
+    });
+
+    test('registerCertificate payload includes the entered register-attribute value', async ({ mount, page }) => {
+        const registerDescriptor: AttributeDescriptorModel = {
+            type: AttributeType.Data,
+            name: 'regField',
+            uuid: 'register-data-uuid-2',
+            contentType: AttributeContentType.String,
+            properties: { label: 'Register Field', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
+        } as AttributeDescriptorModel;
+
+        const dispatched: { type: string; payload?: any }[] = [];
+
+        await mount(
+            <CertificateFormTestWrapper
+                onAction={(a) => dispatched.push(a)}
+                preloadedState={{
+                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                    certificates: { ...testInitialState.certificates, registerAttributes: { 'ra-1': [registerDescriptor] } },
+                }}
+            />,
+        );
+
+        await fillRegisterBasics(page);
+        await page.getByRole('tab', { name: 'Connector Attributes' }).click();
+
+        const regAttrInput = page.getByTestId('text-input-__attributes__register_attributes__.regField');
+        await regAttrInput.click();
+        await regAttrInput.fill('register-value');
+        await expect(regAttrInput).toHaveValue('register-value');
+
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        await expect.poll(() => dispatched.find((a) => a.type === 'certificates/registerCertificate')).toBeTruthy();
+        const action = dispatched.find((a) => a.type === 'certificates/registerCertificate');
+        const attrs = action?.payload.registerRequest.attributes as { name: string; content?: { data?: unknown }[] }[] | undefined;
+        const regAttr = attrs?.find((a) => a.name === 'regField');
+        expect(regAttr?.content?.[0]?.data).toBe('register-value');
+    });
+
+    test('Create stays disabled while register attributes are still loading, even once CSR attributes have resolved', async ({
+        mount,
+        page,
+    }) => {
+        const dispatched: { type: string; payload?: any }[] = [];
+
+        await mount(
+            <CertificateFormTestWrapper
+                onAction={(a) => dispatched.push(a)}
+                preloadedState={{
+                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                    // CSR attributes have already resolved; only the register fetch is still in flight.
+                    certificates: {
+                        ...testInitialState.certificates,
+                        isFetchingCsrAttributes: false,
+                        isFetchingRegisterAttributes: true,
+                    },
+                }}
+            />,
+        );
+
+        await fillRegisterBasics(page);
+
+        // Submitting now would collect an empty register-attribute set and silently drop required
+        // connector attributes, so the button must stay disabled until the descriptors land.
+        const createButton = page.getByRole('button', { name: 'Create' });
+        await expect(createButton).toBeDisabled();
+
+        await createButton.click({ force: true });
+        await expect.poll(() => dispatched.filter((a) => a.type === 'certificates/registerCertificate')).toHaveLength(0);
     });
 
     test('registerCertificate payload omits owner/groups when left empty', async ({ mount, page }) => {

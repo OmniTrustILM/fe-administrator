@@ -62,6 +62,11 @@ export interface ListIssueCertificateAttributesRequest {
     raProfileUuid: string;
 }
 
+export interface ListRegisterCertificateAttributesRequest {
+    authorityUuid: string;
+    raProfileUuid: string;
+}
+
 export interface ListRevokeCertificateAttributesRequest {
     authorityUuid: string;
     raProfileUuid: string;
@@ -290,6 +295,36 @@ export class ClientOperationsV2Api extends BaseAPI {
         return this.request<Array<BaseAttributeDto>>(
             {
                 url: '/v2/operations/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/attributes/issue'
+                    .replace('{authorityUuid}', encodeURI(authorityUuid))
+                    .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Return the list of attributes the client must populate when pre-registering a certificate through this RA profile. The list reflects the certificate authority\'s register-operation attribute schema.
+     * Get registration attributes
+     */
+    listRegisterCertificateAttributes({
+        authorityUuid,
+        raProfileUuid,
+    }: ListRegisterCertificateAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    listRegisterCertificateAttributes(
+        { authorityUuid, raProfileUuid }: ListRegisterCertificateAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    listRegisterCertificateAttributes(
+        { authorityUuid, raProfileUuid }: ListRegisterCertificateAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'listRegisterCertificateAttributes');
+        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'listRegisterCertificateAttributes');
+
+        return this.request<Array<BaseAttributeDto>>(
+            {
+                url: '/v2/operations/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/attributes/register'
                     .replace('{authorityUuid}', encodeURI(authorityUuid))
                     .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
                 method: 'GET',

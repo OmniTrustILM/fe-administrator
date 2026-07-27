@@ -6,6 +6,9 @@ import TabLayoutSkeleton from './TabLayoutSkeleton';
 
 type Props = {
     tabs: {
+        // Stable identity for a tab, independent of its (possibly duplicated or non-string) display
+        // title. Used for the React key and the URL slug; falls back to the title when omitted.
+        tabKey?: string;
         title: string | React.ReactNode;
         hidden?: boolean;
         disabled?: boolean;
@@ -14,6 +17,11 @@ type Props = {
     }[];
     onlyActiveTabContent?: boolean;
     selectedTab?: number;
+    // Controls the selection by tab key/slug instead of by position, so that showing or hiding a tab
+    // cannot shift the user onto a different one. Takes precedence over `selectedTab`; an unknown or
+    // currently-hidden key falls back to the first visible tab.
+    selectedTabKey?: string;
+    onTabKeyChange?: (tabKey: string) => void;
     noBorder?: boolean;
     onTabChange?: (tab: number) => void;
     isLoading?: boolean;
@@ -34,6 +42,8 @@ export default function TabLayout({
     tabs,
     onlyActiveTabContent = true,
     selectedTab,
+    selectedTabKey,
+    onTabKeyChange,
     noBorder = false,
     onTabChange,
     isLoading = false,
@@ -41,7 +51,7 @@ export default function TabLayout({
 }: Readonly<Props>) {
     const memoizedTabs = useMemo(() => tabs.filter((e) => !e.hidden), [tabs]);
 
-    const slugs = useMemo(() => memoizedTabs.map((t, i) => toSlug(t.title, i)), [memoizedTabs]);
+    const slugs = useMemo(() => memoizedTabs.map((t, i) => t.tabKey ?? toSlug(t.title, i)), [memoizedTabs]);
 
     const [searchParams, setSearchParams] = useSearchParams();
     const urlSlug = tabUrlParam ? searchParams.get(tabUrlParam) : null;
@@ -50,16 +60,18 @@ export default function TabLayout({
     const [internalTab, setInternalTab] = useState(selectedTab ?? 0);
 
     const urlDrivenTab = Math.max(urlIndex, 0);
-    const currentTab = tabUrlParam ? urlDrivenTab : (selectedTab ?? internalTab);
+    const keyDrivenTab = selectedTabKey === undefined ? undefined : Math.max(slugs.indexOf(selectedTabKey), 0);
+    const controlledTab = keyDrivenTab ?? selectedTab;
+    const currentTab = tabUrlParam ? urlDrivenTab : (controlledTab ?? internalTab);
 
     useEffect(() => {
-        if (tabUrlParam) return;
+        if (tabUrlParam || keyDrivenTab !== undefined) return;
         if (selectedTab !== undefined) {
             setInternalTab(selectedTab);
         } else if (memoizedTabs.length > 0 && internalTab >= memoizedTabs.length) {
             setInternalTab(0);
         }
-    }, [selectedTab, memoizedTabs.length, internalTab, tabUrlParam]);
+    }, [selectedTab, memoizedTabs.length, internalTab, tabUrlParam, keyDrivenTab]);
 
     useEffect(() => {
         if (!tabUrlParam) return;
@@ -90,12 +102,14 @@ export default function TabLayout({
                 setSearchParams(next);
                 return;
             }
-            if (selectedTab === undefined) {
+            if (controlledTab === undefined) {
                 setInternalTab(tab);
             }
+            const key = slugs[tab];
+            if (key !== undefined) onTabKeyChange?.(key);
             onTabChange?.(tab);
         },
-        [tabUrlParam, searchParams, setSearchParams, slugs, selectedTab, onTabChange],
+        [tabUrlParam, searchParams, setSearchParams, slugs, controlledTab, onTabKeyChange, onTabChange],
     );
 
     const tabsForRender = useMemo(
@@ -113,7 +127,10 @@ export default function TabLayout({
             <hr className="my-4 border-gray-200" />
             {memoizedTabs.map((t, i) =>
                 onlyActiveTabContent === false || currentTab === i ? (
-                    <div key={typeof t.title === 'string' ? t.title : `tab-content-${i}`} className={currentTab === i ? '' : 'hidden'}>
+                    <div
+                        key={t.tabKey ?? (typeof t.title === 'string' ? t.title : `tab-content-${i}`)}
+                        className={currentTab === i ? '' : 'hidden'}
+                    >
                         {t.content}
                     </div>
                 ) : null,

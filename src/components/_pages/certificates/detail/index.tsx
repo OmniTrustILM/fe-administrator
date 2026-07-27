@@ -1214,12 +1214,6 @@ export default function CertificateDetail() {
                                         <AttributeViewer viewerType={ATTRIBUTE_VIEWER_TYPE.METADATA} metadata={certificate?.metadata} />
                                     </Widget>
 
-                                    {certificate?.certificateRequest?.attributes && certificate.certificateRequest.attributes.length > 0 ? (
-                                        <Widget title="CSR" titleSize="large">
-                                            <AttributeViewer attributes={certificate.certificateRequest.attributes} />
-                                        </Widget>
-                                    ) : null}
-
                                     {certificate?.issueAttributes && certificate.issueAttributes.length > 0 ? (
                                         <Widget title="Issue Attributes" titleSize="large">
                                             <AttributeViewer attributes={certificate.issueAttributes} />
@@ -1229,6 +1223,18 @@ export default function CertificateDetail() {
                                     {certificate?.revokeAttributes && certificate.revokeAttributes.length > 0 ? (
                                         <Widget title="Revoke Attributes" titleSize="large">
                                             <AttributeViewer attributes={certificate.revokeAttributes} />
+                                        </Widget>
+                                    ) : null}
+
+                                    {certificate?.registerAttributes && certificate.registerAttributes.length > 0 ? (
+                                        <Widget title="Register Attributes" titleSize="large">
+                                            <AttributeViewer attributes={certificate.registerAttributes} />
+                                        </Widget>
+                                    ) : null}
+
+                                    {certificate?.registrationRequestAttributes && certificate.registrationRequestAttributes.length > 0 ? (
+                                        <Widget title="Registration Request Attributes" titleSize="large">
+                                            <AttributeViewer attributes={certificate.registrationRequestAttributes} />
                                         </Widget>
                                     ) : null}
 

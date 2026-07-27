@@ -90,6 +90,7 @@ export type State = {
     certificateHistory?: CertificateHistoryModel[];
     certificateLocations?: LocationResponseModel[];
     issuanceAttributes: { [raProfileId: string]: AttributeDescriptorModel[] };
+    registerAttributes: { [raProfileId: string]: AttributeDescriptorModel[] };
     revocationAttributes: AttributeDescriptorModel[];
     validationResult?: ValidationCertificateResultModel;
     approvals?: ApprovalDto[];
@@ -137,6 +138,7 @@ export type State = {
     isUploading: boolean;
 
     isFetchingIssuanceAttributes: boolean;
+    isFetchingRegisterAttributes: boolean;
     isFetchingRevocationAttributes: boolean;
 
     isCheckingCompliance: boolean;
@@ -159,6 +161,7 @@ export const initialState: State = {
     certificates: [],
 
     issuanceAttributes: {},
+    registerAttributes: {},
     revocationAttributes: [],
     approvals: [],
 
@@ -200,6 +203,7 @@ export const initialState: State = {
     isUploading: false,
 
     isFetchingIssuanceAttributes: false,
+    isFetchingRegisterAttributes: false,
     isFetchingRevocationAttributes: false,
 
     isCheckingCompliance: false,
@@ -890,6 +894,28 @@ export const slice = createSlice({
             state.isFetchingIssuanceAttributes = false;
         },
 
+        getRegisterAttributes: (state, action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {
+            state.isFetchingRegisterAttributes = true;
+        },
+
+        getRegisterAttributesSuccess: (
+            state,
+            action: PayloadAction<{ raProfileUuid: string; registerAttributes: AttributeDescriptorModel[] }>,
+        ) => {
+            state.isFetchingRegisterAttributes = false;
+            state.registerAttributes[action.payload.raProfileUuid] = action.payload.registerAttributes;
+        },
+
+        getRegisterAttributesFailure: (state, action: PayloadAction<{ raProfileUuid?: string; error: string | undefined }>) => {
+            state.isFetchingRegisterAttributes = false;
+            // Drop any previously loaded descriptors for this profile: keeping them would let the form
+            // render a stale editor (or the "no connector attributes" empty state) as if the load had
+            // succeeded, and submit an attribute set that doesn't match the authority.
+            if (action.payload.raProfileUuid) {
+                delete state.registerAttributes[action.payload.raProfileUuid];
+            }
+        },
+
         getRevocationAttributes: (state, action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {
             state.isFetchingRevocationAttributes = true;
         },
@@ -1090,6 +1116,7 @@ const certificateDownloadContent = createSelector(state, (state) => state.certif
 const certificateHistory = createSelector(state, (state) => state.certificateHistory);
 const certificateLocations = createSelector(state, (state) => state.certificateLocations);
 const issuanceAttributes = createSelector(state, (state) => state.issuanceAttributes);
+const registerAttributes = createSelector(state, (state) => state.registerAttributes);
 const revocationAttributes = createSelector(state, (state) => state.revocationAttributes);
 const approvals = createSelector(state, (state) => state.approvals);
 
@@ -1121,6 +1148,7 @@ const isBulkUpdatingOwner = createSelector(state, (state) => state.isBulkUpdatin
 const isUploading = createSelector(state, (state) => state.isUploading);
 
 const isFetchingIssuanceAttributes = createSelector(state, (state) => state.isFetchingIssuanceAttributes);
+const isFetchingRegisterAttributes = createSelector(state, (state) => state.isFetchingRegisterAttributes);
 const isFetchingRevocationAttributes = createSelector(state, (state) => state.isFetchingRevocationAttributes);
 
 const isFetchingValidationResult = createSelector(state, (state) => state.isFetchingValidationResult);
@@ -1162,6 +1190,7 @@ export const selectors = {
     certificateHistory,
     certificateLocations,
     issuanceAttributes,
+    registerAttributes,
     revocationAttributes,
     approvals,
     isFetchingDetail,
@@ -1186,6 +1215,7 @@ export const selectors = {
     isBulkUpdatingOwner,
     isUploading,
     isFetchingIssuanceAttributes,
+    isFetchingRegisterAttributes,
     isFetchingRevocationAttributes,
     isFetchingValidationResult,
     validationResult,

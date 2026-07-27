@@ -123,6 +123,56 @@ function renderRequestAttributesTabContent(params: {
     );
 }
 
+function renderRegisterAttributesTabContent(params: {
+    registerAttributeDescriptors: AttributeDescriptorModel[] | undefined | null;
+    registerAttributesCallbackAttributes: AttributeDescriptorModel[];
+    setRegisterAttributesCallbackAttributes: React.Dispatch<React.SetStateAction<AttributeDescriptorModel[]>>;
+    isFetchingRegisterAttributes: boolean;
+    selectedRaProfileUuid: string | undefined;
+    callbackParentUuid: string | undefined;
+}) {
+    const {
+        registerAttributeDescriptors,
+        registerAttributesCallbackAttributes,
+        setRegisterAttributesCallbackAttributes,
+        isFetchingRegisterAttributes,
+        selectedRaProfileUuid,
+        callbackParentUuid,
+    } = params;
+
+    if ((registerAttributeDescriptors ?? []).length > 0) {
+        return (
+            <AttributeEditor
+                id="register_attributes"
+                attributeDescriptors={registerAttributeDescriptors ?? []}
+                callbackParentUuid={callbackParentUuid}
+                callbackResource={Resource.Certificates}
+                groupAttributesCallbackAttributes={registerAttributesCallbackAttributes}
+                setGroupAttributesCallbackAttributes={setRegisterAttributesCallbackAttributes}
+            />
+        );
+    }
+    if (isFetchingRegisterAttributes) {
+        return (
+            <span className="text-gray-500 dark:text-neutral-400" data-testid="register_attributes-loading">
+                Loading connector attributes&hellip;
+            </span>
+        );
+    }
+    if (selectedRaProfileUuid) {
+        return (
+            <span className="text-gray-500 dark:text-neutral-400" data-testid="register_attributes-empty">
+                This RA Profile has no connector attributes.
+            </span>
+        );
+    }
+    return (
+        <span className="text-gray-500 dark:text-neutral-400" data-testid="register_attributes-hint">
+            Select an RA Profile to see its connector attributes.
+        </span>
+    );
+}
+
 interface CertificateFormProps {
     onCancel?: () => void;
 }
@@ -135,6 +185,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const users = useSelector(userSelectors.users);
     const certificateGroups = useSelector(certificateGroupSelectors.certificateGroups);
     const issuanceAttributeDescriptors = useSelector(certificateSelectors.issuanceAttributes);
+    const registerAttributeDescriptors = useSelector(certificateSelectors.registerAttributes);
+    const isFetchingRegisterAttributes = useSelector(certificateSelectors.isFetchingRegisterAttributes);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const csrAttributeDescriptors = useSelector(certificateSelectors.csrAttributeDescriptors);
@@ -156,9 +208,10 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const [csrAttributesCallbackAttributes, setCsrAttributesCallbackAttributes] = useDescriptorState();
     const [signatureAttributesCallbackAttributes, setSignatureAttributesCallbackAttributes] = useDescriptorState();
     const [altSignatureAttributesCallbackAttributes, setAltSignatureAttributesCallbackAttributes] = useDescriptorState();
+    const [registerAttributesCallbackAttributes, setRegisterAttributesCallbackAttributes] = useDescriptorState();
     const [fileContent, setFileContent] = useState<string>('');
     const [certificate, setCertificate] = useState<CertificateDetailResponseModel | undefined>();
-    const [activeRequestTab, setActiveRequestTab] = useState(0);
+    const [activeRequestTabKey, setActiveRequestTabKey] = useState<string>('request-attributes');
 
     const [attributeValuesMap] = useState<Record<string, Record<string, unknown>>>({});
     const attributeValuesRef = useRef<Record<string, unknown>>({});
@@ -279,14 +332,27 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             if (!profile?.authorityInstanceUuid) return;
             dispatch(connectorActions.clearCallbackData());
             setGroupAttributesCallbackAttributes([]);
+            setRegisterAttributesCallbackAttributes([]);
             dispatch(
                 certificateActions.getIssuanceAttributes({
                     raProfileUuid: profile.uuid,
                     authorityUuid: profile.authorityInstanceUuid,
                 }),
             );
+            dispatch(
+                certificateActions.getRegisterAttributes({
+                    raProfileUuid: profile.uuid,
+                    authorityUuid: profile.authorityInstanceUuid,
+                }),
+            );
         },
-        [dispatch, raProfiles, setGroupAttributesCallbackAttributes, setCsrAttributesCallbackAttributes],
+        [
+            dispatch,
+            raProfiles,
+            setGroupAttributesCallbackAttributes,
+            setCsrAttributesCallbackAttributes,
+            setRegisterAttributesCallbackAttributes,
+        ],
     );
 
     const raProfileOptions = useMemo(
@@ -331,12 +397,13 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const showAltSignatureTab = !isRegister && includeAltKey && !!altTokenProfileUuid;
     const showConnectorTab = !isRegister;
     const showOwnershipTab = isRegister;
+    // Shown for the whole Pre-register mode (mirrors the Issue-mode Connector Attributes tab), even when
+    // the CA defines no register attributes — the tab then renders an empty editor rather than vanishing.
+    const showRegisterConnectorTab = isRegister;
 
-    useEffect(() => {
-        // Reset to the first visible tab whenever the visible tab set changes, so a carried-over index
-        // never lands the user on a different tab than the one they had selected.
-        setActiveRequestTab(0);
-    }, [showRequestAttributesTab, showSignatureTab, showAltSignatureTab, showConnectorTab, showOwnershipTab]);
+    // Submitting before the descriptors land would collect an empty attribute set and silently drop
+    // required connector/CSR attributes, so block submission while either fetch is in flight.
+    const isFetchingRequestAttributes = isFetchingCsrAttributes || (isRegister && isFetchingRegisterAttributes);
 
     const submitCallback = useCallback(
         (formValues: CertificateFormValues) => {
@@ -351,6 +418,11 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             if (formValues.requestType === 'register') {
                 const csrAttrs = collectFormAttributes('csrAttributes', csrAttributeDescriptors, combinedValues);
                 const customAttrs = collectFormAttributes('customCertificate', resourceCustomAttributes, combinedValues);
+                const registerAttrs = collectFormAttributes(
+                    'register_attributes',
+                    [...(registerAttributeDescriptors[profile.uuid] ?? []), ...registerAttributesCallbackAttributes],
+                    combinedValues,
+                );
 
                 dispatch(
                     certificateActions.registerCertificate({
@@ -361,7 +433,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                             expiresAt: formValues.expiresAt ? new Date(formValues.expiresAt).toISOString() : undefined,
                             csrAttributes: csrAttrs,
                             customAttributes: customAttrs,
-                            attributes: [],
+                            attributes: registerAttrs,
                             ownerUuid: formValues.ownerUuid || undefined,
                             groupUuids: formValues.groupUuids?.length ? formValues.groupUuids : undefined,
                         },
@@ -417,6 +489,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             groupAttributesCallbackAttributes,
             issuanceAttributeDescriptors,
             raProfiles,
+            registerAttributeDescriptors,
+            registerAttributesCallbackAttributes,
             resourceCustomAttributes,
             signatureAttributeDescriptors,
         ],
@@ -432,12 +506,12 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const submitHandler = useCallback(
         (event: React.SyntheticEvent<HTMLFormElement>) => {
             event.preventDefault();
-            if (isFetchingCsrAttributes) {
+            if (isFetchingRequestAttributes) {
                 return;
             }
             handleSubmit(onSubmit)(event);
         },
-        [handleSubmit, isFetchingCsrAttributes, onSubmit],
+        [handleSubmit, isFetchingRequestAttributes, onSubmit],
     );
 
     return (
@@ -676,11 +750,12 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                             )}
 
                             <TabLayout
-                                selectedTab={activeRequestTab}
-                                onTabChange={setActiveRequestTab}
+                                selectedTabKey={activeRequestTabKey}
+                                onTabKeyChange={setActiveRequestTabKey}
                                 onlyActiveTabContent={false}
                                 tabs={[
                                     {
+                                        tabKey: 'request-attributes',
                                         title: tabTitle('Request Attributes', csrAttributeDescriptors),
                                         hidden: !showRequestAttributesTab,
                                         content: renderRequestAttributesTabContent({
@@ -692,6 +767,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         }),
                                     },
                                     {
+                                        tabKey: 'signature-attributes',
                                         title: tabTitle('Signature Attributes', signatureAttributeDescriptors),
                                         hidden: !showSignatureTab,
                                         content: (
@@ -704,6 +780,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         ),
                                     },
                                     {
+                                        tabKey: 'alt-signature-attributes',
                                         title: tabTitle('Alternative Signature Attributes', altSignatureAttributeDescriptors),
                                         hidden: !showAltSignatureTab,
                                         content: (
@@ -718,6 +795,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     {
                                         // Never hidden: kept mounted in both modes so a mode switch can't remount and
                                         // clear entered custom-attribute values.
+                                        tabKey: 'custom-attributes',
                                         title: tabTitle('Custom Attributes', resourceCustomAttributes),
                                         content: (
                                             <AttributeEditor
@@ -728,6 +806,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         ),
                                     },
                                     {
+                                        tabKey: 'ownership',
                                         title: 'Ownership',
                                         hidden: !showOwnershipTab,
                                         content: (
@@ -768,8 +847,10 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         ),
                                     },
                                     {
-                                        // Connector Attributes are discarded on register submit (attributes: [] by design),
-                                        // so this tab is hidden in Pre-register mode to avoid silently-ignored input.
+                                        // Issue-only: this tab's descriptors come from getIssuanceAttributes, which is
+                                        // unrelated to the register-mode Connector Attributes tab below. Both tabs share
+                                        // the same display title, so they need distinct keys to stay distinct subtrees.
+                                        tabKey: 'issuance-connector-attributes',
                                         title: tabTitle('Connector Attributes', issuanceAttributeDescriptors[selectedRaProfileUuid || '']),
                                         hidden: !showConnectorTab,
                                         content: (
@@ -782,6 +863,19 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                 setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                                             />
                                         ),
+                                    },
+                                    {
+                                        tabKey: 'register-connector-attributes',
+                                        title: tabTitle('Connector Attributes', registerAttributeDescriptors[selectedRaProfileUuid || '']),
+                                        hidden: !showRegisterConnectorTab,
+                                        content: renderRegisterAttributesTabContent({
+                                            registerAttributeDescriptors: registerAttributeDescriptors[selectedRaProfileUuid || ''],
+                                            registerAttributesCallbackAttributes,
+                                            setRegisterAttributesCallbackAttributes,
+                                            isFetchingRegisterAttributes,
+                                            selectedRaProfileUuid,
+                                            callbackParentUuid: selectedRaProfile?.uuid,
+                                        }),
                                     },
                                 ]}
                             />
@@ -808,7 +902,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     title="Create"
                                     inProgressTitle="Creating"
                                     inProgress={issuingCertificate}
-                                    disabled={!formState.isValid || isFetchingCsrAttributes}
+                                    disabled={!formState.isValid || isFetchingRequestAttributes}
                                 />
                             </div>
                         </Container>
