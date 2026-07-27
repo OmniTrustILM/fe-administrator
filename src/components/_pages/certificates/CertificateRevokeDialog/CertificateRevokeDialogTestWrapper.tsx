@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, type Middleware } from '@reduxjs/toolkit';
 import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
@@ -35,11 +35,19 @@ export function CertificateRevokeDialogTestWrapper({
     certificate = baseCertificate,
     preloadedState,
 }: CertificateRevokeDialogTestWrapperProps) {
+    const [revokePayload, setRevokePayload] = useState<unknown>();
+
     const store = useMemo(
         () =>
             configureStore({
                 reducer: testReducers,
-                middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
+                middleware: (getDefaultMiddleware) =>
+                    getDefaultMiddleware({ serializableCheck: false }).concat((() => (next) => (action) => {
+                        if ((action as { type?: string }).type === 'certificates/revokeCertificate') {
+                            setRevokePayload((action as { payload?: unknown }).payload);
+                        }
+                        return next(action);
+                    }) as Middleware),
                 preloadedState: { ...testInitialState, ...preloadedState },
             }),
         [preloadedState],
@@ -55,6 +63,7 @@ export function CertificateRevokeDialogTestWrapper({
         <Provider store={store}>
             <MemoryRouter>
                 {open ? <CertificateRevokeDialog certificate={certificate} onClose={handleClose} /> : <div data-testid="dialog-closed" />}
+                <div data-testid="revoke-payload">{revokePayload ? JSON.stringify(revokePayload) : ''}</div>
             </MemoryRouter>
         </Provider>
     );

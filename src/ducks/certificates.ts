@@ -904,6 +904,12 @@ export const slice = createSlice({
 
         getRevocationAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingRevocationAttributes = false;
+            state.revocationAttributes = [];
+        },
+
+        clearRevocationAttributes: (state) => {
+            state.revocationAttributes = [];
+            state.isFetchingRevocationAttributes = false;
         },
 
         checkCompliance: (state, action: PayloadAction<CertificateComplianceCheckModel>) => {

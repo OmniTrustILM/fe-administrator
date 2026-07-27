@@ -1,7 +1,6 @@
 import AttributeEditor from 'components/Attributes/AttributeEditor';
 import Button from 'components/Button';
 import Container from 'components/Container';
-import ProgressButton from 'components/ProgressButton';
 import Select from 'components/Select';
 import Switch from 'components/Switch';
 import Widget from 'components/Widget';
@@ -12,7 +11,7 @@ import { Controller, type FieldValues, FormProvider, useForm } from 'react-hook-
 import { useDispatch, useSelector } from 'react-redux';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { CertificateDetailResponseModel } from 'types/certificate';
-import { CertificateRevocationReason, PlatformEnum } from 'types/openapi';
+import { CertificateRevocationReason, PlatformEnum, Resource } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 
 interface FormValues {
@@ -30,7 +29,6 @@ export default function CertificateRevokeDialog({ certificate, onClose }: Props)
 
     const revocationAttributes = useSelector(certificateSelectors.revocationAttributes);
     const isFetchingRevocationAttributes = useSelector(certificateSelectors.isFetchingRevocationAttributes);
-    const isRevoking = useSelector(certificateSelectors.isRevoking);
     const certificateRevocationReason = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateRevocationReason));
 
     const [groupAttributesCallbackAttributes, setGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
@@ -39,9 +37,13 @@ export default function CertificateRevokeDialog({ certificate, onClose }: Props)
     const authorityUuid = certificate.raProfile?.authorityInstanceUuid;
 
     useEffect(() => {
+        dispatch(certificateActions.clearRevocationAttributes());
         if (raProfileUuid && authorityUuid) {
             dispatch(certificateActions.getRevocationAttributes({ raProfileUuid, authorityUuid }));
         }
+        return () => {
+            dispatch(certificateActions.clearRevocationAttributes());
+        };
     }, [dispatch, raProfileUuid, authorityUuid]);
 
     const reasonOptions = useMemo(() => {
@@ -56,17 +58,20 @@ export default function CertificateRevokeDialog({ certificate, onClose }: Props)
     }, [certificateRevocationReason]);
 
     const methods = useForm<FormValues>({ mode: 'onTouched', defaultValues: { destroyKey: false } });
-    const { control, handleSubmit, getValues } = methods;
+    const { control, handleSubmit } = methods;
 
     const onSubmit = useCallback(
         (values: FormValues) => {
-            const allValues = getValues() as FieldValues;
             dispatch(
                 certificateActions.revokeCertificate({
                     uuid: certificate.uuid,
                     revokeRequest: {
                         reason: values.reason || CertificateRevocationReason.Unspecified,
-                        attributes: collectFormAttributes('revoke', revocationAttributes, allValues),
+                        attributes: collectFormAttributes(
+                            'revoke',
+                            [...revocationAttributes, ...groupAttributesCallbackAttributes],
+                            values as FieldValues,
+                        ),
                         destroyKey: certificate.key ? !!values.destroyKey : undefined,
                     },
                     raProfileUuid: raProfileUuid || '',
@@ -75,13 +80,13 @@ export default function CertificateRevokeDialog({ certificate, onClose }: Props)
             );
             onClose();
         },
-        [certificate, dispatch, revocationAttributes, raProfileUuid, authorityUuid, onClose, getValues],
+        [certificate, dispatch, revocationAttributes, groupAttributesCallbackAttributes, raProfileUuid, authorityUuid, onClose],
     );
 
     return (
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)}>
-                <Widget noBorder busy={isRevoking || isFetchingRevocationAttributes}>
+                <Widget noBorder busy={isFetchingRevocationAttributes}>
                     <div className="space-y-4">
                         <Controller
                             name="reason"
@@ -100,10 +105,12 @@ export default function CertificateRevokeDialog({ certificate, onClose }: Props)
                             )}
                         />
 
-                        {revocationAttributes.length > 0 && (
+                        {!isFetchingRevocationAttributes && revocationAttributes.length > 0 && (
                             <AttributeEditor
                                 id="revoke"
                                 attributeDescriptors={revocationAttributes}
+                                callbackParentUuid={raProfileUuid}
+                                callbackResource={Resource.Certificates}
                                 groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                                 setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                             />
@@ -128,12 +135,9 @@ export default function CertificateRevokeDialog({ certificate, onClose }: Props)
                             <Button variant="outline" onClick={onClose} type="button">
                                 Cancel
                             </Button>
-                            <ProgressButton
-                                title="Revoke"
-                                inProgressTitle="Revoking..."
-                                inProgress={isRevoking}
-                                dataTestId="revokeSubmit"
-                            />
+                            <Button type="submit" disabled={isFetchingRevocationAttributes} data-testid="revokeSubmit">
+                                Revoke
+                            </Button>
                         </Container>
                     </div>
                 </Widget>

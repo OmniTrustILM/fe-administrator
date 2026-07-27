@@ -563,7 +563,6 @@ export type CertificatesTestState = {
     issueErrorMessage?: string;
     revocationAttributes: AttributeDescriptorModel[];
     isFetchingRevocationAttributes: boolean;
-    isRevoking: boolean;
 };
 
 const certificatesTestInitialState: CertificatesTestState = {
@@ -579,7 +578,6 @@ const certificatesTestInitialState: CertificatesTestState = {
     issueErrorMessage: undefined,
     revocationAttributes: [],
     isFetchingRevocationAttributes: false,
-    isRevoking: false,
 };
 
 function certificatesTestReducer(state: CertificatesTestState | undefined, _action: UnknownAction): CertificatesTestState {
