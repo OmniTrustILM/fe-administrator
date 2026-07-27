@@ -6,7 +6,7 @@ import Dialog from 'components/Dialog';
 import { actions, selectors } from 'ducks/discoveries';
 import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import Button from 'components/Button';
 
 import type { TriggerHistorySummaryModel } from 'types/rules';
@@ -21,13 +21,24 @@ type Props = Readonly<{
     triggerHistorySummary?: TriggerHistorySummaryModel;
 }>;
 
+const TAB_URL_PARAM = 'discoveredCerts';
+
+const TABS: ReadonlyArray<{ tabKey: string; title: string; newlyDiscovered?: boolean }> = [
+    { tabKey: 'all', title: 'All', newlyDiscovered: undefined },
+    { tabKey: 'new', title: 'New', newlyDiscovered: true },
+    { tabKey: 'existing', title: 'Existing', newlyDiscovered: false },
+];
+
 export default function DiscoveryCertificates({ id, triggerHistorySummary }: Props) {
     const dispatch = useDispatch();
 
     const discoveryCertificates = useSelector(selectors.discoveryCertificates);
     const isFetchingDiscoveryCertificates = useSelector(selectors.isFetchingDiscoveryCertificates);
 
-    const [newlyDiscovered, setNewlyDiscovered] = useState<boolean | undefined>(undefined);
+    const [searchParams] = useSearchParams();
+    const activeTab = TABS.find((tab) => tab.tabKey === searchParams.get(TAB_URL_PARAM)) ?? TABS[0];
+    const newlyDiscovered = activeTab.newlyDiscovered;
+
     const [showMessage, setShowMessage] = useState<boolean>(false);
     const [message, setMessage] = useState<string>();
 
@@ -148,6 +159,7 @@ export default function DiscoveryCertificates({ id, triggerHistorySummary }: Pro
 
     const pagedTable = (
         <PagedCustomTable
+            key={activeTab.tabKey}
             headers={discoveryCertificatesHeaders}
             data={discoveryCertificatesData}
             totalItems={discoveryCertificates?.totalItems}
@@ -158,12 +170,8 @@ export default function DiscoveryCertificates({ id, triggerHistorySummary }: Pro
     return (
         <Widget title="Discovered Certificates" titleSize="large" busy={isFetchingDiscoveryCertificates}>
             <TabLayout
-                tabUrlParam="discoveredCerts"
-                tabs={[
-                    { title: 'All', onClick: () => setNewlyDiscovered(undefined), content: pagedTable },
-                    { title: 'New', onClick: () => setNewlyDiscovered(true), content: pagedTable },
-                    { title: 'Existing', onClick: () => setNewlyDiscovered(false), content: pagedTable },
-                ]}
+                tabUrlParam={TAB_URL_PARAM}
+                tabs={TABS.map((tab) => ({ tabKey: tab.tabKey, title: tab.title, content: pagedTable }))}
                 onlyActiveTabContent
                 noBorder
             />

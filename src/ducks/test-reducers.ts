@@ -848,6 +848,39 @@ function certificateGroupsTestReducer(state: CertificateGroupsTestState | undefi
     return state ?? certificateGroupsTestInitialState;
 }
 
+// Reducer key must match the real slice.name ('discoveries') so the real discovery selectors
+// (used by the discovered certificates widget) can find this state. Every getDiscoveryCertificates
+// request is recorded so tests can assert which query params the widget sent.
+export type DiscoveryCertificatesRequestTest = {
+    uuid: string;
+    itemsPerPage?: number;
+    pageNumber?: number;
+    newlyDiscovered?: boolean;
+};
+
+export type DiscoveriesTestState = {
+    discoveryCertificates?: {
+        totalItems?: number;
+        certificates: any[];
+    };
+    isFetchingDiscoveryCertificates: boolean;
+    certificatesRequests: DiscoveryCertificatesRequestTest[];
+};
+
+const discoveriesTestInitialState: DiscoveriesTestState = {
+    discoveryCertificates: undefined,
+    isFetchingDiscoveryCertificates: false,
+    certificatesRequests: [],
+};
+
+function discoveriesTestReducer(state: DiscoveriesTestState = discoveriesTestInitialState, action: UnknownAction): DiscoveriesTestState {
+    const a = action as { type: string; payload?: DiscoveryCertificatesRequestTest };
+    if (a.type === 'discoveries/getDiscoveryCertificates' && a.payload) {
+        return { ...state, certificatesRequests: [...state.certificatesRequests, a.payload] };
+    }
+    return state;
+}
+
 export const testReducers = combineReducers({
     raProfileRequestAttributes: raProfileRequestAttributesTestReducer,
     userInterface: userInterfaceTestReducer,
@@ -877,6 +910,7 @@ export const testReducers = combineReducers({
     cryptographicKeys: cryptographicKeysTestReducer,
     users: usersTestReducer,
     certificateGroups: certificateGroupsTestReducer,
+    discoveries: discoveriesTestReducer,
 });
 
 export const testInitialState = {
@@ -908,4 +942,5 @@ export const testInitialState = {
     cryptographicKeys: cryptographicKeysTestInitialState,
     users: usersTestInitialState,
     certificateGroups: certificateGroupsTestInitialState,
+    discoveries: discoveriesTestInitialState,
 };
