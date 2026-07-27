@@ -1,5 +1,6 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
+import type { ConnectInfoDto } from 'types/openapi';
 
 // IMPORTANT: This file is used ONLY in component tests (Playwright CT).
 // It must NOT import the real duck modules
@@ -326,6 +327,7 @@ function customAttributesTestReducer(
 export type ConnectorsTestState = {
     callbackData: { [key: string]: unknown };
     isRunningCallback: { [key: string]: boolean };
+    connectInfo?: ConnectInfoDto[];
 };
 
 const connectorsTestInitialState: ConnectorsTestState = {

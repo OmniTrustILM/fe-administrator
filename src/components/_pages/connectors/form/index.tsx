@@ -606,7 +606,7 @@ export default function ConnectorForm({ connectorId, onCancel, onSuccess }: Conn
                                 title={submitTitle}
                                 inProgressTitle={inProgressTitle}
                                 inProgress={isUpdating || isCreating}
-                                disabled={!isDirty || isFetchingAuthAttributes || (!editMode && !!selectedVersionErrorMessage)}
+                                disabled={!isDirty || isFetchingAuthAttributes || (!editMode && !hasSuccessfulSelectedVersion)}
                                 type="submit"
                             />
                         </Container>
