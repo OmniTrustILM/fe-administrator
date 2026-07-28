@@ -1,11 +1,6 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { ConnectInfoDto } from 'types/openapi';
-// Reducer key must match the real slice.name ('oids') so the real OID selectors (used by
-// useOidMappingOptions and RequestAttributeMappingBadge) read this state instead of falling back to
-// the duck's initialState. Reusing that initialState verbatim keeps every field the real selectors
-// expect present, so registering this slice cannot make an unrelated selector read undefined.
-import { initialState as oidsInitialState, type State as OidsState } from 'ducks/oids';
 
 // IMPORTANT: This file is used ONLY in component tests (Playwright CT).
 // It must NOT import the real duck modules
@@ -862,8 +857,45 @@ function certificateGroupsTestReducer(state: CertificateGroupsTestState | undefi
     return state ?? certificateGroupsTestInitialState;
 }
 
-function oidsTestReducer(state: OidsState | undefined, _action: UnknownAction): OidsState {
-    return state ?? oidsInitialState;
+// Reducer key must match the real slice.name ('oids') so the real OID selectors (used by
+// useOidMappingOptions and RequestAttributeMappingBadge) read this state. Every field of the real
+// duck's State is mirrored here: once this slice exists in the store the duck's `?? initialState`
+// fallback no longer applies, so a missing field would read undefined in a real selector.
+export type OidsTestState = {
+    oid?: any;
+    oids: any[];
+    oidsByCategory: Record<string, any[]>;
+    oidsByCategoryError: Record<string, boolean>;
+    oidsByCategoryLoaded: Record<string, boolean>;
+    systemOids: any[];
+    systemOidsLoaded: boolean;
+    systemOidsError: boolean;
+    isFetching: boolean;
+    isCreating: boolean;
+    createOidSucceeded: boolean;
+    isUpdating: boolean;
+    updateOidSucceeded: boolean;
+    isDeleting: boolean;
+};
+
+const oidsTestInitialState: OidsTestState = {
+    oids: [],
+    oidsByCategory: {},
+    oidsByCategoryError: {},
+    oidsByCategoryLoaded: {},
+    systemOids: [],
+    systemOidsLoaded: false,
+    systemOidsError: false,
+    isFetching: false,
+    isCreating: false,
+    createOidSucceeded: false,
+    isUpdating: false,
+    updateOidSucceeded: false,
+    isDeleting: false,
+};
+
+function oidsTestReducer(state: OidsTestState | undefined, _action: UnknownAction): OidsTestState {
+    return state ?? oidsTestInitialState;
 }
 
 // Reducer key must match the real slice.name ('discoveries') so the real discovery selectors
@@ -976,5 +1008,5 @@ export const testInitialState = {
     users: usersTestInitialState,
     certificateGroups: certificateGroupsTestInitialState,
     discoveries: discoveriesTestInitialState,
-    oids: oidsInitialState,
+    oids: oidsTestInitialState,
 };
