@@ -75,4 +75,34 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await page.getByTestId('select-ra-attr-extension-oid-trigger').click();
         await expect(page.getByRole('option', { name: 'Extended Key Usage' })).toBeVisible();
     });
+
+    test('a failed system-OID fetch surfaces its error without disabling an already-loaded custom extension list', async ({
+        mount,
+        page,
+    }) => {
+        // Partial-source failure: the system registry fetch failed, but the custom certificateExtension
+        // list loaded fine. The error hint must surface without hiding or disabling the still-usable
+        // custom-only dropdown — errors are additive per source, not all-or-nothing across both.
+        const component = await mount(
+            <RequestAttributesSettingsWithStore
+                oids={{
+                    systemOidsError: true,
+                    oidsByCategory: {
+                        certificateExtension: [
+                            { oid: '1.3.6.1.4.1.99999.2', displayName: 'Internal Marker', category: 'certificateExtension' },
+                        ],
+                    },
+                    oidsByCategoryLoaded: { certificateExtension: true },
+                }}
+            />,
+        );
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Certificate extension' }).click();
+
+        await expect(page.getByTestId('request-attribute-authoring-extension-error')).toBeVisible();
+        await page.getByTestId('select-ra-attr-extension-oid-trigger').click();
+        await expect(page.getByRole('option', { name: 'Internal Marker' })).toBeVisible();
+    });
 });

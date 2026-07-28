@@ -87,7 +87,10 @@ export const toOidSelectOptions = (
 
 // System and custom entries are disjoint by construction — the backend rejects a custom OID that
 // shadows a system one — so the lists concatenate without a dedupe pass.
-export const toMergedOidSelectOptions = (system?: OIDResponseModel[], custom?: OIDResponseModel[]) =>
+export const toMergedOidSelectOptions = (
+    system?: OIDResponseModel[],
+    custom?: OIDResponseModel[],
+): { value: string; label: string; description?: string; aliases?: string[]; code?: string }[] =>
     toOidSelectOptions([...(system ?? []), ...(custom ?? [])]);
 
 export const buildRdnCodeByOid = (entries: OIDResponseModel[]): Record<string, string> => {
