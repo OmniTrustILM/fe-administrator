@@ -13,12 +13,18 @@ const revokeDataDescriptor: AttributeDescriptorModel = {
     properties: { label: 'Revoke Field', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
 } as AttributeDescriptorModel;
 
-const certificateWithKey: CertificateDetailResponseModel = {
+const certificateWithPrivateKey: CertificateDetailResponseModel = {
     uuid: 'certificate-uuid',
     commonName: 'test-certificate',
     state: CertificateState.Issued,
     raProfile: { uuid: 'ra-profile-uuid', name: 'Test RA Profile', authorityInstanceUuid: 'authority-uuid' },
     key: { uuid: 'key-uuid', name: 'Test Key' },
+    privateKeyAvailability: true,
+} as CertificateDetailResponseModel;
+
+const certificateWithKeyButNoPrivateKey: CertificateDetailResponseModel = {
+    ...certificateWithPrivateKey,
+    privateKeyAvailability: false,
 } as CertificateDetailResponseModel;
 
 test.describe('CertificateRevokeDialog', () => {
@@ -44,10 +50,39 @@ test.describe('CertificateRevokeDialog', () => {
         await expect(page.getByTestId('switch-destroyKey')).toHaveCount(0);
     });
 
-    test('shows destroyKey switch, unchecked, when the certificate has an associated key', async ({ mount, page }) => {
-        await mount(<CertificateRevokeDialogTestWrapper certificate={certificateWithKey} />);
+    test('hides destroyKey switch when the certificate has a key but no private key available', async ({ mount, page }) => {
+        await mount(<CertificateRevokeDialogTestWrapper certificate={certificateWithKeyButNoPrivateKey} />);
+        await expect(page.getByTestId('switch-destroyKey')).toHaveCount(0);
+    });
+
+    test('shows destroyKey switch, unchecked, when the private key is available', async ({ mount, page }) => {
+        await mount(<CertificateRevokeDialogTestWrapper certificate={certificateWithPrivateKey} />);
         await expect(page.getByTestId('switch-destroyKey')).toBeVisible();
         await expect(page.getByTestId('switch-destroyKey-input')).not.toBeChecked();
+    });
+
+    test('renders reason, destroyKey switch and connector attributes in order', async ({ mount, page }) => {
+        await mount(
+            <CertificateRevokeDialogTestWrapper
+                certificate={certificateWithPrivateKey}
+                preloadedState={{
+                    certificates: { ...testInitialState.certificates, revocationAttributes: [revokeDataDescriptor] },
+                }}
+            />,
+        );
+
+        const reason = page.getByTestId('select-revokeReason-trigger');
+        const destroyKey = page.getByTestId('switch-destroyKey');
+        const attribute = page.getByTestId('text-input-__attributes__revoke__.revokeField');
+        await expect(reason).toBeVisible();
+        await expect(destroyKey).toBeVisible();
+        await expect(attribute).toBeVisible();
+
+        const [reasonTop, destroyKeyTop, attributeTop] = await Promise.all(
+            [reason, destroyKey, attribute].map(async (locator) => (await locator.boundingBox())?.y ?? 0),
+        );
+        expect(reasonTop).toBeLessThan(destroyKeyTop);
+        expect(destroyKeyTop).toBeLessThan(attributeTop);
     });
 
     test('closes the dialog on submit (reason-only path)', async ({ mount, page }) => {
@@ -59,7 +94,7 @@ test.describe('CertificateRevokeDialog', () => {
     test('sends entered revoke attributes and destroyKey in the revoke request', async ({ mount, page }) => {
         await mount(
             <CertificateRevokeDialogTestWrapper
-                certificate={certificateWithKey}
+                certificate={certificateWithPrivateKey}
                 preloadedState={{
                     certificates: { ...testInitialState.certificates, revocationAttributes: [revokeDataDescriptor] },
                 }}
@@ -86,8 +121,8 @@ test.describe('CertificateRevokeDialog', () => {
         });
     });
 
-    test('does not send destroyKey when the certificate has no associated key', async ({ mount, page }) => {
-        await mount(<CertificateRevokeDialogTestWrapper />);
+    test('does not send destroyKey when no private key is available', async ({ mount, page }) => {
+        await mount(<CertificateRevokeDialogTestWrapper certificate={certificateWithKeyButNoPrivateKey} />);
         await page.getByTestId('revokeSubmit').click();
 
         await expect(page.getByTestId('revoke-payload')).not.toBeEmpty();
