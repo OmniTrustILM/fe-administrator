@@ -183,6 +183,27 @@ describe('attributes utils', () => {
             expect(getAttributeContent(AttributeContentType.Text, [{ data: 'lorem' } as any])).toBe('lorem');
         });
 
+        test('prefers reference over data for String and Text content', () => {
+            expect(
+                getAttributeContent(AttributeContentType.String, [
+                    { data: 'ee-profile-object-id', reference: 'End Entity Profile One' } as any,
+                ]),
+            ).toBe('End Entity Profile One');
+            expect(getAttributeContent(AttributeContentType.Text, [{ data: 'raw-text-value', reference: 'Readable Text' } as any])).toBe(
+                'Readable Text',
+            );
+        });
+
+        test('falls back to data for String and Text content when reference is empty', () => {
+            expect(getAttributeContent(AttributeContentType.String, [{ data: 'hello', reference: '' } as any])).toBe('hello');
+            expect(getAttributeContent(AttributeContentType.Text, [{ data: 'lorem', reference: '' } as any])).toBe('lorem');
+        });
+
+        test('resolves reference per item for a multi-value String attribute', () => {
+            const content = [{ data: 'id-1', reference: 'Profile One' } as any, { data: 'id-2' } as any];
+            expect(getAttributeContent(AttributeContentType.String, content)).toBe('Profile One, id-2');
+        });
+
         test('returns raw value for Time and Date', () => {
             expect(getAttributeContent(AttributeContentType.Time, [{ data: '10:00' } as any])).toBe('10:00');
             expect(getAttributeContent(AttributeContentType.Date, [{ data: '2024-01-01' } as any])).toBe('2024-01-01');

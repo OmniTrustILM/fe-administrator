@@ -130,9 +130,10 @@ export const getAttributeContent = (contentType: AttributeContentType, content: 
                 return getFormattedDateTime(String(content.data));
             case AttributeContentType.Float:
             case AttributeContentType.Integer:
+                return String(content.data);
             case AttributeContentType.String:
             case AttributeContentType.Text:
-                return String(content.data);
+                return content.reference ? content.reference : String(content.data);
             case AttributeContentType.Secret:
                 return '*****';
         }
