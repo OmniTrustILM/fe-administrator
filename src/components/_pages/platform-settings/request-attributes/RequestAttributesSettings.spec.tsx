@@ -71,7 +71,7 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await page.getByTestId('select-ra-attr-mapping-trigger').click();
         await page.getByRole('option', { name: 'Certificate extension' }).click();
 
-        await expect(component.getByTestId('request-attribute-authoring-extension-empty')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-extension-empty')).toHaveCount(0);
         await page.getByTestId('select-ra-attr-extension-oid-trigger').click();
         await expect(page.getByRole('option', { name: 'Extended Key Usage' })).toBeVisible();
     });

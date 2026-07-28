@@ -1,5 +1,6 @@
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
+import type { OidsTestState } from 'ducks/test-reducers';
 import { createMockStore } from 'utils/test-helpers';
 import RequestAttributesSettings from './RequestAttributesSettings';
 
@@ -12,7 +13,7 @@ import RequestAttributesSettings from './RequestAttributesSettings';
 export default function RequestAttributesSettingsWithStore({
     strict,
     oids,
-}: Readonly<{ strict?: boolean; oids?: Record<string, unknown> }>) {
+}: Readonly<{ strict?: boolean; oids?: Partial<OidsTestState> }>) {
     const store = createMockStore({
         raProfileRequestAttributes: {
             defaultSet: { requestAttributes: [], externalCsrValidationStrict: strict },
