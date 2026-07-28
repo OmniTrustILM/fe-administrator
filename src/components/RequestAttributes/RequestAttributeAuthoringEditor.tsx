@@ -118,11 +118,11 @@ function resolveOidValue(options: OidSelectOption[], current?: string): string |
     return options.find((o) => o.aliases?.includes(trimmed))?.value ?? trimmed;
 }
 
-// A strict dropdown would silently drop a stored value that isn't in the fetched list
-// (e.g. a standard RDN like CN that lives in the backend SystemOid enum). Keep it selectable.
+// A strict dropdown would silently drop a stored value that is in neither the system registry nor
+// the custom OIDs (e.g. an OID registered under a since-removed entry). Keep it selectable.
 function withCurrentValue(options: OidSelectOption[], resolved?: string): OidSelectOption[] {
     if (!resolved || options.some((o) => o.value === resolved)) return options;
-    return [...options, { value: resolved, label: `${resolved} (not in Custom OIDs)` }];
+    return [...options, { value: resolved, label: `${resolved} (unknown OID)` }];
 }
 
 type OidMappingSelectProps = Readonly<{
@@ -183,6 +183,8 @@ function OidMappingSelect({
                     onChange={(v) => onChange((v as string) || undefined)}
                     options={withCurrent}
                     placeholder={placeholder}
+                    showOptionDescriptionInDropdown
+                    showSelectedDescriptionAsHelp
                 />
             )}
         </>
@@ -436,8 +438,8 @@ export default function RequestAttributeAuthoringEditor({
                         label="RDN"
                         placeholder="Select an RDN"
                         testIdPrefix={`${dataTestId}-rdn`}
-                        emptyHint="No RDNs defined under Custom OIDs."
-                        errorHint="Failed to load RDNs from Custom OIDs."
+                        emptyHint="No RDNs are available. Register one under Settings → OIDs."
+                        errorHint="Failed to load RDNs."
                         options={rdnOptions}
                         optionsError={rdnOptionsError}
                         optionsLoaded={rdnOptionsLoaded}
@@ -486,8 +488,8 @@ export default function RequestAttributeAuthoringEditor({
                             label="Extension"
                             placeholder="Select an extension"
                             testIdPrefix={`${dataTestId}-extension`}
-                            emptyHint="No certificate extensions defined under Custom OIDs."
-                            errorHint="Failed to load certificate extensions from Custom OIDs."
+                            emptyHint="No certificate extensions are available. Register one under Settings → OIDs."
+                            errorHint="Failed to load certificate extensions."
                             options={extensionOptions}
                             optionsError={extensionOptionsError}
                             optionsLoaded={extensionOptionsLoaded}
