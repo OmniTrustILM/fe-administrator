@@ -54,6 +54,17 @@ export const isCertificateExtensionProperties = (
 export const isRdnProperties = (props?: CustomOidEntryDetailResponseDtoAdditionalProperties): props is RdnAttributeTypeOidPropertiesDto =>
     !!props && 'code' in props;
 
+// `SN` is Surname (RFC 4519, OpenSSL, BouncyCastle) while `SERIALNUMBER` is the subject serial
+// number. The two sit adjacent in the RDN dropdown and a mispick is a structurally valid mapping no
+// backend validation can reject — it silently writes the wrong RDN into every issued certificate.
+const RDN_CODE_CLARIFICATIONS: Record<string, string> = {
+    SN: 'Surname (family name). Not a serial number — use SERIALNUMBER for that.',
+    SERIALNUMBER: "Subject serial number, e.g. a device serial. Not the certificate's serial number, and not SN (surname).",
+};
+
+export const rdnCodeClarification = (code?: string): string | undefined =>
+    code ? RDN_CODE_CLARIFICATIONS[code.trim().toUpperCase()] : undefined;
+
 export const toOidSelectOptions = (
     entries: OIDResponseModel[],
 ): { value: string; label: string; description?: string; aliases?: string[]; code?: string }[] =>
@@ -65,8 +76,19 @@ export const toOidSelectOptions = (
             ? [e.additionalProperties.code, ...(e.additionalProperties.altCodes ?? [])].filter(Boolean)
             : undefined;
         const name = e.displayName?.trim() || e.oid;
-        return { value: e.oid, label: code ? `${name} (${code})` : name, description: e.description, aliases, code };
+        return {
+            value: e.oid,
+            label: code ? `${name} (${code})` : name,
+            description: rdnCodeClarification(code) ?? e.description,
+            aliases,
+            code,
+        };
     });
+
+// System and custom entries are disjoint by construction — the backend rejects a custom OID that
+// shadows a system one — so the lists concatenate without a dedupe pass.
+export const toMergedOidSelectOptions = (system?: OIDResponseModel[], custom?: OIDResponseModel[]) =>
+    toOidSelectOptions([...(system ?? []), ...(custom ?? [])]);
 
 export const buildRdnCodeByOid = (entries: OIDResponseModel[]): Record<string, string> => {
     const map: Record<string, string> = {};
