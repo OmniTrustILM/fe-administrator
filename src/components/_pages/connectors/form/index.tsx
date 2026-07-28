@@ -27,7 +27,7 @@ import {
 } from 'utils/attributes/attributes';
 import { featureFlags } from 'utils/feature-flags';
 
-import { validateAlphaNumericWithSpecialChars, validateRequired, validateRoutelessUrl } from 'utils/validators';
+import { validateAlphaNumericWithSpecialChars, validateRequired, validateUrlWithRoute } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from '../../../../ducks/customAttributes';
 import AttributeEditor from '../../../Attributes/AttributeEditor';
@@ -344,7 +344,7 @@ export default function ConnectorForm({ connectorId, onCancel, onSuccess }: Conn
                         <Controller
                             name="url"
                             control={control}
-                            rules={buildValidationRules([validateRequired(), validateRoutelessUrl()])}
+                            rules={buildValidationRules([validateRequired(), validateUrlWithRoute])}
                             render={({ field, fieldState }) => (
                                 <TextInput
                                     {...field}

@@ -48,6 +48,20 @@ async function fillName(page: Page) {
     await expect(name).toHaveValue('ejbca-connector');
 }
 
+test.describe('ConnectorForm URL validation', () => {
+    test('accepts a connector URL that carries a base path', async ({ mount, page }) => {
+        await mount(<ConnectorFormWithStore />);
+
+        const url = page.locator('#url');
+        await url.click();
+        await url.fill('http://demo-web.3key.company:7070/api');
+        await url.blur();
+
+        await expect(page.getByText('Value must be a valid url')).toBeHidden();
+        await expect(page.getByRole('button', { name: 'Connect' })).toBeEnabled();
+    });
+});
+
 test.describe('ConnectorForm submit button availability per version tab', () => {
     test('Save is disabled on the v2 tab when only a v1 connector is reachable', async ({ mount, page }) => {
         await mount(<ConnectorFormWithStore connectInfo={v1OnlyConnectInfo} />);

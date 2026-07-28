@@ -306,6 +306,10 @@ describe('validators', () => {
             expect(validateUrlWithRoute('example.com/path')).toBeUndefined();
         });
 
+        test('should accept a host with a port, a numeric domain label and a path', () => {
+            expect(validateUrlWithRoute('http://demo-web.3key.company:7070/api')).toBeUndefined();
+        });
+
         test('should reject invalid url', () => {
             expect(validateUrlWithRoute('invalid url with spaces')).toBe('Value must be a valid url');
         });
