@@ -336,6 +336,13 @@ const connectorsTestInitialState: ConnectorsTestState = {
 };
 
 function connectorsTestReducer(state: ConnectorsTestState = connectorsTestInitialState, action: UnknownAction): ConnectorsTestState {
+    if (action.type === 'connectors/clearConnectionDetails' || action.type === 'connectors/connectConnector') {
+        return { ...state, connectInfo: undefined };
+    }
+    if (action.type === 'connectors/connectConnectorSuccess') {
+        const { connectInfo } = (action as { payload: { connectInfo?: ConnectInfoDto[] } }).payload;
+        return { ...state, connectInfo };
+    }
     const a = action as { type: string; payload?: { callbackId: string; data?: unknown } };
     if (a.type === 'connectors/clearCallbackData') {
         return { ...state, callbackData: {} };

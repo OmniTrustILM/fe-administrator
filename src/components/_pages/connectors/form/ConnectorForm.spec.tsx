@@ -1,9 +1,11 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../../../../playwright/ct-test';
-import { ConnectorVersion } from 'types/openapi';
+import { ConnectorInterface, ConnectorVersion, FeatureFlag, FunctionGroupCode } from 'types/openapi';
 import type { ConnectInfoDto } from 'types/openapi';
 
 import ConnectorFormWithStore from './ConnectorFormWithStore';
+
+const CONNECTOR_URL = 'https://connector-service';
 
 const v1OnlyConnectInfo = [
     {
@@ -12,13 +14,13 @@ const v1OnlyConnectInfo = [
             {
                 uuid: '1234',
                 name: 'credentialProvider',
-                functionGroupCode: 'credentialProvider',
+                functionGroupCode: FunctionGroupCode.CredentialProvider,
                 kinds: ['SoftKeyStore'],
                 endPoints: [],
             },
         ],
     },
-] as unknown as ConnectInfoDto[];
+] satisfies ConnectInfoDto[];
 
 const v2OnlyConnectInfo = [
     {
@@ -28,14 +30,22 @@ const v2OnlyConnectInfo = [
             name: 'ejbca-connector',
             version: '1.16',
         },
-        interfaces: [{ code: 'certificate', version: 1, features: ['stateless'] }],
+        interfaces: [{ code: ConnectorInterface.Authority, version: '1', features: [FeatureFlag.Stateless] }],
     },
-] as unknown as ConnectInfoDto[];
+] satisfies ConnectInfoDto[];
 
 async function fillUrl(page: Page) {
     const url = page.locator('#url');
     await url.click();
-    await url.fill('https://connector-service');
+    await url.fill(CONNECTOR_URL);
+    await expect(url).toHaveValue(CONNECTOR_URL);
+}
+
+async function fillName(page: Page) {
+    const name = page.locator('#name');
+    await name.click();
+    await name.fill('ejbca-connector');
+    await expect(name).toHaveValue('ejbca-connector');
 }
 
 test.describe('ConnectorForm submit button availability per version tab', () => {
@@ -57,13 +67,20 @@ test.describe('ConnectorForm submit button availability per version tab', () => 
         await page.getByRole('tab', { name: 'v1' }).click();
 
         await expect(page.locator('#name')).toBeVisible();
+        await fillName(page);
+
         await expect(page.getByTestId('progress-button')).toBeEnabled();
     });
 
-    test('Save is disabled on the v1 tab when only a v2 connector is reachable', async ({ mount, page }) => {
+    test('Save toggles off when switching from the reachable v2 tab to the unreachable v1 tab', async ({ mount, page }) => {
         await mount(<ConnectorFormWithStore connectInfo={v2OnlyConnectInfo} />);
 
         await fillUrl(page);
+        await expect(page.getByRole('tab', { name: 'v2' })).toHaveAttribute('data-state', 'active');
+        await fillName(page);
+
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+
         await page.getByRole('tab', { name: 'v1' }).click();
 
         await expect(page.getByTestId('progress-button')).toBeDisabled();
@@ -77,7 +94,7 @@ test.describe('ConnectorForm submit button availability per version tab', () => 
                 errorMessage: 'Connection refused',
                 interfaces: [],
             },
-        ] as unknown as ConnectInfoDto[];
+        ] satisfies ConnectInfoDto[];
 
         await mount(<ConnectorFormWithStore connectInfo={connectInfo} />);
 

@@ -561,6 +561,7 @@ export default function ConnectorForm({ connectorId, onCancel, onSuccess }: Conn
                                     <Controller
                                         name="name"
                                         control={control}
+                                        disabled={editMode}
                                         rules={buildValidationRules([validateRequired(), validateAlphaNumericWithSpecialChars()])}
                                         render={({ field, fieldState }) => (
                                             <TextInput
@@ -606,7 +607,7 @@ export default function ConnectorForm({ connectorId, onCancel, onSuccess }: Conn
                                 title={submitTitle}
                                 inProgressTitle={inProgressTitle}
                                 inProgress={isUpdating || isCreating}
-                                disabled={!isDirty || isFetchingAuthAttributes || (!editMode && !hasSuccessfulSelectedVersion)}
+                                disabled={!isDirty || !isValid || isFetchingAuthAttributes || (!editMode && !hasSuccessfulSelectedVersion)}
                                 type="submit"
                             />
                         </Container>
