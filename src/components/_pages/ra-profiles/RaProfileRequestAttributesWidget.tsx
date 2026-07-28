@@ -1,14 +1,12 @@
 import RequestAttributeAuthoringEditor from 'components/RequestAttributes/RequestAttributeAuthoringEditor';
+import { useOidMappingOptions } from 'components/RequestAttributes/useOidMappingOptions';
 import { actions as authoritiesActions, selectors as authoritiesSelectors } from 'ducks/authorities';
-import { actions as oidActions, selectors as oidSelectors } from 'ducks/oids';
 import { actions as requestAttributesActions, selectors as requestAttributesSelectors } from 'ducks/raProfileRequestAttributes';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RaProfileCertificateRequestAttributesDto } from 'types/openapi';
-import { OidCategory } from 'types/openapi';
 import { isGroupAttributeModel } from 'types/attributes';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
-import { toOidSelectOptions } from 'utils/oid';
 import {
     buildRaProfileRequestAttributesUpdateDto,
     gateMergeModeAndBindings,
@@ -35,12 +33,8 @@ export default function RaProfileRequestAttributesWidget({
 }: Props) {
     const dispatch = useDispatch();
 
-    const oidsByCategory = useSelector(oidSelectors.oidsByCategory);
-    const oidsByCategoryError = useSelector(oidSelectors.oidsByCategoryError);
-    const oidsByCategoryLoaded = useSelector(oidSelectors.oidsByCategoryLoaded);
-    const systemOidsByCategory = useSelector(oidSelectors.systemOidsByCategory);
-    const systemOidsError = useSelector(oidSelectors.systemOidsError);
-    const systemOidsLoaded = useSelector(oidSelectors.systemOidsLoaded);
+    const { rdnOptions, extensionOptions, rdnOptionsError, extensionOptionsError, rdnOptionsLoaded, extensionOptionsLoaded } =
+        useOidMappingOptions();
 
     const raProfileAttributeDescriptors = useSelector(authoritiesSelectors.raProfileAttributeDescriptors);
 
@@ -53,12 +47,6 @@ export default function RaProfileRequestAttributesWidget({
     const [dirty, setDirty] = useState(false);
 
     useEffect(() => {
-        dispatch(oidActions.listOidsByCategory({ category: OidCategory.RdnAttributeType }));
-        dispatch(oidActions.listOidsByCategory({ category: OidCategory.CertificateExtension }));
-        dispatch(oidActions.listSystemOids());
-    }, [dispatch]);
-
-    useEffect(() => {
         if (MERGE_MODE_AND_BINDINGS_ENABLED && authorityUuid) {
             dispatch(authoritiesActions.getRAProfilesAttributesDescriptors({ authorityUuid }));
         }
@@ -69,15 +57,6 @@ export default function RaProfileRequestAttributesWidget({
         setForm(gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes)));
     }, [certificateRequestAttributes, dirty]);
 
-    const rdnOptions = useMemo(
-        () =>
-            toOidSelectOptions([
-                ...(systemOidsByCategory[OidCategory.RdnAttributeType] ?? []),
-                ...(oidsByCategory[OidCategory.RdnAttributeType] ?? []),
-            ]),
-        [systemOidsByCategory, oidsByCategory],
-    );
-    const extensionOptions = useMemo(() => toOidSelectOptions(oidsByCategory[OidCategory.CertificateExtension] ?? []), [oidsByCategory]);
     const connectorAttributeOptions = useMemo(
         () =>
             MERGE_MODE_AND_BINDINGS_ENABLED
@@ -129,10 +108,10 @@ export default function RaProfileRequestAttributesWidget({
                 connectorAttributeOptions={connectorAttributeOptions}
                 rdnOptions={rdnOptions}
                 extensionOptions={extensionOptions}
-                rdnOptionsError={!!oidsByCategoryError[OidCategory.RdnAttributeType] || systemOidsError}
-                extensionOptionsError={!!oidsByCategoryError[OidCategory.CertificateExtension]}
-                rdnOptionsLoaded={!!oidsByCategoryLoaded[OidCategory.RdnAttributeType] && systemOidsLoaded}
-                extensionOptionsLoaded={!!oidsByCategoryLoaded[OidCategory.CertificateExtension]}
+                rdnOptionsError={rdnOptionsError}
+                extensionOptionsError={extensionOptionsError}
+                rdnOptionsLoaded={rdnOptionsLoaded}
+                extensionOptionsLoaded={extensionOptionsLoaded}
                 disabled={disabled || isUpdating}
             />
         </div>

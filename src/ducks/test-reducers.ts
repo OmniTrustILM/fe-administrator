@@ -1,6 +1,11 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { ConnectInfoDto } from 'types/openapi';
+// Reducer key must match the real slice.name ('oids') so the real OID selectors (used by
+// useOidMappingOptions and RequestAttributeMappingBadge) read this state instead of falling back to
+// the duck's initialState. Reusing that initialState verbatim keeps every field the real selectors
+// expect present, so registering this slice cannot make an unrelated selector read undefined.
+import { initialState as oidsInitialState, type State as OidsState } from 'ducks/oids';
 
 // IMPORTANT: This file is used ONLY in component tests (Playwright CT).
 // It must NOT import the real duck modules
@@ -857,6 +862,10 @@ function certificateGroupsTestReducer(state: CertificateGroupsTestState | undefi
     return state ?? certificateGroupsTestInitialState;
 }
 
+function oidsTestReducer(state: OidsState | undefined, _action: UnknownAction): OidsState {
+    return state ?? oidsInitialState;
+}
+
 // Reducer key must match the real slice.name ('discoveries') so the real discovery selectors
 // (used by the discovered certificates widget) can find this state. Every getDiscoveryCertificates
 // request is recorded so tests can assert which query params the widget sent; apart from that the
@@ -934,6 +943,7 @@ export const testReducers = combineReducers({
     users: usersTestReducer,
     certificateGroups: certificateGroupsTestReducer,
     discoveries: discoveriesTestReducer,
+    oids: oidsTestReducer,
 });
 
 export const testInitialState = {
@@ -966,4 +976,5 @@ export const testInitialState = {
     users: usersTestInitialState,
     certificateGroups: certificateGroupsTestInitialState,
     discoveries: discoveriesTestInitialState,
+    oids: oidsInitialState,
 };

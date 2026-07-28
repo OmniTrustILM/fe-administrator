@@ -52,4 +52,27 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await expect(component.locator('input[type="radio"]').first()).not.toBeChecked();
         await expect(component.locator('input[type="radio"]').nth(1)).toBeChecked();
     });
+
+    test('offers a system certificate extension when no custom OIDs are registered', async ({ mount, page }) => {
+        // The fresh-install case: the certificateExtension category has no custom entries at all, and the
+        // only Extended Key Usage OID available comes from the backend's built-in system registry.
+        const component = await mount(
+            <RequestAttributesSettingsWithStore
+                oids={{
+                    systemOids: [{ oid: '2.5.29.37', displayName: 'Extended Key Usage', category: 'certificateExtension' }],
+                    systemOidsLoaded: true,
+                    oidsByCategory: { certificateExtension: [] },
+                    oidsByCategoryLoaded: { certificateExtension: true },
+                }}
+            />,
+        );
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Certificate extension' }).click();
+
+        await expect(component.getByTestId('request-attribute-authoring-extension-empty')).toHaveCount(0);
+        await page.getByTestId('select-ra-attr-extension-oid-trigger').click();
+        await expect(page.getByRole('option', { name: 'Extended Key Usage' })).toBeVisible();
+    });
 });
