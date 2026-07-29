@@ -24,10 +24,12 @@ import type { OidSelectOption } from 'utils/oid';
 import {
     emptyAuthoredAttribute,
     emptyValueSourceBinding,
-    hasDuplicateStaticValues,
-    isAuthoredAttributeValid,
+    isContentTypeAllowedForMapping,
     isStaticListSupportedForContentType,
     isValueSourceBindingValid,
+    MAPPED_CONTENT_TYPES,
+    validateAuthoredAttribute,
+    type AuthoredAttributeErrors,
     type AuthoredAttributeFormValues,
     type RequestAttributeAuthoringFormValues,
     type ValueSourceBindingFormValues,
@@ -55,6 +57,8 @@ const CONTENT_TYPE_OPTIONS = Object.values(AttributeContentType).map((v) => ({
     value: v,
     label: v.charAt(0).toUpperCase() + v.slice(1),
 }));
+
+const MAPPED_CONTENT_TYPE_OPTIONS = CONTENT_TYPE_OPTIONS.filter((o) => MAPPED_CONTENT_TYPES.includes(o.value));
 
 const FIELD_TYPE_LABELS: Record<FieldType, string> = {
     [FieldType.Rdn]: 'RDN (subject)',
@@ -123,6 +127,15 @@ function resolveOidValue(options: OidSelectOption[], current?: string): string |
 function withCurrentValue(options: OidSelectOption[], resolved?: string): OidSelectOption[] {
     if (!resolved || options.some((o) => o.value === resolved)) return options;
     return [...options, { value: resolved, label: `${resolved} (not registered)` }];
+}
+
+function FieldError({ testId, message }: Readonly<{ testId: string; message?: string }>) {
+    if (!message) return null;
+    return (
+        <p className="text-sm text-red-600" data-testid={testId}>
+            {message}
+        </p>
+    );
 }
 
 type OidMappingSelectProps = Readonly<{
@@ -231,7 +244,10 @@ export default function RequestAttributeAuthoringEditor({
     extensionOptionsLoaded = true,
     dataTestId = 'request-attribute-authoring',
 }: Props) {
-    const [attrDraft, setAttrDraft] = useState<{ index: number | null; data: AuthoredAttributeFormValues } | null>(null);
+    // `submitted` gates the error messages: the dialog stays clean until Save is pressed.
+    const [attrDraft, setAttrDraft] = useState<{ index: number | null; data: AuthoredAttributeFormValues; submitted: boolean } | null>(
+        null,
+    );
     const [bindingDraft, setBindingDraft] = useState<{ index: number | null; data: ValueSourceBindingFormValues } | null>(null);
 
     const patch = useCallback((next: Partial<RequestAttributeAuthoringFormValues>) => onChange({ ...value, ...next }), [onChange, value]);
@@ -265,8 +281,22 @@ export default function RequestAttributeAuthoringEditor({
     // -- Authored attributes ---------------------------------------------------
     const removeAttribute = (index: number) => patch({ attributes: value.attributes.filter((_, i) => i !== index) });
 
+    // A name must be unique within the set (excluding the row being edited).
+    const attrNameDuplicate =
+        !!attrDraft &&
+        !!attrDraft.data.name.trim() &&
+        value.attributes.some((a, i) => i !== attrDraft.index && a.name.trim() === attrDraft.data.name.trim());
+    const allAttrErrors: AuthoredAttributeErrors = attrDraft ? validateAuthoredAttribute(attrDraft.data) : {};
+    const attrValid = !!attrDraft && Object.keys(allAttrErrors).length === 0 && !attrNameDuplicate;
+    const attrErrors: AuthoredAttributeErrors = attrDraft?.submitted ? allAttrErrors : {};
+    const nameDuplicateVisible = attrNameDuplicate && !!attrDraft?.submitted;
+
     const saveAttribute = () => {
         if (!attrDraft) return;
+        if (!attrValid) {
+            setAttrDraft({ ...attrDraft, submitted: true });
+            return;
+        }
         const next = [...value.attributes];
         if (attrDraft.index === null) {
             next.push(attrDraft.data);
@@ -296,6 +326,8 @@ export default function RequestAttributeAuthoringEditor({
         }
     };
 
+    const firstError = (attr: AuthoredAttributeFormValues) => Object.values(validateAuthoredAttribute(attr))[0];
+
     const renderAttributeList = () => (
         <div className="space-y-2" data-testid={`${dataTestId}-attributes`}>
             <p className="text-sm font-medium text-gray-700">Authored attributes</p>
@@ -305,49 +337,61 @@ export default function RequestAttributeAuthoringEditor({
                 </p>
             ) : (
                 <ul className="space-y-1">
-                    {value.attributes.map((attr, index) => (
-                        <li
-                            key={attr.uuid ?? `${attr.name}-${index}`}
-                            className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm"
-                            data-testid={`${dataTestId}-attribute-row`}
-                        >
-                            <span className="truncate">
-                                <span className="font-medium">{attr.label || attr.name || '(unnamed)'}</span>
-                                <span className="text-gray-500">
-                                    {' · '}
-                                    {attr.contentType}
-                                    {attr.required ? ' · required' : ''} {mappingSummary(attr)}
-                                    {attr.valueSourceType !== ValueSourceType.None ? ` · ${valueSourceLabel(attr.valueSourceType)}` : ''}
+                    {value.attributes.map((attr, index) => {
+                        // Definitions stored before these rules can violate them — flag them without
+                        // making the user open every row.
+                        const rowError = firstError(attr);
+                        return (
+                            <li
+                                key={attr.uuid ?? `${attr.name}-${index}`}
+                                className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm"
+                                data-testid={`${dataTestId}-attribute-row`}
+                            >
+                                <span className="truncate">
+                                    <span className="font-medium">{attr.label || attr.name || '(unnamed)'}</span>
+                                    <span className="text-gray-500">
+                                        {' · '}
+                                        {attr.contentType}
+                                        {attr.required ? ' · required' : ''} {mappingSummary(attr)}
+                                        {attr.valueSourceType !== ValueSourceType.None
+                                            ? ` · ${valueSourceLabel(attr.valueSourceType)}`
+                                            : ''}
+                                    </span>
+                                    {rowError && (
+                                        <span className="block text-red-600" data-testid={`${dataTestId}-attribute-row-invalid`}>
+                                            {rowError}
+                                        </span>
+                                    )}
                                 </span>
-                            </span>
-                            <span className="flex shrink-0 gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setAttrDraft({ index, data: { ...attr } })}
-                                    disabled={disabled}
-                                    type="button"
-                                    data-testid={`${dataTestId}-attribute-edit`}
-                                >
-                                    Edit
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    color="danger"
-                                    onClick={() => removeAttribute(index)}
-                                    disabled={disabled}
-                                    type="button"
-                                    data-testid={`${dataTestId}-attribute-remove`}
-                                >
-                                    Remove
-                                </Button>
-                            </span>
-                        </li>
-                    ))}
+                                <span className="flex shrink-0 gap-2">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setAttrDraft({ index, data: { ...attr }, submitted: false })}
+                                        disabled={disabled}
+                                        type="button"
+                                        data-testid={`${dataTestId}-attribute-edit`}
+                                    >
+                                        Edit
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        color="danger"
+                                        onClick={() => removeAttribute(index)}
+                                        disabled={disabled}
+                                        type="button"
+                                        data-testid={`${dataTestId}-attribute-remove`}
+                                    >
+                                        Remove
+                                    </Button>
+                                </span>
+                            </li>
+                        );
+                    })}
                 </ul>
             )}
             <Button
                 variant="outline"
-                onClick={() => setAttrDraft({ index: null, data: emptyAuthoredAttribute() })}
+                onClick={() => setAttrDraft({ index: null, data: emptyAuthoredAttribute(), submitted: false })}
                 disabled={disabled}
                 type="button"
                 data-testid={`${dataTestId}-attribute-add`}
@@ -357,17 +401,19 @@ export default function RequestAttributeAuthoringEditor({
         </div>
     );
 
-    // A name must be unique within the set (excluding the row being edited).
-    const attrNameDuplicate =
-        !!attrDraft &&
-        !!attrDraft.data.name.trim() &&
-        value.attributes.some((a, i) => i !== attrDraft.index && a.name.trim() === attrDraft.data.name.trim());
-    const attrValid = !!attrDraft && isAuthoredAttributeValid(attrDraft.data) && !attrNameDuplicate;
-
     const renderAttributeDialog = () => {
         if (!attrDraft) return null;
         const d = attrDraft.data;
         const set = (p: Partial<AuthoredAttributeFormValues>) => setAttrDraft({ ...attrDraft, data: { ...d, ...p } });
+        // Drop the static list and the default so a value typed under the old type can never serialise
+        // into `content`, and fall back to free input when the new type has no scalar editor.
+        const setContentType = (contentType: AttributeContentType) =>
+            set({
+                contentType,
+                staticValues: [],
+                defaultValue: undefined,
+                valueSourceType: isStaticListSupportedForContentType(contentType) ? d.valueSourceType : ValueSourceType.None,
+            });
         return (
             <div className="space-y-3 text-left" data-testid={`${dataTestId}-attribute-form`}>
                 <TextInput
@@ -379,10 +425,12 @@ export default function RequestAttributeAuthoringEditor({
                     value={d.name}
                     onChange={(v) => set({ name: v })}
                 />
-                {attrNameDuplicate && (
+                {nameDuplicateVisible ? (
                     <p className="text-sm text-red-600" data-testid={`${dataTestId}-attribute-name-duplicate`}>
                         An attribute with this name already exists in the set.
                     </p>
+                ) : (
+                    <FieldError testId={`${dataTestId}-attribute-name-error`} message={attrErrors.name} />
                 )}
                 <TextInput
                     id="ra-attr-label"
@@ -392,6 +440,7 @@ export default function RequestAttributeAuthoringEditor({
                     value={d.label}
                     onChange={(v) => set({ label: v })}
                 />
+                <FieldError testId={`${dataTestId}-attribute-label-error`} message={attrErrors.label} />
                 <TextInput
                     id="ra-attr-description"
                     label="Description"
@@ -402,51 +451,55 @@ export default function RequestAttributeAuthoringEditor({
                 <Select
                     id="ra-attr-content-type"
                     label="Content type"
-                    labelTooltip="The data type of the value the requester provides."
+                    labelTooltip="The data type of the value the requester provides. A mapped attribute is written into the certificate as text, so only String and Text are offered once a mapping target is set."
                     value={d.contentType}
-                    onChange={(v) => {
-                        const contentType = v as AttributeContentType;
-                        // Static list is only authorable for scalar content types; drop back to free
-                        // input if the new type can't carry one, so we never render a missing editor.
-                        const keepStaticList = isStaticListSupportedForContentType(contentType);
-                        // Drop both the static list and any free-input default — a value entered under
-                        // the old type would otherwise survive and serialise as a wrong-typed content entry.
-                        set({
-                            contentType,
-                            staticValues: [],
-                            defaultValue: undefined,
-                            valueSourceType: keepStaticList ? d.valueSourceType : ValueSourceType.None,
-                        });
-                    }}
-                    options={CONTENT_TYPE_OPTIONS}
+                    onChange={(v) => setContentType(v as AttributeContentType)}
+                    options={d.mappingFieldType ? MAPPED_CONTENT_TYPE_OPTIONS : CONTENT_TYPE_OPTIONS}
                 />
+                <FieldError testId={`${dataTestId}-attribute-content-type-error`} message={attrErrors.contentType} />
                 <Select
                     id="ra-attr-mapping"
                     label="Mapping target"
-                    labelTooltip="Where this attribute's value is placed in the issued certificate: an RDN (subject) component, a Subject Alternative Name, or a certificate extension. Leave it unmapped if the connector or workflow consumes the value directly."
+                    required
+                    labelTooltip="Where this attribute's value is placed in the issued certificate: an RDN (subject) component, a Subject Alternative Name, or a certificate extension."
                     value={d.mappingFieldType ?? ''}
-                    onChange={(v) =>
-                        set({ mappingFieldType: (v as FieldType) || undefined, mappingObjectType: ObjectType.X509Certificate })
-                    }
+                    onChange={(v) => {
+                        const mappingFieldType = (v as FieldType) || undefined;
+                        // Otherwise the dialog would show a content type its own dropdown no longer offers.
+                        if (mappingFieldType && !isContentTypeAllowedForMapping(d.contentType)) {
+                            set({
+                                mappingFieldType,
+                                mappingObjectType: ObjectType.X509Certificate,
+                                contentType: AttributeContentType.String,
+                                staticValues: [],
+                                defaultValue: undefined,
+                            });
+                            return;
+                        }
+                        set({ mappingFieldType, mappingObjectType: ObjectType.X509Certificate });
+                    }}
                     options={MAPPING_OPTIONS}
-                    isClearable
-                    placeholder="Not mapped"
+                    placeholder="Select mapping target"
                 />
+                <FieldError testId={`${dataTestId}-attribute-mapping-error`} message={attrErrors.mappingFieldType} />
                 {d.mappingFieldType === FieldType.Rdn && (
-                    <OidMappingSelect
-                        id="ra-attr-rdn"
-                        label="RDN"
-                        placeholder="Select an RDN"
-                        testIdPrefix={`${dataTestId}-rdn`}
-                        emptyHint="No RDNs are available. Register one under Settings → Custom OIDs."
-                        errorHint="Failed to load RDNs."
-                        options={rdnOptions}
-                        optionsError={rdnOptionsError}
-                        optionsLoaded={rdnOptionsLoaded}
-                        value={d.mappingRdnCode}
-                        onChange={(v) => set({ mappingRdnCode: v })}
-                        disabled={disabled}
-                    />
+                    <>
+                        <OidMappingSelect
+                            id="ra-attr-rdn"
+                            label="RDN"
+                            placeholder="Select an RDN"
+                            testIdPrefix={`${dataTestId}-rdn`}
+                            emptyHint="No RDNs are available. Register one under Settings → Custom OIDs."
+                            errorHint="Failed to load RDNs."
+                            options={rdnOptions}
+                            optionsError={rdnOptionsError}
+                            optionsLoaded={rdnOptionsLoaded}
+                            value={d.mappingRdnCode}
+                            onChange={(v) => set({ mappingRdnCode: v })}
+                            disabled={disabled}
+                        />
+                        <FieldError testId={`${dataTestId}-attribute-rdn-error`} message={attrErrors.mappingRdnCode} />
+                    </>
                 )}
                 {d.mappingFieldType === FieldType.San && (
                     <>
@@ -459,6 +512,7 @@ export default function RequestAttributeAuthoringEditor({
                             options={GENERAL_NAME_TYPE_OPTIONS}
                             placeholder="Select SAN type"
                         />
+                        <FieldError testId={`${dataTestId}-attribute-san-error`} message={attrErrors.mappingGeneralNameType} />
                         {d.mappingGeneralNameType === GeneralNameType.OtherName && (
                             <>
                                 <TextInput
@@ -468,6 +522,10 @@ export default function RequestAttributeAuthoringEditor({
                                     value={d.mappingOtherNameOid ?? ''}
                                     onChange={(v) => set({ mappingOtherNameOid: v })}
                                 />
+                                <FieldError
+                                    testId={`${dataTestId}-attribute-othername-oid-error`}
+                                    message={attrErrors.mappingOtherNameOid}
+                                />
                                 <Select
                                     id="ra-attr-othername-encoding"
                                     label="otherName value encoding"
@@ -476,6 +534,10 @@ export default function RequestAttributeAuthoringEditor({
                                     onChange={(v) => set({ mappingOtherNameEncoding: (v as ExtensionValueEncoding) || undefined })}
                                     options={ENCODING_OPTIONS}
                                     placeholder="Select encoding"
+                                />
+                                <FieldError
+                                    testId={`${dataTestId}-attribute-othername-encoding-error`}
+                                    message={attrErrors.mappingOtherNameEncoding}
                                 />
                             </>
                         )}
@@ -497,6 +559,7 @@ export default function RequestAttributeAuthoringEditor({
                             onChange={(v) => set({ mappingExtensionOid: v })}
                             disabled={disabled}
                         />
+                        <FieldError testId={`${dataTestId}-attribute-extension-error`} message={attrErrors.mappingExtensionOid} />
                         <Checkbox
                             id="ra-attr-critical-overridable"
                             checked={d.mappingCriticalOverridable ?? false}
@@ -566,6 +629,8 @@ export default function RequestAttributeAuthoringEditor({
                             />
                         )}
                     </Container>
+                    <FieldError testId={`${dataTestId}-attribute-readonly-error`} message={attrErrors.readOnly} />
+                    <FieldError testId={`${dataTestId}-attribute-multiselect-error`} message={attrErrors.multiSelect} />
                 </div>
                 {d.valueSourceType === ValueSourceType.StaticList && renderStaticValues(d, set)}
                 {d.valueSourceType === ValueSourceType.None && renderFreeInputDefault(d, set)}
@@ -616,16 +681,7 @@ export default function RequestAttributeAuthoringEditor({
                         </Button>
                     </div>
                 ))}
-                {d.staticValues.length === 0 && (
-                    <p className="text-sm text-gray-400" data-testid={`${dataTestId}-static-values-empty`}>
-                        Add at least one value for the static list.
-                    </p>
-                )}
-                {hasDuplicateStaticValues(d.staticValues) && (
-                    <p className="text-sm text-red-600" data-testid={`${dataTestId}-static-values-duplicate`}>
-                        Static list values must be unique.
-                    </p>
-                )}
+                <FieldError testId={`${dataTestId}-static-values-error`} message={attrErrors.staticValues} />
                 <Button
                     variant="transparent"
                     className="text-blue-600"
@@ -648,7 +704,10 @@ export default function RequestAttributeAuthoringEditor({
         if (!config) return null;
         return (
             <div className="space-y-2" data-testid={`${dataTestId}-default-value-block`}>
-                <Label labelTooltip="Optional. Pre-fills the field on the request form; the requester can change it unless Read Only is set.">
+                <Label
+                    required={d.readOnly}
+                    labelTooltip="Pre-fills the field on the request form; the requester can change it unless Read Only is set. Required when Read Only is set, optional otherwise."
+                >
                     Default value
                 </Label>
                 <AddCustomValueInput
@@ -661,6 +720,7 @@ export default function RequestAttributeAuthoringEditor({
                     readOnly={disabled}
                     placeholder="Enter default value"
                 />
+                <FieldError testId={`${dataTestId}-default-value-error`} message={attrErrors.defaultValue} />
             </div>
         );
     };
@@ -808,8 +868,8 @@ export default function RequestAttributeAuthoringEditor({
                 caption={attrDraft?.index === null ? 'Add request attribute' : 'Edit request attribute'}
                 body={renderAttributeDialog()}
                 buttons={[
-                    { key: 'cancel', color: 'secondary', variant: 'outline', body: 'Cancel', onClick: () => setAttrDraft(null) },
-                    { key: 'save', color: 'primary', body: 'Save', disabled: !attrValid, onClick: saveAttribute },
+                    { key: 'cancel', color: 'primary', variant: 'outline', body: 'Cancel', onClick: () => setAttrDraft(null) },
+                    { key: 'save', color: 'primary', body: 'Save', onClick: saveAttribute },
                 ]}
             />
 
@@ -820,7 +880,7 @@ export default function RequestAttributeAuthoringEditor({
                 caption={bindingDraft?.index === null ? 'Add value-source binding' : 'Edit value-source binding'}
                 body={renderBindingDialog()}
                 buttons={[
-                    { key: 'cancel', color: 'secondary', variant: 'outline', body: 'Cancel', onClick: () => setBindingDraft(null) },
+                    { key: 'cancel', color: 'primary', variant: 'outline', body: 'Cancel', onClick: () => setBindingDraft(null) },
                     { key: 'save', color: 'primary', body: 'Save', disabled: !bindingValid, onClick: saveBinding },
                 ]}
             />

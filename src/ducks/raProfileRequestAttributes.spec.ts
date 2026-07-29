@@ -76,4 +76,31 @@ describe('raProfileRequestAttributes slice', () => {
         expect(next.isUpdatingRaProfileSet).toBe(false);
         expect(next.updateRaProfileSetSucceeded).toBe(false);
     });
+
+    // The editors read the rejection message to roll back and explain why, so it must survive the
+    // failure and be cleared by the next attempt (otherwise a stale banner outlives the error).
+    test('the RA-profile rejection message is stored and cleared on the next attempt', () => {
+        const failed = reducer(initialState, actions.updateRaProfileRequestAttributesFailure({ error: 'boom' }));
+        expect(failed.updateRaProfileSetError).toBe('boom');
+
+        const retrying = reducer(
+            failed,
+            actions.updateRaProfileRequestAttributes({ authorityUuid: 'a', raProfileUuid: 'r', data: { requestAttributes: [] } }),
+        );
+        expect(retrying.updateRaProfileSetError).toBeUndefined();
+
+        const succeeded = reducer(failed, actions.updateRaProfileRequestAttributesSuccess({ set: undefined }));
+        expect(succeeded.updateRaProfileSetError).toBeUndefined();
+    });
+
+    test('the platform-default rejection message is stored and cleared on the next attempt', () => {
+        const failed = reducer(initialState, actions.updatePlatformDefaultRequestAttributesFailure({ error: 'boom' }));
+        expect(failed.updateDefaultSetError).toBe('boom');
+
+        const retrying = reducer(failed, actions.updatePlatformDefaultRequestAttributes({ data: { requestAttributes: [] } }));
+        expect(retrying.updateDefaultSetError).toBeUndefined();
+
+        const succeeded = reducer(failed, actions.updatePlatformDefaultRequestAttributesSuccess({ requestAttributes: [] }));
+        expect(succeeded.updateDefaultSetError).toBeUndefined();
+    });
 });

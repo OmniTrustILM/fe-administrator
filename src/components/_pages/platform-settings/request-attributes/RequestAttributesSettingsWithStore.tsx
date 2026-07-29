@@ -24,6 +24,20 @@ export default function RequestAttributesSettingsWithStore({
         <Provider store={store}>
             <MemoryRouter initialEntries={['/platformsettings/request-attributes']}>
                 <RequestAttributesSettings />
+                {/* Stand-in for the epic's rejection path (CT runs no epics): flips the pending flag
+                    back with no success, which is what the editor rolls back on. */}
+                <button
+                    type="button"
+                    data-testid="simulate-rejection"
+                    onClick={() =>
+                        store.dispatch({
+                            type: 'raProfileRequestAttributes/updatePlatformDefaultRequestAttributesFailure',
+                            payload: { error: 'Attribute definition is invalid' },
+                        })
+                    }
+                >
+                    simulate rejection
+                </button>
             </MemoryRouter>
         </Provider>
     );

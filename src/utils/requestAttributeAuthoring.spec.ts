@@ -24,10 +24,11 @@ import {
     emptyValueSourceBinding,
     gateMergeModeAndBindings,
     hasAuthoredRequestAttributes,
-    isAuthoredAttributeMappingValid,
-    isAuthoredAttributeValid,
+    isContentTypeAllowedForMapping,
     isStaticListSupportedForContentType,
     isValueSourceBindingValid,
+    isValueValidForContentType,
+    validateAuthoredAttribute,
     parseAuthoredAttributeDto,
     parsePlatformDefaultDto,
     parseRaProfileRequestAttributesDto,
@@ -348,85 +349,160 @@ describe('requestAttributeAuthoring', () => {
         });
     });
 
-    describe('isAuthoredAttributeMappingValid / isAuthoredAttributeValid', () => {
-        test('unmapped attribute is valid', () => {
-            expect(isAuthoredAttributeMappingValid(baseAttr())).toBe(true);
+    describe('isValueValidForContentType', () => {
+        test('blank is always accepted — required-ness is a separate rule', () => {
+            expect(isValueValidForContentType('', AttributeContentType.Integer)).toBe(true);
+            expect(isValueValidForContentType('   ', AttributeContentType.Date)).toBe(true);
+        });
+
+        test('integer accepts whole numbers only', () => {
+            expect(isValueValidForContentType('42', AttributeContentType.Integer)).toBe(true);
+            expect(isValueValidForContentType('-7', AttributeContentType.Integer)).toBe(true);
+            expect(isValueValidForContentType(42, AttributeContentType.Integer)).toBe(true);
+            expect(isValueValidForContentType('4.2', AttributeContentType.Integer)).toBe(false);
+            expect(isValueValidForContentType('abc', AttributeContentType.Integer)).toBe(false);
+            expect(isValueValidForContentType(4.2, AttributeContentType.Integer)).toBe(false);
+        });
+
+        test('float accepts decimals and rejects non-numerics', () => {
+            expect(isValueValidForContentType('4.2', AttributeContentType.Float)).toBe(true);
+            expect(isValueValidForContentType('-1e3', AttributeContentType.Float)).toBe(true);
+            expect(isValueValidForContentType('abc', AttributeContentType.Float)).toBe(false);
+        });
+
+        test('boolean accepts only booleans and their literal spellings', () => {
+            expect(isValueValidForContentType(true, AttributeContentType.Boolean)).toBe(true);
+            expect(isValueValidForContentType('false', AttributeContentType.Boolean)).toBe(true);
+            expect(isValueValidForContentType('yes', AttributeContentType.Boolean)).toBe(false);
+        });
+
+        test('date / time / datetime are format-checked', () => {
+            expect(isValueValidForContentType('2026-07-29', AttributeContentType.Date)).toBe(true);
+            expect(isValueValidForContentType('29/07/2026', AttributeContentType.Date)).toBe(false);
+            expect(isValueValidForContentType('14:30', AttributeContentType.Time)).toBe(true);
+            expect(isValueValidForContentType('2 pm', AttributeContentType.Time)).toBe(false);
+            expect(isValueValidForContentType('2026-07-29T14:30:00Z', AttributeContentType.Datetime)).toBe(true);
+            expect(isValueValidForContentType('not a date', AttributeContentType.Datetime)).toBe(false);
+        });
+
+        test('string and text accept anything', () => {
+            expect(isValueValidForContentType('whatever', AttributeContentType.String)).toBe(true);
+            expect(isValueValidForContentType('whatever', AttributeContentType.Text)).toBe(true);
+        });
+    });
+
+    describe('validateAuthoredAttribute', () => {
+        const mappedAttr = (): AuthoredAttributeFormValues => ({
+            ...baseAttr(),
+            mappingFieldType: FieldType.Rdn,
+            mappingRdnCode: '2.5.4.3',
+        });
+
+        test('a mapped String attribute with name and label is valid', () => {
+            expect(validateAuthoredAttribute(mappedAttr())).toEqual({});
+        });
+
+        test('name and label are required', () => {
+            expect(validateAuthoredAttribute({ ...mappedAttr(), name: '  ' }).name).toBeTruthy();
+            expect(validateAuthoredAttribute({ ...mappedAttr(), label: '' }).label).toBeTruthy();
+        });
+
+        test('a mapping target is required', () => {
+            expect(validateAuthoredAttribute(baseAttr()).mappingFieldType).toBeTruthy();
         });
 
         test('RDN requires a code', () => {
-            expect(isAuthoredAttributeMappingValid({ ...baseAttr(), mappingFieldType: FieldType.Rdn })).toBe(false);
-            expect(isAuthoredAttributeMappingValid({ ...baseAttr(), mappingFieldType: FieldType.Rdn, mappingRdnCode: 'CN' })).toBe(true);
+            expect(validateAuthoredAttribute({ ...mappedAttr(), mappingRdnCode: '' }).mappingRdnCode).toBeTruthy();
+            expect(validateAuthoredAttribute(mappedAttr()).mappingRdnCode).toBeUndefined();
         });
 
         test('SAN requires a generalNameType, and OTHER_NAME requires oid + encoding', () => {
-            expect(isAuthoredAttributeMappingValid({ ...baseAttr(), mappingFieldType: FieldType.San })).toBe(false);
+            const san = { ...mappedAttr(), mappingFieldType: FieldType.San, mappingRdnCode: '' };
+            expect(validateAuthoredAttribute(san).mappingGeneralNameType).toBeTruthy();
+            expect(validateAuthoredAttribute({ ...san, mappingGeneralNameType: GeneralNameType.Dns })).toEqual({});
+
+            const otherName = { ...san, mappingGeneralNameType: GeneralNameType.OtherName, mappingOtherNameOid: '1.2.3' };
+            expect(validateAuthoredAttribute(otherName).mappingOtherNameEncoding).toBeTruthy();
+            expect(validateAuthoredAttribute({ ...otherName, mappingOtherNameEncoding: ExtensionValueEncoding.Utf8String })).toEqual({});
             expect(
-                isAuthoredAttributeMappingValid({
-                    ...baseAttr(),
-                    mappingFieldType: FieldType.San,
-                    mappingGeneralNameType: GeneralNameType.Dns,
-                }),
-            ).toBe(true);
-            expect(
-                isAuthoredAttributeMappingValid({
-                    ...baseAttr(),
-                    mappingFieldType: FieldType.San,
-                    mappingGeneralNameType: GeneralNameType.OtherName,
-                    mappingOtherNameOid: '1.2.3',
-                }),
-            ).toBe(false);
-            expect(
-                isAuthoredAttributeMappingValid({
-                    ...baseAttr(),
-                    mappingFieldType: FieldType.San,
-                    mappingGeneralNameType: GeneralNameType.OtherName,
-                    mappingOtherNameOid: '1.2.3',
+                validateAuthoredAttribute({
+                    ...otherName,
+                    mappingOtherNameOid: '',
                     mappingOtherNameEncoding: ExtensionValueEncoding.Utf8String,
-                }),
-            ).toBe(true);
+                }).mappingOtherNameOid,
+            ).toBeTruthy();
         });
 
         test('EXTENSION requires an OID', () => {
-            expect(isAuthoredAttributeMappingValid({ ...baseAttr(), mappingFieldType: FieldType.Extension })).toBe(false);
+            const ext = { ...mappedAttr(), mappingFieldType: FieldType.Extension, mappingRdnCode: '' };
+            expect(validateAuthoredAttribute(ext).mappingExtensionOid).toBeTruthy();
+            expect(validateAuthoredAttribute({ ...ext, mappingExtensionOid: '2.5.29.17' })).toEqual({});
+        });
+
+        test('a mapped attribute is restricted to String or Text', () => {
+            expect(isContentTypeAllowedForMapping(AttributeContentType.String)).toBe(true);
+            expect(isContentTypeAllowedForMapping(AttributeContentType.Text)).toBe(true);
+            expect(isContentTypeAllowedForMapping(AttributeContentType.Integer)).toBe(false);
+
+            expect(validateAuthoredAttribute({ ...mappedAttr(), contentType: AttributeContentType.Text }).contentType).toBeUndefined();
+            expect(validateAuthoredAttribute({ ...mappedAttr(), contentType: AttributeContentType.Integer }).contentType).toBeTruthy();
+        });
+
+        test('the content-type restriction only applies to mapped attributes', () => {
+            const errors = validateAuthoredAttribute({ ...baseAttr(), contentType: AttributeContentType.Integer });
+            expect(errors.contentType).toBeUndefined();
+            expect(errors.mappingFieldType).toBeTruthy();
+        });
+
+        test('Read Only requires a non-blank default value', () => {
+            expect(validateAuthoredAttribute({ ...mappedAttr(), readOnly: true }).readOnly).toBeTruthy();
+            expect(validateAuthoredAttribute({ ...mappedAttr(), readOnly: true, defaultValue: '   ' }).readOnly).toBeTruthy();
+            expect(validateAuthoredAttribute({ ...mappedAttr(), readOnly: true, defaultValue: 'acme.example.com' })).toEqual({});
+        });
+
+        test('Read Only cannot be combined with a list', () => {
+            expect(validateAuthoredAttribute({ ...mappedAttr(), readOnly: true, defaultValue: 'x', list: true }).readOnly).toBeTruthy();
+            // A static list is a list even when the toggle itself is off.
             expect(
-                isAuthoredAttributeMappingValid({ ...baseAttr(), mappingFieldType: FieldType.Extension, mappingExtensionOid: '2.5.29.17' }),
-            ).toBe(true);
-        });
-
-        test('isAuthoredAttributeValid also requires name and label', () => {
-            expect(isAuthoredAttributeValid({ ...baseAttr(), name: '', label: 'X' })).toBe(false);
-            expect(isAuthoredAttributeValid({ ...baseAttr(), name: 'x', label: '' })).toBe(false);
-            expect(isAuthoredAttributeValid(baseAttr())).toBe(true);
-        });
-
-        test('STATIC_LIST requires at least one value', () => {
-            expect(isAuthoredAttributeValid({ ...baseAttr(), valueSourceType: ValueSourceType.StaticList, staticValues: [] })).toBe(false);
-            expect(isAuthoredAttributeValid({ ...baseAttr(), valueSourceType: ValueSourceType.StaticList, staticValues: ['prod'] })).toBe(
-                true,
-            );
-        });
-
-        test('STATIC_LIST rejects blank string values', () => {
-            expect(isAuthoredAttributeValid({ ...baseAttr(), valueSourceType: ValueSourceType.StaticList, staticValues: ['  '] })).toBe(
-                false,
-            );
-        });
-
-        test('STATIC_LIST rejects duplicate values', () => {
-            expect(
-                isAuthoredAttributeValid({
-                    ...baseAttr(),
+                validateAuthoredAttribute({
+                    ...mappedAttr(),
+                    readOnly: true,
+                    defaultValue: 'x',
                     valueSourceType: ValueSourceType.StaticList,
-                    staticValues: ['prod', 'prod'],
-                }),
-            ).toBe(false);
+                    staticValues: ['prod'],
+                }).readOnly,
+            ).toBeTruthy();
+        });
+
+        test('Multi select requires a list', () => {
+            expect(validateAuthoredAttribute({ ...mappedAttr(), multiSelect: true }).multiSelect).toBeTruthy();
+            expect(validateAuthoredAttribute({ ...mappedAttr(), multiSelect: true, list: true })).toEqual({});
+        });
+
+        test('a default value must conform to the declared content type', () => {
+            const unmappedInteger = { ...baseAttr(), contentType: AttributeContentType.Integer };
+            expect(validateAuthoredAttribute({ ...unmappedInteger, defaultValue: '12' }).defaultValue).toBeUndefined();
+            expect(validateAuthoredAttribute({ ...unmappedInteger, defaultValue: 'twelve' }).defaultValue).toBeTruthy();
+        });
+
+        test('STATIC_LIST requires at least one non-blank, unique, well-typed value', () => {
+            const staticList = (staticValues: (string | number | boolean)[]) => ({
+                ...mappedAttr(),
+                valueSourceType: ValueSourceType.StaticList,
+                staticValues,
+            });
+            expect(validateAuthoredAttribute(staticList([])).staticValues).toBeTruthy();
+            expect(validateAuthoredAttribute(staticList(['  '])).staticValues).toBeTruthy();
+            expect(validateAuthoredAttribute(staticList(['prod', 'prod'])).staticValues).toBeTruthy();
+            expect(validateAuthoredAttribute(staticList(['prod', 'staging']))).toEqual({});
             expect(
-                isAuthoredAttributeValid({
+                validateAuthoredAttribute({
                     ...baseAttr(),
+                    contentType: AttributeContentType.Integer,
                     valueSourceType: ValueSourceType.StaticList,
-                    staticValues: ['prod', 'staging'],
-                }),
-            ).toBe(true);
+                    staticValues: ['1', 'two'],
+                }).staticValues,
+            ).toBeTruthy();
         });
     });
 

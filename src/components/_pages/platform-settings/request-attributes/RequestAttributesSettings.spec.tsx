@@ -27,6 +27,11 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await page.locator('#ra-attr-name').fill('environment');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
+        // A definition must carry a mapping target; SAN/dNSName needs no OID options wired into the store.
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Subject Alternative Name' }).click();
+        await page.getByTestId('select-ra-attr-general-name-type-trigger').click();
+        await page.getByRole('option', { name: 'dNSName' }).click();
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
 
         // The attribute is added to the list...
@@ -35,6 +40,31 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         // true (CT runs no epics to resolve it), which disables the editor. No second Save exists.
         await expect(component.getByTestId('request-attribute-authoring-attribute-add')).toBeDisabled();
         await expect(page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
+    });
+
+    test('a rejected save rolls the list back to the persisted set instead of leaving the attribute behind', async ({ mount, page }) => {
+        const component = await mount(<RequestAttributesSettingsWithStore />);
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('environment');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Subject Alternative Name' }).click();
+        await page.getByTestId('select-ra-attr-general-name-type-trigger').click();
+        await page.getByRole('option', { name: 'dNSName' }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        // Optimistically listed while the save is in flight...
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
+
+        await page.getByTestId('simulate-rejection').click();
+
+        // ...and gone again once the backend rejects it: nothing was persisted, so nothing may be listed.
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
+        await expect(component.getByTestId('request-attribute-authoring-attributes-empty')).toBeVisible();
+        await expect(page.getByTestId('request-attributes-update-error')).toContainText('Attribute definition is invalid');
     });
 
     test('reflects the preloaded strict validation flag', async ({ mount, page }) => {

@@ -137,6 +137,13 @@ export function isStaticListSupportedForContentType(contentType: AttributeConten
     return STATIC_LIST_CONTENT_TYPES.includes(contentType);
 }
 
+/** Core renders a mapped request attribute into its X.509 field as text, so only these can be mapped. */
+export const MAPPED_CONTENT_TYPES: readonly AttributeContentType[] = [AttributeContentType.String, AttributeContentType.Text];
+
+export function isContentTypeAllowedForMapping(contentType: AttributeContentType): boolean {
+    return MAPPED_CONTENT_TYPES.includes(contentType);
+}
+
 function generateUuid(): string {
     // crypto.randomUUID is available in all supported browsers and the test env; using it
     // (never Math.random) keeps the generated identifier cryptographically sound.
@@ -380,29 +387,6 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
     };
 }
 
-/**
- * A mapped attribute must carry its target identifier: RDN code, SAN general-name-type
- * (+ otherName OID/encoding when OTHER_NAME), or extension OID. Unmapped attributes are valid.
- */
-export function isAuthoredAttributeMappingValid(form: AuthoredAttributeFormValues): boolean {
-    switch (form.mappingFieldType) {
-        case FieldType.Rdn:
-            return !!form.mappingRdnCode?.trim();
-        case FieldType.San:
-            if (!form.mappingGeneralNameType) {
-                return false;
-            }
-            if (form.mappingGeneralNameType === GeneralNameType.OtherName) {
-                return !!form.mappingOtherNameOid?.trim() && !!form.mappingOtherNameEncoding;
-            }
-            return true;
-        case FieldType.Extension:
-            return !!form.mappingExtensionOid?.trim();
-        default:
-            return true;
-    }
-}
-
 /** Normalize a static value for equality comparison — strings compared trimmed, others by value. */
 function normalizeStaticValue(v: string | number | boolean): string {
     return typeof v === 'string' ? v.trim() : String(v);
@@ -421,23 +405,125 @@ export function hasDuplicateStaticValues(values: (string | number | boolean)[]):
     return false;
 }
 
-/**
- * A STATIC_LIST source needs at least one option, no option may be a blank string, and the
- * options must be unique.
- */
-export function isStaticListValid(form: AuthoredAttributeFormValues): boolean {
-    if (form.valueSourceType !== ValueSourceType.StaticList) {
+/** Blank counts as "no value" (left to the required-ness rules); otherwise guards `normalizeStaticContentValue`, which turns `"abc"` into `0`. */
+export function isValueValidForContentType(value: string | number | boolean, contentType: AttributeContentType): boolean {
+    if (typeof value === 'string' && value.trim() === '') {
         return true;
     }
-    return (
-        form.staticValues.length > 0 &&
-        form.staticValues.every((v) => typeof v !== 'string' || v.trim() !== '') &&
-        !hasDuplicateStaticValues(form.staticValues)
-    );
+    const raw = typeof value === 'string' ? value.trim() : value;
+    switch (contentType) {
+        case AttributeContentType.Integer:
+            return typeof raw === 'number' ? Number.isInteger(raw) : /^[+-]?\d+$/.test(String(raw));
+        case AttributeContentType.Float:
+            return typeof raw === 'number' ? Number.isFinite(raw) : /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(String(raw));
+        case AttributeContentType.Boolean:
+            return typeof raw === 'boolean' || raw === 'true' || raw === 'false';
+        case AttributeContentType.Date:
+            return /^\d{4}-\d{2}-\d{2}$/.test(String(raw)) && !Number.isNaN(Date.parse(`${raw}T00:00:00`));
+        case AttributeContentType.Time:
+            return /^\d{2}:\d{2}(:\d{2})?$/.test(String(raw));
+        case AttributeContentType.Datetime:
+            return !Number.isNaN(Date.parse(String(raw)));
+        default:
+            return true;
+    }
 }
 
-export function isAuthoredAttributeValid(form: AuthoredAttributeFormValues): boolean {
-    return !!form.name.trim() && !!form.label.trim() && isAuthoredAttributeMappingValid(form) && isStaticListValid(form);
+/** Empty object means the definition is valid. */
+export interface AuthoredAttributeErrors {
+    name?: string;
+    label?: string;
+    contentType?: string;
+    mappingFieldType?: string;
+    mappingRdnCode?: string;
+    mappingGeneralNameType?: string;
+    mappingOtherNameOid?: string;
+    mappingOtherNameEncoding?: string;
+    mappingExtensionOid?: string;
+    readOnly?: string;
+    multiSelect?: string;
+    defaultValue?: string;
+    staticValues?: string;
+}
+
+/** The rules Core enforces on a definition, applied client-side so the dialog can flag them per field. */
+export function validateAuthoredAttribute(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
+    const errors: AuthoredAttributeErrors = {};
+
+    if (!form.name.trim()) {
+        errors.name = 'Name is required.';
+    }
+    if (!form.label.trim()) {
+        errors.label = 'Label is required.';
+    }
+
+    if (form.mappingFieldType) {
+        if (!isContentTypeAllowedForMapping(form.contentType)) {
+            errors.contentType = 'A mapped request attribute must use content type String or Text.';
+        }
+        switch (form.mappingFieldType) {
+            case FieldType.Rdn:
+                if (!form.mappingRdnCode?.trim()) {
+                    errors.mappingRdnCode = 'Select the RDN this attribute maps to.';
+                }
+                break;
+            case FieldType.San:
+                if (!form.mappingGeneralNameType) {
+                    errors.mappingGeneralNameType = 'Select the SAN type this attribute maps to.';
+                } else if (form.mappingGeneralNameType === GeneralNameType.OtherName) {
+                    if (!form.mappingOtherNameOid?.trim()) {
+                        errors.mappingOtherNameOid = 'An otherName OID is required.';
+                    }
+                    if (!form.mappingOtherNameEncoding) {
+                        errors.mappingOtherNameEncoding = 'An otherName value encoding is required.';
+                    }
+                }
+                break;
+            case FieldType.Extension:
+                if (!form.mappingExtensionOid?.trim()) {
+                    errors.mappingExtensionOid = 'Select the certificate extension this attribute maps to.';
+                }
+                break;
+        }
+    } else {
+        errors.mappingFieldType = 'A mapping target is required — pick where this attribute lands in the certificate.';
+    }
+
+    const isList = form.list || form.valueSourceType === ValueSourceType.StaticList;
+    if (form.readOnly) {
+        if (isList) {
+            errors.readOnly = 'Read Only cannot be combined with a list.';
+        } else if (!hasFreeInputDefault(form)) {
+            errors.readOnly = 'Read Only requires a default value — the requester cannot supply one.';
+        }
+    }
+    if (form.multiSelect && !isList) {
+        errors.multiSelect = 'Multi select requires a list.';
+    }
+
+    const { defaultValue } = form;
+    if (
+        form.valueSourceType === ValueSourceType.None &&
+        defaultValue !== undefined &&
+        hasFreeInputDefault(form) &&
+        !isValueValidForContentType(defaultValue, form.contentType)
+    ) {
+        errors.defaultValue = `The default value is not a valid ${form.contentType} value.`;
+    }
+
+    if (form.valueSourceType === ValueSourceType.StaticList) {
+        if (form.staticValues.length === 0) {
+            errors.staticValues = 'Add at least one value for the static list.';
+        } else if (form.staticValues.some((v) => typeof v === 'string' && v.trim() === '')) {
+            errors.staticValues = 'Static list values cannot be blank.';
+        } else if (hasDuplicateStaticValues(form.staticValues)) {
+            errors.staticValues = 'Static list values must be unique.';
+        } else if (form.staticValues.some((v) => !isValueValidForContentType(v, form.contentType))) {
+            errors.staticValues = `Every static list value must be a valid ${form.contentType} value.`;
+        }
+    }
+
+    return errors;
 }
 
 export function isValueSourceBindingValid(form: ValueSourceBindingFormValues): boolean {

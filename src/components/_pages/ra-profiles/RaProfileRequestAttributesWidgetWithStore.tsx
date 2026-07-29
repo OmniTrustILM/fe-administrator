@@ -15,6 +15,20 @@ export default function RaProfileRequestAttributesWidgetWithStore({
                 raProfileUuid="ra-1"
                 certificateRequestAttributes={certificateRequestAttributes}
             />
+            {/* Stand-in for the epic's rejection path (CT runs no epics): flips the pending flag back
+                with no success, which is what the editor rolls back on. */}
+            <button
+                type="button"
+                data-testid="simulate-rejection"
+                onClick={() =>
+                    store.dispatch({
+                        type: 'raProfileRequestAttributes/updateRaProfileRequestAttributesFailure',
+                        payload: { error: 'Attribute definition is invalid' },
+                    })
+                }
+            >
+                simulate rejection
+            </button>
         </Provider>
     );
 }

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RaProfileCertificateRequestAttributesDto } from 'types/openapi';
 import { isGroupAttributeModel } from 'types/attributes';
-import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
+import { useRunOnFailedFinish, useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import {
     buildRaProfileRequestAttributesUpdateDto,
     gateMergeModeAndBindings,
@@ -40,6 +40,7 @@ export default function RaProfileRequestAttributesWidget({
 
     const isUpdating = useSelector(requestAttributesSelectors.isUpdatingRaProfileSet);
     const updateSucceeded = useSelector(requestAttributesSelectors.updateRaProfileSetSucceeded);
+    const updateError = useSelector(requestAttributesSelectors.updateRaProfileSetError);
 
     const [form, setForm] = useState<RequestAttributeAuthoringFormValues>(() =>
         gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes)),
@@ -92,8 +93,25 @@ export default function RaProfileRequestAttributesWidget({
     }, [onSaved]);
     useRunOnSuccessfulFinish(isUpdating, updateSucceeded, clearDirtyAndRefetch);
 
+    // A rejected save persisted nothing, so drop the optimistic edit: the props still hold the last set
+    // Core accepted, and clearing `dirty` unblocks the re-seed effect.
+    const revertToPersisted = useCallback(() => {
+        setForm(gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes)));
+        setDirty(false);
+    }, [certificateRequestAttributes]);
+    useRunOnFailedFinish(isUpdating, updateSucceeded, revertToPersisted);
+
     return (
         <div className="space-y-4" data-testid="ra-profile-request-attributes-widget">
+            {updateError && (
+                <div
+                    className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-800/10 dark:text-red-500"
+                    data-testid="request-attributes-update-error"
+                    role="alert"
+                >
+                    {`The change was rejected and has not been saved: ${updateError}`}
+                </div>
+            )}
             {showPlatformDefaultNote && (
                 <p className="text-sm text-gray-500" data-testid="request-attributes-platform-default-note">
                     No request attributes are defined for this RA profile. The set of request attributes defined in platform settings will

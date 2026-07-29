@@ -34,6 +34,11 @@ async function authorAttribute(page: Page, name: string, label: string): Promise
     await page.locator('#ra-attr-name').fill(name);
     await page.locator('#ra-attr-label').click();
     await page.locator('#ra-attr-label').fill(label);
+    // A definition must carry a mapping target; SAN/dNSName needs no OID options wired into the store.
+    await page.getByTestId('select-ra-attr-mapping-trigger').click();
+    await page.getByRole('option', { name: 'Subject Alternative Name' }).click();
+    await page.getByTestId('select-ra-attr-general-name-type-trigger').click();
+    await page.getByRole('option', { name: 'dNSName' }).click();
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
 }
