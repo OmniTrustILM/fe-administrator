@@ -25,7 +25,8 @@ type Props = Readonly<{
 type KeySource = 'upload' | 'existing';
 
 type CompleteRegisteredFormValues = {
-    authorizationSecret: string;
+    // Absent for a certificate pre-registered without a challenge: the field is not rendered at all.
+    authorizationSecret?: string;
     keySource: KeySource;
     tokenProfileUuid?: string;
     keyUuid?: string;
@@ -102,7 +103,11 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
 
     const isUploadSource = keySource !== 'existing';
 
-    const canSubmit = !!authorizationSecret && (isUploadSource ? !!csrContent : !!tokenProfileUuid && !!keyUuid);
+    // A challenge exists only when the pre-registration created an authorization row; without one Core
+    // ignores authorizationSecret, so there is nothing to ask for and nothing to gate submit on.
+    const hasChallenge = !!certificate.registration;
+
+    const canSubmit = (!hasChallenge || !!authorizationSecret) && (isUploadSource ? !!csrContent : !!tokenProfileUuid && !!keyUuid);
 
     const onSubmit = useCallback(
         (values: CompleteRegisteredFormValues) => {
@@ -130,7 +135,7 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
                     certificateUuid: certificate.uuid,
                     request: isUploadSource ? csrContent : '',
                     format: isUploadSource ? CertificateRequestFormat.Pkcs10 : undefined,
-                    authorizationSecret: values.authorizationSecret,
+                    authorizationSecret: hasChallenge ? values.authorizationSecret : undefined,
                     attributes: [],
                     tokenProfileUuid: isUploadSource ? undefined : values.tokenProfileUuid,
                     keyUuid: isUploadSource ? undefined : values.keyUuid,
@@ -141,7 +146,17 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
             // Do not close here: on success the epic redirects to the issued certificate (unmounting this
             // dialog); on failure the dialog stays open with the entered values so the user can correct and retry.
         },
-        [canSubmit, certificate, csrAttributeDescriptors, csrContent, dispatch, isIssuing, isUploadSource, signatureAttributeDescriptors],
+        [
+            canSubmit,
+            certificate,
+            csrAttributeDescriptors,
+            csrContent,
+            dispatch,
+            hasChallenge,
+            isIssuing,
+            isUploadSource,
+            signatureAttributeDescriptors,
+        ],
     );
 
     const submissionErrors = [...new Set([...(issueErrorMessage ? [issueErrorMessage] : []), ...(issueValidationErrors ?? [])])];
@@ -164,22 +179,24 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
                         </div>
                     )}
 
-                    <Controller
-                        control={control}
-                        name="authorizationSecret"
-                        rules={{ required: true }}
-                        render={({ field: { value, onChange } }) => (
-                            <TextInput
-                                id="completeAuthorizationSecret"
-                                dataTestId="completeAuthorizationSecret"
-                                type="password"
-                                required
-                                label="Challenge"
-                                value={value ?? ''}
-                                onChange={onChange}
-                            />
-                        )}
-                    />
+                    {hasChallenge && (
+                        <Controller
+                            control={control}
+                            name="authorizationSecret"
+                            rules={{ required: true }}
+                            render={({ field: { value, onChange } }) => (
+                                <TextInput
+                                    id="completeAuthorizationSecret"
+                                    dataTestId="completeAuthorizationSecret"
+                                    type="password"
+                                    required
+                                    label="Challenge"
+                                    value={value ?? ''}
+                                    onChange={onChange}
+                                />
+                            )}
+                        />
+                    )}
 
                     <Controller
                         control={control}

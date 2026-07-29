@@ -65,7 +65,7 @@ test.describe('CertificateForm', () => {
         await expect(page.getByTestId('authorizationSecret')).toBeVisible();
     });
 
-    test('Challenge input is masked (write-only) and required in Pre-register mode', async ({ mount, page }) => {
+    test('Challenge input is masked (write-only) and optional in Pre-register mode', async ({ mount, page }) => {
         await mount(<CertificateFormTestWrapper />);
 
         await page.getByTestId('requestType-register').click();
@@ -73,9 +73,10 @@ test.describe('CertificateForm', () => {
         const challengeInput = page.getByTestId('authorizationSecret');
         await expect(challengeInput).toHaveAttribute('type', 'password');
 
-        // Required indicator (red star) is rendered next to the Challenge label in register mode.
-        await expect(page.getByTestId('label-authorizationSecret')).toContainText('Challenge');
-        await expect(page.getByTestId('label-authorizationSecret').locator('.text-red-500')).toBeVisible();
+        // Core treats authorizationSecret as optional — omitting it creates an unchallenged
+        // pre-registration — so no required (red-star) indicator on the Challenge label.
+        await expect(page.getByTestId('label-authorizationSecret')).toContainText('Challenge (optional)');
+        await expect(page.getByTestId('label-authorizationSecret').locator('.text-red-500')).toHaveCount(0);
     });
 
     test('switching back to Request mode restores the key-source select and hides the challenge input', async ({ mount, page }) => {
@@ -361,6 +362,101 @@ test.describe('CertificateForm', () => {
         await page.getByRole('option', { name: 'RA One' }).click();
         await page.getByTestId('authorizationSecret').fill('challenge-secret');
     }
+
+    test('Create is enabled in Pre-register mode with an empty Challenge', async ({ mount, page }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{ raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] } }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+
+        await expect(page.getByRole('button', { name: 'Create' })).toBeEnabled();
+    });
+
+    test('registerCertificate payload omits authorizationSecret when the Challenge is left empty', async ({ mount, page }) => {
+        const dispatched: { type: string; payload?: any }[] = [];
+
+        await mount(
+            <CertificateFormTestWrapper
+                onAction={(a) => dispatched.push(a)}
+                preloadedState={{ raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] } }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        await expect.poll(() => dispatched.find((a) => a.type === 'certificates/registerCertificate')).toBeTruthy();
+        const action = dispatched.find((a) => a.type === 'certificates/registerCertificate');
+        // Absent, not '' — an empty secret must not create an authorization row.
+        expect(action?.payload.registerRequest.authorizationSecret).toBeUndefined();
+    });
+
+    test('a too-short Challenge still blocks Create', async ({ mount, page }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{ raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] } }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+        await page.getByTestId('authorizationSecret').fill('short');
+
+        await expect(page.getByRole('button', { name: 'Create' })).toBeDisabled();
+
+        // Clearing it again is valid: optional means empty passes, only a non-empty value is checked.
+        await page.getByTestId('authorizationSecret').fill('');
+        await expect(page.getByRole('button', { name: 'Create' })).toBeEnabled();
+    });
+
+    test('Issuance window is disabled until a Challenge is entered', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper />);
+
+        await page.getByTestId('requestType-register').click();
+
+        // Core rejects expiresAt without a challenge, so the field is unreachable until one is given.
+        // The date field is a DatePicker (readonly, click-to-open) — address it by id, not test id.
+        await expect(page.locator('#expiresAt')).toBeDisabled();
+        await expect(page.getByTestId('label-tooltip-expiresAt')).toBeVisible();
+
+        await page.getByTestId('authorizationSecret').fill('challenge-secret');
+        await expect(page.locator('#expiresAt')).toBeEnabled();
+        await expect(page.getByTestId('label-tooltip-expiresAt')).toHaveCount(0);
+    });
+
+    test('clearing the Challenge clears and re-disables a filled Issuance window', async ({ mount, page }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{ raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] } }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+        await page.getByTestId('authorizationSecret').fill('challenge-secret');
+
+        // Pick a date from next month so it satisfies the @Future rule whatever today is. The open click
+        // is dispatched straight at the input: the widget's busy spinner never resolves in CT (no epic
+        // dispatches the success for the mount-time listResourceCustomAttributes) and it sits over the
+        // date field, so a real mouse click — forced or not — would land on the spinner instead.
+        await page.locator('#expiresAt').dispatchEvent('click');
+        await page.getByRole('button', { name: 'Next' }).click();
+        await page.getByRole('button', { name: '15', exact: true }).click();
+        await expect(page.locator('#expiresAt')).not.toHaveValue('');
+
+        await page.getByTestId('authorizationSecret').fill('');
+        await expect(page.locator('#expiresAt')).toBeDisabled();
+        await expect(page.locator('#expiresAt')).toHaveValue('');
+    });
 
     test('registerCertificate payload includes selected owner/groups', async ({ mount, page }) => {
         const dispatched: { type: string; payload?: any }[] = [];

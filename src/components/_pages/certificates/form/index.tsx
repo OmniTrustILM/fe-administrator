@@ -271,6 +271,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const altTokenProfileUuid = useWatch({ control, name: 'altTokenProfileUuid' });
     const requestType = useWatch({ control, name: 'requestType' });
     const isRegister = requestType === 'register';
+    const authorizationSecret = useWatch({ control, name: 'authorizationSecret' });
+    const hasChallenge = !!authorizationSecret;
 
     useEffect(() => {
         if (!selectedRaProfileUuid) {
@@ -306,6 +308,14 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             setValue('groupUuids', undefined);
         }
     }, [isRegister, setValue]);
+
+    useEffect(() => {
+        // An issuance window is only meaningful for a challenge-gated pre-registration, so a value
+        // entered and then abandoned must not survive clearing the challenge.
+        if (!hasChallenge) {
+            setValue('expiresAt', undefined);
+        }
+    }, [hasChallenge, setValue]);
 
     useEffect(() => {
         // Owner/Groups options are only needed by the Pre-register Ownership tab; fetch them when that
@@ -429,7 +439,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                         raProfileUuid: profile.uuid,
                         authorityUuid: profile.authorityInstanceUuid,
                         registerRequest: {
-                            authorizationSecret: formValues.authorizationSecret,
+                            authorizationSecret: formValues.authorizationSecret || undefined,
                             expiresAt: formValues.expiresAt ? new Date(formValues.expiresAt).toISOString() : undefined,
                             csrAttributes: csrAttrs,
                             customAttributes: customAttrs,
@@ -705,18 +715,20 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         control={control}
                                         name="authorizationSecret"
                                         rules={{
-                                            required: isRegister,
-                                            minLength: 12,
-                                            maxLength: 255,
-                                            pattern: /^[\x20-\x7E]+$/,
+                                            // Optional: Core creates the authorization row only when a secret is
+                                            // supplied, so an empty value is a valid unchallenged pre-registration.
+                                            // Only a non-empty value is shape-checked.
+                                            validate: (value) =>
+                                                !value ||
+                                                (value.length >= 12 && value.length <= 255 && /^[\x20-\x7E]+$/.test(value)) ||
+                                                'Challenge must be 12–255 printable ASCII characters',
                                         }}
                                         render={({ field: { value, onChange }, fieldState }) => (
                                             <TextInput
                                                 id="authorizationSecret"
                                                 dataTestId="authorizationSecret"
                                                 type="password"
-                                                required
-                                                label="Challenge"
+                                                label="Challenge (optional)"
                                                 value={value ?? ''}
                                                 onChange={onChange}
                                                 invalid={!!fieldState.error}
@@ -727,6 +739,10 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     <Controller
                                         control={control}
                                         name="expiresAt"
+                                        // Core rejects expiresAt supplied without a challenge. Disabling on the
+                                        // Controller (not just the input) keeps the field out of validation so it
+                                        // can never leave the form stuck invalid while unreachable.
+                                        disabled={!hasChallenge}
                                         rules={{
                                             // The Core contract marks expiresAt @Future; reject past/today dates the
                                             // native date picker would otherwise permit before Core rejects them.
@@ -739,6 +755,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                 dataTestId="expiresAt"
                                                 type="date"
                                                 label="Issuance window (optional)"
+                                                labelTooltip={hasChallenge ? undefined : 'Requires a challenge'}
+                                                disabled={!hasChallenge}
                                                 value={value ?? ''}
                                                 onChange={onChange}
                                                 invalid={!!fieldState.error}

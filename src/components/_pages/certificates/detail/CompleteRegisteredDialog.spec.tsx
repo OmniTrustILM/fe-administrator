@@ -34,6 +34,50 @@ test.describe('CompleteRegisteredDialog', () => {
         await expect(submitButton).toBeEnabled();
     });
 
+    test('Challenge is required when the certificate was pre-registered with one', async ({ mount, page }) => {
+        await mount(<CompleteRegisteredDialogTestWrapper />);
+
+        await expect(page.getByTestId('label-completeAuthorizationSecret')).toContainText('Challenge');
+        await expect(page.getByTestId('label-completeAuthorizationSecret').locator('.text-red-500')).toBeVisible();
+    });
+
+    test('Challenge is absent for a certificate pre-registered without one', async ({ mount, page }) => {
+        // No authorization row means Core created no challenge and ignores the secret at issue time,
+        // so there is nothing for the operator to enter.
+        await mount(<CompleteRegisteredDialogTestWrapper challenged={false} />);
+
+        await expect(page.locator('#completeAuthorizationSecret')).toHaveCount(0);
+        await expect(page.locator('#completeCsrUpload__fileUpload__fileContent')).toBeVisible();
+    });
+
+    test('submit needs only CSR content when the certificate has no challenge', async ({ mount, page }) => {
+        await mount(<CompleteRegisteredDialogTestWrapper challenged={false} />);
+
+        const submitButton = page.getByTestId('completeRegisteredSubmit');
+        await expect(submitButton).toBeDisabled();
+
+        await page.locator('#completeCsrUpload__fileUpload__fileContent').fill('LS0tLS1CRUdJTi=');
+        await expect(submitButton).toBeEnabled();
+    });
+
+    test('unchallenged certificate keeps submit reachable on the existing-key path too', async ({ mount, page }) => {
+        await mount(
+            <CompleteRegisteredDialogTestWrapper
+                challenged={false}
+                preloadedState={{
+                    tokenprofiles: { tokenProfiles: [{ uuid: 'token-profile-uuid', name: 'Test Token Profile' }] } as any,
+                }}
+            />,
+        );
+
+        await page.getByTestId('completeKeySource-trigger').click();
+        await page.getByRole('option', { name: 'Existing Key' }).click();
+
+        await expect(page.locator('#completeAuthorizationSecret')).toHaveCount(0);
+        // Still gated on the key selection — dropping the challenge must not drop the other requirements.
+        await expect(page.getByTestId('completeRegisteredSubmit')).toBeDisabled();
+    });
+
     test('key-source toggle switches between CSR upload and existing-key selectors', async ({ mount, page }) => {
         await mount(<CompleteRegisteredDialogTestWrapper />);
 
