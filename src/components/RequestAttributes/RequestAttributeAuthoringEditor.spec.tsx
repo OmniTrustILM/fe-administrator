@@ -198,7 +198,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await component.getByTestId('request-attribute-authoring-attribute-edit').click();
         // The synthetic off-list option keeps the Select usable, but the load error is still surfaced
         // so the user knows the dropdown is missing its fetched entries.
-        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('CN (unknown OID)');
+        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('CN (not registered)');
         await expect(page.getByTestId('request-attribute-authoring-rdn-error')).toBeVisible();
     });
 
@@ -227,7 +227,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await component.getByTestId('request-attribute-authoring-attribute-edit').click();
         // Neither the system registry nor the custom list contains code `CN` in this test, so the
         // stored value stays selectable via a synthetic off-list option rather than being silently dropped.
-        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('CN (unknown OID)');
+        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('CN (not registered)');
     });
 
     test('the RDN dropdown shows each option description, and the selected one as help text', async ({ mount, page }) => {
@@ -297,7 +297,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await component.getByTestId('request-attribute-authoring-attribute-edit').click();
         // The alias resolves the stored code to the real option instead of showing it as off-list.
         await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('Common Name');
-        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).not.toContainText('unknown OID');
+        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).not.toContainText('not registered');
     });
 
     test('static list source requires at least one value, then persists the values', async ({ mount, page }) => {

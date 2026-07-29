@@ -65,9 +65,10 @@ const RDN_CODE_CLARIFICATIONS: Record<string, string> = {
 export const rdnCodeClarification = (code?: string): string | undefined =>
     code ? RDN_CODE_CLARIFICATIONS[code.trim().toUpperCase()] : undefined;
 
-export const toOidSelectOptions = (
-    entries: OIDResponseModel[],
-): { value: string; label: string; description?: string; aliases?: string[]; code?: string }[] =>
+/** `value` = dotted OID, `label` = human display, `aliases`/`code` = the RDN codes the value may legacy-match. */
+export type OidSelectOption = { value: string; label: string; description?: string; aliases?: string[]; code?: string };
+
+export const toOidSelectOptions = (entries: OIDResponseModel[]): OidSelectOption[] =>
     entries.map((e) => {
         // RDN entries carry a code (+altCodes); a legacy mapping may store one of those instead of the
         // dotted OID, so expose them as aliases the dropdown can reconcile back to this option.
@@ -87,10 +88,7 @@ export const toOidSelectOptions = (
 
 // System and custom entries are disjoint by construction — the backend rejects a custom OID that
 // shadows a system one — so the lists concatenate without a dedupe pass.
-export const toMergedOidSelectOptions = (
-    system?: OIDResponseModel[],
-    custom?: OIDResponseModel[],
-): { value: string; label: string; description?: string; aliases?: string[]; code?: string }[] =>
+export const toMergedOidSelectOptions = (system?: OIDResponseModel[], custom?: OIDResponseModel[]): OidSelectOption[] =>
     toOidSelectOptions([...(system ?? []), ...(custom ?? [])]);
 
 export const buildRdnCodeByOid = (entries: OIDResponseModel[]): Record<string, string> => {

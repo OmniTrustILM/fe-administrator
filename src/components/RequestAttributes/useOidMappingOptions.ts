@@ -1,9 +1,8 @@
-import type { OidSelectOption } from 'components/RequestAttributes/RequestAttributeAuthoringEditor';
 import { actions as oidActions, selectors as oidSelectors } from 'ducks/oids';
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { OidCategory } from 'types/openapi';
-import { toMergedOidSelectOptions } from 'utils/oid';
+import { toMergedOidSelectOptions, type OidSelectOption } from 'utils/oid';
 
 export type OidMappingOptions = {
     rdnOptions: OidSelectOption[];
