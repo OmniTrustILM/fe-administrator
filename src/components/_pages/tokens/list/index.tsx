@@ -3,6 +3,7 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
 import Badge from 'components/Badge';
+import ConnectorLink from 'components/ConnectorLink';
 
 import { actions, selectors } from 'ducks/tokens';
 
@@ -173,13 +174,7 @@ function TokenList() {
                         {token.name}
                     </Link>,
 
-                    token.connectorName ? (
-                        <Link key="connector" to={`../connectors/detail/${token.connectorUuid}`}>
-                            {token.connectorName ?? 'Unassigned'}
-                        </Link>
-                    ) : (
-                        (token.connectorName ?? 'Unassigned')
-                    ),
+                    <ConnectorLink key="connector" uuid={token.connectorUuid} name={token.connectorName} fallback="Unassigned" />,
 
                     <Badge key="kind" color="secondary">
                         {token.kind}

@@ -11,6 +11,7 @@ import { PlatformEnum, Resource } from 'types/openapi';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
+import ConnectorLink from 'components/ConnectorLink';
 import Container from 'components/Container';
 import { getEditAndDeleteWidgetButtons, createWidgetDetailHeaders } from 'utils/widget';
 import NotificationInstanceForm from '../notification-instance-form';
@@ -117,9 +118,11 @@ const NotificationInstanceDetails = () => {
                           id: 'notificationProviderName',
                           columns: [
                               'Notification Provider Name',
-                              <Link key="connector" to={`../../../connectors/detail/${notificationInstance.connectorUuid}`}>
-                                  {notificationInstance.connectorName}
-                              </Link>,
+                              <ConnectorLink
+                                  key="connector"
+                                  uuid={notificationInstance.connectorUuid}
+                                  name={notificationInstance.connectorName}
+                              />,
                           ],
                       },
                   ]

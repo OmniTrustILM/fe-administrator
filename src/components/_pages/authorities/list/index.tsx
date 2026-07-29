@@ -12,6 +12,7 @@ import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import Badge from 'components/Badge';
+import ConnectorLink from 'components/ConnectorLink';
 
 function AuthorityList() {
     const dispatch = useDispatch();
@@ -126,13 +127,7 @@ function AuthorityList() {
                         {authority.name}
                     </Link>,
 
-                    authority.connectorName ? (
-                        <Link key="connector" to={`../connectors/detail/${authority.connectorUuid}`}>
-                            {authority.connectorName ?? 'Unassigned'}
-                        </Link>
-                    ) : (
-                        (authority.connectorName ?? 'Unassigned')
-                    ),
+                    <ConnectorLink key="connector" uuid={authority.connectorUuid} name={authority.connectorName} fallback="Unassigned" />,
 
                     <Badge key="kind" color="primary">
                         {authority.kind}

@@ -12,7 +12,8 @@ import { actions, selectors } from 'ducks/tokens';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import ConnectorLink from 'components/ConnectorLink';
 import TokenForm from '../form';
 import { PlatformEnum, Resource, TokenInstanceStatus } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
@@ -198,14 +199,7 @@ export default function TokenDetail() {
                       },
                       {
                           id: 'cryptographyProviderName',
-                          columns: [
-                              'Cryptography Provider Name',
-                              token.connectorUuid ? (
-                                  <Link to={`../../connectors/detail/${token.connectorUuid}`}>{token.connectorName}</Link>
-                              ) : (
-                                  ''
-                              ),
-                          ],
+                          columns: ['Cryptography Provider Name', <ConnectorLink uuid={token.connectorUuid} name={token.connectorName} />],
                       },
                       {
                           id: 'kind',

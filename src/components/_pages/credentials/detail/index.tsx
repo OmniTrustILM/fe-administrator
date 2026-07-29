@@ -9,7 +9,8 @@ import { actions, selectors } from 'ducks/credentials';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import ConnectorLink from 'components/ConnectorLink';
 import CredentialForm from '../form';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { PlatformEnum, Resource } from '../../../../types/openapi';
@@ -121,11 +122,7 @@ function CredentialDetail() {
                           id: 'credentialProviderName',
                           columns: [
                               'Credential Provider Name',
-                              credential.connectorUuid ? (
-                                  <Link to={`../../connectors/detail/${credential.connectorUuid}`}>{credential.connectorName}</Link>
-                              ) : (
-                                  ''
-                              ),
+                              <ConnectorLink uuid={credential.connectorUuid} name={credential.connectorName} />,
                           ],
                       },
                       {
