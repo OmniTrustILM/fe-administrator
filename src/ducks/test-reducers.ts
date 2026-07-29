@@ -797,6 +797,25 @@ function tokenProfilesTestReducer(state: TokenProfilesTestState | undefined, _ac
     return state ?? tokenProfilesTestInitialState;
 }
 
+// Reducer key must match the real slice.name ('tokens') so the real token selectors (used by the
+// token-profile form) can find this state — that duck's `state` selector has no initial-state
+// fallback, so a missing slice would throw rather than read as empty.
+export type TokensTestState = {
+    tokens: any[];
+    tokenProfileAttributeDescriptors?: any[];
+    isFetchingTokenProfileAttributesDescriptors: boolean;
+};
+
+const tokensTestInitialState: TokensTestState = {
+    tokens: [],
+    tokenProfileAttributeDescriptors: [],
+    isFetchingTokenProfileAttributesDescriptors: false,
+};
+
+function tokensTestReducer(state: TokensTestState | undefined, _action: UnknownAction): TokensTestState {
+    return state ?? tokensTestInitialState;
+}
+
 // Reducer key must match the real slice.name ('cryptographicKeys') so the real
 // cryptographic-keys selectors (used by RenderRequestKey) can find this state.
 export type CryptographicKeysTestState = {
@@ -971,6 +990,7 @@ export const testReducers = combineReducers({
     utilsCertificateRequest: utilsCertificateRequestTestReducer,
     settings: settingsTestReducer,
     tokenprofiles: tokenProfilesTestReducer,
+    tokens: tokensTestReducer,
     cryptographicKeys: cryptographicKeysTestReducer,
     users: usersTestReducer,
     certificateGroups: certificateGroupsTestReducer,
@@ -1004,6 +1024,7 @@ export const testInitialState = {
     utilsCertificateRequest: utilsCertificateRequestTestInitialState,
     settings: settingsTestInitialState,
     tokenprofiles: tokenProfilesTestInitialState,
+    tokens: tokensTestInitialState,
     cryptographicKeys: cryptographicKeysTestInitialState,
     users: usersTestInitialState,
     certificateGroups: certificateGroupsTestInitialState,
