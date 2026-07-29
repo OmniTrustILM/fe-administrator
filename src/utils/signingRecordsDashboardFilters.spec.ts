@@ -55,7 +55,7 @@ describe('resolveSigningRecordFilterField', () => {
 describe('buildSigningTimeWindowFilter', () => {
     const now = new Date('2026-07-29T12:00:00.000Z');
 
-    test('builds a lower-bound filter on the signing time field', () => {
+    test('closes the window on both ends of the signing time field', () => {
         expect(buildSigningTimeWindowFilter(grouped, SIGNING_WINDOW_HOURS.last24h, now)).toEqual([
             {
                 fieldSource: FilterFieldSource.Property,
@@ -63,11 +63,19 @@ describe('buildSigningTimeWindowFilter', () => {
                 fieldIdentifier: 'SIGNING_TIME',
                 value: '2026-07-28T12:00:00.000Z',
             },
+            {
+                fieldSource: FilterFieldSource.Property,
+                condition: FilterConditionOperator.LesserOrEqual,
+                fieldIdentifier: 'SIGNING_TIME',
+                value: '2026-07-29T12:00:00.000Z',
+            },
         ]);
     });
 
     test('subtracts the whole window for the 7 day tile', () => {
-        expect(buildSigningTimeWindowFilter(grouped, SIGNING_WINDOW_HOURS.last7d, now)[0].value).toBe('2026-07-22T12:00:00.000Z');
+        const filters = buildSigningTimeWindowFilter(grouped, SIGNING_WINDOW_HOURS.last7d, now);
+        expect(filters[0].value).toBe('2026-07-22T12:00:00.000Z');
+        expect(filters[1].value).toBe('2026-07-29T12:00:00.000Z');
     });
 
     test('returns no filter when the signing time field is not searchable', () => {

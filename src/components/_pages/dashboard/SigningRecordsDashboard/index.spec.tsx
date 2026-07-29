@@ -19,9 +19,10 @@ test.describe('SigningRecordsDashboard', () => {
 
         await expect(component.getByTestId('route')).toHaveText('/signingrecords');
         const applied = JSON.parse((await component.getByTestId('current-filters').textContent()) ?? '[]');
-        expect(applied).toHaveLength(1);
-        expect(applied[0]).toMatchObject({ fieldIdentifier: 'SIGNING_TIME', condition: 'GREATER_OR_EQUAL' });
-        expect(Date.parse(applied[0].value)).toBeLessThan(Date.now());
+        expect(applied.map((filter: { condition: string }) => filter.condition)).toEqual(['GREATER_OR_EQUAL', 'LESSER_OR_EQUAL']);
+        expect(applied.every((filter: { fieldIdentifier: string }) => filter.fieldIdentifier === 'SIGNING_TIME')).toBe(true);
+        expect(Date.parse(applied[0].value)).toBeLessThan(Date.parse(applied[1].value));
+        expect(Date.parse(applied[1].value)).toBeLessThanOrEqual(Date.now());
     });
 
     test('the 7d tile drills down with a wider signing time window than the 24h tile', async ({ mount }) => {
