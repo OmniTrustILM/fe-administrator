@@ -12,6 +12,7 @@ import RenderRequestKey from 'components/_pages/certificates/form/RenderRequestK
 import RenderTokenProfile from 'components/_pages/certificates/form/RenderTokenProfile';
 import { actions as certificateActions, selectors as certificateSelectors } from 'ducks/certificates';
 import { selectors as cryptographyOperationSelectors } from 'ducks/cryptographic-operations';
+import { actions as tokenProfileActions } from 'ducks/token-profiles';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { CertificateRequestFormat } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
@@ -43,6 +44,10 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
     const isIssuing = useSelector(certificateSelectors.isIssuing);
     const issueErrorMessage = useSelector(certificateSelectors.issueErrorMessage);
     const issueValidationErrors = useSelector(certificateSelectors.issueValidationErrors);
+
+    useEffect(() => {
+        dispatch(tokenProfileActions.listTokenProfiles({ enabled: true }));
+    }, [dispatch]);
 
     // The backend generates the CSR from csrAttributes on the existing-key path, so make sure the
     // identity (Request Attributes) descriptors are loaded for this certificate's RA profile.

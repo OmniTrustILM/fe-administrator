@@ -73,6 +73,18 @@ test.describe('CompleteRegisteredDialog', () => {
         await expect(page.getByTestId('select-keyUuid-trigger')).toBeVisible();
     });
 
+    test('fetches token profiles on mount so the dropdown offers more than "+ Add new"', async ({ mount, page }) => {
+        await mount(
+            <CompleteRegisteredDialogTestWrapper tokenProfilesOnFetch={[{ uuid: 'fetched-uuid', name: 'Fetched Token Profile' }]} />,
+        );
+
+        await page.getByTestId('completeKeySource-trigger').click();
+        await page.getByRole('option', { name: 'Existing Key' }).click();
+
+        await page.getByTestId('select-tokenProfileUuid-trigger').click();
+        await expect(page.getByRole('option', { name: 'Fetched Token Profile' })).toBeVisible();
+    });
+
     test('keeps the modal open after submitting instead of closing optimistically', async ({ mount, page }) => {
         await mount(<CompleteRegisteredDialogTestWrapper />);
 
