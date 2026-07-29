@@ -29,6 +29,7 @@ import {
     isReadOnlyDefaultValid,
     isStaticListSupportedForContentType,
     isValueSourceBindingValid,
+    withBooleanReadOnlyDefault,
     type AuthoredAttributeFormValues,
     type RequestAttributeAuthoringFormValues,
     type ValueSourceBindingFormValues,
@@ -100,6 +101,12 @@ const VALUE_SOURCE_OPTIONS = [
 
 // Offered when the content type has no scalar editor — a static list can't be authored there.
 const FREE_INPUT_ONLY_OPTIONS = VALUE_SOURCE_OPTIONS.slice(0, 1);
+
+// Ids wiring each inline error to the control it describes (aria-describedby). The dialog renders one
+// draft at a time, so a constant id per field is unambiguous.
+const ATTR_NAME_ERROR_ID = 'ra-attr-name-error';
+const STATIC_VALUES_ERROR_ID = 'ra-attr-static-values-error';
+const READONLY_DEFAULT_ERROR_ID = 'ra-attr-default-value-error';
 
 function valueSourceLabel(type: ValueSourceType): string {
     return VALUE_SOURCE_OPTIONS.find((o) => o.value === type)?.label ?? 'Free input';
@@ -266,6 +273,11 @@ export default function RequestAttributeAuthoringEditor({
     // -- Authored attributes ---------------------------------------------------
     const removeAttribute = (index: number) => patch({ attributes: value.attributes.filter((_, i) => i !== index) });
 
+    // Every draft is seeded through the Boolean read-only normaliser, so a stored read-only Boolean
+    // attribute with no default opens showing the `false` its switch is already displaying.
+    const openAttrDraft = (index: number | null, data: AuthoredAttributeFormValues) =>
+        setAttrDraft({ index, data: withBooleanReadOnlyDefault(data) });
+
     const saveAttribute = () => {
         if (!attrDraft) return;
         const next = [...value.attributes];
@@ -324,7 +336,7 @@ export default function RequestAttributeAuthoringEditor({
                             <span className="flex shrink-0 gap-2">
                                 <Button
                                     variant="outline"
-                                    onClick={() => setAttrDraft({ index, data: { ...attr } })}
+                                    onClick={() => openAttrDraft(index, { ...attr })}
                                     disabled={disabled}
                                     type="button"
                                     data-testid={`${dataTestId}-attribute-edit`}
@@ -348,7 +360,7 @@ export default function RequestAttributeAuthoringEditor({
             )}
             <Button
                 variant="outline"
-                onClick={() => setAttrDraft({ index: null, data: emptyAuthoredAttribute() })}
+                onClick={() => openAttrDraft(null, emptyAuthoredAttribute())}
                 disabled={disabled}
                 type="button"
                 data-testid={`${dataTestId}-attribute-add`}
@@ -368,7 +380,8 @@ export default function RequestAttributeAuthoringEditor({
     const renderAttributeDialog = () => {
         if (!attrDraft) return null;
         const d = attrDraft.data;
-        const set = (p: Partial<AuthoredAttributeFormValues>) => setAttrDraft({ ...attrDraft, data: { ...d, ...p } });
+        const set = (p: Partial<AuthoredAttributeFormValues>) =>
+            setAttrDraft({ ...attrDraft, data: withBooleanReadOnlyDefault({ ...d, ...p }) });
         return (
             <div className="space-y-3 text-left" data-testid={`${dataTestId}-attribute-form`}>
                 <TextInput
@@ -379,9 +392,11 @@ export default function RequestAttributeAuthoringEditor({
                     required
                     value={d.name}
                     onChange={(v) => set({ name: v })}
+                    invalid={attrNameDuplicate}
+                    ariaDescribedBy={attrNameDuplicate ? ATTR_NAME_ERROR_ID : undefined}
                 />
                 {attrNameDuplicate && (
-                    <p className="text-sm text-red-600" data-testid={`${dataTestId}-attribute-name-duplicate`}>
+                    <p className="text-sm text-red-600" id={ATTR_NAME_ERROR_ID} data-testid={`${dataTestId}-attribute-name-duplicate`}>
                         An attribute with this name already exists in the set.
                     </p>
                 )}
@@ -588,6 +603,7 @@ export default function RequestAttributeAuthoringEditor({
         const setValueAt = (index: number, next: string | number | boolean) =>
             set({ staticValues: d.staticValues.map((v, i) => (i === index ? next : v)) });
         const removeValueAt = (index: number) => set({ staticValues: d.staticValues.filter((_, i) => i !== index) });
+        const duplicates = hasDuplicateStaticValues(d.staticValues);
         return (
             <div className="space-y-2" data-testid={`${dataTestId}-static-values`}>
                 {/* Group label for the value rows below — not tied to a single input's id. */}
@@ -603,6 +619,8 @@ export default function RequestAttributeAuthoringEditor({
                                 value={v}
                                 onChange={(next) => setValueAt(index, next)}
                                 readOnly={disabled}
+                                invalid={duplicates}
+                                ariaDescribedBy={duplicates ? STATIC_VALUES_ERROR_ID : undefined}
                             />
                         </div>
                         <Button
@@ -622,8 +640,8 @@ export default function RequestAttributeAuthoringEditor({
                         Add at least one value for the static list.
                     </p>
                 )}
-                {hasDuplicateStaticValues(d.staticValues) && (
-                    <p className="text-sm text-red-600" data-testid={`${dataTestId}-static-values-duplicate`}>
+                {duplicates && (
+                    <p className="text-sm text-red-600" id={STATIC_VALUES_ERROR_ID} data-testid={`${dataTestId}-static-values-duplicate`}>
                         Static list values must be unique.
                     </p>
                 )}
@@ -646,12 +664,25 @@ export default function RequestAttributeAuthoringEditor({
     // the content type; persisted like a single-entry static list. Non-scalar types have no editor.
     const renderFreeInputDefault = (d: AuthoredAttributeFormValues, set: (p: Partial<AuthoredAttributeFormValues>) => void) => {
         const config = ContentFieldConfiguration[d.contentType];
-        if (!config) return null;
+        const missingDefault = !isReadOnlyDefaultValid(d);
+        // The non-scalar content types (secret, file, credential, codeblock, object, resource) have no
+        // input here, so their default cannot be authored at all. Read Only stays offered for them —
+        // an attribute already saved that way must remain editable — but the explanation has to render
+        // outside the editor block, or Save would sit disabled with nothing on screen to explain it.
+        if (!config) {
+            return missingDefault ? (
+                <p className="text-sm text-red-600" id={READONLY_DEFAULT_ERROR_ID} data-testid={`${dataTestId}-readonly-default-missing`}>
+                    A Read Only attribute needs a default value, and the {d.contentType} content type has no default-value editor here.
+                    Clear Read Only, or pick a content type whose default can be authored.
+                </p>
+            ) : null;
+        }
         return (
             <div className="space-y-2" data-testid={`${dataTestId}-default-value-block`}>
                 <Label
-                    labelTooltip="Pre-fills the field on the request form; the requester can change it unless Read Only is set. Optional, except for a Required + Read Only attribute, which has no other way to get a value."
-                    required={d.required && d.readOnly}
+                    htmlFor="ra-attr-default-value"
+                    labelTooltip="Pre-fills the field on the request form; the requester can change it unless Read Only is set. Optional, except for a Read Only attribute, which has no other way to get a value."
+                    required={d.readOnly}
                 >
                     Default value
                 </Label>
@@ -664,11 +695,17 @@ export default function RequestAttributeAuthoringEditor({
                     onChange={(next) => set({ defaultValue: next })}
                     readOnly={disabled}
                     placeholder="Enter default value"
+                    invalid={missingDefault}
+                    ariaDescribedBy={missingDefault ? READONLY_DEFAULT_ERROR_ID : undefined}
                 />
-                {!isReadOnlyDefaultValid(d) && (
-                    <p className="text-sm text-red-600" data-testid={`${dataTestId}-readonly-default-missing`}>
-                        A Required + Read Only attribute needs a default value — the requester can never fill in a read-only field, so the
-                        certificate request form could not be submitted.
+                {missingDefault && (
+                    <p
+                        className="text-sm text-red-600"
+                        id={READONLY_DEFAULT_ERROR_ID}
+                        data-testid={`${dataTestId}-readonly-default-missing`}
+                    >
+                        A Read Only attribute needs a default value — the requester can never fill in a read-only field, so the certificate
+                        request form could not be submitted.
                     </p>
                 )}
             </div>

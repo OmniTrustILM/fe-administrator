@@ -17,12 +17,26 @@ type Props = {
     className?: string;
     required?: boolean;
     timePicker?: boolean;
+    /** Id of an element describing the field (typically an error paragraph) — announced by screen readers. */
+    ariaDescribedBy?: string;
 };
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
-function DatePicker({ value, onChange, onBlur, disabled, id, invalid, error, className, required, timePicker = false }: Readonly<Props>) {
+function DatePicker({
+    value,
+    onChange,
+    onBlur,
+    disabled,
+    id,
+    invalid,
+    error,
+    className,
+    required,
+    timePicker = false,
+    ariaDescribedBy,
+}: Readonly<Props>) {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(value ? new Date(value) : null);
     const [selectedTime, setSelectedTime] = useState<{ hours: number; minutes: number; seconds: number }>(() => {
@@ -303,6 +317,8 @@ function DatePicker({ value, onChange, onBlur, disabled, id, invalid, error, cla
                     disabled={disabled}
                     required={required}
                     id={id}
+                    aria-invalid={invalid || undefined}
+                    aria-describedby={ariaDescribedBy}
                     onClick={() => !disabled && setIsOpen(!isOpen)}
                     placeholder={timePicker ? 'dd.mm.yyyy 00:00:00' : 'dd.mm.yyyy'}
                     className={cn(

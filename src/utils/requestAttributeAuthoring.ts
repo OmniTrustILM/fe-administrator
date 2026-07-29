@@ -437,16 +437,37 @@ export function isStaticListValid(form: AuthoredAttributeFormValues): boolean {
 }
 
 /**
- * A required + read-only free-input attribute must carry a default value: the requester can never
- * type into a read-only field, so without one the value stays empty and every certificate request
- * form containing the attribute becomes unsubmittable (fe#1913). Only applies to free input —
- * Read Only is not authorable for a static list, and other value sources resolve the value server-side.
+ * A read-only free-input attribute must carry a default value: the requester can never type into a
+ * read-only field, so without one the value stays empty and every certificate request form
+ * containing the attribute becomes unsubmittable (fe#1913). The rule is not conditional on
+ * `required` — the backend rejects any read-only attribute without content
+ * (`AttributeEngine.validateReadOnlyAttributeProperties`), so letting the save through would only
+ * trade this inline hint for a raw server error. Only applies to free input — Read Only is not
+ * authorable for a static list, and other value sources resolve the value server-side.
  */
 export function isReadOnlyDefaultValid(form: AuthoredAttributeFormValues): boolean {
-    if (form.valueSourceType !== ValueSourceType.None || !form.required || !form.readOnly) {
+    if (form.valueSourceType !== ValueSourceType.None || !form.readOnly) {
         return true;
     }
     return hasFreeInputDefault(form);
+}
+
+/**
+ * A Boolean default renders as a switch, which has no "unset" position — an absent default looks
+ * exactly like an explicit `false`. Once Read Only makes the default mandatory, seed the `false`
+ * the switch is already showing so the persisted value matches the visible one, instead of blocking
+ * Save on a gap the author cannot see (and forcing them to toggle twice to store `false`).
+ */
+export function withBooleanReadOnlyDefault(form: AuthoredAttributeFormValues): AuthoredAttributeFormValues {
+    if (
+        form.valueSourceType === ValueSourceType.None &&
+        form.readOnly &&
+        form.contentType === AttributeContentType.Boolean &&
+        form.defaultValue === undefined
+    ) {
+        return { ...form, defaultValue: false };
+    }
+    return form;
 }
 
 export function isAuthoredAttributeValid(form: AuthoredAttributeFormValues): boolean {
