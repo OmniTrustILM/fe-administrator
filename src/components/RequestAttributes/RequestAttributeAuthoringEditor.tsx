@@ -26,6 +26,7 @@ import {
     emptyValueSourceBinding,
     hasDuplicateStaticValues,
     isAuthoredAttributeValid,
+    isReadOnlyDefaultValid,
     isStaticListSupportedForContentType,
     isValueSourceBindingValid,
     type AuthoredAttributeFormValues,
@@ -648,7 +649,10 @@ export default function RequestAttributeAuthoringEditor({
         if (!config) return null;
         return (
             <div className="space-y-2" data-testid={`${dataTestId}-default-value-block`}>
-                <Label labelTooltip="Optional. Pre-fills the field on the request form; the requester can change it unless Read Only is set.">
+                <Label
+                    labelTooltip="Pre-fills the field on the request form; the requester can change it unless Read Only is set. Optional, except for a Required + Read Only attribute, which has no other way to get a value."
+                    required={d.required && d.readOnly}
+                >
                     Default value
                 </Label>
                 <AddCustomValueInput
@@ -661,6 +665,12 @@ export default function RequestAttributeAuthoringEditor({
                     readOnly={disabled}
                     placeholder="Enter default value"
                 />
+                {!isReadOnlyDefaultValid(d) && (
+                    <p className="text-sm text-red-600" data-testid={`${dataTestId}-readonly-default-missing`}>
+                        A Required + Read Only attribute needs a default value — the requester can never fill in a read-only field, so the
+                        certificate request form could not be submitted.
+                    </p>
+                )}
             </div>
         );
     };

@@ -436,8 +436,27 @@ export function isStaticListValid(form: AuthoredAttributeFormValues): boolean {
     );
 }
 
+/**
+ * A required + read-only free-input attribute must carry a default value: the requester can never
+ * type into a read-only field, so without one the value stays empty and every certificate request
+ * form containing the attribute becomes unsubmittable (fe#1913). Only applies to free input —
+ * Read Only is not authorable for a static list, and other value sources resolve the value server-side.
+ */
+export function isReadOnlyDefaultValid(form: AuthoredAttributeFormValues): boolean {
+    if (form.valueSourceType !== ValueSourceType.None || !form.required || !form.readOnly) {
+        return true;
+    }
+    return hasFreeInputDefault(form);
+}
+
 export function isAuthoredAttributeValid(form: AuthoredAttributeFormValues): boolean {
-    return !!form.name.trim() && !!form.label.trim() && isAuthoredAttributeMappingValid(form) && isStaticListValid(form);
+    return (
+        !!form.name.trim() &&
+        !!form.label.trim() &&
+        isAuthoredAttributeMappingValid(form) &&
+        isStaticListValid(form) &&
+        isReadOnlyDefaultValid(form)
+    );
 }
 
 export function isValueSourceBindingValid(form: ValueSourceBindingFormValues): boolean {

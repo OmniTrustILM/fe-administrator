@@ -608,6 +608,54 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(page.getByTestId('value-json')).toContainText('"readOnly":true');
     });
 
+    test('Required + Read Only without a default value blocks Save and explains why', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+        await page.locator('#ra-attr-required').check();
+        await page.locator('#ra-attr-readonly').check();
+
+        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toBeVisible();
+        await expect(page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+    });
+
+    test('entering a default value unblocks a Required + Read Only attribute', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+        await page.locator('#ra-attr-required').check();
+        await page.locator('#ra-attr-readonly').check();
+        await page.locator('#ra-attr-default-value').click();
+        await page.locator('#ra-attr-default-value').fill('prod');
+
+        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toHaveCount(0);
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(page.getByTestId('value-json')).toContainText('"defaultValue":"prod"');
+    });
+
+    test('Required alone does not require a default value', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('env');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Environment');
+        await page.locator('#ra-attr-required').check();
+
+        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toHaveCount(0);
+        await expect(page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+    });
+
     test('Free input value source shows Read Only and hides List/Multi select', async ({ mount, page }) => {
         await mount(<RequestAttributeAuthoringEditorHarness />);
 

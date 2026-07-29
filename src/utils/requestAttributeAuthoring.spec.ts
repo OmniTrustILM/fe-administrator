@@ -26,6 +26,7 @@ import {
     hasAuthoredRequestAttributes,
     isAuthoredAttributeMappingValid,
     isAuthoredAttributeValid,
+    isReadOnlyDefaultValid,
     isStaticListSupportedForContentType,
     isValueSourceBindingValid,
     parseAuthoredAttributeDto,
@@ -425,6 +426,63 @@ describe('requestAttributeAuthoring', () => {
                     ...baseAttr(),
                     valueSourceType: ValueSourceType.StaticList,
                     staticValues: ['prod', 'staging'],
+                }),
+            ).toBe(true);
+        });
+    });
+
+    describe('required + read only needs a default value', () => {
+        const freeInput = (over: Partial<AuthoredAttributeFormValues>): AuthoredAttributeFormValues => ({
+            ...baseAttr(),
+            valueSourceType: ValueSourceType.None,
+            ...over,
+        });
+
+        test('required + read only with no default value is invalid', () => {
+            const attr = freeInput({ required: true, readOnly: true, defaultValue: undefined });
+            expect(isReadOnlyDefaultValid(attr)).toBe(false);
+            expect(isAuthoredAttributeValid(attr)).toBe(false);
+        });
+
+        test('required + read only with a blank default value is invalid', () => {
+            expect(isReadOnlyDefaultValid(freeInput({ required: true, readOnly: true, defaultValue: '   ' }))).toBe(false);
+        });
+
+        test('required + read only with a default value is valid', () => {
+            const attr = freeInput({ required: true, readOnly: true, defaultValue: 'srv.example.com' });
+            expect(isReadOnlyDefaultValid(attr)).toBe(true);
+            expect(isAuthoredAttributeValid(attr)).toBe(true);
+        });
+
+        test('a falsy but present default value counts as a default', () => {
+            expect(
+                isReadOnlyDefaultValid(
+                    freeInput({ contentType: AttributeContentType.Boolean, required: true, readOnly: true, defaultValue: false }),
+                ),
+            ).toBe(true);
+            expect(
+                isReadOnlyDefaultValid(
+                    freeInput({ contentType: AttributeContentType.Integer, required: true, readOnly: true, defaultValue: 0 }),
+                ),
+            ).toBe(true);
+        });
+
+        test('read only without required needs no default value', () => {
+            expect(isReadOnlyDefaultValid(freeInput({ required: false, readOnly: true, defaultValue: undefined }))).toBe(true);
+        });
+
+        test('required without read only needs no default value', () => {
+            expect(isReadOnlyDefaultValid(freeInput({ required: true, readOnly: false, defaultValue: undefined }))).toBe(true);
+        });
+
+        test('a static list source is not subject to the default-value rule', () => {
+            expect(
+                isReadOnlyDefaultValid({
+                    ...baseAttr(),
+                    valueSourceType: ValueSourceType.StaticList,
+                    required: true,
+                    readOnly: true,
+                    staticValues: ['prod'],
                 }),
             ).toBe(true);
         });
