@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../../../../../playwright/ct-test';
 import { testInitialState } from 'ducks/test-reducers';
 import type { AttributeDescriptorModel } from 'types/attributes';
@@ -27,6 +28,26 @@ const certificateWithKeyButNoPrivateKey: CertificateDetailResponseModel = {
     privateKeyAvailability: false,
 } as CertificateDetailResponseModel;
 
+const certificateWithoutKey: CertificateDetailResponseModel = {
+    ...certificateWithPrivateKey,
+    key: undefined,
+    privateKeyAvailability: false,
+} as CertificateDetailResponseModel;
+
+async function getDocumentOrder(page: Page, testIds: string[]) {
+    return page.evaluate(
+        (ids) =>
+            ids
+                .map((testId) => ({ testId, element: document.querySelector(`[data-testid="${testId}"]`) }))
+                .sort((a, b) => {
+                    if (!a.element || !b.element) throw new Error(`Missing element for ${!a.element ? a.testId : b.testId}`);
+                    return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+                })
+                .map(({ testId }) => testId),
+        testIds,
+    );
+}
+
 test.describe('CertificateRevokeDialog', () => {
     test('renders the revocation reason selector', async ({ mount, page }) => {
         await mount(<CertificateRevokeDialogTestWrapper />);
@@ -45,8 +66,8 @@ test.describe('CertificateRevokeDialog', () => {
         await expect(page.getByTestId('text-input-__attributes__revoke__.revokeField')).toBeVisible();
     });
 
-    test('hides destroyKey switch when the certificate has no associated key', async ({ mount, page }) => {
-        await mount(<CertificateRevokeDialogTestWrapper />);
+    test('hides destroyKey switch when the certificate has no key and no private key available', async ({ mount, page }) => {
+        await mount(<CertificateRevokeDialogTestWrapper certificate={certificateWithoutKey} />);
         await expect(page.getByTestId('switch-destroyKey')).toHaveCount(0);
     });
 
@@ -71,18 +92,18 @@ test.describe('CertificateRevokeDialog', () => {
             />,
         );
 
-        const reason = page.getByTestId('select-revokeReason-trigger');
-        const destroyKey = page.getByTestId('switch-destroyKey');
-        const attribute = page.getByTestId('text-input-__attributes__revoke__.revokeField');
-        await expect(reason).toBeVisible();
-        await expect(destroyKey).toBeVisible();
-        await expect(attribute).toBeVisible();
+        const reasonTestId = 'select-revokeReason-trigger';
+        const destroyKeyTestId = 'switch-destroyKey';
+        const attributeTestId = 'text-input-__attributes__revoke__.revokeField';
+        await expect(page.getByTestId(reasonTestId)).toBeVisible();
+        await expect(page.getByTestId(destroyKeyTestId)).toBeVisible();
+        await expect(page.getByTestId(attributeTestId)).toBeVisible();
 
-        const [reasonTop, destroyKeyTop, attributeTop] = await Promise.all(
-            [reason, destroyKey, attribute].map(async (locator) => (await locator.boundingBox())?.y ?? 0),
-        );
-        expect(reasonTop).toBeLessThan(destroyKeyTop);
-        expect(destroyKeyTop).toBeLessThan(attributeTop);
+        expect(await getDocumentOrder(page, [attributeTestId, reasonTestId, destroyKeyTestId])).toEqual([
+            reasonTestId,
+            destroyKeyTestId,
+            attributeTestId,
+        ]);
     });
 
     test('closes the dialog on submit (reason-only path)', async ({ mount, page }) => {
