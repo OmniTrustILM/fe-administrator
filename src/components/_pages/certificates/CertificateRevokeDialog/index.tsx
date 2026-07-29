@@ -72,7 +72,7 @@ export default function CertificateRevokeDialog({ certificate, onClose }: Props)
                             [...revocationAttributes, ...groupAttributesCallbackAttributes],
                             values as FieldValues,
                         ),
-                        destroyKey: certificate.key ? !!values.destroyKey : undefined,
+                        destroyKey: certificate.privateKeyAvailability ? !!values.destroyKey : undefined,
                     },
                     raProfileUuid: raProfileUuid || '',
                     authorityUuid: authorityUuid || '',
@@ -105,18 +105,7 @@ export default function CertificateRevokeDialog({ certificate, onClose }: Props)
                             )}
                         />
 
-                        {!isFetchingRevocationAttributes && revocationAttributes.length > 0 && (
-                            <AttributeEditor
-                                id="revoke"
-                                attributeDescriptors={revocationAttributes}
-                                callbackParentUuid={raProfileUuid}
-                                callbackResource={Resource.Certificates}
-                                groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
-                                setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
-                            />
-                        )}
-
-                        {certificate.key && (
+                        {certificate.privateKeyAvailability && (
                             <Controller
                                 name="destroyKey"
                                 control={control}
@@ -128,6 +117,17 @@ export default function CertificateRevokeDialog({ certificate, onClose }: Props)
                                         onChange={field.onChange}
                                     />
                                 )}
+                            />
+                        )}
+
+                        {!isFetchingRevocationAttributes && revocationAttributes.length > 0 && (
+                            <AttributeEditor
+                                id="revoke"
+                                attributeDescriptors={revocationAttributes}
+                                callbackParentUuid={raProfileUuid}
+                                callbackResource={Resource.Certificates}
+                                groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
+                                setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                             />
                         )}
 
