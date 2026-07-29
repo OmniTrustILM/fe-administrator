@@ -517,7 +517,14 @@ function alertsTestReducer(state: AlertsTestState = alertsTestInitialState, acti
     return state;
 }
 
-type PagingObject = { totalItems: number; checkedRows: string[]; isFetchingList: boolean; pageNumber: number; pageSize: number };
+type PagingObject = {
+    totalItems: number;
+    checkedRows: string[];
+    isFetchingList: boolean;
+    pageNumber: number;
+    pageSize: number;
+    filtersSnapshot?: string;
+};
 type PagingEntry = { entity: number; paging: PagingObject };
 
 export type PagingsTestState = { pagings: PagingEntry[] };
