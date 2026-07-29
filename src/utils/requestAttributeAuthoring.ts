@@ -405,7 +405,7 @@ export function hasDuplicateStaticValues(values: (string | number | boolean)[]):
     return false;
 }
 
-const BOOLEAN_LITERALS = ['true', 'false'];
+const BOOLEAN_LITERALS = new Set(['true', 'false']);
 
 /** Blank counts as "no value" (left to the required-ness rules); otherwise guards `normalizeStaticContentValue`, which turns `"abc"` into `0`. */
 export function isValueValidForContentType(value: string | number | boolean, contentType: AttributeContentType): boolean {
@@ -417,10 +417,10 @@ export function isValueValidForContentType(value: string | number | boolean, con
         case AttributeContentType.Integer:
             return typeof raw === 'number' ? Number.isInteger(raw) : /^[+-]?\d+$/.test(String(raw));
         case AttributeContentType.Float:
-            return typeof raw === 'number' ? Number.isFinite(raw) : /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(String(raw));
+            return typeof raw === 'number' ? Number.isFinite(raw) : /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(String(raw));
         case AttributeContentType.Boolean:
             // Case-insensitive to match normalizeStaticContentValue, which lowercases before comparing.
-            return typeof raw === 'boolean' || BOOLEAN_LITERALS.includes(String(raw).toLowerCase());
+            return typeof raw === 'boolean' || BOOLEAN_LITERALS.has(String(raw).toLowerCase());
         case AttributeContentType.Date:
             return /^\d{4}-\d{2}-\d{2}$/.test(String(raw)) && !Number.isNaN(Date.parse(`${raw}T00:00:00`));
         case AttributeContentType.Time:
@@ -449,49 +449,51 @@ export interface AuthoredAttributeErrors {
     staticValues?: string;
 }
 
-/** The rules Core enforces on a definition, applied client-side so the dialog can flag them per field. */
-export function validateAuthoredAttribute(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
+function validateSanMapping(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
+    if (!form.mappingGeneralNameType) {
+        return { mappingGeneralNameType: 'Select the SAN type this attribute maps to.' };
+    }
+    if (form.mappingGeneralNameType !== GeneralNameType.OtherName) {
+        return {};
+    }
     const errors: AuthoredAttributeErrors = {};
-
-    if (!form.name.trim()) {
-        errors.name = 'Name is required.';
+    if (!form.mappingOtherNameOid?.trim()) {
+        errors.mappingOtherNameOid = 'An otherName OID is required.';
     }
-    if (!form.label.trim()) {
-        errors.label = 'Label is required.';
+    if (!form.mappingOtherNameEncoding) {
+        errors.mappingOtherNameEncoding = 'An otherName value encoding is required.';
     }
+    return errors;
+}
 
-    if (form.mappingFieldType) {
-        if (!isContentTypeAllowedForMapping(form.contentType)) {
-            errors.contentType = 'A mapped request attribute must use content type String or Text.';
-        }
-        switch (form.mappingFieldType) {
-            case FieldType.Rdn:
-                if (!form.mappingRdnCode?.trim()) {
-                    errors.mappingRdnCode = 'Select the RDN this attribute maps to.';
-                }
-                break;
-            case FieldType.San:
-                if (!form.mappingGeneralNameType) {
-                    errors.mappingGeneralNameType = 'Select the SAN type this attribute maps to.';
-                } else if (form.mappingGeneralNameType === GeneralNameType.OtherName) {
-                    if (!form.mappingOtherNameOid?.trim()) {
-                        errors.mappingOtherNameOid = 'An otherName OID is required.';
-                    }
-                    if (!form.mappingOtherNameEncoding) {
-                        errors.mappingOtherNameEncoding = 'An otherName value encoding is required.';
-                    }
-                }
-                break;
-            case FieldType.Extension:
-                if (!form.mappingExtensionOid?.trim()) {
-                    errors.mappingExtensionOid = 'Select the certificate extension this attribute maps to.';
-                }
-                break;
-        }
-    } else {
-        errors.mappingFieldType = 'A mapping target is required — pick where this attribute lands in the certificate.';
+function validateMapping(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
+    if (!form.mappingFieldType) {
+        return { mappingFieldType: 'A mapping target is required — pick where this attribute lands in the certificate.' };
     }
+    const errors: AuthoredAttributeErrors = {};
+    if (!isContentTypeAllowedForMapping(form.contentType)) {
+        errors.contentType = 'A mapped request attribute must use content type String or Text.';
+    }
+    switch (form.mappingFieldType) {
+        case FieldType.Rdn:
+            if (!form.mappingRdnCode?.trim()) {
+                errors.mappingRdnCode = 'Select the RDN this attribute maps to.';
+            }
+            break;
+        case FieldType.San:
+            Object.assign(errors, validateSanMapping(form));
+            break;
+        case FieldType.Extension:
+            if (!form.mappingExtensionOid?.trim()) {
+                errors.mappingExtensionOid = 'Select the certificate extension this attribute maps to.';
+            }
+            break;
+    }
+    return errors;
+}
 
+function validateProperties(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
+    const errors: AuthoredAttributeErrors = {};
     const isList = form.list || form.valueSourceType === ValueSourceType.StaticList;
     if (form.readOnly) {
         if (isList) {
@@ -503,30 +505,59 @@ export function validateAuthoredAttribute(form: AuthoredAttributeFormValues): Au
     if (form.multiSelect && !isList) {
         errors.multiSelect = 'Multi select requires a list.';
     }
-
-    const { defaultValue } = form;
-    if (
-        form.valueSourceType === ValueSourceType.None &&
-        defaultValue !== undefined &&
-        hasFreeInputDefault(form) &&
-        !isValueValidForContentType(defaultValue, form.contentType)
-    ) {
-        errors.defaultValue = `The default value is not a valid ${form.contentType} value.`;
-    }
-
-    if (form.valueSourceType === ValueSourceType.StaticList) {
-        if (form.staticValues.length === 0) {
-            errors.staticValues = 'Add at least one value for the static list.';
-        } else if (form.staticValues.some((v) => typeof v === 'string' && v.trim() === '')) {
-            errors.staticValues = 'Static list values cannot be blank.';
-        } else if (hasDuplicateStaticValues(form.staticValues)) {
-            errors.staticValues = 'Static list values must be unique.';
-        } else if (form.staticValues.some((v) => !isValueValidForContentType(v, form.contentType))) {
-            errors.staticValues = `Every static list value must be a valid ${form.contentType} value.`;
-        }
-    }
-
     return errors;
+}
+
+function validateDefaultValue(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
+    const { defaultValue } = form;
+    if (form.valueSourceType !== ValueSourceType.None || defaultValue === undefined || !hasFreeInputDefault(form)) {
+        return {};
+    }
+    if (isValueValidForContentType(defaultValue, form.contentType)) {
+        return {};
+    }
+    return { defaultValue: `The default value is not a valid ${form.contentType} value.` };
+}
+
+function validateStaticList(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
+    if (form.valueSourceType !== ValueSourceType.StaticList) {
+        return {};
+    }
+    const { staticValues, contentType } = form;
+    if (staticValues.length === 0) {
+        return { staticValues: 'Add at least one value for the static list.' };
+    }
+    if (staticValues.some((v) => typeof v === 'string' && v.trim() === '')) {
+        return { staticValues: 'Static list values cannot be blank.' };
+    }
+    if (hasDuplicateStaticValues(staticValues)) {
+        return { staticValues: 'Static list values must be unique.' };
+    }
+    if (staticValues.some((v) => !isValueValidForContentType(v, contentType))) {
+        return { staticValues: `Every static list value must be a valid ${contentType} value.` };
+    }
+    return {};
+}
+
+/**
+ * The rules Core enforces on a definition, applied client-side so the dialog can flag them per field.
+ * Spread order fixes the key order, which the attribute list relies on to show the first message.
+ */
+export function validateAuthoredAttribute(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
+    const identity: AuthoredAttributeErrors = {};
+    if (!form.name.trim()) {
+        identity.name = 'Name is required.';
+    }
+    if (!form.label.trim()) {
+        identity.label = 'Label is required.';
+    }
+    return {
+        ...identity,
+        ...validateMapping(form),
+        ...validateProperties(form),
+        ...validateDefaultValue(form),
+        ...validateStaticList(form),
+    };
 }
 
 export function isValueSourceBindingValid(form: ValueSourceBindingFormValues): boolean {

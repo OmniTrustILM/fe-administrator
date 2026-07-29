@@ -417,6 +417,13 @@ describe('requestAttributeAuthoring', () => {
             expect(validateAuthoredAttribute({ ...mappedAttr(), label: '' }).label).toBeTruthy();
         });
 
+        // The attribute list shows Object.values(errors)[0] as the row's marker, so identity errors must
+        // keep coming first however the rule checks are split up internally.
+        test('reports the missing name before the missing mapping', () => {
+            const errors = validateAuthoredAttribute({ ...baseAttr(), name: '', label: '' });
+            expect(Object.keys(errors)).toEqual(['name', 'label', 'mappingFieldType']);
+        });
+
         test('a mapping target is required', () => {
             expect(validateAuthoredAttribute(baseAttr()).mappingFieldType).toBeTruthy();
         });
