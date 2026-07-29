@@ -370,10 +370,20 @@ describe('requestAttributeAuthoring', () => {
             expect(isValueValidForContentType('abc', AttributeContentType.Float)).toBe(false);
         });
 
-        test('boolean accepts only booleans and their literal spellings', () => {
+        test('boolean accepts only booleans and their literal spellings, in any case', () => {
             expect(isValueValidForContentType(true, AttributeContentType.Boolean)).toBe(true);
             expect(isValueValidForContentType('false', AttributeContentType.Boolean)).toBe(true);
             expect(isValueValidForContentType('yes', AttributeContentType.Boolean)).toBe(false);
+
+            // Persisting lowercases before comparing, so validation must not be stricter than that.
+            expect(isValueValidForContentType('TRUE', AttributeContentType.Boolean)).toBe(true);
+            const dto = buildAuthoredAttributeDto({
+                ...baseAttr(),
+                contentType: AttributeContentType.Boolean,
+                valueSourceType: ValueSourceType.StaticList,
+                staticValues: ['TRUE'],
+            });
+            expect(dto.content).toEqual([{ data: true, contentType: AttributeContentType.Boolean }]);
         });
 
         test('date / time / datetime are format-checked', () => {

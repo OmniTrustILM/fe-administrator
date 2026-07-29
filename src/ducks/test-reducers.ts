@@ -688,7 +688,7 @@ function raProfileRequestAttributesTestReducer(
     // Mirror the real slice's pending flag so CT can observe that a save was dispatched. CT runs no
     // epics, so the flag stays true — enough to assert the auto-save fired and disabled the editor.
     if (action.type === 'raProfileRequestAttributes/updatePlatformDefaultRequestAttributes') {
-        return { ...current, isUpdatingDefaultSet: true, updateDefaultSetError: undefined };
+        return { ...current, isUpdatingDefaultSet: true, updateDefaultSetSucceeded: false, updateDefaultSetError: undefined };
     }
     if (action.type === 'raProfileRequestAttributes/updateRaProfileRequestAttributes') {
         return { ...current, isUpdatingRaProfileSet: true, updateRaProfileSetSucceeded: false, updateRaProfileSetError: undefined };

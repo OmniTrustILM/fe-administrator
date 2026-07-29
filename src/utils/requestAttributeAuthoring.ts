@@ -405,6 +405,8 @@ export function hasDuplicateStaticValues(values: (string | number | boolean)[]):
     return false;
 }
 
+const BOOLEAN_LITERALS = ['true', 'false'];
+
 /** Blank counts as "no value" (left to the required-ness rules); otherwise guards `normalizeStaticContentValue`, which turns `"abc"` into `0`. */
 export function isValueValidForContentType(value: string | number | boolean, contentType: AttributeContentType): boolean {
     if (typeof value === 'string' && value.trim() === '') {
@@ -417,7 +419,8 @@ export function isValueValidForContentType(value: string | number | boolean, con
         case AttributeContentType.Float:
             return typeof raw === 'number' ? Number.isFinite(raw) : /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(String(raw));
         case AttributeContentType.Boolean:
-            return typeof raw === 'boolean' || raw === 'true' || raw === 'false';
+            // Case-insensitive to match normalizeStaticContentValue, which lowercases before comparing.
+            return typeof raw === 'boolean' || BOOLEAN_LITERALS.includes(String(raw).toLowerCase());
         case AttributeContentType.Date:
             return /^\d{4}-\d{2}-\d{2}$/.test(String(raw)) && !Number.isNaN(Date.parse(`${raw}T00:00:00`));
         case AttributeContentType.Time:
