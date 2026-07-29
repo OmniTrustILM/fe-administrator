@@ -1,13 +1,11 @@
 import ExternalCsrValidationRadio from 'components/RequestAttributes/ExternalCsrValidationRadio';
 import Label from 'components/Label';
 import RequestAttributeAuthoringEditor from 'components/RequestAttributes/RequestAttributeAuthoringEditor';
+import { useOidMappingOptions } from 'components/RequestAttributes/useOidMappingOptions';
 import Widget from 'components/Widget';
-import { actions as oidActions, selectors as oidSelectors } from 'ducks/oids';
 import { actions, selectors } from 'ducks/raProfileRequestAttributes';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { OidCategory } from 'types/openapi';
-import { toOidSelectOptions } from 'utils/oid';
 import {
     buildPlatformDefaultUpdateDto,
     emptyAuthoringForm,
@@ -26,12 +24,8 @@ export default function RequestAttributesSettings() {
     const defaultSet = useSelector(selectors.defaultSet);
     const isFetching = useSelector(selectors.isFetchingDefaultSet);
     const isUpdating = useSelector(selectors.isUpdatingDefaultSet);
-    const oidsByCategory = useSelector(oidSelectors.oidsByCategory);
-    const oidsByCategoryError = useSelector(oidSelectors.oidsByCategoryError);
-    const oidsByCategoryLoaded = useSelector(oidSelectors.oidsByCategoryLoaded);
-    const systemOidsByCategory = useSelector(oidSelectors.systemOidsByCategory);
-    const systemOidsError = useSelector(oidSelectors.systemOidsError);
-    const systemOidsLoaded = useSelector(oidSelectors.systemOidsLoaded);
+    const { rdnOptions, extensionOptions, rdnOptionsError, extensionOptionsError, rdnOptionsLoaded, extensionOptionsLoaded } =
+        useOidMappingOptions();
 
     const [form, setForm] = useState<RequestAttributeAuthoringFormValues>(emptyAuthoringForm());
     const [loaded, setLoaded] = useState(false);
@@ -39,30 +33,6 @@ export default function RequestAttributesSettings() {
     useEffect(() => {
         dispatch(actions.getPlatformDefaultRequestAttributes());
     }, [dispatch]);
-
-    useEffect(() => {
-        dispatch(oidActions.listOidsByCategory({ category: OidCategory.RdnAttributeType }));
-        dispatch(oidActions.listOidsByCategory({ category: OidCategory.CertificateExtension }));
-        // Standard RDNs (CN, O, OU, …) live in the backend SystemOid enum, not in /v1/oids/list — the
-        // cached system list is merged into the RDN dropdown below. (No system certificateExtension entries.)
-        dispatch(oidActions.listSystemOids());
-    }, [dispatch]);
-
-    // RDN target merges built-in system RDNs with custom ones; the two lists are disjoint by construction
-    // (the backend rejects a custom OID that shadows a system OID), so no dedupe is needed.
-    const rdnOptions = useMemo(
-        () =>
-            toOidSelectOptions([
-                ...(systemOidsByCategory[OidCategory.RdnAttributeType] ?? []),
-                ...(oidsByCategory[OidCategory.RdnAttributeType] ?? []),
-            ]),
-        [systemOidsByCategory, oidsByCategory],
-    );
-    const extensionOptions = useMemo(() => toOidSelectOptions(oidsByCategory[OidCategory.CertificateExtension] ?? []), [oidsByCategory]);
-    const rdnOptionsError = !!oidsByCategoryError[OidCategory.RdnAttributeType] || systemOidsError;
-    const extensionOptionsError = !!oidsByCategoryError[OidCategory.CertificateExtension];
-    const rdnOptionsLoaded = !!oidsByCategoryLoaded[OidCategory.RdnAttributeType] && systemOidsLoaded;
-    const extensionOptionsLoaded = !!oidsByCategoryLoaded[OidCategory.CertificateExtension];
 
     // Seed the form once, on the undefined → defined transition of the fetched set. Re-seeding on
     // every `defaultSet` reference change would clobber in-progress edits when a late fetch resolves.

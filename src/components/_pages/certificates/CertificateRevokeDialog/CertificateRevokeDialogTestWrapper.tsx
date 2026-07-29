@@ -24,6 +24,7 @@ const baseCertificate: CertificateDetailResponseModel = {
         name: 'Test RA Profile',
         authorityInstanceUuid: 'authority-uuid',
     },
+    privateKeyAvailability: false,
 } as CertificateDetailResponseModel;
 
 /**

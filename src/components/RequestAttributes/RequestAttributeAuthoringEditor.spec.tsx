@@ -198,7 +198,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await component.getByTestId('request-attribute-authoring-attribute-edit').click();
         // The synthetic off-list option keeps the Select usable, but the load error is still surfaced
         // so the user knows the dropdown is missing its fetched entries.
-        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('CN (not in Custom OIDs)');
+        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('CN (not registered)');
         await expect(page.getByTestId('request-attribute-authoring-rdn-error')).toBeVisible();
     });
 
@@ -225,9 +225,50 @@ test.describe('RequestAttributeAuthoringEditor', () => {
             ),
         );
         await component.getByTestId('request-attribute-authoring-attribute-edit').click();
-        // No custom OID lists code `CN` (a standard RDN in the backend SystemOid enum), so the stored
-        // value stays selectable via a synthetic off-list option rather than being silently dropped.
-        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('CN (not in Custom OIDs)');
+        // Neither the system registry nor the custom list contains code `CN` in this test, so the
+        // stored value stays selectable via a synthetic off-list option rather than being silently dropped.
+        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('CN (not registered)');
+    });
+
+    test('the RDN dropdown shows each option description, and the selected one as help text', async ({ mount, page }) => {
+        const component = await mount(
+            withProviders(
+                <RequestAttributeAuthoringEditorHarness
+                    showMergeMode
+                    rdnOptions={[
+                        {
+                            value: '2.5.4.4',
+                            label: 'Surname (SN)',
+                            code: 'SN',
+                            description: 'Surname (family name). Not a serial number — use SERIALNUMBER for that.',
+                        },
+                        {
+                            value: '2.5.4.5',
+                            label: 'Serial Number (SERIALNUMBER)',
+                            code: 'SERIALNUMBER',
+                            description:
+                                "Subject serial number, e.g. a device serial. Not the certificate's serial number, and not SN (surname).",
+                        },
+                    ]}
+                />,
+            ),
+        );
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'RDN (subject)' }).click();
+        await page.getByTestId('select-ra-attr-rdn-trigger').click();
+
+        // Both descriptions are visible while the list is open, so the confusable pair can be told apart
+        // before picking. Regexes are case-sensitive, so each only matches its own option.
+        await expect(page.getByRole('option', { name: /Surname \(SN\)/ })).toContainText('Not a serial number');
+        await expect(page.getByRole('option', { name: /Serial Number \(SERIALNUMBER\)/ })).toContainText(
+            "Not the certificate's serial number",
+        );
+
+        // …and the description survives collapsing the list, where only the label would otherwise show.
+        await page.getByRole('option', { name: /Surname \(SN\)/ }).click();
+        await expect(page.getByTestId('select-ra-attr-rdn-selected-description')).toContainText('Not a serial number');
     });
 
     test('reconciles a legacy RDN code against a custom OID that lists it as an alias', async ({ mount, page }) => {
@@ -256,7 +297,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await component.getByTestId('request-attribute-authoring-attribute-edit').click();
         // The alias resolves the stored code to the real option instead of showing it as off-list.
         await expect(page.getByTestId('select-ra-attr-rdn-trigger')).toContainText('Common Name');
-        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).not.toContainText('not in Custom OIDs');
+        await expect(page.getByTestId('select-ra-attr-rdn-trigger')).not.toContainText('not registered');
     });
 
     test('static list source requires at least one value, then persists the values', async ({ mount, page }) => {

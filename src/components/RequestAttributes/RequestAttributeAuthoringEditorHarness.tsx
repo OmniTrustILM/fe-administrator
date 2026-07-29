@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import type { OidSelectOption } from 'utils/oid';
 import { emptyAuthoringForm, type RequestAttributeAuthoringFormValues } from 'utils/requestAttributeAuthoring';
-import RequestAttributeAuthoringEditor, { type OidSelectOption } from './RequestAttributeAuthoringEditor';
+import RequestAttributeAuthoringEditor from './RequestAttributeAuthoringEditor';
 
 type Props = Readonly<{
     initialValue?: RequestAttributeAuthoringFormValues;
