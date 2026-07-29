@@ -1,5 +1,5 @@
 import { act } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 
 import CredentialList from './index';
@@ -82,6 +82,14 @@ describe('CredentialList credential provider cell', () => {
         } as unknown as Parameters<typeof useSelectorMock>[0];
 
         useSelectorMock.mockImplementation((selector: (state: unknown) => unknown) => selector(state));
+    });
+
+    afterEach(() => {
+        act(() => {
+            root.unmount();
+        });
+        container.remove();
+        vi.clearAllMocks();
     });
 
     it('links the provider when the connector uuid is known', async () => {
