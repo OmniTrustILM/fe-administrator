@@ -3,29 +3,19 @@ import { useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import { PlatformEnum, Resource, ResourceEvent, TriggerType } from 'types/openapi';
+import type { TriggerModel } from 'types/rules';
 import { createMockStore } from 'utils/test-helpers';
 import TriggerEditorWidget from './index';
-
-type TriggerFixture = {
-    uuid: string;
-    name: string;
-    resource: Resource;
-    ignoreTrigger: boolean;
-    type?: TriggerType;
-    event?: ResourceEvent;
-    description?: string;
-};
 
 export type TriggerEditorWidgetWithStoreProps = Readonly<{
     resource?: Resource;
     event?: ResourceEvent;
-    triggers?: TriggerFixture[];
+    triggers?: TriggerModel[];
     initialSelectedTriggers?: string[];
 }>;
 
-// Two event-bound triggers on the Certificate Discovered event, one bound to a different event, and
-// one with no event at all — the shape the backend returns for a resource that has both kinds.
-const defaultTriggers: TriggerFixture[] = [
+// The shape the backend returns for a resource that has both event-bound and unbound triggers.
+const defaultTriggers: TriggerModel[] = [
     {
         uuid: 'trigger-event-bound',
         name: 'Event Bound Trigger',

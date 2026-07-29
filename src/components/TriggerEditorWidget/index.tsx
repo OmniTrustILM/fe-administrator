@@ -43,13 +43,20 @@ export default function TriggerEditorWidget({ resource, event, selectedTriggers,
             triggers
                 // A trigger with no event of its own is not bound to any single event and stays assignable
                 // to every event of its resource; one bound to a different event must not be offered here.
-                .filter((trigger) => event === undefined || trigger.event === undefined || trigger.event === event)
+                // The resource check is not redundant: `triggers` still holds the previous consumer's list
+                // until the listTriggers dispatched below resolves, and event-less triggers are not
+                // otherwise constrained to the event's resource.
+                .filter(
+                    (trigger) =>
+                        (resource === undefined || trigger.resource === resource) &&
+                        (event === undefined || trigger.event === undefined || trigger.event === event),
+                )
                 .map((trigger) => ({
                     label: trigger.name,
                     value: trigger.uuid,
                 }))
                 .filter((trigger) => !selectedTriggers.includes(trigger.value)),
-        [triggers, selectedTriggers, event],
+        [triggers, selectedTriggers, event, resource],
     );
 
     const isBusy = useMemo(() => isFetchingTriggers, [isFetchingTriggers]);
