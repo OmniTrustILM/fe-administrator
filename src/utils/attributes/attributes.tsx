@@ -103,6 +103,14 @@ export const getAttributeCopyValue = (contentType: AttributeContentType, content
     return content.map(mapping).join(', ');
 };
 
+/**
+ * Content types whose editor widget is a plain text input, so the form value it holds is submitted
+ * verbatim as `data`. These must be seeded from `data` — seeding the human-readable `reference`
+ * would write the label back as the stored value on the next save.
+ */
+export const isFreeTextContentType = (contentType: AttributeContentType) =>
+    contentType === AttributeContentType.String || contentType === AttributeContentType.Text;
+
 export const getAttributeContent = (contentType: AttributeContentType, content: BaseAttributeContentModel[] | undefined) => {
     if (!content) return 'Not set';
 
@@ -486,14 +494,18 @@ export const testAttributeSetFunction = (
     } else if (descriptor.properties?.list) {
         setSelectListAttributeValue();
     } else if (appliedContent) {
-        formAttributeValue = appliedContent[0].reference ?? appliedContent[0].data;
+        formAttributeValue = isFreeTextContentType(descriptor.contentType)
+            ? (appliedContent[0].data ?? appliedContent[0].reference)
+            : (appliedContent[0].reference ?? appliedContent[0].data);
     } else if (
         descriptor.content &&
         descriptor.content.length > 0 &&
         descriptor.contentType !== AttributeContentType.Resource &&
         (!setDefaultOnRequiredValuesOnly || descriptor.properties.required)
     ) {
-        formAttributeValue = descriptor.content[0].reference ?? descriptor.content[0].data;
+        formAttributeValue = isFreeTextContentType(descriptor.contentType)
+            ? (descriptor.content[0].data ?? descriptor.content[0].reference)
+            : (descriptor.content[0].reference ?? descriptor.content[0].data);
     }
 
     if (descriptor.contentType === AttributeContentType.Codeblock && formAttributeValue !== undefined) {

@@ -12,7 +12,7 @@ import Badge from 'components/Badge';
 import { EnumValueDescription } from 'components/EnumDescription';
 import { PlatformEnum, Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { getAttributeContent } from 'utils/attributes/attributes';
+import { getAttributeContent, getAttributeCopyValue } from 'utils/attributes/attributes';
 import { useCopyToClipboard } from 'utils/common-hooks';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
@@ -121,12 +121,10 @@ export default function CustomAttributeDetail() {
     const copyToClipboard = useCopyToClipboard();
 
     const onContentCopyClick = useCallback(() => {
-        if (!customAttribute) return;
-        let textToCopy = '';
-
         if (!customAttribute?.content?.length) return;
-        if (customAttribute.content.length > 1) textToCopy = customAttribute.content?.map((content) => content.data).join(', ');
-        if (customAttribute.content.length === 1) textToCopy = customAttribute.content[0].data.toString();
+
+        const textToCopy = getAttributeCopyValue(customAttribute.contentType, customAttribute.content);
+        if (!textToCopy) return;
 
         copyToClipboard(textToCopy, 'Custom Attribute content was copied to clipboard', 'Failed to Custom Attribute content to clipboard');
     }, [customAttribute, copyToClipboard]);
