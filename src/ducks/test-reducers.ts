@@ -945,6 +945,53 @@ function discoveriesTestReducer(state: DiscoveriesTestState = discoveriesTestIni
     return state;
 }
 
+// Reducer key must match the real slice.name ('rules') so the real rules selectors (used by
+// TriggerEditorWidget) read this state. The real `state` selector has no `?? initialState` fallback,
+// so every field a selector touches must be present here.
+export type RulesTestState = {
+    rules: any[];
+    triggerHistories: any[];
+    triggerHistorySummary?: any;
+    eventTriggerAssociation?: Record<string, string[]>;
+    ruleDetails?: any;
+    executions: any[];
+    executionDetails?: any;
+    actionsList: any[];
+    actionDetails?: any;
+    conditions: any[];
+    conditionDetails?: any;
+    triggers: any[];
+    triggerDetails?: any;
+    isFetchingTriggers: boolean;
+    isFetchingEventTriggersAssociation: boolean;
+    isUpdatingEventTriggersAssociation: boolean;
+    associateEventTriggersSucceeded: boolean;
+};
+
+const rulesTestInitialState: RulesTestState = {
+    rules: [],
+    triggerHistories: [],
+    triggerHistorySummary: undefined,
+    eventTriggerAssociation: undefined,
+    ruleDetails: undefined,
+    executions: [],
+    executionDetails: undefined,
+    actionsList: [],
+    actionDetails: undefined,
+    conditions: [],
+    conditionDetails: undefined,
+    triggers: [],
+    triggerDetails: undefined,
+    isFetchingTriggers: false,
+    isFetchingEventTriggersAssociation: false,
+    isUpdatingEventTriggersAssociation: false,
+    associateEventTriggersSucceeded: false,
+};
+
+function rulesTestReducer(state: RulesTestState | undefined, _action: UnknownAction): RulesTestState {
+    return state ?? rulesTestInitialState;
+}
+
 export const testReducers = combineReducers({
     raProfileRequestAttributes: raProfileRequestAttributesTestReducer,
     userInterface: userInterfaceTestReducer,
@@ -976,6 +1023,7 @@ export const testReducers = combineReducers({
     certificateGroups: certificateGroupsTestReducer,
     discoveries: discoveriesTestReducer,
     oids: oidsTestReducer,
+    rules: rulesTestReducer,
 });
 
 export const testInitialState = {
@@ -1009,4 +1057,5 @@ export const testInitialState = {
     certificateGroups: certificateGroupsTestInitialState,
     discoveries: discoveriesTestInitialState,
     oids: oidsTestInitialState,
+    rules: rulesTestInitialState,
 };

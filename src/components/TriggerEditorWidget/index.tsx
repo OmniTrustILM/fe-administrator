@@ -41,7 +41,9 @@ export default function TriggerEditorWidget({ resource, event, selectedTriggers,
     const newTriggerOptions = useMemo(
         () =>
             triggers
-                .filter((trigger) => event === undefined || trigger.event === event)
+                // A trigger with no event of its own is not bound to any single event and stays assignable
+                // to every event of its resource; one bound to a different event must not be offered here.
+                .filter((trigger) => event === undefined || trigger.event === undefined || trigger.event === event)
                 .map((trigger) => ({
                     label: trigger.name,
                     value: trigger.uuid,
