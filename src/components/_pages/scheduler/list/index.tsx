@@ -16,6 +16,7 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import type { SearchRequestModel } from 'types/certificate';
 import { PlatformEnum, SchedulerJobExecutionStatus } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { describeCronSchedule } from 'utils/cronSchedule';
 
 function SchedulerJobsList() {
     const dispatch = useDispatch();
@@ -76,7 +77,7 @@ function SchedulerJobsList() {
                 width: 'auto',
             },
             {
-                content: 'Cron Expression',
+                content: 'Cron Expression (UTC)',
                 id: 'cron',
                 width: '60%',
             },
@@ -126,7 +127,9 @@ function SchedulerJobsList() {
                         {schedulerJob.jobName}
                     </Link>,
                     schedulerJob.jobType,
-                    schedulerJob.cronExpression,
+                    <span key="cron" title={describeCronSchedule(schedulerJob.cronExpression)}>
+                        {schedulerJob.cronExpression}
+                    </span>,
                     <Badge
                         key="status"
                         color={(() => {
