@@ -225,7 +225,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         },
     });
 
-    const { control, handleSubmit, setValue, formState } = methods;
+    const { control, handleSubmit, setValue, clearErrors, formState } = methods;
 
     const combinedAttributeValues = useMemo(
         () =>
@@ -272,7 +272,10 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const requestType = useWatch({ control, name: 'requestType' });
     const isRegister = requestType === 'register';
     const authorizationSecret = useWatch({ control, name: 'authorizationSecret' });
-    const hasChallenge = !!authorizationSecret;
+    // Core decides with String.isBlank(), so an all-whitespace value creates no authorization row —
+    // treat it as unchallenged here too, or the operator would see a challenge-gated form for a
+    // pre-registration Core leaves open.
+    const hasChallenge = !!authorizationSecret?.trim();
 
     useEffect(() => {
         if (!selectedRaProfileUuid) {
@@ -314,8 +317,11 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         // entered and then abandoned must not survive clearing the challenge.
         if (!hasChallenge) {
             setValue('expiresAt', undefined);
+            // RHF skips validation for a disabled field, so an error from a date picked earlier would
+            // otherwise sit under the now-empty, unreachable input.
+            clearErrors('expiresAt');
         }
-    }, [hasChallenge, setValue]);
+    }, [hasChallenge, setValue, clearErrors]);
 
     useEffect(() => {
         // Owner/Groups options are only needed by the Pre-register Ownership tab; fetch them when that
@@ -439,7 +445,9 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                         raProfileUuid: profile.uuid,
                         authorityUuid: profile.authorityInstanceUuid,
                         registerRequest: {
-                            authorizationSecret: formValues.authorizationSecret || undefined,
+                            // Blank is "unchallenged" to Core (String.isBlank), so never ship a
+                            // whitespace-only secret that would silently create no authorization row.
+                            authorizationSecret: formValues.authorizationSecret?.trim() ? formValues.authorizationSecret : undefined,
                             expiresAt: formValues.expiresAt ? new Date(formValues.expiresAt).toISOString() : undefined,
                             csrAttributes: csrAttrs,
                             customAttributes: customAttrs,
@@ -717,9 +725,10 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         rules={{
                                             // Optional: Core creates the authorization row only when a secret is
                                             // supplied, so an empty value is a valid unchallenged pre-registration.
-                                            // Only a non-empty value is shape-checked.
+                                            // Core tests it with String.isBlank(), hence the trim — an all-space
+                                            // value passes the ASCII pattern but would create no row.
                                             validate: (value) =>
-                                                !value ||
+                                                !value?.trim() ||
                                                 (value.length >= 12 && value.length <= 255 && /^[\x20-\x7E]+$/.test(value)) ||
                                                 'Challenge must be 12–255 printable ASCII characters',
                                         }}
@@ -729,10 +738,11 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                 dataTestId="authorizationSecret"
                                                 type="password"
                                                 label="Challenge (optional)"
+                                                labelTooltip="Leave empty to pre-register without a challenge — completion will not require a secret"
                                                 value={value ?? ''}
                                                 onChange={onChange}
                                                 invalid={!!fieldState.error}
-                                                error={fieldState.error ? 'Challenge must be 12–255 printable ASCII characters' : undefined}
+                                                error={fieldState.error?.message}
                                             />
                                         )}
                                     />
@@ -760,7 +770,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                 value={value ?? ''}
                                                 onChange={onChange}
                                                 invalid={!!fieldState.error}
-                                                error={fieldState.error ? 'Issuance window must be a future date' : undefined}
+                                                error={fieldState.error?.message}
                                             />
                                         )}
                                     />

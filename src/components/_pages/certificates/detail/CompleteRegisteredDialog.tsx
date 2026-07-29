@@ -14,7 +14,7 @@ import { actions as certificateActions, selectors as certificateSelectors } from
 import { selectors as cryptographyOperationSelectors } from 'ducks/cryptographic-operations';
 import { actions as tokenProfileActions } from 'ducks/token-profiles';
 import type { CertificateDetailResponseModel } from 'types/certificate';
-import { CertificateRequestFormat } from 'types/openapi';
+import { CertificateRegistrationState, CertificateRequestFormat } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 
 type Props = Readonly<{
@@ -103,9 +103,11 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
 
     const isUploadSource = keySource !== 'existing';
 
-    // A challenge exists only when the pre-registration created an authorization row; without one Core
-    // ignores authorizationSecret, so there is nothing to ask for and nothing to gate submit on.
-    const hasChallenge = !!certificate.registration;
+    // A challenge is pending only while an authorization row exists *and* is still Active: Core verifies
+    // the secret for nothing else, so in every other case there is nothing to ask for and nothing to gate
+    // submit on. Matched to the same condition CertificateDetailsContent gates the Complete button on, so
+    // the dialog stays correct on its own rather than relying on that button never being relaxed.
+    const hasChallenge = certificate.registration?.state === CertificateRegistrationState.Active;
 
     const canSubmit = (!hasChallenge || !!authorizationSecret) && (isUploadSource ? !!csrContent : !!tokenProfileUuid && !!keyUuid);
 

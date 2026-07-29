@@ -406,8 +406,8 @@ export const slice = createSlice({
                 certificateUuid: string;
                 request: string;
                 format?: CertificateRequestFormat;
-                // Optional: a certificate pre-registered without a challenge has no secret to prove,
-                // and Core ignores the field for certificates without an active registration.
+                // A certificate pre-registered without a challenge has no secret to prove, and Core
+                // ignores the field for certificates without an active registration.
                 authorizationSecret?: string;
                 attributes?: Array<AttributeRequestModel>;
                 tokenProfileUuid?: string;

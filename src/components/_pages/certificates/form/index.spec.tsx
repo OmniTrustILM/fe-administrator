@@ -73,8 +73,7 @@ test.describe('CertificateForm', () => {
         const challengeInput = page.getByTestId('authorizationSecret');
         await expect(challengeInput).toHaveAttribute('type', 'password');
 
-        // Core treats authorizationSecret as optional — omitting it creates an unchallenged
-        // pre-registration — so no required (red-star) indicator on the Challenge label.
+        // Core treats authorizationSecret as optional — omitting it creates an unchallenged pre-registration.
         await expect(page.getByTestId('label-authorizationSecret')).toContainText('Challenge (optional)');
         await expect(page.getByTestId('label-authorizationSecret').locator('.text-red-500')).toHaveCount(0);
     });
@@ -266,7 +265,7 @@ test.describe('CertificateForm', () => {
         await expect(page.getByRole('tab', { name: 'Custom Attributes' })).toBeVisible();
         await expect(page.getByRole('tab', { name: 'Ownership' })).toBeVisible();
 
-        // The required Challenge is inline (not hidden behind a tab), visible without any tab click.
+        // The Challenge is inline (not hidden behind a tab), visible without any tab click.
         await expect(page.getByTestId('authorizationSecret')).toBeVisible();
     });
 
@@ -398,6 +397,32 @@ test.describe('CertificateForm', () => {
         expect(action?.payload.registerRequest.authorizationSecret).toBeUndefined();
     });
 
+    test('an all-whitespace Challenge is treated as no challenge at all', async ({ mount, page }) => {
+        const dispatched: { type: string; payload?: any }[] = [];
+
+        await mount(
+            <CertificateFormTestWrapper
+                onAction={(a) => dispatched.push(a)}
+                preloadedState={{ raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] } }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+        // 12 spaces satisfy the length and printable-ASCII rules, but Core tests with String.isBlank()
+        // and would create no authorization row — so the UI must not present it as challenge-gated.
+        await page.getByTestId('authorizationSecret').fill('            ');
+
+        await expect(page.locator('#expiresAt')).toBeDisabled();
+
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        await expect.poll(() => dispatched.find((a) => a.type === 'certificates/registerCertificate')).toBeTruthy();
+        const action = dispatched.find((a) => a.type === 'certificates/registerCertificate');
+        expect(action?.payload.registerRequest.authorizationSecret).toBeUndefined();
+    });
+
     test('a too-short Challenge still blocks Create', async ({ mount, page }) => {
         await mount(
             <CertificateFormTestWrapper
@@ -412,7 +437,7 @@ test.describe('CertificateForm', () => {
 
         await expect(page.getByRole('button', { name: 'Create' })).toBeDisabled();
 
-        // Clearing it again is valid: optional means empty passes, only a non-empty value is checked.
+        // Empty is valid again — only a non-empty value is shape-checked.
         await page.getByTestId('authorizationSecret').fill('');
         await expect(page.getByRole('button', { name: 'Create' })).toBeEnabled();
     });
@@ -456,6 +481,30 @@ test.describe('CertificateForm', () => {
         await page.getByTestId('authorizationSecret').fill('');
         await expect(page.locator('#expiresAt')).toBeDisabled();
         await expect(page.locator('#expiresAt')).toHaveValue('');
+    });
+
+    test('clearing the Challenge also clears a past-date error left on the Issuance window', async ({ mount, page }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{ raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] } }}
+            />,
+        );
+
+        await page.getByTestId('requestType-register').click();
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+        await page.getByTestId('authorizationSecret').fill('challenge-secret');
+
+        // Last month's 15th is always in the past, which the picker permits but @Future rejects.
+        await page.locator('#expiresAt').dispatchEvent('click');
+        await page.getByRole('button', { name: 'Previous' }).click();
+        await page.getByRole('button', { name: '15', exact: true }).click();
+        await expect(page.getByText('Issuance window must be a future date')).toBeVisible();
+
+        // Disabling the field takes it out of validation, so the error has to be cleared explicitly or it
+        // would sit under an empty, unreachable input.
+        await page.getByTestId('authorizationSecret').fill('');
+        await expect(page.getByText('Issuance window must be a future date')).toHaveCount(0);
     });
 
     test('registerCertificate payload includes selected owner/groups', async ({ mount, page }) => {

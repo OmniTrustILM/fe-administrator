@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, type Middleware } from '@reduxjs/toolkit';
 import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
@@ -21,9 +21,12 @@ export type CompleteRegisteredDialogTestWrapperProps = Readonly<{
      * a CT spec cannot import a component and a plain value from the same module.
      */
     challenged?: boolean;
+    /** State of that authorization row. Ignored when `challenged` is false — there is no row at all then. */
+    registrationState?: CertificateRegistrationState;
+    onAction?: (action: { type: string; payload?: unknown }) => void;
 }>;
 
-const testCertificate = (challenged: boolean): CertificateDetailResponseModel =>
+const testCertificate = (challenged: boolean, registrationState: CertificateRegistrationState): CertificateDetailResponseModel =>
     ({
         uuid: 'certificate-uuid',
         commonName: 'test-registered-certificate',
@@ -33,9 +36,7 @@ const testCertificate = (challenged: boolean): CertificateDetailResponseModel =>
             name: 'Test RA Profile',
             authorityInstanceUuid: 'authority-uuid',
         },
-        // Pre-registering without a challenge skips the authorization row entirely, so there is no
-        // challenge to enter at issue time.
-        registration: challenged ? { state: CertificateRegistrationState.Active } : undefined,
+        registration: challenged ? { state: registrationState } : undefined,
     }) as CertificateDetailResponseModel;
 
 type CertificatesSlice = ReturnType<typeof testReducers>['certificates'];
@@ -79,18 +80,22 @@ export function CompleteRegisteredDialogTestWrapper({
     preloadedState,
     tokenProfilesOnFetch,
     challenged = true,
+    registrationState = CertificateRegistrationState.Active,
+    onAction,
 }: CompleteRegisteredDialogTestWrapperProps) {
-    const certificate = useMemo(() => testCertificate(challenged), [challenged]);
+    const certificate = useMemo(() => testCertificate(challenged, registrationState), [challenged, registrationState]);
 
-    const store = useMemo(
-        () =>
-            configureStore({
-                reducer: createRootReducer(tokenProfilesOnFetch),
-                middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
-                preloadedState: { ...testInitialState, ...preloadedState },
-            }),
-        [preloadedState, tokenProfilesOnFetch],
-    );
+    const store = useMemo(() => {
+        const onActionMiddleware: Middleware = () => (next) => (action) => {
+            onAction?.(action as { type: string; payload?: unknown });
+            return next(action);
+        };
+        return configureStore({
+            reducer: createRootReducer(tokenProfilesOnFetch),
+            middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(onActionMiddleware),
+            preloadedState: { ...testInitialState, ...preloadedState },
+        });
+    }, [preloadedState, tokenProfilesOnFetch, onAction]);
 
     // Mirror the real parent (CertificateDetailsContent): onCancel closes the dialog and unmounts its body.
     const [open, setOpen] = useState(true);
