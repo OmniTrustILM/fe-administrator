@@ -10,6 +10,8 @@ import {
     isCertificateExtensionProperties,
     isRdnProperties,
     toOidSelectOptions,
+    toMergedOidSelectOptions,
+    rdnCodeClarification,
     buildRdnCodeByOid,
 } from './oid';
 
@@ -171,6 +173,79 @@ describe('oid utils', () => {
             ]);
             expect(opt.label).toBe('Basic Constraints');
             expect(opt.code).toBeUndefined();
+        });
+    });
+
+    describe('toMergedOidSelectOptions', () => {
+        const system: OIDResponseModel[] = [
+            { oid: '2.5.29.37', displayName: 'Extended Key Usage', category: OidCategory.CertificateExtension },
+        ];
+        const custom: OIDResponseModel[] = [
+            { oid: '1.3.6.1.4.1.99999.2', displayName: 'Internal Marker', category: OidCategory.CertificateExtension },
+        ];
+
+        test('a system-only list still produces options (the fresh-install case)', () => {
+            expect(toMergedOidSelectOptions(system, [])).toEqual([
+                { value: '2.5.29.37', label: 'Extended Key Usage', description: undefined },
+            ]);
+        });
+
+        test('a custom-only list produces options', () => {
+            expect(toMergedOidSelectOptions([], custom)).toEqual([
+                { value: '1.3.6.1.4.1.99999.2', label: 'Internal Marker', description: undefined },
+            ]);
+        });
+
+        test('system entries are ordered before custom ones', () => {
+            expect(toMergedOidSelectOptions(system, custom).map((o) => o.value)).toEqual(['2.5.29.37', '1.3.6.1.4.1.99999.2']);
+        });
+
+        test('undefined inputs produce an empty list', () => {
+            expect(toMergedOidSelectOptions(undefined, undefined)).toEqual([]);
+        });
+    });
+
+    describe('confusable RDN code clarifications', () => {
+        const rdnEntry = (code: string, displayName: string, description?: string): OIDResponseModel =>
+            ({
+                oid: '2.5.4.4',
+                displayName,
+                description,
+                category: OidCategory.RdnAttributeType,
+                additionalProperties: { code },
+            }) as OIDResponseModel;
+
+        test('SN is described as surname and warns against the serial-number reading', () => {
+            const [opt] = toOidSelectOptions([rdnEntry('SN', 'Surname')]);
+            expect(opt.label).toBe('Surname (SN)');
+            expect(opt.description).toBe('Surname (family name). Not a serial number — use SERIALNUMBER for that.');
+        });
+
+        test('SERIALNUMBER is described as the subject serial number, not the certificate serial', () => {
+            const [opt] = toOidSelectOptions([rdnEntry('SERIALNUMBER', 'Serial Number')]);
+            expect(opt.description).toBe(
+                "Subject serial number, e.g. a device serial. Not the certificate's serial number, and not SN (surname).",
+            );
+        });
+
+        test('the clarification wins over a backend-supplied description', () => {
+            const [opt] = toOidSelectOptions([rdnEntry('SN', 'Surname', 'X.520 surname attribute')]);
+            expect(opt.description).toContain('Not a serial number');
+        });
+
+        test('codes are matched case-insensitively', () => {
+            const [opt] = toOidSelectOptions([rdnEntry('sn', 'Surname')]);
+            expect(opt.description).toContain('Surname (family name)');
+        });
+
+        test('every other RDN code keeps its backend description', () => {
+            const [opt] = toOidSelectOptions([rdnEntry('CN', 'Common Name', 'X.520 common name')]);
+            expect(opt.description).toBe('X.520 common name');
+        });
+
+        test('rdnCodeClarification returns undefined for an unknown or missing code', () => {
+            expect(rdnCodeClarification('CN')).toBeUndefined();
+            expect(rdnCodeClarification(undefined)).toBeUndefined();
         });
     });
 });

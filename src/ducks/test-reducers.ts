@@ -857,6 +857,47 @@ function certificateGroupsTestReducer(state: CertificateGroupsTestState | undefi
     return state ?? certificateGroupsTestInitialState;
 }
 
+// Reducer key must match the real slice.name ('oids') so the real OID selectors (used by
+// useOidMappingOptions and RequestAttributeMappingBadge) read this state. Every field of the real
+// duck's State is mirrored here: once this slice exists in the store the duck's `?? initialState`
+// fallback no longer applies, so a missing field would read undefined in a real selector.
+export type OidsTestState = {
+    oid?: any;
+    oids: any[];
+    oidsByCategory: Record<string, any[]>;
+    oidsByCategoryError: Record<string, boolean>;
+    oidsByCategoryLoaded: Record<string, boolean>;
+    systemOids: any[];
+    systemOidsLoaded: boolean;
+    systemOidsError: boolean;
+    isFetching: boolean;
+    isCreating: boolean;
+    createOidSucceeded: boolean;
+    isUpdating: boolean;
+    updateOidSucceeded: boolean;
+    isDeleting: boolean;
+};
+
+const oidsTestInitialState: OidsTestState = {
+    oids: [],
+    oidsByCategory: {},
+    oidsByCategoryError: {},
+    oidsByCategoryLoaded: {},
+    systemOids: [],
+    systemOidsLoaded: false,
+    systemOidsError: false,
+    isFetching: false,
+    isCreating: false,
+    createOidSucceeded: false,
+    isUpdating: false,
+    updateOidSucceeded: false,
+    isDeleting: false,
+};
+
+function oidsTestReducer(state: OidsTestState | undefined, _action: UnknownAction): OidsTestState {
+    return state ?? oidsTestInitialState;
+}
+
 // Reducer key must match the real slice.name ('discoveries') so the real discovery selectors
 // (used by the discovered certificates widget) can find this state. Every getDiscoveryCertificates
 // request is recorded so tests can assert which query params the widget sent; apart from that the
@@ -934,6 +975,7 @@ export const testReducers = combineReducers({
     users: usersTestReducer,
     certificateGroups: certificateGroupsTestReducer,
     discoveries: discoveriesTestReducer,
+    oids: oidsTestReducer,
 });
 
 export const testInitialState = {
@@ -966,4 +1008,5 @@ export const testInitialState = {
     users: usersTestInitialState,
     certificateGroups: certificateGroupsTestInitialState,
     discoveries: discoveriesTestInitialState,
+    oids: oidsTestInitialState,
 };
