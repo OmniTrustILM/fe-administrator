@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router';
 
 import { actions as certificateActions } from 'ducks/certificates';
 import { testInitialState, testReducers } from 'ducks/test-reducers';
+import { actions as tokenProfileActions } from 'ducks/token-profiles';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { CertificateState } from 'types/openapi';
 
@@ -13,6 +14,7 @@ import CompleteRegisteredDialog from './CompleteRegisteredDialog';
 export type CompleteRegisteredDialogTestWrapperProps = Readonly<{
     onCancel?: () => void;
     preloadedState?: Partial<ReturnType<typeof testReducers>>;
+    tokenProfilesOnFetch?: Array<{ uuid: string; name: string }>;
 }>;
 
 const testCertificate: CertificateDetailResponseModel = {
@@ -27,28 +29,34 @@ const testCertificate: CertificateDetailResponseModel = {
 } as CertificateDetailResponseModel;
 
 type CertificatesSlice = ReturnType<typeof testReducers>['certificates'];
+type TokenProfilesSlice = ReturnType<typeof testReducers>['tokenprofiles'];
 
 // The shared test-reducers stub the certificates slice as a no-op. Overlay just the issue success/failure
 // transitions so this harness can drive the real isIssuing flips the dialog reacts to (e.g. a confirmed
 // success closing the dialog), while leaving every other action a no-op so preloaded state stays stable
 // (the dialog's mount-time clearIssueErrors / getCsrAttributes must not wipe preloaded fixtures).
-function rootReducer(state: ReturnType<typeof testReducers> | undefined, action: Parameters<typeof testReducers>[1]) {
-    const next = testReducers(state, action);
-    if (certificateActions.issueCertificateSuccess.match(action)) {
-        return { ...next, certificates: { ...next.certificates, isIssuing: false } as CertificatesSlice };
-    }
-    if (certificateActions.issueCertificateFailure.match(action)) {
-        return {
-            ...next,
-            certificates: {
-                ...next.certificates,
-                isIssuing: false,
-                issueErrorMessage: action.payload.error,
-                issueValidationErrors: action.payload.validationErrors,
-            } as CertificatesSlice,
-        };
-    }
-    return next;
+function createRootReducer(tokenProfilesOnFetch?: CompleteRegisteredDialogTestWrapperProps['tokenProfilesOnFetch']) {
+    return function rootReducer(state: ReturnType<typeof testReducers> | undefined, action: Parameters<typeof testReducers>[1]) {
+        const next = testReducers(state, action);
+        if (certificateActions.issueCertificateSuccess.match(action)) {
+            return { ...next, certificates: { ...next.certificates, isIssuing: false } as CertificatesSlice };
+        }
+        if (certificateActions.issueCertificateFailure.match(action)) {
+            return {
+                ...next,
+                certificates: {
+                    ...next.certificates,
+                    isIssuing: false,
+                    issueErrorMessage: action.payload.error,
+                    issueValidationErrors: action.payload.validationErrors,
+                } as CertificatesSlice,
+            };
+        }
+        if (tokenProfilesOnFetch && tokenProfileActions.listTokenProfiles.match(action) && action.payload.enabled) {
+            return { ...next, tokenprofiles: { ...next.tokenprofiles, tokenProfiles: tokenProfilesOnFetch } as TokenProfilesSlice };
+        }
+        return next;
+    };
 }
 
 /**
@@ -56,15 +64,19 @@ function rootReducer(state: ReturnType<typeof testReducers> | undefined, action:
  * Node/browser boundary — building the store inside the mounted component (as done here) avoids
  * that entirely. See CertificateFormTestWrapper.tsx for the established precedent.
  */
-export function CompleteRegisteredDialogTestWrapper({ onCancel = () => {}, preloadedState }: CompleteRegisteredDialogTestWrapperProps) {
+export function CompleteRegisteredDialogTestWrapper({
+    onCancel = () => {},
+    preloadedState,
+    tokenProfilesOnFetch,
+}: CompleteRegisteredDialogTestWrapperProps) {
     const store = useMemo(
         () =>
             configureStore({
-                reducer: rootReducer,
+                reducer: createRootReducer(tokenProfilesOnFetch),
                 middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
                 preloadedState: { ...testInitialState, ...preloadedState },
             }),
-        [preloadedState],
+        [preloadedState, tokenProfilesOnFetch],
     );
 
     // Mirror the real parent (CertificateDetailsContent): onCancel closes the dialog and unmounts its body.
