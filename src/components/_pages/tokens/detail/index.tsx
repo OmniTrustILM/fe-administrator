@@ -199,7 +199,10 @@ export default function TokenDetail() {
                       },
                       {
                           id: 'cryptographyProviderName',
-                          columns: ['Cryptography Provider Name', <ConnectorLink uuid={token.connectorUuid} name={token.connectorName} />],
+                          columns: [
+                              'Cryptography Provider Name',
+                              <ConnectorLink key="connector" uuid={token.connectorUuid} name={token.connectorName} />,
+                          ],
                       },
                       {
                           id: 'kind',

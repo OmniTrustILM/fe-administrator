@@ -116,7 +116,7 @@ export default function DiscoveryDetail() {
                           id: 'discoveryProviderName',
                           columns: [
                               'Discovery Provider Name',
-                              <ConnectorLink uuid={discovery.connectorUuid} name={discovery.connectorName} />,
+                              <ConnectorLink key="connector" uuid={discovery.connectorUuid} name={discovery.connectorName} />,
                           ],
                       },
                       {

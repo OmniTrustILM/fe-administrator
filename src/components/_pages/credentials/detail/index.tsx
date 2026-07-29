@@ -122,7 +122,7 @@ function CredentialDetail() {
                           id: 'credentialProviderName',
                           columns: [
                               'Credential Provider Name',
-                              <ConnectorLink uuid={credential.connectorUuid} name={credential.connectorName} />,
+                              <ConnectorLink key="connector" uuid={credential.connectorUuid} name={credential.connectorName} />,
                           ],
                       },
                       {

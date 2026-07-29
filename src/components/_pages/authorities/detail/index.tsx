@@ -105,7 +105,7 @@ export default function AuthorityDetail() {
                           id: 'authorityProviderName',
                           columns: [
                               'Authority Provider Name',
-                              <ConnectorLink uuid={authority.connectorUuid} name={authority.connectorName} />,
+                              <ConnectorLink key="connector" uuid={authority.connectorUuid} name={authority.connectorName} />,
                           ],
                       },
                   ]

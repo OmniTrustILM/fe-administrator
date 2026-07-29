@@ -101,7 +101,10 @@ export default function EntityDetail() {
                       },
                       {
                           id: 'entityProviderName',
-                          columns: ['Entity Provider Name', <ConnectorLink uuid={entity.connectorUuid} name={entity.connectorName} />],
+                          columns: [
+                              'Entity Provider Name',
+                              <ConnectorLink key="connector" uuid={entity.connectorUuid} name={entity.connectorName} />,
+                          ],
                       },
                   ]
                 : [],
