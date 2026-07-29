@@ -84,9 +84,14 @@ function PagedList({
     const isFetchingList = useSelector(selectors.isFetchingList(entity));
     const pageNumber = useSelector(selectors.pageNumber(entity));
     const pageSize = useSelector(selectors.pageSize(entity));
+    const listedFiltersSnapshot = useSelector(selectors.filtersSnapshot(entity));
+
+    const currentFiltersSnapshot = useMemo(() => JSON.stringify(currentFilters ?? []), [currentFilters]);
+
+    const isPageStaleForFilters = listedFiltersSnapshot !== undefined && listedFiltersSnapshot !== currentFiltersSnapshot;
+    const effectivePageNumber = isPageStaleForFilters ? 1 : pageNumber;
 
     const [confirmDelete, setConfirmDelete] = useState(false);
-    const previousFiltersSnapshotRef = useRef<string | undefined>(undefined);
     const hasLoadedOnce = useRef(false);
     if (!isFetchingList && data.length > 0) hasLoadedOnce.current = true;
 
@@ -98,9 +103,9 @@ function PagedList({
     );
 
     const getFreshData = useCallback(() => {
-        onListCallback({ itemsPerPage: pageSize, pageNumber, filters: currentFilters });
+        onListCallback({ itemsPerPage: pageSize, pageNumber: effectivePageNumber, filters: currentFilters });
         onCheckedRowsChanged([]);
-    }, [currentFilters, pageSize, pageNumber, onListCallback, onCheckedRowsChanged]);
+    }, [currentFilters, pageSize, effectivePageNumber, onListCallback, onCheckedRowsChanged]);
 
     const onPageSizeChanged = useCallback(
         (pageSize: number) => {
@@ -137,14 +142,9 @@ function PagedList({
     }, [checkedRows, onDeleteCallback, currentFilters, onCheckedRowsChanged, getFreshData]);
 
     useEffect(() => {
-        const currentFiltersSnapshot = JSON.stringify(currentFilters ?? []);
+        if (listedFiltersSnapshot === currentFiltersSnapshot) return;
 
-        if (previousFiltersSnapshotRef.current === undefined) {
-            previousFiltersSnapshotRef.current = currentFiltersSnapshot;
-            return;
-        }
-
-        if (previousFiltersSnapshotRef.current !== currentFiltersSnapshot) {
+        if (listedFiltersSnapshot !== undefined) {
             dispatch(
                 actions.setPagination({
                     entity,
@@ -154,8 +154,8 @@ function PagedList({
             );
         }
 
-        previousFiltersSnapshotRef.current = currentFiltersSnapshot;
-    }, [currentFilters, dispatch, entity, pageSize]);
+        dispatch(actions.setFiltersSnapshot({ entity, filtersSnapshot: currentFiltersSnapshot }));
+    }, [currentFiltersSnapshot, listedFiltersSnapshot, dispatch, entity, pageSize]);
 
     useEffect(() => {
         getFreshData();
@@ -201,13 +201,13 @@ function PagedList({
 
     const paginationData = useMemo(
         () => ({
-            page: pageNumber,
+            page: effectivePageNumber,
             totalItems: totalItems,
             pageSize: pageSize,
             loadedPageSize: pageSize,
             totalPages: Math.ceil(totalItems / pageSize),
         }),
-        [pageNumber, totalItems, pageSize],
+        [effectivePageNumber, totalItems, pageSize],
     );
 
     if (isFetchingList && data.length === 0 && !hasLoadedOnce.current) {

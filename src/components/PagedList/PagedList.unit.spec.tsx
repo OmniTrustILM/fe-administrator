@@ -322,22 +322,35 @@ describe('PagedList unit coverage', () => {
         expect(onListCallback).toHaveBeenCalledWith({ itemsPerPage: 10, pageNumber: 2, filters: [] });
     });
 
-    it('resets pagination when current filters change after first render', async () => {
-        await renderPagedList();
-
-        const paginationCallsBefore = dispatch.mock.calls.filter((call) => call[0]?.type === 'pagings/setPagination').length;
-
+    it('resets pagination when current filters no longer match the ones the page was listed with', async () => {
+        mockState.pagings.pagings[0].paging.filtersSnapshot = '[]';
         mockState.filters.filters[0].filter.currentFilters = [{ fieldIdentifier: 'name', value: ['cbom'], type: 'TEXT' }];
 
         await renderPagedList();
 
-        const paginationCallsAfter = dispatch.mock.calls.filter((call) => call[0]?.type === 'pagings/setPagination');
+        const paginationCalls = dispatch.mock.calls.filter((call) => call[0]?.type === 'pagings/setPagination');
 
-        expect(paginationCallsAfter.length).toBeGreaterThan(paginationCallsBefore);
-        expect(paginationCallsAfter.at(-1)?.[0]).toEqual(
+        expect(paginationCalls.at(-1)?.[0]).toEqual(
             expect.objectContaining({
                 type: 'pagings/setPagination',
                 payload: { entity: EntityType.CBOM, pageSize: 10, pageNumber: 1 },
+            }),
+        );
+    });
+
+    it('records the listed filters without resetting pagination when no snapshot is stored yet', async () => {
+        mockState.filters.filters[0].filter.currentFilters = [{ fieldIdentifier: 'name', value: ['cbom'], type: 'TEXT' }];
+
+        await renderPagedList();
+
+        expect(dispatch.mock.calls.filter((call) => call[0]?.type === 'pagings/setPagination')).toHaveLength(0);
+        expect(dispatch).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'pagings/setFiltersSnapshot',
+                payload: {
+                    entity: EntityType.CBOM,
+                    filtersSnapshot: JSON.stringify([{ fieldIdentifier: 'name', value: ['cbom'], type: 'TEXT' }]),
+                },
             }),
         );
     });
