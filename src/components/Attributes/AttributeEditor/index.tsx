@@ -27,7 +27,12 @@ import { AttributeContentType, AttributeValueTarget, type ConnectorVersion, type
 import { base64ToUtf8 } from 'utils/common-utils';
 import { Attribute } from './Attribute';
 import CustomAttributeAddSelect from 'components/Attributes/AttributeEditor/CustomAttributeAddSelect';
-import { type AttributeSelectOption, collectFormAttributes, mapAttributeContentToOptionValue } from 'utils/attributes/attributes';
+import {
+    type AttributeSelectOption,
+    collectFormAttributes,
+    isFreeTextContentType,
+    mapAttributeContentToOptionValue,
+} from 'utils/attributes/attributes';
 import { deepEqual } from 'utils/deep-equal';
 import Button from 'components/Button';
 import { Trash } from 'lucide-react';
@@ -613,7 +618,9 @@ function AttributeEditorInner({
                 setSelectListAttributeValue();
             } else if (appliedContent) {
                 const firstApplied = appliedContent[0] as { reference?: string; data?: unknown } | undefined;
-                formAttributeValue = firstApplied?.reference ?? firstApplied?.data;
+                formAttributeValue = isFreeTextContentType(descriptor.contentType)
+                    ? (firstApplied?.data ?? firstApplied?.reference)
+                    : (firstApplied?.reference ?? firstApplied?.data);
             } else if (descriptor.content && descriptor.content.length > 0) {
                 // This acts as a fallback for the case when the attribute has no value, but has a default value in the
                 // descriptor. The default is seeded regardless of the required/read-only properties, so an optional

@@ -176,11 +176,32 @@ describe('attributes utils', () => {
             expect(getAttributeContent(AttributeContentType.Resource, content)).toBe('1111');
         });
 
-        test('returns primitive value for numeric and text content types', () => {
+        test('returns primitive value for Float and Integer', () => {
             expect(getAttributeContent(AttributeContentType.Float, [{ data: 1.23 } as any])).toBe('1.23');
             expect(getAttributeContent(AttributeContentType.Integer, [{ data: 42 } as any])).toBe('42');
+        });
+
+        test('prefers reference over data for String and Text content', () => {
+            expect(
+                getAttributeContent(AttributeContentType.String, [
+                    { data: 'ee-profile-object-id', reference: 'End Entity Profile One' } as any,
+                ]),
+            ).toBe('End Entity Profile One');
+            expect(getAttributeContent(AttributeContentType.Text, [{ data: 'raw-text-value', reference: 'Readable Text' } as any])).toBe(
+                'Readable Text',
+            );
+        });
+
+        test('falls back to data for String and Text content when reference is missing or empty', () => {
             expect(getAttributeContent(AttributeContentType.String, [{ data: 'hello' } as any])).toBe('hello');
             expect(getAttributeContent(AttributeContentType.Text, [{ data: 'lorem' } as any])).toBe('lorem');
+            expect(getAttributeContent(AttributeContentType.String, [{ data: 'hello', reference: '' } as any])).toBe('hello');
+            expect(getAttributeContent(AttributeContentType.Text, [{ data: 'lorem', reference: '' } as any])).toBe('lorem');
+        });
+
+        test('resolves reference per item for a multi-value String attribute', () => {
+            const content = [{ data: 'id-1', reference: 'Profile One' } as any, { data: 'id-2' } as any];
+            expect(getAttributeContent(AttributeContentType.String, content)).toBe('Profile One, id-2');
         });
 
         test('returns raw value for Time and Date', () => {
@@ -880,7 +901,7 @@ describe('attributes utils', () => {
             expect(result.formAttributeValue).toHaveLength(1);
             expect(result.formAttributeValue[0].label).toBe('A');
         });
-        test('returns formAttributeValue from attribute content (reference preferred over data)', () => {
+        test('seeds a non-list String input from data, so a save does not write the reference back as data', () => {
             const descriptor = {
                 type: AttributeType.Data,
                 contentType: AttributeContentType.String,
@@ -890,7 +911,42 @@ describe('attributes utils', () => {
             const attribute = { content: [{ data: 'set', reference: 'Set' }] } as any;
             const result = testAttributeSetFunction(descriptor, attribute, 'profile.x', false, false);
             expect(result.formAttributeName).toBe('profile.x');
-            expect(result.formAttributeValue).toBe('Set');
+            expect(result.formAttributeValue).toBe('set');
+        });
+
+        test('seeds a non-list String input from reference when data is absent', () => {
+            const descriptor = {
+                type: AttributeType.Data,
+                contentType: AttributeContentType.String,
+                content: [],
+                properties: { list: false, required: false },
+            } as any;
+            const attribute = { content: [{ reference: 'Only Reference' }] } as any;
+            const result = testAttributeSetFunction(descriptor, attribute, 'profile.x', false, false);
+            expect(result.formAttributeValue).toBe('Only Reference');
+        });
+
+        test('keeps reference-first seeding for non-free-text content such as Credential', () => {
+            const descriptor = {
+                type: AttributeType.Data,
+                contentType: AttributeContentType.Credential,
+                content: [],
+                properties: { list: false, required: false },
+            } as any;
+            const attribute = { content: [{ data: { uuid: 'cred-uuid' }, reference: 'My Credential' }] } as any;
+            const result = testAttributeSetFunction(descriptor, attribute, 'profile.cred', false, false);
+            expect(result.formAttributeValue).toBe('My Credential');
+        });
+
+        test('seeds a non-list String descriptor default from data over reference', () => {
+            const descriptor = {
+                type: AttributeType.Data,
+                contentType: AttributeContentType.String,
+                content: [{ data: 'default-data', reference: 'Default Label' }],
+                properties: { list: false, multiSelect: false, required: false },
+            } as any;
+            const result = testAttributeSetFunction(descriptor, undefined, 'profile.value', false, false);
+            expect(result.formAttributeValue).toBe('default-data');
         });
 
         test('for required Boolean without value sets false', () => {

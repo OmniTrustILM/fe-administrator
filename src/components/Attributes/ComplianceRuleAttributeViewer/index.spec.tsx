@@ -29,6 +29,17 @@ test.describe('ComplianceRuleAttributeViewer', () => {
         await expect(component.getByText('hello')).toBeVisible();
     });
 
+    test('renders the reference of a String attribute instead of its data', async ({ mount }) => {
+        const attributes = [
+            mockAttribute('a1', 'attr1', AttributeContentType.String, [
+                { data: 'ee-profile-object-id', reference: 'End Entity Profile One' },
+            ]),
+        ];
+        const component = await mount(withProviders(<ComplianceRuleAttributeViewer attributes={attributes} />));
+        await expect(component.getByText('End Entity Profile One')).toBeVisible();
+        await expect(component.getByText('ee-profile-object-id')).toHaveCount(0);
+    });
+
     test('renders descriptor rows from descriptorAttributes (data only)', async ({ mount }) => {
         const descriptorAttributes = [mockDataDescriptor('d1', 'desc1', AttributeContentType.String, [{ data: 'world' }])];
         const component = await mount(withProviders(<ComplianceRuleAttributeViewer descriptorAttributes={descriptorAttributes} />));

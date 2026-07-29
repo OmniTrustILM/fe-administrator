@@ -84,6 +84,17 @@ test.describe('AttributeDescriptorViewer', () => {
         await expect(page.getByRole('cell', { name: 'n/a' })).toBeVisible();
     });
 
+    test('shows the reference of a String default instead of its data in the Default Value column', async ({ mount, page }) => {
+        const desc = dataDescriptor({
+            properties: { label: 'WithDefault' },
+            content: [{ data: 'ee-profile-object-id', reference: 'End Entity Profile One' }],
+        });
+        await mount(withStore(<AttributeDescriptorViewer attributeDescriptors={[desc]} />));
+
+        await expect(page.getByText('End Entity Profile One')).toBeVisible();
+        await expect(page.getByText('ee-profile-object-id')).toHaveCount(0);
+    });
+
     test('renders without error when regex constraint data is non-string', async ({ mount, page }) => {
         const desc = dataDescriptor({
             properties: { label: 'WithRegex' },
