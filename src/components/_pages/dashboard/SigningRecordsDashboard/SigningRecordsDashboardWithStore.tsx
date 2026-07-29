@@ -1,10 +1,36 @@
-import { Provider } from 'react-redux';
+import { Provider, useSelector } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import { createMockStore } from 'utils/test-helpers';
-import { SigningRecordStatisticsPeriod } from 'types/openapi';
+import TestRouteDisplay from 'utils/TestRouteDisplay';
+import { EntityType, selectors as filterSelectors } from 'ducks/filters';
+import { FilterFieldType, SigningRecordStatisticsPeriod } from 'types/openapi';
 import SigningRecordsDashboard from './index';
 
 const preloadedState: Parameters<typeof createMockStore>[0] = {
+    filters: {
+        filters: [
+            {
+                entity: EntityType.SIGNING_RECORD,
+                filter: {
+                    availableFilters: [
+                        {
+                            searchFieldData: [
+                                {
+                                    fieldIdentifier: 'SIGNING_TIME',
+                                    fieldLabel: 'Signing Time',
+                                    type: FilterFieldType.Datetime,
+                                    conditions: [],
+                                },
+                            ],
+                        },
+                    ],
+                    currentFilters: [],
+                    preservedFilters: [],
+                    isFetchingFilters: false,
+                },
+            },
+        ],
+    },
     signingRecordsDashboard: {
         isFetching: false,
         isFetchingSeries: false,
@@ -25,12 +51,19 @@ const preloadedState: Parameters<typeof createMockStore>[0] = {
     },
 };
 
+function CurrentFiltersProbe() {
+    const currentFilters = useSelector(filterSelectors.currentFilters(EntityType.SIGNING_RECORD));
+    return <span data-testid="current-filters">{JSON.stringify(currentFilters)}</span>;
+}
+
 export default function SigningRecordsDashboardWithStore() {
     const store = createMockStore(preloadedState);
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/dashboard/signing-records']}>
                 <SigningRecordsDashboard />
+                <TestRouteDisplay />
+                <CurrentFiltersProbe />
             </MemoryRouter>
         </Provider>
     );

@@ -11,4 +11,45 @@ test.describe('SigningRecordsDashboard', () => {
         // single-key breakdowns render muted with their captions
         await expect(component.getByText('unlocks when CSC API ships')).toBeVisible();
     });
+
+    test('the 24h tile drills down to signing records filtered by signing time', async ({ mount }) => {
+        const component = await mount(<SigningRecordsDashboardWithStore />);
+
+        await component.getByRole('link', { name: 'Signings – last 24h' }).click();
+
+        await expect(component.getByTestId('route')).toHaveText('/signingrecords');
+        const applied = JSON.parse((await component.getByTestId('current-filters').textContent()) ?? '[]');
+        expect(applied).toHaveLength(1);
+        expect(applied[0]).toMatchObject({ fieldIdentifier: 'SIGNING_TIME', condition: 'GREATER_OR_EQUAL' });
+        expect(Date.parse(applied[0].value)).toBeLessThan(Date.now());
+    });
+
+    test('the 7d tile drills down with a wider signing time window than the 24h tile', async ({ mount }) => {
+        const component = await mount(<SigningRecordsDashboardWithStore />);
+
+        await component.getByRole('link', { name: 'Signings – last 7d' }).click();
+        const sevenDays = JSON.parse((await component.getByTestId('current-filters').textContent()) ?? '[]');
+
+        expect(Date.now() - Date.parse(sevenDays[0].value)).toBeGreaterThan(6 * 24 * 60 * 60 * 1000);
+    });
+
+    test('the total tile clears any previously applied filter', async ({ mount }) => {
+        const component = await mount(<SigningRecordsDashboardWithStore />);
+
+        await component.getByRole('link', { name: 'Signings – last 24h' }).click();
+        await expect(component.getByTestId('current-filters')).not.toHaveText('[]');
+
+        await component.getByRole('link', { name: 'Signing Records', exact: true }).click();
+
+        await expect(component.getByTestId('current-filters')).toHaveText('[]');
+        await expect(component.getByTestId('route')).toHaveText('/signingrecords');
+    });
+
+    test('the active profiles tile opens the signing profiles list', async ({ mount }) => {
+        const component = await mount(<SigningRecordsDashboardWithStore />);
+
+        await component.getByRole('link', { name: 'Active Signing Profiles' }).click();
+
+        await expect(component.getByTestId('route')).toHaveText('/signingprofiles');
+    });
 });
