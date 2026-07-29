@@ -28,7 +28,7 @@ function StartTimePicker({
             <NumberInput value={atHour} onChange={onHourChange} min={0} max={23} zeroPad />
             <span className="text-gray-400 font-bold">:</span>
             <NumberInput value={atMinute} onChange={onMinuteChange} min={0} max={59} zeroPad />
-            <Label className="!mb-0 text-gray-500">{CRON_TIME_ZONE}</Label>
+            <Label className="!mb-0 text-gray-500 dark:text-neutral-400">{CRON_TIME_ZONE}</Label>
         </div>
     );
 }
@@ -125,7 +125,7 @@ export default function CronBuilder({ value, onChange }: Readonly<Props>) {
                                 max={59}
                                 zeroPad
                             />
-                            <Label className="!mb-0 text-gray-500">{CRON_TIME_ZONE}</Label>
+                            <Label className="!mb-0 text-gray-500 dark:text-neutral-400">{CRON_TIME_ZONE}</Label>
                         </RadioRow>
                     </Container>
                 ),

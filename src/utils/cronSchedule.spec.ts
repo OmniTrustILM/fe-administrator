@@ -50,11 +50,21 @@ describe('cronSchedule', () => {
             expect(getNextCronRun('0 0 12 LW * ?', afterJulyRun)?.toISOString()).toBe('2026-08-31T12:00:00.000Z');
         });
 
+        test('accepts either wildcard the builder round-trips in the weekday slot', () => {
+            expect(getNextCronRun('0 0 12 LW * *', FROM)?.toISOString()).toBe('2026-07-31T12:00:00.000Z');
+        });
+
         test('returns undefined for expressions neither path can evaluate', () => {
             // Seven-field (with year) expressions are reachable through the Custom tab.
             expect(getNextCronRun('0 15 10 * * ? 2026', FROM)).toBeUndefined();
             expect(getNextCronRun('nonsense', FROM)).toBeUndefined();
             expect(getNextCronRun(undefined, FROM)).toBeUndefined();
+        });
+
+        test('declines month-end forms that restrict month or weekday', () => {
+            // The fallback ignores both slots, so a hand-typed restriction would get a wrong preview.
+            expect(getNextCronRun('0 0 12 LW 1 MON', FROM)).toBeUndefined();
+            expect(getNextCronRun('0 0 12 L-3 6 ?', FROM)).toBeUndefined();
         });
     });
 

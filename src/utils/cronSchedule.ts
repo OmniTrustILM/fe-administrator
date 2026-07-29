@@ -16,8 +16,12 @@ export function describeCronInUtc(cronExpression: string | undefined): string | 
     }
 }
 
-/** `sec min hour <LW|L-N> month dow` — the month-end forms cron-parser rejects but the builder emits. */
-const QUARTZ_MONTH_END = /^(\d+) (\d+) (\d+) (LW|L-\d+) \S+ \S+$/;
+/**
+ * `sec min hour <LW|L-N> * <*|?>` — the month-end forms cron-parser rejects but the builder emits.
+ * Narrowed to the builder's own shape: a hand-typed `0 0 12 LW 1 MON` restricts month and weekday,
+ * which this fallback ignores, so it must fall through to "not previewable" instead of guessing.
+ */
+const QUARTZ_MONTH_END = /^(\d+) (\d+) (\d+) (LW|L-\d+) \* [*?]$/;
 
 const LOOKAHEAD_MONTHS = 24;
 
@@ -115,7 +119,8 @@ export function describeNextCronRunLocally(cronExpression: string | undefined, f
         return undefined;
     }
     const zone = getLocalTimeZoneLabel(nextRun);
-    const local = `${formatLocalDateTime(nextRun)}${zone ? ` ${zone}` : ''}`;
+    const zoneSuffix = zone ? ` ${zone}` : '';
+    const local = `${formatLocalDateTime(nextRun)}${zoneSuffix}`;
     return `Next run: ${formatUtcDateTime(nextRun)} ${CRON_TIME_ZONE} → ${local} (your local time)`;
 }
 

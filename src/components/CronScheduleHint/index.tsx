@@ -20,12 +20,12 @@ export default function CronScheduleHint({ cronExpression, dataTestId = 'cron-sc
     return (
         <div className="space-y-1" data-testid={dataTestId}>
             {description && (
-                <p className="text-sm text-gray-600" data-testid={`${dataTestId}-description`}>
+                <p className="text-sm text-gray-600 dark:text-neutral-400" data-testid={`${dataTestId}-description`}>
                     {description}
                 </p>
             )}
             {nextRun && (
-                <p className="text-sm text-gray-500" data-testid={`${dataTestId}-next-run`}>
+                <p className="text-sm text-gray-500 dark:text-neutral-400" data-testid={`${dataTestId}-next-run`}>
                     {nextRun}
                 </p>
             )}

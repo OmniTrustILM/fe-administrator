@@ -292,7 +292,10 @@ export default function SchedulerJobDetail() {
                               'Cron Expression',
                               <>
                                   {schedulerJob.cronExpression}&nbsp;
-                                  <Tooltip content={describeCronSchedule(schedulerJob.cronExpression)}>
+                                  <Tooltip
+                                      content={describeCronSchedule(schedulerJob.cronExpression)}
+                                      contentClassName="whitespace-pre-line"
+                                  >
                                       <Info size={16} className="inline-block" />
                                   </Tooltip>
                               </>,
