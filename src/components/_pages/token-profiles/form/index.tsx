@@ -57,8 +57,8 @@ export default function TokenProfileForm({
     const dispatch = useDispatch();
 
     const { id: routeId, tokenId: routeTokenId } = useParams();
-    const id = tokenProfileId || routeId;
-    const tokenId = propTokenId || routeTokenId;
+    const id = tokenProfileId ?? (usesGlobalModal ? undefined : routeId);
+    const tokenId = propTokenId ?? (usesGlobalModal ? undefined : routeTokenId);
 
     const editMode = useMemo(() => !!id, [id]);
 

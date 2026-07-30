@@ -57,7 +57,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
     const dispatch = useDispatch();
 
     const { id: routeId, tokenId } = useParams();
-    const id = keyId || routeId;
+    const id = keyId ?? (usesGlobalModal ? undefined : routeId);
 
     const editMode = useMemo(() => !!id, [id]);
 

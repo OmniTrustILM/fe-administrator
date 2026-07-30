@@ -38,7 +38,7 @@ const RenderRequestKey = ({ type, name, tokenProfileField }: Props) => {
                 value: key.uuid,
             })),
             {
-                label: '+',
+                label: '+ Add new',
                 value: '__add_new__',
                 disabled: false,
             },
