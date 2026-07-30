@@ -823,4 +823,62 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
         await expect(page.getByTestId('value-json')).toContainText('"list":false');
     });
+    test('a String attribute can carry a validation pattern with its own error message', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('costCenter');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Cost center');
+        await pickSanMapping(page);
+
+        await page.locator('#ra-attr-regex-pattern').click();
+        await page.locator('#ra-attr-regex-pattern').fill('^CC-\\d{6}$');
+        await page.locator('#ra-attr-regex-error-message').click();
+        await page.locator('#ra-attr-regex-error-message').fill('Cost center must be CC- followed by 6 digits');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(page.getByTestId('value-json')).toContainText('"regexPattern":"^CC-');
+        await expect(page.getByTestId('value-json')).toContainText('Cost center must be CC- followed by 6 digits');
+    });
+
+    test('a pattern the engine cannot compile is rejected inline', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('costCenter');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Cost center');
+        await pickSanMapping(page);
+
+        await page.locator('#ra-attr-regex-pattern').click();
+        await page.locator('#ra-attr-regex-pattern').fill('^CC-[0-9$');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(page.getByTestId('request-attribute-authoring-attribute-regex-pattern-error')).toContainText(
+            'not a valid regular expression',
+        );
+        await expect(page.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
+    });
+
+    test('the pattern fields are offered for String only and clear when the type changes', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-regex-block')).toBeVisible();
+
+        await page.locator('#ra-attr-regex-pattern').click();
+        await page.locator('#ra-attr-regex-pattern').fill('^A+$');
+
+        await page.getByTestId('select-ra-attr-content-type-trigger').click();
+        await page.getByRole('option', { name: 'Integer', exact: true }).click();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-regex-block')).toHaveCount(0);
+
+        // Coming back must not resurrect the pattern — it would silently reattach on save.
+        await page.getByTestId('select-ra-attr-content-type-trigger').click();
+        await page.getByRole('option', { name: 'String', exact: true }).click();
+        await expect(page.locator('#ra-attr-regex-pattern')).toHaveValue('');
+    });
 });
