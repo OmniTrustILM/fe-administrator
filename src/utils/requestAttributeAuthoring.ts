@@ -7,6 +7,8 @@ import {
     GeneralNameType,
     ObjectType,
     ValueSourceType,
+    AttributeConstraintType,
+    type BaseAttributeConstraint,
     type BaseAttributeDto,
     type CertificateRequestAttributesSettingsDto,
     type CertificateRequestAttributesSettingsUpdateDto,
@@ -79,6 +81,20 @@ export interface AuthoredAttributeFormValues {
     collectionRef?: string;
     /** Cascading dependency params, preserved on round-trip (no authoring UI yet). */
     valueSourceParams?: SourceParam[];
+    /**
+     * Regular expression a String value must match, plus the wording shown when it does not. Core
+     * validates it through `RegexpAttributeConstraint`; only String is offered because the other
+     * content types have their own typed validation.
+     */
+    regexPattern?: string;
+    regexDescription?: string;
+    regexErrorMessage?: string;
+    /**
+     * Constraints of a kind this editor cannot author (range, dateTime) exactly as loaded. Core
+     * replaces the whole array on save, so dropping them here would silently delete a constraint
+     * attached through the API.
+     */
+    otherConstraints?: BaseAttributeConstraint[];
 }
 
 export interface ValueSourceBindingFormValues {
@@ -138,6 +154,26 @@ export function isStaticListSupportedForContentType(contentType: AttributeConten
 }
 
 /** Core renders a mapped request attribute into its X.509 field as text, so only these can be mapped. */
+/** Content types a regular-expression constraint can be authored for. */
+export const REGEX_CONSTRAINT_CONTENT_TYPES: readonly AttributeContentType[] = [AttributeContentType.String];
+
+export function isRegexConstraintSupportedForContentType(contentType: AttributeContentType): boolean {
+    return REGEX_CONSTRAINT_CONTENT_TYPES.includes(contentType);
+}
+
+/**
+ * Undefined when `pattern` compiles, otherwise the engine's own complaint — the author needs to know
+ * which part it rejected, and the message differs per pattern.
+ */
+export function getRegexPatternError(pattern: string): string | undefined {
+    try {
+        new RegExp(pattern);
+        return undefined;
+    } catch (error) {
+        return error instanceof Error ? error.message : 'The pattern is not a valid regular expression.';
+    }
+}
+
 export const MAPPED_CONTENT_TYPES: readonly AttributeContentType[] = [AttributeContentType.String, AttributeContentType.Text];
 
 export function isContentTypeAllowedForMapping(contentType: AttributeContentType): boolean {
@@ -173,6 +209,9 @@ export function emptyAuthoredAttribute(): AuthoredAttributeFormValues {
         staticValues: [],
         defaultValue: undefined,
         collectionRef: '',
+        regexPattern: '',
+        regexDescription: '',
+        regexErrorMessage: '',
     };
 }
 
@@ -292,6 +331,26 @@ function hasFreeInputDefault(form: AuthoredAttributeFormValues): boolean {
     return v !== undefined && (typeof v !== 'string' || v.trim() !== '');
 }
 
+/**
+ * The authored regex constraint plus every constraint kind this editor cannot author, in that order.
+ * Empty means the attribute carries no constraints and `constraints` is left off the DTO entirely.
+ */
+function buildConstraints(form: AuthoredAttributeFormValues): BaseAttributeConstraint[] {
+    const pattern = form.regexPattern?.trim();
+    const authored: BaseAttributeConstraint[] =
+        pattern && isRegexConstraintSupportedForContentType(form.contentType)
+            ? [
+                  {
+                      type: AttributeConstraintType.RegExp,
+                      data: pattern,
+                      description: form.regexDescription?.trim() || undefined,
+                      errorMessage: form.regexErrorMessage?.trim() || undefined,
+                  } as BaseAttributeConstraint,
+              ]
+            : [];
+    return [...authored, ...(form.otherConstraints ?? [])];
+}
+
 export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): DataAttributeV3 {
     // A static list presents a predefined set of options, so it is a list attribute by definition —
     // force `list` on regardless of the toggle so the DTO does not contradict the content array.
@@ -316,6 +375,11 @@ export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): Da
         properties,
         schemaVersion: AttributeVersion.V3,
     };
+
+    const constraints = buildConstraints(form);
+    if (constraints.length > 0) {
+        dto.constraints = constraints;
+    }
 
     const fieldMapping = buildFieldMapping(form);
     if (fieldMapping) {
@@ -353,6 +417,8 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
     const san = firstField && firstField.fieldType === FieldType.San ? firstField : undefined;
     const ext = firstField && firstField.fieldType === FieldType.Extension ? firstField : undefined;
     const valueSourceKind = view.valueSource?.kind ?? ValueSourceType.None;
+    const constraints = view.constraints ?? [];
+    const regex = constraints.find((c) => c.type === AttributeConstraintType.RegExp);
     return {
         uuid: view.uuid,
         name: view.name ?? '',
@@ -384,6 +450,10 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
                 : undefined,
         collectionRef: '',
         valueSourceParams: view.valueSource?.params,
+        regexPattern: typeof regex?.data === 'string' ? regex.data : '',
+        regexDescription: regex?.description ?? '',
+        regexErrorMessage: regex?.errorMessage ?? '',
+        otherConstraints: constraints.filter((c) => c.type !== AttributeConstraintType.RegExp),
     };
 }
 
@@ -481,6 +551,7 @@ export interface AuthoredAttributeErrors {
     multiSelect?: string;
     defaultValue?: string;
     staticValues?: string;
+    regexPattern?: string;
 }
 
 function validateSanMapping(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
@@ -546,6 +617,19 @@ function validateProperties(form: AuthoredAttributeFormValues): AuthoredAttribut
     return errors;
 }
 
+/**
+ * A pattern Core cannot compile would reject every value, so it is blocked here rather than saved.
+ * A pattern left on a content type that cannot carry one is not an error — it is simply not emitted.
+ */
+function validateRegexConstraint(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
+    const pattern = form.regexPattern?.trim();
+    if (!pattern || !isRegexConstraintSupportedForContentType(form.contentType)) {
+        return {};
+    }
+    const error = getRegexPatternError(pattern);
+    return error ? { regexPattern: `The pattern is not a valid regular expression: ${error}` } : {};
+}
+
 function validateDefaultValue(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
     const { defaultValue } = form;
     if (form.valueSourceType !== ValueSourceType.None || defaultValue === undefined || !hasFreeInputDefault(form)) {
@@ -595,6 +679,7 @@ export function validateAuthoredAttribute(form: AuthoredAttributeFormValues): Au
         ...validateProperties(form),
         ...validateDefaultValue(form),
         ...validateStaticList(form),
+        ...validateRegexConstraint(form),
     };
 }
 

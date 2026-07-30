@@ -25,6 +25,7 @@ import {
     emptyAuthoredAttribute,
     emptyValueSourceBinding,
     isContentTypeAllowedForMapping,
+    isRegexConstraintSupportedForContentType,
     isStaticListSupportedForContentType,
     isValueSourceBindingValid,
     MAPPED_CONTENT_TYPES,
@@ -424,6 +425,9 @@ export default function RequestAttributeAuthoringEditor({
                 staticValues: [],
                 defaultValue: undefined,
                 valueSourceType: isStaticListSupportedForContentType(contentType) ? d.valueSourceType : ValueSourceType.None,
+                ...(isRegexConstraintSupportedForContentType(contentType)
+                    ? {}
+                    : { regexPattern: '', regexDescription: '', regexErrorMessage: '' }),
             });
         return (
             <div className="space-y-3 text-left" data-testid={`${dataTestId}-attribute-form`}>
@@ -470,6 +474,36 @@ export default function RequestAttributeAuthoringEditor({
                     options={d.mappingFieldType ? MAPPED_CONTENT_TYPE_OPTIONS : CONTENT_TYPE_OPTIONS}
                 />
                 <FieldError testId={`${dataTestId}-attribute-content-type-error`} message={attrErrors.contentType} />
+                {isRegexConstraintSupportedForContentType(d.contentType) && (
+                    <div className="space-y-3" data-testid={`${dataTestId}-attribute-regex-block`}>
+                        <TextInput
+                            id="ra-attr-regex-pattern"
+                            label="Validation pattern"
+                            labelTooltip="Regular expression the requester's value must match, e.g. ^CC-\d{6}$. Leave empty to accept any text."
+                            placeholder="Enter regular expression"
+                            value={d.regexPattern ?? ''}
+                            onChange={(v) => set({ regexPattern: v })}
+                            invalid={Boolean(attrErrors.regexPattern)}
+                        />
+                        <FieldError testId={`${dataTestId}-attribute-regex-pattern-error`} message={attrErrors.regexPattern} />
+                        <TextInput
+                            id="ra-attr-regex-error-message"
+                            label="Validation error message"
+                            labelTooltip="Shown on the request form when the value does not match the pattern. Falls back to a generic message when empty."
+                            placeholder="Enter error message"
+                            value={d.regexErrorMessage ?? ''}
+                            onChange={(v) => set({ regexErrorMessage: v })}
+                        />
+                        <TextInput
+                            id="ra-attr-regex-description"
+                            label="Validation description"
+                            labelTooltip="Explains the pattern to the requester alongside the field."
+                            placeholder="Enter description"
+                            value={d.regexDescription ?? ''}
+                            onChange={(v) => set({ regexDescription: v })}
+                        />
+                    </div>
+                )}
                 <Select
                     id="ra-attr-mapping"
                     label="Mapping target"

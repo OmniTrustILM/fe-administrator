@@ -1,5 +1,6 @@
 import { describe, expect, it, test } from 'vitest';
 import {
+    AttributeConstraintType,
     AttributeContentType,
     AttributeSetMergeMode,
     AttributeType,
@@ -24,7 +25,9 @@ import {
     emptyValueSourceBinding,
     gateMergeModeAndBindings,
     hasAuthoredRequestAttributes,
+    getRegexPatternError,
     isContentTypeAllowedForMapping,
+    isRegexConstraintSupportedForContentType,
     isReadOnlyDefaultValid,
     isStaticListSupportedForContentType,
     isValueSourceBindingValid,
@@ -898,5 +901,85 @@ describe('buildPlatformDefaultUpdateDto strict flag', () => {
     it('carries false through so toggling strictness off persists', () => {
         const dto = buildPlatformDefaultUpdateDto([], false);
         expect(dto.externalCsrValidationStrict).toBe(false);
+    });
+});
+
+describe('regular-expression constraint', () => {
+    const stringAttr = (over: Partial<AuthoredAttributeFormValues> = {}): AuthoredAttributeFormValues => ({
+        ...baseAttr(),
+        mappingFieldType: FieldType.Rdn,
+        mappingRdnCode: '2.5.4.3',
+        ...over,
+    });
+
+    test('is offered for String only', () => {
+        expect(isRegexConstraintSupportedForContentType(AttributeContentType.String)).toBe(true);
+        expect(isRegexConstraintSupportedForContentType(AttributeContentType.Text)).toBe(false);
+        expect(isRegexConstraintSupportedForContentType(AttributeContentType.Integer)).toBe(false);
+    });
+
+    test('getRegexPatternError reports only patterns the engine rejects', () => {
+        expect(getRegexPatternError(String.raw`^CC-\d{6}$`)).toBeUndefined();
+        expect(getRegexPatternError('^CC-[0-9$')).toBeTruthy();
+    });
+
+    test('a pattern is emitted as a regExp constraint with its wording', () => {
+        const dto = buildAuthoredAttributeDto(
+            stringAttr({
+                regexPattern: String.raw`^CC-\d{6}$`,
+                regexErrorMessage: 'Cost center must be CC- followed by 6 digits',
+                regexDescription: 'Cost center code',
+            }),
+        );
+        expect(dto.constraints).toEqual([
+            {
+                type: AttributeConstraintType.RegExp,
+                data: String.raw`^CC-\d{6}$`,
+                description: 'Cost center code',
+                errorMessage: 'Cost center must be CC- followed by 6 digits',
+            },
+        ]);
+    });
+
+    test('a blank pattern leaves the attribute without constraints', () => {
+        expect(buildAuthoredAttributeDto(stringAttr({ regexPattern: '   ' })).constraints).toBeUndefined();
+        expect(buildAuthoredAttributeDto(stringAttr()).constraints).toBeUndefined();
+    });
+
+    test('a pattern left over from String is not emitted for another content type', () => {
+        const dto = buildAuthoredAttributeDto(stringAttr({ contentType: AttributeContentType.Text, regexPattern: String.raw`^CC-\d{6}$` }));
+        expect(dto.constraints).toBeUndefined();
+    });
+
+    test('round-trips through the DTO', () => {
+        const authored = stringAttr({ regexPattern: '^A+$', regexErrorMessage: 'Only A', regexDescription: 'Letters' });
+        const parsed = parseAuthoredAttributeDto(buildAuthoredAttributeDto(authored) as never);
+        expect(parsed.regexPattern).toBe('^A+$');
+        expect(parsed.regexErrorMessage).toBe('Only A');
+        expect(parsed.regexDescription).toBe('Letters');
+    });
+
+    test('constraint kinds this editor cannot author survive a round-trip', () => {
+        const range = { type: AttributeConstraintType.Range, data: { from: 1, to: 9 } } as never;
+        const parsed = parseAuthoredAttributeDto({
+            ...(buildAuthoredAttributeDto(stringAttr({ regexPattern: '^A+$' })) as never),
+            constraints: [{ type: AttributeConstraintType.RegExp, data: '^A+$' }, range],
+        } as never);
+        expect(parsed.otherConstraints).toEqual([range]);
+        expect(buildAuthoredAttributeDto(parsed).constraints).toEqual([
+            { type: AttributeConstraintType.RegExp, data: '^A+$', description: undefined, errorMessage: undefined },
+            range,
+        ]);
+    });
+
+    test('an uncompilable pattern is rejected, a valid one is not', () => {
+        expect(validateAuthoredAttribute(stringAttr({ regexPattern: '^CC-[0-9$' })).regexPattern).toBeTruthy();
+        expect(validateAuthoredAttribute(stringAttr({ regexPattern: String.raw`^CC-\d{6}$` }))).toEqual({});
+    });
+
+    test('an uncompilable pattern on a content type that cannot carry one is not an error', () => {
+        expect(
+            validateAuthoredAttribute(stringAttr({ contentType: AttributeContentType.Text, regexPattern: '^CC-[0-9$' })).regexPattern,
+        ).toBeUndefined();
     });
 });
