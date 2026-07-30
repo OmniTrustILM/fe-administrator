@@ -427,7 +427,7 @@ const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
                                                     onSelectedTriggersChange={(e) => {
                                                         field.onChange(e);
                                                     }}
-                                                    noteText={`Only Triggers associated with the same Resource as the Event are shown`}
+                                                    noteText={`Only Triggers associated with the same Resource as the Event, and bound either to this Event or to no Event, are shown`}
                                                 />
                                             )}
                                         />

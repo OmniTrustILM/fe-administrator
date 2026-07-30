@@ -14,7 +14,7 @@ import { actions as certificateActions, selectors as certificateSelectors } from
 import { selectors as cryptographyOperationSelectors } from 'ducks/cryptographic-operations';
 import { actions as tokenProfileActions } from 'ducks/token-profiles';
 import type { CertificateDetailResponseModel } from 'types/certificate';
-import { CertificateRequestFormat } from 'types/openapi';
+import { CertificateRegistrationState, CertificateRequestFormat } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 
 type Props = Readonly<{
@@ -25,7 +25,8 @@ type Props = Readonly<{
 type KeySource = 'upload' | 'existing';
 
 type CompleteRegisteredFormValues = {
-    authorizationSecret: string;
+    // Absent for a certificate pre-registered without a challenge: the field is not rendered at all.
+    authorizationSecret?: string;
     keySource: KeySource;
     tokenProfileUuid?: string;
     keyUuid?: string;
@@ -102,7 +103,13 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
 
     const isUploadSource = keySource !== 'existing';
 
-    const canSubmit = !!authorizationSecret && (isUploadSource ? !!csrContent : !!tokenProfileUuid && !!keyUuid);
+    // A challenge is pending only while an authorization row exists *and* is still Active: Core verifies
+    // the secret for nothing else, so in every other case there is nothing to ask for and nothing to gate
+    // submit on. Matched to the same condition CertificateDetailsContent gates the Complete button on, so
+    // the dialog stays correct on its own rather than relying on that button never being relaxed.
+    const hasChallenge = certificate.registration?.state === CertificateRegistrationState.Active;
+
+    const canSubmit = (!hasChallenge || !!authorizationSecret) && (isUploadSource ? !!csrContent : !!tokenProfileUuid && !!keyUuid);
 
     const onSubmit = useCallback(
         (values: CompleteRegisteredFormValues) => {
@@ -130,7 +137,7 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
                     certificateUuid: certificate.uuid,
                     request: isUploadSource ? csrContent : '',
                     format: isUploadSource ? CertificateRequestFormat.Pkcs10 : undefined,
-                    authorizationSecret: values.authorizationSecret,
+                    authorizationSecret: hasChallenge ? values.authorizationSecret : undefined,
                     attributes: [],
                     tokenProfileUuid: isUploadSource ? undefined : values.tokenProfileUuid,
                     keyUuid: isUploadSource ? undefined : values.keyUuid,
@@ -141,7 +148,17 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
             // Do not close here: on success the epic redirects to the issued certificate (unmounting this
             // dialog); on failure the dialog stays open with the entered values so the user can correct and retry.
         },
-        [canSubmit, certificate, csrAttributeDescriptors, csrContent, dispatch, isIssuing, isUploadSource, signatureAttributeDescriptors],
+        [
+            canSubmit,
+            certificate,
+            csrAttributeDescriptors,
+            csrContent,
+            dispatch,
+            hasChallenge,
+            isIssuing,
+            isUploadSource,
+            signatureAttributeDescriptors,
+        ],
     );
 
     const submissionErrors = [...new Set([...(issueErrorMessage ? [issueErrorMessage] : []), ...(issueValidationErrors ?? [])])];
@@ -164,22 +181,24 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
                         </div>
                     )}
 
-                    <Controller
-                        control={control}
-                        name="authorizationSecret"
-                        rules={{ required: true }}
-                        render={({ field: { value, onChange } }) => (
-                            <TextInput
-                                id="completeAuthorizationSecret"
-                                dataTestId="completeAuthorizationSecret"
-                                type="password"
-                                required
-                                label="Challenge"
-                                value={value ?? ''}
-                                onChange={onChange}
-                            />
-                        )}
-                    />
+                    {hasChallenge && (
+                        <Controller
+                            control={control}
+                            name="authorizationSecret"
+                            rules={{ required: true }}
+                            render={({ field: { value, onChange } }) => (
+                                <TextInput
+                                    id="completeAuthorizationSecret"
+                                    dataTestId="completeAuthorizationSecret"
+                                    type="password"
+                                    required
+                                    label="Challenge"
+                                    value={value ?? ''}
+                                    onChange={onChange}
+                                />
+                            )}
+                        />
+                    )}
 
                     <Controller
                         control={control}

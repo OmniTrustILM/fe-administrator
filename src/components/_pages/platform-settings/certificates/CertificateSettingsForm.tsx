@@ -206,7 +206,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                             )}
                         />
                         <p className="text-sm text-gray-500 mt-2">
-                            Default issuance window in days, applied when a pre-registration omits an explicit expiry.
+                            Default issuance window in days, applied when a challenge-gated pre-registration omits an explicit expiry.
                         </p>
                     </div>
                     <div>

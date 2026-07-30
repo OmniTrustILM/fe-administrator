@@ -665,6 +665,26 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(page.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
     });
 
+    test('a Read Only attribute whose content type has no default editor says so', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('apiKey');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('API key');
+        await page.getByTestId('select-ra-attr-content-type-trigger').click();
+        await page.getByRole('option', { name: 'Secret', exact: true }).click();
+        await page.locator('#ra-attr-readonly').check();
+
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        // Secret has no default-value editor, so pointing at a missing default would be a dead end.
+        await expect(page.getByTestId('request-attribute-authoring-default-value-block')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-attribute-readonly-error')).toContainText('secret');
+        await expect(page.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
+    });
+
     test('errors stay hidden until Save is pressed, and an invalid Save stores nothing', async ({ mount, page }) => {
         await mount(<RequestAttributeAuthoringEditorHarness />);
 

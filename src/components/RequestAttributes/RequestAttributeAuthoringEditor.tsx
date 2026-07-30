@@ -29,6 +29,7 @@ import {
     isValueSourceBindingValid,
     MAPPED_CONTENT_TYPES,
     validateAuthoredAttribute,
+    withBooleanReadOnlyDefault,
     type AuthoredAttributeErrors,
     type AuthoredAttributeFormValues,
     type RequestAttributeAuthoringFormValues,
@@ -103,6 +104,10 @@ const VALUE_SOURCE_OPTIONS = [
 
 // Offered when the content type has no scalar editor — a static list can't be authored there.
 const FREE_INPUT_ONLY_OPTIONS = VALUE_SOURCE_OPTIONS.slice(0, 1);
+
+// Ids wiring each inline error to the control it describes (aria-describedby). The dialog renders one
+// draft at a time, so a constant id per field is unambiguous.
+const ATTR_NAME_ERROR_ID = 'ra-attr-name-error';
 
 function valueSourceLabel(type: ValueSourceType): string {
     return VALUE_SOURCE_OPTIONS.find((o) => o.value === type)?.label ?? 'Free input';
@@ -291,6 +296,11 @@ export default function RequestAttributeAuthoringEditor({
     const attrErrors: AuthoredAttributeErrors = attrDraft?.submitted ? allAttrErrors : {};
     const nameDuplicateVisible = attrNameDuplicate && !!attrDraft?.submitted;
 
+    // Every draft is seeded through the Boolean read-only normaliser, so a stored read-only Boolean
+    // attribute with no default opens showing the `false` its switch is already displaying.
+    const openAttrDraft = (index: number | null, data: AuthoredAttributeFormValues) =>
+        setAttrDraft({ index, data: withBooleanReadOnlyDefault(data), submitted: false });
+
     const saveAttribute = () => {
         if (!attrDraft) return;
         if (!attrValid) {
@@ -366,7 +376,7 @@ export default function RequestAttributeAuthoringEditor({
                                 <span className="flex shrink-0 gap-2">
                                     <Button
                                         variant="outline"
-                                        onClick={() => setAttrDraft({ index, data: { ...attr }, submitted: false })}
+                                        onClick={() => openAttrDraft(index, { ...attr })}
                                         disabled={disabled}
                                         type="button"
                                         data-testid={`${dataTestId}-attribute-edit`}
@@ -391,7 +401,7 @@ export default function RequestAttributeAuthoringEditor({
             )}
             <Button
                 variant="outline"
-                onClick={() => setAttrDraft({ index: null, data: emptyAuthoredAttribute(), submitted: false })}
+                onClick={() => openAttrDraft(null, emptyAuthoredAttribute())}
                 disabled={disabled}
                 type="button"
                 data-testid={`${dataTestId}-attribute-add`}
@@ -404,7 +414,8 @@ export default function RequestAttributeAuthoringEditor({
     const renderAttributeDialog = () => {
         if (!attrDraft) return null;
         const d = attrDraft.data;
-        const set = (p: Partial<AuthoredAttributeFormValues>) => setAttrDraft({ ...attrDraft, data: { ...d, ...p } });
+        const set = (p: Partial<AuthoredAttributeFormValues>) =>
+            setAttrDraft({ ...attrDraft, data: withBooleanReadOnlyDefault({ ...d, ...p }) });
         // Drop the static list and the default so a value typed under the old type can never serialise
         // into `content`, and fall back to free input when the new type has no scalar editor.
         const setContentType = (contentType: AttributeContentType) =>
@@ -424,9 +435,11 @@ export default function RequestAttributeAuthoringEditor({
                     required
                     value={d.name}
                     onChange={(v) => set({ name: v })}
+                    invalid={attrNameDuplicate}
+                    ariaDescribedBy={attrNameDuplicate ? ATTR_NAME_ERROR_ID : undefined}
                 />
                 {nameDuplicateVisible ? (
-                    <p className="text-sm text-red-600" data-testid={`${dataTestId}-attribute-name-duplicate`}>
+                    <p className="text-sm text-red-600" id={ATTR_NAME_ERROR_ID} data-testid={`${dataTestId}-attribute-name-duplicate`}>
                         An attribute with this name already exists in the set.
                     </p>
                 ) : (
@@ -667,6 +680,7 @@ export default function RequestAttributeAuthoringEditor({
                                 value={v}
                                 onChange={(next) => setValueAt(index, next)}
                                 readOnly={disabled}
+                                invalid={Boolean(attrErrors.staticValues)}
                             />
                         </div>
                         <Button
@@ -719,6 +733,7 @@ export default function RequestAttributeAuthoringEditor({
                     onChange={(next) => set({ defaultValue: next })}
                     readOnly={disabled}
                     placeholder="Enter default value"
+                    invalid={Boolean(attrErrors.defaultValue)}
                 />
                 <FieldError testId={`${dataTestId}-default-value-error`} message={attrErrors.defaultValue} />
             </div>
