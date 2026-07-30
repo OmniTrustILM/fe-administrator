@@ -1,6 +1,7 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { ConnectInfoDto } from 'types/openapi';
+import type { EventTriggerAssociationModel, TriggerModel } from 'types/rules';
 
 // IMPORTANT: This file is used ONLY in component tests (Playwright CT).
 // It must NOT import the real duck modules
@@ -945,6 +946,54 @@ function discoveriesTestReducer(state: DiscoveriesTestState = discoveriesTestIni
     return state;
 }
 
+// Reducer key must match the real slice.name ('rules') so the real rules selectors (used by
+// TriggerEditorWidget) read this state. This is a subset of the real slice `State` in ducks/rules.ts,
+// not a mirror of it: the `state` selector is a plain property read, so an omitted scalar just yields
+// `undefined`. Array-typed fields are the ones that must be present, because consumers iterate them.
+export type RulesTestState = {
+    rules: unknown[];
+    triggerHistories: unknown[];
+    triggerHistorySummary?: unknown;
+    eventTriggerAssociation?: EventTriggerAssociationModel;
+    ruleDetails?: unknown;
+    executions: unknown[];
+    executionDetails?: unknown;
+    actionsList: unknown[];
+    actionDetails?: unknown;
+    conditions: unknown[];
+    conditionDetails?: unknown;
+    triggers: TriggerModel[];
+    triggerDetails?: unknown;
+    isFetchingTriggers: boolean;
+    isFetchingEventTriggersAssociation: boolean;
+    isUpdatingEventTriggersAssociation: boolean;
+    associateEventTriggersSucceeded: boolean;
+};
+
+const rulesTestInitialState: RulesTestState = {
+    rules: [],
+    triggerHistories: [],
+    triggerHistorySummary: undefined,
+    eventTriggerAssociation: undefined,
+    ruleDetails: undefined,
+    executions: [],
+    executionDetails: undefined,
+    actionsList: [],
+    actionDetails: undefined,
+    conditions: [],
+    conditionDetails: undefined,
+    triggers: [],
+    triggerDetails: undefined,
+    isFetchingTriggers: false,
+    isFetchingEventTriggersAssociation: false,
+    isUpdatingEventTriggersAssociation: false,
+    associateEventTriggersSucceeded: false,
+};
+
+function rulesTestReducer(state: RulesTestState | undefined, _action: UnknownAction): RulesTestState {
+    return state ?? rulesTestInitialState;
+}
+
 export const testReducers = combineReducers({
     raProfileRequestAttributes: raProfileRequestAttributesTestReducer,
     userInterface: userInterfaceTestReducer,
@@ -976,6 +1025,7 @@ export const testReducers = combineReducers({
     certificateGroups: certificateGroupsTestReducer,
     discoveries: discoveriesTestReducer,
     oids: oidsTestReducer,
+    rules: rulesTestReducer,
 });
 
 export const testInitialState = {
@@ -1009,4 +1059,5 @@ export const testInitialState = {
     certificateGroups: certificateGroupsTestInitialState,
     discoveries: discoveriesTestInitialState,
     oids: oidsTestInitialState,
+    rules: rulesTestInitialState,
 };
