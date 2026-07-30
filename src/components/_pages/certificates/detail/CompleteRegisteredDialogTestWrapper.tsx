@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, type Middleware } from '@reduxjs/toolkit';
 import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
@@ -7,7 +7,7 @@ import { actions as certificateActions } from 'ducks/certificates';
 import { testInitialState, testReducers } from 'ducks/test-reducers';
 import { actions as tokenProfileActions } from 'ducks/token-profiles';
 import type { CertificateDetailResponseModel } from 'types/certificate';
-import { CertificateState } from 'types/openapi';
+import { CertificateRegistrationState, CertificateState } from 'types/openapi';
 
 import CompleteRegisteredDialog from './CompleteRegisteredDialog';
 
@@ -15,18 +15,29 @@ export type CompleteRegisteredDialogTestWrapperProps = Readonly<{
     onCancel?: () => void;
     preloadedState?: Partial<ReturnType<typeof testReducers>>;
     tokenProfilesOnFetch?: Array<{ uuid: string; name: string }>;
+    /**
+     * Whether the certificate was pre-registered *with* a challenge, i.e. whether Core created an
+     * authorization row (`registration`). Selected by a plain prop rather than an exported fixture:
+     * a CT spec cannot import a component and a plain value from the same module.
+     */
+    challenged?: boolean;
+    /** State of that authorization row. Ignored when `challenged` is false — there is no row at all then. */
+    registrationState?: CertificateRegistrationState;
+    onAction?: (action: { type: string; payload?: unknown }) => void;
 }>;
 
-const testCertificate: CertificateDetailResponseModel = {
-    uuid: 'certificate-uuid',
-    commonName: 'test-registered-certificate',
-    state: CertificateState.Registered,
-    raProfile: {
-        uuid: 'ra-profile-uuid',
-        name: 'Test RA Profile',
-        authorityInstanceUuid: 'authority-uuid',
-    },
-} as CertificateDetailResponseModel;
+const testCertificate = (challenged: boolean, registrationState: CertificateRegistrationState): CertificateDetailResponseModel =>
+    ({
+        uuid: 'certificate-uuid',
+        commonName: 'test-registered-certificate',
+        state: CertificateState.Registered,
+        raProfile: {
+            uuid: 'ra-profile-uuid',
+            name: 'Test RA Profile',
+            authorityInstanceUuid: 'authority-uuid',
+        },
+        registration: challenged ? { state: registrationState } : undefined,
+    }) as CertificateDetailResponseModel;
 
 type CertificatesSlice = ReturnType<typeof testReducers>['certificates'];
 type TokenProfilesSlice = ReturnType<typeof testReducers>['tokenprofiles'];
@@ -68,16 +79,23 @@ export function CompleteRegisteredDialogTestWrapper({
     onCancel = () => {},
     preloadedState,
     tokenProfilesOnFetch,
+    challenged = true,
+    registrationState = CertificateRegistrationState.Active,
+    onAction,
 }: CompleteRegisteredDialogTestWrapperProps) {
-    const store = useMemo(
-        () =>
-            configureStore({
-                reducer: createRootReducer(tokenProfilesOnFetch),
-                middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
-                preloadedState: { ...testInitialState, ...preloadedState },
-            }),
-        [preloadedState, tokenProfilesOnFetch],
-    );
+    const certificate = useMemo(() => testCertificate(challenged, registrationState), [challenged, registrationState]);
+
+    const store = useMemo(() => {
+        const onActionMiddleware: Middleware = () => (next) => (action) => {
+            onAction?.(action as { type: string; payload?: unknown });
+            return next(action);
+        };
+        return configureStore({
+            reducer: createRootReducer(tokenProfilesOnFetch),
+            middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(onActionMiddleware),
+            preloadedState: { ...testInitialState, ...preloadedState },
+        });
+    }, [preloadedState, tokenProfilesOnFetch, onAction]);
 
     // Mirror the real parent (CertificateDetailsContent): onCancel closes the dialog and unmounts its body.
     const [open, setOpen] = useState(true);
@@ -91,7 +109,7 @@ export function CompleteRegisteredDialogTestWrapper({
             <MemoryRouter>
                 {open ? (
                     <>
-                        <CompleteRegisteredDialog certificate={testCertificate} onCancel={handleCancel} />
+                        <CompleteRegisteredDialog certificate={certificate} onCancel={handleCancel} />
                         {/* Stand-in for the epic: flips isIssuing true→false with no error so the dialog can
                             observe a confirmed success (the real success redirect can be a same-URL no-op). */}
                         <button

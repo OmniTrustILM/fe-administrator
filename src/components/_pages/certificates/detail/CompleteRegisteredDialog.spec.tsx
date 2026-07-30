@@ -1,7 +1,7 @@
 import { test, expect } from '../../../../../playwright/ct-test';
 import { testInitialState } from 'ducks/test-reducers';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import { AttributeContentType, AttributeType } from 'types/openapi';
+import { AttributeContentType, AttributeType, CertificateRegistrationState } from 'types/openapi';
 import { CompleteRegisteredDialogTestWrapper } from './CompleteRegisteredDialogTestWrapper';
 
 const csrDataDescriptor: AttributeDescriptorModel = {
@@ -32,6 +32,88 @@ test.describe('CompleteRegisteredDialog', () => {
 
         await page.locator('#completeCsrUpload__fileUpload__fileContent').fill('LS0tLS1CRUdJTi=');
         await expect(submitButton).toBeEnabled();
+    });
+
+    test('Challenge is required when the certificate was pre-registered with one', async ({ mount, page }) => {
+        await mount(<CompleteRegisteredDialogTestWrapper />);
+
+        await expect(page.getByTestId('label-completeAuthorizationSecret')).toContainText('Challenge');
+        await expect(page.getByTestId('label-completeAuthorizationSecret').locator('.text-red-500')).toBeVisible();
+    });
+
+    test('Challenge is absent for a certificate pre-registered without one', async ({ mount, page }) => {
+        await mount(<CompleteRegisteredDialogTestWrapper challenged={false} />);
+
+        await expect(page.locator('#completeAuthorizationSecret')).toHaveCount(0);
+        await expect(page.locator('#completeCsrUpload__fileUpload__fileContent')).toBeVisible();
+    });
+
+    test('submit needs only CSR content when the certificate has no challenge', async ({ mount, page }) => {
+        await mount(<CompleteRegisteredDialogTestWrapper challenged={false} />);
+
+        const submitButton = page.getByTestId('completeRegisteredSubmit');
+        await expect(submitButton).toBeDisabled();
+
+        await page.locator('#completeCsrUpload__fileUpload__fileContent').fill('LS0tLS1CRUdJTi=');
+        await expect(submitButton).toBeEnabled();
+    });
+
+    test('unchallenged certificate keeps submit reachable on the existing-key path too', async ({ mount, page }) => {
+        await mount(
+            <CompleteRegisteredDialogTestWrapper
+                challenged={false}
+                preloadedState={{
+                    tokenprofiles: { tokenProfiles: [{ uuid: 'token-profile-uuid', name: 'Test Token Profile' }] } as any,
+                }}
+            />,
+        );
+
+        await page.getByTestId('completeKeySource-trigger').click();
+        await page.getByRole('option', { name: 'Existing Key' }).click();
+
+        await expect(page.locator('#completeAuthorizationSecret')).toHaveCount(0);
+        // Still gated on the key selection — dropping the challenge must not drop the other requirements.
+        await expect(page.getByTestId('completeRegisteredSubmit')).toBeDisabled();
+    });
+
+    test('Challenge is absent once the registration is no longer Active', async ({ mount, page }) => {
+        // Core verifies the secret only for an Active row; asking for one on a Closed registration would
+        // make the operator invent a value Core discards.
+        await mount(<CompleteRegisteredDialogTestWrapper registrationState={CertificateRegistrationState.Closed} />);
+
+        await expect(page.locator('#completeAuthorizationSecret')).toHaveCount(0);
+
+        await page.locator('#completeCsrUpload__fileUpload__fileContent').fill('LS0tLS1CRUdJTi=');
+        await expect(page.getByTestId('completeRegisteredSubmit')).toBeEnabled();
+    });
+
+    test('completeRegisteredCertificate payload carries the typed challenge for a challenged certificate', async ({ mount, page }) => {
+        const dispatched: { type: string; payload?: any }[] = [];
+
+        await mount(<CompleteRegisteredDialogTestWrapper onAction={(a) => dispatched.push(a)} />);
+
+        await page.locator('#completeAuthorizationSecret').fill('super-secret-challenge');
+        await page.locator('#completeCsrUpload__fileUpload__fileContent').fill('LS0tLS1CRUdJTi=');
+        await page.getByTestId('completeRegisteredSubmit').click();
+
+        await expect.poll(() => dispatched.find((a) => a.type === 'certificates/completeRegisteredCertificate')).toBeTruthy();
+        const action = dispatched.find((a) => a.type === 'certificates/completeRegisteredCertificate');
+        expect(action?.payload.authorizationSecret).toBe('super-secret-challenge');
+    });
+
+    test('completeRegisteredCertificate payload omits authorizationSecret for an unchallenged certificate', async ({ mount, page }) => {
+        const dispatched: { type: string; payload?: any }[] = [];
+
+        await mount(<CompleteRegisteredDialogTestWrapper challenged={false} onAction={(a) => dispatched.push(a)} />);
+
+        await page.locator('#completeCsrUpload__fileUpload__fileContent').fill('LS0tLS1CRUdJTi=');
+        await page.getByTestId('completeRegisteredSubmit').click();
+
+        await expect.poll(() => dispatched.find((a) => a.type === 'certificates/completeRegisteredCertificate')).toBeTruthy();
+        const action = dispatched.find((a) => a.type === 'certificates/completeRegisteredCertificate');
+        // RHF retains an unmounted field's value, so the hasChallenge ternary — not the missing input —
+        // is what keeps a stale secret out of the request.
+        expect(action?.payload.authorizationSecret).toBeUndefined();
     });
 
     test('key-source toggle switches between CSR upload and existing-key selectors', async ({ mount, page }) => {
