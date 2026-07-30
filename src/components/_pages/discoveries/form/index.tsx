@@ -17,6 +17,7 @@ import Button from 'components/Button';
 import Container from 'components/Container';
 import Label from 'components/Label';
 import CronBuilder from 'components/CronBuilder';
+import CronScheduleHint from 'components/CronScheduleHint';
 import { Clock } from 'lucide-react';
 
 import type { AttributeDescriptorModel } from 'types/attributes';
@@ -24,7 +25,6 @@ import type { ConnectorResponseModel } from 'types/connectors';
 import { FunctionGroupCode, Resource } from 'types/openapi';
 
 import { collectFormAttributes } from 'utils/attributes/attributes';
-import { getStrongFromCronExpression } from 'utils/dateUtil';
 import { validateAlphaNumericWithSpecialChars, validateQuartzCronExpression, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import TriggerEditorWidget from 'components/TriggerEditorWidget';
@@ -287,7 +287,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                                     <div className="mb-4 space-y-4">
                                         <TextInput
                                             id="cronExpression"
-                                            label="Cron Expression"
+                                            label="Cron Expression (UTC)"
                                             value={field.value}
                                             onChange={field.onChange}
                                             onBlur={field.onBlur}
@@ -306,11 +306,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                                                 </button>
                                             }
                                         />
-                                        {getStrongFromCronExpression(watchedCronExpression) && (
-                                            <p className="mt-1 text-sm text-gray-600">
-                                                {getStrongFromCronExpression(watchedCronExpression)}
-                                            </p>
-                                        )}
+                                        <CronScheduleHint cronExpression={watchedCronExpression} />
                                     </div>
                                 )}
                             />

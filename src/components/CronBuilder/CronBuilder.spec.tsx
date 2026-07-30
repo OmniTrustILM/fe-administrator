@@ -41,6 +41,31 @@ test.describe('CronBuilder', () => {
         await expect(component.locator('code').last()).toContainText('0 */5 * * * ?');
     });
 
+    test('names UTC in the schedule description and previews the next run locally', async ({ mount }) => {
+        const component = await mount(cron('0 36 11 * * ?'));
+
+        // Core runs the cron in UTC — the description must say so rather than leave the time bare.
+        await expect(component.getByTestId('cron-builder-schedule-hint-description')).toContainText('11:36');
+        await expect(component.getByTestId('cron-builder-schedule-hint-description')).toContainText('UTC');
+        // ...and the same firing is spelled out in the viewer's own zone, where it may land on another hour.
+        await expect(component.getByTestId('cron-builder-schedule-hint-next-run')).toContainText('your local time');
+    });
+
+    test('marks the start time inputs as UTC', async ({ mount }) => {
+        const component = await mount(cron('0 00 12 * * ?'));
+        await expect(component.getByText('Start time')).toBeVisible();
+        await expect(component.getByText('UTC', { exact: true })).toBeVisible();
+    });
+
+    test('previews the Quartz month-end schedules the Monthly tab emits', async ({ mount }) => {
+        // cron-parser rejects `LW`; our own fallback resolves it, so no Monthly mode is left without
+        // a preview. The sibling `L-N` form is covered in the cronSchedule unit tests.
+        const component = await mount(cron('0 00 12 LW * ?'));
+
+        await expect(component.getByTestId('cron-builder-schedule-hint-description')).toContainText('UTC');
+        await expect(component.getByTestId('cron-builder-schedule-hint-next-run')).toContainText('your local time');
+    });
+
     for (const { title, expr, tab } of activeTabCases) {
         test(title, async ({ mount }) => {
             const component = await mount(cron(expr));

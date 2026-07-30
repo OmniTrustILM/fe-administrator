@@ -14,8 +14,9 @@ import Badge from 'components/Badge';
 import Switch from 'components/Switch';
 import { PlatformEnum, Resource, SchedulerJobExecutionStatus } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { getStrongFromCronExpression } from 'utils/dateUtil';
+import { describeCronSchedule } from 'utils/cronSchedule';
 import CronBuilder from 'components/CronBuilder';
+import CronScheduleHint from 'components/CronScheduleHint';
 import { validateQuartzCronExpression, validateRequired } from 'utils/validators';
 import { buildValidationRules } from 'utils/validators-helper';
 import TextInput from 'components/TextInput';
@@ -68,7 +69,7 @@ const CronExpressionForm = ({
                         <div className="mb-4 space-y-4">
                             <TextInput
                                 id="cronExpression"
-                                label="Cron Expression"
+                                label="Cron Expression (UTC)"
                                 value={field.value}
                                 onChange={field.onChange}
                                 onBlur={field.onBlur}
@@ -86,9 +87,7 @@ const CronExpressionForm = ({
                                     </button>
                                 }
                             />
-                            {getStrongFromCronExpression(cronExpressionValue) && (
-                                <p className="mt-1 text-sm text-gray-600">{getStrongFromCronExpression(cronExpressionValue)}</p>
-                            )}
+                            <CronScheduleHint cronExpression={cronExpressionValue} />
                         </div>
                     )}
                 />
@@ -293,7 +292,10 @@ export default function SchedulerJobDetail() {
                               'Cron Expression',
                               <>
                                   {schedulerJob.cronExpression}&nbsp;
-                                  <Tooltip content={getStrongFromCronExpression(schedulerJob.cronExpression)}>
+                                  <Tooltip
+                                      content={describeCronSchedule(schedulerJob.cronExpression)}
+                                      contentClassName="whitespace-pre-line"
+                                  >
                                       <Info size={16} className="inline-block" />
                                   </Tooltip>
                               </>,

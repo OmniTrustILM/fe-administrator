@@ -5,8 +5,9 @@ import TabLayout from 'components/Layout/TabLayout';
 import NumberInput from 'components/NumberInput';
 import RadioRow from 'components/RadioRow';
 import TextInput from 'components/TextInput';
-import { getStrongFromCronExpression } from 'utils/dateUtil';
 import Container from 'components/Container';
+import CronScheduleHint from 'components/CronScheduleHint';
+import { CRON_TIME_ZONE } from 'utils/cronSchedule';
 import { buildCron, parseCron, DAYS_OF_WEEK, TABS } from './cronUtils';
 import type { CronState } from './cronUtils';
 
@@ -27,6 +28,7 @@ function StartTimePicker({
             <NumberInput value={atHour} onChange={onHourChange} min={0} max={23} zeroPad />
             <span className="text-gray-400 font-bold">:</span>
             <NumberInput value={atMinute} onChange={onMinuteChange} min={0} max={59} zeroPad />
+            <Label className="!mb-0 text-gray-500 dark:text-neutral-400">{CRON_TIME_ZONE}</Label>
         </div>
     );
 }
@@ -74,7 +76,6 @@ export default function CronBuilder({ value, onChange }: Readonly<Props>) {
     );
 
     const currentCron = buildCron(state);
-    const description = getStrongFromCronExpression(currentCron);
 
     const tabs = useMemo(
         () => [
@@ -124,6 +125,7 @@ export default function CronBuilder({ value, onChange }: Readonly<Props>) {
                                 max={59}
                                 zeroPad
                             />
+                            <Label className="!mb-0 text-gray-500 dark:text-neutral-400">{CRON_TIME_ZONE}</Label>
                         </RadioRow>
                     </Container>
                 ),
@@ -275,9 +277,9 @@ export default function CronBuilder({ value, onChange }: Readonly<Props>) {
         <div className="space-y-4">
             <TabLayout tabs={tabs} selectedTab={TABS.findIndex((t) => t.id === state.tab)} onTabChange={handleTabChange} noBorder />
             <div className="flex items-center gap-2 px-1">
-                <code className="flex-1 text-sm font-mono bg-gray-100 dark:bg-neutral-800 text-[var(--dark-gray-color)] dark:text-neutral-300 px-3 py-2 rounded-lg border border-gray-200 dark:border-neutral-700">
-                    {description && <p className="text-sm text-gray-500 px-1 text-inherit">{description}</p>}
-                </code>
+                <div className="flex-1 text-sm bg-gray-100 dark:bg-neutral-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-neutral-700">
+                    <CronScheduleHint cronExpression={currentCron} dataTestId="cron-builder-schedule-hint" />
+                </div>
             </div>
             <div className="flex items-center gap-2 px-1">
                 <code className="flex-1 text-sm font-mono bg-gray-100 dark:bg-neutral-800 text-[var(--dark-gray-color)] dark:text-neutral-300 px-3 py-2 rounded-lg border border-gray-200 dark:border-neutral-700">
