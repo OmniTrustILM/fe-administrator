@@ -518,7 +518,14 @@ function alertsTestReducer(state: AlertsTestState = alertsTestInitialState, acti
     return state;
 }
 
-type PagingObject = { totalItems: number; checkedRows: string[]; isFetchingList: boolean; pageNumber: number; pageSize: number };
+type PagingObject = {
+    totalItems: number;
+    checkedRows: string[];
+    isFetchingList: boolean;
+    pageNumber: number;
+    pageSize: number;
+    filtersSnapshot?: string;
+};
 type PagingEntry = { entity: number; paging: PagingObject };
 
 export type PagingsTestState = { pagings: PagingEntry[] };
@@ -540,9 +547,25 @@ function updatePaging(state: PagingsTestState, entity: number, fn: (p: PagingObj
 function pagingsTestReducer(state: PagingsTestState = pagingsTestInitialState, action: UnknownAction): PagingsTestState {
     const a = action as {
         type: string;
-        payload?: number | { entity: number; totalItems?: number; checkedRows?: string[]; pageNumber?: number; pageSize?: number };
+        payload?:
+            | number
+            | {
+                  entity: number;
+                  totalItems?: number;
+                  checkedRows?: string[];
+                  pageNumber?: number;
+                  pageSize?: number;
+                  filtersSnapshot?: string;
+              };
     };
-    const data = a.payload as { entity: number; totalItems?: number; checkedRows?: string[]; pageNumber?: number; pageSize?: number };
+    const data = a.payload as {
+        entity: number;
+        totalItems?: number;
+        checkedRows?: string[];
+        pageNumber?: number;
+        pageSize?: number;
+        filtersSnapshot?: string;
+    };
     if (a.type === 'pagings/list') return updatePaging(state, a.payload as number, (p) => ({ ...p, isFetchingList: true }));
     if (a.type === 'pagings/listSuccess')
         return updatePaging(state, data.entity, (p) => ({ ...p, isFetchingList: false, totalItems: data.totalItems ?? 0 }));
@@ -555,8 +578,16 @@ function pagingsTestReducer(state: PagingsTestState = pagingsTestInitialState, a
             pageNumber: data.pageNumber ?? p.pageNumber,
             pageSize: data.pageSize ?? p.pageSize,
         }));
+    if (a.type === 'pagings/setFiltersSnapshot')
+        return updatePaging(state, data.entity, (p) => ({ ...p, filtersSnapshot: data.filtersSnapshot }));
     if (a.type === 'pagings/resetPaging')
-        return updatePaging(state, data.entity, (p) => ({ ...p, pageNumber: 1, pageSize: 10, checkedRows: [] }));
+        return updatePaging(state, data.entity, (p) => ({
+            ...p,
+            pageNumber: 1,
+            pageSize: 10,
+            checkedRows: [],
+            filtersSnapshot: undefined,
+        }));
     return state;
 }
 

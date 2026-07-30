@@ -371,6 +371,64 @@ describe('PagedList (redux pagination logic)', () => {
         });
     });
 
+    test('filters applied while the list is unmounted reset the stale page on remount', async () => {
+        const onListCallback = vi.fn();
+        const store = createStore();
+
+        await act(async () => {
+            root.render(renderPagedList({ store, onListCallback }));
+        });
+        await flushEffects();
+
+        await act(async () => {
+            store.dispatch(pagingActions.setPagination({ entity: EntityType.CBOM, pageNumber: 20, pageSize: 10 }));
+        });
+        await flushEffects();
+        expect(onListCallback).toHaveBeenLastCalledWith({ itemsPerPage: 10, pageNumber: 20, filters: [] });
+
+        await act(async () => {
+            root.unmount();
+        });
+
+        await act(async () => {
+            store.dispatch(
+                filterActions.setCurrentFilters({
+                    entity: EntityType.CBOM,
+                    currentFilters: [
+                        {
+                            fieldSource: 'PROPERTY' as any,
+                            fieldIdentifier: 'STATE',
+                            condition: 'EQUALS' as any,
+                            value: 'failed',
+                        },
+                    ] as any,
+                }),
+            );
+        });
+
+        onListCallback.mockClear();
+        root = createRoot(container);
+        await act(async () => {
+            root.render(renderPagedList({ store, onListCallback }));
+        });
+        await flushEffects();
+
+        expect((store.getState() as any).pagings.pagings[0].paging.pageNumber).toBe(1);
+        expect(onListCallback).toHaveBeenCalledTimes(1);
+        expect(onListCallback).toHaveBeenCalledWith({
+            itemsPerPage: 10,
+            pageNumber: 1,
+            filters: [
+                {
+                    fieldSource: 'PROPERTY',
+                    fieldIdentifier: 'STATE',
+                    condition: 'EQUALS',
+                    value: 'failed',
+                },
+            ],
+        });
+    });
+
     test('same filter content does not reset page', async () => {
         const onListCallback = vi.fn();
         const currentFilters = [

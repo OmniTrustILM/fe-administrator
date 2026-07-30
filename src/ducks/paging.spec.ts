@@ -105,6 +105,19 @@ describe('paging slice', () => {
         expect(cert?.paging.pageNumber).toBe(5);
         expect(cert?.paging.pageSize).toBe(50);
     });
+
+    test('setFiltersSnapshot stores the snapshot per entity and resetPaging clears it', () => {
+        let next = reducer(initialState, actions.setFiltersSnapshot({ entity: EntityType.CBOM, filtersSnapshot: '[]' }));
+        next = reducer(next, actions.setFiltersSnapshot({ entity: EntityType.CERTIFICATE, filtersSnapshot: '[{"a":1}]' }));
+
+        expect(next.pagings.find((p) => p.entity === EntityType.CBOM)?.paging.filtersSnapshot).toBe('[]');
+        expect(next.pagings.find((p) => p.entity === EntityType.CERTIFICATE)?.paging.filtersSnapshot).toBe('[{"a":1}]');
+
+        next = reducer(next, actions.resetPaging({ entity: EntityType.CBOM }));
+
+        expect(next.pagings.find((p) => p.entity === EntityType.CBOM)?.paging.filtersSnapshot).toBeUndefined();
+        expect(next.pagings.find((p) => p.entity === EntityType.CERTIFICATE)?.paging.filtersSnapshot).toBe('[{"a":1}]');
+    });
 });
 
 describe('paging selectors', () => {

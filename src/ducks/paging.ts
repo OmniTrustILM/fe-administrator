@@ -15,6 +15,7 @@ type PagingObject = {
     isFetchingList: boolean;
     pageNumber: number;
     pageSize: number;
+    filtersSnapshot?: string;
 };
 
 export type State = {
@@ -88,11 +89,18 @@ export const slice = createSlice({
             });
         },
 
+        setFiltersSnapshot: (state, action: PayloadAction<{ entity: EntityType; filtersSnapshot: string }>) => {
+            updatePagingState(state, action.payload.entity, (paging) => {
+                paging.filtersSnapshot = action.payload.filtersSnapshot;
+            });
+        },
+
         resetPaging: (state, action: PayloadAction<{ entity: EntityType }>) => {
             updatePagingState(state, action.payload.entity, (paging) => {
                 paging.pageNumber = EMPTY_PAGING.pageNumber;
                 paging.pageSize = EMPTY_PAGING.pageSize;
                 paging.checkedRows = [];
+                paging.filtersSnapshot = undefined;
             });
         },
     },
@@ -110,6 +118,8 @@ const pageNumber = (entity: EntityType) =>
     createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageNumber);
 const pageSize = (entity: EntityType) =>
     createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).pageSize);
+const filtersSnapshot = (entity: EntityType) =>
+    createSelector(state, (state) => (state?.pagings.find((f) => f.entity === entity)?.paging ?? EMPTY_PAGING).filtersSnapshot);
 
 /**
  * Builds the params for a list request for `entity` from the current redux root state:
@@ -155,6 +165,7 @@ export const selectors = {
     isFetchingList,
     pageNumber,
     pageSize,
+    filtersSnapshot,
 };
 
 export const actions = slice.actions;
