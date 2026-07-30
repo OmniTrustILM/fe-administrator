@@ -25,11 +25,11 @@ export interface CertificateProtocolDto {
      */
     protocol: CertificateProtocol;
     /**
-     * UUID of the protocol
+     * UUID of the protocol profile the certificate was issued through. Null when the profile is not known, e.g. when the association predates tracking or the profile was removed.
      * @type {string}
      * @memberof CertificateProtocolDto
      */
-    protocolProfileUuid: string;
+    protocolProfileUuid?: string;
     /**
      * Additional UUID for use of the protocol, for example ACME Account UUID in case of ACME protocol
      * @type {string}
