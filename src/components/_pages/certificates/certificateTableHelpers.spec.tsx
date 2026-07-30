@@ -318,6 +318,18 @@ test.describe('certificateTableHelpers', () => {
             expect(cell).toBe('n/a');
         });
 
+        test('renders the profile UUID as plain text when its protocol has no known profile route', () => {
+            // A protocol the backend added before these types were regenerated resolves to no route, so the UUID is
+            // kept visible rather than linked to a path that cannot exist.
+            const cell = valueCellOf(
+                { protocol: 'unknown-protocol' as CertificateProtocol, protocolProfileUuid: 'profile-1' },
+                'protocolProfileUuid',
+            );
+
+            expect(typeof cell).toBe('string');
+            expect(cell).toBe('profile-1');
+        });
+
         test('still renders the protocol name row when the profile UUID is missing', () => {
             const rows = buildCertificateProtocolRows({ protocol: CertificateProtocol.Cmp }, {}, mockGetEnumLabel);
 

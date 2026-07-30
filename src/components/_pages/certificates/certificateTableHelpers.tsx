@@ -393,7 +393,7 @@ export function buildCertificateDetailBaseRows(
     return rows;
 }
 
-function getProtocolProfileLink(protocolInfo: CertificateProtocolDto): string {
+function getProtocolProfileLink(protocolInfo: CertificateProtocolDto): string | undefined {
     switch (protocolInfo.protocol) {
         case CertificateProtocol.Acme:
             return `../acmeprofiles/detail/${protocolInfo.protocolProfileUuid}`;
@@ -401,6 +401,9 @@ function getProtocolProfileLink(protocolInfo: CertificateProtocolDto): string {
             return `../cmpprofiles/detail/${protocolInfo.protocolProfileUuid}`;
         case CertificateProtocol.Scep:
             return `../scepprofiles/detail/${protocolInfo.protocolProfileUuid}`;
+        default:
+            // A protocol the backend added before these types were regenerated has no known profile route here.
+            return undefined;
     }
 }
 
@@ -413,7 +416,10 @@ export function buildCertificateProtocolRows(
 
     // The profile association is not always known — e.g. legacy CMP-issued certificates whose recorded UUID was
     // cleared by a core migration, or profiles deleted after issuance. Linking anyway would navigate to
-    // /detail/undefined, which 404s, and the link label would be empty and therefore invisible.
+    // /detail/undefined, which 404s, and the link label would be empty and therefore invisible. An unrecognised
+    // protocol has no route either, so the UUID is still shown, just not as a link.
+    const profileLink = protocolInfo.protocolProfileUuid ? getProtocolProfileLink(protocolInfo) : undefined;
+
     const rows: TableDataRow[] = [
         {
             id: 'protocol',
@@ -429,12 +435,12 @@ export function buildCertificateProtocolRows(
             id: 'protocolProfileUuid',
             columns: [
                 'Protocol Profile UUID',
-                protocolInfo.protocolProfileUuid ? (
-                    <Link key="protocolProfileUuid" to={getProtocolProfileLink(protocolInfo)}>
+                profileLink ? (
+                    <Link key="protocolProfileUuid" to={profileLink}>
                         {protocolInfo.protocolProfileUuid}
                     </Link>
                 ) : (
-                    'n/a'
+                    (protocolInfo.protocolProfileUuid ?? 'n/a')
                 ),
             ],
         },
