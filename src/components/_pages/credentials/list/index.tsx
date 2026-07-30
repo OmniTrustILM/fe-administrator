@@ -3,6 +3,7 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
 import Badge from 'components/Badge';
+import ConnectorLink from 'components/ConnectorLink';
 
 import { actions, selectors } from 'ducks/credentials';
 
@@ -135,13 +136,7 @@ function CredentialList() {
                         {credential.kind}
                     </Badge>,
 
-                    credential.connectorName ? (
-                        <Link key="connector" to={`../connectors/detail/${credential.connectorUuid}`}>
-                            {credential.connectorName ?? 'Unassigned'}
-                        </Link>
-                    ) : (
-                        (credential.connectorName ?? 'Unassigned')
-                    ),
+                    <ConnectorLink key="connector" uuid={credential.connectorUuid} name={credential.connectorName} fallback="Unassigned" />,
                 ],
             })),
 

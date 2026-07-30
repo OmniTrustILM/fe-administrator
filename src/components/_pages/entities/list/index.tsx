@@ -3,6 +3,7 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
 import Badge from 'components/Badge';
+import ConnectorLink from 'components/ConnectorLink';
 
 import { actions, selectors } from 'ducks/entities';
 
@@ -67,13 +68,7 @@ function EntityList() {
                     <Link key="name" to={`./detail/${entity.uuid}`}>
                         {entity.name}
                     </Link>,
-                    entity.connectorName ? (
-                        <Link key="connector" to={`../connectors/detail/${entity.connectorUuid}`}>
-                            {entity.connectorName ?? 'Unassigned'}
-                        </Link>
-                    ) : (
-                        (entity.connectorName ?? 'Unassigned')
-                    ),
+                    <ConnectorLink key="connector" uuid={entity.connectorUuid} name={entity.connectorName} fallback="Unassigned" />,
                     <Badge key="kind" color="primary">
                         {entity.kind}
                     </Badge>,

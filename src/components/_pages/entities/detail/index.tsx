@@ -9,7 +9,8 @@ import { actions, selectors } from 'ducks/entities';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import ConnectorLink from 'components/ConnectorLink';
 import EntityForm from '../form';
 
 import Label from 'components/Label';
@@ -102,11 +103,7 @@ export default function EntityDetail() {
                           id: 'entityProviderName',
                           columns: [
                               'Entity Provider Name',
-                              entity.connectorUuid ? (
-                                  <Link to={`../../connectors/detail/${entity.connectorUuid}`}>{entity.connectorName}</Link>
-                              ) : (
-                                  ''
-                              ),
+                              <ConnectorLink key="connector" uuid={entity.connectorUuid} name={entity.connectorName} />,
                           ],
                       },
                   ]

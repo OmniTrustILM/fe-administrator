@@ -13,6 +13,7 @@ import { PlatformEnum, Resource } from 'types/openapi';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
+import ConnectorLink from 'components/ConnectorLink';
 
 import Label from 'components/Label';
 
@@ -115,11 +116,7 @@ export default function DiscoveryDetail() {
                           id: 'discoveryProviderName',
                           columns: [
                               'Discovery Provider Name',
-                              discovery.connectorUuid ? (
-                                  <Link to={`../../connectors/detail/${discovery.connectorUuid}`}>{discovery.connectorName}</Link>
-                              ) : (
-                                  ''
-                              ),
+                              <ConnectorLink key="connector" uuid={discovery.connectorUuid} name={discovery.connectorName} />,
                           ],
                       },
                       {

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
 
 import Badge from 'components/Badge';
+import ConnectorLink from 'components/ConnectorLink';
 
 import { actions, selectors } from 'ducks/discoveries';
 import { EntityType } from 'ducks/filters';
@@ -94,13 +95,7 @@ function DiscoveryList() {
                     <Link key="name" to={`./detail/${discovery.uuid}`}>
                         {discovery.name}
                     </Link>,
-                    discovery.connectorName ? (
-                        <Link key="connector" to={`../connectors/detail/${discovery.connectorUuid}`}>
-                            {discovery.connectorName ?? 'Unassigned'}
-                        </Link>
-                    ) : (
-                        (discovery.connectorName ?? 'Unassigned')
-                    ),
+                    <ConnectorLink key="connector" uuid={discovery.connectorUuid} name={discovery.connectorName} fallback="Unassigned" />,
                     <Badge key="kind" color="secondary">
                         {discovery.kind}
                     </Badge>,

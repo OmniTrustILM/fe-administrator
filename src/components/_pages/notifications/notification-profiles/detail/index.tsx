@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
+import ConnectorLink from 'components/ConnectorLink';
 import NotificationProfileForm from '../form';
 
 import Badge from 'components/Badge';
@@ -239,9 +240,11 @@ export default function NotificationProfileDetail() {
                           id: 'notificationProviderName',
                           columns: [
                               'Notification Provider Name',
-                              <Link key="notificationProviderName" to={`../../../connectors/detail/${notificationInstance.connectorUuid}`}>
-                                  {notificationInstance.connectorName}
-                              </Link>,
+                              <ConnectorLink
+                                  key="notificationProviderName"
+                                  uuid={notificationInstance.connectorUuid}
+                                  name={notificationInstance.connectorName}
+                              />,
                           ],
                       },
                   ]
