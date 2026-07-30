@@ -696,10 +696,12 @@ type RaProfileRequestAttributesTestState = {
     raProfileSet?: any;
     isUpdatingRaProfileSet: boolean;
     updateRaProfileSetSucceeded: boolean;
+    updateRaProfileSetError?: string;
     defaultSet?: any;
     isFetchingDefaultSet: boolean;
     isUpdatingDefaultSet: boolean;
     updateDefaultSetSucceeded: boolean;
+    updateDefaultSetError?: string;
 };
 
 const raProfileRequestAttributesTestInitialState: RaProfileRequestAttributesTestState = {
@@ -718,10 +720,23 @@ function raProfileRequestAttributesTestReducer(
     // Mirror the real slice's pending flag so CT can observe that a save was dispatched. CT runs no
     // epics, so the flag stays true — enough to assert the auto-save fired and disabled the editor.
     if (action.type === 'raProfileRequestAttributes/updatePlatformDefaultRequestAttributes') {
-        return { ...current, isUpdatingDefaultSet: true };
+        return { ...current, isUpdatingDefaultSet: true, updateDefaultSetSucceeded: false, updateDefaultSetError: undefined };
     }
     if (action.type === 'raProfileRequestAttributes/updateRaProfileRequestAttributes') {
-        return { ...current, isUpdatingRaProfileSet: true, updateRaProfileSetSucceeded: false };
+        return { ...current, isUpdatingRaProfileSet: true, updateRaProfileSetSucceeded: false, updateRaProfileSetError: undefined };
+    }
+    // Failure transitions too, so CT can drive a backend rejection and observe the rollback.
+    const failure = action as { type: string; payload?: { error?: string } };
+    if (failure.type === 'raProfileRequestAttributes/updatePlatformDefaultRequestAttributesFailure') {
+        return { ...current, isUpdatingDefaultSet: false, updateDefaultSetSucceeded: false, updateDefaultSetError: failure.payload?.error };
+    }
+    if (failure.type === 'raProfileRequestAttributes/updateRaProfileRequestAttributesFailure') {
+        return {
+            ...current,
+            isUpdatingRaProfileSet: false,
+            updateRaProfileSetSucceeded: false,
+            updateRaProfileSetError: failure.payload?.error,
+        };
     }
     return current;
 }

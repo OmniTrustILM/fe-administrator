@@ -1,8 +1,21 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../../../playwright/ct-test';
 import { withProviders } from 'utils/test-helpers';
 import RequestAttributeAuthoringEditorHarness from './RequestAttributeAuthoringEditorHarness';
 import { emptyAuthoringForm, emptyAuthoredAttribute } from 'utils/requestAttributeAuthoring';
 import { FieldType, ObjectType } from 'types/openapi';
+
+/**
+ * Every definition must carry a mapping target, so a test that is not about mapping still has to
+ * pick one to reach an enabled Save. SAN/dNSName is the cheapest: unlike RDN and Extension it needs
+ * no OID options wired into the harness.
+ */
+async function pickSanMapping(page: Page) {
+    await page.getByTestId('select-ra-attr-mapping-trigger').click();
+    await page.getByRole('option', { name: 'Subject Alternative Name' }).click();
+    await page.getByTestId('select-ra-attr-general-name-type-trigger').click();
+    await page.getByRole('option', { name: 'dNSName' }).click();
+}
 
 test.describe('RequestAttributeAuthoringEditor', () => {
     test('shows empty states and the merge-mode selector when enabled', async ({ mount }) => {
@@ -44,6 +57,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-name').fill('serverFqdn');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Server FQDN');
+        await pickSanMapping(page);
         await page.getByRole('button', { name: 'Save' }).click();
 
         await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
@@ -96,11 +110,13 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.getByRole('option', { name: 'RDN (subject)' }).click();
 
         const saveButton = page.getByRole('button', { name: 'Save', exact: true });
-        await expect(saveButton).toBeDisabled();
+        await saveButton.click();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-rdn-error')).toBeVisible();
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
 
         await page.getByTestId('select-ra-attr-rdn-trigger').click();
         await page.getByRole('option', { name: 'Common Name' }).click();
-        await expect(saveButton).toBeEnabled();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-rdn-error')).toHaveCount(0);
         await saveButton.click();
 
         await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toContainText('→ RDN 1.3.6.1.4.1.99999.1');
@@ -308,12 +324,15 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-name').fill('environment');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
+        await pickSanMapping(page);
 
         await page.getByTestId('select-ra-attr-value-source-trigger').click();
         await page.getByRole('option', { name: 'Static list' }).click();
 
         const saveButton = page.getByRole('button', { name: 'Save', exact: true });
-        await expect(saveButton).toBeDisabled();
+        await saveButton.click();
+        await expect(page.getByTestId('request-attribute-authoring-static-values-error')).toContainText('at least one value');
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
 
         await page.getByTestId('request-attribute-authoring-static-value-add').click();
         await page.locator('#ra-attr-static-value-0').click();
@@ -322,7 +341,6 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-static-value-1').click();
         await page.locator('#ra-attr-static-value-1').fill('staging');
 
-        await expect(saveButton).toBeEnabled();
         await saveButton.click();
 
         await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toContainText('Static list');
@@ -339,6 +357,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-name').fill('environment');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
+        await pickSanMapping(page);
 
         await page.getByTestId('select-ra-attr-value-source-trigger').click();
         await page.getByRole('option', { name: 'Static list' }).click();
@@ -350,13 +369,17 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-static-value-1').click();
         await page.locator('#ra-attr-static-value-1').fill('prod');
 
-        await expect(page.getByTestId('request-attribute-authoring-static-values-duplicate')).toBeVisible();
+        const staticValuesError = page.getByTestId('request-attribute-authoring-static-values-error');
         const saveButton = page.getByRole('button', { name: 'Save', exact: true });
-        await expect(saveButton).toBeDisabled();
+        await saveButton.click();
+        await expect(staticValuesError).toContainText('unique');
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
 
+        // Once revealed, the message tracks the field live and clears as soon as it is fixed.
         await page.locator('#ra-attr-static-value-1').fill('staging');
-        await expect(page.getByTestId('request-attribute-authoring-static-values-duplicate')).toHaveCount(0);
-        await expect(saveButton).toBeEnabled();
+        await expect(staticValuesError).toHaveCount(0);
+        await saveButton.click();
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
     });
 
     test('selecting a static list locks the List toggle on', async ({ mount, page }) => {
@@ -367,6 +390,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-name').fill('environment');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
+        await pickSanMapping(page);
 
         // Free input (default) does not offer the List checkbox at all.
         await expect(page.locator('#ra-attr-list')).toHaveCount(0);
@@ -491,8 +515,10 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Duplicate');
 
+        await page.getByRole('button', { name: 'Save', exact: true }).click();
         await expect(page.getByTestId('request-attribute-authoring-attribute-name-duplicate')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+        // Still the single pre-existing row: the duplicate was not stored.
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
     });
 
     test('removes an authored attribute', async ({ mount }) => {
@@ -554,6 +580,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-name').fill('env');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
+        await pickSanMapping(page);
         await page.locator('#ra-attr-default-value').click();
         await page.locator('#ra-attr-default-value').fill('prod');
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
@@ -582,15 +609,17 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-name').fill('env');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
+        // Mapped definitions are restricted to String/Text, so the switch under test is String → Text.
+        await pickSanMapping(page);
         await page.locator('#ra-attr-default-value').click();
         await page.locator('#ra-attr-default-value').fill('prod');
 
         await page.getByTestId('select-ra-attr-content-type-trigger').click();
-        await page.getByRole('option', { name: 'Integer', exact: true }).click();
+        await page.getByRole('option', { name: 'Text', exact: true }).click();
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
 
-        // The default entered under String must not survive the type switch and serialise as a
-        // wrong-typed (NaN) content entry.
+        // The default entered under the old type must not survive the switch and serialise as a
+        // wrong-typed content entry.
         await expect(page.getByTestId('value-json')).not.toContainText('"defaultValue"');
     });
 
@@ -602,8 +631,9 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-name').fill('env');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
+        await pickSanMapping(page);
         await page.locator('#ra-attr-readonly').check();
-        // Read Only implies a default value, so one has to be supplied before the attribute can be saved.
+        // Read Only locks the field to its default, so a default is mandatory for it.
         await page.locator('#ra-attr-default-value').click();
         await page.locator('#ra-attr-default-value').fill('prod');
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
@@ -611,7 +641,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(page.getByTestId('value-json')).toContainText('"readOnly":true');
     });
 
-    test('Required + Read Only without a default value blocks Save and explains why', async ({ mount, page }) => {
+    test('Read Only without a default value is rejected inline', async ({ mount, page }) => {
         await mount(<RequestAttributeAuthoringEditorHarness />);
 
         await page.getByTestId('request-attribute-authoring-attribute-add').click();
@@ -619,102 +649,23 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-name').fill('env');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
-        await page.locator('#ra-attr-required').check();
+        await pickSanMapping(page);
+
         await page.locator('#ra-attr-readonly').check();
 
-        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toBeVisible();
-        await expect(page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
-    });
+        const saveButton = page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true });
+        await saveButton.click();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-readonly-error')).toContainText('default value');
+        await expect(page.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
 
-    test('Read Only alone, without Required, also demands a default value', async ({ mount, page }) => {
-        await mount(<RequestAttributeAuthoringEditorHarness />);
-
-        await page.getByTestId('request-attribute-authoring-attribute-add').click();
-        await page.locator('#ra-attr-name').click();
-        await page.locator('#ra-attr-name').fill('env');
-        await page.locator('#ra-attr-label').click();
-        await page.locator('#ra-attr-label').fill('Environment');
-        await page.locator('#ra-attr-readonly').check();
-
-        // The backend rejects any read-only attribute without content, whether or not it is required.
-        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toBeVisible();
-        await expect(page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
-    });
-
-    test('clearing Read Only removes the missing-default error', async ({ mount, page }) => {
-        await mount(<RequestAttributeAuthoringEditorHarness />);
-
-        await page.getByTestId('request-attribute-authoring-attribute-add').click();
-        await page.locator('#ra-attr-name').click();
-        await page.locator('#ra-attr-name').fill('env');
-        await page.locator('#ra-attr-label').click();
-        await page.locator('#ra-attr-label').fill('Environment');
-        await page.locator('#ra-attr-required').check();
-        await page.locator('#ra-attr-readonly').check();
-        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toBeVisible();
-
-        await page.locator('#ra-attr-readonly').uncheck();
-
-        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toHaveCount(0);
-        await expect(page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
-    });
-
-    test('entering a default value unblocks a Required + Read Only attribute', async ({ mount, page }) => {
-        await mount(<RequestAttributeAuthoringEditorHarness />);
-
-        await page.getByTestId('request-attribute-authoring-attribute-add').click();
-        await page.locator('#ra-attr-name').click();
-        await page.locator('#ra-attr-name').fill('env');
-        await page.locator('#ra-attr-label').click();
-        await page.locator('#ra-attr-label').fill('Environment');
-        await page.locator('#ra-attr-required').check();
-        await page.locator('#ra-attr-readonly').check();
         await page.locator('#ra-attr-default-value').click();
         await page.locator('#ra-attr-default-value').fill('prod');
-
-        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toHaveCount(0);
-        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
-
-        await expect(page.getByTestId('value-json')).toContainText('"defaultValue":"prod"');
+        await expect(page.getByTestId('request-attribute-authoring-attribute-readonly-error')).toHaveCount(0);
+        await saveButton.click();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
     });
 
-    test('the missing-default error is wired to the default-value input for screen readers', async ({ mount, page }) => {
-        await mount(<RequestAttributeAuthoringEditorHarness />);
-
-        await page.getByTestId('request-attribute-authoring-attribute-add').click();
-        await page.locator('#ra-attr-readonly').check();
-
-        const input = page.locator('#ra-attr-default-value');
-        await expect(input).toHaveAttribute('aria-invalid', 'true');
-        await expect(input).toHaveAttribute('aria-describedby', 'ra-attr-default-value-error');
-        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toHaveAttribute(
-            'id',
-            'ra-attr-default-value-error',
-        );
-        // The asterisk on the label is only meaningful once the label is tied to the input.
-        await expect(page.getByTestId('label-ra-attr-default-value')).toBeVisible();
-    });
-
-    test('a Read Only Boolean starts from an explicit false default rather than a blocked Save', async ({ mount, page }) => {
-        await mount(<RequestAttributeAuthoringEditorHarness />);
-
-        await page.getByTestId('request-attribute-authoring-attribute-add').click();
-        await page.locator('#ra-attr-name').click();
-        await page.locator('#ra-attr-name').fill('autoRenew');
-        await page.locator('#ra-attr-label').click();
-        await page.locator('#ra-attr-label').fill('Auto renew');
-        await page.getByTestId('select-ra-attr-content-type-trigger').click();
-        await page.getByRole('option', { name: 'Boolean', exact: true }).click();
-        await page.locator('#ra-attr-readonly').check();
-
-        // The switch cannot render "unset", so checking Read Only seeds the false it already shows.
-        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toHaveCount(0);
-        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
-
-        await expect(page.getByTestId('value-json')).toContainText('"defaultValue":false');
-    });
-
-    test('a non-scalar content type explains why a Read Only attribute cannot be saved', async ({ mount, page }) => {
+    test('a Read Only attribute whose content type has no default editor says so', async ({ mount, page }) => {
         await mount(<RequestAttributeAuthoringEditorHarness />);
 
         await page.getByTestId('request-attribute-authoring-attribute-add').click();
@@ -726,53 +677,79 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.getByRole('option', { name: 'Secret', exact: true }).click();
         await page.locator('#ra-attr-readonly').check();
 
-        // Secret has no default-value editor, so the block that normally carries the error is gone —
-        // the explanation still has to appear, or Save would be disabled for no visible reason.
-        await expect(page.getByTestId('request-attribute-authoring-default-value-block')).toHaveCount(0);
-        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toContainText('secret');
-        await expect(page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
-    });
-
-    test('editing a stored read-only attribute with no default surfaces the error', async ({ mount, page }) => {
-        const initialValue = {
-            ...emptyAuthoringForm(),
-            attributes: [
-                {
-                    ...emptyAuthoredAttribute(),
-                    name: 'legacy',
-                    label: 'Legacy',
-                    required: true,
-                    readOnly: true,
-                    defaultValue: undefined,
-                },
-            ],
-        };
-        await mount(<RequestAttributeAuthoringEditorHarness initialValue={initialValue} />);
-
-        await page.getByTestId('request-attribute-authoring-attribute-edit').click();
-
-        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toBeVisible();
-        await expect(page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
-
-        await page.locator('#ra-attr-default-value').click();
-        await page.locator('#ra-attr-default-value').fill('prod');
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
 
-        await expect(page.getByTestId('value-json')).toContainText('"defaultValue":"prod"');
+        // Secret has no default-value editor, so pointing at a missing default would be a dead end.
+        await expect(page.getByTestId('request-attribute-authoring-default-value-block')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-attribute-readonly-error')).toContainText('secret');
+        await expect(page.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
     });
 
-    test('Required alone does not require a default value', async ({ mount, page }) => {
+    test('errors stay hidden until Save is pressed, and an invalid Save stores nothing', async ({ mount, page }) => {
         await mount(<RequestAttributeAuthoringEditorHarness />);
 
         await page.getByTestId('request-attribute-authoring-attribute-add').click();
+
+        // A just-opened dialog must not greet the user with errors — only the required markers...
+        await expect(page.getByTestId('request-attribute-authoring-attribute-name-error')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-attribute-mapping-error')).toHaveCount(0);
+
+        // ...and typing must not either: the reveal is tied to the Save attempt, nothing else.
         await page.locator('#ra-attr-name').click();
         await page.locator('#ra-attr-name').fill('env');
+        await expect(page.getByTestId('request-attribute-authoring-attribute-mapping-error')).toHaveCount(0);
+
+        const saveButton = page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true });
+        await saveButton.click();
+
+        await expect(page.getByTestId('request-attribute-authoring-attribute-label-error')).toContainText('Label is required');
+        await expect(page.getByTestId('request-attribute-authoring-attribute-mapping-error')).toContainText('mapping target is required');
+        await expect(page.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
+
+        // Fixing a field clears its message without another Save.
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
-        await page.locator('#ra-attr-required').check();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-label-error')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-attribute-mapping-error')).toBeVisible();
 
-        await expect(page.getByTestId('request-attribute-authoring-readonly-default-missing')).toHaveCount(0);
-        await expect(page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+        await pickSanMapping(page);
+        await saveButton.click();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
+    });
+
+    test('a stored definition that breaks the rules is flagged in the list', async ({ mount, page }) => {
+        // A set authored before these rules: unmapped, so Core would reject it on the next save.
+        const initialValue = {
+            ...emptyAuthoringForm(),
+            attributes: [{ ...emptyAuthoredAttribute(), name: 'legacy', label: 'Legacy' }],
+        };
+        await mount(<RequestAttributeAuthoringEditorHarness initialValue={initialValue} />);
+
+        await expect(page.getByTestId('request-attribute-authoring-attribute-row-invalid')).toContainText('mapping target is required');
+
+        // The Edit dialog itself still waits for a Save attempt before turning red.
+        await page.getByTestId('request-attribute-authoring-attribute-edit').click();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-mapping-error')).toHaveCount(0);
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-mapping-error')).toBeVisible();
+    });
+
+    test('picking a mapping target narrows the content type to String/Text and coerces an incompatible one', async ({ mount, page }) => {
+        await mount(<RequestAttributeAuthoringEditorHarness />);
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-content-type-trigger').click();
+        await page.getByRole('option', { name: 'Integer', exact: true }).click();
+
+        await pickSanMapping(page);
+
+        // Integer cannot be mapped, so the selection falls back to String...
+        await expect(page.getByTestId('select-ra-attr-content-type-trigger')).toContainText('String');
+        // ...and the dropdown no longer offers anything but String/Text.
+        await page.getByTestId('select-ra-attr-content-type-trigger').click();
+        await expect(page.getByRole('option', { name: 'Text', exact: true })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Integer', exact: true })).toHaveCount(0);
+        await expect(page.getByRole('option', { name: 'Boolean', exact: true })).toHaveCount(0);
     });
 
     test('Free input value source shows Read Only and hides List/Multi select', async ({ mount, page }) => {
@@ -806,6 +783,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-name').fill('env');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
+        await pickSanMapping(page);
         await page.locator('#ra-attr-readonly').check();
 
         await page.getByTestId('select-ra-attr-value-source-trigger').click();
@@ -829,6 +807,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.locator('#ra-attr-name').fill('env');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
+        await pickSanMapping(page);
 
         // Static list forces List on and shows the checkbox...
         await page.getByTestId('select-ra-attr-value-source-trigger').click();

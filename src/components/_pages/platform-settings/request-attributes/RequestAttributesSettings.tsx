@@ -6,6 +6,7 @@ import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/raProfileRequestAttributes';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useRunOnFailedFinish } from 'utils/common-hooks';
 import {
     buildPlatformDefaultUpdateDto,
     emptyAuthoringForm,
@@ -24,6 +25,8 @@ export default function RequestAttributesSettings() {
     const defaultSet = useSelector(selectors.defaultSet);
     const isFetching = useSelector(selectors.isFetchingDefaultSet);
     const isUpdating = useSelector(selectors.isUpdatingDefaultSet);
+    const updateSucceeded = useSelector(selectors.updateDefaultSetSucceeded);
+    const updateError = useSelector(selectors.updateDefaultSetError);
     const { rdnOptions, extensionOptions, rdnOptionsError, extensionOptionsError, rdnOptionsLoaded, extensionOptionsLoaded } =
         useOidMappingOptions();
 
@@ -34,18 +37,28 @@ export default function RequestAttributesSettings() {
         dispatch(actions.getPlatformDefaultRequestAttributes());
     }, [dispatch]);
 
+    const formFromDefaultSet = useCallback(
+        (): RequestAttributeAuthoringFormValues => ({
+            ...emptyAuthoringForm(),
+            attributes: parsePlatformDefaultDto(defaultSet),
+            externalCsrValidationStrict: defaultSet?.externalCsrValidationStrict,
+        }),
+        [defaultSet],
+    );
+
     // Seed the form once, on the undefined → defined transition of the fetched set. Re-seeding on
     // every `defaultSet` reference change would clobber in-progress edits when a late fetch resolves.
     useEffect(() => {
         if (defaultSet !== undefined && !loaded) {
-            setForm({
-                ...emptyAuthoringForm(),
-                attributes: parsePlatformDefaultDto(defaultSet),
-                externalCsrValidationStrict: defaultSet?.externalCsrValidationStrict,
-            });
+            setForm(formFromDefaultSet());
             setLoaded(true);
         }
-    }, [defaultSet, loaded]);
+    }, [defaultSet, loaded, formFromDefaultSet]);
+
+    // A rejected save persisted nothing, so drop the optimistic edit: `defaultSet` is only replaced on
+    // success, which makes it the authoritative rollback target.
+    const revertToPersisted = useCallback(() => setForm(formFromDefaultSet()), [formFromDefaultSet]);
+    useRunOnFailedFinish(isUpdating, updateSucceeded, revertToPersisted);
 
     // Persist on every editor mutation (add / edit / remove) so the attribute dialog's own Save is the
     // only click a user needs — there is no separate form-level Save to confirm the change again.
@@ -103,6 +116,15 @@ export default function RequestAttributesSettings() {
                     The platform default request-attribute set is the terminal fallback used when an RA Profile does not define its own set.
                     Changes are saved automatically.
                 </p>
+                {updateError && (
+                    <div
+                        className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-800/10 dark:text-red-500"
+                        data-testid="request-attributes-update-error"
+                        role="alert"
+                    >
+                        {`The change was rejected and has not been saved: ${updateError}`}
+                    </div>
+                )}
                 <div className="space-y-2">
                     <Label className="!text-base">Request validation</Label>
                     <ExternalCsrValidationRadio
