@@ -24,6 +24,8 @@ type Props = {
     required?: boolean;
     buttonRight?: ReactNode;
     dataTestId?: string;
+    /** Id of an element describing the field (typically an error paragraph) — announced by screen readers. */
+    ariaDescribedBy?: string;
 };
 
 function TextInput({
@@ -42,6 +44,7 @@ function TextInput({
     required = false,
     buttonRight,
     dataTestId,
+    ariaDescribedBy,
 }: Readonly<Props>) {
     const inputRef = useRef<HTMLInputElement>(null);
     const generatedId = useId();
@@ -90,6 +93,7 @@ function TextInput({
                     error={error}
                     className={className}
                     required={required}
+                    ariaDescribedBy={ariaDescribedBy}
                 />
             </>
         );
@@ -114,6 +118,7 @@ function TextInput({
                     error={error}
                     className={className}
                     required={required}
+                    ariaDescribedBy={ariaDescribedBy}
                 />
             </>
         );
@@ -153,6 +158,8 @@ function TextInput({
                     onBlur={onBlur}
                     disabled={disabled}
                     id={passwordToggleTargetId ?? id}
+                    aria-invalid={invalid || undefined}
+                    aria-describedby={ariaDescribedBy}
                     autoComplete={getAutoComplete()}
                     data-form-type="other"
                     data-testid={dataTestId ?? (id ? `text-input-${id}` : 'text-input')}

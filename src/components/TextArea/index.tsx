@@ -14,6 +14,8 @@ type Props = {
     className?: string;
     required?: boolean;
     rows?: number;
+    /** Id of an element describing the field (typically an error paragraph) — announced by screen readers. */
+    ariaDescribedBy?: string;
 };
 
 function TextArea({
@@ -29,6 +31,7 @@ function TextArea({
     className,
     required = false,
     rows = 3,
+    ariaDescribedBy,
 }: Readonly<Props>) {
     return (
         <>
@@ -55,6 +58,8 @@ function TextArea({
                 disabled={disabled}
                 id={id}
                 rows={rows}
+                aria-invalid={invalid || undefined}
+                aria-describedby={ariaDescribedBy}
             />
             {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
         </>

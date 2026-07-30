@@ -26,8 +26,10 @@ import {
     hasAuthoredRequestAttributes,
     isAuthoredAttributeMappingValid,
     isAuthoredAttributeValid,
+    isReadOnlyDefaultValid,
     isStaticListSupportedForContentType,
     isValueSourceBindingValid,
+    withBooleanReadOnlyDefault,
     parseAuthoredAttributeDto,
     parsePlatformDefaultDto,
     parseRaProfileRequestAttributesDto,
@@ -427,6 +429,124 @@ describe('requestAttributeAuthoring', () => {
                     staticValues: ['prod', 'staging'],
                 }),
             ).toBe(true);
+        });
+    });
+
+    describe('read only needs a default value', () => {
+        const freeInput = (over: Partial<AuthoredAttributeFormValues>): AuthoredAttributeFormValues => ({
+            ...baseAttr(),
+            valueSourceType: ValueSourceType.None,
+            ...over,
+        });
+
+        test('required + read only with no default value is invalid', () => {
+            const attr = freeInput({ required: true, readOnly: true, defaultValue: undefined });
+            expect(isReadOnlyDefaultValid(attr)).toBe(false);
+            expect(isAuthoredAttributeValid(attr)).toBe(false);
+        });
+
+        test('required + read only with a blank default value is invalid', () => {
+            expect(isReadOnlyDefaultValid(freeInput({ required: true, readOnly: true, defaultValue: '   ' }))).toBe(false);
+        });
+
+        test('required + read only with a default value is valid', () => {
+            const attr = freeInput({ required: true, readOnly: true, defaultValue: 'srv.example.com' });
+            expect(isReadOnlyDefaultValid(attr)).toBe(true);
+            expect(isAuthoredAttributeValid(attr)).toBe(true);
+        });
+
+        test('a falsy but present default value counts as a default', () => {
+            expect(
+                isReadOnlyDefaultValid(
+                    freeInput({ contentType: AttributeContentType.Boolean, required: true, readOnly: true, defaultValue: false }),
+                ),
+            ).toBe(true);
+            expect(
+                isReadOnlyDefaultValid(
+                    freeInput({ contentType: AttributeContentType.Integer, required: true, readOnly: true, defaultValue: 0 }),
+                ),
+            ).toBe(true);
+        });
+
+        // The backend rejects a read-only attribute with no content regardless of `required`
+        // (AttributeEngine.validateReadOnlyAttributeProperties), so the rule cannot be narrowed to
+        // required attributes without letting a guaranteed server-side failure through.
+        test('read only without required still needs a default value', () => {
+            const attr = freeInput({ required: false, readOnly: true, defaultValue: undefined });
+            expect(isReadOnlyDefaultValid(attr)).toBe(false);
+            expect(isAuthoredAttributeValid(attr)).toBe(false);
+        });
+
+        test('read only without required is valid once a default value is set', () => {
+            expect(isReadOnlyDefaultValid(freeInput({ required: false, readOnly: true, defaultValue: 'prod' }))).toBe(true);
+        });
+
+        test('required without read only needs no default value', () => {
+            expect(isReadOnlyDefaultValid(freeInput({ required: true, readOnly: false, defaultValue: undefined }))).toBe(true);
+        });
+
+        test('a static list source is not subject to the default-value rule', () => {
+            expect(
+                isReadOnlyDefaultValid({
+                    ...baseAttr(),
+                    valueSourceType: ValueSourceType.StaticList,
+                    required: true,
+                    readOnly: true,
+                    staticValues: ['prod'],
+                }),
+            ).toBe(true);
+        });
+
+        test('a connector callback source is not subject to the default-value rule', () => {
+            expect(
+                isReadOnlyDefaultValid({
+                    ...baseAttr(),
+                    valueSourceType: ValueSourceType.ConnectorCallback,
+                    required: true,
+                    readOnly: true,
+                    defaultValue: undefined,
+                }),
+            ).toBe(true);
+        });
+    });
+
+    describe('withBooleanReadOnlyDefault', () => {
+        const freeInput = (over: Partial<AuthoredAttributeFormValues>): AuthoredAttributeFormValues => ({
+            ...baseAttr(),
+            valueSourceType: ValueSourceType.None,
+            ...over,
+        });
+
+        test('seeds false for a read-only Boolean with no default, so the switch matches what is stored', () => {
+            const attr = freeInput({ contentType: AttributeContentType.Boolean, readOnly: true, defaultValue: undefined });
+            expect(withBooleanReadOnlyDefault(attr).defaultValue).toBe(false);
+            expect(isReadOnlyDefaultValid(withBooleanReadOnlyDefault(attr))).toBe(true);
+        });
+
+        test('leaves an explicit true default alone', () => {
+            const attr = freeInput({ contentType: AttributeContentType.Boolean, readOnly: true, defaultValue: true });
+            expect(withBooleanReadOnlyDefault(attr).defaultValue).toBe(true);
+        });
+
+        test('does not seed a Boolean that is not read only — unset stays unset', () => {
+            const attr = freeInput({ contentType: AttributeContentType.Boolean, readOnly: false, defaultValue: undefined });
+            expect(withBooleanReadOnlyDefault(attr)).toBe(attr);
+        });
+
+        test('does not seed a non-Boolean content type', () => {
+            const attr = freeInput({ contentType: AttributeContentType.String, readOnly: true, defaultValue: undefined });
+            expect(withBooleanReadOnlyDefault(attr)).toBe(attr);
+        });
+
+        test('does not seed when the value comes from a static list', () => {
+            const attr: AuthoredAttributeFormValues = {
+                ...baseAttr(),
+                contentType: AttributeContentType.Boolean,
+                valueSourceType: ValueSourceType.StaticList,
+                readOnly: true,
+                defaultValue: undefined,
+            };
+            expect(withBooleanReadOnlyDefault(attr)).toBe(attr);
         });
     });
 

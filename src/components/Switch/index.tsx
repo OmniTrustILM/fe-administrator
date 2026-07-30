@@ -13,6 +13,9 @@ type Props = {
     className?: string;
     labelClassName?: string;
     dataTestId?: string;
+    /** Id of an element describing the control (typically an error paragraph) — announced by screen readers. */
+    ariaDescribedBy?: string;
+    ariaInvalid?: boolean;
 };
 
 function Switch({
@@ -25,6 +28,8 @@ function Switch({
     className,
     labelClassName,
     dataTestId,
+    ariaDescribedBy,
+    ariaInvalid,
 }: Readonly<Props>) {
     return (
         <div className={cn('flex items-center gap-x-3', className)} data-testid={dataTestId ?? `switch-${id}`}>
@@ -51,6 +56,8 @@ function Switch({
                             onChange(e.target.checked);
                         }}
                         disabled={disabled}
+                        aria-invalid={ariaInvalid || undefined}
+                        aria-describedby={ariaDescribedBy}
                         data-testid={dataTestId ? `${dataTestId}-input` : `switch-${id}-input`}
                     />
                     <span className="absolute inset-0 bg-gray-200 rounded-full transition-colors duration-200 ease-in-out peer-checked:bg-blue-600 dark:bg-neutral-700 dark:peer-checked:bg-blue-500 peer-disabled:opacity-50 peer-disabled:pointer-events-none"></span>
