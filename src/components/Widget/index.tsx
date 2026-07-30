@@ -24,6 +24,7 @@ type Props = {
     id?: string;
     title?: string;
     titleLink?: string;
+    onTitleLinkClick?: () => void;
     titleSize?: 'small' | 'medium' | 'large' | 'larger';
     titleBoldness?: 'normal' | 'bold' | 'semi-bold';
     titleColor?: string;
@@ -49,6 +50,7 @@ function Widget({
     id,
     title = '',
     titleLink,
+    onTitleLinkClick,
     titleSize = 'medium',
     widgetButtons,
     titleBoldness = 'bold',
@@ -102,7 +104,7 @@ function Widget({
 
     const renderTitle = () =>
         titleLink ? (
-            <Link to={titleLink} className="text-blue-600">
+            <Link to={titleLink} className="text-blue-600" onClick={onTitleLinkClick}>
                 {getTitleText()}
             </Link>
         ) : (

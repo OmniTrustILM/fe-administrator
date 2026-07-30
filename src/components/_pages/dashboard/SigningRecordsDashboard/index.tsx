@@ -13,9 +13,15 @@ import { FilterConditionOperator, FilterFieldSource, type SigningRecordStatistic
 import type { ApiClients } from 'src/api';
 import type { SearchFilterModel } from 'types/certificate';
 import { getSigningRecordDonutChartColors, getSigningSchemeLabel } from 'utils/dashboard';
-import { resolveSigningRecordFilterField, type SigningRecordFilterKind } from 'utils/signingRecordsDashboardFilters';
+import {
+    buildSigningTimeWindowFilter,
+    resolveSigningRecordFilterField,
+    SIGNING_WINDOW_HOURS,
+    type SigningRecordFilterKind,
+} from 'utils/signingRecordsDashboardFilters';
 
 const LINK = '../signingrecords';
+const PROFILES_LINK = '../signingprofiles';
 const REDIRECT = '/signingrecords';
 
 function caption(text: string) {
@@ -126,6 +132,8 @@ function SigningRecordsDashboard() {
                         data={statistics.totalRetained}
                         title="Signing Records"
                         link={LINK}
+                        entity={EntityType.SIGNING_RECORD}
+                        onSetFilter={() => []}
                         extraComponent={caption('in retention window')}
                     />
                 </div>
@@ -134,6 +142,8 @@ function SigningRecordsDashboard() {
                         data={statistics.countLast24h}
                         title="Signings – last 24h"
                         link={LINK}
+                        entity={EntityType.SIGNING_RECORD}
+                        onSetFilter={() => buildSigningTimeWindowFilter(availableFilters, SIGNING_WINDOW_HOURS.last24h)}
                         extraComponent={caption('by signing time')}
                     />
                 </div>
@@ -142,6 +152,8 @@ function SigningRecordsDashboard() {
                         data={statistics.countLast7d}
                         title="Signings – last 7d"
                         link={LINK}
+                        entity={EntityType.SIGNING_RECORD}
+                        onSetFilter={() => buildSigningTimeWindowFilter(availableFilters, SIGNING_WINDOW_HOURS.last7d)}
                         extraComponent={caption('by signing time')}
                     />
                 </div>
@@ -149,7 +161,7 @@ function SigningRecordsDashboard() {
                     <CountBadge
                         data={statistics.activeProfileCount}
                         title="Active Signing Profiles"
-                        link={LINK}
+                        link={PROFILES_LINK}
                         extraComponent={caption('produced ≥1 record')}
                     />
                 </div>

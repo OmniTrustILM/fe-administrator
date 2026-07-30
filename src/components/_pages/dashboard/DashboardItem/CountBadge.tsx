@@ -1,16 +1,27 @@
 import Widget from 'components/Widget';
+import { type EntityType, actions as filterActions } from 'ducks/filters';
+import { useDispatch } from 'react-redux';
+import type { SearchFilterModel } from 'types/certificate';
 
 type Props = Readonly<{
     data?: number;
     title: string;
     link: string;
     extraComponent?: React.ReactNode;
+    entity?: EntityType;
+    onSetFilter?: () => SearchFilterModel[];
 }>;
 
-function CountBadge({ data, title, link, extraComponent }: Props) {
+function CountBadge({ data, title, link, extraComponent, entity, onSetFilter }: Props) {
+    const dispatch = useDispatch();
+
+    const applyFilter =
+        entity && onSetFilter ? () => dispatch(filterActions.setCurrentFilters({ entity, currentFilters: onSetFilter() })) : undefined;
+
     return (
         <Widget
             titleLink={link}
+            onTitleLinkClick={applyFilter}
             title={title}
             className="h-full"
             titleColor="var(--primary-blue-color)"
