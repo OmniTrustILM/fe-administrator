@@ -4,6 +4,8 @@ import Badge from 'components/Badge';
 import { KeyRound } from 'lucide-react';
 import { actions as filterActions, EntityType } from 'ducks/filters';
 import {
+    CertificateProtocol,
+    type CertificateProtocolDto,
     CertificateType,
     type CertificateValidationResultDto,
     CertificateValidationStatus,
@@ -386,6 +388,83 @@ export function buildCertificateDetailBaseRows(
 
     if (certificate.qcStatements) {
         rows.push(...buildQcStatementRows(certificate.qcStatements, enums.qcType, getEnumLabel));
+    }
+
+    return rows;
+}
+
+function getProtocolProfileLink(protocolInfo: CertificateProtocolDto): string | undefined {
+    switch (protocolInfo.protocol) {
+        case CertificateProtocol.Acme:
+            return `../acmeprofiles/detail/${protocolInfo.protocolProfileUuid}`;
+        case CertificateProtocol.Cmp:
+            return `../cmpprofiles/detail/${protocolInfo.protocolProfileUuid}`;
+        case CertificateProtocol.Scep:
+            return `../scepprofiles/detail/${protocolInfo.protocolProfileUuid}`;
+        default:
+            // A protocol the backend added before these types were regenerated has no known profile route here.
+            return undefined;
+    }
+}
+
+export function buildCertificateProtocolRows(
+    protocolInfo: CertificateProtocolDto | undefined,
+    certificateProtocolEnum: PlatformEnumMap,
+    getEnumLabel: (e: PlatformEnumMap, key: string) => string,
+): TableDataRow[] {
+    if (!protocolInfo) return [];
+
+    // The profile association is not always known — e.g. legacy CMP-issued certificates whose recorded UUID was
+    // cleared by a core migration, or profiles deleted after issuance. Linking anyway would navigate to
+    // /detail/undefined, which 404s, and the link label would be empty and therefore invisible. An unrecognised
+    // protocol has no route either, so the UUID is still shown, just not as a link.
+    const profileLink = protocolInfo.protocolProfileUuid ? getProtocolProfileLink(protocolInfo) : undefined;
+
+    const rows: TableDataRow[] = [
+        {
+            id: 'protocol',
+            columns: [
+                'Protocol Name',
+                <span key="protocol" className="inline-flex items-center gap-1">
+                    <Badge color="secondary">{getEnumLabel(certificateProtocolEnum, protocolInfo.protocol)}</Badge>
+                    <EnumValueDescription platformEnum={PlatformEnum.CertificateProtocol} value={protocolInfo.protocol} />
+                </span>,
+            ],
+        },
+        {
+            id: 'protocolProfileUuid',
+            columns: [
+                'Protocol Profile UUID',
+                profileLink ? (
+                    <Link key="protocolProfileUuid" to={profileLink}>
+                        {protocolInfo.protocolProfileUuid}
+                    </Link>
+                ) : (
+                    (protocolInfo.protocolProfileUuid ?? 'n/a')
+                ),
+            ],
+        },
+    ];
+
+    if (protocolInfo.protocol === CertificateProtocol.Acme && protocolInfo.additionalProtocolUuid) {
+        rows.push({
+            id: 'additionalProfileUuid',
+            columns: [
+                'Protocol Account UUID',
+                // The ACME account route is nested under the profile, so without the profile UUID there is no
+                // resolvable path — show the account UUID as plain text instead.
+                protocolInfo.protocolProfileUuid ? (
+                    <Link
+                        key="additionalProfileUuid"
+                        to={`../acmeaccounts/detail/${protocolInfo.protocolProfileUuid}/${protocolInfo.additionalProtocolUuid}`}
+                    >
+                        {protocolInfo.additionalProtocolUuid}
+                    </Link>
+                ) : (
+                    protocolInfo.additionalProtocolUuid
+                ),
+            ],
+        });
     }
 
     return rows;

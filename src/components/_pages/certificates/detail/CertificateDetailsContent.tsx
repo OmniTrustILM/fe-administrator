@@ -7,7 +7,6 @@ import Widget from 'components/Widget';
 import Container from 'components/Container';
 import Dialog from 'components/Dialog';
 import Switch from 'components/Switch';
-import Badge from 'components/Badge';
 import Asn1Dialog from '../Asn1Dialog/Asn1Dialog';
 import CertificateRenewDialog from '../CertificateRenewDialog';
 import CertificateRekeyDialog from '../CertificateRekeyDialog';
@@ -21,7 +20,6 @@ import { dateFormatter } from 'utils/dateUtil';
 import { actions, selectors } from 'ducks/certificates';
 import { actions as userInterfaceActions } from 'ducks/user-interface';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
-import { EnumValueDescription } from 'components/EnumDescription';
 import { actions as certificateGroupActions, selectors as groupSelectors } from 'ducks/certificateGroups';
 import { actions as userActions, selectors as userSelectors } from 'ducks/users';
 import { actions as raProfileActions, selectors as raProfileSelectors } from 'ducks/ra-profiles';
@@ -32,7 +30,6 @@ import {
     CertificateState as CertStatus,
     CertificateSubjectType,
     type CertificateValidationResultDto,
-    CertificateProtocol,
     PlatformEnum,
 } from 'types/openapi';
 import CertificateDownloadForm from './CertificateDownloadForm';
@@ -40,7 +37,7 @@ import CompleteRegisteredDialog from './CompleteRegisteredDialog';
 import Button from 'components/Button';
 import { Trash2 } from 'lucide-react';
 import EditIcon from 'components/icons/EditIcon';
-import { buildCertificateDetailBaseRows } from '../certificateTableHelpers';
+import { buildCertificateDetailBaseRows, buildCertificateProtocolRows } from '../certificateTableHelpers';
 import PendingActionDialogs from '../PendingActionButtons/PendingActionDialogs';
 import type { PendingAction } from '../PendingActionButtons/types';
 
@@ -445,58 +442,10 @@ export default function CertificateDetailsContent({ certificate, validationResul
         [],
     );
 
-    const protocolData: TableDataRow[] = useMemo(() => {
-        const protocolInfo = certificate?.protocolInfo;
-        if (!protocolInfo) return [];
-
-        function getProtocolProfileLink(): string {
-            if (!protocolInfo) return '';
-            switch (protocolInfo.protocol) {
-                case CertificateProtocol.Acme:
-                    return `../acmeprofiles/detail/${protocolInfo.protocolProfileUuid}`;
-                case CertificateProtocol.Cmp:
-                    return `../cmpprofiles/detail/${protocolInfo.protocolProfileUuid}`;
-                case CertificateProtocol.Scep:
-                    return `../scepprofiles/detail/${protocolInfo.protocolProfileUuid}`;
-            }
-        }
-        const data = [
-            {
-                id: 'protocol',
-                columns: [
-                    'Protocol Name',
-                    <span key="protocol" className="inline-flex items-center gap-1">
-                        <Badge color="secondary">{getEnumLabel(certificateProtocol, protocolInfo.protocol)}</Badge>
-                        <EnumValueDescription platformEnum={PlatformEnum.CertificateProtocol} value={protocolInfo.protocol} />
-                    </span>,
-                ],
-            },
-            {
-                id: 'protocolProfileUuid',
-                columns: [
-                    'Protocol Profile UUID',
-                    <Link key="protocolProfileUuid" to={getProtocolProfileLink()}>
-                        {protocolInfo.protocolProfileUuid}
-                    </Link>,
-                ],
-            },
-        ];
-        if (protocolInfo.protocol === CertificateProtocol.Acme && protocolInfo.additionalProtocolUuid) {
-            data.push({
-                id: 'additionalProfileUuid',
-                columns: [
-                    'Protocol Account UUID',
-                    <Link
-                        key="additionalProfileUuid"
-                        to={`../acmeaccounts/detail/${protocolInfo.protocolProfileUuid}/${protocolInfo.additionalProtocolUuid}`}
-                    >
-                        {protocolInfo.additionalProtocolUuid}
-                    </Link>,
-                ],
-            });
-        }
-        return data;
-    }, [certificate?.protocolInfo, certificateProtocol]);
+    const protocolData: TableDataRow[] = useMemo(
+        () => buildCertificateProtocolRows(certificate?.protocolInfo, certificateProtocol, getEnumLabel),
+        [certificate?.protocolInfo, certificateProtocol],
+    );
 
     const registrationData: TableDataRow[] = useMemo(() => {
         const registration = certificate?.registration;
