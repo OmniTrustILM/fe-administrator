@@ -67,13 +67,7 @@ export default defineConfig(async ({ mode }) => {
             ],
         },
         optimizeDeps: {
-            include: [
-                '@ilm/openapi-types',
-                '@ilm/openapi-types/utils',
-                // Deep-imported in src/api.ts (excluded from the barrel due to a name
-                // collision with TokenInstanceManagementApi); pre-bundle it explicitly.
-                '@ilm/openapi-types/apis/TokenInstanceControllerApi',
-            ],
+            include: ['@ilm/openapi-types', '@ilm/openapi-types/utils'],
         },
         css: {
             preprocessorOptions: {

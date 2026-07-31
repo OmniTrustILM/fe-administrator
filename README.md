@@ -94,8 +94,6 @@ import type {
 
 `npm run generate-types-utils` regenerates `src/types/openapi/utils` from the spec configured as `typescript-rxjs-utils` in `openapitools.json`. That spec is still served from `https://api.czertainly.com/utils/main/utils-service.yaml`, so the generated files under `src/types/openapi/utils` still carry `CZERTAINLY Utils Service API` / `getinfo@czertainly.com` headers. This is the only remaining CZERTAINLY branding in the generated code and it cannot be fixed here — do **not** hand-edit those headers, they would be overwritten on the next regeneration. It clears once `utils-service` is rebranded and publishes an ILM spec URL, tracked under the platform rebrand epic [OmniTrustILM/ilm#108](https://github.com/OmniTrustILM/ilm/issues/108).
 
-Note also that `src/types/openapi` contains a handful of files that the current core spec no longer emits (they are absent from `src/types/openapi/.openapi-generator/FILES`). Some are still imported by application code, so they are kept for now; regenerating does not touch them.
-
 ## Docker container
 
 Admin Web Interface is provided as a Docker container. Use the `docker pull hub.omnitrustregistry.com/ilm/frontend-administrator:tagname` to pull the required image from the repository. It can be configured using the following environment variables:
