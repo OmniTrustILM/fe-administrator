@@ -19,10 +19,10 @@ permissions: {}
 
 env:
   REGISTRY: harbor.3key.company
-  IMAGE: harbor.3key.company/czertainly/czertainly-frontend-administrator
+  IMAGE: harbor.3key.company/ilm/frontend-administrator
   PREVIEW_TAG: pr-${{ inputs.pr_number }}-${{ inputs.head_sha }}
   # cache scope so both jobs share the same cache namespace
-  CACHE_SCOPE: czertainly-fe-admin-preview
+  CACHE_SCOPE: ilm-fe-admin-preview
 
 jobs:
   # Create the GitHub check once, and reuse the check_id in other jobs

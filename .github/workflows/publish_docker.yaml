@@ -18,7 +18,10 @@ permissions:
 
 jobs:
   publish:
-    uses: OmniTrustILM/.github/.github/workflows/containers-build-and-push.yml@50f83b9285f0f12ed0b329696a920c811bf8fe23 # main
+    # Tracks @main by design: this is a first-party OmniTrustILM reusable workflow and
+    # edits to it are meant to reach every repo without a bump here. Sonar's "use a full
+    # commit SHA" rule targets third-party actions and is accepted for this reference.
+    uses: OmniTrustILM/.github/.github/workflows/containers-build-and-push.yml@main
     secrets:
       CONTAINER_REGISTRY_USERNAME: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
       CONTAINER_REGISTRY_PASSWORD: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}

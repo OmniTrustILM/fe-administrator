@@ -53,10 +53,10 @@ export default defineConfig(async ({ mode }) => {
         resolve: {
             // Aliases match the structure of import paths in tsconfig.js
             alias: [
-                // Route openapi imports through the @czertainly/openapi-types
+                // Route openapi imports through the @ilm/openapi-types
                 // file: dep so Vite pre-bundles the whole generated tree
                 // (~600 files) into a single cached chunk for dev.
-                { find: /^types\/openapi(?=$|\/)/, replacement: '@czertainly/openapi-types' },
+                { find: /^types\/openapi(?=$|\/)/, replacement: '@ilm/openapi-types' },
                 { find: 'utils/', replacement: path.resolve(__dirname, './src/utils/') + '/' },
                 { find: 'types/', replacement: path.resolve(__dirname, './src/types/') + '/' },
                 { find: 'components/', replacement: path.resolve(__dirname, './src/components/') + '/' },
@@ -67,13 +67,7 @@ export default defineConfig(async ({ mode }) => {
             ],
         },
         optimizeDeps: {
-            include: [
-                '@czertainly/openapi-types',
-                '@czertainly/openapi-types/utils',
-                // Deep-imported in src/api.ts (excluded from the barrel due to a name
-                // collision with TokenInstanceManagementApi); pre-bundle it explicitly.
-                '@czertainly/openapi-types/apis/TokenInstanceControllerApi',
-            ],
+            include: ['@ilm/openapi-types', '@ilm/openapi-types/utils'],
         },
         css: {
             preprocessorOptions: {

@@ -14,7 +14,7 @@ test.describe('Footer', () => {
 
         const docsLink = component.getByTestId('footer-docs-link');
         await expect(docsLink).toBeVisible();
-        await expect(docsLink).toHaveAttribute('href', 'https://docs.czertainly.com/docs');
+        await expect(docsLink).toHaveAttribute('href', 'https://docs.otilm.com');
         await expect(docsLink).toHaveText('Documentation');
     });
 
@@ -23,7 +23,7 @@ test.describe('Footer', () => {
 
         const supportLink = component.getByTestId('footer-support-link');
         await expect(supportLink).toBeVisible();
-        await expect(supportLink).toHaveAttribute('href', 'https://czertainly.atlassian.net/servicedesk/customer/portal/1');
+        await expect(supportLink).toHaveAttribute('href', 'mailto:ilm@omnitrust.com');
         await expect(supportLink).toHaveText('Support');
     });
 
@@ -32,7 +32,7 @@ test.describe('Footer', () => {
 
         const aboutLink = component.getByTestId('footer-about-link');
         await expect(aboutLink).toBeVisible();
-        await expect(aboutLink).toHaveAttribute('href', 'https://www.czertainly.com');
+        await expect(aboutLink).toHaveAttribute('href', 'https://www.omnitrust.com');
         await expect(aboutLink).toHaveText('About Us');
     });
 

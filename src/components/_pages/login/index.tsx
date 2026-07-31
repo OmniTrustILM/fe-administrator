@@ -26,7 +26,7 @@ export default function Login() {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-neutral-900 px-4 py-12">
             <main className="max-w-md w-full">
                 <div className="flex justify-center mb-8">
-                    <img src="./logo.svg" alt="CZERTAINLY Logo" className="h-13" />
+                    <img src="./logo.svg" alt="ILM Logo" className="h-13" />
                 </div>
 
                 <h1 className="text-xl font-bold mt-8 mb-9 text-center text-gray-800 dark:text-white">Login with</h1>
