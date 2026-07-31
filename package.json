@@ -4,6 +4,9 @@
     "homepage": ".",
     "private": true,
     "type": "module",
+    "engines": {
+        "node": ">=22.22.0"
+    },
     "dependencies": {
         "@ilm/openapi-types": "file:./src/types/openapi",
         "@radix-ui/react-dialog": "^1.1.15",
