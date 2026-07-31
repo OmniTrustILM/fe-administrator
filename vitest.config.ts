@@ -11,6 +11,12 @@ export default defineConfig({
         environment: 'happy-dom',
         include: ['**/*.spec.ts', 'src/components/**/*.unit.spec.{ts,tsx}'],
         exclude: ['node_modules', 'build', 'dist', '.claude/**'],
+        // Some specs re-import large module graphs under vi.resetModules(). Those
+        // re-imports became measurably slower to load once react-router v8 made the
+        // dependency ESM-only, so the defaults (5s test / 10s hook) are too tight for
+        // them. The tests themselves do the same amount of work as before.
+        testTimeout: 20000,
+        hookTimeout: 30000,
         coverage: {
             provider: 'v8',
             reporter: ['lcovonly', 'text-summary'],
