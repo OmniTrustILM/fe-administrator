@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify';
-import { useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { actions, selectors } from 'ducks/alerts';
@@ -16,22 +16,27 @@ function Alerts({ autoDismissMs }: Readonly<Props>) {
     const dispatch = useDispatch();
 
     // Danger toasts carry role="alert" and are announced on insertion by screen readers.
-    // Polite role="status" insertions are not announced consistently, so the newest
-    // success/info message is mirrored into a persistent visually-hidden live region instead.
-    const announcedAlert = useMemo(() => [...alerts].reverse().find((alert) => alert.color !== 'danger'), [alerts]);
-    const announcedMessage = useMemo(
-        () => (announcedAlert ? DOMPurify.sanitize(announcedAlert.message, SANITIZE_CONFIG) : ''),
-        [announcedAlert],
-    );
+    // Success/info messages are mirrored into a persistent visually-hidden live region
+    // instead, because polite role insertions are not announced consistently. Only newer
+    // alerts update the region — falling back to an older alert when the newest one is
+    // dismissed would re-announce stale content.
+    const announcedIdRef = useRef(-1);
+    const [announcedMessage, setAnnouncedMessage] = useState('');
+
+    useEffect(() => {
+        const newest = [...alerts].reverse().find((alert) => alert.color !== 'danger');
+        if (!newest || newest.id <= announcedIdRef.current) return;
+        announcedIdRef.current = newest.id;
+        setAnnouncedMessage(DOMPurify.sanitize(newest.message, SANITIZE_CONFIG));
+    }, [alerts]);
 
     return (
         <div
             data-testid="alerts-container"
             className="pointer-events-none fixed bottom-4 right-4 z-[9999] flex max-h-[calc(100vh-2rem)] w-[min(420px,calc(100vw-2rem))] flex-col gap-2"
         >
-            <div
+            <output
                 data-testid="alerts-announcer"
-                role="status"
                 className="sr-only"
                 // biome-ignore lint/security/noDangerouslySetInnerHtml: mirrors the toast message for screen readers; sanitized with the same DOMPurify allowlist as the visible card
                 dangerouslySetInnerHTML={{ __html: announcedMessage }}

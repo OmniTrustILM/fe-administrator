@@ -10,10 +10,12 @@ import type { MessageModel } from 'types/alerts';
 
 import { AUTO_DISMISS_MS, COPY_CONFIRMATION_MS, EXIT_ANIMATION_MS, PROGRESS_ANIMATION_NAME, SANITIZE_CONFIG } from './constants';
 
+// Success and info toasts carry no ARIA role: their announcements come from the persistent
+// live region in the stack container, so a role here would only cause double announcements.
 const severityConfig = {
     success: {
         icon: CircleCheck,
-        role: 'status',
+        role: undefined,
         autoDismiss: true,
         iconClassName: 'text-teal-500',
         accentClassName: 'border-l-teal-500 dark:border-l-teal-500',
@@ -29,7 +31,7 @@ const severityConfig = {
     },
     info: {
         icon: Info,
-        role: 'status',
+        role: undefined,
         autoDismiss: true,
         iconClassName: 'text-blue-500',
         accentClassName: 'border-l-blue-500 dark:border-l-blue-500',

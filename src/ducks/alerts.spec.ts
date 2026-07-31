@@ -135,7 +135,7 @@ describe('alerts slice', () => {
 
         expect(next.messages).toHaveLength(MAX_STORED_ALERTS);
         expect(next.messages[0].id).toBe(1);
-        expect(next.messages[next.messages.length - 1].message).toBe('Newest failure');
+        expect(next.messages.at(-1)?.message).toBe('Newest failure');
     });
 });
 

@@ -21,7 +21,7 @@ test.describe('Alerts', () => {
 
         const alert = page.getByTestId('alert-1');
         await expect(alert).toBeVisible();
-        await expect(alert).toHaveAttribute('role', 'status');
+        await expect(alert).not.toHaveAttribute('role');
         await expect(alert).toContainText('Saved successfully');
     });
 
@@ -42,7 +42,7 @@ test.describe('Alerts', () => {
         await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 9 } }} />);
 
         await expect(page.getByTestId('alert-7')).toHaveClass(/border-l-blue-500/);
-        await expect(page.getByTestId('alert-7')).toHaveAttribute('role', 'status');
+        await expect(page.getByTestId('alert-7')).not.toHaveAttribute('role');
         await expect(page.getByTestId('alert-8')).toHaveClass(/border-l-red-500/);
     });
 
@@ -281,9 +281,13 @@ test.describe('Alerts', () => {
         await mount(<AlertsWithStore autoDismissMs={600000} preloadedState={{ [alertsSlice.name]: { messages, msgId: 63 } }} />);
 
         const announcer = page.getByTestId('alerts-announcer');
-        await expect(announcer).toHaveAttribute('role', 'status');
+        await expect(announcer).toHaveJSProperty('tagName', 'OUTPUT');
         await expect(announcer).toHaveText('Second success');
         await expect(page.getByTestId('alerts-scroll-area')).not.toHaveAttribute('aria-live');
+
+        await page.getByTestId('alert-61').getByRole('button', { name: 'Dismiss' }).click();
+        await expect(page.getByTestId('alert-61')).not.toBeAttached();
+        await expect(announcer).toHaveText('Second success');
     });
 
     test('should clip horizontal overflow so the entry animation cannot flash a scrollbar', async ({ mount, page }) => {
