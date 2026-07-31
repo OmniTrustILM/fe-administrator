@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   publish:
-    uses: OmniTrustILM/.github/.github/workflows/containers-build-and-push.yml@main
+    uses: OmniTrustILM/.github/.github/workflows/containers-build-and-push.yml@c89a3ffb3c9505e6bf45141297443aa926dd14f0 # main
     secrets:
       CONTAINER_REGISTRY_USERNAME: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
       CONTAINER_REGISTRY_PASSWORD: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}

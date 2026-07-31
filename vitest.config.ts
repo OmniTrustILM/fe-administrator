@@ -21,10 +21,13 @@ export default defineConfig({
                 'src/ducks/**/*.{ts,tsx}',
                 'src/components/PagedList/PagedList.tsx',
                 'src/components/Widget/index.tsx',
+                // Build hook with its own unit tests; report it so Sonar sees the coverage.
+                'scripts/set-openapi-contact.mjs',
             ],
             exclude: [
                 'node_modules',
                 'src/**/*.spec.{ts,tsx}',
+                'scripts/**/*.spec.{ts,tsx}',
                 'src/types/**/*',
                 'src/utils/ct-window-shim.ts',
                 'src/utils/TestStoreConsumer.tsx',

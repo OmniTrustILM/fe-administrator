@@ -9,36 +9,52 @@
 
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const CONTACT = 'ilm@omnitrust.com';
+export const CONTACT = 'ilm@omnitrust.com';
+
 const CONTACT_LINE = /^( \* Contact: ).*$/m;
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const coreDir = path.join(root, 'src', 'types', 'openapi');
-const utilsDir = path.join(coreDir, 'utils');
+/** Replace the address on the header's `Contact:` line, leaving everything else intact. */
+export function setContactInSource(source, contact = CONTACT) {
+    return source.replace(CONTACT_LINE, `$1${contact}`);
+}
 
-function* walk(dir) {
+/** Yield every `.ts` file under `dir`, skipping any directory listed in `skipDirs`. */
+export function* walkTypeScriptFiles(dir, skipDirs = []) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-            if (full === utilsDir) continue;
-            yield* walk(full);
+            if (skipDirs.includes(full)) continue;
+            yield* walkTypeScriptFiles(full, skipDirs);
         } else if (entry.name.endsWith('.ts')) {
             yield full;
         }
     }
 }
 
-let changed = 0;
-for (const file of walk(coreDir)) {
-    const source = readFileSync(file, 'utf8');
-    if (!CONTACT_LINE.test(source)) continue;
-    const updated = source.replace(CONTACT_LINE, `$1${CONTACT}`);
-    if (updated !== source) {
-        writeFileSync(file, updated);
-        changed += 1;
+/** Rewrite the contact across a generated tree; returns how many files changed. */
+export function setContactInTree(coreDir, { contact = CONTACT, skipDirs = [] } = {}) {
+    let changed = 0;
+    for (const file of walkTypeScriptFiles(coreDir, skipDirs)) {
+        const source = readFileSync(file, 'utf8');
+        const updated = setContactInSource(source, contact);
+        if (updated !== source) {
+            writeFileSync(file, updated);
+            changed += 1;
+        }
     }
+    return changed;
 }
 
-console.log(`set Contact: ${CONTACT} in ${changed} generated file(s)`);
+export function run(root) {
+    const coreDir = path.join(root, 'src', 'types', 'openapi');
+    const changed = setContactInTree(coreDir, { skipDirs: [path.join(coreDir, 'utils')] });
+    console.log(`set Contact: ${CONTACT} in ${changed} generated file(s)`);
+    return changed;
+}
+
+const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (invokedDirectly) {
+    run(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'));
+}
