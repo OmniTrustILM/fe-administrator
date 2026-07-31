@@ -1,59 +1,69 @@
 import DOMPurify from 'dompurify';
-import cn from 'classnames';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { actions, selectors } from 'ducks/alerts';
 
-import { CircleCheck, CircleX, X } from 'lucide-react';
-import Container from 'components/Container';
+import Alert from './Alert';
+import { DISMISS_ALL_THRESHOLD, SANITIZE_CONFIG } from './constants';
 
-function Alerts() {
+type Props = {
+    autoDismissMs?: number;
+};
+
+function Alerts({ autoDismissMs }: Readonly<Props>) {
     const alerts = useSelector(selectors.selectMessages);
     const dispatch = useDispatch();
 
+    // Danger toasts carry role="alert" and are announced on insertion by screen readers.
+    // Success/info messages are mirrored into a persistent visually-hidden live region
+    // instead, because polite role insertions are not announced consistently. Only newer
+    // alerts update the region — falling back to an older alert when the newest one is
+    // dismissed would re-announce stale content.
+    const announcedIdRef = useRef(-1);
+    const [announcedMessage, setAnnouncedMessage] = useState('');
+
+    useEffect(() => {
+        const newest = [...alerts].reverse().find((alert) => alert.color !== 'danger');
+        if (!newest || newest.id <= announcedIdRef.current) return;
+        announcedIdRef.current = newest.id;
+        setAnnouncedMessage(DOMPurify.sanitize(newest.message, SANITIZE_CONFIG));
+    }, [alerts]);
+
     return (
-        <Container
-            className="sticky bottom-12 !gap-2 z-[9999] px-2 md:px-4 max-w-[1200px] mx-auto pointer-events-auto"
+        <div
             data-testid="alerts-container"
+            className="pointer-events-none fixed bottom-4 right-4 z-[9999] flex max-h-[calc(100vh-2rem)] w-[min(420px,calc(100vw-2rem))] flex-col gap-2"
         >
-            {alerts.map((alert) => (
-                <div
-                    key={alert.id}
-                    data-testid={`alert-${alert.id}`}
-                    className={cn('mt-2 text-sm border rounded-lg px-10 py-4 relative transition-opacity duration-[3000ms]', {
-                        'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-800/10 dark:border-teal-900 dark:text-teal-500':
-                            alert.color === 'success',
-                        'bg-red-100 text-red-800 border-red-200 dark:bg-red-800/10 dark:border-red-900 dark:text-red-500':
-                            alert.color !== 'success',
-                        'opacity-0': alert.isHiding,
-                        'opacity-100': !alert.isHiding,
-                    })}
-                    role="alert"
-                    tabIndex={-1}
-                    aria-labelledby={`hs-soft-color-warning-label-${alert.id}`}
+            <output
+                data-testid="alerts-announcer"
+                className="sr-only"
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: mirrors the toast message for screen readers; sanitized with the same DOMPurify allowlist as the visible card
+                dangerouslySetInnerHTML={{ __html: announcedMessage }}
+            />
+            {alerts.length >= DISMISS_ALL_THRESHOLD && (
+                <button
+                    type="button"
+                    className="pointer-events-auto self-end rounded-md px-2 py-1 text-xs font-medium text-gray-800 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    onClick={() => dispatch(actions.dismissAll())}
                 >
-                    <div className="absolute top-5 left-4 translate-y-[2px]">
-                        {alert.color === 'success' ? <CircleCheck size={14} /> : <CircleX size={14} />}
-                    </div>
-                    <div
-                        id={`hs-soft-color-warning-label-${alert.id}`}
-                        className="text-lg font-semibold overflow-hidden"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(alert.message) }}
-                    />
-                    <button
-                        type="button"
-                        aria-label="Dismiss"
-                        className={cn('absolute top-2 right-2 translate-y-[3px]', {
-                            'text-teal-800 dark:text-teal-500': alert.color === 'success',
-                            'text-red-800 dark:text-red-500': alert.color !== 'success',
-                        })}
-                        onClick={() => dispatch(actions.dismiss(alert.id))}
-                    >
-                        <X size={14} aria-hidden="true" />
-                    </button>
-                </div>
-            ))}
-        </Container>
+                    Dismiss all
+                </button>
+            )}
+            <div
+                data-testid="alerts-scroll-area"
+                // Newest alerts render first in the DOM; column-reverse places them at the visual
+                // bottom and keeps the scroll position anchored there, so a new alert is always visible
+                // even when persistent errors overflow the stack. The x-axis is clipped because the
+                // toast-in animation slides cards in from the right and would otherwise flash a
+                // horizontal scrollbar for the duration of the animation.
+                className="flex min-h-0 flex-col-reverse gap-2 overflow-x-hidden overflow-y-auto"
+            >
+                {[...alerts].reverse().map((alert) => (
+                    <Alert key={alert.id} alert={alert} autoDismissMs={autoDismissMs} />
+                ))}
+            </div>
+        </div>
     );
 }
 

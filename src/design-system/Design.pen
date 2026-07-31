@@ -3428,17 +3428,24 @@
                           "gap": 8,
                           "children": [
                             {
-                              "id": "icxAn",
+                              "id": "m7tjS",
                               "type": "ref",
-                              "ref": "gNmMe",
-                              "name": "Alerts/Success",
+                              "ref": "F7lBgU",
+                              "name": "Toast Success",
                               "width": "fill_container"
                             },
                             {
-                              "id": "wV7Qr",
+                              "id": "kSyEJ",
                               "type": "ref",
-                              "ref": "e4bLs9",
-                              "name": "Alerts/Error",
+                              "ref": "Q0ABF",
+                              "name": "Toast Info",
+                              "width": "fill_container"
+                            },
+                            {
+                              "id": "viHgq",
+                              "type": "ref",
+                              "ref": "oMbZA",
+                              "name": "Toast Error",
                               "width": "fill_container"
                             }
                           ]
@@ -3450,7 +3457,7 @@
                           "fill": "$color.gray-500",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
-                          "content": "success + error · dismissible banner",
+                          "content": "success · info · error · dismissible toast with progress",
                           "fontFamily": "Inter",
                           "fontSize": 12,
                           "fontWeight": "normal"
@@ -9632,109 +9639,312 @@
     },
     {
       "type": "frame",
-      "id": "gNmMe",
+      "id": "F7lBgU",
       "x": 7700,
       "y": 3600,
       "name": "Alerts/Success",
       "reusable": true,
-      "width": 380,
-      "fill": "$color.teal-100",
+      "clip": true,
+      "width": 420,
+      "fill": "$color.white",
       "cornerRadius": 8,
-      "stroke": "$color.teal-200",
-      "strokeWidth": 1,
+      "stroke": "$color.status-success",
+      "strokeWidth": {
+        "top": 1,
+        "right": 1,
+        "bottom": 1,
+        "left": 4
+      },
       "strokeAlignment": "inner",
-      "gap": 10,
-      "padding": [
-        12,
-        16
-      ],
-      "alignItems": "center",
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#0000001a",
+        "offset": {
+          "x": 0,
+          "y": 4
+        },
+        "blur": 12,
+        "spread": -1
+      },
+      "layout": "vertical",
       "children": [
         {
-          "type": "icon",
-          "id": "YNUKH",
-          "name": "Icon",
-          "width": 16,
-          "height": 16,
-          "icon": "circle-check",
-          "library": "lucide",
-          "fill": "$color.teal-800"
-        },
-        {
-          "type": "text",
-          "id": "tPiHj",
-          "name": "Message",
-          "fill": "$color.teal-800",
-          "textGrowth": "fixed-width",
+          "type": "frame",
+          "id": "m49wzx",
+          "name": "Content",
           "width": "fill_container",
-          "content": "Operation completed successfully.",
-          "fontFamily": "Inter",
-          "fontSize": 14,
-          "fontWeight": "600"
+          "gap": 10,
+          "padding": 12,
+          "children": [
+            {
+              "type": "icon",
+              "id": "oXmdH",
+              "name": "Icon",
+              "width": 18,
+              "height": 18,
+              "icon": "circle-check",
+              "library": "lucide",
+              "fill": "$color.status-success"
+            },
+            {
+              "type": "text",
+              "id": "Vklua",
+              "name": "Message",
+              "fill": "$color.gray-900",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "RA profile updated successfully.",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "icon",
+              "id": "ByF67",
+              "name": "Dismiss",
+              "width": 16,
+              "height": 16,
+              "icon": "x",
+              "library": "lucide",
+              "fill": "$color.gray-500"
+            }
+          ]
         },
         {
-          "type": "icon",
-          "id": "F6qJyk",
-          "name": "Dismiss",
-          "width": 14,
-          "height": 14,
-          "icon": "x",
-          "library": "lucide",
-          "fill": "$color.teal-800"
+          "type": "frame",
+          "id": "a8313O",
+          "name": "ProgressTrack",
+          "width": "fill_container",
+          "height": 3,
+          "fill": "$color.gray-200",
+          "cornerRadius": [
+            0,
+            0,
+            4,
+            0
+          ],
+          "children": [
+            {
+              "type": "rectangle",
+              "id": "rwA6s",
+              "name": "ProgressFill",
+              "fill": "$color.status-success",
+              "width": 280,
+              "height": "fill_container"
+            }
+          ]
         }
       ]
     },
     {
       "type": "frame",
-      "id": "e4bLs9",
-      "x": 8120,
+      "id": "Q0ABF",
+      "x": 8160,
+      "y": 3600,
+      "name": "Alerts/Info",
+      "reusable": true,
+      "clip": true,
+      "width": 420,
+      "fill": "$color.white",
+      "cornerRadius": 8,
+      "stroke": "$color.status-info",
+      "strokeWidth": {
+        "top": 1,
+        "right": 1,
+        "bottom": 1,
+        "left": 4
+      },
+      "strokeAlignment": "inner",
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#0000001a",
+        "offset": {
+          "x": 0,
+          "y": 4
+        },
+        "blur": 12,
+        "spread": -1
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "X9bed",
+          "name": "Content",
+          "width": "fill_container",
+          "gap": 10,
+          "padding": 12,
+          "children": [
+            {
+              "type": "icon",
+              "id": "OYpBn",
+              "name": "Icon",
+              "width": 18,
+              "height": 18,
+              "icon": "info",
+              "library": "lucide",
+              "fill": "$color.status-info"
+            },
+            {
+              "type": "text",
+              "id": "nLKm0",
+              "name": "Message",
+              "fill": "$color.gray-900",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Bulk RA profile update finished. 42 of 44 certificates were processed.",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "icon",
+              "id": "Nv3vv",
+              "name": "Dismiss",
+              "width": 16,
+              "height": 16,
+              "icon": "x",
+              "library": "lucide",
+              "fill": "$color.gray-500"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ThA7M",
+          "name": "ProgressTrack",
+          "width": "fill_container",
+          "height": 3,
+          "fill": "$color.gray-200",
+          "cornerRadius": [
+            0,
+            0,
+            4,
+            0
+          ],
+          "children": [
+            {
+              "type": "rectangle",
+              "id": "qDJat",
+              "name": "ProgressFill",
+              "fill": "$color.status-info",
+              "width": 280,
+              "height": "fill_container"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "oMbZA",
+      "x": 8620,
       "y": 3600,
       "name": "Alerts/Error",
       "reusable": true,
-      "width": 380,
-      "fill": "$color.red-100",
+      "clip": true,
+      "width": 420,
+      "fill": "$color.white",
       "cornerRadius": 8,
-      "stroke": "$color.red-200",
-      "strokeWidth": 1,
+      "stroke": "$color.status-danger",
+      "strokeWidth": {
+        "top": 1,
+        "right": 1,
+        "bottom": 1,
+        "left": 4
+      },
       "strokeAlignment": "inner",
-      "gap": 10,
-      "padding": [
-        12,
-        16
-      ],
-      "alignItems": "center",
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#0000001a",
+        "offset": {
+          "x": 0,
+          "y": 4
+        },
+        "blur": 12,
+        "spread": -1
+      },
+      "layout": "vertical",
       "children": [
         {
-          "type": "icon",
-          "id": "my0ff",
-          "name": "Icon",
-          "width": 16,
-          "height": 16,
-          "icon": "circle-x",
-          "library": "lucide",
-          "fill": "$color.red-800"
-        },
-        {
-          "type": "text",
-          "id": "oCPAZ",
-          "name": "Message",
-          "fill": "$color.red-800",
-          "textGrowth": "fixed-width",
+          "type": "frame",
+          "id": "Vk0Lm",
+          "name": "Content",
           "width": "fill_container",
-          "content": "Something went wrong. Please try again.",
-          "fontFamily": "Inter",
-          "fontSize": 14,
-          "fontWeight": "600"
+          "gap": 10,
+          "padding": 12,
+          "children": [
+            {
+              "type": "icon",
+              "id": "jfntE",
+              "name": "Icon",
+              "width": 18,
+              "height": 18,
+              "icon": "circle-alert",
+              "library": "lucide",
+              "fill": "$color.status-danger"
+            },
+            {
+              "type": "text",
+              "id": "K74LC",
+              "name": "Message",
+              "fill": "$color.gray-900",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Failed to synchronize certificates (500): the connector returned an unexpected response while processing the discovery batch.",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "icon",
+              "id": "dPLJU",
+              "name": "Dismiss",
+              "width": 16,
+              "height": 16,
+              "icon": "x",
+              "library": "lucide",
+              "fill": "$color.gray-500"
+            }
+          ]
         },
         {
-          "type": "icon",
-          "id": "kqp9R",
-          "name": "Dismiss",
-          "width": 14,
-          "height": 14,
-          "icon": "x",
-          "library": "lucide",
-          "fill": "$color.red-800"
+          "type": "frame",
+          "id": "augbO",
+          "name": "Actions",
+          "width": "fill_container",
+          "gap": 12,
+          "padding": [
+            0,
+            12,
+            10,
+            40
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "qZ1ym",
+              "name": "ShowMore",
+              "fill": "$color.gray-500",
+              "content": "Show more ⌄",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "500"
+            },
+            {
+              "type": "text",
+              "id": "SoNTK",
+              "name": "Copy",
+              "fill": "$color.gray-500",
+              "content": "Copy",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "500"
+            }
+          ]
         }
       ]
     }
