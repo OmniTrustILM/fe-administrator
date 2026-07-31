@@ -90,6 +90,10 @@ import type {
 } from './';
 ```
 
+#### Contact address in the generated headers
+
+The core spec publishes `info@otilm.com` as `info.contact.email`, but the ILM support address is `ilm@omnitrust.com`. `npm run generate-types` and `generate-types-local` therefore run `scripts/set-openapi-contact.mjs` after the generator, which rewrites the `Contact:` line across the generated core tree. Remove the script and its two hooks once the core spec publishes the correct address itself. The utils tree is deliberately left alone — see below.
+
 #### Utils service types and remaining CZERTAINLY branding
 
 `npm run generate-types-utils` regenerates `src/types/openapi/utils` from the spec configured as `typescript-rxjs-utils` in `openapitools.json`. That spec is still served from `https://api.czertainly.com/utils/main/utils-service.yaml`, so the generated files under `src/types/openapi/utils` still carry `CZERTAINLY Utils Service API` / `getinfo@czertainly.com` headers. This is the only remaining CZERTAINLY branding in the generated code and it cannot be fixed here — do **not** hand-edit those headers, they would be overwritten on the next regeneration. It clears once `utils-service` is rebranded and publishes an ILM spec URL, tracked under the platform rebrand epic [OmniTrustILM/ilm#108](https://github.com/OmniTrustILM/ilm/issues/108).
