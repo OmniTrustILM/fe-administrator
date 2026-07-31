@@ -32,7 +32,7 @@
         "react-dom": "^19.2.4",
         "react-hook-form": "^7.72.1",
         "react-redux": "^9.2.0",
-        "react-router": "^7.14.0",
+        "react-router": "^8.3.0",
         "reactflow": "^11.11.4",
         "recharts": "^3.10.0",
         "redux-observable": "^3.0.0-rc.3",
@@ -115,7 +115,7 @@
         "js-yaml": "$js-yaml",
         "shell-quote": "^1.8.4",
         "esbuild": "^0.28.1",
-        "brace-expansion@2": "2.1.2",
+        "brace-expansion": "5.0.9",
         "ws@8": "8.21.1",
         "nyc": {
             "istanbul-lib-processinfo": {
