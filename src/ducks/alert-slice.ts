@@ -79,5 +79,9 @@ export const alertsSlice = createSlice({
                 state.messages.splice(messageIndex, 1);
             },
         },
+
+        dismissAll: (state) => {
+            state.messages = [];
+        },
     },
 });

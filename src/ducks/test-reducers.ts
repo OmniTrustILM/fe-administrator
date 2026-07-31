@@ -515,6 +515,9 @@ function alertsTestReducer(state: AlertsTestState = alertsTestInitialState, acti
             messages: state.messages.map((m) => (m.id === action.payload ? { ...m, isHiding: true } : m)),
         };
     }
+    if (action.type === 'alerts/dismissAll') {
+        return { ...state, messages: [] };
+    }
     return state;
 }
 

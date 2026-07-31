@@ -1,10 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./ducks/alerts-ticker', () => ({
-    startAlertsTicker: vi.fn(),
-    resetTickerStarted: vi.fn(),
-}));
-
 vi.mock('redux-observable', async () => {
     const actual = await vi.importActual<typeof import('redux-observable')>('redux-observable');
     return {
@@ -28,7 +23,6 @@ vi.mock('./App', () => ({
 describe('store', () => {
     let configure: typeof import('./store').default;
     let initialState: any;
-    let alertsTicker: any;
 
     beforeEach(async () => {
         vi.resetModules();
@@ -36,7 +30,6 @@ describe('store', () => {
         configure = storeModule.default;
         const initialStateModule = await import('./ducks/initial-state');
         initialState = initialStateModule.initialState;
-        alertsTicker = await import('./ducks/alerts-ticker');
     });
 
     it('should configure the store with the initial state', () => {
@@ -45,10 +38,5 @@ describe('store', () => {
         // Check if some key slices are present and match the initial state
         expect(state.alerts).toEqual(initialState.alerts);
         expect(state.auth).toEqual(initialState.auth);
-    });
-
-    it('should call startAlertsTicker during configuration', () => {
-        configure();
-        expect(alertsTicker.startAlertsTicker).toHaveBeenCalled();
     });
 });

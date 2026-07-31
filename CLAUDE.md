@@ -18,8 +18,12 @@ npm run test:vitest:cov     # Unit tests with coverage → coverage-vitest/
 npm run test:playwright     # Component tests (Playwright CT)
 npm run test:all            # Run all tests
 
-# Linting
-npm run lint                # ESLint + Prettier check
+# Linting & formatting
+npm run lint                # Biome check (lint + format verification)
+npm run format              # Biome format --write
+
+# Typechecking
+npm run typecheck           # Typecheck hand-written code (use this; plain `tsc --noEmit` fails on known config deprecations)
 
 # Type generation
 npm run generate-types      # Generate TypeScript types from remote OpenAPI spec
@@ -30,7 +34,7 @@ npm run generate-types-local # Generate from local OpenAPI spec
 
 ```bash
 npx vitest run src/utils/myfile.spec.ts
-npx playwright test --ct src/components/MyComponent.spec.tsx
+npx playwright test -c playwright-ct.config.ts src/components/MyComponent.spec.tsx
 ```
 
 ## Architecture
@@ -76,7 +80,7 @@ Tailwind CSS 4 with Preline UI components. The main CSS entry is `src/tailwindcs
 
 ### Code Style
 
-Prettier enforced via ESLint: 4-space indent, 140-char line width, single quotes, trailing commas everywhere, semicolons required.
+Biome enforces linting and formatting: 4-space indent, 140-char line width, single quotes, trailing commas everywhere, semicolons required. Suppress rules only with a justified `biome-ignore` comment.
 
 ## Git & Pull Requests
 
