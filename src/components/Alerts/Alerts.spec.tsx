@@ -129,16 +129,22 @@ test.describe('Alerts', () => {
     });
 
     test('should keep danger alert past the auto-dismiss window', async ({ mount, page }) => {
-        const messages = [createAlertMessage({ id: 12, message: 'Stays put', color: 'danger' })];
-        await mount(<AlertsWithStore autoDismissMs={500} preloadedState={{ [alertsSlice.name]: { messages, msgId: 13 } }} />);
+        const messages = [
+            createAlertMessage({ id: 12, message: 'Stays put', color: 'danger' }),
+            createAlertMessage({ id: 34, message: 'Sentinel that auto-dismisses', color: 'success' }),
+        ];
+        await mount(<AlertsWithStore autoDismissMs={500} preloadedState={{ [alertsSlice.name]: { messages, msgId: 35 } }} />);
 
-        await page.waitForTimeout(1500);
+        await expect(page.getByTestId('alert-34')).not.toBeAttached({ timeout: 5000 });
         await expect(page.getByTestId('alert-12')).toBeVisible();
     });
 
     test('should pause auto-dismiss while hovered and resume after', async ({ mount, page }) => {
-        const messages = [createAlertMessage({ id: 13, message: 'Hover me', color: 'info' })];
-        await mount(<AlertsWithStore autoDismissMs={2000} preloadedState={{ [alertsSlice.name]: { messages, msgId: 14 } }} />);
+        const messages = [
+            createAlertMessage({ id: 35, message: 'Sentinel that auto-dismisses', color: 'success' }),
+            createAlertMessage({ id: 13, message: 'Hover me', color: 'info' }),
+        ];
+        await mount(<AlertsWithStore autoDismissMs={2000} preloadedState={{ [alertsSlice.name]: { messages, msgId: 36 } }} />);
 
         const alert = page.getByTestId('alert-13');
         await alert.hover();
@@ -146,11 +152,11 @@ test.describe('Alerts', () => {
         const playState = await page.getByTestId('alert-progress-13').evaluate((element) => getComputedStyle(element).animationPlayState);
         expect(playState).toBe('paused');
 
-        await page.waitForTimeout(3000);
+        await expect(page.getByTestId('alert-35')).not.toBeAttached({ timeout: 10000 });
         await expect(alert).toBeVisible();
 
         await page.mouse.move(0, 0);
-        await expect(alert).not.toBeAttached({ timeout: 5000 });
+        await expect(alert).not.toBeAttached({ timeout: 10000 });
     });
 
     const longMessage = Array.from({ length: 30 }, (_, index) => `Line ${index} of a very long backend error report.`).join(' ');
@@ -241,15 +247,18 @@ test.describe('Alerts', () => {
     });
 
     test('should pause auto-dismiss while a control inside the toast has keyboard focus', async ({ mount, page }) => {
-        const messages = [createAlertMessage({ id: 23, message: 'Focus me', color: 'info' })];
-        await mount(<AlertsWithStore autoDismissMs={2000} preloadedState={{ [alertsSlice.name]: { messages, msgId: 24 } }} />);
+        const messages = [
+            createAlertMessage({ id: 36, message: 'Sentinel that auto-dismisses', color: 'success' }),
+            createAlertMessage({ id: 23, message: 'Focus me', color: 'info' }),
+        ];
+        await mount(<AlertsWithStore autoDismissMs={2000} preloadedState={{ [alertsSlice.name]: { messages, msgId: 37 } }} />);
 
         await page.getByTestId('alert-23').getByRole('button', { name: 'Dismiss' }).focus();
 
         const playState = await page.getByTestId('alert-progress-23').evaluate((element) => getComputedStyle(element).animationPlayState);
         expect(playState).toBe('paused');
 
-        await page.waitForTimeout(3000);
+        await expect(page.getByTestId('alert-36')).not.toBeAttached({ timeout: 10000 });
         await expect(page.getByTestId('alert-23')).toBeVisible();
     });
 
@@ -261,6 +270,20 @@ test.describe('Alerts', () => {
 
         await expect(page.getByTestId('alert-47')).toBeInViewport();
         await expect(page.getByRole('button', { name: 'Dismiss all' })).toBeInViewport();
+    });
+
+    test('should mirror the newest auto-dismissing alert into a persistent live region', async ({ mount, page }) => {
+        const messages = [
+            createAlertMessage({ id: 60, message: 'First success', color: 'success' }),
+            createAlertMessage({ id: 61, message: '<b>Second</b> success', color: 'success' }),
+            createAlertMessage({ id: 62, message: 'A failure', color: 'danger' }),
+        ];
+        await mount(<AlertsWithStore autoDismissMs={600000} preloadedState={{ [alertsSlice.name]: { messages, msgId: 63 } }} />);
+
+        const announcer = page.getByTestId('alerts-announcer');
+        await expect(announcer).toHaveAttribute('role', 'status');
+        await expect(announcer).toHaveText('Second success');
+        await expect(page.getByTestId('alerts-scroll-area')).not.toHaveAttribute('aria-live');
     });
 
     test('should clip horizontal overflow so the entry animation cannot flash a scrollbar', async ({ mount, page }) => {

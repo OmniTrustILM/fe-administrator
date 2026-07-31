@@ -8,17 +8,7 @@ import { Check, ChevronDown, ChevronUp, CircleAlert, CircleCheck, Copy, Info, X 
 import { actions } from 'ducks/alerts';
 import type { MessageModel } from 'types/alerts';
 
-import { AUTO_DISMISS_MS, COPY_CONFIRMATION_MS, EXIT_ANIMATION_MS, PROGRESS_ANIMATION_NAME } from './constants';
-
-// Backend-provided messages may carry simple formatting, but nothing in the app produces
-// richer markup — so only basic text formatting survives sanitization. Style tags, forms,
-// images, links and all attributes are stripped to prevent UI injection via API errors.
-const SANITIZE_CONFIG = {
-    ALLOWED_TAGS: ['b', 'strong', 'i', 'em', 'u', 'p', 'br', 'ul', 'ol', 'li', 'code', 'pre', 'span'],
-    ALLOWED_ATTR: [],
-    ALLOW_ARIA_ATTR: false,
-    ALLOW_DATA_ATTR: false,
-};
+import { AUTO_DISMISS_MS, COPY_CONFIRMATION_MS, EXIT_ANIMATION_MS, PROGRESS_ANIMATION_NAME, SANITIZE_CONFIG } from './constants';
 
 const severityConfig = {
     success: {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
 import reducer, { actions, selectors } from './alerts';
-import { initialState as sliceInitialState } from './alert-slice';
+import { initialState as sliceInitialState, MAX_STORED_ALERTS } from './alert-slice';
 
 describe('alerts slice', () => {
     test('returns initial state for unknown action', () => {
@@ -117,6 +117,25 @@ describe('alerts slice', () => {
         const next = reducer(sliceInitialState, actions.dismissAll());
 
         expect(next.messages).toHaveLength(0);
+    });
+
+    test('drops the oldest message once the retention cap is exceeded', () => {
+        const before = {
+            ...sliceInitialState,
+            msgId: MAX_STORED_ALERTS,
+            messages: Array.from({ length: MAX_STORED_ALERTS }, (_, index) => ({
+                id: index,
+                time: 0,
+                message: `Message ${index}`,
+                color: 'danger' as const,
+            })),
+        };
+
+        const next = reducer(before, actions.error('Newest failure'));
+
+        expect(next.messages).toHaveLength(MAX_STORED_ALERTS);
+        expect(next.messages[0].id).toBe(1);
+        expect(next.messages[next.messages.length - 1].message).toBe('Newest failure');
     });
 });
 
