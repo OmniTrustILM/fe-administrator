@@ -1,11 +1,11 @@
 {
-    "name": "czertainly-administrator",
+    "name": "ilm-administrator",
     "version": "2.18.0",
     "homepage": ".",
     "private": true,
     "type": "module",
     "dependencies": {
-        "@czertainly/openapi-types": "file:./src/types/openapi",
+        "@ilm/openapi-types": "file:./src/types/openapi",
         "@radix-ui/react-dialog": "^1.1.15",
         "@radix-ui/react-dropdown-menu": "^2.1.16",
         "@radix-ui/react-popover": "^1.1.15",
@@ -19,7 +19,6 @@
         "cron-expression-validator": "^1.0.20",
         "cron-parser": "^5.5.0",
         "cronstrue": "^3.14.0",
-        "czertainly-administrator": "file:",
         "dagre": "^0.8.5",
         "dompurify": "^3.3.3",
         "highlight.js": "^11.11.1",

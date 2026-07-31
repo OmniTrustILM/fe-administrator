@@ -1,6 +1,6 @@
-# CZERTAINLY Administrator User Interface
+# ILM Administrator User Interface
 
-> This repository is part of the commercial open-source project CZERTAINLY. You can find more information about the project at [CZERTAINLY](https://github.com/CZERTAINLY/CZERTAINLY) repository, including the contribution guide.
+> This repository is part of the open source project ILM. You can find more information about the project at the [ILM](https://github.com/OmniTrustILM/ilm) repository, including the contribution guide.
 
 Administrator User Interface or commonly called as Admin UI consists of the administrative web interface where various administrative tasks can be performed on top of the platform by the administrators.
 
@@ -16,7 +16,7 @@ For the ease of understanding and usage, the icons are added with tooltip to und
 
 Bulk operations can be performed on most of the objects from their list page. To perform any operation on a single object (for example - a connector), the user can do it either from the list page or the details page.
 
-For more information, please refer to the [CZERTAINLY documentation](https://docs.czertainly.com).
+For more information, please refer to the [ILM documentation](https://docs.otilm.com).
 
 ### Generating API Types
 
@@ -90,13 +90,19 @@ import type {
 } from './';
 ```
 
+#### Utils service types and remaining CZERTAINLY branding
+
+`npm run generate-types-utils` regenerates `src/types/openapi/utils` from the spec configured as `typescript-rxjs-utils` in `openapitools.json`. That spec is still served from `https://api.czertainly.com/utils/main/utils-service.yaml`, so the generated files under `src/types/openapi/utils` still carry `CZERTAINLY Utils Service API` / `getinfo@czertainly.com` headers. This is the only remaining CZERTAINLY branding in the generated code and it cannot be fixed here — do **not** hand-edit those headers, they would be overwritten on the next regeneration. It clears once `utils-service` is rebranded and publishes an ILM spec URL, tracked under the platform rebrand epic [OmniTrustILM/ilm#108](https://github.com/OmniTrustILM/ilm/issues/108).
+
+Note also that `src/types/openapi` contains a handful of files that the current core spec no longer emits (they are absent from `src/types/openapi/.openapi-generator/FILES`). Some are still imported by application code, so they are kept for now; regenerating does not touch them.
+
 ## Docker container
 
-Admin Web Interface is provided as a Docker container. Use the `docker pull czertainly/czertainly-frontend-administrator:tagname` to pull the required image from the repository. It can be configured using the following environment variables:
+Admin Web Interface is provided as a Docker container. Use the `docker pull hub.omnitrustregistry.com/ilm/frontend-administrator:tagname` to pull the required image from the repository. It can be configured using the following environment variables:
 
 | Variable     | Description                                            | Required                                      | Default value    |
 | ------------ | ------------------------------------------------------ | --------------------------------------------- | ---------------- |
 | `BASE_URL`   | URL Path of the frontend application                   | ![](https://img.shields.io/badge/-NO-red.svg) | `/administrator` |
-| `API_URL`    | URL Path of the CZERTAINLY API for the web application | ![](https://img.shields.io/badge/-NO-red.svg) | `/api`           |
+| `API_URL`    | URL Path of the ILM API for the web application        | ![](https://img.shields.io/badge/-NO-red.svg) | `/api`           |
 | `LOGIN_URL`  | URL Path of the login page                             | ![](https://img.shields.io/badge/-NO-red.svg) | `/login`         |
 | `LOGOUT_URL` | URL Path of the logout page                            | ![](https://img.shields.io/badge/-NO-red.svg) | `/logout`        |

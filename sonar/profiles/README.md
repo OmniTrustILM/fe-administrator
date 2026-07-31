@@ -31,7 +31,7 @@ Defaults match the local-SonarQube setup documented in
 ```bash
 SONAR_URL=http://localhost:9000 \
 SONAR_AUTH=admin:AdminLocal2024! \
-PROJECT_KEY=czertainly-fe-administrator \
+PROJECT_KEY=fe-administrator \
 ./scripts/sonar-import-profiles.sh
 ```
 
