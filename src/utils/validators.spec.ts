@@ -307,7 +307,7 @@ describe('validators', () => {
         });
 
         test('should accept a host with a port, a numeric domain label and a path', () => {
-            expect(validateUrlWithRoute('http://demo-web.otilm.com:7070/api')).toBeUndefined();
+            expect(validateUrlWithRoute('http://demo-web.3rd.otilm.com:7070/api')).toBeUndefined();
         });
 
         test('should reject invalid url', () => {

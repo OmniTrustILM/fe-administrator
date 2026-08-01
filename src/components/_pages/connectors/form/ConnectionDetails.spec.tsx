@@ -72,7 +72,7 @@ test.describe('ConnectionDetailsV2', () => {
                     id: 'czertainly.ejbca.connector',
                     name: 'ejbca-connector',
                     version: '1.16',
-                    description: 'EJBCA Connector for CZERTAINLY',
+                    description: 'EJBCA Connector for ILM',
                     metadata: {
                         Author: 'OmniTrust',
                         License: 'MIT',
