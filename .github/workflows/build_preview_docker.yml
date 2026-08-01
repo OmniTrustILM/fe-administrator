@@ -18,8 +18,8 @@ run-name: >-
 permissions: {}
 
 env:
-  REGISTRY: hub.omnitrustregistry.com
-  IMAGE: hub.omnitrustregistry.com/ilm/frontend-administrator
+  REGISTRY: harbor.3key.company
+  IMAGE: harbor.3key.company/ilm/frontend-administrator
   PREVIEW_TAG: pr-${{ inputs.pr_number }}-${{ inputs.head_sha }}
   # cache scope so both jobs share the same cache namespace
   CACHE_SCOPE: ilm-fe-admin-preview
