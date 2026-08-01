@@ -124,7 +124,7 @@ export default function TabLayout({
     return (
         <Widget noBorder={noBorder} dataTestId="tab-layout">
             <Tabs tabs={tabsForRender} selectedTab={currentTab} onTabChange={handleTabChange} />
-            <hr className="my-4 border-gray-200" />
+            <hr className="my-4 border-divider" />
             {memoizedTabs.map((t, i) =>
                 onlyActiveTabContent === false || currentTab === i ? (
                     <div

@@ -357,7 +357,8 @@
                           "fill": "$color.gray-700",
                           "content": "Active",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -379,7 +380,8 @@
                           "fill": "$color.gray-700",
                           "content": "12 Jun 2026",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -467,7 +469,8 @@
                           "fill": "$color.gray-700",
                           "content": "Active",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -489,7 +492,8 @@
                           "fill": "$color.gray-700",
                           "content": "03 May 2026",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -572,7 +576,8 @@
                           "fill": "$color.gray-700",
                           "content": "Disabled",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -594,7 +599,8 @@
                           "fill": "$color.gray-700",
                           "content": "21 Apr 2026",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -1118,7 +1124,7 @@
                           "width": 260,
                           "fill": "$color.white",
                           "cornerRadius": 8,
-                          "stroke": "$color.gray-200",
+                          "stroke": "$color.gray-300",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner",
                           "gap": 8,
@@ -1186,7 +1192,7 @@
                           "name": "Page Size",
                           "fill": "$color.white",
                           "cornerRadius": 8,
-                          "stroke": "$color.gray-200",
+                          "stroke": "$color.gray-300",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner",
                           "gap": 8,
@@ -1287,7 +1293,8 @@
                                   "fill": "$color.gray-700",
                                   "content": "2",
                                   "fontFamily": "Inter",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -1308,7 +1315,8 @@
                                   "fill": "$color.gray-700",
                                   "content": "3",
                                   "fontFamily": "Inter",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -1614,7 +1622,7 @@
                               "type": "text",
                               "id": "h9rQDp",
                               "name": "Text",
-                              "fill": "$color.neutral-400",
+                              "fill": "$color.neutral-500",
                               "content": "NAME",
                               "fontFamily": "Inter",
                               "fontSize": 11,
@@ -1629,7 +1637,7 @@
                               "height": 12,
                               "icon": "arrow-down-up",
                               "library": "lucide",
-                              "fill": "$color.neutral-400"
+                              "fill": "$color.neutral-500"
                             }
                           ]
                         }
@@ -1657,7 +1665,7 @@
                               "type": "text",
                               "id": "rM2N9",
                               "name": "Text",
-                              "fill": "$color.neutral-400",
+                              "fill": "$color.neutral-500",
                               "content": "STATUS",
                               "fontFamily": "Inter",
                               "fontSize": 11,
@@ -1672,7 +1680,7 @@
                               "height": 12,
                               "icon": "arrow-down-up",
                               "library": "lucide",
-                              "fill": "$color.neutral-400"
+                              "fill": "$color.neutral-500"
                             }
                           ]
                         }
@@ -1700,7 +1708,7 @@
                               "type": "text",
                               "id": "X9TaY",
                               "name": "Text",
-                              "fill": "$color.neutral-400",
+                              "fill": "$color.neutral-500",
                               "content": "CREATED",
                               "fontFamily": "Inter",
                               "fontSize": 11,
@@ -1718,7 +1726,7 @@
                   "id": "FM9aV",
                   "name": "Row 1",
                   "width": "fill_container",
-                  "fill": "$color.neutral-800",
+                  "fill": "$color.neutral-900",
                   "stroke": "$color.neutral-700",
                   "strokeWidth": {
                     "bottom": 1
@@ -1744,9 +1752,9 @@
                           "name": "Checkbox",
                           "width": 16,
                           "height": 16,
-                          "fill": "$color.blue-500",
+                          "fill": "$color.blue-600",
                           "cornerRadius": 4,
-                          "stroke": "$color.blue-500",
+                          "stroke": "$color.blue-600",
                           "strokeAlignment": "inner",
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -1806,7 +1814,8 @@
                           "fill": "$color.neutral-400",
                           "content": "Active",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -1828,7 +1837,8 @@
                           "fill": "$color.neutral-400",
                           "content": "12 Jun 2026",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -1839,7 +1849,7 @@
                   "id": "U2mse",
                   "name": "Row 2",
                   "width": "fill_container",
-                  "fill": "$color.neutral-800",
+                  "fill": "$color.neutral-900",
                   "stroke": "$color.neutral-700",
                   "strokeWidth": {
                     "bottom": 1
@@ -1916,7 +1926,8 @@
                           "fill": "$color.neutral-400",
                           "content": "Active",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -1938,7 +1949,8 @@
                           "fill": "$color.neutral-400",
                           "content": "03 May 2026",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -1949,7 +1961,7 @@
                   "id": "wfL9K",
                   "name": "Row 3",
                   "width": "fill_container",
-                  "fill": "$color.neutral-800",
+                  "fill": "$color.neutral-900",
                   "alignItems": "center",
                   "children": [
                     {
@@ -2021,7 +2033,8 @@
                           "fill": "$color.neutral-400",
                           "content": "Disabled",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -2043,7 +2056,8 @@
                           "fill": "$color.neutral-400",
                           "content": "21 Apr 2026",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -2567,7 +2581,7 @@
                           "width": 260,
                           "fill": "$color.neutral-900",
                           "cornerRadius": 8,
-                          "stroke": "$color.neutral-700",
+                          "stroke": "$color.neutral-600",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner",
                           "gap": 8,
@@ -2635,7 +2649,7 @@
                           "name": "Page Size",
                           "fill": "$color.neutral-900",
                           "cornerRadius": 8,
-                          "stroke": "$color.neutral-700",
+                          "stroke": "$color.neutral-600",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner",
                           "gap": 8,
@@ -2702,7 +2716,7 @@
                               "name": "Pg 1",
                               "width": 30,
                               "height": 30,
-                              "fill": "$color.blue-500",
+                              "fill": "$color.blue-600",
                               "cornerRadius": 6,
                               "justifyContent": "center",
                               "alignItems": "center",
@@ -2736,7 +2750,8 @@
                                   "fill": "$color.neutral-400",
                                   "content": "2",
                                   "fontFamily": "Inter",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -2757,7 +2772,8 @@
                                   "fill": "$color.neutral-400",
                                   "content": "3",
                                   "fontFamily": "Inter",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             },
@@ -2871,7 +2887,7 @@
                               "type": "text",
                               "id": "T4iRe",
                               "name": "ETitle",
-                              "fill": "$color.neutral-400",
+                              "fill": "$color.neutral-200",
                               "content": "No items to show",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -2919,31 +2935,31 @@
     },
     "color.gray-300": {
       "type": "color",
-      "value": "#d4d4d4"
+      "value": "#8f8f8f"
     },
     "color.gray-400": {
       "type": "color",
-      "value": "#c7c7c7"
+      "value": "#6e6e6e"
     },
     "color.gray-500": {
       "type": "color",
-      "value": "#a8a8a8"
+      "value": "#6e6e6e"
     },
     "color.gray-700": {
       "type": "color",
-      "value": "#8c8c8c"
+      "value": "#525252"
     },
     "color.gray-800": {
       "type": "color",
-      "value": "#666666"
+      "value": "#1f2937"
     },
     "color.gray-900": {
       "type": "color",
-      "value": "#404040"
+      "value": "#1f2937"
     },
     "color.blue-500": {
       "type": "color",
-      "value": "#0085e6"
+      "value": "#3399ff"
     },
     "color.blue-600": {
       "type": "color",
@@ -2951,7 +2967,7 @@
     },
     "color.neutral-200": {
       "type": "color",
-      "value": "#e5e5e5"
+      "value": "#f5f5f5"
     },
     "color.neutral-300": {
       "type": "color",
@@ -2959,19 +2975,19 @@
     },
     "color.neutral-400": {
       "type": "color",
-      "value": "#a3a3a3"
+      "value": "#d4d4d4"
     },
     "color.neutral-500": {
       "type": "color",
-      "value": "#737373"
+      "value": "#a3a3a3"
     },
     "color.neutral-600": {
       "type": "color",
-      "value": "#525252"
+      "value": "#666666"
     },
     "color.neutral-700": {
       "type": "color",
-      "value": "#404040"
+      "value": "#262626"
     },
     "color.neutral-800": {
       "type": "color",

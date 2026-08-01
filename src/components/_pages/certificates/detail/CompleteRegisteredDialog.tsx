@@ -169,11 +169,11 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
                 <div className="space-y-4">
                     {submissionErrors.length > 0 && (
                         <div
-                            className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-800/10"
+                            className="rounded-lg border border-danger bg-danger-surface p-4"
                             data-testid="completeRegisteredError"
                             role="alert"
                         >
-                            <ul className="list-disc space-y-1 ps-5 text-sm text-red-700 dark:text-red-500">
+                            <ul className="list-disc space-y-1 ps-5 text-sm text-danger">
                                 {submissionErrors.map((error) => (
                                     <li key={error}>{error}</li>
                                 ))}
@@ -231,7 +231,7 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
 
                             {/* Identity the backend uses to build the CSR from the selected key. */}
                             {isFetchingCsrAttributes && (csrAttributeDescriptors ?? []).length === 0 ? (
-                                <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-loading">
+                                <span className="text-content-subtle" data-testid="csrAttributes-loading">
                                     Loading request attributes&hellip;
                                 </span>
                             ) : (

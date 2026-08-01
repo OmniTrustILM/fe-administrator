@@ -22,7 +22,7 @@ test.describe('BooleanBadge', () => {
         const badge = component.getByText('Yes');
         await expect(badge).toBeVisible();
 
-        await expect(badge).toHaveClass(/bg-\[var\(--status-success-color\)\]/);
+        await expect(badge).toHaveClass(/bg-success-surface/);
     });
 
     test('should use danger color for false value by default', async ({ mount }) => {
@@ -31,7 +31,7 @@ test.describe('BooleanBadge', () => {
         const badge = component.getByText('No');
         await expect(badge).toBeVisible();
 
-        await expect(badge).toHaveClass(/bg-\[var\(--status-danger-color\)\]/);
+        await expect(badge).toHaveClass(/bg-danger-surface/);
     });
 
     test('should invert colors when invertColor is true', async ({ mount }) => {
@@ -39,13 +39,13 @@ test.describe('BooleanBadge', () => {
 
         const trueElement = trueBadge.getByText('Yes');
 
-        await expect(trueElement).toHaveClass(/bg-\[var\(--status-danger-color\)\]/);
+        await expect(trueElement).toHaveClass(/bg-danger-surface/);
         await trueBadge.unmount();
 
         const falseBadge = await mount(<BooleanBadge value={false} invertColor={true} />);
         const falseElement = falseBadge.getByText('No');
 
-        await expect(falseElement).toHaveClass(/bg-\[var\(--status-success-color\)\]/);
+        await expect(falseElement).toHaveClass(/bg-success-surface/);
     });
 
     test('should use custom data-testid when provided', async ({ mount }) => {

@@ -25,7 +25,7 @@ const PROFILES_LINK = '../signingprofiles';
 const REDIRECT = '/signingrecords';
 
 function caption(text: string) {
-    return <span className="text-sm text-gray-400">{text}</span>;
+    return <span className="text-sm text-content-subtle">{text}</span>;
 }
 
 function isEmpty(obj?: object) {

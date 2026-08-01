@@ -38,7 +38,7 @@ test.describe('CompleteRegisteredDialog', () => {
         await mount(<CompleteRegisteredDialogTestWrapper />);
 
         await expect(page.getByTestId('label-completeAuthorizationSecret')).toContainText('Challenge');
-        await expect(page.getByTestId('label-completeAuthorizationSecret').locator('.text-red-500')).toBeVisible();
+        await expect(page.getByTestId('label-completeAuthorizationSecret').locator('.text-danger')).toBeVisible();
     });
 
     test('Challenge is absent for a certificate pre-registered without one', async ({ mount, page }) => {

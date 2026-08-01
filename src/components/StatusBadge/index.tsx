@@ -15,7 +15,7 @@ function StatusBadge({ enabled, style, textStatus, dataTestId }: Props) {
     };
 
     const renderBadge = (color: BadgeColor, children: string) => (
-        <Badge {...badgeProps} color={color}>
+        <Badge {...badgeProps} color={color} fill="surface">
             {children}
         </Badge>
     );

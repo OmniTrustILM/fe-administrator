@@ -285,7 +285,7 @@ export default function NotificationProfileForm({
                                             placement="bottom"
                                         />
                                         {fieldState.error && fieldState.isTouched && (
-                                            <p className="mt-1 text-sm text-red-600">
+                                            <p className="mt-1 text-sm text-danger">
                                                 Notification Instance is required when Recipient Type is Default, None, or Object, or when
                                                 Send internal notifications is off
                                             </p>
@@ -328,13 +328,15 @@ export default function NotificationProfileForm({
                                         invalid={fieldState.error && fieldState.isTouched}
                                         error={getFieldErrorMessage(fieldState)}
                                     />
-                                    {!fieldState.error && <p className="mt-1 text-sm text-gray-500">Enter duration in format: 0d 0h</p>}
+                                    {!fieldState.error && (
+                                        <p className="mt-1 text-sm text-content-subtle">Enter duration in format: 0d 0h</p>
+                                    )}
                                 </>
                             )}
                         />
 
                         <div>
-                            <p className="text-sm text-gray-500 mb-2">Maximum number of repetitions of the same notification</p>
+                            <p className="text-sm text-content-subtle mb-2">Maximum number of repetitions of the same notification</p>
                             <Controller
                                 name="repetitions"
                                 control={control}
@@ -464,7 +466,7 @@ function RecipientTypeFields() {
         return (
             <div>
                 <Label required>Notification Recipients</Label>
-                <p className="text-sm text-gray-500 mb-2">{props.description}</p>
+                <p className="text-sm text-content-subtle mb-2">{props.description}</p>
                 <Controller
                     name="recipients"
                     control={control}
@@ -483,7 +485,7 @@ function RecipientTypeFields() {
                                 placement="bottom"
                             />
                             {fieldState.error && fieldState.isTouched && (
-                                <p className="mt-1 text-sm text-red-600">At least one recipient is required</p>
+                                <p className="mt-1 text-sm text-danger">At least one recipient is required</p>
                             )}
                         </>
                     )}
@@ -500,7 +502,7 @@ function RecipientTypeFields() {
                         Recipient Type
                     </Label>
                 </div>
-                <p className="text-sm text-gray-500 mb-2">Recipient type of notifications managed by profile.</p>
+                <p className="text-sm text-content-subtle mb-2">Recipient type of notifications managed by profile.</p>
                 <Controller
                     name="recipientType"
                     control={control}
@@ -529,7 +531,7 @@ function RecipientTypeFields() {
                                 showSelectedDescriptionAsHelp
                             />
                             {fieldState.error && fieldState.isTouched && (
-                                <p className="mt-1 text-sm text-red-600">
+                                <p className="mt-1 text-sm text-danger">
                                     {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message || 'Invalid value'}
                                 </p>
                             )}

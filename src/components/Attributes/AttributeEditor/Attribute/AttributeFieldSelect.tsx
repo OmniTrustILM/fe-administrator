@@ -59,7 +59,7 @@ export function AttributeFieldSelect({
             render={({ field, fieldState }) => {
                 fieldValueRef.current = field.value;
                 const selectValue = getSelectValueFromField(field.value, descriptor.properties.multiSelect);
-                const invalidClass = fieldState.isTouched && fieldState.invalid ? 'border-red-500' : '';
+                const invalidClass = fieldState.isTouched && fieldState.invalid ? 'border-danger' : '';
 
                 const baseOptions = options;
                 let currentValues: unknown[];
@@ -133,7 +133,7 @@ export function AttributeFieldSelect({
                                     <Button
                                         type="button"
                                         variant="transparent"
-                                        className="text-blue-600 mt-1"
+                                        className="text-brand mt-1"
                                         onClick={() => setShowAddCustom(true)}
                                     >
                                         <Plus size={14} className="mr-1" />
@@ -155,11 +155,9 @@ export function AttributeFieldSelect({
                         )}
                         {descriptor.properties.visible && (
                             <>
-                                {descriptor.description && (
-                                    <p className="text-xs text-gray-700 mt-1 dark:text-neutral-400">{descriptor.description}</p>
-                                )}
+                                {descriptor.description && <p className="text-xs text-content-muted mt-1">{descriptor.description}</p>}
                                 {fieldState.isTouched && fieldState.invalid && (
-                                    <div className="mt-1 text-sm text-red-600">
+                                    <div className="mt-1 text-sm text-danger">
                                         {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message}
                                     </div>
                                 )}

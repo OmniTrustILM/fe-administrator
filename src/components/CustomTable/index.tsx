@@ -545,10 +545,10 @@ function CustomTable({
                     strokeLinejoin="round"
                     className="lucide lucide-arrow-down-up-icon lucide-arrow-down-up"
                 >
-                    <path d="m3 16 4 4 4-4" color={sort && sort === 'desc' ? 'var(--dark-gray-color)' : 'currentColor'} />
-                    <path d="M7 20V4" color={sort && sort === 'desc' ? 'var(--dark-gray-color)' : 'currentColor'} />
-                    <path d="m21 8-4-4-4 4" color={sort && sort === 'asc' ? 'var(--dark-gray-color)' : 'currentColor'} />
-                    <path d="M17 4v16" color={sort && sort === 'asc' ? 'var(--dark-gray-color)' : 'currentColor'} />
+                    <path d="m3 16 4 4 4-4" color={sort && sort === 'desc' ? 'var(--content)' : 'currentColor'} />
+                    <path d="M7 20V4" color={sort && sort === 'desc' ? 'var(--content)' : 'currentColor'} />
+                    <path d="m21 8-4-4-4 4" color={sort && sort === 'asc' ? 'var(--content)' : 'currentColor'} />
+                    <path d="M17 4v16" color={sort && sort === 'asc' ? 'var(--content)' : 'currentColor'} />
                 </svg>
             </div>
         );
@@ -563,7 +563,7 @@ function CustomTable({
                 <th
                     scope="col"
                     className={cn(
-                        'p-2.5 text-start text-xs font-medium text-gray-500 uppercase dark:text-neutral-400 !color-gray-500 bg-[#F8FAFC] whitespace-nowrap',
+                        'p-2.5 text-start text-xs font-medium text-content-subtle uppercase !color-gray-500 bg-surface-sunken whitespace-nowrap',
                         {
                             'cursor-pointer': header.sortable,
                         },
@@ -712,7 +712,7 @@ function CustomTable({
                                     onChange={(event) => setSearchKey(event.target.value)}
                                     type="text"
                                     disabled={disableSearchControls}
-                                    className="py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg sm:text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                                    className="py-2.5 sm:py-3 px-4 block w-full border-outline rounded-lg sm:text-sm focus:border-brand focus:ring-brand disabled:opacity-50 disabled:pointer-events-none bg-surface-raised text-content placeholder-content-subtle"
                                 />
                             </div>
                         </div>
@@ -720,16 +720,16 @@ function CustomTable({
                     {(hasHeader || body?.length > 0 || !data.length) && (
                         <div className="py-2">
                             <SimpleBar forceVisible="x">
-                                <div className={cn('rounded-md', { 'border border-gray-100': hasHeader })}>
+                                <div className={cn('rounded-md', { 'border border-divider': hasHeader })}>
                                     <div className="min-w-full inline-block align-middle">
                                         <div className="overflow-hidden">
-                                            <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700 bg-white">
+                                            <table className="min-w-full divide-y divide-divider bg-surface-raised">
                                                 {hasHeader && (
-                                                    <thead className="bg-gray-50 dark:bg-neutral-700">
+                                                    <thead className="bg-surface-sunken">
                                                         <tr>{header}</tr>
                                                     </thead>
                                                 )}
-                                                <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">{body}</tbody>
+                                                <tbody className="divide-y divide-divider">{body}</tbody>
                                             </table>
                                         </div>
                                     </div>
@@ -737,14 +737,14 @@ function CustomTable({
                             </SimpleBar>
                             {body.length === 0 && (
                                 <div className="flex flex-col items-center justify-center gap-3 py-8">
-                                    <div className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 dark:bg-neutral-800">
-                                        <TableProperties size={28} strokeWidth={1.5} className="text-gray-400 dark:text-neutral-500" />
+                                    <div className="flex items-center justify-center w-14 h-14 rounded-full bg-surface-sunken">
+                                        <TableProperties size={28} strokeWidth={1.5} className="text-content-subtle" />
                                     </div>
                                     <div className="flex flex-col items-center gap-1">
-                                        <span className="text-sm font-medium text-gray-600 dark:text-neutral-400">
+                                        <span className="text-sm font-medium text-content-muted">
                                             {data.length > 0 ? 'No matching items' : 'No items to show'}
                                         </span>
-                                        <span className="text-xs text-gray-400 dark:text-neutral-500">
+                                        <span className="text-xs text-content-subtle">
                                             {data.length > 0
                                                 ? 'Try adjusting your search or filters to see results'
                                                 : 'There are no records to display here yet'}

@@ -1,5 +1,5 @@
 {
-  "version": "2.13",
+  "version": "2.14",
   "children": [
     {
       "type": "frame",
@@ -11,7 +11,7 @@
       "width": 320,
       "fill": "$color.white",
       "cornerRadius": 8,
-      "stroke": "$color.gray-200",
+      "stroke": "#8f8f8f",
       "strokeWidth": 1,
       "strokeAlignment": "inner",
       "gap": 8,
@@ -25,7 +25,7 @@
           "type": "text",
           "id": "lIkIN",
           "name": "Value",
-          "fill": "$color.gray-500",
+          "fill": "#6e6e6e",
           "textGrowth": "fixed-width",
           "width": "fill_container",
           "content": "Placeholder text",
@@ -69,7 +69,7 @@
               "type": "text",
               "id": "N3nfI",
               "name": "Title",
-              "fill": "$color.gray-900",
+              "fill": "#1f2937",
               "content": "TextInput",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -79,7 +79,7 @@
               "type": "text",
               "id": "Vf2Pr",
               "name": "Subtitle",
-              "fill": "$color.gray-700",
+              "fill": "#525252",
               "content": "Text field — states, types & examples",
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -126,7 +126,7 @@
                       "type": "text",
                       "id": "F8BjEo",
                       "name": "Header",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Default",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -146,7 +146,7 @@
                       "type": "text",
                       "id": "bp4mY",
                       "name": "Header",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Focus",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -166,7 +166,7 @@
                       "type": "text",
                       "id": "A5JDvb",
                       "name": "Header",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Error",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -186,7 +186,7 @@
                       "type": "text",
                       "id": "TwLpw",
                       "name": "Header",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Disabled",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -226,7 +226,7 @@
                       "type": "text",
                       "id": "KkDjf",
                       "name": "Text",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Empty",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -255,7 +255,7 @@
                       "descendants": {
                         "lIkIN": {
                           "content": "Placeholder",
-                          "fill": "$color.gray-500"
+                          "fill": "#6e6e6e"
                         }
                       }
                     }
@@ -289,7 +289,7 @@
                       "descendants": {
                         "lIkIN": {
                           "content": "Placeholder",
-                          "fill": "$color.gray-500"
+                          "fill": "#6e6e6e"
                         }
                       }
                     }
@@ -313,11 +313,11 @@
                       "ref": "JGrSb",
                       "name": "Empty Error",
                       "width": "fill_container",
-                      "stroke": "$color.red-500",
+                      "stroke": "#b91c1c",
                       "descendants": {
                         "lIkIN": {
                           "content": "Placeholder",
-                          "fill": "$color.gray-500"
+                          "fill": "#6e6e6e"
                         }
                       }
                     }
@@ -346,7 +346,7 @@
                       "descendants": {
                         "lIkIN": {
                           "content": "Placeholder",
-                          "fill": "$color.gray-500"
+                          "fill": "#6e6e6e"
                         }
                       }
                     }
@@ -384,7 +384,7 @@
                       "type": "text",
                       "id": "JMSVN",
                       "name": "Text",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Filled",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -413,7 +413,7 @@
                       "descendants": {
                         "lIkIN": {
                           "content": "Acme Corp",
-                          "fill": "$color.gray-900"
+                          "fill": "#1f2937"
                         }
                       }
                     }
@@ -447,7 +447,7 @@
                       "descendants": {
                         "lIkIN": {
                           "content": "Acme Corp",
-                          "fill": "$color.gray-900"
+                          "fill": "#1f2937"
                         }
                       }
                     }
@@ -471,11 +471,11 @@
                       "ref": "JGrSb",
                       "name": "Filled Error",
                       "width": "fill_container",
-                      "stroke": "$color.red-500",
+                      "stroke": "#b91c1c",
                       "descendants": {
                         "lIkIN": {
                           "content": "Acme Corp",
-                          "fill": "$color.gray-900"
+                          "fill": "#1f2937"
                         }
                       }
                     }
@@ -504,7 +504,7 @@
                       "descendants": {
                         "lIkIN": {
                           "content": "Acme Corp",
-                          "fill": "$color.gray-900"
+                          "fill": "#1f2937"
                         }
                       }
                     }
@@ -534,7 +534,7 @@
               "type": "text",
               "id": "Uxa0c",
               "name": "Section: Examples",
-              "fill": "$color.gray-900",
+              "fill": "#1f2937",
               "content": "Examples",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -559,7 +559,7 @@
                       "type": "text",
                       "id": "tfbOR",
                       "name": "Text",
-                      "fill": "$color.gray-900",
+                      "fill": "#1f2937",
                       "content": "API Endpoint",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -569,7 +569,7 @@
                       "type": "text",
                       "id": "JKqlM",
                       "name": "Required",
-                      "fill": "$color.red-500",
+                      "fill": "#b91c1c",
                       "content": "*",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -586,7 +586,7 @@
                   "descendants": {
                     "lIkIN": {
                       "content": "https://api.example.com",
-                      "fill": "$color.gray-900"
+                      "fill": "#1f2937"
                     }
                   }
                 }
@@ -611,7 +611,7 @@
                       "type": "text",
                       "id": "eeCDj",
                       "name": "Text",
-                      "fill": "$color.gray-900",
+                      "fill": "#1f2937",
                       "content": "Password",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -621,7 +621,7 @@
                       "type": "text",
                       "id": "b5KoSR",
                       "name": "Required",
-                      "fill": "$color.red-500",
+                      "fill": "#b91c1c",
                       "content": "*",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -636,7 +636,7 @@
                   "width": "fill_container",
                   "fill": "$color.white",
                   "cornerRadius": 8,
-                  "stroke": "$color.gray-200",
+                  "stroke": "#8f8f8f",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "gap": 8,
@@ -650,7 +650,7 @@
                       "type": "text",
                       "id": "k8WDvk",
                       "name": "Value",
-                      "fill": "$color.gray-900",
+                      "fill": "#1f2937",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "••••••••••",
@@ -666,7 +666,7 @@
                       "height": 18,
                       "icon": "eye-off",
                       "library": "lucide",
-                      "fill": "$color.gray-700"
+                      "fill": "#525252"
                     }
                   ]
                 }
@@ -691,7 +691,7 @@
                       "type": "text",
                       "id": "LuVPs",
                       "name": "Text",
-                      "fill": "$color.gray-900",
+                      "fill": "#1f2937",
                       "content": "Email",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -701,7 +701,7 @@
                       "type": "text",
                       "id": "KUWrx",
                       "name": "Required",
-                      "fill": "$color.red-500",
+                      "fill": "#b91c1c",
                       "content": "*",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -715,11 +715,11 @@
                   "ref": "JGrSb",
                   "name": "Field",
                   "width": "fill_container",
-                  "stroke": "$color.red-500",
+                  "stroke": "#b91c1c",
                   "descendants": {
                     "lIkIN": {
                       "content": "user@@example",
-                      "fill": "$color.gray-900"
+                      "fill": "#1f2937"
                     }
                   }
                 },
@@ -727,7 +727,7 @@
                   "type": "text",
                   "id": "n6SPwU",
                   "name": "Error",
-                  "fill": "$color.red-600",
+                  "fill": "#b91c1c",
                   "content": "Please enter a valid email address",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -754,7 +754,7 @@
                       "type": "text",
                       "id": "EVCY2",
                       "name": "Text",
-                      "fill": "$color.gray-900",
+                      "fill": "#1f2937",
                       "content": "Account ID",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -773,7 +773,7 @@
                   "descendants": {
                     "lIkIN": {
                       "content": "ACC-009912",
-                      "fill": "$color.gray-900"
+                      "fill": "#1f2937"
                     }
                   }
                 }
@@ -793,7 +793,7 @@
       "width": 700,
       "fill": "$color.neutral-900",
       "cornerRadius": 12,
-      "stroke": "$color.neutral-700",
+      "stroke": "#262626",
       "strokeWidth": 1,
       "strokeAlignment": "inner",
       "layout": "vertical",
@@ -817,7 +817,7 @@
               "type": "text",
               "id": "qcYr9",
               "name": "Title",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "TextInput",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -948,7 +948,7 @@
               "type": "rectangle",
               "id": "hFMKv",
               "name": "Divider",
-              "fill": "$color.neutral-700",
+              "fill": "#262626",
               "width": "fill_container",
               "height": 1
             },
@@ -1001,11 +1001,11 @@
                       "name": "Empty Default",
                       "width": "fill_container",
                       "fill": "$color.neutral-900",
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "descendants": {
                         "lIkIN": {
                           "content": "Placeholder",
-                          "fill": "$color.neutral-500"
+                          "fill": "#a3a3a3"
                         }
                       }
                     }
@@ -1040,7 +1040,7 @@
                       "descendants": {
                         "lIkIN": {
                           "content": "Placeholder",
-                          "fill": "$color.neutral-500"
+                          "fill": "#a3a3a3"
                         }
                       }
                     }
@@ -1065,11 +1065,11 @@
                       "name": "Empty Error",
                       "width": "fill_container",
                       "fill": "$color.neutral-900",
-                      "stroke": "$color.red-500",
+                      "stroke": "#f87171",
                       "descendants": {
                         "lIkIN": {
                           "content": "Placeholder",
-                          "fill": "$color.neutral-500"
+                          "fill": "#a3a3a3"
                         }
                       }
                     }
@@ -1094,12 +1094,12 @@
                       "name": "Empty Disabled",
                       "width": "fill_container",
                       "fill": "$color.neutral-800",
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "opacity": 0.5,
                       "descendants": {
                         "lIkIN": {
                           "content": "Placeholder",
-                          "fill": "$color.neutral-500"
+                          "fill": "#a3a3a3"
                         }
                       }
                     }
@@ -1111,7 +1111,7 @@
               "type": "rectangle",
               "id": "nck63",
               "name": "Divider",
-              "fill": "$color.neutral-700",
+              "fill": "#262626",
               "width": "fill_container",
               "height": 1
             },
@@ -1164,11 +1164,11 @@
                       "name": "Filled Default",
                       "width": "fill_container",
                       "fill": "$color.neutral-900",
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "descendants": {
                         "lIkIN": {
                           "content": "Acme Corp",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f5f5f5"
                         }
                       }
                     }
@@ -1203,7 +1203,7 @@
                       "descendants": {
                         "lIkIN": {
                           "content": "Acme Corp",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f5f5f5"
                         }
                       }
                     }
@@ -1228,11 +1228,11 @@
                       "name": "Filled Error",
                       "width": "fill_container",
                       "fill": "$color.neutral-900",
-                      "stroke": "$color.red-500",
+                      "stroke": "#f87171",
                       "descendants": {
                         "lIkIN": {
                           "content": "Acme Corp",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f5f5f5"
                         }
                       }
                     }
@@ -1257,12 +1257,12 @@
                       "name": "Filled Disabled",
                       "width": "fill_container",
                       "fill": "$color.neutral-800",
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "opacity": 0.5,
                       "descendants": {
                         "lIkIN": {
                           "content": "Acme Corp",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f5f5f5"
                         }
                       }
                     }
@@ -1276,7 +1276,7 @@
           "type": "rectangle",
           "id": "kbvIF",
           "name": "Section Divider",
-          "fill": "$color.neutral-700",
+          "fill": "#262626",
           "width": "fill_container",
           "height": 1
         },
@@ -1292,7 +1292,7 @@
               "type": "text",
               "id": "nrImM",
               "name": "Section: Examples",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "Examples",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -1317,7 +1317,7 @@
                       "type": "text",
                       "id": "rtur0",
                       "name": "Text",
-                      "fill": "$color.white",
+                      "fill": "#f5f5f5",
                       "content": "API Endpoint",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -1327,7 +1327,7 @@
                       "type": "text",
                       "id": "lRH2Q",
                       "name": "Required",
-                      "fill": "$color.red-500",
+                      "fill": "#f87171",
                       "content": "*",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -1342,11 +1342,11 @@
                   "name": "Field",
                   "width": "fill_container",
                   "fill": "$color.neutral-900",
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#666666",
                   "descendants": {
                     "lIkIN": {
                       "content": "https://api.example.com",
-                      "fill": "$color.neutral-400"
+                      "fill": "#f5f5f5"
                     }
                   }
                 }
@@ -1371,7 +1371,7 @@
                       "type": "text",
                       "id": "rEoCf",
                       "name": "Text",
-                      "fill": "$color.white",
+                      "fill": "#f5f5f5",
                       "content": "Password",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -1381,7 +1381,7 @@
                       "type": "text",
                       "id": "pB3SB",
                       "name": "Required",
-                      "fill": "$color.red-500",
+                      "fill": "#f87171",
                       "content": "*",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -1396,7 +1396,7 @@
                   "width": "fill_container",
                   "fill": "$color.neutral-900",
                   "cornerRadius": 8,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#666666",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "gap": 8,
@@ -1410,7 +1410,7 @@
                       "type": "text",
                       "id": "J0TXzX",
                       "name": "Value",
-                      "fill": "$color.neutral-400",
+                      "fill": "#f5f5f5",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "••••••••••",
@@ -1426,7 +1426,7 @@
                       "height": 18,
                       "icon": "eye-off",
                       "library": "lucide",
-                      "fill": "$color.neutral-400"
+                      "fill": "#d4d4d4"
                     }
                   ]
                 }
@@ -1451,7 +1451,7 @@
                       "type": "text",
                       "id": "BOI0f",
                       "name": "Text",
-                      "fill": "$color.white",
+                      "fill": "#f5f5f5",
                       "content": "Email",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -1461,7 +1461,7 @@
                       "type": "text",
                       "id": "aZP2l",
                       "name": "Required",
-                      "fill": "$color.red-500",
+                      "fill": "#f87171",
                       "content": "*",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -1476,11 +1476,11 @@
                   "name": "Field",
                   "width": "fill_container",
                   "fill": "$color.neutral-900",
-                  "stroke": "$color.red-500",
+                  "stroke": "#f87171",
                   "descendants": {
                     "lIkIN": {
                       "content": "user@@example",
-                      "fill": "$color.neutral-400"
+                      "fill": "#f5f5f5"
                     }
                   }
                 },
@@ -1515,7 +1515,7 @@
                       "type": "text",
                       "id": "XgeOX",
                       "name": "Text",
-                      "fill": "$color.white",
+                      "fill": "#f5f5f5",
                       "content": "Account ID",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -1530,12 +1530,12 @@
                   "name": "Field",
                   "width": "fill_container",
                   "fill": "$color.neutral-800",
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#666666",
                   "opacity": 0.5,
                   "descendants": {
                     "lIkIN": {
                       "content": "ACC-009912",
-                      "fill": "$color.neutral-400"
+                      "fill": "#f5f5f5"
                     }
                   }
                 }
@@ -1723,5 +1723,6 @@
       "type": "color",
       "value": "#854d0e4d"
     }
-  }
+  },
+  "fileToken": "2616ef57-5ed6-411e-88c1-b3600b7b6e39"
 }

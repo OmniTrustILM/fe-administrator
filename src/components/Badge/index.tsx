@@ -1,9 +1,13 @@
 import cn from 'classnames';
 
 export type BadgeColor = 'gray' | 'secondary' | 'success' | 'primary' | 'danger' | 'warning' | 'info' | 'transparent';
+export type BadgeFill = 'solid' | 'surface';
 
 type Props = {
     color?: BadgeColor;
+    /** 'solid' (default) is a vivid fill, used for icon-only indicators like StatusCircle. 'surface' is the
+     *  tinted-background/plain-text treatment used by text status badges (StatusBadge, BooleanBadge). */
+    fill?: BadgeFill;
     onClick?: () => void;
     onRemove?: () => void;
     children: React.ReactNode;
@@ -17,6 +21,7 @@ type Props = {
 
 function Badge({
     color = 'secondary',
+    fill = 'solid',
     onClick,
     onRemove,
     children,
@@ -28,14 +33,14 @@ function Badge({
     id,
 }: Readonly<Props>) {
     const colorClasses = {
-        gray: 'bg-gray-800 text-white dark:bg-white dark:text-neutral-800',
-        secondary: 'bg-gray-500 text-white',
-        success: 'bg-[var(--status-success-color)] text-white',
-        primary: 'bg-blue-600 text-white dark:bg-blue-500',
-        danger: 'bg-[var(--status-danger-color)] text-white',
-        warning: 'bg-[var(--status-warning-color)] text-white',
-        info: 'bg-[var(--status-info-color)] text-white',
-        transparent: 'bg-white text-gray-600',
+        gray: 'bg-surface-inverse text-content-inverse',
+        secondary: 'bg-surface-sunken text-content',
+        success: fill === 'surface' ? 'bg-success-surface text-success' : 'bg-success-solid text-content-on-brand',
+        primary: 'bg-brand-solid text-content-on-brand',
+        danger: fill === 'surface' ? 'bg-danger-surface text-danger' : 'bg-danger-solid text-content-on-brand',
+        warning: fill === 'surface' ? 'bg-warning-surface text-warning' : 'bg-warning-solid text-content-on-brand',
+        info: fill === 'surface' ? 'bg-info-surface text-info' : 'bg-info-solid text-content-on-brand',
+        transparent: 'bg-surface-raised text-content-muted',
     };
     const handleKeyDown = (event: React.KeyboardEvent<HTMLSpanElement>) => {
         if (!onClick) return;
@@ -73,7 +78,7 @@ function Badge({
                 {onRemove && (
                     <button
                         type="button"
-                        className="shrink-0 size-4 inline-flex items-center justify-center rounded-full hover:bg-gray-200 focus:outline-hidden focus:bg-gray-200 focus:text-gray-500 dark:hover:bg-gray-900"
+                        className="shrink-0 size-4 inline-flex items-center justify-center rounded-full hover:bg-surface-hover focus:outline-hidden focus:bg-surface-hover focus:text-content-subtle"
                         onClick={(e) => {
                             e.stopPropagation();
                             onRemove();
@@ -107,7 +112,7 @@ function Badge({
             {onRemove && (
                 <button
                     type="button"
-                    className="shrink-0 size-4 inline-flex items-center justify-center rounded-full hover:bg-gray-200 focus:outline-hidden focus:bg-gray-200 focus:text-gray-500 dark:hover:bg-gray-900"
+                    className="shrink-0 size-4 inline-flex items-center justify-center rounded-full hover:bg-surface-hover focus:outline-hidden focus:bg-surface-hover focus:text-content-subtle"
                     onClick={onRemove}
                 >
                     <span className="sr-only">Remove badge</span>

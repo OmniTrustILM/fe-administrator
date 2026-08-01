@@ -1,3 +1,4 @@
+import type { BadgeColor } from 'components/Badge';
 import { getEnumLabel } from 'ducks/enums';
 import type { ConnectorResponseModel } from 'types/connectors';
 import { ConnectorVersion } from 'types/openapi';
@@ -39,30 +40,30 @@ export function getConnectorCapabilities(
     };
 }
 
-export function inventoryStatus(status: string) {
+export function inventoryStatus(status: string): [string, BadgeColor] {
     switch (status) {
         case 'Success':
-            return ['Success', 'var(--status-success-color)'];
+            return ['Success', 'success'];
 
         case 'registered':
-            return ['Reistered', 'var(--status-success-color)'];
+            return ['Reistered', 'success'];
 
         case 'connected':
-            return ['Connected', 'var(--status-success-color)'];
+            return ['Connected', 'success'];
 
         case 'failed':
-            return ['Failed', 'var(--status-danger-color)'];
+            return ['Failed', 'danger'];
 
         case 'Failed':
-            return ['Failed', 'var(--status-danger-color)'];
+            return ['Failed', 'danger'];
 
         case 'offline':
-            return ['Offline', 'var(--status-danger-color)'];
+            return ['Offline', 'danger'];
 
         case 'waitingForApproval':
-            return ['Waiting for Approval', 'var(--status-warning-color)'];
+            return ['Waiting for Approval', 'warning'];
 
         default:
-            return [status || 'Unknown', 'var(--status-gray-color)'];
+            return [status || 'Unknown', 'secondary'];
     }
 }

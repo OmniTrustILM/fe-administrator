@@ -241,7 +241,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                             <Label htmlFor="scheme" required>
                                 Authentication Scheme
                             </Label>
-                            <p className="text-sm text-gray-500 mb-2">Select authentication scheme supported by the provider.</p>
+                            <p className="text-sm text-content-subtle mb-2">Select authentication scheme supported by the provider.</p>
                             <Controller
                                 name="scheme"
                                 control={control}
@@ -259,7 +259,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                             placement="bottom"
                                         />
                                         {fieldState.error && fieldState.isTouched && (
-                                            <p className="mt-1 text-sm text-red-600">
+                                            <p className="mt-1 text-sm text-danger">
                                                 {typeof fieldState.error === 'string'
                                                     ? fieldState.error
                                                     : fieldState.error?.message || 'Invalid value'}
@@ -295,7 +295,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                 )}
 
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-2">
+                                    <p className="text-sm text-content-subtle mb-2">
                                         The URL where the JSON Web Key Set (JWKS) containing the public keys used to verify JWT tokens can
                                         be retrieved.
                                     </p>
@@ -327,7 +327,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                 </div>
 
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-2">
+                                    <p className="text-sm text-content-subtle mb-2">
                                         Base64 encoded JWK Set, provided in case JWK Set URL is not available.
                                     </p>
                                     <Controller
@@ -350,7 +350,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                 </div>
 
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-2">
+                                    <p className="text-sm text-content-subtle mb-2">
                                         The client ID used to identify the client application during the authorization process.
                                     </p>
                                     <Controller
@@ -372,7 +372,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                 </div>
 
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-2">
+                                    <p className="text-sm text-content-subtle mb-2">
                                         The client secret used by the client application to authenticate with the authorization server.
                                     </p>
                                     <Controller
@@ -395,7 +395,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
 
                                 <div>
                                     <Label htmlFor="scope">Scope</Label>
-                                    <p className="text-sm text-gray-500 mb-2">
+                                    <p className="text-sm text-content-subtle mb-2">
                                         The list of scopes that define the access levels and permissions requested by the client
                                         application.
                                     </p>
@@ -421,7 +421,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
 
                                 <div>
                                     <Label htmlFor="audiences">Audiences</Label>
-                                    <p className="text-sm text-gray-500 mb-2">
+                                    <p className="text-sm text-content-subtle mb-2">
                                         A list of expected audiences for validating the issued tokens, used to match the intended recipients
                                         of the tokens.
                                     </p>
@@ -446,7 +446,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                 </div>
 
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-2">
+                                    <p className="text-sm text-content-subtle mb-2">
                                         The URL used to exchange the authorization code or credentials for an access token.
                                     </p>
                                     <Controller
@@ -468,7 +468,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                 </div>
 
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-2">
+                                    <p className="text-sm text-content-subtle mb-2">
                                         The URL where the authorization server redirects the user for login and authorization.
                                     </p>
                                     <Controller
@@ -494,7 +494,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                 </div>
 
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-2">URL to end session on provider side.</p>
+                                    <p className="text-sm text-content-subtle mb-2">URL to end session on provider side.</p>
                                     <Controller
                                         name="logoutUrl"
                                         control={control}
@@ -518,7 +518,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                 </div>
 
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-2">
+                                    <p className="text-sm text-content-subtle mb-2">
                                         URL that user will be redirected after logout from application.
                                     </p>
                                     <Controller
@@ -544,7 +544,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                 </div>
 
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-2">
+                                    <p className="text-sm text-content-subtle mb-2">
                                         URL of issuer issuing authentication tokens. If provided, authentication via JWT token is enabled
                                         for this provider.
                                     </p>
@@ -571,7 +571,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                 </div>
 
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-2">The URL containing information about user.</p>
+                                    <p className="text-sm text-content-subtle mb-2">The URL containing information about user.</p>
                                     <Controller
                                         name="userInfoUrl"
                                         control={control}
@@ -607,7 +607,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                                 />
                                             )}
                                         />
-                                        <p className="text-sm text-gray-500 mt-2">
+                                        <p className="text-sm text-content-subtle mt-2">
                                             The allowed time skew, in seconds, for token validation. This accounts for clock differences
                                             between systems. Default value is 30 seconds.
                                         </p>
@@ -630,7 +630,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                                 />
                                             )}
                                         />
-                                        <p className="text-sm text-gray-500 mt-2">
+                                        <p className="text-sm text-content-subtle mt-2">
                                             Duration in seconds after which will inactive user's session be terminated. Default value is 15
                                             minutes.
                                         </p>

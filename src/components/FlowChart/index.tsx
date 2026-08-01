@@ -1,4 +1,5 @@
 import Widget from 'components/Widget';
+import { useTheme } from 'components/ThemeProvider';
 import dagre from 'dagre';
 import { useEffect, useMemo } from 'react';
 
@@ -44,6 +45,11 @@ dagreGraph.setDefaultEdgeLabel(() => ({}));
 
 export const nodeWidth = 400;
 export const nodeHeight = 100;
+
+const CANVAS_BACKGROUND_COLORS = {
+    light: '#d4d4d4',
+    dark: '#404040',
+} as const;
 
 export const getLayoutedElements = (nodes: CustomNode[], edges: Edge[], direction = 'TB') => {
     const baseNodes: CustomNode[] = nodes.map((node) => ({
@@ -189,6 +195,7 @@ const FlowChartContent = ({
     legends,
 }: FlowChartProps) => {
     const defaultEdgeOptions = { animated: true };
+    const { resolvedTheme } = useTheme();
     const flowChartNodesState = useSelector(userInterfaceSelectors.flowChartNodes);
     const flowChartEdgesState = useSelector(userInterfaceSelectors.flowChartEdges);
     const dispatch = useDispatch();
@@ -229,7 +236,12 @@ const FlowChartContent = ({
                     edgeTypes={edgeTypes}
                 >
                     <ReactFlowLib.Controls />
-                    <ReactFlowLib.Background variant={ReactFlowLib.BackgroundVariant.Dots} gap={16} size={1} />
+                    <ReactFlowLib.Background
+                        variant={ReactFlowLib.BackgroundVariant.Dots}
+                        gap={16}
+                        size={1}
+                        color={CANVAS_BACKGROUND_COLORS[resolvedTheme]}
+                    />
                 </ReactFlowLib.ReactFlow>
             </div>
 

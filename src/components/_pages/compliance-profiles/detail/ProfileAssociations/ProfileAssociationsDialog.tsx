@@ -131,10 +131,7 @@ export default function ProfileAssociationsDialog({ isOpen, onClose, profile, as
                             rules={buildValidationRules([validateRequired()])}
                             render={({ field, fieldState }) => (
                                 <div className="mb-4">
-                                    <label
-                                        htmlFor="resource-select"
-                                        className="block text-sm font-medium mb-2 text-gray-700 dark:text-white"
-                                    >
+                                    <label htmlFor="resource-select" className="block text-sm font-medium mb-2 text-content">
                                         Select the resource of association
                                     </label>
                                     <Select
@@ -153,11 +150,11 @@ export default function ProfileAssociationsDialog({ isOpen, onClose, profile, as
                                         showOptionDescriptionInDropdown
                                         showSelectedDescriptionAsHelp
                                         className={cn({
-                                            'border-red-500': fieldState.error && fieldState.isTouched,
+                                            'border-danger': fieldState.error && fieldState.isTouched,
                                         })}
                                     />
                                     {fieldState.error && fieldState.isTouched && (
-                                        <p className="mt-1 text-sm text-red-600">
+                                        <p className="mt-1 text-sm text-danger">
                                             {typeof fieldState.error === 'string'
                                                 ? fieldState.error
                                                 : fieldState.error?.message || 'Required Field'}
@@ -187,7 +184,7 @@ export default function ProfileAssociationsDialog({ isOpen, onClose, profile, as
                                         <div className="mb-4">
                                             <label
                                                 htmlFor="resource-profiles-select"
-                                                className="block text-sm font-medium mb-2 text-gray-700 dark:text-white"
+                                                className="block text-sm font-medium mb-2 text-content"
                                             >
                                                 Select {getEnumLabel(resourceEnum, selectedResource)}
                                             </label>
@@ -198,11 +195,11 @@ export default function ProfileAssociationsDialog({ isOpen, onClose, profile, as
                                                 onChange={onProfileSelect}
                                                 placeholder={`Select ${getEnumLabel(resourceEnum, selectedResource)} to be associated`}
                                                 className={cn({
-                                                    'border-red-500': fieldState.error && fieldState.isTouched,
+                                                    'border-danger': fieldState.error && fieldState.isTouched,
                                                 })}
                                             />
                                             {fieldState.error && fieldState.isTouched && (
-                                                <p className="mt-1 text-sm text-red-600">
+                                                <p className="mt-1 text-sm text-danger">
                                                     {typeof fieldState.error === 'string'
                                                         ? fieldState.error
                                                         : fieldState.error?.message || 'Required Field'}

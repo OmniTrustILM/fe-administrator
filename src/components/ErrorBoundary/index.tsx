@@ -72,12 +72,12 @@ class ErrorBoundary extends Component<Props, State> {
                     data-testid="error-boundary-fallback"
                 >
                     <div className="text-center">
-                        <h2 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h2>
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        <h2 className="text-2xl font-bold text-danger mb-4">Something went wrong</h2>
+                        <p className="text-content-muted mb-4">
                             An unexpected error occurred. Please try refreshing the page or contact support if the problem persists.
                         </p>
                         {process.env.NODE_ENV === 'development' && this.state.error && (
-                            <details className="mt-4 text-left bg-gray-100 dark:bg-gray-800 p-4 rounded-lg max-w-2xl">
+                            <details className="mt-4 text-left bg-surface-sunken p-4 rounded-lg max-w-2xl">
                                 <summary className="cursor-pointer font-semibold mb-2">Error Details (Development Only)</summary>
                                 <pre className="text-xs overflow-auto">
                                     <div className="mb-2">

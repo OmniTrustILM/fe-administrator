@@ -31,15 +31,15 @@ import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 function getHealthStatusIcon(status: string): { Icon: typeof CircleCheck; className: string } {
     if (status === HealthStatus.Up) {
-        return { Icon: CircleCheck, className: 'text-[var(--status-success-color)]' };
+        return { Icon: CircleCheck, className: 'text-success' };
     }
     if (status === HealthStatus.Down || status === HealthStatus.OutOfService) {
-        return { Icon: CircleAlert, className: 'text-[var(--status-danger-color)]' };
+        return { Icon: CircleAlert, className: 'text-danger' };
     }
     if (status === HealthStatus.Degraded) {
-        return { Icon: CircleAlert, className: 'text-[var(--status-warning-color)]' };
+        return { Icon: CircleAlert, className: 'text-warning' };
     }
-    return { Icon: CircleHelp, className: 'text-[var(--status-light-gray-color)]' };
+    return { Icon: CircleHelp, className: 'text-content-subtle' };
 }
 
 export default function ConnectorDetail() {
@@ -274,7 +274,7 @@ export default function ConnectorDetail() {
                 id: 'status',
                 columns: [
                     'Status',
-                    <Badge key="status" style={{ backgroundColor: connectorStatus[1] }}>
+                    <Badge key="status" color={connectorStatus[1]}>
                         {connectorStatus[0]}
                     </Badge>,
                 ],

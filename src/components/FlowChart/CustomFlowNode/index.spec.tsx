@@ -30,7 +30,7 @@ test.describe('CustomFlowNode', () => {
 
     test('renders with dragging style', async ({ mount }) => {
         const component = await mount(<CustomFlowNodeMountWrapper nodeProps={buildProps({ dragging: true })} />);
-        await expect(component.locator('.bg-gray-200').first()).toBeVisible();
+        await expect(component.locator('.bg-surface-active').first()).toBeVisible();
     });
 
     test('renders with isMainNode border', async ({ mount }) => {
@@ -609,7 +609,7 @@ test.describe('CustomFlowNode', () => {
         );
         const expandBtn = component.getByRole('button', { name: /Expand/i });
         await expect(expandBtn).toBeVisible();
-        await expect(expandBtn).toHaveClass(/!bg-\[#1ab3949f\]/);
+        await expect(expandBtn).toHaveClass(/!bg-node-valid\/62/);
     });
 
     test('expand button uses group based classes', async ({ mount }) => {
@@ -625,7 +625,7 @@ test.describe('CustomFlowNode', () => {
                 })}
             />,
         );
-        await expect(component.getByRole('button', { name: /Expand/i })).toHaveClass(/!bg-\[#7fa2c1a1\]/);
+        await expect(component.getByRole('button', { name: /Expand/i })).toHaveClass(/!bg-node-unchecked\/63/);
     });
 
     test('expand button uses actions group based classes', async ({ mount }) => {
@@ -641,17 +641,17 @@ test.describe('CustomFlowNode', () => {
                 })}
             />,
         );
-        await expect(component.getByRole('button', { name: /Expand/i })).toHaveClass(/!bg-\[#1ab3949f\]/);
+        await expect(component.getByRole('button', { name: /Expand/i })).toHaveClass(/!bg-node-valid\/62/);
     });
 
     const expandStatusCases: Array<{ status: CertificateValidationStatus; classFragment: string }> = [
-        { status: CertificateValidationStatus.Expired, classFragment: '!bg-[#ef4444a4]' },
-        { status: CertificateValidationStatus.Revoked, classFragment: '!bg-[#632828b7]' },
-        { status: CertificateValidationStatus.Expiring, classFragment: '!bg-[#eab308a6]' },
-        { status: CertificateValidationStatus.Invalid, classFragment: '!bg-[#131212a3]' },
-        { status: CertificateValidationStatus.NotChecked, classFragment: '!bg-[#7fa2c1a1]' },
-        { status: CertificateValidationStatus.Failed, classFragment: '!bg-[#9c0012a2]' },
-        { status: CertificateValidationStatus.Inactive, classFragment: '!bg-[#6c757da0]' },
+        { status: CertificateValidationStatus.Expired, classFragment: '!bg-node-expired/64' },
+        { status: CertificateValidationStatus.Revoked, classFragment: '!bg-node-revoked/72' },
+        { status: CertificateValidationStatus.Expiring, classFragment: '!bg-node-expiring/65' },
+        { status: CertificateValidationStatus.Invalid, classFragment: '!bg-node-invalid/64' },
+        { status: CertificateValidationStatus.NotChecked, classFragment: '!bg-node-unchecked/63' },
+        { status: CertificateValidationStatus.Failed, classFragment: '!bg-node-failed/64' },
+        { status: CertificateValidationStatus.Inactive, classFragment: '!bg-node-inactive/63' },
     ];
 
     for (const c of expandStatusCases) {

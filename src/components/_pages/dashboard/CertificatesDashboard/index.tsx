@@ -67,7 +67,7 @@ function CertificatesDashboard() {
                                 id="archived-switch"
                                 checked={isIncludeArchived}
                                 onChange={() => dispatch(certificatesActions.setIncludeArchived(!isIncludeArchived))}
-                                labelClassName="!text-gray-500 text-base"
+                                labelClassName="!text-content-subtle text-base"
                             />
                         }
                     />

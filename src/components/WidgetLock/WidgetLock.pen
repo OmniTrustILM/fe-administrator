@@ -918,7 +918,7 @@
               "type": "text",
               "id": "ylIdk",
               "name": "Title",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "WidgetLock",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -981,7 +981,7 @@
               "id": "O1FzV",
               "name": "Lock Card",
               "width": "fill_container",
-              "fill": "$color.neutral-800",
+              "fill": "#171717",
               "cornerRadius": 12,
               "stroke": "$color.neutral-700",
               "strokeWidth": 1,
@@ -1004,7 +1004,7 @@
                       "height": 32,
                       "icon": "triangle-alert",
                       "library": "lucide",
-                      "fill": "$color.neutral-400"
+                      "fill": "#f87171"
                     }
                   ]
                 },
@@ -1143,7 +1143,7 @@
                           "height": 26,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f87171"
                         },
                         {
                           "type": "text",
@@ -1180,7 +1180,7 @@
                           "height": 26,
                           "icon": "wifi",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f87171"
                         },
                         {
                           "type": "text",
@@ -1217,7 +1217,7 @@
                           "height": 26,
                           "icon": "lock",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f87171"
                         },
                         {
                           "type": "text",
@@ -1263,7 +1263,7 @@
                           "height": 26,
                           "icon": "house",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f87171"
                         },
                         {
                           "type": "text",
@@ -1300,7 +1300,7 @@
                           "height": 26,
                           "icon": "database",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f87171"
                         },
                         {
                           "type": "text",
@@ -1337,7 +1337,7 @@
                           "height": 26,
                           "icon": "server",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f87171"
                         },
                         {
                           "type": "text",
@@ -1432,7 +1432,7 @@
                           "height": 24,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f87171"
                         }
                       ]
                     },
@@ -1479,7 +1479,7 @@
                           "height": 32,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f87171"
                         }
                       ]
                     },
@@ -1526,7 +1526,7 @@
                           "height": 48,
                           "icon": "triangle-alert",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#f87171"
                         }
                       ]
                     },
@@ -1588,7 +1588,7 @@
               "id": "FdKIw",
               "name": "Lock Card",
               "width": "fill_container",
-              "fill": "$color.neutral-800",
+              "fill": "#171717",
               "cornerRadius": 12,
               "stroke": "$color.neutral-700",
               "strokeWidth": 1,
@@ -1611,7 +1611,7 @@
                       "height": 32,
                       "icon": "wifi",
                       "library": "lucide",
-                      "fill": "$color.neutral-400"
+                      "fill": "#f87171"
                     }
                   ]
                 },
@@ -1697,7 +1697,7 @@
               "id": "CQ3yK",
               "name": "Lock Card",
               "width": "fill_container",
-              "fill": "$color.neutral-800",
+              "fill": "#171717",
               "cornerRadius": 12,
               "stroke": "$color.neutral-700",
               "strokeWidth": 1,
@@ -1720,7 +1720,7 @@
                       "height": 32,
                       "icon": "lock",
                       "library": "lucide",
-                      "fill": "$color.neutral-400"
+                      "fill": "#f87171"
                     }
                   ]
                 },
@@ -1801,27 +1801,27 @@
     },
     "color.gray-500": {
       "type": "color",
-      "value": "#a8a8a8"
+      "value": "#6e6e6e"
     },
     "color.gray-700": {
       "type": "color",
-      "value": "#8c8c8c"
+      "value": "#525252"
     },
     "color.gray-800": {
       "type": "color",
-      "value": "#666666"
+      "value": "#525252"
     },
     "color.gray-900": {
       "type": "color",
-      "value": "#404040"
+      "value": "#1f2937"
     },
     "color.red-500": {
       "type": "color",
-      "value": "#ef4444"
+      "value": "#b91c1c"
     },
     "color.neutral-200": {
       "type": "color",
-      "value": "#e5e5e5"
+      "value": "#f5f5f5"
     },
     "color.neutral-300": {
       "type": "color",
@@ -1829,15 +1829,15 @@
     },
     "color.neutral-400": {
       "type": "color",
-      "value": "#a3a3a3"
+      "value": "#d4d4d4"
     },
     "color.neutral-500": {
       "type": "color",
-      "value": "#737373"
+      "value": "#a3a3a3"
     },
     "color.neutral-700": {
       "type": "color",
-      "value": "#404040"
+      "value": "#262626"
     },
     "color.neutral-800": {
       "type": "color",

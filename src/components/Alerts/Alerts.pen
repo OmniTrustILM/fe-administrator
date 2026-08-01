@@ -26,7 +26,7 @@
               "type": "text",
               "id": "pOGpA",
               "name": "Title",
-              "fill": "$color.gray-900",
+              "fill": "#1f2937",
               "content": "Toast Notifications",
               "fontFamily": "Inter",
               "fontSize": 28,
@@ -36,7 +36,7 @@
               "type": "text",
               "id": "NB7eW",
               "name": "Subtitle",
-              "fill": "$color.gray-800",
+              "fill": "#525252",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Bottom-right toast notification stack with three severity levels — success, info, and danger. Toasts auto-dismiss after 6 seconds (except errors), support long-message expansion, and stack with newest at the bottom.",
@@ -67,7 +67,7 @@
               "type": "text",
               "id": "y0ND5",
               "name": "Section Label",
-              "fill": "$color.gray-500",
+              "fill": "#6e6e6e",
               "content": "CARD ANATOMY",
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -125,13 +125,13 @@
                           "height": 16,
                           "icon": "circle-check",
                           "library": "lucide",
-                          "fill": "$color.teal-500"
+                          "fill": "#0d9488"
                         },
                         {
                           "type": "text",
                           "id": "oRM0M",
                           "name": "Message",
-                          "fill": "$color.gray-700",
+                          "fill": "#1f2937",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "RA profile updated successfully.",
@@ -157,7 +157,7 @@
                               "height": 14,
                               "icon": "x",
                               "library": "lucide",
-                              "fill": "$color.neutral-400"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         }
@@ -167,7 +167,7 @@
                       "type": "rectangle",
                       "id": "c0DQ5s",
                       "name": "Progress Bar",
-                      "fill": "$color.teal-500",
+                      "fill": "#0d9488",
                       "width": "fill_container",
                       "height": 3
                     },
@@ -178,7 +178,7 @@
                       "x": 0,
                       "y": 0,
                       "name": "Accent Border",
-                      "fill": "$color.teal-500",
+                      "fill": "#0d9488",
                       "width": 4,
                       "height": 800
                     }
@@ -196,7 +196,7 @@
                       "type": "text",
                       "id": "O3kQQl",
                       "name": "A1",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "420px wide, 8px corner radius, clip: true",
@@ -209,7 +209,7 @@
                       "type": "text",
                       "id": "aKvdG",
                       "name": "A2",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "1px gray-200 border (dark: neutral-700)",
@@ -222,7 +222,7 @@
                       "type": "text",
                       "id": "FJ08a",
                       "name": "A3",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "4px colored left accent border (severity color)",
@@ -235,7 +235,7 @@
                       "type": "text",
                       "id": "i74HxQ",
                       "name": "A4",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "12px internal padding",
@@ -248,7 +248,7 @@
                       "type": "text",
                       "id": "s5FBz",
                       "name": "A5",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "16px severity icon, top-aligned with text",
@@ -261,7 +261,7 @@
                       "type": "text",
                       "id": "kVMTs",
                       "name": "A6",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "14px message text, gray-800 (dark: neutral-200)",
@@ -274,7 +274,7 @@
                       "type": "text",
                       "id": "v6TG2e",
                       "name": "A7",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Close button (X icon) top-right",
@@ -287,7 +287,7 @@
                       "type": "text",
                       "id": "C21uZD",
                       "name": "A8",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Drop shadow: 0 4px 12px rgba(0,0,0,0.1)",
@@ -300,7 +300,7 @@
                       "type": "text",
                       "id": "qhYWn",
                       "name": "A9",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Progress bar (3px): auto-dismiss timer, 6s duration. Pauses on hover/focus.",
@@ -335,7 +335,7 @@
               "type": "text",
               "id": "zuO6z",
               "name": "Section Label",
-              "fill": "$color.gray-500",
+              "fill": "#6e6e6e",
               "content": "SEVERITY VARIANTS",
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -401,13 +401,13 @@
                               "height": 16,
                               "icon": "circle-check",
                               "library": "lucide",
-                              "fill": "$color.teal-500"
+                              "fill": "#0d9488"
                             },
                             {
                               "type": "text",
                               "id": "y5PVK",
                               "name": "Message",
-                              "fill": "$color.gray-700",
+                              "fill": "#1f2937",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "RA profile updated successfully.",
@@ -433,7 +433,7 @@
                                   "height": 14,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-400"
+                                  "fill": "#6e6e6e"
                                 }
                               ]
                             }
@@ -443,7 +443,7 @@
                           "type": "rectangle",
                           "id": "KsfLU",
                           "name": "Progress Bar",
-                          "fill": "$color.teal-500",
+                          "fill": "#0d9488",
                           "width": "fill_container",
                           "height": 3
                         },
@@ -454,7 +454,7 @@
                           "x": 0,
                           "y": 0,
                           "name": "Accent",
-                          "fill": "$color.teal-500",
+                          "fill": "#0d9488",
                           "width": 4,
                           "height": 800
                         }
@@ -464,7 +464,7 @@
                       "type": "text",
                       "id": "LVPZk",
                       "name": "Note",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Auto-dismisses in 6s. Teal accent + progress bar.",
@@ -532,7 +532,7 @@
                               "type": "text",
                               "id": "FlDtj",
                               "name": "Message",
-                              "fill": "$color.gray-700",
+                              "fill": "#1f2937",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Bulk RA profile update finished. 42 of 44 certificates were processed.",
@@ -558,7 +558,7 @@
                                   "height": 14,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-400"
+                                  "fill": "#6e6e6e"
                                 }
                               ]
                             }
@@ -589,7 +589,7 @@
                       "type": "text",
                       "id": "G9kPsK",
                       "name": "Note",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Auto-dismisses in 6s. Blue accent + progress bar.",
@@ -657,7 +657,7 @@
                               "type": "text",
                               "id": "p00MCp",
                               "name": "Message",
-                              "fill": "$color.gray-700",
+                              "fill": "#1f2937",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Failed to synchronize certificates (500): the connector returned an unexpected response while processing the discovery batch.",
@@ -683,7 +683,7 @@
                                   "height": 14,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-400"
+                                  "fill": "#6e6e6e"
                                 }
                               ]
                             }
@@ -706,7 +706,7 @@
                       "type": "text",
                       "id": "oxIR6",
                       "name": "Note",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Persists until dismissed — no progress bar. Errors require user acknowledgment.",
@@ -741,7 +741,7 @@
               "type": "text",
               "id": "B8qeW",
               "name": "Section Label",
-              "fill": "$color.gray-500",
+              "fill": "#6e6e6e",
               "content": "EXPANDED STATE",
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -766,7 +766,7 @@
                       "type": "text",
                       "id": "az3k2",
                       "name": "State Label",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "content": "Collapsed (4-line clamp)",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -829,7 +829,7 @@
                                   "type": "text",
                                   "id": "BTl5r",
                                   "name": "Message",
-                                  "fill": "$color.gray-700",
+                                  "fill": "#1f2937",
                                   "textGrowth": "fixed-width-height",
                                   "width": "fill_container",
                                   "height": 78,
@@ -856,7 +856,7 @@
                                       "type": "text",
                                       "id": "n176bT",
                                       "name": "Show More",
-                                      "fill": "$color.gray-700",
+                                      "fill": "#1f2937",
                                       "content": "Show more",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
@@ -870,7 +870,7 @@
                                       "height": 12,
                                       "icon": "chevron-down",
                                       "library": "lucide",
-                                      "fill": "$color.gray-700"
+                                      "fill": "#1f2937"
                                     }
                                   ]
                                 }
@@ -893,7 +893,7 @@
                                   "height": 14,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-400"
+                                  "fill": "#6e6e6e"
                                 }
                               ]
                             }
@@ -925,7 +925,7 @@
                       "type": "text",
                       "id": "yxPXO",
                       "name": "State Label",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "content": "Expanded",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -988,7 +988,7 @@
                                   "type": "text",
                                   "id": "o5EEFA",
                                   "name": "Message",
-                                  "fill": "$color.gray-700",
+                                  "fill": "#1f2937",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
                                   "content": "Failed to synchronize certificates (500): the connector returned an unexpected response while processing the discovery batch. Certificate 0 could not be validated against the configured RA profile. Certificate 1 could not be validated against the configured RA profile. Certificate 2 could not be validated against the configured RA profile. Certificate 3 could not be validated against the configured RA profile.",
@@ -1021,7 +1021,7 @@
                                           "type": "text",
                                           "id": "V8JnkM",
                                           "name": "Label",
-                                          "fill": "$color.gray-700",
+                                          "fill": "#1f2937",
                                           "content": "Show less",
                                           "fontFamily": "Inter",
                                           "fontSize": 12,
@@ -1035,7 +1035,7 @@
                                           "height": 12,
                                           "icon": "chevron-up",
                                           "library": "lucide",
-                                          "fill": "$color.gray-700"
+                                          "fill": "#1f2937"
                                         }
                                       ]
                                     },
@@ -1050,7 +1050,7 @@
                                           "type": "text",
                                           "id": "iCzat",
                                           "name": "Label",
-                                          "fill": "$color.gray-700",
+                                          "fill": "#1f2937",
                                           "content": "Copy",
                                           "fontFamily": "Inter",
                                           "fontSize": 12,
@@ -1064,7 +1064,7 @@
                                           "height": 12,
                                           "icon": "copy",
                                           "library": "lucide",
-                                          "fill": "$color.gray-700"
+                                          "fill": "#1f2937"
                                         }
                                       ]
                                     }
@@ -1089,7 +1089,7 @@
                                   "height": 14,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-400"
+                                  "fill": "#6e6e6e"
                                 }
                               ]
                             }
@@ -1134,7 +1134,7 @@
               "type": "text",
               "id": "k0uOco",
               "name": "Section Label",
-              "fill": "$color.gray-500",
+              "fill": "#6e6e6e",
               "content": "STACK BEHAVIOR",
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -1145,7 +1145,7 @@
               "type": "text",
               "id": "N6U9dV",
               "name": "Description",
-              "fill": "$color.gray-600",
+              "fill": "#525252",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Toasts stack bottom-right with 8px gap. Newest toast appears at the bottom. A \"Dismiss all\" control appears above the stack when 3+ toasts are visible.",
@@ -1183,7 +1183,7 @@
                       "type": "text",
                       "id": "qPNlX",
                       "name": "Dismiss All",
-                      "fill": "$color.gray-600",
+                      "fill": "#525252",
                       "content": "Dismiss all",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -1233,13 +1233,13 @@
                               "height": 16,
                               "icon": "circle-check",
                               "library": "lucide",
-                              "fill": "$color.teal-500"
+                              "fill": "#0d9488"
                             },
                             {
                               "type": "text",
                               "id": "svXym",
                               "name": "Message",
-                              "fill": "$color.gray-700",
+                              "fill": "#1f2937",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "RA profile updated successfully.",
@@ -1265,7 +1265,7 @@
                                   "height": 13,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-400"
+                                  "fill": "#6e6e6e"
                                 }
                               ]
                             }
@@ -1275,7 +1275,7 @@
                           "type": "rectangle",
                           "id": "ZjsXT",
                           "name": "Progress",
-                          "fill": "$color.teal-500",
+                          "fill": "#0d9488",
                           "width": "fill_container",
                           "height": 3
                         },
@@ -1286,7 +1286,7 @@
                           "x": 0,
                           "y": 0,
                           "name": "Accent",
-                          "fill": "$color.teal-500",
+                          "fill": "#0d9488",
                           "width": 4,
                           "height": 800
                         }
@@ -1342,7 +1342,7 @@
                               "type": "text",
                               "id": "K4vfzD",
                               "name": "Message",
-                              "fill": "$color.gray-700",
+                              "fill": "#1f2937",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Bulk RA profile update finished. 42 of 44 certificates were processed.",
@@ -1368,7 +1368,7 @@
                                   "height": 13,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-400"
+                                  "fill": "#6e6e6e"
                                 }
                               ]
                             }
@@ -1452,7 +1452,7 @@
                                   "type": "text",
                                   "id": "PVG3c",
                                   "name": "Message",
-                                  "fill": "$color.gray-700",
+                                  "fill": "#1f2937",
                                   "textGrowth": "fixed-width-height",
                                   "width": "fill_container",
                                   "height": 78,
@@ -1479,7 +1479,7 @@
                                       "type": "text",
                                       "id": "an7YD",
                                       "name": "Show More",
-                                      "fill": "$color.gray-700",
+                                      "fill": "#1f2937",
                                       "content": "Show more",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
@@ -1493,7 +1493,7 @@
                                       "height": 12,
                                       "icon": "chevron-down",
                                       "library": "lucide",
-                                      "fill": "$color.gray-700"
+                                      "fill": "#1f2937"
                                     }
                                   ]
                                 }
@@ -1516,7 +1516,7 @@
                                   "height": 13,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-400"
+                                  "fill": "#6e6e6e"
                                 }
                               ]
                             }
@@ -1568,7 +1568,7 @@
               "type": "text",
               "id": "B91uIy",
               "name": "Title",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "Toast Notifications",
               "fontFamily": "Inter",
               "fontSize": 28,
@@ -1578,7 +1578,7 @@
               "type": "text",
               "id": "oBqd3",
               "name": "Subtitle",
-              "fill": "$color.neutral-500",
+              "fill": "#d4d4d4",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Bottom-right toast notification stack with three severity levels — success, info, and danger. Toasts auto-dismiss after 6 seconds (except errors), support long-message expansion, and stack with newest at the bottom.",
@@ -1593,7 +1593,7 @@
           "type": "rectangle",
           "id": "COWn7",
           "name": "Divider",
-          "fill": "$color.neutral-700",
+          "fill": "#262626",
           "width": "fill_container",
           "height": 1
         },
@@ -1609,7 +1609,7 @@
               "type": "text",
               "id": "BVhxn",
               "name": "Section Label",
-              "fill": "$color.neutral-500",
+              "fill": "#a3a3a3",
               "content": "CARD ANATOMY",
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -1629,9 +1629,9 @@
                   "name": "Toast / Success",
                   "clip": true,
                   "width": 420,
-                  "fill": "$color.neutral-800",
+                  "fill": "#171717",
                   "cornerRadius": 8,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -1673,7 +1673,7 @@
                           "type": "text",
                           "id": "HFDGe",
                           "name": "Message",
-                          "fill": "$color.neutral-200",
+                          "fill": "#f5f5f5",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "RA profile updated successfully.",
@@ -1699,7 +1699,7 @@
                               "height": 14,
                               "icon": "x",
                               "library": "lucide",
-                              "fill": "$color.neutral-500"
+                              "fill": "#a3a3a3"
                             }
                           ]
                         }
@@ -1738,7 +1738,7 @@
                       "type": "text",
                       "id": "qu2q7",
                       "name": "A1",
-                      "fill": "$color.neutral-400",
+                      "fill": "#d4d4d4",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Card fill: neutral-800 (#262626)",
@@ -1751,7 +1751,7 @@
                       "type": "text",
                       "id": "LX1FA",
                       "name": "A2",
-                      "fill": "$color.neutral-400",
+                      "fill": "#d4d4d4",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Border: 1px neutral-700 (#404040)",
@@ -1764,7 +1764,7 @@
                       "type": "text",
                       "id": "lPBs6",
                       "name": "A3",
-                      "fill": "$color.neutral-400",
+                      "fill": "#d4d4d4",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Text fill: neutral-200 (#e5e5e5)",
@@ -1777,7 +1777,7 @@
                       "type": "text",
                       "id": "E1yoyd",
                       "name": "A4",
-                      "fill": "$color.neutral-400",
+                      "fill": "#d4d4d4",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Close icon: neutral-500 (#737373)",
@@ -1790,7 +1790,7 @@
                       "type": "text",
                       "id": "wKgWC",
                       "name": "A5",
-                      "fill": "$color.neutral-400",
+                      "fill": "#d4d4d4",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Accent colors and icons identical to light mode",
@@ -1803,7 +1803,7 @@
                       "type": "text",
                       "id": "DpcEz",
                       "name": "A6",
-                      "fill": "$color.neutral-400",
+                      "fill": "#d4d4d4",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Shadow: 0 4px 12px rgba(0,0,0,0.2)",
@@ -1822,7 +1822,7 @@
           "type": "rectangle",
           "id": "GHo6J",
           "name": "Divider",
-          "fill": "$color.neutral-700",
+          "fill": "#262626",
           "width": "fill_container",
           "height": 1
         },
@@ -1838,7 +1838,7 @@
               "type": "text",
               "id": "VKzy1",
               "name": "Section Label",
-              "fill": "$color.neutral-500",
+              "fill": "#a3a3a3",
               "content": "SEVERITY VARIANTS",
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -1859,9 +1859,9 @@
                   "name": "Toast / Success",
                   "clip": true,
                   "width": 420,
-                  "fill": "$color.neutral-800",
+                  "fill": "#171717",
                   "cornerRadius": 8,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -1903,7 +1903,7 @@
                           "type": "text",
                           "id": "cfyMV",
                           "name": "Message",
-                          "fill": "$color.neutral-200",
+                          "fill": "#f5f5f5",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "RA profile updated successfully.",
@@ -1929,7 +1929,7 @@
                               "height": 14,
                               "icon": "x",
                               "library": "lucide",
-                              "fill": "$color.neutral-500"
+                              "fill": "#a3a3a3"
                             }
                           ]
                         }
@@ -1962,9 +1962,9 @@
                   "name": "Toast / Info",
                   "clip": true,
                   "width": 420,
-                  "fill": "$color.neutral-800",
+                  "fill": "#171717",
                   "cornerRadius": 8,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -2006,7 +2006,7 @@
                           "type": "text",
                           "id": "k8fh5",
                           "name": "Message",
-                          "fill": "$color.neutral-200",
+                          "fill": "#f5f5f5",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Bulk RA profile update finished. 42 of 44 certificates were processed.",
@@ -2032,7 +2032,7 @@
                               "height": 14,
                               "icon": "x",
                               "library": "lucide",
-                              "fill": "$color.neutral-500"
+                              "fill": "#a3a3a3"
                             }
                           ]
                         }
@@ -2065,9 +2065,9 @@
                   "name": "Toast / Danger",
                   "clip": true,
                   "width": 420,
-                  "fill": "$color.neutral-800",
+                  "fill": "#171717",
                   "cornerRadius": 8,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -2109,7 +2109,7 @@
                           "type": "text",
                           "id": "d33Fcd",
                           "name": "Message",
-                          "fill": "$color.neutral-200",
+                          "fill": "#f5f5f5",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Failed to synchronize certificates (500): the connector returned an unexpected response while processing the discovery batch.",
@@ -2135,7 +2135,7 @@
                               "height": 14,
                               "icon": "x",
                               "library": "lucide",
-                              "fill": "$color.neutral-500"
+                              "fill": "#a3a3a3"
                             }
                           ]
                         }
@@ -2162,7 +2162,7 @@
           "type": "rectangle",
           "id": "H4QHR",
           "name": "Divider",
-          "fill": "$color.neutral-700",
+          "fill": "#262626",
           "width": "fill_container",
           "height": 1
         },
@@ -2178,7 +2178,7 @@
               "type": "text",
               "id": "ps3zY",
               "name": "Section Label",
-              "fill": "$color.neutral-500",
+              "fill": "#a3a3a3",
               "content": "EXPANDED STATE",
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -2203,7 +2203,7 @@
                       "type": "text",
                       "id": "VAayG",
                       "name": "State Label",
-                      "fill": "$color.neutral-400",
+                      "fill": "#d4d4d4",
                       "content": "Collapsed (4-line clamp)",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -2215,9 +2215,9 @@
                       "name": "Toast / Collapsed",
                       "clip": true,
                       "width": 420,
-                      "fill": "$color.neutral-800",
+                      "fill": "#171717",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "effect": {
@@ -2266,7 +2266,7 @@
                                   "type": "text",
                                   "id": "LVHEh",
                                   "name": "Message",
-                                  "fill": "$color.neutral-200",
+                                  "fill": "#f5f5f5",
                                   "textGrowth": "fixed-width-height",
                                   "width": "fill_container",
                                   "height": 78,
@@ -2293,7 +2293,7 @@
                                       "type": "text",
                                       "id": "KSMvh",
                                       "name": "Show More",
-                                      "fill": "$color.neutral-300",
+                                      "fill": "#f5f5f5",
                                       "content": "Show more",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
@@ -2307,7 +2307,7 @@
                                       "height": 12,
                                       "icon": "chevron-down",
                                       "library": "lucide",
-                                      "fill": "$color.neutral-300"
+                                      "fill": "#f5f5f5"
                                     }
                                   ]
                                 }
@@ -2330,7 +2330,7 @@
                                   "height": 14,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-500"
+                                  "fill": "#a3a3a3"
                                 }
                               ]
                             }
@@ -2362,7 +2362,7 @@
                       "type": "text",
                       "id": "EoLo5",
                       "name": "State Label",
-                      "fill": "$color.neutral-400",
+                      "fill": "#d4d4d4",
                       "content": "Expanded",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -2374,9 +2374,9 @@
                       "name": "Toast / Expanded",
                       "clip": true,
                       "width": 420,
-                      "fill": "$color.neutral-800",
+                      "fill": "#171717",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "effect": {
@@ -2425,7 +2425,7 @@
                                   "type": "text",
                                   "id": "n294Rt",
                                   "name": "Message",
-                                  "fill": "$color.neutral-200",
+                                  "fill": "#f5f5f5",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
                                   "content": "Failed to synchronize certificates (500): the connector returned an unexpected response while processing the discovery batch. Certificate 0 could not be validated against the configured RA profile. Certificate 1 could not be validated against the configured RA profile. Certificate 2 could not be validated against the configured RA profile. Certificate 3 could not be validated against the configured RA profile.",
@@ -2458,7 +2458,7 @@
                                           "type": "text",
                                           "id": "rTIZ9",
                                           "name": "Label",
-                                          "fill": "$color.neutral-300",
+                                          "fill": "#f5f5f5",
                                           "content": "Show less",
                                           "fontFamily": "Inter",
                                           "fontSize": 12,
@@ -2472,7 +2472,7 @@
                                           "height": 12,
                                           "icon": "chevron-up",
                                           "library": "lucide",
-                                          "fill": "$color.neutral-300"
+                                          "fill": "#f5f5f5"
                                         }
                                       ]
                                     },
@@ -2487,7 +2487,7 @@
                                           "type": "text",
                                           "id": "IaGcS",
                                           "name": "Label",
-                                          "fill": "$color.neutral-300",
+                                          "fill": "#f5f5f5",
                                           "content": "Copy",
                                           "fontFamily": "Inter",
                                           "fontSize": 12,
@@ -2501,7 +2501,7 @@
                                           "height": 12,
                                           "icon": "copy",
                                           "library": "lucide",
-                                          "fill": "$color.neutral-300"
+                                          "fill": "#f5f5f5"
                                         }
                                       ]
                                     }
@@ -2526,7 +2526,7 @@
                                   "height": 14,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-500"
+                                  "fill": "#a3a3a3"
                                 }
                               ]
                             }
@@ -2555,7 +2555,7 @@
           "type": "rectangle",
           "id": "BsQNW",
           "name": "Divider",
-          "fill": "$color.neutral-700",
+          "fill": "#262626",
           "width": "fill_container",
           "height": 1
         },
@@ -2571,7 +2571,7 @@
               "type": "text",
               "id": "W1aOZ",
               "name": "Section Label",
-              "fill": "$color.neutral-500",
+              "fill": "#a3a3a3",
               "content": "STACK BEHAVIOR",
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -2582,7 +2582,7 @@
               "type": "text",
               "id": "Nm5OY",
               "name": "Description",
-              "fill": "$color.neutral-400",
+              "fill": "#d4d4d4",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Toasts stack bottom-right with 8px gap. Newest toast appears at the bottom. A \"Dismiss all\" control appears above the stack when 3+ toasts are visible.",
@@ -2598,9 +2598,9 @@
               "clip": true,
               "width": "fill_container",
               "height": 520,
-              "fill": "$color.neutral-600",
+              "fill": "#262626",
               "cornerRadius": 8,
-              "stroke": "$color.neutral-700",
+              "stroke": "#262626",
               "strokeWidth": 1,
               "strokeAlignment": "inner",
               "layout": "none",
@@ -2620,7 +2620,7 @@
                       "type": "text",
                       "id": "RPROM",
                       "name": "Dismiss All",
-                      "fill": "$color.neutral-400",
+                      "fill": "#d4d4d4",
                       "content": "Dismiss all",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -2632,9 +2632,9 @@
                       "name": "Toast / Success",
                       "clip": true,
                       "width": 380,
-                      "fill": "$color.neutral-800",
+                      "fill": "#171717",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "effect": {
@@ -2676,7 +2676,7 @@
                               "type": "text",
                               "id": "RRMp3",
                               "name": "Message",
-                              "fill": "$color.neutral-200",
+                              "fill": "#f5f5f5",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "RA profile updated successfully.",
@@ -2702,7 +2702,7 @@
                                   "height": 13,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-500"
+                                  "fill": "#a3a3a3"
                                 }
                               ]
                             }
@@ -2735,9 +2735,9 @@
                       "name": "Toast / Info",
                       "clip": true,
                       "width": 380,
-                      "fill": "$color.neutral-800",
+                      "fill": "#171717",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "effect": {
@@ -2779,7 +2779,7 @@
                               "type": "text",
                               "id": "XaxV9",
                               "name": "Message",
-                              "fill": "$color.neutral-200",
+                              "fill": "#f5f5f5",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Bulk RA profile update finished. 42 of 44 certificates were processed.",
@@ -2805,7 +2805,7 @@
                                   "height": 13,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-500"
+                                  "fill": "#a3a3a3"
                                 }
                               ]
                             }
@@ -2838,9 +2838,9 @@
                       "name": "Toast / Danger",
                       "clip": true,
                       "width": 380,
-                      "fill": "$color.neutral-800",
+                      "fill": "#171717",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "effect": {
@@ -2889,7 +2889,7 @@
                                   "type": "text",
                                   "id": "rhylR",
                                   "name": "Message",
-                                  "fill": "$color.neutral-200",
+                                  "fill": "#f5f5f5",
                                   "textGrowth": "fixed-width-height",
                                   "width": "fill_container",
                                   "height": 78,
@@ -2916,7 +2916,7 @@
                                       "type": "text",
                                       "id": "CGZex",
                                       "name": "Show More",
-                                      "fill": "$color.neutral-300",
+                                      "fill": "#f5f5f5",
                                       "content": "Show more",
                                       "fontFamily": "Inter",
                                       "fontSize": 12,
@@ -2930,7 +2930,7 @@
                                       "height": 12,
                                       "icon": "chevron-down",
                                       "library": "lucide",
-                                      "fill": "$color.neutral-300"
+                                      "fill": "#f5f5f5"
                                     }
                                   ]
                                 }
@@ -2953,7 +2953,7 @@
                                   "height": 13,
                                   "icon": "x",
                                   "library": "lucide",
-                                  "fill": "$color.neutral-500"
+                                  "fill": "#a3a3a3"
                                 }
                               ]
                             }

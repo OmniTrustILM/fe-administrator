@@ -607,9 +607,9 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                         <label
                                             id="variant-label"
                                             htmlFor="variant-0"
-                                            className="block text-sm font-medium mb-2 text-[var(--dark-gray-color)] dark:text-white"
+                                            className="block text-sm font-medium mb-2 text-content"
                                         >
-                                            Variant <span className="text-red-500">*</span>
+                                            Variant <span className="text-danger">*</span>
                                         </label>
                                         <Controller
                                             name="variant"
@@ -627,14 +627,12 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                                                     value={option.value}
                                                                     checked={field.value === option.value}
                                                                     onChange={() => field.onChange(option.value)}
-                                                                    className="shrink-0 mt-0.5 border-gray-200 rounded-full text-blue-600 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800"
+                                                                    className="shrink-0 mt-0.5 rounded-full border-outline text-brand-solid focus:ring-brand disabled:opacity-50 disabled:pointer-events-none"
                                                                 />
                                                                 <span className="ml-2">
-                                                                    <span className="block text-sm text-[var(--dark-gray-color)] dark:text-white">
-                                                                        {option.label}
-                                                                    </span>
+                                                                    <span className="block text-sm text-content">{option.label}</span>
                                                                     {option.description && (
-                                                                        <span className="block text-xs text-[var(--dark-gray-color)] dark:text-neutral-500">
+                                                                        <span className="block text-xs text-content-subtle">
                                                                             {option.description}
                                                                         </span>
                                                                     )}
@@ -643,7 +641,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                                         ))}
                                                     </div>
                                                     {fieldState.error && fieldState.isTouched && (
-                                                        <p className="mt-1 text-sm text-red-600">
+                                                        <p className="mt-1 text-sm text-danger">
                                                             {typeof fieldState.error === 'string'
                                                                 ? fieldState.error
                                                                 : fieldState.error?.message || 'Invalid value'}

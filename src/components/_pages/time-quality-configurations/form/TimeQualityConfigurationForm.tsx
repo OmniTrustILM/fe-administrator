@@ -255,7 +255,7 @@ export const TimeQualityConfigurationForm = () => {
                                 />
 
                                 <div className="flex flex-col gap-1">
-                                    <label htmlFor="leapSecondGuard" className="block text-sm font-medium text-gray-700">
+                                    <label htmlFor="leapSecondGuard" className="block text-sm font-medium text-content-muted">
                                         Leap Second Guard
                                     </label>
                                     <Controller
@@ -278,8 +278,8 @@ export const TimeQualityConfigurationForm = () => {
                         <Widget title="NTP Settings" busy={isBusy} titleSize="large">
                             <div className="space-y-4">
                                 <div className="flex flex-col gap-1">
-                                    <label htmlFor="ntpServers" className="block text-sm font-medium text-gray-700">
-                                        NTP Servers <span className="text-red-500 ml-1">*</span>
+                                    <label htmlFor="ntpServers" className="block text-sm font-medium text-content-muted">
+                                        NTP Servers <span className="text-danger ml-1">*</span>
                                     </label>
                                     <Controller
                                         name="ntpServers"
@@ -302,7 +302,7 @@ export const TimeQualityConfigurationForm = () => {
                                                     invalid={!!fieldState.error}
                                                 />
                                                 {fieldState.error && (
-                                                    <p className="text-xs text-red-600 mt-0.5">{fieldState.error.message}</p>
+                                                    <p className="text-xs text-danger mt-0.5">{fieldState.error.message}</p>
                                                 )}
                                             </>
                                         )}

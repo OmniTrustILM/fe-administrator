@@ -2,6 +2,7 @@ import React from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import { ReactFlowProvider } from 'reactflow';
+import ThemeProvider from 'components/ThemeProvider';
 import CustomFlowNode from './index';
 import type { EntityNodeProps } from 'types/flowchart';
 import { createMockStore } from 'utils/test-helpers';
@@ -42,11 +43,13 @@ export default function CustomFlowNodeMountWrapper({ nodeProps, initialStoreStat
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>
-                <ReactFlowProvider>
-                    <ErrorBoundary>
-                        <CustomFlowNode {...nodeProps} />
-                    </ErrorBoundary>
-                </ReactFlowProvider>
+                <ThemeProvider>
+                    <ReactFlowProvider>
+                        <ErrorBoundary>
+                            <CustomFlowNode {...nodeProps} />
+                        </ErrorBoundary>
+                    </ReactFlowProvider>
+                </ThemeProvider>
             </MemoryRouter>
         </Provider>
     );

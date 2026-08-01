@@ -1,5 +1,5 @@
 {
-  "version": "2.13",
+  "version": "2.14",
   "children": [
     {
       "type": "frame",
@@ -30,7 +30,7 @@
               "type": "text",
               "id": "N3glwm",
               "name": "Title",
-              "fill": "$color.neutral-900",
+              "fill": "#1f2937",
               "content": "Dialog",
               "fontFamily": "Inter",
               "fontSize": 28,
@@ -40,7 +40,7 @@
               "type": "text",
               "id": "qK26F",
               "name": "Subtitle",
-              "fill": "$color.neutral-400",
+              "fill": "#525252",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Modal dialog built on Radix. Optional circular icon, caption heading, scrollable body, and a right-aligned footer button row. Delete/destroy variants are centered and borderless.",
@@ -63,7 +63,7 @@
               "type": "text",
               "id": "FEcTK",
               "name": "Section Title",
-              "fill": "$color.gray-500",
+              "fill": "#6e6e6e",
               "content": "PREVIEW",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -133,7 +133,7 @@
                           "height": 16,
                           "icon": "x",
                           "library": "lucide",
-                          "fill": "$color.gray-500"
+                          "fill": "#525252"
                         }
                       ]
                     },
@@ -159,7 +159,7 @@
                           "type": "text",
                           "id": "q818oT",
                           "name": "Caption",
-                          "fill": "$color.neutral-900",
+                          "fill": "#1f2937",
                           "content": "Rename signing profile",
                           "fontFamily": "Inter",
                           "fontSize": 24,
@@ -182,7 +182,7 @@
                           "type": "text",
                           "id": "FqyTn",
                           "name": "Body Text",
-                          "fill": "$color.gray-500",
+                          "fill": "#525252",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Enter a new name for this signing profile. The change is applied immediately and will be visible to everyone with access.",
@@ -224,7 +224,7 @@
                               "type": "text",
                               "id": "u99Ow",
                               "name": "Label",
-                              "fill": "$color.gray-800",
+                              "fill": "#1f2937",
                               "content": "Cancel",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -278,7 +278,7 @@
               "type": "text",
               "id": "GQsp0",
               "name": "Section Title",
-              "fill": "$color.gray-500",
+              "fill": "#6e6e6e",
               "content": "ICON VARIANTS",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -376,7 +376,7 @@
                                   "height": 24,
                                   "icon": "trash-2",
                                   "library": "lucide",
-                                  "fill": "$color.red-800"
+                                  "fill": "#b91c1c"
                                 }
                               ]
                             },
@@ -384,7 +384,7 @@
                               "type": "text",
                               "id": "qATRc",
                               "name": "Del Caption",
-                              "fill": "$color.neutral-900",
+                              "fill": "#1f2937",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Delete profile?",
@@ -410,7 +410,7 @@
                               "type": "text",
                               "id": "wWZx1",
                               "name": "Del Body",
-                              "fill": "$color.gray-500",
+                              "fill": "#525252",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "This action cannot be undone. The signing profile and all of its records will be permanently removed.",
@@ -453,7 +453,7 @@
                                   "type": "text",
                                   "id": "M7Nkh",
                                   "name": "Del Cancel Lbl",
-                                  "fill": "$color.gray-800",
+                                  "fill": "#1f2937",
                                   "content": "Cancel",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
@@ -465,7 +465,7 @@
                               "type": "frame",
                               "id": "CEKjZ",
                               "name": "Del Delete Btn",
-                              "fill": "$color.red-500",
+                              "fill": "#b91c1c",
                               "cornerRadius": 8,
                               "gap": 8,
                               "padding": [
@@ -578,7 +578,7 @@
                                   "height": 24,
                                   "icon": "triangle-alert",
                                   "library": "lucide",
-                                  "fill": "$color.red-800"
+                                  "fill": "#b91c1c"
                                 }
                               ]
                             },
@@ -586,7 +586,7 @@
                               "type": "text",
                               "id": "cKPAy",
                               "name": "Warn Caption",
-                              "fill": "$color.neutral-900",
+                              "fill": "#1f2937",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Certificates in use",
@@ -612,7 +612,7 @@
                               "type": "text",
                               "id": "mZlTY",
                               "name": "Warn Body",
-                              "fill": "$color.gray-500",
+                              "fill": "#525252",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Some certificates are still associated with this entity. Proceeding may affect dependent services.",
@@ -654,7 +654,7 @@
                                   "type": "text",
                                   "id": "U69sn",
                                   "name": "Warn Cancel Lbl",
-                                  "fill": "$color.gray-800",
+                                  "fill": "#1f2937",
                                   "content": "Cancel",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
@@ -666,7 +666,7 @@
                               "type": "frame",
                               "id": "mgDG1",
                               "name": "Warn Proceed Btn",
-                              "fill": "$color.red-500",
+                              "fill": "#b91c1c",
                               "cornerRadius": 8,
                               "gap": 8,
                               "padding": [
@@ -788,7 +788,7 @@
                                   "height": 24,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$color.icon-default"
+                                  "fill": "#0369a1"
                                 }
                               ]
                             },
@@ -796,7 +796,7 @@
                               "type": "text",
                               "id": "LXqpS",
                               "name": "Info Caption",
-                              "fill": "$color.neutral-900",
+                              "fill": "#1f2937",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Update available",
@@ -822,7 +822,7 @@
                               "type": "text",
                               "id": "ZJ29O",
                               "name": "Info Body",
-                              "fill": "$color.gray-500",
+                              "fill": "#525252",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "A new connector version is available. Review the changelog before updating to the latest release.",
@@ -864,7 +864,7 @@
                                   "type": "text",
                                   "id": "w8RAwP",
                                   "name": "Info Cancel Lbl",
-                                  "fill": "$color.gray-800",
+                                  "fill": "#1f2937",
                                   "content": "Cancel",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
@@ -989,7 +989,7 @@
                                   "height": 24,
                                   "icon": "check",
                                   "library": "lucide",
-                                  "fill": "$color.teal-800"
+                                  "fill": "#0f766e"
                                 }
                               ]
                             },
@@ -997,7 +997,7 @@
                               "type": "text",
                               "id": "A0MsA",
                               "name": "Succ Caption",
-                              "fill": "$color.neutral-900",
+                              "fill": "#1f2937",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Profile created",
@@ -1023,7 +1023,7 @@
                               "type": "text",
                               "id": "JxO9r",
                               "name": "Succ Body",
-                              "fill": "$color.gray-500",
+                              "fill": "#525252",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "The signing profile was created successfully and is now ready to issue certificates.",
@@ -1065,7 +1065,7 @@
                                   "type": "text",
                                   "id": "bGLEK",
                                   "name": "Succ Cancel Lbl",
-                                  "fill": "$color.gray-800",
+                                  "fill": "#1f2937",
                                   "content": "Cancel",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
@@ -1121,7 +1121,7 @@
               "type": "text",
               "id": "c3CO2",
               "name": "Section Title",
-              "fill": "$color.gray-500",
+              "fill": "#6e6e6e",
               "content": "SIZES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -1165,7 +1165,7 @@
                           "type": "text",
                           "id": "rpWUw",
                           "name": "Size sm Name",
-                          "fill": "$color.neutral-900",
+                          "fill": "#1f2937",
                           "content": "sm",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -1177,7 +1177,7 @@
                       "type": "text",
                       "id": "PrfxB",
                       "name": "Size sm Dim",
-                      "fill": "$color.gray-500",
+                      "fill": "#525252",
                       "content": "max-w-sm · 384px",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -1214,7 +1214,7 @@
                           "type": "text",
                           "id": "aMzPp",
                           "name": "Size md Name",
-                          "fill": "$color.neutral-900",
+                          "fill": "#1f2937",
                           "content": "md",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -1226,7 +1226,7 @@
                       "type": "text",
                       "id": "G5sRG0",
                       "name": "Size md Dim",
-                      "fill": "$color.gray-500",
+                      "fill": "#525252",
                       "content": "max-w-lg · 512px",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -1263,7 +1263,7 @@
                           "type": "text",
                           "id": "iUGuW",
                           "name": "Size lg Name",
-                          "fill": "$color.neutral-900",
+                          "fill": "#1f2937",
                           "content": "lg",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -1275,7 +1275,7 @@
                       "type": "text",
                       "id": "A8i0n",
                       "name": "Size lg Dim",
-                      "fill": "$color.gray-500",
+                      "fill": "#525252",
                       "content": "max-w-xl · 576px",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -1312,7 +1312,7 @@
                           "type": "text",
                           "id": "JLkbl",
                           "name": "Size xl Name",
-                          "fill": "$color.neutral-900",
+                          "fill": "#1f2937",
                           "content": "xl",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -1324,7 +1324,7 @@
                       "type": "text",
                       "id": "Jy8l7",
                       "name": "Size xl Dim",
-                      "fill": "$color.gray-500",
+                      "fill": "#525252",
                       "content": "max-w-4xl · 896px",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -1361,7 +1361,7 @@
                           "type": "text",
                           "id": "s6Vo4",
                           "name": "Size xxl Name",
-                          "fill": "$color.neutral-900",
+                          "fill": "#1f2937",
                           "content": "xxl",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -1373,7 +1373,7 @@
                       "type": "text",
                       "id": "Pownn",
                       "name": "Size xxl Dim",
-                      "fill": "$color.gray-500",
+                      "fill": "#525252",
                       "content": "max-w-6xl · 1152px",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -1397,7 +1397,7 @@
       "width": 680,
       "fill": "$color.neutral-900",
       "cornerRadius": 12,
-      "stroke": "$color.neutral-700",
+      "stroke": "#262626",
       "strokeWidth": 1,
       "strokeAlignment": "inner",
       "layout": "vertical",
@@ -1416,7 +1416,7 @@
               "type": "text",
               "id": "J9hXr",
               "name": "Title",
-              "fill": "$color.neutral-200",
+              "fill": "#f5f5f5",
               "content": "Dialog",
               "fontFamily": "Inter",
               "fontSize": 28,
@@ -1426,7 +1426,7 @@
               "type": "text",
               "id": "hdKK4",
               "name": "Subtitle",
-              "fill": "$color.neutral-400",
+              "fill": "#d4d4d4",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Modal dialog built on Radix. Optional circular icon, caption heading, scrollable body, and a right-aligned footer button row. Delete/destroy variants are centered and borderless.",
@@ -1449,7 +1449,7 @@
               "type": "text",
               "id": "bseQF",
               "name": "Section Title",
-              "fill": "$color.gray-500",
+              "fill": "#a3a3a3",
               "content": "PREVIEW",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -1473,9 +1473,9 @@
                   "id": "NRpbl",
                   "name": "Default Dialog",
                   "width": 480,
-                  "fill": "$color.neutral-800",
+                  "fill": "#171717",
                   "cornerRadius": 12,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -1519,7 +1519,7 @@
                           "height": 16,
                           "icon": "x",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     },
@@ -1528,7 +1528,7 @@
                       "id": "K3qjM",
                       "name": "Dialog Header",
                       "width": "fill_container",
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": {
                         "bottom": 1
                       },
@@ -1545,7 +1545,7 @@
                           "type": "text",
                           "id": "Gkum9",
                           "name": "Caption",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "Rename signing profile",
                           "fontFamily": "Inter",
                           "fontSize": 24,
@@ -1596,7 +1596,7 @@
                           "type": "frame",
                           "id": "IGxRH",
                           "name": "Cancel Button",
-                          "fill": "$color.white-10",
+                          "fill": "#262626",
                           "cornerRadius": 8,
                           "gap": 8,
                           "padding": [
@@ -1610,7 +1610,7 @@
                               "type": "text",
                               "id": "t6Ijhi",
                               "name": "Label",
-                              "fill": "$color.white",
+                              "fill": "#f5f5f5",
                               "content": "Cancel",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -1664,7 +1664,7 @@
               "type": "text",
               "id": "kfpEp",
               "name": "Section Title",
-              "fill": "$color.gray-500",
+              "fill": "#a3a3a3",
               "content": "ICON VARIANTS",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -1691,9 +1691,9 @@
                       "id": "MXrJW",
                       "name": "Del Card",
                       "width": "fill_container",
-                      "fill": "$color.neutral-800",
+                      "fill": "#171717",
                       "cornerRadius": 12,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "effect": {
@@ -1762,7 +1762,7 @@
                                   "height": 24,
                                   "icon": "trash-2",
                                   "library": "lucide",
-                                  "fill": "$color.red-800"
+                                  "fill": "#f87171"
                                 }
                               ]
                             },
@@ -1770,7 +1770,7 @@
                               "type": "text",
                               "id": "TPwG6",
                               "name": "Del Caption",
-                              "fill": "$color.white",
+                              "fill": "#f5f5f5",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Delete profile?",
@@ -1825,7 +1825,7 @@
                               "type": "frame",
                               "id": "GLQPH",
                               "name": "Del Cancel Btn",
-                              "fill": "$color.white-10",
+                              "fill": "#262626",
                               "cornerRadius": 8,
                               "gap": 8,
                               "padding": [
@@ -1839,7 +1839,7 @@
                                   "type": "text",
                                   "id": "HDPKs",
                                   "name": "Del Cancel Lbl",
-                                  "fill": "$color.white",
+                                  "fill": "#f5f5f5",
                                   "content": "Cancel",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
@@ -1851,7 +1851,7 @@
                               "type": "frame",
                               "id": "p9PKJt",
                               "name": "Del Delete Btn",
-                              "fill": "$color.red-500",
+                              "fill": "#b91c1c",
                               "cornerRadius": 8,
                               "gap": 8,
                               "padding": [
@@ -1882,9 +1882,9 @@
                       "id": "yyUEl",
                       "name": "Warn Card",
                       "width": "fill_container",
-                      "fill": "$color.neutral-800",
+                      "fill": "#171717",
                       "cornerRadius": 12,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "effect": {
@@ -1911,7 +1911,7 @@
                           "id": "VR3aZ",
                           "name": "Warn Head",
                           "width": "fill_container",
-                          "stroke": "$color.neutral-700",
+                          "stroke": "#262626",
                           "strokeWidth": {
                             "bottom": 1
                           },
@@ -1964,7 +1964,7 @@
                                   "height": 24,
                                   "icon": "triangle-alert",
                                   "library": "lucide",
-                                  "fill": "$color.red-800"
+                                  "fill": "#f87171"
                                 }
                               ]
                             },
@@ -1972,7 +1972,7 @@
                               "type": "text",
                               "id": "t6vyq",
                               "name": "Warn Caption",
-                              "fill": "$color.white",
+                              "fill": "#f5f5f5",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Certificates in use",
@@ -2026,7 +2026,7 @@
                               "type": "frame",
                               "id": "fzHeH",
                               "name": "Warn Cancel Btn",
-                              "fill": "$color.white-10",
+                              "fill": "#262626",
                               "cornerRadius": 8,
                               "gap": 8,
                               "padding": [
@@ -2040,7 +2040,7 @@
                                   "type": "text",
                                   "id": "lFE4Q",
                                   "name": "Warn Cancel Lbl",
-                                  "fill": "$color.white",
+                                  "fill": "#f5f5f5",
                                   "content": "Cancel",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
@@ -2052,7 +2052,7 @@
                               "type": "frame",
                               "id": "BPEtc",
                               "name": "Warn Proceed Btn",
-                              "fill": "$color.red-500",
+                              "fill": "#b91c1c",
                               "cornerRadius": 8,
                               "gap": 8,
                               "padding": [
@@ -2092,9 +2092,9 @@
                       "id": "DH1Kv",
                       "name": "Info Card",
                       "width": "fill_container",
-                      "fill": "$color.neutral-800",
+                      "fill": "#171717",
                       "cornerRadius": 12,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "effect": {
@@ -2121,7 +2121,7 @@
                           "id": "vTKGH",
                           "name": "Info Head",
                           "width": "fill_container",
-                          "stroke": "$color.neutral-700",
+                          "stroke": "#262626",
                           "strokeWidth": {
                             "bottom": 1
                           },
@@ -2174,7 +2174,7 @@
                                   "height": 24,
                                   "icon": "info",
                                   "library": "lucide",
-                                  "fill": "$color.icon-default"
+                                  "fill": "#38bdf8"
                                 }
                               ]
                             },
@@ -2182,7 +2182,7 @@
                               "type": "text",
                               "id": "hhkc1",
                               "name": "Info Caption",
-                              "fill": "$color.white",
+                              "fill": "#f5f5f5",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Update available",
@@ -2236,7 +2236,7 @@
                               "type": "frame",
                               "id": "z17ZL3",
                               "name": "Info Cancel Btn",
-                              "fill": "$color.white-10",
+                              "fill": "#262626",
                               "cornerRadius": 8,
                               "gap": 8,
                               "padding": [
@@ -2250,7 +2250,7 @@
                                   "type": "text",
                                   "id": "wsdml",
                                   "name": "Info Cancel Lbl",
-                                  "fill": "$color.white",
+                                  "fill": "#f5f5f5",
                                   "content": "Cancel",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
@@ -2293,9 +2293,9 @@
                       "id": "rC8o2",
                       "name": "Succ Card",
                       "width": "fill_container",
-                      "fill": "$color.neutral-800",
+                      "fill": "#171717",
                       "cornerRadius": 12,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "effect": {
@@ -2322,7 +2322,7 @@
                           "id": "R1Twi",
                           "name": "Succ Head",
                           "width": "fill_container",
-                          "stroke": "$color.neutral-700",
+                          "stroke": "#262626",
                           "strokeWidth": {
                             "bottom": 1
                           },
@@ -2361,7 +2361,7 @@
                                   "x": 8,
                                   "y": 8,
                                   "name": "Succ Inner",
-                                  "fill": "$color.teal-100",
+                                  "fill": "#134e4a",
                                   "width": 48,
                                   "height": 48
                                 },
@@ -2375,7 +2375,7 @@
                                   "height": 24,
                                   "icon": "check",
                                   "library": "lucide",
-                                  "fill": "$color.teal-800"
+                                  "fill": "#5eead4"
                                 }
                               ]
                             },
@@ -2383,7 +2383,7 @@
                               "type": "text",
                               "id": "fOVyZ",
                               "name": "Succ Caption",
-                              "fill": "$color.white",
+                              "fill": "#f5f5f5",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
                               "content": "Profile created",
@@ -2437,7 +2437,7 @@
                               "type": "frame",
                               "id": "wLktL",
                               "name": "Succ Cancel Btn",
-                              "fill": "$color.white-10",
+                              "fill": "#262626",
                               "cornerRadius": 8,
                               "gap": 8,
                               "padding": [
@@ -2451,7 +2451,7 @@
                                   "type": "text",
                                   "id": "Thpbr",
                                   "name": "Succ Cancel Lbl",
-                                  "fill": "$color.white",
+                                  "fill": "#f5f5f5",
                                   "content": "Cancel",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
@@ -2507,7 +2507,7 @@
               "type": "text",
               "id": "MoDq6",
               "name": "Section Title",
-              "fill": "$color.gray-500",
+              "fill": "#a3a3a3",
               "content": "SIZES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -2538,7 +2538,7 @@
                       "height": 40,
                       "fill": "$color.neutral-800",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -2551,7 +2551,7 @@
                           "type": "text",
                           "id": "AGuzj",
                           "name": "Size sm Name",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "sm",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -2563,7 +2563,7 @@
                       "type": "text",
                       "id": "KeYsV",
                       "name": "Size sm Dim",
-                      "fill": "$color.gray-500",
+                      "fill": "#d4d4d4",
                       "content": "max-w-sm · 384px",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -2587,7 +2587,7 @@
                       "height": 40,
                       "fill": "$color.neutral-800",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -2600,7 +2600,7 @@
                           "type": "text",
                           "id": "JxLVD",
                           "name": "Size md Name",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "md",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -2612,7 +2612,7 @@
                       "type": "text",
                       "id": "VdzEB",
                       "name": "Size md Dim",
-                      "fill": "$color.gray-500",
+                      "fill": "#d4d4d4",
                       "content": "max-w-lg · 512px",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -2636,7 +2636,7 @@
                       "height": 40,
                       "fill": "$color.neutral-800",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -2649,7 +2649,7 @@
                           "type": "text",
                           "id": "A2K6qk",
                           "name": "Size lg Name",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "lg",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -2661,7 +2661,7 @@
                       "type": "text",
                       "id": "q4Y4X",
                       "name": "Size lg Dim",
-                      "fill": "$color.gray-500",
+                      "fill": "#d4d4d4",
                       "content": "max-w-xl · 576px",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -2685,7 +2685,7 @@
                       "height": 40,
                       "fill": "$color.neutral-800",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -2698,7 +2698,7 @@
                           "type": "text",
                           "id": "avOEG",
                           "name": "Size xl Name",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "xl",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -2710,7 +2710,7 @@
                       "type": "text",
                       "id": "KecMr",
                       "name": "Size xl Dim",
-                      "fill": "$color.gray-500",
+                      "fill": "#d4d4d4",
                       "content": "max-w-4xl · 896px",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -2734,7 +2734,7 @@
                       "height": 40,
                       "fill": "$color.neutral-800",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "padding": [
@@ -2747,7 +2747,7 @@
                           "type": "text",
                           "id": "jAigO",
                           "name": "Size xxl Name",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "xxl",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -2759,7 +2759,7 @@
                       "type": "text",
                       "id": "H2J7tF",
                       "name": "Size xxl Dim",
-                      "fill": "$color.gray-500",
+                      "fill": "#d4d4d4",
                       "content": "max-w-6xl · 1152px",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -2987,5 +2987,6 @@
       "type": "color",
       "value": "#854d0e4d"
     }
-  }
+  },
+  "fileToken": "2047109a-b538-4796-adaa-217383425d74"
 }

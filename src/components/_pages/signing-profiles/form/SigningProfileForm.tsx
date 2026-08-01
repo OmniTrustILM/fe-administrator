@@ -134,9 +134,11 @@ function parseIsoDurationSeconds(duration: string | undefined): number | undefin
 // Tailwind classes for a selectable option card (signing scheme / managed signing type).
 function optionCardClassName(isSupported: boolean, isSelected: boolean): string {
     if (isSupported) {
-        return isSelected ? 'border-blue-500 bg-blue-50 text-gray-900' : 'border-gray-300 bg-white text-gray-900 hover:border-blue-300';
+        return isSelected
+            ? 'border-brand bg-brand-subtle text-content'
+            : 'border-outline bg-surface-raised text-content hover:border-brand';
     }
-    return 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60';
+    return 'border-divider bg-surface-sunken text-content-subtle cursor-not-allowed opacity-60';
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -581,8 +583,8 @@ export default function SigningProfileForm() {
             />
 
             <div>
-                <p className="block text-sm font-medium text-gray-700 mb-2">
-                    Signing Workflow Type <span className="text-red-500">*</span>
+                <p className="block text-sm font-medium text-content-muted mb-2">
+                    Signing Workflow Type <span className="text-danger">*</span>
                 </p>
                 <div className="space-y-2">
                     {Object.values(SigningWorkflowType)
@@ -594,8 +596,8 @@ export default function SigningProfileForm() {
                                     key={wt}
                                     className={`flex items-center gap-x-3 p-3 border rounded-lg cursor-pointer ${
                                         isSupported
-                                            ? 'border-blue-300 bg-blue-50 text-gray-900'
-                                            : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
+                                            ? 'border-brand bg-brand-subtle text-content'
+                                            : 'border-divider bg-surface-sunken text-content-subtle cursor-not-allowed opacity-60'
                                     }`}
                                 >
                                     <input
@@ -604,7 +606,7 @@ export default function SigningProfileForm() {
                                         value={wt}
                                         checked={wt === workflowTypeValue}
                                         disabled={!isSupported}
-                                        className="accent-blue-600"
+                                        className="accent-brand-solid"
                                         onChange={() => setValue('workflowType', wt, { shouldDirty: true })}
                                     />
                                     <span className="text-sm font-medium">{workflowTypeLabels[wt]}</span>
@@ -653,7 +655,7 @@ export default function SigningProfileForm() {
                         />
                     ) : (
                         !isFetchingSignatureFormattingConnectorAttributes && (
-                            <p className="text-xs text-gray-500">No attributes available for the selected connector.</p>
+                            <p className="text-xs text-content-subtle">No attributes available for the selected connector.</p>
                         )
                     )}
                 </Widget>
@@ -719,7 +721,7 @@ export default function SigningProfileForm() {
                 )}
             />
             {showAccuracyWarning && (
-                <div className="mt-2 flex items-start gap-x-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800">
+                <div className="mt-2 flex items-start gap-x-2 rounded-md border border-warning bg-warning-surface p-2 text-sm text-warning">
                     <TriangleAlert size={16} className="mt-0.5 shrink-0" />
                     <span>
                         The selected Time Quality Configuration has an accuracy coarser than 1&nbsp;second
@@ -761,7 +763,7 @@ export default function SigningProfileForm() {
             />
 
             <div className="flex flex-col gap-1">
-                <label htmlFor="policyIdInput" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="policyIdInput" className="block text-sm font-medium text-content-muted">
                     Allowed TSA Policy IDs
                 </label>
                 {/* A registered field, so adding or removing an entry marks the form dirty and enables Update (issue #1927) */}
@@ -781,9 +783,9 @@ export default function SigningProfileForm() {
                                 validateValue={validateOid()}
                                 invalid={!!fieldState.error}
                             />
-                            {fieldState.error && <p className="text-xs text-red-600 mt-0.5">{fieldState.error.message}</p>}
+                            {fieldState.error && <p className="text-xs text-danger mt-0.5">{fieldState.error.message}</p>}
                             {field.value.length === 0 && (
-                                <p className="text-xs text-gray-400">No policies added. All policy IDs will be accepted.</p>
+                                <p className="text-xs text-content-subtle">No policies added. All policy IDs will be accepted.</p>
                             )}
                         </>
                     )}
@@ -814,8 +816,8 @@ export default function SigningProfileForm() {
         <div className="space-y-4">
             {/* Level 1: Managed vs Delegated */}
             <div>
-                <p className="block text-sm font-medium text-gray-700 mb-2">
-                    Signing Scheme <span className="text-red-500">*</span>
+                <p className="block text-sm font-medium text-content-muted mb-2">
+                    Signing Scheme <span className="text-danger">*</span>
                 </p>
                 <div className="space-y-2">
                     {Object.values(SigningScheme)
@@ -837,7 +839,7 @@ export default function SigningProfileForm() {
                                         checked={signingSchemeValue === scheme}
                                         disabled={!isSupported}
                                         onChange={() => isSupported && setValue('signingScheme', scheme, { shouldDirty: true })}
-                                        className="accent-blue-600"
+                                        className="accent-brand-solid"
                                     />
                                     <span className="text-sm font-medium">{signingSchemeLabels[scheme]}</span>
                                 </label>
@@ -849,8 +851,8 @@ export default function SigningProfileForm() {
             {/* Level 2: Managed signing type (only for Managed) */}
             {signingSchemeValue === SigningScheme.Managed && (
                 <div>
-                    <p className="block text-sm font-medium text-gray-700 mb-2">
-                        Managed Signing Type <span className="text-red-500">*</span>
+                    <p className="block text-sm font-medium text-content-muted mb-2">
+                        Managed Signing Type <span className="text-danger">*</span>
                     </p>
                     <div className="space-y-2">
                         {Object.values(ManagedSigningType)
@@ -872,7 +874,7 @@ export default function SigningProfileForm() {
                                             checked={managedSigningTypeValue === mst}
                                             disabled={!isSupported}
                                             onChange={() => isSupported && setValue('managedSigningType', mst, { shouldDirty: true })}
-                                            className="accent-blue-600"
+                                            className="accent-brand-solid"
                                         />
                                         <span className="text-sm font-medium">{managedSigningTypeLabels[mst]}</span>
                                     </label>
@@ -915,7 +917,7 @@ export default function SigningProfileForm() {
                                 />
                             ) : (
                                 !isFetchingSignatureAttributes && (
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-content-subtle">
                                         No signing operation attributes are available for the selected certificate's key algorithm.
                                     </p>
                                 )
@@ -930,7 +932,7 @@ export default function SigningProfileForm() {
     // Tab 4 ── Record Policy
     const tab4Content = (
         <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-content-muted">
                 Configure what is captured for each signing operation, how long it is retained, and how durably it is persisted.
             </p>
 
@@ -949,12 +951,12 @@ export default function SigningProfileForm() {
                 />
             </div>
             {!recordingEnabledValue && (
-                <p className="text-xs text-gray-500">No Signing Record is created for this profile while recording is disabled.</p>
+                <p className="text-xs text-content-subtle">No Signing Record is created for this profile while recording is disabled.</p>
             )}
 
             {/* Content policy */}
             <div className={recordingEnabledValue ? '' : 'opacity-60'}>
-                <p className="block text-sm font-medium text-gray-700 mb-2">Captured Content</p>
+                <p className="block text-sm font-medium text-content-muted mb-2">Captured Content</p>
                 <div className="space-y-3">
                     <Controller
                         name="recordRequestMetadata"
@@ -999,7 +1001,7 @@ export default function SigningProfileForm() {
                             )}
                         />
                         {!recordSignedDocumentAllowed && (
-                            <p className="ml-16 mt-1 text-xs text-gray-500">
+                            <p className="ml-16 mt-1 text-xs text-content-subtle">
                                 Only available for the Content Signing and Timestamping workflows.
                             </p>
                         )}
@@ -1024,7 +1026,7 @@ export default function SigningProfileForm() {
 
             {/* Retention */}
             <div className={recordingEnabledValue ? '' : 'opacity-60'}>
-                <p className="block text-sm font-medium text-gray-700 mb-2">Retention</p>
+                <p className="block text-sm font-medium text-content-muted mb-2">Retention</p>
                 <Controller
                     name="retentionIndefinite"
                     control={control}
@@ -1088,7 +1090,9 @@ export default function SigningProfileForm() {
                         />
                     )}
                 />
-                {persistenceModeValue && <p className="mt-1 text-xs text-gray-500">{persistenceModeDescriptions[persistenceModeValue]}</p>}
+                {persistenceModeValue && (
+                    <p className="mt-1 text-xs text-content-subtle">{persistenceModeDescriptions[persistenceModeValue]}</p>
+                )}
             </div>
         </div>
     );

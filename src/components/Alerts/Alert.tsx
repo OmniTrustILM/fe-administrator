@@ -16,30 +16,29 @@ const severityConfig = {
         icon: CircleCheck,
         role: undefined,
         autoDismiss: true,
-        iconClassName: 'text-teal-500',
-        accentClassName: 'border-l-teal-500 dark:border-l-teal-500',
-        progressClassName: 'bg-teal-500',
+        iconClassName: 'text-success',
+        accentClassName: 'border-l-success-solid',
+        progressClassName: 'bg-success-solid',
     },
     danger: {
         icon: CircleAlert,
         role: 'alert',
         autoDismiss: false,
-        iconClassName: 'text-red-500',
-        accentClassName: 'border-l-red-500 dark:border-l-red-500',
-        progressClassName: 'bg-red-500',
+        iconClassName: 'text-danger',
+        accentClassName: 'border-l-danger-solid',
+        progressClassName: 'bg-danger-solid',
     },
     info: {
         icon: Info,
         role: undefined,
         autoDismiss: true,
-        iconClassName: 'text-blue-500',
-        accentClassName: 'border-l-blue-500 dark:border-l-blue-500',
-        progressClassName: 'bg-blue-500',
+        iconClassName: 'text-info',
+        accentClassName: 'border-l-info-solid',
+        progressClassName: 'bg-info-solid',
     },
 } as const;
 
-const actionButtonClassName =
-    'flex items-center gap-1 text-xs font-medium text-gray-800 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-neutral-200';
+const actionButtonClassName = 'flex items-center gap-1 text-xs font-medium text-content-muted hover:text-content';
 
 type Props = {
     alert: MessageModel;
@@ -128,7 +127,7 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
                     data-testid={`alert-${alert.id}`}
                     className={cn(
                         'group pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-lg border border-l-4 p-3 text-sm shadow-lg',
-                        'bg-white border-gray-200 text-gray-800 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-200',
+                        'bg-surface-raised border-divider text-content',
                         'animate-[toast-in_200ms_ease-out] motion-reduce:animate-[toast-fade-in_200ms_ease-out]',
                         config.accentClassName,
                     )}
@@ -161,8 +160,7 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
                         aria-label="Dismiss"
                         className={cn(
                             '-my-1 -mr-1 flex size-8 shrink-0 items-center justify-center rounded-md',
-                            'text-gray-800 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2',
-                            'dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200',
+                            'text-content-muted hover:bg-surface-hover hover:text-content focus-visible:outline-2 focus-visible:outline-offset-2',
                         )}
                         onClick={beginDismiss}
                     >

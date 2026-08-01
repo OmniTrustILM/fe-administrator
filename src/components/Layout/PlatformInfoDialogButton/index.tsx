@@ -90,7 +90,7 @@ const PlatformInfoDialogLink = ({ initiallyOpen = false, forceOpen }: PlatformIn
         <>
             <button
                 type="button"
-                className="text-blue-600 bg-transparent border-0 p-0 cursor-pointer font-inherit"
+                className="text-brand bg-transparent border-0 p-0 cursor-pointer font-inherit"
                 data-testid="footer-version-info-link"
                 onClick={() => setIsOpenState(true)}
             >

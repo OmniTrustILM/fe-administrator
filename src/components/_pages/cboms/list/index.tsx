@@ -111,7 +111,7 @@ function CbomsList() {
             cboms.map((c) => ({
                 id: c.uuid,
                 options: {
-                    rowClassName: c.uuid === highlightedCbomUuid ? 'bg-green-50' : undefined,
+                    rowClassName: c.uuid === highlightedCbomUuid ? 'bg-success-surface' : undefined,
                 },
                 columns: [
                     <Link key="serial" to={`./detail/${c.uuid}`}>

@@ -1,3 +1,4 @@
+import cn from 'classnames';
 import Tooltip from 'components/Tooltip';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { useSelector } from 'react-redux';
@@ -10,22 +11,22 @@ type Props = Readonly<{
 function KeyStateCircle({ state }: Props) {
     const keyStateEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyState));
     const stateText = getEnumLabel(keyStateEnum, state);
-    const stateMap: { [key in KeyState]: { color: string; text: string } } = {
-        [KeyState.Active]: { color: 'var(--status-success-color)', text: stateText },
-        [KeyState.PreActive]: { color: 'var(--status-dark-color)', text: stateText },
-        [KeyState.Compromised]: { color: 'var(--status-danger-color)', text: stateText },
-        [KeyState.Destroyed]: { color: 'var(--status-danger-color)', text: stateText },
-        [KeyState.Deactivated]: { color: 'var(--status-warning-color)', text: stateText },
-        [KeyState.DestroyedCompromised]: { color: 'var(--status-danger-color)', text: stateText },
+    const stateMap: { [key in KeyState]: { colorClass: string; text: string } } = {
+        [KeyState.Active]: { colorClass: 'bg-success-solid', text: stateText },
+        [KeyState.PreActive]: { colorClass: 'bg-surface-inverse', text: stateText },
+        [KeyState.Compromised]: { colorClass: 'bg-danger-solid', text: stateText },
+        [KeyState.Destroyed]: { colorClass: 'bg-danger-solid', text: stateText },
+        [KeyState.Deactivated]: { colorClass: 'bg-warning-solid', text: stateText },
+        [KeyState.DestroyedCompromised]: { colorClass: 'bg-danger-solid', text: stateText },
     };
 
-    const _default = { color: 'secondary', text: stateText };
+    const _default = { colorClass: 'bg-content-subtle', text: stateText };
 
-    const { color, text } = state ? stateMap[state] || _default : _default;
+    const { colorClass, text } = state ? stateMap[state] || _default : _default;
 
     return (
         <Tooltip content={text}>
-            <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: color }}>
+            <span className={cn('w-3 h-3 rounded-full inline-block', colorClass)}>
                 <span className="sr-only">{text}</span>
             </span>
         </Tooltip>

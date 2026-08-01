@@ -161,7 +161,7 @@ export default function VaultProfileForm({ onCancel, onSuccess }: VaultProfileFo
                             setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                         />
                     ) : (
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-content-subtle">
                             {selectedVaultUuid && isFetchingVaultProfileAttributes
                                 ? 'Loading attributes...'
                                 : 'No vault profile attributes configured.'}

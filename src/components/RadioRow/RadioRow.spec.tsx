@@ -51,7 +51,7 @@ test.describe('RadioRow', () => {
                 Option
             </RadioRow>,
         );
-        await expect(component.locator('label')).toHaveClass(/border-blue-300/);
+        await expect(component.locator('label')).toHaveClass(/border-brand/);
     });
 
     test('should apply inactive border style when unchecked', async ({ mount }) => {
@@ -60,7 +60,7 @@ test.describe('RadioRow', () => {
                 Option
             </RadioRow>,
         );
-        await expect(component.locator('label')).toHaveClass(/border-gray-200/);
+        await expect(component.locator('label')).toHaveClass(/border-outline/);
     });
 
     test('should apply maxWidth style when maxWidth prop is provided', async ({ mount }) => {

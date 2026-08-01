@@ -184,7 +184,7 @@ export default function InternalRuleForm({ rule, onCancel }: Props) {
                                 minWidth={180}
                                 isClearable
                                 className={cn({
-                                    'border-red-500': fieldState.error && fieldState.isTouched,
+                                    'border-danger': fieldState.error && fieldState.isTouched,
                                 })}
                                 label="Resource"
                                 error={getFieldErrorMessage(fieldState)}

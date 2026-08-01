@@ -123,7 +123,7 @@ const RenderRequestKey = ({ type, name, tokenProfileField }: Props) => {
                             }}
                             placeholder={isAltKey ? 'Select Alternative Key' : 'Select Key'}
                         />
-                        {error && <div className="text-red-500 mt-1">{error.message ?? 'Key is required.'}</div>}
+                        {error && <div className="text-danger mt-1">{error.message ?? 'Key is required.'}</div>}
                     </div>
                 );
             }}

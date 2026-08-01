@@ -37,7 +37,7 @@ export function AttributeFieldFile({
                 <section
                     id={`${name}-dragAndDrop`}
                     aria-label="File drop zone"
-                    className="border-2 border-dashed border-gray-200 rounded-lg p-4 dark:border-neutral-700"
+                    className="border-2 border-dashed border-divider rounded-lg p-4"
                     style={{ display: 'flex', flexWrap: 'wrap' }}
                     onDrop={onFileDrop}
                     onDragOver={onFileDragOver}
@@ -58,16 +58,16 @@ export function AttributeFieldFile({
                                         placeholder={`Select or drag & drop ${descriptor.properties.label} File`}
                                         readOnly
                                         className={cn(
-                                            'py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600',
+                                            'text-content py-2.5 sm:py-3 px-4 block w-full border-outline rounded-lg text-sm focus:border-brand focus:ring-brand disabled:opacity-50 disabled:pointer-events-none bg-surface-raised placeholder-content-subtle',
                                             {
-                                                'border-red-500 focus:border-red-500 focus:ring-red-500':
+                                                'border-danger focus:border-danger focus:ring-danger':
                                                     fieldState.isTouched && fieldState.invalid,
                                             },
                                         )}
                                     />
 
                                     {fieldState.isTouched && fieldState.invalid && (
-                                        <div className="mt-1 text-sm text-red-600">
+                                        <div className="mt-1 text-sm text-danger">
                                             {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message}
                                         </div>
                                     )}
@@ -75,9 +75,7 @@ export function AttributeFieldFile({
                             )}
                         />
 
-                        {descriptor.description && (
-                            <p className="text-xs text-gray-700 mt-1 dark:text-neutral-400">{descriptor.description}</p>
-                        )}
+                        {descriptor.description && <p className="text-xs text-content-muted mt-1">{descriptor.description}</p>}
                     </div>
                     <div className="w-52 ml-4">
                         <Label htmlFor={`${name}-mimeType`}>Content type</Label>
@@ -120,16 +118,14 @@ export function AttributeFieldFile({
                     <div className="ml-4 flex items-center">
                         <label
                             htmlFor={name}
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg hover:bg-gray-50 cursor-pointer dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-content-muted bg-surface-raised rounded-lg hover:bg-surface-hover cursor-pointer"
                         >
                             Select file...
                         </label>
                         <input id={name} type="file" className="hidden" onChange={onFileChanged} />
                     </div>
                     <div className="w-full h-0"></div>
-                    <div className="text-sm text-gray-400 text-center w-full mt-4 dark:text-neutral-400">
-                        Select or Drag &amp; Drop file to Drop Zone.
-                    </div>
+                    <div className="text-sm text-content-subtle text-center w-full mt-4">Select or Drag &amp; Drop file to Drop Zone.</div>
                     {deleteButton}
                 </section>
             )}
