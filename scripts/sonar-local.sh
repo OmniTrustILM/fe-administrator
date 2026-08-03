@@ -72,15 +72,21 @@ done
 
 echo "Configuring SonarQube..."
 # SonarQube ships with `admin/admin` as the factory default; the server forces
-# this password to be changed on first login. We rotate it to `Admin12345678!`
-# (a value that satisfies SonarQube's password policy) so the rest of the script
-# can authenticate. Both credentials are scoped to this ephemeral container only —
-# the container is removed by the EXIT trap, so neither value is persisted.
-curl -s -o /dev/null -u admin:admin -X POST \
-    "${SONAR_URL}/api/users/change_password?login=admin&previousPassword=admin&password=Admin12345678!" 2>/dev/null || true
+# this password to be changed on first login. We rotate it to a password
+# generated fresh for this run (satisfying SonarQube's policy: length, mixed
+# case, digit, symbol) so the rest of the script can authenticate. The value
+# never leaves this process and the container is removed by the EXIT trap, so
+# nothing is persisted — and no credential is hardcoded in the repo.
+ADMIN_PASSWORD="Aa1!$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)"
 
-if curl -sf -u admin:Admin12345678! "${SONAR_URL}/api/system/status" >/dev/null 2>&1; then
-    SONAR_CREDS="admin:Admin12345678!"
+curl -s -o /dev/null -u admin:admin -X POST \
+    --data-urlencode "login=admin" \
+    --data-urlencode "previousPassword=admin" \
+    --data-urlencode "password=${ADMIN_PASSWORD}" \
+    "${SONAR_URL}/api/users/change_password" 2>/dev/null || true
+
+if curl -sf -u "admin:${ADMIN_PASSWORD}" "${SONAR_URL}/api/system/status" >/dev/null 2>&1; then
+    SONAR_CREDS="admin:${ADMIN_PASSWORD}"
 elif curl -sf -u admin:admin "${SONAR_URL}/api/system/status" >/dev/null 2>&1; then
     SONAR_CREDS="admin:admin"
 else
