@@ -1,8 +1,7 @@
 import { test, expect } from '../../../playwright/ct-test';
-import CronBuilder from './index';
-import { withProviders } from 'utils/test-helpers';
+import CronBuilderWithProviders from './CronBuilderWithProviders';
 
-const cron = (value: string, onChange: (v: string) => void = () => {}) => withProviders(<CronBuilder value={value} onChange={onChange} />);
+const cron = (value: string, onChange: (v: string) => void = () => {}) => <CronBuilderWithProviders value={value} onChange={onChange} />;
 
 const POLL = { timeout: 2000 } as const;
 
