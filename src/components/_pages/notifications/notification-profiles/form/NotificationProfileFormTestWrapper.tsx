@@ -1,4 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
+import type { UnknownAction } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import { useMemo } from 'react';
@@ -24,10 +25,10 @@ type ProfileSliceState = {
 // simulate a detail refetch landing after mount.
 const profileSliceReducer =
     (initial: ProfileSliceState) =>
-    (state: ProfileSliceState | undefined, action: { type: string; payload?: NotificationProfileDetailModel }): ProfileSliceState => {
+    (state: ProfileSliceState | undefined, action: UnknownAction): ProfileSliceState => {
         const current = state ?? initial;
         if (action.type === '__test/setNotificationProfile') {
-            return { ...current, notificationProfile: action.payload };
+            return { ...current, notificationProfile: (action as { payload?: NotificationProfileDetailModel }).payload };
         }
         return current;
     };
@@ -58,7 +59,7 @@ export function NotificationProfileFormTestWrapper({
                 userInterface: identity({ widgetLocks: [] }),
             },
             middleware: (getDefault) =>
-                getDefault({ serializableCheck: false }).concat(() => (next) => (action) => {
+                getDefault({ serializableCheck: false }).concat(() => (next: (action: unknown) => unknown) => (action: unknown) => {
                     // Expose every dispatched action so specs can assert submitted payloads.
                     const capture = window as unknown as { __dispatchedActions?: unknown[] };
                     capture.__dispatchedActions = capture.__dispatchedActions ?? [];
