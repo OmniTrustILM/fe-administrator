@@ -44,7 +44,7 @@ test.describe('NotificationProfileForm - Object recipient type', () => {
         await page.getByTestId('select-recipientType-trigger').click();
         await page.getByRole('option', { name: 'User', exact: true }).click();
         const switchEl = page.locator('#internalNotification');
-        await page.getByTestId('switch-internalNotification').locator('label[for="internalNotification"]').last().click();
+        await page.locator('label:has(#internalNotification)').click();
         await expect(switchEl).toBeChecked();
 
         // Switch to Object — must be off and disabled
