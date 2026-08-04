@@ -1,7 +1,7 @@
 import { test, expect } from '../../../../playwright/ct-test';
-import { buildCertificateRowColumns, buildCertificateDetailBaseRows } from './certificateTableHelpers';
+import { buildCertificateRowColumns, buildCertificateDetailBaseRows, buildCertificateProtocolRows } from './certificateTableHelpers';
 import type { CertificateListResponseModel, CertificateDetailResponseModel } from 'types/certificate';
-import { CertificateType } from 'types/openapi';
+import { CertificateProtocol, type CertificateProtocolDto, CertificateType } from 'types/openapi';
 
 const mockDateFormatter = (d: Date) => d.toISOString().slice(0, 10);
 const mockGetEnumLabel = (_e: any, key: string) => key;
@@ -286,6 +286,71 @@ test.describe('certificateTableHelpers', () => {
 
             const qcTypeRow = rows.find((r) => r.id === 'qcType');
             expect(qcTypeRow).toBeDefined();
+        });
+    });
+
+    test.describe('buildCertificateProtocolRows', () => {
+        // Playwright CT compiles JSX into its own element descriptors rather than real React elements, so a rendered
+        // link is asserted through its `to` prop while plain text stays a bare string.
+        type LinkCell = { props: { to: string } };
+
+        function valueCellOf(protocolInfo: CertificateProtocolDto, rowId: string) {
+            const rows = buildCertificateProtocolRows(protocolInfo, {}, mockGetEnumLabel);
+            return rows.find((r) => r.id === rowId)?.columns[1];
+        }
+
+        test('returns no rows when the certificate was not issued through a protocol', () => {
+            expect(buildCertificateProtocolRows(undefined, {}, mockGetEnumLabel)).toEqual([]);
+        });
+
+        test('links the protocol profile UUID to the profile detail page of its protocol', () => {
+            const cell = valueCellOf({ protocol: CertificateProtocol.Cmp, protocolProfileUuid: 'profile-1' }, 'protocolProfileUuid');
+
+            expect((cell as LinkCell).props.to).toBe('../cmpprofiles/detail/profile-1');
+        });
+
+        test('renders the profile UUID as plain text when it is missing', () => {
+            // Legacy CMP-issued certificates can have no recorded profile — a Link here would point at
+            // ../cmpprofiles/detail/undefined and render an empty, invisible label.
+            const cell = valueCellOf({ protocol: CertificateProtocol.Cmp }, 'protocolProfileUuid');
+
+            expect(typeof cell).toBe('string');
+            expect(cell).toBe('n/a');
+        });
+
+        test('renders the profile UUID as plain text when its protocol has no known profile route', () => {
+            // A protocol the backend added before these types were regenerated resolves to no route, so the UUID is
+            // kept visible rather than linked to a path that cannot exist.
+            const cell = valueCellOf(
+                { protocol: 'unknown-protocol' as CertificateProtocol, protocolProfileUuid: 'profile-1' },
+                'protocolProfileUuid',
+            );
+
+            expect(typeof cell).toBe('string');
+            expect(cell).toBe('profile-1');
+        });
+
+        test('still renders the protocol name row when the profile UUID is missing', () => {
+            const rows = buildCertificateProtocolRows({ protocol: CertificateProtocol.Cmp }, {}, mockGetEnumLabel);
+
+            expect(rows.map((r) => r.id)).toEqual(['protocol', 'protocolProfileUuid']);
+        });
+
+        test('links the ACME account under its profile when both UUIDs are known', () => {
+            const cell = valueCellOf(
+                { protocol: CertificateProtocol.Acme, protocolProfileUuid: 'profile-1', additionalProtocolUuid: 'account-1' },
+                'additionalProfileUuid',
+            );
+
+            expect((cell as LinkCell).props.to).toBe('../acmeaccounts/detail/profile-1/account-1');
+        });
+
+        test('renders the ACME account UUID as plain text when the profile UUID is missing', () => {
+            // The account route is nested under the profile, so there is no resolvable path without it.
+            const cell = valueCellOf({ protocol: CertificateProtocol.Acme, additionalProtocolUuid: 'account-1' }, 'additionalProfileUuid');
+
+            expect(typeof cell).toBe('string');
+            expect(cell).toBe('account-1');
         });
     });
 });

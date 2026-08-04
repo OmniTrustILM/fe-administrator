@@ -11,6 +11,24 @@ export const initialState: State = {
     msgId: 0,
 };
 
+// Persistent errors accumulate until dismissed; the cap bounds Redux state and the
+// rendered stack when failures repeat unattended, dropping the oldest messages first.
+export const MAX_STORED_ALERTS = 50;
+
+const pushMessage = (state: State, message: string, color: MessageModel['color']) => {
+    state.messages.push({
+        id: state.msgId,
+        time: Date.now(),
+        message,
+        color,
+    });
+    state.msgId++;
+
+    if (state.messages.length > MAX_STORED_ALERTS) {
+        state.messages.splice(0, state.messages.length - MAX_STORED_ALERTS);
+    }
+};
+
 export const alertsSlice = createSlice({
     name: 'alerts',
 
@@ -21,13 +39,7 @@ export const alertsSlice = createSlice({
             prepare: (message: string) => ({ payload: message }),
 
             reducer: (state, action: PayloadAction<string>) => {
-                state.messages.push({
-                    id: state.msgId,
-                    time: Date.now(),
-                    message: action.payload,
-                    color: 'danger',
-                });
-                state.msgId++;
+                pushMessage(state, action.payload, 'danger');
             },
         },
 
@@ -35,13 +47,7 @@ export const alertsSlice = createSlice({
             prepare: (message: string) => ({ payload: message }),
 
             reducer: (state, action: PayloadAction<string>) => {
-                state.messages.push({
-                    id: state.msgId,
-                    time: Date.now(),
-                    message: action.payload,
-                    color: 'success',
-                });
-                state.msgId++;
+                pushMessage(state, action.payload, 'success');
             },
         },
 
@@ -49,13 +55,7 @@ export const alertsSlice = createSlice({
             prepare: (message: string) => ({ payload: message }),
 
             reducer: (state, action: PayloadAction<string>) => {
-                state.messages.push({
-                    id: state.msgId,
-                    time: Date.now(),
-                    message: action.payload,
-                    color: 'info',
-                });
-                state.msgId++;
+                pushMessage(state, action.payload, 'info');
             },
         },
 
@@ -78,6 +78,10 @@ export const alertsSlice = createSlice({
 
                 state.messages.splice(messageIndex, 1);
             },
+        },
+
+        dismissAll: (state) => {
+            state.messages = [];
         },
     },
 });

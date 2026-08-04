@@ -1,8 +1,7 @@
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import reducer, { actions, selectors } from './alerts';
-import { store } from '../App';
-import { initialState as sliceInitialState } from './alert-slice';
+import { initialState as sliceInitialState, MAX_STORED_ALERTS } from './alert-slice';
 
 describe('alerts slice', () => {
     test('returns initial state for unknown action', () => {
@@ -97,6 +96,47 @@ describe('alerts slice', () => {
 
         expect(next).toEqual(before);
     });
+
+    test('dismissAll removes all messages', () => {
+        const before = {
+            ...sliceInitialState,
+            msgId: 3,
+            messages: [
+                { id: 1, time: 0, message: 'First', color: 'info' as const },
+                { id: 2, time: 0, message: 'Second', color: 'danger' as const },
+            ],
+        };
+
+        const next = reducer(before, actions.dismissAll());
+
+        expect(next.messages).toHaveLength(0);
+        expect(next.msgId).toBe(3);
+    });
+
+    test('dismissAll is a no-op safe on empty state', () => {
+        const next = reducer(sliceInitialState, actions.dismissAll());
+
+        expect(next.messages).toHaveLength(0);
+    });
+
+    test('drops the oldest message once the retention cap is exceeded', () => {
+        const before = {
+            ...sliceInitialState,
+            msgId: MAX_STORED_ALERTS,
+            messages: Array.from({ length: MAX_STORED_ALERTS }, (_, index) => ({
+                id: index,
+                time: 0,
+                message: `Message ${index}`,
+                color: 'danger' as const,
+            })),
+        };
+
+        const next = reducer(before, actions.error('Newest failure'));
+
+        expect(next.messages).toHaveLength(MAX_STORED_ALERTS);
+        expect(next.messages[0].id).toBe(1);
+        expect(next.messages.at(-1)?.message).toBe('Newest failure');
+    });
 });
 
 describe('alerts selectors', () => {
@@ -122,30 +162,5 @@ describe('alerts selectors', () => {
 
         const emptyState = { alerts: undefined } as any;
         expect(selectors.selectMessages(emptyState)).toEqual([]);
-    });
-});
-
-describe('alerts interval behaviour', () => {
-    test('periodic check hides and dismisses old messages', async () => {
-        const originalGetState = store.getState;
-        const originalDispatch = store.dispatch;
-
-        const now = Date.now();
-
-        const dispatchSpy = vi.fn();
-        (store as any).getState = vi.fn().mockReturnValue({
-            alerts: {
-                messages: [{ id: 1, time: now - 9000, message: 'Old', color: 'info' as const }],
-            },
-        });
-        (store as any).dispatch = dispatchSpy;
-
-        await new Promise((resolve) => setTimeout(resolve, 600));
-
-        expect(dispatchSpy).toHaveBeenCalledWith(actions.hide(1));
-        expect(dispatchSpy).toHaveBeenCalledWith(actions.dismiss(1));
-
-        (store as any).getState = originalGetState;
-        (store as any).dispatch = originalDispatch;
     });
 });

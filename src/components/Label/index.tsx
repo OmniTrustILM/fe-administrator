@@ -49,7 +49,7 @@ function Label({ htmlFor, title, children, required, className, onClick, dataTes
             {labelTooltip && (
                 <Tooltip content={labelTooltip}>
                     <span
-                        className="ml-1 inline-flex align-middle text-gray-400 hover:text-gray-600 dark:hover:text-neutral-200 cursor-help"
+                        className="ml-1 inline-flex align-middle text-gray-600 hover:text-gray-800 dark:text-neutral-400 dark:hover:text-neutral-200 cursor-help"
                         data-testid={htmlFor ? `label-tooltip-${htmlFor}` : 'label-tooltip'}
                     >
                         <Info size={13} aria-hidden />

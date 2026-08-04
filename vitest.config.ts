@@ -11,6 +11,12 @@ export default defineConfig({
         environment: 'happy-dom',
         include: ['**/*.spec.ts', 'src/components/**/*.unit.spec.{ts,tsx}'],
         exclude: ['node_modules', 'build', 'dist', '.claude/**'],
+        // Some specs re-import large module graphs under vi.resetModules(). Those
+        // re-imports became measurably slower to load once react-router v8 made the
+        // dependency ESM-only, so the defaults (5s test / 10s hook) are too tight for
+        // them. The tests themselves do the same amount of work as before.
+        testTimeout: 20000,
+        hookTimeout: 30000,
         coverage: {
             provider: 'v8',
             reporter: ['lcovonly', 'text-summary'],
@@ -21,10 +27,13 @@ export default defineConfig({
                 'src/ducks/**/*.{ts,tsx}',
                 'src/components/PagedList/PagedList.tsx',
                 'src/components/Widget/index.tsx',
+                // Build hook with its own unit tests; report it so Sonar sees the coverage.
+                'scripts/set-openapi-contact.mjs',
             ],
             exclude: [
                 'node_modules',
                 'src/**/*.spec.{ts,tsx}',
+                'scripts/**/*.spec.{ts,tsx}',
                 'src/types/**/*',
                 'src/utils/ct-window-shim.ts',
                 'src/utils/TestStoreConsumer.tsx',

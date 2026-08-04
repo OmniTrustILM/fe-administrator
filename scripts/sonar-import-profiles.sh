@@ -5,11 +5,15 @@
 # same rules SonarCloud enforces on PRs.
 #
 # Usage:
-#   ./scripts/sonar-import-profiles.sh                       # defaults
+#   SONAR_AUTH='admin:<your-local-password>' ./scripts/sonar-import-profiles.sh
 #   SONAR_URL=http://localhost:9000 \
-#     SONAR_AUTH=admin:AdminLocal2024! \
-#     PROJECT_KEY=czertainly-fe-administrator \
+#     SONAR_AUTH='admin:<your-local-password>' \
+#     PROJECT_KEY=fe-administrator \
 #     ./scripts/sonar-import-profiles.sh
+#
+# SONAR_AUTH is required — it holds the credentials of your own local SonarQube
+# instance and is deliberately not defaulted here. sonar-local.sh passes the
+# throwaway credentials of its ephemeral container automatically.
 #
 # Requirements:
 #   - SonarQube already running and reachable at SONAR_URL
@@ -22,7 +26,11 @@
 set -euo pipefail
 
 SONAR_URL="${SONAR_URL:-http://localhost:9000}"
-SONAR_AUTH="${SONAR_AUTH:-admin:AdminLocal2024!}"
+
+if [[ -z "${SONAR_AUTH:-}" ]]; then
+    echo "ERROR: SONAR_AUTH is required (e.g. SONAR_AUTH='admin:<your-local-password>' or SONAR_AUTH='<token>:')." >&2
+    exit 1
+fi
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 profiles_dir="${repo_root}/sonar/profiles"

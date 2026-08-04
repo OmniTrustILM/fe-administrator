@@ -13,7 +13,7 @@ function Footer({ className }: Readonly<Props>) {
                 <span>© 2018-{new Date().getFullYear()} &nbsp;Identity Lifecycle Management </span>
                 <span className="mx-2">·</span>
                 <a
-                    href="https://docs.czertainly.com/docs"
+                    href="https://docs.otilm.com"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600"
@@ -22,18 +22,12 @@ function Footer({ className }: Readonly<Props>) {
                     Documentation
                 </a>
                 <span className="mx-2">·</span>
-                <a
-                    href="https://czertainly.atlassian.net/servicedesk/customer/portal/1"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600"
-                    data-testid="footer-support-link"
-                >
+                <a href="mailto:ilm@omnitrust.com" className="text-blue-600" data-testid="footer-support-link">
                     Support
                 </a>
                 <span className="mx-2">·</span>
                 <a
-                    href="https://www.czertainly.com"
+                    href="https://www.omnitrust.com"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600"

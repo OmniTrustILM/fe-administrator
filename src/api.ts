@@ -41,6 +41,7 @@ import {
     ScheduledJobsManagementApi,
     SettingsApi,
     StatisticsDashboardApi,
+    TokenInstanceManagementApi,
     TokenProfileManagementApi,
     UserManagementApi,
     WorkflowActionsManagementApi,
@@ -57,9 +58,6 @@ import {
     SigningProfileManagementApi,
     SigningRecordManagementApi,
 } from 'types/openapi';
-// Deep import: the openapi barrel only re-exports TokenInstanceManagementApi because
-// both modules export overlapping request interfaces that would collide via `export *`.
-import { TokenInstanceControllerApi } from 'types/openapi/apis/TokenInstanceControllerApi';
 import {
     ActuatorApi,
     CertificateUtilsAPIApi,
@@ -115,7 +113,7 @@ export interface ApiClients {
     externalNotificationManagementApi: ExternalNotificationManagementApi;
     enums: EnumsApi;
     info: InfoApi;
-    tokenInstances: TokenInstanceControllerApi;
+    tokenInstances: TokenInstanceManagementApi;
     tokenProfiles: TokenProfileManagementApi;
     cryptographicKeys: CryptographicKeyManagementApi;
     cryptographicOperations: CryptographicOperationsControllerApi;
@@ -181,7 +179,7 @@ const factories: Partial<{ [K in ApiClientKey]: () => ApiClients[K] }> = {
     externalNotificationManagementApi: () => new ExternalNotificationManagementApi(configuration),
     enums: () => new EnumsApi(configuration),
     info: () => new InfoApi(configuration),
-    tokenInstances: () => new TokenInstanceControllerApi(configuration),
+    tokenInstances: () => new TokenInstanceManagementApi(configuration),
     tokenProfiles: () => new TokenProfileManagementApi(configuration),
     cryptographicKeys: () => new CryptographicKeyManagementApi(configuration),
     cryptographicOperations: () => new CryptographicOperationsControllerApi(configuration),

@@ -253,7 +253,7 @@ const activateToken: AppEpic = (action$, state$, deps) => {
         filter(slice.actions.activateToken.match),
         switchMap((action) =>
             deps.apiClients.tokenInstances
-                .activateTokenInstance({ uuid: action.payload.uuid, requestAttributeDto: action.payload.request })
+                .activateTokenInstance({ uuid: action.payload.uuid, requestAttribute: action.payload.request })
                 .pipe(
                     mergeMap(() => of(slice.actions.activateTokenSuccess({ uuid: action.payload.uuid }))),
 

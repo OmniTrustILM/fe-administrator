@@ -38,7 +38,7 @@
             },
             "typescript-rxjs-utils": {
                 "generatorName": "typescript-rxjs",
-                "inputSpec": "https://api.czertainly.com/utils/main/utils-service.yaml",
+                "inputSpec": "https://api.otilm.com/utils/main/utils-service.yaml",
                 "output": "./src/types/openapi/utils",
                 "typeMappings": {
                     "set": "Array",

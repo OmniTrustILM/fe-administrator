@@ -15,7 +15,10 @@ permissions:
 
 jobs:
   test:
-    uses: OmniTrustILM/.github/.github/workflows/containers-test.yml@50f83b9285f0f12ed0b329696a920c811bf8fe23 # main
+    # Tracks @main by design: this is a first-party OmniTrustILM reusable workflow and
+    # edits to it are meant to reach every repo without a bump here. Sonar's "use a full
+    # commit SHA" rule targets third-party actions and is accepted for this reference.
+    uses: OmniTrustILM/.github/.github/workflows/containers-test.yml@main
     with:
       image: ilm/frontend-administrator
       cache-scope: frontend-administrator
