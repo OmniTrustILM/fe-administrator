@@ -1,5 +1,5 @@
 import { test, expect } from 'playwright/ct-test';
-import { RecipientType } from 'types/openapi';
+import { NotificationDataCategory, RecipientType } from 'types/openapi';
 import {
     RECIPIENT_TYPE_USER_DESCRIPTION as USER_DESCRIPTION,
     defaultNotificationProfileDetail as baseProfile,
@@ -37,5 +37,30 @@ test.describe('NotificationProfileDetail - recipient type description toggletip'
 
         await expect(page.getByText('Recipient Type')).toBeVisible();
         await expect(page.getByTestId('recipientType-info')).toHaveCount(0);
+    });
+});
+
+test.describe('NotificationProfileDetail - event data categories', () => {
+    test('enabled categories render as tags', async ({ mount, page }) => {
+        await mount(
+            <NotificationProfileDetailTestWrapper
+                notificationProfile={{
+                    ...baseProfile,
+                    eventDataCategories: [NotificationDataCategory.CustomAttributes, NotificationDataCategory.Metadata],
+                }}
+            />,
+        );
+
+        const tags = page.getByTestId('eventDataCategories-tags');
+        await expect(tags).toBeVisible();
+        await expect(tags.getByText('Custom attributes', { exact: true })).toBeVisible();
+        await expect(tags.getByText('Metadata', { exact: true })).toBeVisible();
+    });
+
+    test('a profile without categories shows None', async ({ mount, page }) => {
+        await mount(<NotificationProfileDetailTestWrapper />);
+
+        await expect(page.getByText('Event Data', { exact: true })).toBeVisible();
+        await expect(page.getByText('None', { exact: true })).toBeVisible();
     });
 });

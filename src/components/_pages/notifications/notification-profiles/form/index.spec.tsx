@@ -94,3 +94,127 @@ test.describe('NotificationProfileForm - recipient type description', () => {
         await expect(helpField(page)).toHaveCount(0);
     });
 });
+
+test.describe('NotificationProfileForm - Event data categories', () => {
+    test('renders all four category checkboxes unchecked with help texts', async ({ mount, page }) => {
+        await mount(<NotificationProfileFormTestWrapper />);
+
+        for (const category of ['customAttributes', 'metadata', 'associations', 'objectContent']) {
+            await expect(page.locator(`#eventDataCategory-${category}`)).toBeVisible();
+            await expect(page.locator(`#eventDataCategory-${category}`)).not.toBeChecked();
+        }
+        await expect(page.getByText('Custom attributes', { exact: true })).toBeVisible();
+        await expect(page.getByText("Include the event object's custom attribute values")).toBeVisible();
+        await expect(page.getByText('Include owner, groups, and RA profile references')).toBeVisible();
+    });
+
+    test('toggling a category checks and unchecks it', async ({ mount, page }) => {
+        await mount(<NotificationProfileFormTestWrapper />);
+
+        const checkbox = page.locator('#eventDataCategory-metadata');
+        await checkbox.click();
+        await expect(checkbox).toBeChecked();
+        await checkbox.click();
+        await expect(checkbox).not.toBeChecked();
+    });
+});
+
+type CapturedAction = { type: string; payload?: Record<string, unknown> };
+
+const capturedPayload = async (page: import('@playwright/test').Page, actionType: string) =>
+    page.evaluate((type) => {
+        const actions = (window as unknown as { __dispatchedActions?: { type: string; payload?: unknown }[] }).__dispatchedActions ?? [];
+        return (actions.filter((action) => action.type === type).at(-1)?.payload ?? null) as Record<string, unknown> | null;
+    }, actionType);
+
+const editProfile = {
+    uuid: 'np-1',
+    name: 'Edited Profile',
+    version: 1,
+    recipientType: 'none' as const,
+    internalNotification: false,
+    notificationInstance: { uuid: 'ni-1', name: 'Email Instance' },
+    eventDataCategories: ['metadata' as const],
+};
+
+test.describe('NotificationProfileForm - event data category payloads', () => {
+    test('create sends the selection in canonical order', async ({ mount, page }) => {
+        await mount(<NotificationProfileFormTestWrapper />);
+
+        // TextInput is readOnly until focused (autofill guard); focus first.
+        await page.locator('#name').click();
+        await page.locator('#name').fill('payload-profile');
+        await page.getByTestId('select-notificationInstance-trigger').click();
+        await page.getByRole('option', { name: 'Email Instance', exact: true }).click();
+        // Toggle in reverse canonical order; the payload must come out canonical.
+        await page.locator('#eventDataCategory-objectContent').click();
+        await page.locator('#eventDataCategory-customAttributes').click();
+        await expect(page.locator('#eventDataCategory-objectContent')).toBeChecked();
+        await expect(page.locator('#eventDataCategory-customAttributes')).toBeChecked();
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        await expect
+            .poll(async () => {
+                const payload = await capturedPayload(page, 'notificationProfiles/createNotificationProfile');
+                return (payload?.notificationProfileAddRequest as Record<string, unknown> | undefined)?.eventDataCategories ?? null;
+            })
+            .toEqual(['customAttributes', 'objectContent']);
+    });
+
+    test('an untouched selection is omitted from the update request', async ({ mount, page }) => {
+        await mount(<NotificationProfileFormTestWrapper notificationProfile={editProfile} />);
+
+        await page.locator('#description').click();
+        await page.locator('#description').fill('only the description changes');
+        await expect(page.locator('#eventDataCategory-metadata')).toBeChecked();
+        await page.getByRole('button', { name: 'Save' }).click();
+
+        await expect
+            .poll(async () => {
+                const payload = await capturedPayload(page, 'notificationProfiles/updateNotificationProfile');
+                const request = payload?.notificationProfileEditRequest as Record<string, unknown> | undefined;
+                return request ? Object.hasOwn(request, 'eventDataCategories') : null;
+            })
+            .toBe(false);
+    });
+
+    test('clearing every category sends an empty list', async ({ mount, page }) => {
+        await mount(<NotificationProfileFormTestWrapper notificationProfile={editProfile} />);
+
+        await expect(page.locator('#eventDataCategory-metadata')).toBeChecked();
+        await page.locator('#eventDataCategory-metadata').click();
+        await page.getByRole('button', { name: 'Save' }).click();
+
+        await expect
+            .poll(async () => {
+                const payload = await capturedPayload(page, 'notificationProfiles/updateNotificationProfile');
+                return (payload?.notificationProfileEditRequest as Record<string, unknown> | undefined)?.eventDataCategories ?? null;
+            })
+            .toEqual([]);
+    });
+
+    test('a refetch landing after mount does not manufacture a stale category change', async ({ mount, page }) => {
+        await mount(<NotificationProfileFormTestWrapper notificationProfile={{ ...editProfile, eventDataCategories: [] }} />);
+
+        // The user edits an unrelated field, then the detail refetch lands with categories a
+        // concurrent operator enabled meanwhile.
+        await page.locator('#description').click();
+        await page.locator('#description').fill('concurrent edit survivor');
+        await page.evaluate((profile) => {
+            (window as unknown as { __setTestProfile: (p: unknown) => void }).__setTestProfile(profile);
+        }, editProfile);
+
+        // The pristine checkbox re-baselines to the refreshed profile; the dirty edit survives.
+        await expect(page.locator('#eventDataCategory-metadata')).toBeChecked();
+        await expect(page.locator('#description')).toHaveValue('concurrent edit survivor');
+
+        await page.getByRole('button', { name: 'Save' }).click();
+        await expect
+            .poll(async () => {
+                const payload = await capturedPayload(page, 'notificationProfiles/updateNotificationProfile');
+                const request = payload?.notificationProfileEditRequest as Record<string, unknown> | undefined;
+                return request ? Object.hasOwn(request, 'eventDataCategories') : null;
+            })
+            .toBe(false);
+    });
+});

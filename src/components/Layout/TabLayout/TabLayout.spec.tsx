@@ -138,9 +138,9 @@ test.describe('TabLayout', () => {
         test('preserves unrelated query params on tab change', async ({ mount }) => {
             const component = await mount(<TabLayoutWithStore tabUrlParam="tab" initialEntries={['/?foo=bar']} tabs={urlTabs} />);
             await component.getByRole('tab', { name: 'Flow' }).click();
-            const search = await component.getByTestId('location-probe').getAttribute('data-search');
-            expect(search).toContain('foo=bar');
-            expect(search).toContain('tab=flow');
+            // Auto-retrying assertions: a one-shot attribute read races the click's state flush.
+            await expect(component.getByTestId('location-probe')).toHaveAttribute('data-search', /foo=bar/);
+            await expect(component.getByTestId('location-probe')).toHaveAttribute('data-search', /tab=flow/);
         });
     });
 

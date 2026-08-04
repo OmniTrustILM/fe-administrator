@@ -37,6 +37,7 @@ export default function NotificationProfileDetail() {
     const isFetchingNotificationInstanceDetail = useSelector(notificationSelectors.isFetchingNotificationInstanceDetail);
 
     const recipientTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.RecipientType));
+    const eventDataCategoryEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.NotificationDataCategory));
 
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
@@ -169,6 +170,23 @@ export default function NotificationProfileDetail() {
                 ],
             },
             {
+                id: 'eventDataCategories',
+                columns: [
+                    'Event Data',
+                    notificationProfile.eventDataCategories?.length ? (
+                        <span key="eventDataCategories" className="inline-flex items-center gap-1" data-testid="eventDataCategories-tags">
+                            {notificationProfile.eventDataCategories.map((category) => (
+                                <Badge key={category} color="secondary">
+                                    {getEnumLabel(eventDataCategoryEnum, category)}
+                                </Badge>
+                            ))}
+                        </span>
+                    ) : (
+                        'None'
+                    ),
+                ],
+            },
+            {
                 id: 'frequency',
                 columns: ['Frequency', notificationProfile.frequency ? getInputStringFromIso8601String(notificationProfile.frequency) : ''],
             },
@@ -177,7 +195,7 @@ export default function NotificationProfileDetail() {
                 columns: ['Max Repetitions', notificationProfile.repetitions?.toString() ?? ''],
             },
         ];
-    }, [notificationProfile, recipientTypeEnum]);
+    }, [notificationProfile, recipientTypeEnum, eventDataCategoryEnum]);
     const recipientsData: TableDataRow[] = useMemo(
         () =>
             notificationProfile?.recipients
