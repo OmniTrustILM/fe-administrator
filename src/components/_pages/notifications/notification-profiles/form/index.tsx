@@ -372,10 +372,19 @@ function EventDataCategoryFields() {
     const categoryEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.NotificationDataCategory));
 
     return (
-        <div>
-            <Label htmlFor="eventDataCategories">Event data</Label>
+        <fieldset>
+            <legend className="text-sm font-medium">Event data</legend>
             <p className="text-sm text-gray-500 mb-2">
-                Data included in external notifications when the event's subject supports it; all categories are off by default.
+                Data included in external notifications when the event's subject supports it; all categories are off by default. See the{' '}
+                <a
+                    className="underline"
+                    href="https://docs.otilm.com/docs/certificate-key/concept-design/core-components/notification-event-data"
+                    target="_blank"
+                    rel="noreferrer"
+                >
+                    applicability matrix
+                </a>{' '}
+                for what each event can provide.
             </p>
             <Controller
                 name="eventDataCategories"
@@ -403,7 +412,7 @@ function EventDataCategoryFields() {
                     </div>
                 )}
             />
-        </div>
+        </fieldset>
     );
 }
 

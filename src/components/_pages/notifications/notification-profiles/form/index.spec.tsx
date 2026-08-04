@@ -104,7 +104,7 @@ test.describe('NotificationProfileForm - Event data categories', () => {
         }
         await expect(page.getByText('Custom attributes', { exact: true })).toBeVisible();
         await expect(page.getByText("Include the event object's custom attribute values")).toBeVisible();
-        await expect(page.getByText('Include owner, group, and RA profile references')).toBeVisible();
+        await expect(page.getByText('Include owner, groups, and RA profile references')).toBeVisible();
     });
 
     test('toggling a category checks and unchecks it', async ({ mount, page }) => {

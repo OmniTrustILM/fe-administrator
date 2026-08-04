@@ -33,7 +33,7 @@ export const notificationDataCategoryEnumLabels: Record<string, { label: string;
     },
     [NotificationDataCategory.Associations]: {
         label: 'Associations',
-        description: 'Include owner, group, and RA profile references',
+        description: 'Include owner, groups, and RA profile references',
     },
     [NotificationDataCategory.ObjectContent]: {
         label: 'Object content',
