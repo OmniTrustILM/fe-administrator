@@ -140,6 +140,11 @@ export default function NotificationProfileForm({
 
     const methods = useForm<FormValues>({
         defaultValues,
+        // Re-baseline pristine fields when the profile refetch lands, keeping the user's dirty
+        // edits: otherwise the presence-aware submit would compare stale mount-time values
+        // against the refreshed defaults and send an unintended change.
+        values: defaultValues,
+        resetOptions: { keepDirtyValues: true },
         mode: 'onChange',
     });
 
@@ -378,7 +383,7 @@ function EventDataCategoryFields() {
                 Data included in external notifications when the event's subject supports it; all categories are off by default. See the{' '}
                 <a
                     className="underline"
-                    href="https://docs.otilm.com/docs/certificate-key/concept-design/core-components/notification-event-data"
+                    href="https://docs.otilm.com/docs/certificate-key/concept-design/core-components/notification-profile#event-data"
                     target="_blank"
                     rel="noreferrer"
                 >
