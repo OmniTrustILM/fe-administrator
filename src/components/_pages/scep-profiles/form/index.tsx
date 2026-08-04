@@ -422,7 +422,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                         <Controller
                             name="name"
                             control={control}
-                            rules={buildValidationRules([validateRequired(), validateAlphaNumericWithoutAccents()])}
+                            rules={buildValidationRules(editMode ? [] : [validateRequired(), validateAlphaNumericWithoutAccents()])}
                             render={({ field, fieldState }) => (
                                 <TextInput
                                     {...field}
@@ -593,7 +593,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                             )}
                         />
 
-                        <CertificateField certificates={certificates} />
+                        <CertificateField certificates={certificates} currentCertificate={scepProfile?.caCertificate} />
 
                         <Widget
                             title="RA Profile Configuration"
