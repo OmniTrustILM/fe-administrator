@@ -1,11 +1,11 @@
-import DOMPurify from 'dompurify';
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { actions, selectors } from 'ducks/alerts';
+import { sanitizeAlertMessage } from 'utils/alertMessage';
 
 import Alert from './Alert';
-import { DISMISS_ALL_THRESHOLD, SANITIZE_CONFIG } from './constants';
+import { DISMISS_ALL_THRESHOLD } from './constants';
 
 type Props = {
     autoDismissMs?: number;
@@ -27,7 +27,7 @@ function Alerts({ autoDismissMs }: Readonly<Props>) {
         const newest = [...alerts].reverse().find((alert) => alert.color !== 'danger');
         if (!newest || newest.id <= announcedIdRef.current) return;
         announcedIdRef.current = newest.id;
-        setAnnouncedMessage(DOMPurify.sanitize(newest.message, SANITIZE_CONFIG));
+        setAnnouncedMessage(sanitizeAlertMessage(newest.message));
     }, [alerts]);
 
     return (

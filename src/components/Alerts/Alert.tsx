@@ -1,5 +1,4 @@
 import cn from 'classnames';
-import DOMPurify from 'dompurify';
 import { type AnimationEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
@@ -7,8 +6,9 @@ import { Check, ChevronDown, ChevronUp, CircleAlert, CircleCheck, Copy, Info, X 
 
 import { actions } from 'ducks/alerts';
 import type { MessageModel } from 'types/alerts';
+import { sanitizeAlertMessage } from 'utils/alertMessage';
 
-import { AUTO_DISMISS_MS, COPY_CONFIRMATION_MS, EXIT_ANIMATION_MS, PROGRESS_ANIMATION_NAME, SANITIZE_CONFIG } from './constants';
+import { AUTO_DISMISS_MS, COPY_CONFIRMATION_MS, EXIT_ANIMATION_MS, PROGRESS_ANIMATION_NAME } from './constants';
 
 // Success and info toasts carry no ARIA role: their announcements come from the persistent
 // live region in the stack container, so a role here would only cause double announcements.
@@ -62,7 +62,7 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
     const isHiding = Boolean(alert.isHiding);
     const autoDismissEnabled = config.autoDismiss && !wasExpanded && !isHiding;
 
-    const sanitizedMessage = useMemo(() => DOMPurify.sanitize(alert.message, SANITIZE_CONFIG), [alert.message]);
+    const sanitizedMessage = useMemo(() => sanitizeAlertMessage(alert.message), [alert.message]);
 
     const beginDismiss = useCallback(() => {
         dispatch(actions.hide(alert.id));

@@ -111,6 +111,23 @@ test.describe('Alerts', () => {
         await expect(alert.locator('script')).toHaveCount(0);
     });
 
+    test('should keep angle-bracketed identifiers in a backend error message', async ({ mount, page }) => {
+        const message = 'Certificate not imported, alias <cert-alias> already exists on <host.example.com>';
+        const messages = [createAlertMessage({ id: 63, message, color: 'danger' })];
+        await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 64 } }} />);
+
+        await expect(page.getByTestId('alert-63')).toHaveText(message);
+    });
+
+    test('should still render supported formatting around bracketed identifiers', async ({ mount, page }) => {
+        const messages = [createAlertMessage({ id: 64, message: '<b>Failed</b> for <cert-alias>', color: 'danger' })];
+        await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 65 } }} />);
+
+        const alert = page.getByTestId('alert-64');
+        await expect(alert).toHaveText('Failed for <cert-alias>');
+        await expect(alert.locator('b')).toHaveText('Failed');
+    });
+
     test('should remove alert when dismiss button clicked', async ({ mount, page }) => {
         const messages = [createAlertMessage({ id: 3, message: 'Dismiss me', color: 'info' })];
         await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 4 } }} />);
@@ -210,6 +227,32 @@ test.describe('Alerts', () => {
         expect(copiedTexts?.[0]).not.toContain('<b>');
     });
 
+    test('should copy bracketed identifiers along with the rest of the message', async ({ mount, page }) => {
+        const messages = [createAlertMessage({ id: 65, message: `alias <cert-alias> already exists. ${longMessage}`, color: 'danger' })];
+        await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 66 } }} />);
+
+        await page.evaluate(() => {
+            const copied: string[] = [];
+            (globalThis as { __copiedTexts?: string[] }).__copiedTexts = copied;
+            Object.defineProperty(navigator, 'clipboard', {
+                configurable: true,
+                value: {
+                    writeText: (text: string) => {
+                        copied.push(text);
+                        return Promise.resolve();
+                    },
+                },
+            });
+        });
+
+        await page.getByRole('button', { name: 'Show more' }).click();
+        await page.getByRole('button', { name: 'Copy' }).click();
+
+        await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
+        const copiedTexts = await page.evaluate(() => (globalThis as { __copiedTexts?: string[] }).__copiedTexts);
+        expect(copiedTexts?.[0]).toContain('alias <cert-alias> already exists.');
+    });
+
     test('should show dismiss all for three or more alerts and clear the stack', async ({ mount, page }) => {
         const messages = [
             createAlertMessage({ id: 17, message: 'One', color: 'danger' }),
@@ -288,6 +331,13 @@ test.describe('Alerts', () => {
         await page.getByTestId('alert-61').getByRole('button', { name: 'Dismiss' }).click();
         await expect(page.getByTestId('alert-61')).not.toBeAttached();
         await expect(announcer).toHaveText('Second success');
+    });
+
+    test('should announce bracketed identifiers to screen readers', async ({ mount, page }) => {
+        const messages = [createAlertMessage({ id: 66, message: 'Imported as <cert-alias>', color: 'info' })];
+        await mount(<AlertsWithStore autoDismissMs={600000} preloadedState={{ [alertsSlice.name]: { messages, msgId: 67 } }} />);
+
+        await expect(page.getByTestId('alerts-announcer')).toHaveText('Imported as <cert-alias>');
     });
 
     test('should clip horizontal overflow so the entry animation cannot flash a scrollbar', async ({ mount, page }) => {
