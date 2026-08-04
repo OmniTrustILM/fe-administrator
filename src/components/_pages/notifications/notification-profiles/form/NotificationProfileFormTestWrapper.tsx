@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import type { UnknownAction } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
@@ -40,24 +40,27 @@ export function NotificationProfileFormTestWrapper({
 }: Readonly<NotificationProfileFormTestWrapperProps>) {
     const store = useMemo(() => {
         const platformEnums = { ...defaultPlatformEnums, ...platformEnumsOverride };
+        // combineReducers infers each slice's state individually; the inline reducer map does
+        // not survive the strict typecheck once stateful and identity reducers are mixed.
+        const rootReducer = combineReducers({
+            enums: identity({ platformEnums }),
+            notificationProfiles: profileSliceReducer({
+                notificationProfile,
+                isFetchingDetail: false,
+                isUpdating: false,
+                isCreating: false,
+            }),
+            notifications: identity({
+                notificationInstances,
+                isFetchingNotificationInstances: false,
+            }),
+            users: identity({ users: [{ uuid: 'u-1', username: 'alice' }] }),
+            roles: identity({ roles: [{ uuid: 'r-1', name: 'Admin' }] }),
+            certificateGroups: identity({ certificateGroups: [{ uuid: 'g-1', name: 'Group A' }] }),
+            userInterface: identity({ widgetLocks: [] as unknown[] }),
+        });
         return configureStore({
-            reducer: {
-                enums: identity({ platformEnums }),
-                notificationProfiles: profileSliceReducer({
-                    notificationProfile,
-                    isFetchingDetail: false,
-                    isUpdating: false,
-                    isCreating: false,
-                }),
-                notifications: identity({
-                    notificationInstances,
-                    isFetchingNotificationInstances: false,
-                }),
-                users: identity({ users: [{ uuid: 'u-1', username: 'alice' }] }),
-                roles: identity({ roles: [{ uuid: 'r-1', name: 'Admin' }] }),
-                certificateGroups: identity({ certificateGroups: [{ uuid: 'g-1', name: 'Group A' }] }),
-                userInterface: identity({ widgetLocks: [] }),
-            },
+            reducer: rootReducer,
             middleware: (getDefault) =>
                 getDefault({ serializableCheck: false }).concat(() => (next: (action: unknown) => unknown) => (action: unknown) => {
                     // Expose every dispatched action so specs can assert submitted payloads.
