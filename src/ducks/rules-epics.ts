@@ -285,7 +285,7 @@ const deleteAction: AppEpic = (action$, state, deps) => {
                 switchMap(() =>
                     of(
                         slice.actions.deleteActionSuccess({ actionUuid: action.payload.actionUuid }),
-                        appRedirectActions.redirect({ url: `../actions/0` }),
+                        appRedirectActions.redirect({ url: `../actions` }),
                     ),
                 ),
                 catchError((err) =>
@@ -329,7 +329,7 @@ const deleteRule: AppEpic = (action$, state, deps) => {
                 switchMap(() =>
                     of(
                         slice.actions.deleteRuleSuccess({ ruleUuid: action.payload.ruleUuid }),
-                        appRedirectActions.redirect({ url: `../rules/0` }),
+                        appRedirectActions.redirect({ url: `../rules` }),
                     ),
                 ),
                 catchError((err) =>

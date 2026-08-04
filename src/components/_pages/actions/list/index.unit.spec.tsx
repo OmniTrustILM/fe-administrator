@@ -63,7 +63,7 @@ describe('ActionsList tab persistence', () => {
         await clickTab('Executions');
 
         expect(container.textContent).toContain('executions-list');
-        // Without this the URL stays /rules and the browser Back button loses the tab.
+        // Without this the URL stays /actions and the browser Back button loses the tab.
         expect(currentUrl).toBe('/actions?tab=executions');
     });
 
