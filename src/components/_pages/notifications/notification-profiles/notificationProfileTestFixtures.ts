@@ -1,10 +1,13 @@
+import type { UnknownAction } from '@reduxjs/toolkit';
 import type { NotificationProfileDetailModel } from 'types/notification-profiles';
 import { NotificationDataCategory, PlatformEnum, RecipientType } from 'types/openapi';
 
-// Identity reducer for building lightweight test stores without real reducer logic.
+// Identity reducer for building lightweight test stores without real reducer logic. Carries the
+// full Redux reducer signature so configureStore infers per-slice state even when mixed with
+// stateful test reducers.
 export const identity =
     <S>(initial: S) =>
-    (state: S | undefined): S =>
+    (state: S | undefined, _action: UnknownAction): S =>
         state ?? initial;
 
 export const RECIPIENT_TYPE_USER_DESCRIPTION = 'Selected users will receive the notifications.';
