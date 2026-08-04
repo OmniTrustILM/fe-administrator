@@ -149,6 +149,8 @@ test.describe('NotificationProfileForm - event data category payloads', () => {
         // Toggle in reverse canonical order; the payload must come out canonical.
         await page.locator('#eventDataCategory-objectContent').click();
         await page.locator('#eventDataCategory-customAttributes').click();
+        await expect(page.locator('#eventDataCategory-objectContent')).toBeChecked();
+        await expect(page.locator('#eventDataCategory-customAttributes')).toBeChecked();
         await page.getByRole('button', { name: 'Create' }).click();
 
         await expect
@@ -164,6 +166,7 @@ test.describe('NotificationProfileForm - event data category payloads', () => {
 
         await page.locator('#description').click();
         await page.locator('#description').fill('only the description changes');
+        await expect(page.locator('#eventDataCategory-metadata')).toBeChecked();
         await page.getByRole('button', { name: 'Save' }).click();
 
         await expect
