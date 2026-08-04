@@ -440,13 +440,13 @@ export default function AppRouter() {
 
                     <Route path={`/conditions/detail/:id`} element={<ConditionDetails />} />
 
-                    <Route path={`/rules/:tabIndex?`} element={<RulesList />} />
+                    <Route path={`/rules`} element={<RulesList />} />
                     <Route path={`/rules/detail/:id`} element={<RuleDetails />} />
 
                     <Route path={`/executions/add`} element={<ExecutionForm />} />
                     <Route path={`/executions/detail/:id`} element={<ExecutionDetails />} />
 
-                    <Route path={`/actions/:tabIndex?`} element={<ActionsList />} />
+                    <Route path={`/actions`} element={<ActionsList />} />
                     <Route path={`/actions/detail/:id`} element={<ActionDetails />} />
 
                     <Route path={`/triggers`} element={<TriggerList />} />

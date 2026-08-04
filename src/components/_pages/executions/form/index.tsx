@@ -70,7 +70,7 @@ const ExecutionForm = () => {
     const inProgressTitle = 'Creating...';
 
     const onCancel = useCallback(() => {
-        navigate('../actions/1');
+        navigate('../actions?tab=executions');
     }, [navigate]);
 
     const methods = useForm<ExecutionFormValues>({
@@ -140,7 +140,7 @@ const ExecutionForm = () => {
         <>
             <Breadcrumb
                 items={[
-                    { label: `${getEnumLabel(resourceEnum, Resource.Actions)} Inventory`, href: '/actions/1' },
+                    { label: `${getEnumLabel(resourceEnum, Resource.Actions)} Inventory`, href: '/actions?tab=executions' },
                     { label: title, href: '' },
                 ]}
             />

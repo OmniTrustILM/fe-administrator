@@ -1,36 +1,25 @@
 import TabLayout from 'components/Layout/TabLayout';
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router';
 import ActionsListComponent from './actions-list-component';
 import ExecutionsListComponent from './executions-list-component';
 
-const RulesList = () => {
-    const { tabIndex } = useParams();
-    const [activeTab, setActiveTab] = useState(0);
-
-    useEffect(() => {
-        if (tabIndex && Number.parseInt(tabIndex, 10) <= 1) {
-            setActiveTab(Number.parseInt(tabIndex, 10));
-        }
-    }, [tabIndex]);
-
+const ActionsList = () => {
     return (
         <TabLayout
-            selectedTab={activeTab}
+            tabUrlParam="tab"
             tabs={[
                 {
+                    tabKey: 'actions',
                     title: 'Actions',
                     content: <ActionsListComponent />,
-                    onClick: () => setActiveTab(0),
                 },
                 {
+                    tabKey: 'executions',
                     title: 'Executions',
                     content: <ExecutionsListComponent />,
-                    onClick: () => setActiveTab(1),
                 },
             ]}
         />
     );
 };
 
-export default RulesList;
+export default ActionsList;

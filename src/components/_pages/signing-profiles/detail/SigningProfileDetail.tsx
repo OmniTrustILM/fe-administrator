@@ -592,6 +592,7 @@ export default function SigningProfileDetail() {
 
             <Widget widgetLockName={LockWidgetNameEnum.SigningProfileDetails} busy={isBusy} noBorder>
                 <TabLayout
+                    tabUrlParam="tab"
                     tabs={[
                         {
                             title: 'Details',

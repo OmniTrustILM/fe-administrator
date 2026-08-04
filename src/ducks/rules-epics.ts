@@ -263,7 +263,7 @@ const deleteExecution: AppEpic = (action$, state, deps) => {
                 switchMap(() =>
                     of(
                         slice.actions.deleteExecutionSuccess({ executionUuid: action.payload.executionUuid }),
-                        appRedirectActions.redirect({ url: `../../actions/1` }),
+                        appRedirectActions.redirect({ url: `../../actions?tab=executions` }),
                     ),
                 ),
                 catchError((err) =>
@@ -307,7 +307,7 @@ const deleteCondition: AppEpic = (action$, state, deps) => {
                 switchMap(() =>
                     of(
                         slice.actions.deleteConditionSuccess({ conditionUuid: action.payload.conditionUuid }),
-                        appRedirectActions.redirect({ url: `../../rules/1` }),
+                        appRedirectActions.redirect({ url: `../../rules?tab=conditions` }),
                     ),
                 ),
                 catchError((err) =>

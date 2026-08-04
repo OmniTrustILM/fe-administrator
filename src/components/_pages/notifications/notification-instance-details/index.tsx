@@ -206,7 +206,7 @@ const NotificationInstanceDetails = () => {
         <div>
             <Breadcrumb
                 items={[
-                    { label: `${getEnumLabel(resourceEnum, Resource.NotificationInstances)}`, href: '/events' },
+                    { label: `${getEnumLabel(resourceEnum, Resource.NotificationInstances)}`, href: '/events?tab=notification-instances' },
                     { label: notificationInstance?.name || 'Notification Instance Details', href: '' },
                 ]}
             />

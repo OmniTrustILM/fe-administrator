@@ -156,7 +156,7 @@ const ExecutionDetails = () => {
         <Container>
             <Breadcrumb
                 items={[
-                    { label: `${getEnumLabel(resourceEnum, Resource.Actions)} Inventory`, href: '/actions/1' },
+                    { label: `${getEnumLabel(resourceEnum, Resource.Actions)} Inventory`, href: '/actions?tab=executions' },
                     { label: executionDetails?.name || 'Execution Details', href: '' },
                 ]}
             />
