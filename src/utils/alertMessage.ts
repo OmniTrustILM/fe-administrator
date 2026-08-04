@@ -12,7 +12,7 @@ const SANITIZE_CONFIG = {
     ALLOW_DATA_ATTR: false,
 };
 
-const ALLOWED_TAG_START = new RegExp(`^</?(?:${ALLOWED_TAGS.join('|')})(?:\\s[^<>]*)?/?>`, 'i');
+const ALLOWED_TAG_START = new RegExp(String.raw`^</?(?:${ALLOWED_TAGS.join('|')})(?:\s[^<>]*)?/?>`, 'i');
 
 // Errors quote identifiers in angle brackets ("alias <cert-alias> already exists"). Handing those
 // to the sanitizer as-is loses them: the HTML parser reads them as unknown elements and the tag
