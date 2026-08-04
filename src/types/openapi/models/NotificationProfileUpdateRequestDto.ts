@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { RecipientType } from './';
+import type { NotificationDataCategory, RecipientType } from './';
 
 /**
  * @export
@@ -60,4 +60,10 @@ export interface NotificationProfileUpdateRequestDto {
      * @memberof NotificationProfileUpdateRequestDto
      */
     repetitions?: number;
+    /**
+     * Notification data categories included in external notifications sent by this profile. Presence-aware on update: absent keeps the current value, an empty list disables enrichment
+     * @type {Array<NotificationDataCategory>}
+     * @memberof NotificationProfileUpdateRequestDto
+     */
+    eventDataCategories?: Array<NotificationDataCategory>;
 }

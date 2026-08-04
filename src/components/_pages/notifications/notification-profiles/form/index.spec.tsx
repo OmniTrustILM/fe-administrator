@@ -93,3 +93,27 @@ test.describe('NotificationProfileForm - recipient type description', () => {
         await expect(helpField(page)).toHaveCount(0);
     });
 });
+
+test.describe('NotificationProfileForm - Event data categories', () => {
+    test('renders all four category checkboxes unchecked with help texts', async ({ mount, page }) => {
+        await mount(<NotificationProfileFormTestWrapper />);
+
+        for (const category of ['customAttributes', 'metadata', 'associations', 'objectContent']) {
+            await expect(page.locator(`#eventDataCategory-${category}`)).toBeVisible();
+            await expect(page.locator(`#eventDataCategory-${category}`)).not.toBeChecked();
+        }
+        await expect(page.getByText('Custom attributes', { exact: true })).toBeVisible();
+        await expect(page.getByText("Include the event object's custom attribute values")).toBeVisible();
+        await expect(page.getByText('Include owner, group, and RA profile references')).toBeVisible();
+    });
+
+    test('toggling a category checks and unchecks it', async ({ mount, page }) => {
+        await mount(<NotificationProfileFormTestWrapper />);
+
+        const checkbox = page.locator('#eventDataCategory-metadata');
+        await checkbox.click();
+        await expect(checkbox).toBeChecked();
+        await checkbox.click();
+        await expect(checkbox).not.toBeChecked();
+    });
+});

@@ -344,6 +344,7 @@ export * from './Module';
 export * from './MultipleCertificateObjectUpdateDto';
 export * from './NameAndIdDto';
 export * from './NameAndUuidDto';
+export * from './NotificationDataCategory';
 export * from './NotificationDto';
 export * from './NotificationInstanceDto';
 export * from './NotificationInstanceRequestDto';
