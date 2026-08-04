@@ -61,7 +61,7 @@
         "test:vitest:ui": "vitest --ui",
         "test:vitest:watch": "vitest",
         "test:vitest:cov": "vitest run --coverage",
-        "test:playwright": "playwright test -c playwright-ct.config.ts",
+        "test:playwright": "rm -rf playwright/.cache && playwright test -c playwright-ct.config.ts",
         "test:chromium": "playwright test -c playwright-ct.config.ts --project=chromium && node scripts/clean-lcov.js",
         "test:firefox": "playwright test -c playwright-ct.config.ts --project=firefox",
         "test:webkit": "playwright test -c playwright-ct.config.ts --project=webkit",

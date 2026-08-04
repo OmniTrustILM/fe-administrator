@@ -39,11 +39,12 @@ test.describe('NotificationProfileForm - Object recipient type', () => {
     test('Object resets internal notifications to off', async ({ mount, page }) => {
         await mount(<NotificationProfileFormTestWrapper />);
 
-        // Enable internal notifications via the visually hidden checkbox (sr-only).
+        // Enable internal notifications through the visible switch track: the input itself is
+        // visually hidden (sr-only), and force-clicking it does not toggle on Firefox and WebKit.
         await page.getByTestId('select-recipientType-trigger').click();
         await page.getByRole('option', { name: 'User', exact: true }).click();
         const switchEl = page.locator('#internalNotification');
-        await switchEl.check({ force: true });
+        await page.getByTestId('switch-internalNotification').locator('label[for="internalNotification"]').last().click();
         await expect(switchEl).toBeChecked();
 
         // Switch to Object — must be off and disabled
