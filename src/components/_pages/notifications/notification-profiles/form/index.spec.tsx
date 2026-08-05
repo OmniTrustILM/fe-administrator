@@ -95,12 +95,19 @@ test.describe('NotificationProfileForm - recipient type description', () => {
     });
 });
 
+/**
+ * Toggles a category through its visible switch track: the input itself is visually hidden
+ * (sr-only), and force-clicking it does not toggle on Firefox and WebKit.
+ */
+const toggleCategory = (page: import('@playwright/test').Page, category: string) =>
+    page.locator(`label:has(#eventDataCategory-${category})`).click();
+
 test.describe('NotificationProfileForm - Event data categories', () => {
-    test('renders all four category checkboxes unchecked with help texts', async ({ mount, page }) => {
+    test('renders all four category switches unchecked with help texts', async ({ mount, page }) => {
         await mount(<NotificationProfileFormTestWrapper />);
 
         for (const category of ['customAttributes', 'metadata', 'associations', 'objectContent']) {
-            await expect(page.locator(`#eventDataCategory-${category}`)).toBeVisible();
+            await expect(page.getByTestId(`eventDataCategory-${category}`)).toBeVisible();
             await expect(page.locator(`#eventDataCategory-${category}`)).not.toBeChecked();
         }
         await expect(page.getByText('Custom attributes', { exact: true })).toBeVisible();
@@ -111,15 +118,13 @@ test.describe('NotificationProfileForm - Event data categories', () => {
     test('toggling a category checks and unchecks it', async ({ mount, page }) => {
         await mount(<NotificationProfileFormTestWrapper />);
 
-        const checkbox = page.locator('#eventDataCategory-metadata');
-        await checkbox.click();
-        await expect(checkbox).toBeChecked();
-        await checkbox.click();
-        await expect(checkbox).not.toBeChecked();
+        const categorySwitch = page.locator('#eventDataCategory-metadata');
+        await toggleCategory(page, 'metadata');
+        await expect(categorySwitch).toBeChecked();
+        await toggleCategory(page, 'metadata');
+        await expect(categorySwitch).not.toBeChecked();
     });
 });
-
-type CapturedAction = { type: string; payload?: Record<string, unknown> };
 
 const capturedPayload = async (page: import('@playwright/test').Page, actionType: string) =>
     page.evaluate((type) => {
@@ -147,8 +152,8 @@ test.describe('NotificationProfileForm - event data category payloads', () => {
         await page.getByTestId('select-notificationInstance-trigger').click();
         await page.getByRole('option', { name: 'Email Instance', exact: true }).click();
         // Toggle in reverse canonical order; the payload must come out canonical.
-        await page.locator('#eventDataCategory-objectContent').click();
-        await page.locator('#eventDataCategory-customAttributes').click();
+        await toggleCategory(page, 'objectContent');
+        await toggleCategory(page, 'customAttributes');
         await expect(page.locator('#eventDataCategory-objectContent')).toBeChecked();
         await expect(page.locator('#eventDataCategory-customAttributes')).toBeChecked();
         await page.getByRole('button', { name: 'Create' }).click();
@@ -182,7 +187,7 @@ test.describe('NotificationProfileForm - event data category payloads', () => {
         await mount(<NotificationProfileFormTestWrapper notificationProfile={editProfile} />);
 
         await expect(page.locator('#eventDataCategory-metadata')).toBeChecked();
-        await page.locator('#eventDataCategory-metadata').click();
+        await toggleCategory(page, 'metadata');
         await page.getByRole('button', { name: 'Save' }).click();
 
         await expect
@@ -204,7 +209,7 @@ test.describe('NotificationProfileForm - event data category payloads', () => {
             (window as unknown as { __setTestProfile: (p: unknown) => void }).__setTestProfile(profile);
         }, editProfile);
 
-        // The pristine checkbox re-baselines to the refreshed profile; the dirty edit survives.
+        // The pristine switch re-baselines to the refreshed profile; the dirty edit survives.
         await expect(page.locator('#eventDataCategory-metadata')).toBeChecked();
         await expect(page.locator('#description')).toHaveValue('concurrent edit survivor');
 
