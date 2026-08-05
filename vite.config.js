@@ -34,8 +34,9 @@ function openApiTypesFingerprint() {
             .readdirSync(typesDir, { recursive: true, withFileTypes: true })
             .filter((entry) => entry.isFile())
             .map((entry) => path.join(entry.parentPath, entry.name))
-            .sort();
-        const hash = crypto.createHash('sha1');
+            // Byte-wise ordering, not locale-aware: the fingerprint must not depend on the locale.
+            .sort((a, b) => (a < b ? -1 : Number(a > b)));
+        const hash = crypto.createHash('sha256');
         for (const file of files) {
             hash.update(path.relative(typesDir, file));
             hash.update(fs.readFileSync(file));
