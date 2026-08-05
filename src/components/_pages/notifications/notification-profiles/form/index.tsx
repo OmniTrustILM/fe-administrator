@@ -14,7 +14,6 @@ import Select from 'components/Select';
 import Button from 'components/Button';
 import Container from 'components/Container';
 import Switch from 'components/Switch';
-import Checkbox from 'components/Checkbox';
 import { useAreDefaultValuesSame } from 'utils/common-hooks';
 import Label from 'components/Label';
 import {
@@ -380,16 +379,7 @@ function EventDataCategoryFields() {
         <fieldset>
             <legend className="text-sm font-medium">Event data</legend>
             <p className="text-sm text-gray-500 mb-2">
-                Data included in external notifications when the event's subject supports it; all categories are off by default. See the{' '}
-                <a
-                    className="underline"
-                    href="https://docs.otilm.com/docs/certificate-key/concept-design/core-components/notification-profile#event-data"
-                    target="_blank"
-                    rel="noreferrer"
-                >
-                    applicability matrix
-                </a>{' '}
-                for what each event can provide.
+                Data included in external notifications when the event's subject supports it; all categories are off by default.
             </p>
             <Controller
                 name="eventDataCategories"
@@ -398,10 +388,10 @@ function EventDataCategoryFields() {
                     <div id="eventDataCategories" className="space-y-2">
                         {Object.values(NotificationDataCategory).map((category) => (
                             <div key={category}>
-                                <Checkbox
+                                <Switch
                                     id={`eventDataCategory-${category}`}
                                     dataTestId={`eventDataCategory-${category}`}
-                                    label={getEnumLabel(categoryEnum, category)}
+                                    secondaryLabel={getEnumLabel(categoryEnum, category)}
                                     checked={field.value.includes(category)}
                                     onChange={(checked) =>
                                         field.onChange(
@@ -411,7 +401,8 @@ function EventDataCategoryFields() {
                                         )
                                     }
                                 />
-                                <p className="ml-6 text-sm text-gray-500">{getEnumDescription(categoryEnum, category)}</p>
+                                {/* Indented to the switch width plus its gap, so the help text lines up with the label. */}
+                                <p className="ml-16 text-sm text-gray-500">{getEnumDescription(categoryEnum, category)}</p>
                             </div>
                         ))}
                     </div>
