@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
@@ -13,6 +15,38 @@ async function loadProxyConfig() {
         return {};
     }
 }
+
+/**
+ * Content fingerprint of the openapi types, carried in a plugin name so that it takes part in
+ * Vite's own dependency-cache hash (which covers plugin names).
+ *
+ * The types are consumed through the linked `@ilm/openapi-types` dependency so Vite pre-bundles
+ * the whole tree into one cached chunk (see the alias below). That cache hash is otherwise built
+ * from the lockfile and the config only, so edits inside a linked package never invalidate it:
+ * the dev server keeps serving the previous pre-bundle and imports of newly added types fail at
+ * runtime with "does not provide an export named ...". Mixing the fingerprint in lets Vite
+ * re-optimize by itself, exactly when the types change.
+ */
+function openApiTypesFingerprint() {
+    const typesDir = path.resolve(__dirname, './src/types/openapi');
+    try {
+        const files = fs
+            .readdirSync(typesDir, { recursive: true, withFileTypes: true })
+            .filter((entry) => entry.isFile())
+            .map((entry) => path.join(entry.parentPath, entry.name))
+            .sort();
+        const hash = crypto.createHash('sha1');
+        for (const file of files) {
+            hash.update(path.relative(typesDir, file));
+            hash.update(fs.readFileSync(file));
+        }
+        return hash.digest('hex');
+    } catch {
+        // Types directory unreadable — keep the hash stable so the cache behaves as it did before.
+        return 'unavailable';
+    }
+}
+
 export default defineConfig(async ({ mode }) => {
     const proxyConfig = await loadProxyConfig();
     const coverageEnabled = process.env.COVERAGE === 'true' || mode === 'test';
@@ -87,6 +121,7 @@ export default defineConfig(async ({ mode }) => {
                     exclude: ['node_modules/**/*'],
                 }),
             tailwindcss(),
+            { name: `openapi-types-fingerprint:${openApiTypesFingerprint()}` },
         ].filter(Boolean),
     };
 });
