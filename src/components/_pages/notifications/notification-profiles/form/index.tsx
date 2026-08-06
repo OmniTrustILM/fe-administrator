@@ -24,7 +24,7 @@ import {
     validateDuration,
 } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
-import { PlatformEnum, RecipientType } from 'types/openapi';
+import { NotificationDataCategory, PlatformEnum, RecipientType } from 'types/openapi';
 import type { NotificationProfileUpdateRequestModel } from 'types/notification-profiles';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { getInputStringFromIso8601String, getIso8601StringFromInputString } from 'utils/duration';
@@ -47,7 +47,13 @@ interface FormValues {
     frequency: string;
     repetitions: string;
     notificationInstance: string;
+    eventDataCategories: NotificationDataCategory[];
 }
+
+// Canonical enum-declaration order keeps the deep default-values comparison stable regardless of
+// the order the categories were stored or toggled in.
+const orderedCategories = (categories: NotificationDataCategory[] | undefined): NotificationDataCategory[] =>
+    Object.values(NotificationDataCategory).filter((category) => categories?.includes(category));
 
 export default function NotificationProfileForm({
     notificationProfileId,
@@ -114,6 +120,7 @@ export default function NotificationProfileForm({
                 frequency: notificationProfile.frequency ? getInputStringFromIso8601String(notificationProfile.frequency) : '',
                 repetitions: notificationProfile.repetitions?.toString() || '',
                 notificationInstance: notificationProfile.notificationInstance?.uuid || '',
+                eventDataCategories: orderedCategories(notificationProfile.eventDataCategories),
             };
         } else {
             return {
@@ -125,12 +132,18 @@ export default function NotificationProfileForm({
                 frequency: '',
                 repetitions: '',
                 notificationInstance: '',
+                eventDataCategories: [],
             };
         }
     }, [editMode, notificationProfile]);
 
     const methods = useForm<FormValues>({
         defaultValues,
+        // Re-baseline pristine fields when the profile refetch lands, keeping the user's dirty
+        // edits: otherwise the presence-aware submit would compare stale mount-time values
+        // against the refreshed defaults and send an unintended change.
+        values: defaultValues,
+        resetOptions: { keepDirtyValues: true },
         mode: 'onChange',
     });
 
@@ -154,12 +167,19 @@ export default function NotificationProfileForm({
                     Object.assign(recipients, { recipientUuids: values.recipients.map((recipient) => recipient.value) });
                     break;
             }
+            const categories = orderedCategories(values.eventDataCategories);
+            const categoriesChanged =
+                categories.length !== defaultValues.eventDataCategories.length ||
+                categories.some((category, index) => category !== defaultValues.eventDataCategories[index]);
             const updateNotificationProfileRequest: NotificationProfileUpdateRequestModel = {
                 description: values.description,
                 frequency: values.frequency ? getIso8601StringFromInputString(values.frequency) : undefined,
                 repetitions: values.repetitions ? Number.parseInt(values.repetitions, 10) : undefined,
                 internalNotification: values.internalNotification ?? false,
                 notificationInstanceUuid: values.notificationInstance,
+                // Presence-aware update: an untouched field is omitted so the server keeps the
+                // stored value; create always sends the selection.
+                ...(!editMode || categoriesChanged ? { eventDataCategories: categories } : {}),
                 ...recipients,
             };
 
@@ -181,7 +201,7 @@ export default function NotificationProfileForm({
                 );
             }
         },
-        [dispatch, id, editMode],
+        [dispatch, id, editMode, defaultValues.eventDataCategories],
     );
 
     const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues as unknown as Record<string, unknown>);
@@ -291,6 +311,8 @@ export default function NotificationProfileForm({
                             )}
                         />
 
+                        <EventDataCategoryFields />
+
                         <Controller
                             name="frequency"
                             control={control}
@@ -346,6 +368,47 @@ export default function NotificationProfileForm({
                 </Widget>
             </form>
         </FormProvider>
+    );
+}
+
+function EventDataCategoryFields() {
+    const { control } = useFormContext<FormValues>();
+    const categoryEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.NotificationDataCategory));
+
+    return (
+        <fieldset>
+            <legend className="text-sm font-medium">Event data</legend>
+            <p className="text-sm text-gray-500 mb-2">
+                Data included in external notifications when the event's subject supports it; all categories are off by default.
+            </p>
+            <Controller
+                name="eventDataCategories"
+                control={control}
+                render={({ field }) => (
+                    <div id="eventDataCategories" className="space-y-2">
+                        {Object.values(NotificationDataCategory).map((category) => (
+                            <div key={category}>
+                                <Switch
+                                    id={`eventDataCategory-${category}`}
+                                    dataTestId={`eventDataCategory-${category}`}
+                                    secondaryLabel={getEnumLabel(categoryEnum, category)}
+                                    checked={field.value.includes(category)}
+                                    onChange={(checked) =>
+                                        field.onChange(
+                                            orderedCategories(
+                                                checked ? [...field.value, category] : field.value.filter((el) => el !== category),
+                                            ),
+                                        )
+                                    }
+                                />
+                                {/* Indented to the switch width plus its gap, so the help text lines up with the label. */}
+                                <p className="ml-16 text-sm text-gray-500">{getEnumDescription(categoryEnum, category)}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            />
+        </fieldset>
     );
 }
 

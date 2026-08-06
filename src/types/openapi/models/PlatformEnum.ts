@@ -17,6 +17,7 @@
  * @enum {string}
  */
 export enum PlatformEnum {
+    NotificationDataCategory = 'NotificationDataCategory',
     Resource = 'Resource',
     ResourceAction = 'ResourceAction',
     FilterConditionOperator = 'FilterConditionOperator',

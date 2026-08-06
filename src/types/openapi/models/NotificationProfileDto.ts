@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { RecipientType } from './';
+import type { NotificationDataCategory, RecipientType } from './';
 
 /**
  * @export
@@ -66,4 +66,10 @@ export interface NotificationProfileDto {
      * @memberof NotificationProfileDto
      */
     internalNotification: boolean;
+    /**
+     * Notification data categories included in external notifications sent by this profile
+     * @type {Array<NotificationDataCategory>}
+     * @memberof NotificationProfileDto
+     */
+    eventDataCategories?: Array<NotificationDataCategory>;
 }
