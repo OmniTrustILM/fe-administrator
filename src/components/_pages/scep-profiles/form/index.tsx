@@ -593,7 +593,12 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                             )}
                         />
 
-                        <CertificateField certificates={certificates} currentCertificate={scepProfile?.caCertificate} />
+                        <CertificateField
+                            certificates={certificates}
+                            currentCertificate={
+                                watchedEnableIntune === (scepProfile?.enableIntune ?? false) ? scepProfile?.caCertificate : undefined
+                            }
+                        />
 
                         <Widget
                             title="RA Profile Configuration"

@@ -146,6 +146,23 @@ describe('ScepProfileForm (edit mode)', () => {
         expect(update.payload.updateScepRequest.caCertificateUuid).toBe('cert-1');
     });
 
+    it('drops the saved certificate when Intune is toggled, forcing a re-pick from the refreshed list', async () => {
+        await renderForm(createStore(), profile, [{ uuid: 'other-cert', commonName: 'Other', serialNumber: '9' }]);
+
+        const certificateTrigger = () => container.querySelector('[data-testid="select-certificateSelect-trigger"]') as HTMLElement;
+        expect(certificateTrigger().textContent).toContain('Demo CA');
+
+        const intuneSwitch = container.querySelector('[data-testid="switch-enableIntune-input"]') as HTMLInputElement;
+        expect(intuneSwitch).toBeTruthy();
+        await act(async () => {
+            intuneSwitch.click();
+        });
+        await act(async () => {});
+
+        // Eligibility rules changed — the stored CA is no longer offered and the field is cleared.
+        expect(certificateTrigger().textContent).not.toContain('Demo CA');
+    });
+
     it('allows Update when the certificate eligibility list is empty', async () => {
         await renderForm(createStore(), profile, []);
 
