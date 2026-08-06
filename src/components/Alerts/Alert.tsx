@@ -1,12 +1,11 @@
 import cn from 'classnames';
-import { type AnimationEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type AnimationEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
 import { Check, ChevronDown, ChevronUp, CircleAlert, CircleCheck, Copy, Info, X } from 'lucide-react';
 
 import { actions } from 'ducks/alerts';
 import type { MessageModel } from 'types/alerts';
-import { sanitizeAlertMessage } from 'utils/alertMessage';
 
 import { AUTO_DISMISS_MS, COPY_CONFIRMATION_MS, EXIT_ANIMATION_MS, PROGRESS_ANIMATION_NAME } from './constants';
 
@@ -62,8 +61,6 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
     const isHiding = Boolean(alert.isHiding);
     const autoDismissEnabled = config.autoDismiss && !wasExpanded && !isHiding;
 
-    const sanitizedMessage = useMemo(() => sanitizeAlertMessage(alert.message), [alert.message]);
-
     const beginDismiss = useCallback(() => {
         dispatch(actions.hide(alert.id));
         setTimeout(() => dispatch(actions.dismiss(alert.id)), EXIT_ANIMATION_MS);
@@ -110,14 +107,13 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
     }, []);
 
     const copyMessage = useCallback(async () => {
-        const text = contentRef.current?.textContent ?? '';
         try {
-            await navigator.clipboard.writeText(text);
+            await navigator.clipboard.writeText(alert.message);
             setIsCopied(true);
         } catch {
             setIsCopied(false);
         }
-    }, []);
+    }, [alert.message]);
 
     return (
         <div
@@ -141,10 +137,10 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
                     <div className="min-w-0 flex-1">
                         <div
                             ref={contentRef}
-                            className={cn('break-words', isExpanded ? 'max-h-[50vh] overflow-y-auto' : 'line-clamp-4')}
-                            // biome-ignore lint/security/noDangerouslySetInnerHtml: alert messages may contain backend-provided HTML; sanitized with DOMPurify above
-                            dangerouslySetInnerHTML={{ __html: sanitizedMessage }}
-                        />
+                            className={cn('break-words whitespace-pre-line', isExpanded ? 'max-h-[50vh] overflow-y-auto' : 'line-clamp-4')}
+                        >
+                            {alert.message.trimEnd()}
+                        </div>
                         {(isOverflowing || isExpanded) && (
                             <div className="mt-2 flex items-center gap-4">
                                 <button type="button" className={actionButtonClassName} onClick={toggleExpanded}>

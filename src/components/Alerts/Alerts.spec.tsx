@@ -65,50 +65,53 @@ test.describe('Alerts', () => {
         await expect(page.getByTestId('alert-2')).toContainText('Something failed');
     });
 
-    test('should strip img element from XSS payload', async ({ mount, page }) => {
+    test('should render img markup as inert text', async ({ mount, page }) => {
         const xssMessage = '<img src=x onerror="window.__xss=true" alt="">Safe text';
         const messages = [createAlertMessage({ id: 4, message: xssMessage, color: 'danger' })];
         await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 5 } }} />);
 
         const alert = page.getByTestId('alert-4');
         await expect(alert).toBeVisible();
-        await expect(alert).toContainText('Safe text');
+        await expect(alert).toContainText(xssMessage);
         await expect(alert.locator('img')).toHaveCount(0);
+        const xssFired = await page.evaluate(() => (globalThis as { __xss?: boolean }).__xss);
+        expect(xssFired).toBeUndefined();
     });
 
-    test('should strip style tags, forms and attributes while keeping basic formatting', async ({ mount, page }) => {
+    test('should render markup-looking messages verbatim without creating elements', async ({ mount, page }) => {
         const message = '<style>body{display:none}</style><form><input name="user"></form><b class="evil">Important</b> detail';
         const messages = [createAlertMessage({ id: 30, message, color: 'danger' })];
         await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 31 } }} />);
 
         const alert = page.getByTestId('alert-30');
-        await expect(alert).toContainText('Important detail');
+        await expect(alert).toContainText(message);
         await expect(alert.locator('style')).toHaveCount(0);
         await expect(alert.locator('form')).toHaveCount(0);
         await expect(alert.locator('input')).toHaveCount(0);
-        await expect(alert.locator('b')).toHaveCount(1);
-        await expect(alert.locator('b')).not.toHaveAttribute('class');
+        await expect(alert.locator('b')).toHaveCount(0);
     });
 
-    test('should strip aria and data attributes so messages cannot hide from screen readers', async ({ mount, page }) => {
+    test('should render aria attributes in messages as text so they cannot hide from screen readers', async ({ mount, page }) => {
         const message = '<span aria-hidden="true" data-tracking="x">Critical failure</span>';
         const messages = [createAlertMessage({ id: 31, message, color: 'danger' })];
         await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 32 } }} />);
 
-        const span = page.getByTestId('alert-31').locator('span', { hasText: 'Critical failure' });
-        await expect(span).not.toHaveAttribute('aria-hidden');
-        await expect(span).not.toHaveAttribute('data-tracking');
+        const alert = page.getByTestId('alert-31');
+        await expect(alert).toContainText('Critical failure');
+        await expect(alert.locator('span[aria-hidden]')).toHaveCount(0);
     });
 
-    test('should remove script tags from XSS payload', async ({ mount, page }) => {
+    test('should render script markup as inert text', async ({ mount, page }) => {
         const xssMessage = '<script>window.__xss=true</script>Visible text';
         const messages = [createAlertMessage({ id: 5, message: xssMessage, color: 'danger' })];
         await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 6 } }} />);
 
         const alert = page.getByTestId('alert-5');
         await expect(alert).toBeVisible();
-        await expect(alert).toContainText('Visible text');
+        await expect(alert).toContainText(xssMessage);
         await expect(alert.locator('script')).toHaveCount(0);
+        const xssFired = await page.evaluate(() => (globalThis as { __xss?: boolean }).__xss);
+        expect(xssFired).toBeUndefined();
     });
 
     test('should keep angle-bracketed identifiers in a backend error message', async ({ mount, page }) => {
@@ -119,13 +122,15 @@ test.describe('Alerts', () => {
         await expect(page.getByTestId('alert-63')).toHaveText(message);
     });
 
-    test('should still render supported formatting around bracketed identifiers', async ({ mount, page }) => {
-        const messages = [createAlertMessage({ id: 64, message: '<b>Failed</b> for <cert-alias>', color: 'danger' })];
+    test('should keep values that look like allowlisted tags', async ({ mount, page }) => {
+        const message = 'Alias <code> conflicts with <b alias> on import';
+        const messages = [createAlertMessage({ id: 64, message, color: 'danger' })];
         await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 65 } }} />);
 
         const alert = page.getByTestId('alert-64');
-        await expect(alert).toHaveText('Failed for <cert-alias>');
-        await expect(alert.locator('b')).toHaveText('Failed');
+        await expect(alert).toHaveText(message);
+        await expect(alert.locator('code')).toHaveCount(0);
+        await expect(alert.locator('b')).toHaveCount(0);
     });
 
     test('should remove alert when dismiss button clicked', async ({ mount, page }) => {
@@ -200,8 +205,9 @@ test.describe('Alerts', () => {
         await expect(page.getByRole('button', { name: 'Show more' })).toHaveCount(0);
     });
 
-    test('should copy expanded danger message as plain text', async ({ mount, page }) => {
-        const messages = [createAlertMessage({ id: 16, message: `<b>Bold</b> ${longMessage}`, color: 'danger' })];
+    test('should copy the raw message exactly as the backend sent it', async ({ mount, page }) => {
+        const message = `<b>Bold</b> ${longMessage}`;
+        const messages = [createAlertMessage({ id: 16, message, color: 'danger' })];
         await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 17 } }} />);
 
         await page.evaluate(() => {
@@ -223,8 +229,7 @@ test.describe('Alerts', () => {
 
         await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
         const copiedTexts = await page.evaluate(() => (globalThis as { __copiedTexts?: string[] }).__copiedTexts);
-        expect(copiedTexts?.[0]).toContain('Bold');
-        expect(copiedTexts?.[0]).not.toContain('<b>');
+        expect(copiedTexts?.[0]).toBe(message);
     });
 
     test('should copy bracketed identifiers along with the rest of the message', async ({ mount, page }) => {
@@ -318,7 +323,7 @@ test.describe('Alerts', () => {
     test('should mirror the newest auto-dismissing alert into a persistent live region', async ({ mount, page }) => {
         const messages = [
             createAlertMessage({ id: 60, message: 'First success', color: 'success' }),
-            createAlertMessage({ id: 61, message: '<b>Second</b> success', color: 'success' }),
+            createAlertMessage({ id: 61, message: 'Second success', color: 'success' }),
             createAlertMessage({ id: 62, message: 'A failure', color: 'danger' }),
         ];
         await mount(<AlertsWithStore autoDismissMs={600000} preloadedState={{ [alertsSlice.name]: { messages, msgId: 63 } }} />);
