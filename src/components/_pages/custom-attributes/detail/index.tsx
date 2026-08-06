@@ -203,7 +203,7 @@ export default function CustomAttributeDetail() {
                       {
                           id: 'content',
                           columns: [
-                              'Content',
+                              customAttribute.list ? 'Options' : 'Default Content',
                               <div key="content-actions" className="flex items-center gap-2">
                                   {getAttributeContent(customAttribute.contentType, customAttribute.content)}
                                   {customAttribute?.content?.length ? (

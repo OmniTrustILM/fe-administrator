@@ -18,12 +18,14 @@ function DescriptorInputControl({
     name,
     contentType,
     fieldStepValue,
+    placeholder,
     field,
     fieldState,
 }: Readonly<{
     name: string;
     contentType: AttributeContentType;
     fieldStepValue: number | undefined;
+    placeholder: string;
     field: ControllerRenderProps;
     fieldState: { error?: { message?: string } | string; isTouched: boolean };
 }>) {
@@ -69,7 +71,7 @@ function DescriptorInputControl({
                 type={inputType}
                 id={name}
                 step={fieldStepValue}
-                placeholder="Default Content"
+                placeholder={placeholder}
                 value={field.value || ''}
                 className={`${inputClassName} text-[var(--dark-gray-color)]`}
             />
@@ -80,7 +82,7 @@ function DescriptorInputControl({
             {...field}
             id={name}
             type={inputType as 'text' | 'textarea' | 'date' | 'time'}
-            placeholder="Default Content"
+            placeholder={placeholder}
             invalid={!!invalid}
             error={error}
         />
@@ -92,8 +94,15 @@ type Props = {
     contentType: AttributeContentType;
 };
 
+const wording = (isList: boolean) => ({
+    label: isList ? 'Options' : 'Default Content',
+    placeholder: isList ? 'Option' : 'Default Content',
+    addButton: isList ? 'Add Option' : 'Add Content',
+});
+
 export default function ContentDescriptorField({ isList, contentType }: Readonly<Props>) {
     const { control, setValue, watch } = useFormContext();
+    const { label, placeholder, addButton } = wording(isList);
     const contentValues = watch('content');
     const readOnly = watch('readOnly');
 
@@ -141,12 +150,13 @@ export default function ContentDescriptorField({ isList, contentType }: Readonly
                                     : buildValidationRules([validateRequired()])
                             }
                             render={({ field, fieldState }) => {
-                                const labelComponent = index === 0 ? <Label htmlFor={name}>Default Content</Label> : null;
+                                const labelComponent = index === 0 ? <Label htmlFor={name}>{label}</Label> : null;
                                 const inputComponent = (
                                     <DescriptorInputControl
                                         name={name}
                                         contentType={contentType}
                                         fieldStepValue={fieldStepValue}
+                                        placeholder={placeholder}
                                         field={field}
                                         fieldState={fieldState}
                                     />
@@ -214,7 +224,7 @@ export default function ContentDescriptorField({ isList, contentType }: Readonly
                     }
                 >
                     <Plus className="w-4 h-4" />
-                    Add Content
+                    {addButton}
                 </Button>
             )}
         </>
