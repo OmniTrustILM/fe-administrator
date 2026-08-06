@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { NameAndUuidDto, RecipientType } from './';
+import type { NameAndUuidDto, NotificationDataCategory, RecipientType } from './';
 
 /**
  * @export
@@ -78,4 +78,10 @@ export interface NotificationProfileDetailDto {
      * @memberof NotificationProfileDetailDto
      */
     repetitions?: number;
+    /**
+     * Notification data categories included in external notifications sent by this profile
+     * @type {Array<NotificationDataCategory>}
+     * @memberof NotificationProfileDetailDto
+     */
+    eventDataCategories?: Array<NotificationDataCategory>;
 }

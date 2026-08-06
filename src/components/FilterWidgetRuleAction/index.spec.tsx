@@ -201,7 +201,10 @@ test.describe('FilterWidgetRuleAction', () => {
         await selectFieldSourceMeta(page);
         await selectFieldOption(page, 'Status');
         const input = page.getByPlaceholder('Enter filter value');
-        await input.focus();
+        // The input is readOnly until focused (autofill guard); typing must wait for the
+        // focus handler's re-render or early keystrokes are dropped.
+        await input.click();
+        await expect(input).toBeEditable();
         await page.keyboard.type('hello world');
         await expect(input).toHaveValue('hello world');
     });
