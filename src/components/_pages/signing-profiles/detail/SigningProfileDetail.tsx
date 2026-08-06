@@ -595,6 +595,7 @@ export default function SigningProfileDetail() {
                     tabUrlParam="tab"
                     tabs={[
                         {
+                            tabKey: 'details',
                             title: 'Details',
                             content: (
                                 <Container className="md:flex-row">
@@ -622,6 +623,9 @@ export default function SigningProfileDetail() {
                             ),
                         },
                         {
+                            // Stable key: the display title changes once the profile loads, which would
+                            // otherwise change the URL slug and break links captured before load.
+                            tabKey: 'workflow',
                             title: workflowTabTitle,
                             content: (
                                 <>
@@ -643,6 +647,7 @@ export default function SigningProfileDetail() {
                             ),
                         },
                         {
+                            tabKey: 'signing-scheme',
                             title: 'Signing Scheme',
                             content: (
                                 <Widget title="Signing Scheme Configuration" titleSize="large">
@@ -651,6 +656,7 @@ export default function SigningProfileDetail() {
                             ),
                         },
                         {
+                            tabKey: 'record-policy',
                             title: 'Record Policy',
                             content: (
                                 <Widget title="Signing Record Policy" titleSize="large">
@@ -670,6 +676,7 @@ export default function SigningProfileDetail() {
                             ),
                         },
                         {
+                            tabKey: 'protocols',
                             title: 'Protocols',
                             content: (
                                 <Widget

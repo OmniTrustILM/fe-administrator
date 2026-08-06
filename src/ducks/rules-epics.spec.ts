@@ -5,7 +5,17 @@ import { take, toArray } from 'rxjs/operators';
 
 import { actions as rulesActions } from './rules';
 import { actions as appRedirectActions } from './app-redirect';
-import { bulkDeleteRules, bulkDeleteActions, bulkDeleteConditions, bulkDeleteTriggers, bulkDeleteExecutions } from './rules-epics';
+import {
+    bulkDeleteRules,
+    bulkDeleteActions,
+    bulkDeleteConditions,
+    bulkDeleteTriggers,
+    bulkDeleteExecutions,
+    deleteRule,
+    deleteAction,
+    deleteCondition,
+    deleteExecution,
+} from './rules-epics';
 import type { AppEpic } from 'ducks';
 
 type EpicDeps = {
@@ -459,6 +469,37 @@ describe('bulkDeleteExecutions epic', () => {
         expect(emitted).toEqual([
             rulesActions.bulkDeleteExecutionsFailure({ error: 'Failed to delete Executions. sync fail' }),
             appRedirectActions.fetchError({ error: err, message: 'Failed to delete Executions' }),
+        ]);
+    });
+});
+
+describe('single-delete redirects', () => {
+    test('deleteRule success redirects to the Rules list', async () => {
+        const emitted = await runEpic(deleteRule, rulesActions.deleteRule({ ruleUuid: 'r-1' }), {}, 2);
+        expect(emitted).toEqual([rulesActions.deleteRuleSuccess({ ruleUuid: 'r-1' }), appRedirectActions.redirect({ url: '/rules' })]);
+    });
+
+    test('deleteCondition success redirects to the Conditions tab', async () => {
+        const emitted = await runEpic(deleteCondition, rulesActions.deleteCondition({ conditionUuid: 'c-1' }), {}, 2);
+        expect(emitted).toEqual([
+            rulesActions.deleteConditionSuccess({ conditionUuid: 'c-1' }),
+            appRedirectActions.redirect({ url: '/rules?tab=conditions' }),
+        ]);
+    });
+
+    test('deleteAction success redirects to the Actions list', async () => {
+        const emitted = await runEpic(deleteAction, rulesActions.deleteAction({ actionUuid: 'a-1' }), {}, 2);
+        expect(emitted).toEqual([
+            rulesActions.deleteActionSuccess({ actionUuid: 'a-1' }),
+            appRedirectActions.redirect({ url: '/actions' }),
+        ]);
+    });
+
+    test('deleteExecution success redirects to the Executions tab', async () => {
+        const emitted = await runEpic(deleteExecution, rulesActions.deleteExecution({ executionUuid: 'e-1' }), {}, 2);
+        expect(emitted).toEqual([
+            rulesActions.deleteExecutionSuccess({ executionUuid: 'e-1' }),
+            appRedirectActions.redirect({ url: '/actions?tab=executions' }),
         ]);
     });
 });

@@ -255,7 +255,7 @@ const createTrigger: AppEpic = (action$, state, deps) => {
     );
 };
 
-const deleteExecution: AppEpic = (action$, state, deps) => {
+export const deleteExecution: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.deleteExecution.match),
         switchMap((action) =>
@@ -263,7 +263,7 @@ const deleteExecution: AppEpic = (action$, state, deps) => {
                 switchMap(() =>
                     of(
                         slice.actions.deleteExecutionSuccess({ executionUuid: action.payload.executionUuid }),
-                        appRedirectActions.redirect({ url: `../../actions?tab=executions` }),
+                        appRedirectActions.redirect({ url: `/actions?tab=executions` }),
                     ),
                 ),
                 catchError((err) =>
@@ -277,7 +277,7 @@ const deleteExecution: AppEpic = (action$, state, deps) => {
     );
 };
 
-const deleteAction: AppEpic = (action$, state, deps) => {
+export const deleteAction: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.deleteAction.match),
         switchMap((action) =>
@@ -285,7 +285,7 @@ const deleteAction: AppEpic = (action$, state, deps) => {
                 switchMap(() =>
                     of(
                         slice.actions.deleteActionSuccess({ actionUuid: action.payload.actionUuid }),
-                        appRedirectActions.redirect({ url: `../actions` }),
+                        appRedirectActions.redirect({ url: `/actions` }),
                     ),
                 ),
                 catchError((err) =>
@@ -299,7 +299,7 @@ const deleteAction: AppEpic = (action$, state, deps) => {
     );
 };
 
-const deleteCondition: AppEpic = (action$, state, deps) => {
+export const deleteCondition: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.deleteCondition.match),
         switchMap((action) =>
@@ -307,7 +307,7 @@ const deleteCondition: AppEpic = (action$, state, deps) => {
                 switchMap(() =>
                     of(
                         slice.actions.deleteConditionSuccess({ conditionUuid: action.payload.conditionUuid }),
-                        appRedirectActions.redirect({ url: `../../rules?tab=conditions` }),
+                        appRedirectActions.redirect({ url: `/rules?tab=conditions` }),
                     ),
                 ),
                 catchError((err) =>
@@ -321,7 +321,7 @@ const deleteCondition: AppEpic = (action$, state, deps) => {
     );
 };
 
-const deleteRule: AppEpic = (action$, state, deps) => {
+export const deleteRule: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.deleteRule.match),
         switchMap((action) =>
@@ -329,7 +329,7 @@ const deleteRule: AppEpic = (action$, state, deps) => {
                 switchMap(() =>
                     of(
                         slice.actions.deleteRuleSuccess({ ruleUuid: action.payload.ruleUuid }),
-                        appRedirectActions.redirect({ url: `../rules` }),
+                        appRedirectActions.redirect({ url: `/rules` }),
                     ),
                 ),
                 catchError((err) =>
