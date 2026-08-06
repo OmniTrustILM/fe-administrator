@@ -48,25 +48,33 @@ test.describe('CustomAttributeAddSelect', () => {
         expect((added[0] as { uuid: string; properties: { label: string } }).properties.label).toBe('First Attr');
     });
 
-    test('calls onAdd only for newly added options when selection grows', async ({ mount, page }) => {
+    test('closes the popover after selection so the added field below stays visible', async ({ mount, page }) => {
         const descriptors = [customDescriptor('id-1', 'One'), customDescriptor('id-2', 'Two')];
         const added: unknown[] = [];
         await mount(<CustomAttributeAddSelect attributeDescriptors={descriptors} onAdd={(attr) => added.push(attr)} />);
         await page.getByTestId('select-selectAddCustomAttribute-trigger').click();
         await page.getByRole('option', { name: 'One' }).click();
         expect(added).toHaveLength(1);
-        // Multi-select keeps popover open, click second option
+        await expect(page.getByRole('option')).toHaveCount(0);
+    });
+
+    test('allows adding another attribute by reopening', async ({ mount, page }) => {
+        const descriptors = [customDescriptor('id-1', 'One'), customDescriptor('id-2', 'Two')];
+        const added: unknown[] = [];
+        await mount(<CustomAttributeAddSelect attributeDescriptors={descriptors} onAdd={(attr) => added.push(attr)} />);
+        await page.getByTestId('select-selectAddCustomAttribute-trigger').click();
+        await page.getByRole('option', { name: 'One' }).click();
+        await page.getByTestId('select-selectAddCustomAttribute-trigger').click();
         await page.getByRole('option', { name: 'Two' }).click();
         expect(added).toHaveLength(2);
         expect((added[1] as { uuid: string }).uuid).toBe('id-2');
     });
 
-    test('handles onChange with empty values (clear)', async ({ mount, page }) => {
+    test('keeps showing the placeholder instead of the picked value', async ({ mount, page }) => {
         const descriptors = [customDescriptor('x', 'Only')];
-        const added: unknown[] = [];
-        await mount(<CustomAttributeAddSelect attributeDescriptors={descriptors} onAdd={(attr) => added.push(attr)} />);
-        // Initially nothing selected — no clear button rendered. Verify no onAdd was triggered.
-        await expect(page.getByTestId('select-selectAddCustomAttribute-clear')).toHaveCount(0);
-        expect(added).toHaveLength(0);
+        await mount(<CustomAttributeAddSelect attributeDescriptors={descriptors} onAdd={() => {}} />);
+        await page.getByTestId('select-selectAddCustomAttribute-trigger').click();
+        await page.getByRole('option', { name: 'Only' }).click();
+        await expect(page.getByTestId('select-selectAddCustomAttribute-trigger')).toContainText('Show...');
     });
 });

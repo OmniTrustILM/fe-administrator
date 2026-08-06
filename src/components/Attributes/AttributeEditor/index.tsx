@@ -80,16 +80,6 @@ const contentItemLabel = (value: { reference?: string; data?: unknown } | null |
     return String(data);
 };
 
-/**
- * A descriptor carries a configured default value when it holds content and is neither a list nor a
- * RESOURCE — for those `content` is the set of selectable options, not a value to pre-fill.
- */
-const hasDefaultValue = (descriptor: CustomAttributeModel): boolean =>
-    !descriptor.properties.list &&
-    descriptor.contentType !== AttributeContentType.Resource &&
-    Array.isArray(descriptor.content) &&
-    descriptor.content.length > 0;
-
 export type Props = {
     id: string;
     attributeDescriptors: AttributeDescriptorModel[];
@@ -398,15 +388,16 @@ function AttributeEditorInner({
     /* c8 ignore stop */
 
     /*
-     * Get non-required custom attributes, without a value assigned and without a default value.
-     * An attribute with a default value is rendered right away so its default is visible and editable.
+     * Get non-required custom attributes, without a value assigned. They stay behind the
+     * "Show custom attribute" selector even when the descriptor carries a default value — the user
+     * opts in per attribute, and only then the default is pre-filled (see Issue: #1906).
      */
     const initiallyHiddenCustomAttributeDescriptors = useMemo(
         () =>
             attributeDescriptors.filter((descriptor) => {
                 if (isCustomAttributeModel(descriptor)) {
                     const attribute = attributes.find((el) => el.name === descriptor.name);
-                    return !descriptor.properties.required && !attribute?.content && !hasDefaultValue(descriptor);
+                    return !descriptor.properties.required && !attribute?.content;
                 }
                 return false;
             }),
@@ -784,9 +775,7 @@ function AttributeEditorInner({
         setPrevAttributes(attributes);
         setShownCustomAttributes(
             attributeDescriptors.filter(
-                (descriptor) =>
-                    isCustomAttributeModel(descriptor) &&
-                    (attributes.some((attr) => attr.uuid === descriptor.uuid) || hasDefaultValue(descriptor)),
+                (descriptor) => isCustomAttributeModel(descriptor) && attributes.some((attr) => attr.uuid === descriptor.uuid),
             ),
         );
 
@@ -796,6 +785,10 @@ function AttributeEditorInner({
 
                 // Skip if this attribute was deleted
                 if (deletedAttributes.includes(descriptor.name)) {
+                    return;
+                }
+
+                if (initiallyHiddenCustomAttributeDescriptors.some((el) => el.uuid === descriptor.uuid)) {
                     return;
                 }
 
@@ -840,6 +833,7 @@ function AttributeEditorInner({
         getAttributeStaticOptions,
         deletedAttributes,
         reAddedAttributes,
+        initiallyHiddenCustomAttributeDescriptors,
     ]);
 
     /**

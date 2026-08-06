@@ -19,7 +19,13 @@ export type AttributeEditorTestWrapperProps = {
     kind?: string;
     withRemoveAction?: boolean;
     preloadedState?: Record<string, unknown>;
+    renderFormValues?: boolean;
 };
+
+function FormValuesProbe() {
+    const values = ReactHookForm.useWatch();
+    return <pre data-testid="form-values">{JSON.stringify(values)}</pre>;
+}
 
 /** Build form defaultValues so Data/Custom fields exist on first paint (before AttributeEditor effects run) */
 function buildAttributeDefaultValues(
@@ -38,17 +44,23 @@ function buildAttributeDefaultValues(
     return { [key]: inner };
 }
 
+// Stable defaults: a fresh array here would change prop identity on every wrapper render, which
+// AttributeEditor's initial effect reads as "descriptors changed" and resets user-shown attributes.
+const EMPTY_ATTRIBUTES: AttributeResponseModel[] = [];
+const EMPTY_GROUP_CALLBACK_ATTRIBUTES: AttributeDescriptorModel[] = [];
+
 export function AttributeEditorTestWrapper({
     id,
     attributeDescriptors,
-    attributes = [],
-    groupAttributesCallbackAttributes = [],
+    attributes = EMPTY_ATTRIBUTES,
+    groupAttributesCallbackAttributes = EMPTY_GROUP_CALLBACK_ATTRIBUTES,
     setGroupAttributesCallbackAttributes,
     connectorUuid,
     functionGroupCode,
     kind,
     withRemoveAction = true,
     preloadedState,
+    renderFormValues = false,
 }: Readonly<AttributeEditorTestWrapperProps>) {
     const store = useMemo(() => createMockStore(preloadedState), [preloadedState]);
     const defaultValues = useMemo(
@@ -73,6 +85,7 @@ export function AttributeEditorTestWrapper({
                         kind={kind}
                         withRemoveAction={withRemoveAction}
                     />
+                    {renderFormValues && <FormValuesProbe />}
                 </ReactHookForm.FormProvider>
             </MemoryRouter>
         </Provider>

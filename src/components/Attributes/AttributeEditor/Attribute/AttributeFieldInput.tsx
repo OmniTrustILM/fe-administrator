@@ -1,7 +1,7 @@
 import type React from 'react';
 import { Controller, type ControllerRenderProps, useFormContext, useFormState } from 'react-hook-form';
 import Label from 'components/Label';
-import TextInput from 'components/TextInput';
+import TextInput, { inputBaseClassName } from 'components/TextInput';
 import DatePicker from 'components/DatePicker';
 import Switch from 'components/Switch';
 import Editor from 'components/Input/CodeEditor/CodeEditor';
@@ -54,10 +54,10 @@ function StandardInputControl({
     const transformed = transformInputValueForDescriptor(field.value, descriptor);
     const textValue = transformed ? String(transformed) : '';
     const validationVisible = fieldState.isTouched || submitCount > 0;
-    const inputClassName = cn(
-        'py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600',
-        { 'border-red-500 focus:border-red-500 focus:ring-red-500': validationVisible && fieldState.invalid },
-    );
+    const inputClassName = cn(inputBaseClassName, {
+        'border-red-500 focus:border-red-500 focus:ring-red-500': validationVisible && fieldState.invalid,
+        'bg-[#F8FAFC]': descriptor.properties.readOnly,
+    });
 
     if (descriptor.contentType === AttributeContentType.Boolean) {
         return (
