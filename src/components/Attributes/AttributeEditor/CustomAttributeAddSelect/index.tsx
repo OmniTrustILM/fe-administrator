@@ -38,7 +38,8 @@ export default function CustomAttributeAddSelect({ attributeDescriptors, onAdd }
                 placeholder="Show..."
                 value=""
                 onChange={(value) => {
-                    const attribute = uuidToAttributeMap.get(String(value));
+                    // Every option here carries a uuid string, so anything else is not a selection.
+                    const attribute = typeof value === 'string' ? uuidToAttributeMap.get(value) : undefined;
                     if (attribute) {
                         onAdd(attribute);
                     }
