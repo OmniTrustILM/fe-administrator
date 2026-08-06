@@ -64,8 +64,17 @@ test.describe('AttributeFieldInput', () => {
 
         const textarea = page.locator('#testField');
         await expect(textarea).toHaveValue('Filled value');
-        // --dark-gray-color (#1f2937), the shared input text color
-        await expect(textarea).toHaveCSS('color', 'rgb(31, 41, 55)');
+        // Must match the shared input text color token, whatever its current value is —
+        // and therefore not the gray inherited from the ancestor above.
+        const tokenColor = await textarea.evaluate((el) => {
+            const probe = document.createElement('span');
+            probe.style.color = 'var(--dark-gray-color)';
+            document.body.appendChild(probe);
+            const color = getComputedStyle(probe).color;
+            probe.remove();
+            return color;
+        });
+        await expect(textarea).toHaveCSS('color', tokenColor);
     });
 
     test('renders Switch for Boolean contentType', async ({ mount, page }) => {
