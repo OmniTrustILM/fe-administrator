@@ -11,6 +11,7 @@ import { getStepValue } from 'utils/common-utils';
 import { validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { ContentFieldConfiguration } from '../index';
+import { getContentDescriptorLabels } from '../contentDescriptorLabels';
 import { Plus } from 'lucide-react';
 import cn from 'classnames';
 
@@ -94,15 +95,9 @@ type Props = {
     contentType: AttributeContentType;
 };
 
-const wording = (isList: boolean) => ({
-    label: isList ? 'Options' : 'Default Content',
-    placeholder: isList ? 'Option' : 'Default Content',
-    addButton: isList ? 'Add Option' : 'Add Content',
-});
-
 export default function ContentDescriptorField({ isList, contentType }: Readonly<Props>) {
     const { control, setValue, watch } = useFormContext();
-    const { label, placeholder, addButton } = wording(isList);
+    const { label, placeholder, addButton } = getContentDescriptorLabels(isList);
     const contentValues = watch('content');
     const readOnly = watch('readOnly');
 
