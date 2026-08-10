@@ -316,7 +316,6 @@ test.describe('AttributeEditor', () => {
         ];
         await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
 
-        // hidden by default — optional attributes join the form only when the user asks for them
         await expect(page.getByText('Show custom attribute')).toBeVisible({ timeout: 10000 });
         const input = page.getByTestId('text-input-__attributes__testEditor__.customDefault');
         await expect(input).toHaveCount(0);
@@ -324,10 +323,39 @@ test.describe('AttributeEditor', () => {
         await page.getByTestId('select-selectAddCustomAttribute-trigger').click();
         await page.getByRole('option', { name: 'Custom Default' }).click();
 
-        // once opted in, the configured default is pre-filled and editable
         await expect(input).toBeVisible({ timeout: 10000 });
         await expect(input).toHaveValue('customDefaultValue');
         await expect(input).toBeEnabled();
+    });
+
+    test('an opted-in custom attribute survives a descriptor refresh', async ({ mount, page }) => {
+        const descriptors: AttributeDescriptorModel[] = [
+            customDescriptor({
+                name: 'customDefault',
+                uuid: 'custom-default-uuid',
+                properties: { label: 'Custom Default', required: false, readOnly: false, list: false, multiSelect: false } as any,
+                content: [{ data: 'customDefaultValue' }] as any,
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} withDescriptorRefresh />);
+
+        await page.getByTestId('select-selectAddCustomAttribute-trigger').click();
+        await page.getByRole('option', { name: 'Custom Default' }).click();
+
+        const input = page.getByTestId('text-input-__attributes__testEditor__.customDefault');
+        await expect(input).toBeVisible({ timeout: 10000 });
+        // TextInput starts readonly to block autofill and drops it on focus, so click before typing.
+        await input.click();
+        await input.fill('typedValue');
+
+        await page.getByTestId('refresh-descriptors').click();
+        // Let React flush the effects the refresh schedules, otherwise the assertions below pass on the
+        // pre-refresh render and the test would never see the field disappear.
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(null)))));
+
+        // The field must not vanish — its value stays in the form state and would be submitted invisibly.
+        await expect(input).toBeVisible();
+        await expect(input).toHaveValue('typedValue');
     });
 
     test('hidden optional custom attribute default is not silently seeded into the form values', async ({ mount, page }) => {

@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
@@ -20,6 +20,9 @@ export type AttributeEditorTestWrapperProps = {
     withRemoveAction?: boolean;
     preloadedState?: Record<string, unknown>;
     renderFormValues?: boolean;
+    /** Renders a button that hands AttributeEditor the same descriptors under a new identity, the way a
+     *  parent re-render or a resolved group callback does. */
+    withDescriptorRefresh?: boolean;
 };
 
 function FormValuesProbe() {
@@ -61,8 +64,14 @@ export function AttributeEditorTestWrapper({
     withRemoveAction = true,
     preloadedState,
     renderFormValues = false,
+    withDescriptorRefresh = false,
 }: Readonly<AttributeEditorTestWrapperProps>) {
     const store = useMemo(() => createMockStore(preloadedState), [preloadedState]);
+    const [refreshCount, setRefreshCount] = useState(0);
+    const currentDescriptors = useMemo(
+        () => (refreshCount === 0 ? attributeDescriptors : [...attributeDescriptors]),
+        [attributeDescriptors, refreshCount],
+    );
     const defaultValues = useMemo(
         () => ({ ...buildAttributeDefaultValues(id, attributeDescriptors, attributes) }),
         [id, attributeDescriptors, attributes],
@@ -76,7 +85,7 @@ export function AttributeEditorTestWrapper({
                 <ReactHookForm.FormProvider {...methods}>
                     <AttributeEditor
                         id={id}
-                        attributeDescriptors={attributeDescriptors}
+                        attributeDescriptors={currentDescriptors}
                         attributes={attributes}
                         groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                         setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes ?? (() => {})}
@@ -85,6 +94,11 @@ export function AttributeEditorTestWrapper({
                         kind={kind}
                         withRemoveAction={withRemoveAction}
                     />
+                    {withDescriptorRefresh && (
+                        <button type="button" data-testid="refresh-descriptors" onClick={() => setRefreshCount((count) => count + 1)}>
+                            Refresh descriptors
+                        </button>
+                    )}
                     {renderFormValues && <FormValuesProbe />}
                 </ReactHookForm.FormProvider>
             </MemoryRouter>

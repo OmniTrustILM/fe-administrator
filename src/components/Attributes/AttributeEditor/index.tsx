@@ -773,11 +773,15 @@ function AttributeEditorInner({
         setPrevGroupDescriptors(groupAttributesCallbackAttributes);
         setPrevDescriptors(attributeDescriptors);
         setPrevAttributes(attributes);
-        setShownCustomAttributes(
-            attributeDescriptors.filter(
-                (descriptor) => isCustomAttributeModel(descriptor) && attributes.some((attr) => attr.uuid === descriptor.uuid),
-            ),
-        );
+        setShownCustomAttributes((prev) => {
+            const next = attributeDescriptors.filter(
+                (descriptor) =>
+                    isCustomAttributeModel(descriptor) &&
+                    (attributes.some((attr) => attr.uuid === descriptor.uuid) || prev.some((el) => el.uuid === descriptor.uuid)),
+            );
+            const unchanged = next.length === prev.length && next.every((descriptor, index) => descriptor.uuid === prev[index].uuid);
+            return unchanged ? prev : next;
+        });
 
         descriptorsToLoad.forEach((descriptor) => {
             if (isDataAttributeModel(descriptor) || isGroupAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) {
