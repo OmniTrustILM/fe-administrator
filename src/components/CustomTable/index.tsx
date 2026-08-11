@@ -563,7 +563,7 @@ function CustomTable({
                 <th
                     scope="col"
                     className={cn(
-                        'p-2.5 text-start text-xs font-medium text-content-subtle uppercase !color-gray-500 bg-surface-sunken whitespace-nowrap',
+                        'p-2.5 text-start text-xs font-medium text-content-subtle uppercase bg-surface-sunken whitespace-nowrap',
                         {
                             'cursor-pointer': header.sortable,
                         },

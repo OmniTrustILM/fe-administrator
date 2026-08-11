@@ -53,7 +53,7 @@ function Tooltip({
                             )}
                         >
                             {content}
-                            <RadixTooltip.Arrow className="fill-[var(--surface-inverse)]" />
+                            <RadixTooltip.Arrow className="fill-surface-inverse" />
                         </RadixTooltip.Content>
                     </RadixTooltip.Portal>
                 </span>

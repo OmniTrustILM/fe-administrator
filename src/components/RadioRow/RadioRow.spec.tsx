@@ -92,6 +92,34 @@ test.describe('RadioRow', () => {
         await expect(component.getByRole('radio')).toHaveAttribute('name', 'csr-validation');
     });
 
+    // @tailwindcss/forms paints the checked radio with `background-color: currentColor` from the
+    // base layer, and any unconditional bg-* utility outranks it because utilities is the later
+    // cascade layer. The dot in the checked state is a white SVG circle, so clobbering that fill
+    // with a light surface makes a checked radio look unchecked. Hence not-checked:bg-surface-raised
+    // rather than bg-surface-raised, and hence these two tests assert computed colour: every other
+    // test in this file asserts class names, which cannot tell the two apart.
+    test('should keep the brand fill on the checked radio', async ({ mount }) => {
+        const component = await mount(
+            <RadioRow checked={true} onSelect={() => {}}>
+                Option
+            </RadioRow>,
+        );
+        await expect(component.getByRole('radio')).toHaveCSS('background-color', 'rgb(0, 115, 207)');
+    });
+
+    test('should give the unchecked radio the themed surface rather than hardcoded white', async ({ mount, page }) => {
+        const component = await mount(
+            <RadioRow checked={false} onSelect={() => {}}>
+                Option
+            </RadioRow>,
+        );
+        await expect(component.getByRole('radio')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+
+        await page.evaluate(() => document.documentElement.classList.add('dark'));
+        await expect(component.getByRole('radio')).toHaveCSS('background-color', 'rgb(23, 23, 23)');
+        await page.evaluate(() => document.documentElement.classList.remove('dark'));
+    });
+
     test('should render multiple children', async ({ mount }) => {
         const component = await mount(
             <RadioRow checked={false} onSelect={() => {}}>

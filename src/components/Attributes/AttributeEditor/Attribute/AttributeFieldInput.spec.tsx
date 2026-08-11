@@ -68,7 +68,7 @@ test.describe('AttributeFieldInput', () => {
         // and therefore not the gray inherited from the ancestor above.
         const tokenColor = await textarea.evaluate((el) => {
             const probe = document.createElement('span');
-            probe.style.color = 'var(--dark-gray-color)';
+            probe.style.color = 'var(--content)';
             document.body.appendChild(probe);
             const color = getComputedStyle(probe).color;
             probe.remove();

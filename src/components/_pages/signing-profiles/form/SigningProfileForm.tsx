@@ -606,7 +606,7 @@ export default function SigningProfileForm() {
                                         value={wt}
                                         checked={wt === workflowTypeValue}
                                         disabled={!isSupported}
-                                        className="accent-brand-solid"
+                                        className="not-checked:bg-surface-raised accent-brand-solid"
                                         onChange={() => setValue('workflowType', wt, { shouldDirty: true })}
                                     />
                                     <span className="text-sm font-medium">{workflowTypeLabels[wt]}</span>
@@ -839,7 +839,7 @@ export default function SigningProfileForm() {
                                         checked={signingSchemeValue === scheme}
                                         disabled={!isSupported}
                                         onChange={() => isSupported && setValue('signingScheme', scheme, { shouldDirty: true })}
-                                        className="accent-brand-solid"
+                                        className="not-checked:bg-surface-raised accent-brand-solid"
                                     />
                                     <span className="text-sm font-medium">{signingSchemeLabels[scheme]}</span>
                                 </label>
@@ -874,7 +874,7 @@ export default function SigningProfileForm() {
                                             checked={managedSigningTypeValue === mst}
                                             disabled={!isSupported}
                                             onChange={() => isSupported && setValue('managedSigningType', mst, { shouldDirty: true })}
-                                            className="accent-brand-solid"
+                                            className="not-checked:bg-surface-raised accent-brand-solid"
                                         />
                                         <span className="text-sm font-medium">{managedSigningTypeLabels[mst]}</span>
                                     </label>

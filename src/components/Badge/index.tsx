@@ -34,7 +34,12 @@ function Badge({
 }: Readonly<Props>) {
     const colorClasses = {
         gray: 'bg-surface-inverse text-content-inverse',
-        secondary: 'bg-surface-sunken text-content',
+        // Inset ring rather than a border: surface-sunken is only ~1.1:1 against the surface-raised
+        // cards and table bodies badges sit on, so without a boundary the chrome disappears and
+        // status badges render as bare text. outline is the token guaranteed at 3:1 against
+        // surface-raised in both themes (see theme-tokens.spec.ts), and an inset ring draws inside
+        // the element, so no badge changes size.
+        secondary: 'bg-surface-sunken text-content inset-ring-1 inset-ring-outline',
         success: fill === 'surface' ? 'bg-success-surface text-success' : 'bg-success-solid text-content-on-brand',
         primary: 'bg-brand-solid text-content-on-brand',
         danger: fill === 'surface' ? 'bg-danger-surface text-danger' : 'bg-danger-solid text-content-on-brand',

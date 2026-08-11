@@ -36,7 +36,7 @@ function CertificateStatus({ status, badgeSize = 'small', asIcon = false }: Prop
             </span>
         </Tooltip>
     ) : (
-        <Badge size={badgeSize} style={{ backgroundColor: color }} dataTestId="certificate-status">
+        <Badge size={badgeSize} style={{ backgroundColor: color }} className="text-content-on-brand" dataTestId="certificate-status">
             {capitalize(text)}
         </Badge>
     );

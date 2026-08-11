@@ -627,7 +627,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                                                     value={option.value}
                                                                     checked={field.value === option.value}
                                                                     onChange={() => field.onChange(option.value)}
-                                                                    className="shrink-0 mt-0.5 rounded-full border-outline text-brand-solid focus:ring-brand disabled:opacity-50 disabled:pointer-events-none"
+                                                                    className="shrink-0 mt-0.5 rounded-full not-checked:bg-surface-raised border-outline text-brand-solid focus:ring-brand disabled:opacity-50 disabled:pointer-events-none"
                                                                 />
                                                                 <span className="ml-2">
                                                                     <span className="block text-sm text-content">{option.label}</span>

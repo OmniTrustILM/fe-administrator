@@ -43,7 +43,7 @@ function DescriptorInputControl({
                 id={name}
                 checked={field.value}
                 onChange={(e) => field.onChange(e.target.checked)}
-                className="h-4 w-4 text-brand-solid focus:ring-brand border-outline rounded"
+                className="h-4 w-4 not-checked:bg-surface-raised text-brand-solid focus:ring-brand border-outline rounded"
             />
         );
     }

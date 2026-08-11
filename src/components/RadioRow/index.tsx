@@ -26,7 +26,7 @@ export default function RadioRow({ checked, onSelect, children, maxWidth, disabl
                     checked={checked}
                     onChange={onSelect}
                     disabled={disabled}
-                    className="shrink-0 mt-0.5 border-outline text-brand-solid focus:ring-brand"
+                    className="shrink-0 mt-0.5 not-checked:bg-surface-raised border-outline text-brand-solid focus:ring-brand"
                 />
                 <div className="flex items-center gap-2 flex-wrap text-sm">{children}</div>
             </label>
