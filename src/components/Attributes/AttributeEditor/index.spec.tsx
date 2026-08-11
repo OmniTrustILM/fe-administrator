@@ -155,7 +155,7 @@ test.describe('AttributeEditor', () => {
         await expect(page.getByTestId('text-input-__attributes__testEditor__.toDelete')).toHaveCount(0);
     });
 
-    test.skip('add custom attribute via CustomAttributeAddSelect', async ({ mount, page }) => {
+    test('add custom attribute via CustomAttributeAddSelect', async ({ mount, page }) => {
         const descriptors: AttributeDescriptorModel[] = [
             customDescriptor({
                 name: 'addable',
@@ -165,7 +165,8 @@ test.describe('AttributeEditor', () => {
         ];
         await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
         await expect(page.getByText('Show custom attribute')).toBeVisible({ timeout: 10000 });
-        await page.getByTestId('select-selectAddCustomAttribute-input').selectOption('addable-uuid', { force: true });
+        await page.getByTestId('select-selectAddCustomAttribute-trigger').click();
+        await page.getByRole('option', { name: 'Addable Custom' }).click();
         await expect(page.getByTestId('text-input-__attributes__testEditor__.addable')).toBeVisible({ timeout: 5000 });
     });
 
@@ -301,7 +302,10 @@ test.describe('AttributeEditor', () => {
         await expect(input).toBeEnabled();
     });
 
-    test('optional custom attribute with a default value is shown pre-filled instead of being hidden', async ({ mount, page }) => {
+    test('optional custom attribute with a default value stays hidden until the user opts in, then is pre-filled', async ({
+        mount,
+        page,
+    }) => {
         const descriptors: AttributeDescriptorModel[] = [
             customDescriptor({
                 name: 'customDefault',
@@ -311,12 +315,83 @@ test.describe('AttributeEditor', () => {
             }),
         ];
         await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
+
+        await expect(page.getByText('Show custom attribute')).toBeVisible({ timeout: 10000 });
         const input = page.getByTestId('text-input-__attributes__testEditor__.customDefault');
+        await expect(input).toHaveCount(0);
+
+        await page.getByTestId('select-selectAddCustomAttribute-trigger').click();
+        await page.getByRole('option', { name: 'Custom Default' }).click();
+
         await expect(input).toBeVisible({ timeout: 10000 });
         await expect(input).toHaveValue('customDefaultValue');
         await expect(input).toBeEnabled();
-        // it is already shown, so the selector must not offer it again
-        await expect(page.getByText('Show custom attribute')).toHaveCount(0);
+    });
+
+    test('an opted-in custom attribute survives a descriptor refresh', async ({ mount, page }) => {
+        const descriptors: AttributeDescriptorModel[] = [
+            customDescriptor({
+                name: 'customDefault',
+                uuid: 'custom-default-uuid',
+                properties: { label: 'Custom Default', required: false, readOnly: false, list: false, multiSelect: false } as any,
+                content: [{ data: 'customDefaultValue' }] as any,
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} withDescriptorRefresh />);
+
+        await page.getByTestId('select-selectAddCustomAttribute-trigger').click();
+        await page.getByRole('option', { name: 'Custom Default' }).click();
+
+        const input = page.getByTestId('text-input-__attributes__testEditor__.customDefault');
+        await expect(input).toBeVisible({ timeout: 10000 });
+        // TextInput starts readonly to block autofill and drops it on focus, so click before typing.
+        await input.click();
+        await input.fill('typedValue');
+
+        await page.getByTestId('refresh-descriptors').click();
+        // Let React flush the effects the refresh schedules, otherwise the assertions below pass on the
+        // pre-refresh render and the test would never see the field disappear.
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(null)))));
+
+        // The field must not vanish — its value stays in the form state and would be submitted invisibly.
+        await expect(input).toBeVisible();
+        await expect(input).toHaveValue('typedValue');
+    });
+
+    test('hidden optional custom attribute default is not silently seeded into the form values', async ({ mount, page }) => {
+        const descriptors: AttributeDescriptorModel[] = [
+            customDescriptor({
+                name: 'customDefault',
+                uuid: 'custom-default-uuid',
+                properties: { label: 'Custom Default', required: false, readOnly: false, list: false, multiSelect: false } as any,
+                content: [{ data: 'customDefaultValue' }] as any,
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} renderFormValues />);
+        await expect(page.getByText('Show custom attribute')).toBeVisible({ timeout: 10000 });
+
+        // While hidden, the default must not sit in the form state — it would end up in the request payload.
+        await expect(page.getByTestId('form-values')).not.toContainText('customDefaultValue');
+
+        await page.getByTestId('select-selectAddCustomAttribute-trigger').click();
+        await page.getByRole('option', { name: 'Custom Default' }).click();
+        await expect(page.getByTestId('form-values')).toContainText('customDefaultValue', { timeout: 10000 });
+    });
+
+    test('required custom attribute with a default value is shown and pre-filled from the start', async ({ mount, page }) => {
+        const descriptors: AttributeDescriptorModel[] = [
+            customDescriptor({
+                name: 'requiredDefault',
+                uuid: 'required-default-uuid',
+                properties: { label: 'Required Default', required: true, readOnly: false, list: false, multiSelect: false } as any,
+                content: [{ data: 'requiredDefaultValue' }] as any,
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
+        const input = page.getByTestId('text-input-__attributes__testEditor__.requiredDefault');
+        await expect(input).toBeVisible({ timeout: 10000 });
+        await expect(input).toHaveValue('requiredDefaultValue');
+        await expect(input).toBeEnabled();
     });
 
     test('attribute value takes precedence over the descriptor default', async ({ mount, page }) => {

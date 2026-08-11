@@ -50,6 +50,33 @@ test.describe('AttributeFieldInput', () => {
         await expect(textarea).toHaveAttribute('rows', '4');
     });
 
+    test('textarea text color does not depend on the ancestor text color', async ({ mount, page }) => {
+        const descriptor = minimalDescriptor(AttributeContentType.Text, {
+            properties: { ...defaultProperties, label: 'Description' },
+        } as any);
+        // Tailwind preflight makes form controls inherit color; without an explicit class a gray
+        // ancestor turns the value into placeholder-gray text.
+        await mount(
+            <div className="text-gray-400">
+                <AttributeFieldInputTestWrapper name="testField" descriptor={descriptor} defaultValues={{ testField: 'Filled value' }} />
+            </div>,
+        );
+
+        const textarea = page.locator('#testField');
+        await expect(textarea).toHaveValue('Filled value');
+        // Must match the shared input text color token, whatever its current value is —
+        // and therefore not the gray inherited from the ancestor above.
+        const tokenColor = await textarea.evaluate((el) => {
+            const probe = document.createElement('span');
+            probe.style.color = 'var(--dark-gray-color)';
+            document.body.appendChild(probe);
+            const color = getComputedStyle(probe).color;
+            probe.remove();
+            return color;
+        });
+        await expect(textarea).toHaveCSS('color', tokenColor);
+    });
+
     test('renders Switch for Boolean contentType', async ({ mount, page }) => {
         const descriptor = minimalDescriptor(AttributeContentType.Boolean, {
             properties: { ...defaultProperties, label: 'Enable feature' },
