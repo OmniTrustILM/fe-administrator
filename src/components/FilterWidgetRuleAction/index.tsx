@@ -524,7 +524,7 @@ export default function FilterWidgetRuleAction({
             // Compare only the YYYY-MM-DD part: saved data uses plain dates, API field values use ISO strings.
             const findMatchingFieldOption = (v: unknown): { label: string; value: SelectableValue } => {
                 const vRecord = asRecord(v);
-                const rawStr = vRecord?.value !== undefined ? toDisplayString(vRecord.value) : String(v);
+                const rawStr = vRecord?.value === undefined ? String(v) : toDisplayString(vRecord.value);
                 const datePart = rawStr.split('T')[0];
                 if (Array.isArray(currentFieldThis.value)) {
                     const matched = (currentFieldThis.value as unknown[]).find(
