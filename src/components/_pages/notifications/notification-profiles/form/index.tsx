@@ -380,7 +380,7 @@ function EventDataCategoryFields() {
     return (
         <fieldset>
             <legend className="text-sm font-medium">Event data</legend>
-            <p className="text-sm text-gray-500 mb-2">
+            <p className="text-sm text-content-subtle mb-2">
                 Data included in external notifications when the event's subject supports it; all categories are off by default.
             </p>
             <Controller
@@ -404,7 +404,7 @@ function EventDataCategoryFields() {
                                     }
                                 />
                                 {/* Indented to the switch width plus its gap, so the help text lines up with the label. */}
-                                <p className="ml-16 text-sm text-gray-500">{getEnumDescription(categoryEnum, category)}</p>
+                                <p className="ml-16 text-sm text-content-subtle">{getEnumDescription(categoryEnum, category)}</p>
                             </div>
                         ))}
                     </div>
