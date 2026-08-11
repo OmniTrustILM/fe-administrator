@@ -102,4 +102,21 @@ test.describe('DonutChart', () => {
         await expect(component.getByTestId('donut-chart-container')).toHaveClass(/max-w-\[200px\]/);
         await expect(component.getByTestId('donut-chart-container')).toHaveClass(/w-full/);
     });
+
+    test('paints each sector with its own colour from colorOptions', async ({ mount, page }) => {
+        await mount(
+            <DonutChartWithStore
+                title="Certificates by status"
+                data={{ [CertificateState.Issued]: 10, [CertificateState.Revoked]: 2 }}
+                entity={EntityType.CERTIFICATE}
+                redirect="/certificates"
+                onSetFilter={() => []}
+                colorOptions={{ colors: ['#333333', '#444444'] }}
+            />,
+        );
+        const sectors = page.locator('.recharts-pie-sector path');
+        await expect(sectors).toHaveCount(2);
+        await expect(sectors.nth(0)).toHaveAttribute('fill', '#333333');
+        await expect(sectors.nth(1)).toHaveAttribute('fill', '#444444');
+    });
 });
