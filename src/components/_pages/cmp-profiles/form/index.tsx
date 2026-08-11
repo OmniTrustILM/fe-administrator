@@ -569,7 +569,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                 <Controller
                                     name="name"
                                     control={control}
-                                    rules={buildValidationRules([validateRequired(), validateAlphaNumericWithoutAccents()])}
+                                    rules={buildValidationRules(editMode ? [] : [validateRequired(), validateAlphaNumericWithoutAccents()])}
                                     render={({ field, fieldState }) => (
                                         <TextInput
                                             {...field}

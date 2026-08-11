@@ -438,7 +438,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                         <Controller
                             name="name"
                             control={control}
-                            rules={buildValidationRules([validateRequired(), validateAlphaNumericWithoutAccents()])}
+                            rules={buildValidationRules(editMode ? [] : [validateRequired(), validateAlphaNumericWithoutAccents()])}
                             render={({ field, fieldState }) => (
                                 <TextInput
                                     value={field.value}
