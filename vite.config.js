@@ -38,12 +38,18 @@ function openApiTypesFingerprint() {
             .sort((a, b) => (a < b ? -1 : Number(a > b)));
         const hash = crypto.createHash('sha256');
         for (const file of files) {
-            hash.update(path.relative(typesDir, file));
-            hash.update(fs.readFileSync(file));
+            const relativePath = path.relative(typesDir, file);
+            const contents = fs.readFileSync(file);
+            // Delimit and length-prefix each record so that no two different file sets can hash to the
+            // same byte stream (`a` + `bc` would otherwise be indistinguishable from `ab` + `c`).
+            hash.update(`${relativePath}\0${contents.byteLength}\0`);
+            hash.update(contents);
         }
         return hash.digest('hex');
-    } catch {
-        // Types directory unreadable — keep the hash stable so the cache behaves as it did before.
+    } catch (error) {
+        // Covers the directory listing and every file read. Falling back to a fixed hash keeps the cache
+        // behaving as it did before, which is also the stale-cache bug above — so say so rather than fail quietly.
+        console.warn(`[openapi-types-fingerprint] cannot fingerprint ${typesDir}, the dependency cache may go stale:`, error);
         return 'unavailable';
     }
 }
