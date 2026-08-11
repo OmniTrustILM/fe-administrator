@@ -213,6 +213,50 @@ async function runCompleteRegisteredEpic(
     return { emitted, calls };
 }
 
+async function runGetRegisterAttributesEpic(
+    action: UnknownAction,
+    listRegisterCertificateAttributes: (args: any) => Observable<any> = () => of([]),
+    takeCount = 1,
+): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+    const calls: any[] = [];
+    const deps = {
+        apiClients: {
+            clientOperations: {
+                listRegisterCertificateAttributes: (args: any) => {
+                    calls.push(args);
+                    return listRegisterCertificateAttributes(args);
+                },
+            },
+        },
+    };
+    const output$ = epics[GET_REGISTER_ATTRIBUTES_EPIC_INDEX](of(action), of({}) as any, deps as any);
+    const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
+    return { emitted, calls };
+}
+
+async function runGetCsrAttributesEpic(
+    action: UnknownAction,
+    getCsrGenerationAttributes: (args: any) => Observable<any> = () => of([]),
+    takeCount = 1,
+): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+    const calls: any[] = [];
+    const deps = {
+        apiClients: {
+            certificates: {
+                getCsrGenerationAttributes: (args: any) => {
+                    calls.push(args);
+                    return getCsrGenerationAttributes(args);
+                },
+            },
+        },
+    };
+    const output$ = epics[GET_CSR_ATTRIBUTES_EPIC_INDEX](of(action), of({}) as any, deps as any);
+    const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
+    return { emitted, calls };
+}
+
 describe('certificates epics', () => {
     const issueAction = certificatesActions.issueCertificate({
         authorityUuid: 'auth-1',
@@ -744,28 +788,6 @@ describe('certificates epics', () => {
     });
 
     describe('getRegisterAttributes', () => {
-        async function runGetRegisterAttributesEpic(
-            action: UnknownAction,
-            listRegisterCertificateAttributes: (args: any) => Observable<any> = () => of([]),
-            takeCount = 1,
-        ): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
-            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
-            const calls: any[] = [];
-            const deps = {
-                apiClients: {
-                    clientOperations: {
-                        listRegisterCertificateAttributes: (args: any) => {
-                            calls.push(args);
-                            return listRegisterCertificateAttributes(args);
-                        },
-                    },
-                },
-            };
-            const output$ = epics[GET_REGISTER_ATTRIBUTES_EPIC_INDEX](of(action), of({}) as any, deps as any);
-            const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
-            return { emitted, calls };
-        }
-
         test('forwards authorityUuid and raProfileUuid to the client and maps descriptors on success', async () => {
             const { emitted, calls } = await runGetRegisterAttributesEpic(
                 certificatesActions.getRegisterAttributes({ raProfileUuid: 'ra-1', authorityUuid: 'auth-1' }),
@@ -794,28 +816,6 @@ describe('certificates epics', () => {
     });
 
     describe('getCsrAttributes', () => {
-        async function runGetCsrAttributesEpic(
-            action: UnknownAction,
-            getCsrGenerationAttributes: (args: any) => Observable<any> = () => of([]),
-            takeCount = 1,
-        ): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
-            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
-            const calls: any[] = [];
-            const deps = {
-                apiClients: {
-                    certificates: {
-                        getCsrGenerationAttributes: (args: any) => {
-                            calls.push(args);
-                            return getCsrGenerationAttributes(args);
-                        },
-                    },
-                },
-            };
-            const output$ = epics[GET_CSR_ATTRIBUTES_EPIC_INDEX](of(action), of({}) as any, deps as any);
-            const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
-            return { emitted, calls };
-        }
-
         test('forwards raProfileUuid to the client and maps descriptors on success', async () => {
             const { emitted, calls } = await runGetCsrAttributesEpic(certificatesActions.getCsrAttributes({ raProfileUuid: 'ra-1' }), () =>
                 of([{ uuid: 'csr-attr-1' }]),

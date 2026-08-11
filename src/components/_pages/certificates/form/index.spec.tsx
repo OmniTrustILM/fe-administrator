@@ -42,6 +42,13 @@ const customAttrDescriptor: AttributeDescriptorModel = {
     properties: { label: 'Custom Field', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
 } as AttributeDescriptorModel;
 
+async function fillRegisterBasics(page: import('@playwright/test').Page) {
+    await page.getByTestId('requestType-register').click();
+    await page.getByTestId('select-raProfile-trigger').click();
+    await page.getByRole('option', { name: 'RA One' }).click();
+    await page.getByTestId('authorizationSecret').fill('challenge-secret');
+}
+
 test.describe('CertificateForm', () => {
     test('request mode radio is labelled "Request now"', async ({ mount, page }) => {
         await mount(<CertificateFormTestWrapper />);
@@ -354,13 +361,6 @@ test.describe('CertificateForm', () => {
         await page.getByRole('tab', { name: 'Custom Attributes' }).click();
         await expect(page.getByTestId('text-input-__attributes__customCertificate__.customField')).toHaveValue('keep-me');
     });
-
-    async function fillRegisterBasics(page: import('@playwright/test').Page) {
-        await page.getByTestId('requestType-register').click();
-        await page.getByTestId('select-raProfile-trigger').click();
-        await page.getByRole('option', { name: 'RA One' }).click();
-        await page.getByTestId('authorizationSecret').fill('challenge-secret');
-    }
 
     test('Create is enabled in Pre-register mode with an empty Challenge', async ({ mount, page }) => {
         await mount(

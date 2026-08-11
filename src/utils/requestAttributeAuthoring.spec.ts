@@ -41,7 +41,7 @@ import {
     type ValueSourceBindingFormValues,
 } from './requestAttributeAuthoring';
 
-const mappingOf = (dto: { fieldMapping?: unknown }) => dto.fieldMapping as unknown as FieldMappingModel | undefined;
+const mappingOf = (dto: { fieldMapping?: unknown }) => dto.fieldMapping as FieldMappingModel | undefined;
 
 const baseAttr = (): AuthoredAttributeFormValues => ({
     ...emptyAuthoredAttribute(),
@@ -49,6 +49,12 @@ const baseAttr = (): AuthoredAttributeFormValues => ({
     label: 'Server FQDN',
     contentType: AttributeContentType.String,
     required: true,
+});
+
+const freeInput = (over: Partial<AuthoredAttributeFormValues>): AuthoredAttributeFormValues => ({
+    ...baseAttr(),
+    valueSourceType: ValueSourceType.None,
+    ...over,
 });
 
 describe('requestAttributeAuthoring', () => {
@@ -529,12 +535,6 @@ describe('requestAttributeAuthoring', () => {
     });
 
     describe('read only needs a default value', () => {
-        const freeInput = (over: Partial<AuthoredAttributeFormValues>): AuthoredAttributeFormValues => ({
-            ...baseAttr(),
-            valueSourceType: ValueSourceType.None,
-            ...over,
-        });
-
         test('required + read only with no default value is invalid', () => {
             const attr = freeInput({ required: true, readOnly: true, defaultValue: undefined });
             expect(isReadOnlyDefaultValid(attr)).toBe(false);
@@ -607,12 +607,6 @@ describe('requestAttributeAuthoring', () => {
     });
 
     describe('withBooleanReadOnlyDefault', () => {
-        const freeInput = (over: Partial<AuthoredAttributeFormValues>): AuthoredAttributeFormValues => ({
-            ...baseAttr(),
-            valueSourceType: ValueSourceType.None,
-            ...over,
-        });
-
         test('seeds false for a read-only Boolean with no default, so the switch matches what is stored', () => {
             const attr = freeInput({ contentType: AttributeContentType.Boolean, readOnly: true, defaultValue: undefined });
             expect(withBooleanReadOnlyDefault(attr).defaultValue).toBe(false);

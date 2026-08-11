@@ -282,6 +282,6 @@ describe('signing record dashboard helpers', () => {
     });
 
     test('getSigningRecordDonutChartColors handles undefined', () => {
-        expect(getSigningRecordDonutChartColors(undefined).colors).toHaveLength(0);
+        expect(getSigningRecordDonutChartColors().colors).toHaveLength(0);
     });
 });

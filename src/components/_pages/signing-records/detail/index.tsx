@@ -72,9 +72,8 @@ export default function SigningRecordDetail() {
 
     const generalData: TableDataRow[] = useMemo(
         () =>
-            !detail
-                ? []
-                : [
+            detail
+                ? [
                       { id: 'uuid', columns: ['UUID', detail.uuid] },
                       { id: 'name', columns: ['Name', detail.name] },
                       {
@@ -100,7 +99,8 @@ export default function SigningRecordDetail() {
                               detail.signedDocumentRetrievedAt ? dateFormatter(detail.signedDocumentRetrievedAt) : '-',
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [detail],
     );
 

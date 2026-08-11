@@ -33,4 +33,21 @@ test.describe('HorizontalBarChart', () => {
         );
         await expect(component.getByText(/more/)).toHaveCount(0);
     });
+
+    test('paints each bar with its own colour from colorOptions', async ({ mount, page }) => {
+        await mount(
+            <HorizontalBarChartWithStore
+                title="Top Requesters"
+                data={{ alice: 8, bob: 5 }}
+                entity={EntityType.SIGNING_RECORD}
+                redirect="/signingrecords"
+                onSetFilter={() => []}
+                colorOptions={{ colors: ['#111111', '#222222'] }}
+            />,
+        );
+        const bars = page.locator('.recharts-bar-rectangle path');
+        await expect(bars).toHaveCount(2);
+        await expect(bars.nth(0)).toHaveAttribute('fill', '#111111');
+        await expect(bars.nth(1)).toHaveAttribute('fill', '#222222');
+    });
 });

@@ -364,9 +364,9 @@ export default function RequestAttributeAuthoringEditor({
                                         {' · '}
                                         {attr.contentType}
                                         {attr.required ? ' · required' : ''} {mappingSummary(attr)}
-                                        {attr.valueSourceType !== ValueSourceType.None
-                                            ? ` · ${valueSourceLabel(attr.valueSourceType)}`
-                                            : ''}
+                                        {attr.valueSourceType === ValueSourceType.None
+                                            ? ''
+                                            : ` · ${valueSourceLabel(attr.valueSourceType)}`}
                                     </span>
                                     {rowError && (
                                         <span className="block text-red-600" data-testid={`${dataTestId}-attribute-row-invalid`}>

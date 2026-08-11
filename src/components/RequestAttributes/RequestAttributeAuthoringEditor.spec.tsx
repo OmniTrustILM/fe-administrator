@@ -834,7 +834,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await pickSanMapping(page);
 
         await page.locator('#ra-attr-regex-pattern').click();
-        await page.locator('#ra-attr-regex-pattern').fill('^CC-\\d{6}$');
+        await page.locator('#ra-attr-regex-pattern').fill(String.raw`^CC-\d{6}$`);
         await page.locator('#ra-attr-regex-error-message').click();
         await page.locator('#ra-attr-regex-error-message').fill('Cost center must be CC- followed by 6 digits');
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();

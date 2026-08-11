@@ -34,6 +34,11 @@ function buildListCertificate(overrides: Partial<CertificateListResponseModel> =
     } as unknown as CertificateListResponseModel;
 }
 
+function valueCellOf(protocolInfo: CertificateProtocolDto, rowId: string) {
+    const rows = buildCertificateProtocolRows(protocolInfo, {}, mockGetEnumLabel);
+    return rows.find((r) => r.id === rowId)?.columns[1];
+}
+
 test.describe('certificateTableHelpers', () => {
     test.describe('buildCertificateRowColumns', () => {
         const baseOpts = {
@@ -293,11 +298,6 @@ test.describe('certificateTableHelpers', () => {
         // Playwright CT compiles JSX into its own element descriptors rather than real React elements, so a rendered
         // link is asserted through its `to` prop while plain text stays a bare string.
         type LinkCell = { props: { to: string } };
-
-        function valueCellOf(protocolInfo: CertificateProtocolDto, rowId: string) {
-            const rows = buildCertificateProtocolRows(protocolInfo, {}, mockGetEnumLabel);
-            return rows.find((r) => r.id === rowId)?.columns[1];
-        }
 
         test('returns no rows when the certificate was not issued through a protocol', () => {
             expect(buildCertificateProtocolRows(undefined, {}, mockGetEnumLabel)).toEqual([]);

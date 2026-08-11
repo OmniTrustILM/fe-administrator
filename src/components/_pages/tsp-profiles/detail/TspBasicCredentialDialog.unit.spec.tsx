@@ -55,7 +55,7 @@ const CREDENTIAL = { uuid: 'cred-1', username: 'alice', mappedUser: { uuid: 'use
 
 async function typeInto(container: HTMLElement, testId: string, value: string) {
     const input = container.querySelector(`[data-testid="${testId}"]`) as HTMLInputElement;
-    const setValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    const setValue = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value')!.set!;
     await act(async () => {
         setValue.call(input, value);
         input.dispatchEvent(new Event('input', { bubbles: true }));

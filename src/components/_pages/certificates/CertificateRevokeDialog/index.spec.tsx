@@ -40,7 +40,7 @@ async function getDocumentOrder(page: Page, testIds: string[]) {
             ids
                 .map((testId) => ({ testId, element: document.querySelector(`[data-testid="${testId}"]`) }))
                 .sort((a, b) => {
-                    if (!a.element || !b.element) throw new Error(`Missing element for ${!a.element ? a.testId : b.testId}`);
+                    if (!a.element || !b.element) throw new Error(`Missing element for ${a.element ? b.testId : a.testId}`);
                     return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
                 })
                 .map(({ testId }) => testId),

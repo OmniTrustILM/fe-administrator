@@ -13,7 +13,7 @@ setupReactActEnvironment();
 
 // Sets a controlled input's value and dispatches the change event (declaration is hoisted, so position is free).
 async function typeInto(container: HTMLElement, testId: string, value: string) {
-    const setValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    const setValue = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value')!.set!;
     const input = container.querySelector(`[data-testid="${testId}"]`) as HTMLInputElement;
     await act(async () => {
         setValue.call(input, value);

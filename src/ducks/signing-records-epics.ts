@@ -144,6 +144,7 @@ const bulkDeleteSigningRecords: AppEpic = (action$, state, deps) => {
                     }
 
                     const listParams = listParamsAfterDelete(paramsBeforeDelete, totalBeforeDelete, deletedCount);
+                    const pageNumberChanged = listParams.pageNumber !== paramsBeforeDelete.pageNumber;
 
                     return of(
                         successAction,
@@ -152,7 +153,7 @@ const bulkDeleteSigningRecords: AppEpic = (action$, state, deps) => {
                         ...(errors.length === 0 ? [alertsSlice.actions.success('Selected Signing Records successfully deleted.')] : []),
                         // Only re-align the paging slice when the deletion emptied the current page
                         // and we had to step back; otherwise the re-fetch below is enough.
-                        ...(listParams.pageNumber !== paramsBeforeDelete.pageNumber
+                        ...(pageNumberChanged
                             ? [
                                   pagingActions.setPagination({
                                       entity: EntityType.SIGNING_RECORD,

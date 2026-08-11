@@ -34,6 +34,7 @@ import {
     mapAttributeContentToOptionValue,
 } from 'utils/attributes/attributes';
 import { deepEqual } from 'utils/deep-equal';
+import { contentItemLabel } from 'utils/displayValue';
 import Button from 'components/Button';
 import { Trash } from 'lucide-react';
 
@@ -64,21 +65,6 @@ const emptyGroupAttributesCallbackAttributes: AttributeDescriptorModel[] = [];
 
 /** Form changes are collected for this long before the change-driven callback pass runs. */
 export const CALLBACK_DEBOUNCE_MS = 600;
-
-/**
- * Select-option label for a content item: reference first, then a RESOURCE-style object's name
- * (never the object's default stringification), then the primitive value. Null-safe.
- */
-const contentItemLabel = (value: { reference?: string; data?: unknown } | null | undefined): string => {
-    if (value?.reference) return value.reference;
-    const data = value?.data;
-    if (data == null) return '';
-    if (typeof data === 'object') {
-        const name = (data as { name?: unknown }).name;
-        return typeof name === 'string' ? name : String(data);
-    }
-    return String(data);
-};
 
 export type Props = {
     id: string;

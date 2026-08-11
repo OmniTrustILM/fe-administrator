@@ -95,8 +95,8 @@ const getUuidFromValue = (val: unknown): string | null => {
 };
 
 const getOptionValueString = (val: OptionValue): string => {
-    const obj = asRecord(val);
-    if (obj) {
+    if (typeof val === 'object' && val !== null) {
+        const obj = val as Record<string, unknown>;
         if ('reference' in obj && typeof obj.reference === 'string') {
             return obj.reference;
         }
@@ -124,7 +124,7 @@ const valuesMatch = (val1: unknown, val2: unknown): boolean => {
     if (obj1 && typeof val2 === 'string' && obj1.name) {
         return obj1.name === val2;
     }
-    if (typeof val1 === 'string' && obj2 && obj2.name) {
+    if (typeof val1 === 'string' && obj2?.name) {
         return val1 === obj2.name;
     }
     if (!obj1 || !obj2) {

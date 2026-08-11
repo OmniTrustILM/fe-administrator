@@ -69,7 +69,7 @@ describe('walkTypeScriptFiles and setContactInTree', () => {
         writeFileSync(core('models', 'Example.ts'), header('info@otilm.com'));
         writeFileSync(core('package.json'), '{}');
 
-        const found = [...walkTypeScriptFiles(core())].sort();
+        const found = [...walkTypeScriptFiles(core())].sort((a, b) => a.localeCompare(b));
 
         expect(found).toEqual([core('models', 'Example.ts'), core('runtime.ts')]);
     });

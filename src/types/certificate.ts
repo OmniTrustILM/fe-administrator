@@ -5,7 +5,6 @@ import type {
     CertificateChainResponseDto,
     CertificateComplianceResultDto,
     CertificateDetailDto,
-    CertificateRegistrationDetailDto,
     CertificateSearchRequestDto,
     CertificateValidationCheck,
     CertificateValidationCheckDto,

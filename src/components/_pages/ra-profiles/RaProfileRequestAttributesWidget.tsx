@@ -63,7 +63,7 @@ export default function RaProfileRequestAttributesWidget({
             MERGE_MODE_AND_BINDINGS_ENABLED
                 ? (raProfileAttributeDescriptors ?? []).map((descriptor) => ({
                       value: descriptor.uuid ?? descriptor.name,
-                      label: !isGroupAttributeModel(descriptor) ? (descriptor.properties?.label ?? descriptor.name) : descriptor.name,
+                      label: isGroupAttributeModel(descriptor) ? descriptor.name : (descriptor.properties?.label ?? descriptor.name),
                       description: descriptor.name,
                   }))
                 : [],

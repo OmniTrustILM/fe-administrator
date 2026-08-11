@@ -66,7 +66,7 @@ export default function ConnectionDetailsV2({ connectInfo, errorMessage }: Props
     const v2ConnectionDetailsData: TableDataRow[] = useMemo(() => {
         if (!v2Connector) return [];
 
-        const metadata = v2Connector.metadata as Record<string, unknown> | undefined;
+        const metadata = v2Connector.metadata;
         const metadataString = metadata
             ? Object.entries(metadata)
                   .map(([key, value]) => `${key}:${String(value)}`)

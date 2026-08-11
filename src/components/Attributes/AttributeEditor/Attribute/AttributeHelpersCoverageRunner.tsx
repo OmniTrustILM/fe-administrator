@@ -37,8 +37,18 @@ export default function AttributeHelpersCoverageRunner() {
 
         getSelectValueFromField(undefined, true);
         getSelectValueFromField([{ value: 1, label: 'One' }], true);
+        getSelectValueFromField([{ value: 2 }], true);
+        getSelectValueFromField([1, 'a'], true);
+        getSelectValueFromField('not-an-array', true);
+        getSelectValueFromField([{ reference: 'ref-1' }], true);
+        getSelectValueFromField([{ data: 'plain' }], true);
+        getSelectValueFromField([{ data: 7 }], true);
+        getSelectValueFromField([{ data: false }], true);
+        getSelectValueFromField([{ data: { nested: 1 } }], true);
+        getSelectValueFromField([{}], true);
         getSelectValueFromField('single', false);
         getSelectValueFromField({ value: 1, label: 'X' }, false);
+        getSelectValueFromField({ reference: 'no-value-key' }, false);
 
         getFormTypeFromAttributeContentType(AttributeContentType.Boolean);
         getFormTypeFromAttributeContentType(AttributeContentType.Integer);

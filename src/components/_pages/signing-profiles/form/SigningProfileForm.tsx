@@ -426,7 +426,7 @@ export default function SigningProfileForm() {
             recordSignedDocument: rp?.recordSignedDocument ?? false,
             recordDtbs: rp?.recordDtbs ?? false,
             retentionIndefinite: rp?.retentionDays == null,
-            retentionDays: rp?.retentionDays != null ? String(rp.retentionDays) : '',
+            retentionDays: rp?.retentionDays == null ? '' : String(rp.retentionDays),
             persistenceMode: rp?.persistenceMode ?? SigningRecordPersistenceMode.DeferredDurable,
             ...transformAttributes(attrInitial ?? []),
         };

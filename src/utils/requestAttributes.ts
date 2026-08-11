@@ -24,7 +24,7 @@ const FIELD_TYPE_ORDER: FieldType[] = [FieldType.Rdn, FieldType.San, FieldType.E
 
 /** Extracts fieldMapping defensively; only DataAttribute (V3) carries it. */
 export function getFieldMapping(descriptor: AnyDescriptor): FieldMapping | undefined {
-    if (!descriptor || !isDataAttributeModel(descriptor as AttributeDescriptorModel)) return undefined;
+    if (!descriptor || !isDataAttributeModel(descriptor)) return undefined;
     return (descriptor as DataAttributeV3).fieldMapping ?? undefined;
 }
 
@@ -66,7 +66,7 @@ function typeRank(field: MappedField): number {
 export function fieldMappingTokens(fieldMapping: FieldMapping | undefined, rdnCodeByOid: Record<string, string> = {}): string[] {
     const fields = fieldMapping?.fields;
     if (!Array.isArray(fields) || fields.length === 0) return [];
-    return [...(fields as MappedField[])]
+    return [...fields]
         .sort((a, b) => {
             const byType = typeRank(a) - typeRank(b);
             if (byType !== 0) return byType;

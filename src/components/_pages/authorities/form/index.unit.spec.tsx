@@ -48,8 +48,8 @@ vi.mock('components/ProgressButton', () => ({
 vi.mock('components/Layout/TabLayout', () => ({
     default: ({ tabs }: any) => (
         <div>
-            {tabs.map((t: any, i: number) => (
-                <div key={i}>{t.content}</div>
+            {tabs.map((t: any) => (
+                <div key={t.title}>{t.content}</div>
             ))}
         </div>
     ),
@@ -140,7 +140,7 @@ describe('AuthorityForm', () => {
         await act(async () => {
             const nameInput = container.querySelector<HTMLInputElement>('[data-testid="input-name"]');
             if (nameInput) {
-                const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+                const setter = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value')?.set;
                 setter?.call(nameInput, 'auth1');
                 nameInput.dispatchEvent(new Event('input', { bubbles: true }));
             }

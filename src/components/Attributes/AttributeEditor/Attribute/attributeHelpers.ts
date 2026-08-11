@@ -11,10 +11,13 @@ export type FieldValidator = (value: unknown, allValues?: object, fieldState?: u
 /** A react-select option whose value may be any dynamic form value. */
 export type SelectFieldOption = { value: unknown; label: string };
 
+/** A plain form value as accepted by attribute content items. */
+export type PrimitiveAttributeValue = string | number | boolean | undefined;
+
 export function parseListValueByContentType(
     contentType: AttributeContentType,
     raw: string | number | boolean | { value: string | number; label: string } | undefined,
-): string | number | boolean | undefined {
+): PrimitiveAttributeValue {
     if (raw === undefined || raw === null || raw === '') return undefined;
     const val = typeof raw === 'object' && raw !== null && 'value' in raw ? raw.value : raw;
     const str = String(val).trim();
@@ -38,14 +41,14 @@ export function parseListValueByContentType(
 export function transformInputValueForDescriptor(
     value: unknown,
     descriptor: DataAttributeModel | CustomAttributeModel,
-): string | number | boolean | undefined {
+): PrimitiveAttributeValue {
     if (descriptor.contentType === AttributeContentType.Datetime) {
         return getFormattedDateTime(value as string);
     }
     if (descriptor.contentType === AttributeContentType.Boolean && descriptor.properties.required) {
         return (value as boolean | undefined) ?? false;
     }
-    return value as string | number | boolean | undefined;
+    return value as PrimitiveAttributeValue;
 }
 
 export function getSelectValueFromField(fieldValue: unknown, multiSelect: boolean): SelectFieldOption[] | AttributeSelectOptionValue {
@@ -59,7 +62,9 @@ export function getSelectValueFromField(fieldValue: unknown, multiSelect: boolea
             }
             if (typeof v === 'object' && v !== null) {
                 const content = v as { reference?: unknown; data?: unknown };
-                return { value: v, label: String(content.reference ?? content.data ?? JSON.stringify(v)) };
+                const display = content.reference ?? content.data;
+                const isPrimitiveDisplay = typeof display === 'string' || typeof display === 'number' || typeof display === 'boolean';
+                return { value: v, label: isPrimitiveDisplay ? String(display) : JSON.stringify(v) };
             }
             return { value: v, label: String(v) };
         });

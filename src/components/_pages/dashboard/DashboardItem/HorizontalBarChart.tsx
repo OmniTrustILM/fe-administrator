@@ -2,7 +2,7 @@ import Widget from 'components/Widget';
 import { type EntityType, actions as filterActions } from 'ducks/filters';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router';
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { SearchFilterModel } from 'types/certificate';
 import { getDonutChartColorsByRandomNumberOfOptions } from 'utils/dashboard';
 import type { ColorOptions } from './DonutChart';
@@ -46,7 +46,7 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
     const colors = colorOptions?.colors ?? getDonutChartColorsByRandomNumberOfOptions(labels.length).colors;
     const remaining = (overflowCount ?? labels.length) - labels.length;
 
-    const chartData = shown.map(([label, value], index) => ({ label, value, color: colors[index] ?? '#6B7280' }));
+    const chartData = shown.map(([label, value], index) => ({ label, value, fill: colors[index] ?? '#6B7280', cursor: 'pointer' }));
 
     const longestLabel = labels.reduce((max, label) => Math.max(max, label.length), 0);
     const yAxisWidth = Math.min(180, Math.max(80, longestLabel * 7 + 8));
@@ -84,11 +84,7 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
                         formatter={(value) => [String(value), 'Count']}
                         contentStyle={{ fontSize: 12 }}
                     />
-                    <Bar dataKey="value" radius={[0, 2, 2, 0]} isAnimationActive onClick={(_entry, index) => handleBarClick(index)}>
-                        {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} cursor="pointer" />
-                        ))}
-                    </Bar>
+                    <Bar dataKey="value" radius={[0, 2, 2, 0]} isAnimationActive onClick={(_entry, index) => handleBarClick(index)} />
                 </BarChart>
             </ResponsiveContainer>
             {remaining > 0 && <div className="text-sm text-gray-500 mt-1">+{remaining} more</div>}
