@@ -68,8 +68,31 @@ test.describe('attributeHelpers', () => {
             expect(result).toEqual([{ value: { reference: 'ref-1' }, label: 'ref-1' }]);
         });
 
+        test('multiSelect: labels a content item from its primitive data when there is no reference', () => {
+            expect(getSelectValueFromField([{ data: 'plain' }], true)).toEqual([{ value: { data: 'plain' }, label: 'plain' }]);
+            expect(getSelectValueFromField([{ data: 7 }], true)).toEqual([{ value: { data: 7 }, label: '7' }]);
+            expect(getSelectValueFromField([{ data: false }], true)).toEqual([{ value: { data: false }, label: 'false' }]);
+        });
+
+        test('multiSelect: falls back to JSON for an object data payload instead of [object Object]', () => {
+            const item = { data: { nested: 1 } };
+            const result = getSelectValueFromField([item], true);
+            expect(result).toEqual([{ value: item, label: '{"data":{"nested":1}}' }]);
+        });
+
+        test('multiSelect: falls back to JSON when a content item has neither reference nor data', () => {
+            expect(getSelectValueFromField([{}], true)).toEqual([{ value: {}, label: '{}' }]);
+        });
+
+        test('multiSelect: prefers reference over data', () => {
+            expect(getSelectValueFromField([{ reference: 'ref-1', data: 'ignored' }], true)).toEqual([
+                { value: { reference: 'ref-1', data: 'ignored' }, label: 'ref-1' },
+            ]);
+        });
+
         test('multiSelect: returns empty array for non-array value', () => {
             expect(getSelectValueFromField({ value: 1 }, true)).toEqual([]);
+            expect(getSelectValueFromField('not-an-array', true)).toEqual([]);
         });
 
         test('single: returns empty string for empty value', () => {

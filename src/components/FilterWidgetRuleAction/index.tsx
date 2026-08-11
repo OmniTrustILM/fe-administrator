@@ -18,6 +18,7 @@ import type { PlatformEnumModel } from 'types/enums';
 import { AttributeContentType, FilterFieldSource, FilterFieldType, PlatformEnum } from 'types/openapi';
 import type { ExecutionItemModel, ExecutionItemRequestModel } from 'types/rules';
 import { getFormTypeFromAttributeContentType, getFormTypeFromFilterFieldType } from 'utils/common-utils';
+import { toDisplayString } from 'utils/displayValue';
 import {
     checkIfFieldAttributeTypeIsDate,
     getFormattedDate,
@@ -36,8 +37,6 @@ type FieldData = NonNullable<SearchFieldListModel['searchFieldData']>[number];
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
     typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined;
-
-const toDisplayString = (value: unknown): string => (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value));
 
 const toSelectableValue = (value: unknown): SelectableValue => {
     if (value === null || value === undefined) return '';
