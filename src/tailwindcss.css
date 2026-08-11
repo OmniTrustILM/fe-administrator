@@ -265,7 +265,6 @@ table .table-badge {
 }
 
 .modal-footer {
-    background-color: var(--surface-sunken);
     width: calc(100% + 4rem);
     margin-left: -2rem;
     padding-left: 2rem;
