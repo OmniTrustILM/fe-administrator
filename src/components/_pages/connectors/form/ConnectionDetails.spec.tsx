@@ -72,9 +72,9 @@ test.describe('ConnectionDetailsV2', () => {
                     id: 'czertainly.ejbca.connector',
                     name: 'ejbca-connector',
                     version: '1.16',
-                    description: 'EJBCA Connector for CZERTAINLY',
+                    description: 'EJBCA Connector for ILM',
                     metadata: {
-                        Author: '3KeyCompany',
+                        Author: 'OmniTrust',
                         License: 'MIT',
                     },
                 },
@@ -105,7 +105,7 @@ test.describe('ConnectionDetailsV2', () => {
         await expect(page.getByText('1.16')).toBeVisible();
 
         await expect(page.getByText('Metadata')).toBeVisible();
-        await expect(page.getByText('Author:3KeyCompany License:MIT')).toBeVisible();
+        await expect(page.getByText('Author:OmniTrust License:MIT')).toBeVisible();
 
         await expect(page.getByRole('columnheader', { name: 'Interfaces' })).toBeVisible();
         await expect(page.getByText('Authority')).toBeVisible();

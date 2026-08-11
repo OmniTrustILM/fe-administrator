@@ -54,7 +54,7 @@ test.describe('ConnectorForm URL validation', () => {
 
         const url = page.locator('#url');
         await url.click();
-        await url.fill('http://demo-web.3key.company:7070/api');
+        await url.fill('http://demo-web.otilm.com:7070/api');
         await url.blur();
 
         await expect(page.getByText('Value must be a valid url')).toBeHidden();
