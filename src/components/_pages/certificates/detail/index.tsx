@@ -1498,6 +1498,7 @@ export default function CertificateDetail() {
             <Dialog
                 isOpen={confirmRemove}
                 caption={`Remove Certificate from Location`}
+                size="lg"
                 body={
                     <>
                         You are about to remove a Certificate from selected locations:
@@ -1520,8 +1521,8 @@ export default function CertificateDetail() {
                 }
                 toggle={() => setConfirmRemove(false)}
                 buttons={[
-                    { color: 'primary', onClick: onRemove, body: 'Remove' },
                     { color: 'secondary', variant: 'outline', onClick: () => setConfirmRemove(false), body: 'Cancel' },
+                    { color: 'primary', onClick: onRemove, body: 'Remove' },
                 ]}
             />
         </div>
