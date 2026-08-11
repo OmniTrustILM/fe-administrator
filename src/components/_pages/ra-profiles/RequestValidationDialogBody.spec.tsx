@@ -57,7 +57,7 @@ test.describe('RequestValidationDialogBody', () => {
     });
 
     test('inherited strictness: platform switch is on and current platform mode is shown', async ({ mount }) => {
-        const component = await mountDialog(mount, { raProfile: buildRaProfile(undefined) });
+        const component = await mountDialog(mount, { raProfile: buildRaProfile() });
 
         await expect(component.getByText('Use Platform Request Validation Settings')).toBeVisible();
         await expect(component.getByText('Current Platform Settings')).toBeVisible();
@@ -86,7 +86,7 @@ test.describe('RequestValidationDialogBody', () => {
         const updates: any[] = [];
         let closed = false;
         const component = await mountDialog(mount, {
-            raProfile: buildRaProfile(undefined),
+            raProfile: buildRaProfile(),
             onUpdateRequestAttributes: (payload) => updates.push(payload),
             onClose: () => {
                 closed = true;

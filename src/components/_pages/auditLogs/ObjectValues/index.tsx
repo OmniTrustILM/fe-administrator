@@ -8,7 +8,9 @@ function ObjectValues({ className, obj }: Readonly<Props>) {
 
     if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') return <>{obj}</>;
 
-    if (typeof obj !== 'object') return <>{String(obj)}</>;
+    if (typeof obj === 'bigint' || typeof obj === 'symbol') return <>{String(obj)}</>;
+
+    if (typeof obj !== 'object') return null;
 
     return (
         <ul className={className}>

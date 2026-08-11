@@ -1,8 +1,7 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import type { UnknownAction } from '@reduxjs/toolkit';
 import { firstValueFrom, of, throwError } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
-import { vi } from 'vitest';
 
 import { slice } from './raProfileRequestAttributes';
 import { AttributeSetMergeMode } from 'types/openapi';

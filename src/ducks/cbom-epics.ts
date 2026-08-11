@@ -201,13 +201,14 @@ const bulkDeleteCbom: AppEpic = (action$, state, deps) => {
             return deps.apiClients.cbomManagement.bulkDeleteCbom({ requestBody: action.payload.uuids }).pipe(
                 mergeMap(() => {
                     const listParams = listParamsAfterDelete(paramsBeforeDelete, totalBeforeDelete, action.payload.uuids.length);
+                    const pageNumberChanged = listParams.pageNumber !== paramsBeforeDelete.pageNumber;
 
                     return of(
                         slice.actions.bulkDeleteCbomSuccess({ uuids: action.payload.uuids }),
                         alertsSlice.actions.success('Selected CBOMs successfully deleted.'),
                         // Only re-align the paging slice when the deletion emptied the current page
                         // and we had to step back; otherwise the re-fetch below is enough.
-                        ...(listParams.pageNumber !== paramsBeforeDelete.pageNumber
+                        ...(pageNumberChanged
                             ? [
                                   pagingActions.setPagination({
                                       entity: EntityType.CBOM,

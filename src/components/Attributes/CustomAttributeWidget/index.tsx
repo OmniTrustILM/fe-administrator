@@ -145,7 +145,7 @@ export default function CustomAttributeWidget({ resource, resourceUuid, attribut
                                             value={field.value}
                                             onChange={(value) => {
                                                 field.onChange(value);
-                                                setSelectedAttributeUuid(typeof value === 'string' ? value : String(value ?? ''));
+                                                setSelectedAttributeUuid(typeof value === 'string' ? value : '');
                                             }}
                                         />
                                     )}

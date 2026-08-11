@@ -10,6 +10,9 @@ import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes'
 import type { AttributeSelectOption } from 'utils/attributes/attributes';
 import { getSelectValueFromField, buildAttributeValidators, parseListValueByContentType } from './attributeHelpers';
 
+/** Identity key used to tell existing options apart from custom (extensible list) values. */
+const optionIdentity = (value: unknown): string => String(value);
+
 type AttributeFieldSelectProps = {
     name: string;
     descriptor: DataAttributeModel | CustomAttributeModel;
@@ -68,11 +71,11 @@ export function AttributeFieldSelect({
                 } else {
                     currentValues = field.value != null && field.value !== '' ? [field.value] : [];
                 }
-                const seen = new Set(baseOptions.map((o) => String(o.value)));
+                const seen = new Set(baseOptions.map((o) => optionIdentity(o.value)));
                 const extra: AttributeSelectOption[] =
                     descriptor.properties.extensibleList === true
                         ? currentValues
-                              .filter((v) => !seen.has(String(v)))
+                              .filter((v) => !seen.has(optionIdentity(v)))
                               .map((v) => ({ label: String(v), value: v as AttributeSelectOption['value'] }))
                         : [];
                 const selectOptionsList = [...baseOptions, ...extra];

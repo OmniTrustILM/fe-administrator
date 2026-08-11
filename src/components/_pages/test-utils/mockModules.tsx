@@ -4,7 +4,7 @@ type SelectValueMap = Record<string, unknown>;
 
 type MockButton = {
     tooltip?: string;
-    icon?: ReactNode;
+    icon?: string;
     onClick?: () => void;
 };
 
@@ -42,7 +42,7 @@ export const widgetMockModule = () => ({
     default: ({ title, widgetButtons, children }: { title?: string; widgetButtons?: MockButton[]; children?: ReactNode }) => (
         <div data-testid={`widget-${title || 'root'}`}>
             {(widgetButtons || []).map((button) => (
-                <button key={button.tooltip ?? String(button.icon)} title={button.tooltip} onClick={button.onClick}>
+                <button key={button.tooltip ?? button.icon} title={button.tooltip} onClick={button.onClick}>
                     {button.icon}
                 </button>
             ))}
@@ -97,7 +97,7 @@ export const widgetButtonsMockModule = () => ({
     default: ({ buttons }: { buttons?: MockButton[] }) => (
         <div>
             {(buttons || []).map((button) => (
-                <button key={button.tooltip ?? String(button.icon)} title={button.tooltip} onClick={button.onClick}>
+                <button key={button.tooltip ?? button.icon} title={button.tooltip} onClick={button.onClick}>
                     {button.icon}
                 </button>
             ))}

@@ -55,7 +55,7 @@ function TimeSeriesChart({
     const bucketEndIso = (index: number): string => {
         if (index + 1 < isoKeys.length) return isoKeys[index + 1];
         const startMs = new Date(isoKeys[index]).getTime();
-        const intervalMs = isoKeys.length > 1 ? new Date(isoKeys[1]).getTime() - new Date(isoKeys[0]).getTime() : 3600_000;
+        const intervalMs = isoKeys.length > 1 ? new Date(isoKeys[1]).getTime() - new Date(isoKeys[0]).getTime() : 3_600_000;
         return new Date(startMs + intervalMs).toISOString();
     };
 
@@ -93,7 +93,7 @@ function TimeSeriesChart({
     return (
         <Widget title={title} titleBoldness="bold" className="col-span-full" busy={isLoading}>
             <div className="flex justify-end mb-2">
-                <div className="inline-flex rounded-md border border-gray-200 dark:border-neutral-700 overflow-hidden" role="group">
+                <fieldset className="inline-flex rounded-md border border-gray-200 dark:border-neutral-700 overflow-hidden">
                     {PERIOD_OPTIONS.map((option) => (
                         <button
                             key={option}
@@ -110,7 +110,7 @@ function TimeSeriesChart({
                             {option}
                         </button>
                     ))}
-                </div>
+                </fieldset>
             </div>
             <ResponsiveContainer width="100%" height={260}>
                 <AreaChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>

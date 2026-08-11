@@ -14,7 +14,7 @@ import RaProfileForm from './index';
 // Pass authorityId="" to exercise the no-authority state where the attribute tabs are disabled.
 export default function RaProfileFormCreateWithStore({ authorityId = 'auth-1' }: { authorityId?: string }) {
     const capturedActions: UnknownAction[] = [];
-    (window as unknown as { __raProfileActions__: UnknownAction[] }).__raProfileActions__ = capturedActions;
+    (globalThis as unknown as { __raProfileActions__: UnknownAction[] }).__raProfileActions__ = capturedActions;
 
     const captureMiddleware: Middleware = () => (next) => (action) => {
         capturedActions.push(action as UnknownAction);
@@ -25,7 +25,7 @@ export default function RaProfileFormCreateWithStore({ authorityId = 'auth-1' }:
         middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(captureMiddleware),
         preloadedState: testInitialState,
     });
-    (window as unknown as { __raProfileStore__: typeof store }).__raProfileStore__ = store;
+    (globalThis as unknown as { __raProfileStore__: typeof store }).__raProfileStore__ = store;
 
     return (
         <Provider store={store}>

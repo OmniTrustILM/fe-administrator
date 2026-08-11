@@ -143,9 +143,8 @@ export const TspProfileDetail = () => {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !tspProfile
-                ? []
-                : [
+            tspProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', tspProfile.uuid],
@@ -166,15 +165,15 @@ export const TspProfileDetail = () => {
                           id: 'signingUrl',
                           columns: ['TSP Signing URL', tspProfile.signingUrl ? tspProfile.signingUrl : '-'],
                       },
-                  ],
+                  ]
+                : [],
         [tspProfile],
     );
 
     const signingProfileData: TableDataRow[] = useMemo(
         () =>
-            !tspProfile?.defaultSigningProfile
-                ? []
-                : [
+            tspProfile?.defaultSigningProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', tspProfile.defaultSigningProfile.uuid],
@@ -195,7 +194,8 @@ export const TspProfileDetail = () => {
                           id: 'status',
                           columns: ['Status', <StatusBadge key="status" enabled={tspProfile.defaultSigningProfile.enabled} />],
                       },
-                  ],
+                  ]
+                : [],
         [tspProfile],
     );
 
@@ -206,9 +206,8 @@ export const TspProfileDetail = () => {
 
     const authenticationData: TableDataRow[] = useMemo(
         () =>
-            !tspProfile
-                ? []
-                : [
+            tspProfile
+                ? [
                       {
                           id: 'allowedMethods',
                           columns: [
@@ -239,7 +238,8 @@ export const TspProfileDetail = () => {
                               ),
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [tspProfile, authenticationMethodEnum],
     );
 

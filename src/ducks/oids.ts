@@ -193,7 +193,9 @@ const systemOidsLoaded = createSelector(state, (state) => state.systemOidsLoaded
 const systemOidsError = createSelector(state, (state) => state.systemOidsError);
 const systemOidsByCategory = createSelector(systemOids, (systemOids) =>
     systemOids.reduce<Partial<Record<OidCategory, OIDResponseModel[]>>>((acc, entry) => {
-        (acc[entry.category] ??= []).push(entry);
+        const categoryOids = acc[entry.category] ?? [];
+        categoryOids.push(entry);
+        acc[entry.category] = categoryOids;
         return acc;
     }, {}),
 );

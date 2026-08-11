@@ -325,7 +325,7 @@ export default function FilterWidget({
                     }
                 } else {
                     const name = typeof v === 'object' && v !== null && 'name' in v ? (v as { name?: unknown }).name : undefined;
-                    label = name ? String(name) : JSON.stringify(v);
+                    label = name && (typeof name === 'string' || typeof name === 'number') ? String(name) : JSON.stringify(v);
                 }
                 return { label, value };
             });

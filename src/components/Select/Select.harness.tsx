@@ -83,7 +83,7 @@ export function SearchableHarness() {
                 isSearchable
                 dataTestId="sel"
             />
-            <div data-testid="value-display">{String(v ?? '')}</div>
+            <div data-testid="value-display">{typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v ?? '')}</div>
         </div>
     );
 }

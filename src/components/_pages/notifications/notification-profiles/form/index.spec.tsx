@@ -128,8 +128,9 @@ test.describe('NotificationProfileForm - Event data categories', () => {
 
 const capturedPayload = async (page: import('@playwright/test').Page, actionType: string) =>
     page.evaluate((type) => {
-        const actions = (window as unknown as { __dispatchedActions?: { type: string; payload?: unknown }[] }).__dispatchedActions ?? [];
-        return (actions.filter((action) => action.type === type).at(-1)?.payload ?? null) as Record<string, unknown> | null;
+        const actions =
+            (globalThis as unknown as { __dispatchedActions?: { type: string; payload?: unknown }[] }).__dispatchedActions ?? [];
+        return (actions.findLast((action) => action.type === type)?.payload ?? null) as Record<string, unknown> | null;
     }, actionType);
 
 const editProfile = {
@@ -206,7 +207,7 @@ test.describe('NotificationProfileForm - event data category payloads', () => {
         await page.locator('#description').click();
         await page.locator('#description').fill('concurrent edit survivor');
         await page.evaluate((profile) => {
-            (window as unknown as { __setTestProfile: (p: unknown) => void }).__setTestProfile(profile);
+            (globalThis as unknown as { __setTestProfile: (p: unknown) => void }).__setTestProfile(profile);
         }, editProfile);
 
         // The pristine switch re-baselines to the refreshed profile; the dirty edit survives.

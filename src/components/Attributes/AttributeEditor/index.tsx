@@ -75,9 +75,11 @@ const contentItemLabel = (value: { reference?: string; data?: unknown } | null |
     if (data == null) return '';
     if (typeof data === 'object') {
         const name = (data as { name?: unknown }).name;
-        return typeof name === 'string' ? name : String(data);
+        return typeof name === 'string' ? name : JSON.stringify(data);
     }
-    return String(data);
+    if (typeof data === 'string') return data;
+    if (typeof data === 'number' || typeof data === 'boolean') return String(data);
+    return '';
 };
 
 export type Props = {

@@ -64,7 +64,7 @@ export function NotificationProfileFormTestWrapper({
             middleware: (getDefault) =>
                 getDefault({ serializableCheck: false }).concat(() => (next: (action: unknown) => unknown) => (action: unknown) => {
                     // Expose every dispatched action so specs can assert submitted payloads.
-                    const capture = window as unknown as { __dispatchedActions?: unknown[] };
+                    const capture = globalThis as unknown as { __dispatchedActions?: unknown[] };
                     capture.__dispatchedActions = capture.__dispatchedActions ?? [];
                     capture.__dispatchedActions.push(action);
                     return next(action);
@@ -72,7 +72,7 @@ export function NotificationProfileFormTestWrapper({
         });
     }, [notificationInstances, platformEnumsOverride, notificationProfile]);
 
-    (window as unknown as { __setTestProfile?: (profile: NotificationProfileDetailModel) => void }).__setTestProfile = (profile) =>
+    (globalThis as unknown as { __setTestProfile?: (profile: NotificationProfileDetailModel) => void }).__setTestProfile = (profile) =>
         store.dispatch({ type: '__test/setNotificationProfile', payload: profile });
 
     return (

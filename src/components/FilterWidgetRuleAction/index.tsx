@@ -37,11 +37,13 @@ type FieldData = NonNullable<SearchFieldListModel['searchFieldData']>[number];
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
     typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined;
 
+const toDisplayString = (value: unknown): string => (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value));
+
 const toSelectableValue = (value: unknown): SelectableValue => {
     if (value === null || value === undefined) return '';
     if (typeof value === 'string' || typeof value === 'number') return value;
     if (typeof value === 'object') return value;
-    return String(value);
+    return toDisplayString(value);
 };
 
 function formatBadgeDataValue(v: unknown, field: FieldData | undefined, platformEnums: PlatformEnumModel): string {
@@ -50,12 +52,12 @@ function formatBadgeDataValue(v: unknown, field: FieldData | undefined, platform
     }
     const record = asRecord(v);
     if (record) {
-        if (record.name) return String(record.name);
+        if (record.name) return toDisplayString(record.name);
         if (field && checkIfFieldAttributeTypeIsDate(field)) {
             const labelStr = String(record.label ?? v);
             return field.attributeContentType === AttributeContentType.Date ? getFormattedDate(labelStr) : getFormattedDateTime(labelStr);
         }
-        return record.label != null ? String(record.label) : String(v);
+        return record.label == null ? String(v) : toDisplayString(record.label);
     }
     if (Array.isArray(field?.value)) {
         const matched = (field.value as unknown[]).find((fv) => {
@@ -88,11 +90,11 @@ function mapFieldValueToOption(
     }
     const record = asRecord(v);
     if (checkIfFieldAttributeTypeIsDate(fieldRef)) {
-        return { label: String(record?.label ?? ''), value: toSelectableValue(record?.value) };
+        return { label: toDisplayString(record?.label ?? ''), value: toSelectableValue(record?.value) };
     }
     const dataLabel = record && typeof record.data !== 'object' ? record.data : undefined;
     return {
-        label: String(record?.name || record?.label || dataLabel || JSON.stringify(v)),
+        label: toDisplayString(record?.name || record?.label || dataLabel || JSON.stringify(v)),
         value: normalizeValue(v),
     };
 }
@@ -385,13 +387,13 @@ export default function FilterWidgetRuleAction({
                     if (checkIfFieldAttributeTypeIsDate(field)) {
                         const dateSource = matchedRecord?.value || singleValue;
                         return {
-                            label: String(matchedRecord?.label || getFormattedDateTime(String(dateSource))),
+                            label: toDisplayString(matchedRecord?.label || getFormattedDateTime(String(dateSource))),
                             value: normalizeSelectValue(dateSource),
                         };
                     }
 
                     return {
-                        label: String(matchedRecord?.name || matchedRecord?.label || String(singleValue)),
+                        label: toDisplayString(matchedRecord?.name || matchedRecord?.label || String(singleValue)),
                         value: normalizeSelectValue(matchedFieldValue),
                     };
                 }
@@ -400,14 +402,14 @@ export default function FilterWidgetRuleAction({
                 if (singleRecord) {
                     if (Object.hasOwn(singleRecord, 'value')) {
                         return {
-                            label: String(singleRecord.label || singleRecord.name || JSON.stringify(singleRecord.value)),
+                            label: toDisplayString(singleRecord.label || singleRecord.name || JSON.stringify(singleRecord.value)),
                             value: normalizeSelectValue(singleRecord.value),
                         };
                     }
 
                     const dataLabel = typeof singleRecord.data === 'object' ? undefined : singleRecord.data;
                     return {
-                        label: String(singleRecord.name || singleRecord.label || dataLabel || JSON.stringify(singleValue)),
+                        label: toDisplayString(singleRecord.name || singleRecord.label || dataLabel || JSON.stringify(singleValue)),
                         value: normalizeSelectValue(singleValue),
                     };
                 }
@@ -522,7 +524,7 @@ export default function FilterWidgetRuleAction({
             // Compare only the YYYY-MM-DD part: saved data uses plain dates, API field values use ISO strings.
             const findMatchingFieldOption = (v: unknown): { label: string; value: SelectableValue } => {
                 const vRecord = asRecord(v);
-                const rawStr = vRecord && vRecord.value !== undefined ? String(vRecord.value) : String(v);
+                const rawStr = vRecord?.value !== undefined ? toDisplayString(vRecord.value) : String(v);
                 const datePart = rawStr.split('T')[0];
                 if (Array.isArray(currentFieldThis.value)) {
                     const matched = (currentFieldThis.value as unknown[]).find(

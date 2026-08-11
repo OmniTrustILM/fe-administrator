@@ -3,7 +3,7 @@ import Widget from 'components/Widget';
 import { type EntityType, actions } from 'ducks/filters';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router';
-import { Cell, Pie, PieChart, Tooltip } from 'recharts';
+import { Pie, PieChart, Tooltip } from 'recharts';
 import SimpleBar from 'simplebar-react';
 import type { SearchFilterModel } from 'types/certificate';
 import type { DashboardDict } from 'types/statisticsDashboard';
@@ -117,11 +117,10 @@ function DonutChart({
         };
     }, []);
 
-    const pieData = labels.map((label, index) => ({
-        label,
-        value: Number(values[index] ?? 0),
-        color: chartColors[index] || '#6B7280',
-    }));
+    const pieData = labels.map((label, index) => {
+        const color = chartColors[index] || '#6B7280';
+        return { label, value: Number(values[index] ?? 0), color, fill: color };
+    });
 
     return (
         <Widget title={title} titleBoldness="bold" className="flex-1">
@@ -140,11 +139,7 @@ function DonutChart({
                                 paddingAngle={1}
                                 stroke="none"
                                 isAnimationActive
-                            >
-                                {pieData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Pie>
+                            />
                             <Tooltip content={<DonutTooltip />} />
                         </PieChart>
                     </div>

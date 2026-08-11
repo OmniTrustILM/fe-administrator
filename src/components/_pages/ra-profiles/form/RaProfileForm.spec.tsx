@@ -11,12 +11,12 @@ import RaProfileFormCreateWithStore from './RaProfileFormCreateWithStore';
 type CapturedAction = { type: string; payload?: Record<string, unknown> };
 
 async function capturedActions(page: Page): Promise<CapturedAction[]> {
-    return page.evaluate(() => (window as unknown as { __raProfileActions__: CapturedAction[] }).__raProfileActions__ ?? []);
+    return page.evaluate(() => (globalThis as unknown as { __raProfileActions__: CapturedAction[] }).__raProfileActions__ ?? []);
 }
 
 async function dispatchToStore(page: Page, action: CapturedAction): Promise<void> {
     await page.evaluate(
-        (a) => (window as unknown as { __raProfileStore__: { dispatch: (x: unknown) => void } }).__raProfileStore__.dispatch(a),
+        (a) => (globalThis as unknown as { __raProfileStore__: { dispatch: (x: unknown) => void } }).__raProfileStore__.dispatch(a),
         action,
     );
 }

@@ -482,13 +482,13 @@ export default function SigningProfileDetail() {
                 columns: ['Data-to-be-signed', <StatusBadge key="value" enabled={rp.recordDtbs ?? false} />],
             });
         }
+        const retentionDaySuffix = rp.retentionDays === 1 ? '' : 's';
+        const retentionLabel = rp.retentionDays == null ? 'Indefinite' : `${rp.retentionDays} day${retentionDaySuffix}`;
+
         rows.push(
             {
                 id: 'retentionDays',
-                columns: [
-                    'Retention',
-                    rp.retentionDays != null ? `${rp.retentionDays} day${rp.retentionDays === 1 ? '' : 's'}` : 'Indefinite',
-                ],
+                columns: ['Retention', retentionLabel],
             },
             {
                 id: 'persistenceMode',

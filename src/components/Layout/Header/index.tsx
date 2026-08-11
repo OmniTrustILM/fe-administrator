@@ -77,7 +77,7 @@ function Header({ sidebarToggle }: Readonly<Props>) {
                             {
                                 title: 'Log out',
                                 onClick: () => {
-                                    globalThis.location.href = window.__ENV__.LOGOUT_URL;
+                                    globalThis.location.href = (globalThis as typeof globalThis & { __ENV__: Env }).__ENV__.LOGOUT_URL;
                                 },
                             },
                         ]}

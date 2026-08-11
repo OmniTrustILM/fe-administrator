@@ -202,7 +202,7 @@ test.describe('CodeEditor', () => {
         await ta.pressSequentially('hello', { delay: 5 });
         expect(await ta.inputValue()).toBe('hello');
 
-        const isMac = await component.page().evaluate(() => /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform));
+        const isMac = await component.page().evaluate(() => /(Mac|iPhone|iPod|iPad)/i.test(navigator.userAgent));
         await ta.press(isMac ? 'Meta+KeyZ' : 'Control+KeyZ');
 
         expect(calls.at(-1)).not.toBe('hello');

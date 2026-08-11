@@ -83,15 +83,13 @@ export function getCertificateStatusColor(
 ) {
     switch (status) {
         case CertificateState.Requested:
+        case CertificateState.PendingApproval:
             return '#3754a5';
         case CertificateState.Rejected:
+        case CertificateState.Failed:
             return '#EF4444';
         case CertificateState.Issued:
             return '#14B8A6';
-        case CertificateState.Failed:
-            return '#EF4444';
-        case CertificateState.PendingApproval:
-            return '#3754a5';
         case CertificateState.PendingIssue:
             return '#3782a5';
         case CertificateState.PendingRevoke:
