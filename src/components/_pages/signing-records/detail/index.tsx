@@ -152,6 +152,7 @@ export default function SigningRecordDetail() {
 
             <Widget widgetLockName={LockWidgetNameEnum.SigningRecordDetail} busy={isBusy} noBorder>
                 <TabLayout
+                    tabUrlParam="tab"
                     tabs={[
                         {
                             title: 'Details',

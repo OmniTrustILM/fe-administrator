@@ -440,13 +440,18 @@ export default function AppRouter() {
 
                     <Route path={`/conditions/detail/:id`} element={<ConditionDetails />} />
 
-                    <Route path={`/rules/:tabIndex?`} element={<RulesList />} />
+                    <Route path={`/rules`} element={<RulesList />} />
+                    {/* Legacy tab-index URLs predate the ?tab= query param; keep bookmarks working. */}
+                    <Route path={`/rules/0`} element={<Navigate to="/rules" replace />} />
+                    <Route path={`/rules/1`} element={<Navigate to="/rules?tab=conditions" replace />} />
                     <Route path={`/rules/detail/:id`} element={<RuleDetails />} />
 
                     <Route path={`/executions/add`} element={<ExecutionForm />} />
                     <Route path={`/executions/detail/:id`} element={<ExecutionDetails />} />
 
-                    <Route path={`/actions/:tabIndex?`} element={<ActionsList />} />
+                    <Route path={`/actions`} element={<ActionsList />} />
+                    <Route path={`/actions/0`} element={<Navigate to="/actions" replace />} />
+                    <Route path={`/actions/1`} element={<Navigate to="/actions?tab=executions" replace />} />
                     <Route path={`/actions/detail/:id`} element={<ActionDetails />} />
 
                     <Route path={`/triggers`} element={<TriggerList />} />
