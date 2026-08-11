@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
@@ -13,6 +15,45 @@ async function loadProxyConfig() {
         return {};
     }
 }
+
+/**
+ * Content fingerprint of the openapi types, carried in a plugin name so that it takes part in
+ * Vite's own dependency-cache hash (which covers plugin names).
+ *
+ * The types are consumed through the linked `@ilm/openapi-types` dependency so Vite pre-bundles
+ * the whole tree into one cached chunk (see the alias below). That cache hash is otherwise built
+ * from the lockfile and the config only, so edits inside a linked package never invalidate it:
+ * the dev server keeps serving the previous pre-bundle and imports of newly added types fail at
+ * runtime with "does not provide an export named ...". Mixing the fingerprint in lets Vite
+ * re-optimize by itself, exactly when the types change.
+ */
+function openApiTypesFingerprint() {
+    const typesDir = path.resolve(__dirname, './src/types/openapi');
+    try {
+        const files = fs
+            .readdirSync(typesDir, { recursive: true, withFileTypes: true })
+            .filter((entry) => entry.isFile())
+            .map((entry) => path.join(entry.parentPath, entry.name))
+            // Byte-wise ordering, not locale-aware: the fingerprint must not depend on the locale.
+            .sort((a, b) => (a < b ? -1 : Number(a > b)));
+        const hash = crypto.createHash('sha256');
+        for (const file of files) {
+            const relativePath = path.relative(typesDir, file);
+            const contents = fs.readFileSync(file);
+            // Delimit and length-prefix each record so that no two different file sets can hash to the
+            // same byte stream (`a` + `bc` would otherwise be indistinguishable from `ab` + `c`).
+            hash.update(`${relativePath}\0${contents.byteLength}\0`);
+            hash.update(contents);
+        }
+        return hash.digest('hex');
+    } catch (error) {
+        // Covers the directory listing and every file read. Falling back to a fixed hash keeps the cache
+        // behaving as it did before, which is also the stale-cache bug above — so say so rather than fail quietly.
+        console.warn(`[openapi-types-fingerprint] cannot fingerprint ${typesDir}, the dependency cache may go stale:`, error);
+        return 'unavailable';
+    }
+}
+
 export default defineConfig(async ({ mode }) => {
     const proxyConfig = await loadProxyConfig();
     const coverageEnabled = process.env.COVERAGE === 'true' || mode === 'test';
@@ -87,6 +128,7 @@ export default defineConfig(async ({ mode }) => {
                     exclude: ['node_modules/**/*'],
                 }),
             tailwindcss(),
+            { name: `openapi-types-fingerprint:${openApiTypesFingerprint()}` },
         ].filter(Boolean),
     };
 });
