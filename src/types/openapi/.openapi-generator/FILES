@@ -266,8 +266,6 @@ models/ConnectorSummaryDto.ts
 models/ConnectorUpdateRequestDto.ts
 models/ConnectorUpdateRequestDtoV2.ts
 models/ConnectorVersion.ts
-models/ContentSigningWorkflowDto.ts
-models/ContentSigningWorkflowRequestDto.ts
 models/CoreInfoResponseDto.ts
 models/CredentialAttributeContentData.ts
 models/CredentialAttributeContentV2.ts
@@ -312,6 +310,8 @@ models/DiscoveryHistoryDetailDto.ts
 models/DiscoveryHistoryDto.ts
 models/DiscoveryResponseDto.ts
 models/DiscoveryStatus.ts
+models/DocumentSigningWorkflowDto.ts
+models/DocumentSigningWorkflowRequestDto.ts
 models/EditKeyItemDto.ts
 models/EditKeyRequestDto.ts
 models/EditLocationRequestDto.ts
