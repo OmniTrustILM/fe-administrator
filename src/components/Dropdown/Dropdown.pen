@@ -35,7 +35,7 @@
               "type": "text",
               "id": "uIeiI",
               "name": "Title",
-              "fill": "$color.gray-900",
+              "fill": "#1f2937",
               "content": "Dropdown",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -45,7 +45,7 @@
               "type": "text",
               "id": "L05X7U",
               "name": "Subtitle",
-              "fill": "$color.gray-700",
+              "fill": "#525252",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Trigger menu — styles, states & open menu",
@@ -94,7 +94,7 @@
                       "type": "text",
                       "id": "iBGXh",
                       "name": "Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Default",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -114,7 +114,7 @@
                       "type": "text",
                       "id": "y6mUav",
                       "name": "Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Hover",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -134,7 +134,7 @@
                       "type": "text",
                       "id": "gyVzr",
                       "name": "Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Focus",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -154,7 +154,7 @@
                       "type": "text",
                       "id": "u6qcTD",
                       "name": "Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Disabled",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -193,7 +193,7 @@
                     {
                       "type": "text",
                       "id": "J41qRn",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Default",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -215,7 +215,7 @@
                       "name": "Dropdown Trigger",
                       "fill": "$color.white",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -226,7 +226,7 @@
                           "type": "text",
                           "id": "THGnE",
                           "name": "Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -240,7 +240,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#1f2937"
                         }
                       ]
                     }
@@ -258,9 +258,9 @@
                       "type": "frame",
                       "id": "CWHnu",
                       "name": "Dropdown Trigger",
-                      "fill": "$color.gray-100",
+                      "fill": "#ebebeb",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -271,7 +271,7 @@
                           "type": "text",
                           "id": "B3nscX",
                           "name": "Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -285,7 +285,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#1f2937"
                         }
                       ]
                     }
@@ -303,7 +303,7 @@
                       "type": "frame",
                       "id": "MCkhV",
                       "name": "Dropdown Trigger",
-                      "fill": "$color.gray-100",
+                      "fill": "#ebebeb",
                       "cornerRadius": 8,
                       "stroke": "$color.blue-500",
                       "strokeWidth": 1,
@@ -322,7 +322,7 @@
                           "type": "text",
                           "id": "bJOIf",
                           "name": "Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -336,7 +336,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#1f2937"
                         }
                       ]
                     }
@@ -357,7 +357,7 @@
                       "opacity": 0.5,
                       "fill": "$color.white",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -368,7 +368,7 @@
                           "type": "text",
                           "id": "cAfkA",
                           "name": "Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -382,7 +382,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#1f2937"
                         }
                       ]
                     }
@@ -419,7 +419,7 @@
                     {
                       "type": "text",
                       "id": "MzT7S",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Transparent",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -449,7 +449,7 @@
                           "type": "text",
                           "id": "WImTn",
                           "name": "Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -463,7 +463,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#1f2937"
                         }
                       ]
                     }
@@ -481,7 +481,7 @@
                       "type": "frame",
                       "id": "WMryt",
                       "name": "Dropdown Trigger",
-                      "fill": "$color.gray-100",
+                      "fill": "#ebebeb",
                       "cornerRadius": 8,
                       "gap": 8,
                       "padding": 8,
@@ -491,7 +491,7 @@
                           "type": "text",
                           "id": "oVHuw",
                           "name": "Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -505,7 +505,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#1f2937"
                         }
                       ]
                     }
@@ -542,7 +542,7 @@
                           "type": "text",
                           "id": "G4ePs",
                           "name": "Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -556,7 +556,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#1f2937"
                         }
                       ]
                     }
@@ -585,7 +585,7 @@
                           "type": "text",
                           "id": "xiWsg",
                           "name": "Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -599,7 +599,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#1f2937"
                         }
                       ]
                     }
@@ -629,7 +629,7 @@
               "type": "text",
               "id": "ykDsi",
               "name": "Section: Open Menu",
-              "fill": "$color.gray-900",
+              "fill": "#1f2937",
               "content": "Open menu",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -646,9 +646,9 @@
                   "type": "frame",
                   "id": "m9tTS",
                   "name": "Dropdown Trigger",
-                  "fill": "$color.gray-100",
+                  "fill": "#ebebeb",
                   "cornerRadius": 8,
-                  "stroke": "$color.gray-200",
+                  "stroke": "#8f8f8f",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "gap": 8,
@@ -659,7 +659,7 @@
                       "type": "text",
                       "id": "ACHdD",
                       "name": "Label",
-                      "fill": "$color.gray-800",
+                      "fill": "#1f2937",
                       "content": "Actions",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -673,7 +673,7 @@
                       "height": 16,
                       "icon": "chevron-up",
                       "library": "lucide",
-                      "fill": "$color.gray-800"
+                      "fill": "#1f2937"
                     }
                   ]
                 },
@@ -723,13 +723,13 @@
                           "height": 16,
                           "icon": "pencil",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         },
                         {
                           "type": "text",
                           "id": "m6G01I",
                           "name": "Item Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Edit",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -742,7 +742,7 @@
                       "id": "H1L6kA",
                       "name": "Menu Item",
                       "width": "fill_container",
-                      "fill": "$color.gray-100",
+                      "fill": "#ebebeb",
                       "cornerRadius": 8,
                       "gap": 14,
                       "padding": [
@@ -759,13 +759,13 @@
                           "height": 16,
                           "icon": "copy",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         },
                         {
                           "type": "text",
                           "id": "It3zE",
                           "name": "Item Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Duplicate",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -795,13 +795,13 @@
                           "height": 16,
                           "icon": "folder",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         },
                         {
                           "type": "text",
                           "id": "CHPho",
                           "name": "Item Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Move to…",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -831,13 +831,13 @@
                           "height": 16,
                           "icon": "archive",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         },
                         {
                           "type": "text",
                           "id": "kPey3",
                           "name": "Item Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Archive",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -871,7 +871,7 @@
               "type": "text",
               "id": "bK41n",
               "name": "Section: Examples",
-              "fill": "$color.gray-900",
+              "fill": "#1f2937",
               "content": "Examples",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -898,7 +898,7 @@
                       "name": "Dropdown Trigger",
                       "fill": "$color.white",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -913,13 +913,13 @@
                           "height": 16,
                           "icon": "list-checks",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#1f2937"
                         },
                         {
                           "type": "text",
                           "id": "KupuL",
                           "name": "Label",
-                          "fill": "$color.gray-800",
+                          "fill": "#1f2937",
                           "content": "Bulk actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -933,14 +933,14 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#1f2937"
                         }
                       ]
                     },
                     {
                       "type": "text",
                       "id": "p8ruL",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "3 selected",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -958,7 +958,7 @@
                     {
                       "type": "text",
                       "id": "u8tir",
-                      "fill": "$color.gray-900",
+                      "fill": "#1f2937",
                       "content": "Certificate #1024",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -982,7 +982,7 @@
                           "height": 16,
                           "icon": "ellipsis",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#1f2937"
                         }
                       ]
                     }
@@ -1004,7 +1004,7 @@
       "width": 820,
       "fill": "$color.neutral-900",
       "cornerRadius": 12,
-      "stroke": "$color.neutral-700",
+      "stroke": "#262626",
       "strokeWidth": 1,
       "strokeAlignment": "inner",
       "layout": "vertical",
@@ -1028,7 +1028,7 @@
               "type": "text",
               "id": "x8AC4O",
               "name": "Title",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "Dropdown",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -1161,7 +1161,7 @@
               "type": "rectangle",
               "id": "uVAbK",
               "name": "Divider",
-              "fill": "$color.neutral-700",
+              "fill": "#262626",
               "width": "fill_container",
               "height": 1
             },
@@ -1208,7 +1208,7 @@
                       "name": "Dropdown Trigger",
                       "fill": "$color.neutral-800",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -1219,7 +1219,7 @@
                           "type": "text",
                           "id": "avahq",
                           "name": "Label",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1233,7 +1233,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#f5f5f5"
                         }
                       ]
                     }
@@ -1251,9 +1251,9 @@
                       "type": "frame",
                       "id": "pSZsR",
                       "name": "Dropdown Trigger",
-                      "fill": "$color.neutral-700",
+                      "fill": "#2e2e2e",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -1264,7 +1264,7 @@
                           "type": "text",
                           "id": "p5LxUL",
                           "name": "Label",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1278,7 +1278,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#f5f5f5"
                         }
                       ]
                     }
@@ -1296,7 +1296,7 @@
                       "type": "frame",
                       "id": "slero",
                       "name": "Dropdown Trigger",
-                      "fill": "$color.neutral-700",
+                      "fill": "#2e2e2e",
                       "cornerRadius": 8,
                       "stroke": "$color.blue-500",
                       "strokeWidth": 1,
@@ -1315,7 +1315,7 @@
                           "type": "text",
                           "id": "KiiOy",
                           "name": "Label",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1329,7 +1329,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#f5f5f5"
                         }
                       ]
                     }
@@ -1350,7 +1350,7 @@
                       "opacity": 0.5,
                       "fill": "$color.neutral-800",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -1361,7 +1361,7 @@
                           "type": "text",
                           "id": "bCnHq",
                           "name": "Label",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1375,7 +1375,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#f5f5f5"
                         }
                       ]
                     }
@@ -1387,7 +1387,7 @@
               "type": "rectangle",
               "id": "KL0VV",
               "name": "Divider",
-              "fill": "$color.neutral-700",
+              "fill": "#262626",
               "width": "fill_container",
               "height": 1
             },
@@ -1442,7 +1442,7 @@
                           "type": "text",
                           "id": "zIP7j",
                           "name": "Label",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1456,7 +1456,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#f5f5f5"
                         }
                       ]
                     }
@@ -1474,7 +1474,7 @@
                       "type": "frame",
                       "id": "M1lxNp",
                       "name": "Dropdown Trigger",
-                      "fill": "$color.neutral-700",
+                      "fill": "#2e2e2e",
                       "cornerRadius": 8,
                       "gap": 8,
                       "padding": 8,
@@ -1484,7 +1484,7 @@
                           "type": "text",
                           "id": "Dcz3f",
                           "name": "Label",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1498,7 +1498,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#f5f5f5"
                         }
                       ]
                     }
@@ -1535,7 +1535,7 @@
                           "type": "text",
                           "id": "v3UVl",
                           "name": "Label",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1549,7 +1549,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#f5f5f5"
                         }
                       ]
                     }
@@ -1578,7 +1578,7 @@
                           "type": "text",
                           "id": "RVnRE",
                           "name": "Label",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "Actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1592,7 +1592,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#f5f5f5"
                         }
                       ]
                     }
@@ -1606,7 +1606,7 @@
           "type": "rectangle",
           "id": "UvlfD",
           "name": "Section Divider",
-          "fill": "$color.neutral-700",
+          "fill": "#262626",
           "width": "fill_container",
           "height": 1
         },
@@ -1622,7 +1622,7 @@
               "type": "text",
               "id": "GymCW",
               "name": "Section: Open Menu",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "Open menu",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -1639,9 +1639,9 @@
                   "type": "frame",
                   "id": "NmkQ3",
                   "name": "Dropdown Trigger",
-                  "fill": "$color.neutral-700",
+                  "fill": "#2e2e2e",
                   "cornerRadius": 8,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#666666",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "gap": 8,
@@ -1652,7 +1652,7 @@
                       "type": "text",
                       "id": "I9UAn",
                       "name": "Label",
-                      "fill": "$color.white",
+                      "fill": "#f5f5f5",
                       "content": "Actions",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -1666,7 +1666,7 @@
                       "height": 16,
                       "icon": "chevron-up",
                       "library": "lucide",
-                      "fill": "$color.white"
+                      "fill": "#f5f5f5"
                     }
                   ]
                 },
@@ -1675,9 +1675,9 @@
                   "id": "XmHlV",
                   "name": "Menu",
                   "width": 240,
-                  "fill": "$color.neutral-800",
+                  "fill": "#171717",
                   "cornerRadius": 8,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "effect": {
@@ -1716,13 +1716,13 @@
                           "height": 16,
                           "icon": "pencil",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#d4d4d4"
                         },
                         {
                           "type": "text",
                           "id": "r730j",
                           "name": "Item Label",
-                          "fill": "$color.neutral-400",
+                          "fill": "#f5f5f5",
                           "content": "Edit",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1735,7 +1735,7 @@
                       "id": "wm5tp",
                       "name": "Menu Item",
                       "width": "fill_container",
-                      "fill": "$color.neutral-700",
+                      "fill": "#2e2e2e",
                       "cornerRadius": 8,
                       "gap": 14,
                       "padding": [
@@ -1752,13 +1752,13 @@
                           "height": 16,
                           "icon": "copy",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#d4d4d4"
                         },
                         {
                           "type": "text",
                           "id": "fOx93",
                           "name": "Item Label",
-                          "fill": "$color.neutral-300",
+                          "fill": "#f5f5f5",
                           "content": "Duplicate",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1788,13 +1788,13 @@
                           "height": 16,
                           "icon": "folder",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#d4d4d4"
                         },
                         {
                           "type": "text",
                           "id": "wPuVQ",
                           "name": "Item Label",
-                          "fill": "$color.neutral-400",
+                          "fill": "#f5f5f5",
                           "content": "Move to…",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1824,13 +1824,13 @@
                           "height": 16,
                           "icon": "archive",
                           "library": "lucide",
-                          "fill": "$color.neutral-400"
+                          "fill": "#d4d4d4"
                         },
                         {
                           "type": "text",
                           "id": "v9iRr",
                           "name": "Item Label",
-                          "fill": "$color.neutral-400",
+                          "fill": "#f5f5f5",
                           "content": "Archive",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1848,7 +1848,7 @@
           "type": "rectangle",
           "id": "TFY9j",
           "name": "Section Divider",
-          "fill": "$color.neutral-700",
+          "fill": "#262626",
           "width": "fill_container",
           "height": 1
         },
@@ -1864,7 +1864,7 @@
               "type": "text",
               "id": "t1ykjx",
               "name": "Section: Examples",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "Examples",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -1891,7 +1891,7 @@
                       "name": "Dropdown Trigger",
                       "fill": "$color.neutral-800",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -1906,13 +1906,13 @@
                           "height": 16,
                           "icon": "list-checks",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#f5f5f5"
                         },
                         {
                           "type": "text",
                           "id": "wlH8b",
                           "name": "Label",
-                          "fill": "$color.white",
+                          "fill": "#f5f5f5",
                           "content": "Bulk actions",
                           "fontFamily": "Inter",
                           "fontSize": 14,
@@ -1926,7 +1926,7 @@
                           "height": 16,
                           "icon": "chevron-down",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#f5f5f5"
                         }
                       ]
                     },
@@ -1951,7 +1951,7 @@
                     {
                       "type": "text",
                       "id": "OpL9i",
-                      "fill": "$color.white",
+                      "fill": "#f5f5f5",
                       "content": "Certificate #1024",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -1975,7 +1975,7 @@
                           "height": 16,
                           "icon": "ellipsis",
                           "library": "lucide",
-                          "fill": "$color.white"
+                          "fill": "#f5f5f5"
                         }
                       ]
                     }

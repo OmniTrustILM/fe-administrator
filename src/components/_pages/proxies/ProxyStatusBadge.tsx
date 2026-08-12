@@ -14,5 +14,5 @@ export const ProxyStatusBadge = ({ status }: ProxyStatusBadgeProps) => {
     const statusColor = getProxyStatusColor(status);
     const statusLabel = getProxyStatus(status);
 
-    return <Badge style={{ backgroundColor: statusColor }}>{statusLabel}</Badge>;
+    return <Badge color={statusColor}>{statusLabel}</Badge>;
 };

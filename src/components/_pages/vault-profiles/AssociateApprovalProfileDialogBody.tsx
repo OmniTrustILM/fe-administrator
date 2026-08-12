@@ -104,10 +104,7 @@ export default function AssociateApprovalProfileDialogBody({
 
                             return (
                                 <div className="mb-4">
-                                    <Label
-                                        htmlFor="approvalProfile"
-                                        className="block text-sm font-medium mb-2 text-gray-700 dark:text-white"
-                                    >
+                                    <Label htmlFor="approvalProfile" className="block text-sm font-medium mb-2 text-content">
                                         Select Approval profile
                                     </Label>
 
@@ -118,11 +115,11 @@ export default function AssociateApprovalProfileDialogBody({
                                         onChange={(value) => field.onChange(value)}
                                         placeholder="Select Approval profile to be associated"
                                         className={cn({
-                                            'border-red-500': !!fieldError,
+                                            'border-danger': !!fieldError,
                                         })}
                                     />
 
-                                    {fieldError && <p className="mt-1 text-sm text-red-600">{fieldError}</p>}
+                                    {fieldError && <p className="mt-1 text-sm text-danger">{fieldError}</p>}
                                 </div>
                             );
                         }}

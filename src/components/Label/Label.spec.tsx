@@ -25,7 +25,7 @@ test.describe('Label', () => {
         await expect(component.getByText('Required Label')).toBeVisible();
 
         const label = component.getByText('Required Label');
-        const requiredSpan = label.locator('..').locator('span.text-red-500');
+        const requiredSpan = label.locator('..').locator('span.text-danger');
         await expect(requiredSpan).toBeVisible();
         await expect(requiredSpan).toHaveText(' *');
     });
@@ -35,7 +35,7 @@ test.describe('Label', () => {
 
         await expect(component.getByText('Optional Label')).toBeVisible();
         const label = component.getByText('Optional Label');
-        const requiredSpan = label.locator('..').locator('span.text-red-500');
+        const requiredSpan = label.locator('..').locator('span.text-danger');
         await expect(requiredSpan).toHaveCount(0);
     });
 

@@ -135,8 +135,8 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
     return (
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="mt-2 space-y-4">
-                <div className="rounded-xl border border-gray-200 dark:border-neutral-700 p-4 md:p-5 shadow-2xs bg-white dark:bg-neutral-900 space-y-4">
-                    <h3 className="text-lg font-bold text-[var(--dark-gray-color)] dark:text-neutral-200">Validation</h3>
+                <div className="rounded-xl border border-divider p-4 md:p-5 shadow-2xs bg-surface-raised space-y-4">
+                    <h3 className="text-lg font-bold text-content">Validation</h3>
                     <Controller
                         name="enabled"
                         control={control}
@@ -162,7 +162,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                                         />
                                     )}
                                 />
-                                <p className="text-sm text-gray-500 mt-2">Validation frequency of certificates specified in days.</p>
+                                <p className="text-sm text-content-subtle mt-2">Validation frequency of certificates specified in days.</p>
                             </div>
                             <div>
                                 <Controller
@@ -180,15 +180,15 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                                         />
                                     )}
                                 />
-                                <p className="text-sm text-gray-500 mt-2">
+                                <p className="text-sm text-content-subtle mt-2">
                                     How many days before expiration should certificate's validation status change to Expiring.
                                 </p>
                             </div>
                         </>
                     )}
                 </div>
-                <div className="rounded-xl border border-gray-200 dark:border-neutral-700 p-4 md:p-5 shadow-2xs bg-white dark:bg-neutral-900 space-y-4">
-                    <h3 className="text-lg font-bold text-[var(--dark-gray-color)] dark:text-neutral-200">Registration</h3>
+                <div className="rounded-xl border border-divider p-4 md:p-5 shadow-2xs bg-surface-raised space-y-4">
+                    <h3 className="text-lg font-bold text-content">Registration</h3>
                     <div>
                         <Controller
                             name="defaultIssuanceWindowDays"
@@ -205,7 +205,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                                 />
                             )}
                         />
-                        <p className="text-sm text-gray-500 mt-2">
+                        <p className="text-sm text-content-subtle mt-2">
                             Default issuance window in days, applied when a challenge-gated pre-registration omits an explicit expiry.
                         </p>
                     </div>
@@ -225,7 +225,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                                 />
                             )}
                         />
-                        <p className="text-sm text-gray-500 mt-2">
+                        <p className="text-sm text-content-subtle mt-2">
                             Maximum failed challenge-verification attempts before the registration authorization locks.
                         </p>
                     </div>

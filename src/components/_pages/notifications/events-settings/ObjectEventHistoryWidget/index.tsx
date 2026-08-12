@@ -19,12 +19,7 @@ type Props = {
     uuid: string;
 };
 
-const booleanIcon = (value: boolean) =>
-    value ? (
-        <Check size={16} className="text-[var(--status-success-color)]" />
-    ) : (
-        <X size={16} className="text-[var(--status-danger-color)]" />
-    );
+const booleanIcon = (value: boolean) => (value ? <Check size={16} className="text-success" /> : <X size={16} className="text-danger" />);
 
 export default function ObjectEventHistoryWidget({ resource, uuid }: Readonly<Props>) {
     const dispatch = useDispatch();

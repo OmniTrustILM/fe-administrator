@@ -40,7 +40,7 @@ const ExecutionsItemsList = ({
 
     return smallerBadges ? (
         <div className="flex flex-col gap-1 w-full min-w-0">
-            <h6 className="text-gray-500 break-words">{`${executionName}'s Execution Items`}</h6>
+            <h6 className="text-content-subtle break-words">{`${executionName}'s Execution Items`}</h6>
             <div className="flex flex-col gap-1 w-full min-w-0">
                 {renderExecutionItems(
                     executionItems,
@@ -55,7 +55,7 @@ const ExecutionsItemsList = ({
         </div>
     ) : (
         <div key={executionUuid} className="flex gap-2 items-start">
-            <h6 className="text-gray-500 whitespace-nowrap">{`${executionName}`}</h6>
+            <h6 className="text-content-subtle whitespace-nowrap">{`${executionName}`}</h6>
             <div className="flex flex-wrap gap-2">
                 {renderExecutionItems(
                     executionItems,

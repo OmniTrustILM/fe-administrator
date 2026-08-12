@@ -56,13 +56,13 @@ export default function EvaluationDetailsDialog({ isOpen, onClose, objectLabel, 
             caption="Evaluation details"
             size="xl"
             body={
-                <div className="divide-y divide-gray-200 text-sm">
+                <div className="divide-y divide-divider text-sm">
                     {sections.map((section) => (
                         <div key={section.id} className="grid grid-cols-[200px_1fr] gap-y-2 py-4 first:pt-0 last:pb-0">
                             {section.rows.map((row) => (
                                 <Fragment key={row.label}>
-                                    <div className="text-gray-600">{row.label}</div>
-                                    <div className="text-gray-900">{row.value}</div>
+                                    <div className="text-content-muted">{row.label}</div>
+                                    <div className="text-content">{row.value}</div>
                                 </Fragment>
                             ))}
                         </div>

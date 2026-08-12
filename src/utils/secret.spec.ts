@@ -63,11 +63,11 @@ afterEach(() => {
 describe('secret utils', () => {
     describe('getSecretStatusColor', () => {
         test('returns teal for Active', () => {
-            expect(getSecretStatusColor(SecretState.Active)).toBe('#14B8A6');
+            expect(getSecretStatusColor(SecretState.Active)).toBe('#12a393');
         });
 
         test('returns dark gray for Inactive', () => {
-            expect(getSecretStatusColor(SecretState.Inactive)).toBe('#1F2937');
+            expect(getSecretStatusColor(SecretState.Inactive)).toBe('#4f688c');
         });
 
         test('returns gray for Revoked', () => {
@@ -75,7 +75,7 @@ describe('secret utils', () => {
         });
 
         test('returns light gray for Expired', () => {
-            expect(getSecretStatusColor(SecretState.Expired)).toBe('#9CA3AF');
+            expect(getSecretStatusColor(SecretState.Expired)).toBe('#8a92a0');
         });
 
         test('returns red for Failed', () => {

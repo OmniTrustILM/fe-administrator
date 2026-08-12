@@ -121,7 +121,7 @@ export default function EventForm() {
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <Widget title={'Edit Event'} busy={isBusy} widgetLockName={LockWidgetNameEnum.EventSettings}>
                         <div>
-                            <Label htmlFor="event" className="block text-sm font-medium mb-2 text-gray-700 dark:text-white">
+                            <Label htmlFor="event" className="block text-sm font-medium mb-2 text-content">
                                 Event Name
                             </Label>
                             <Select
@@ -135,7 +135,7 @@ export default function EventForm() {
                         </div>
 
                         <div>
-                            <Label htmlFor="resource" className="block text-sm font-medium mb-2 text-gray-700 dark:text-white">
+                            <Label htmlFor="resource" className="block text-sm font-medium mb-2 text-content">
                                 Resource
                             </Label>
                             <Select

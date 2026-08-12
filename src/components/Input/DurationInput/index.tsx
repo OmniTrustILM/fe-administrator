@@ -46,9 +46,9 @@ const DurationInput = ({ id, label, value, onChange, onBlur, required, invalid, 
     return (
         <div className="flex flex-col gap-1">
             {label && (
-                <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+                <label htmlFor={id} className="block text-sm font-medium text-content">
                     {label}
-                    {required && <span className="text-red-500 ml-1">*</span>}
+                    {required && <span className="text-danger ml-1">*</span>}
                 </label>
             )}
             <input
@@ -61,12 +61,12 @@ const DurationInput = ({ id, label, value, onChange, onBlur, required, invalid, 
                 placeholder={placeholder ?? 'e.g. 1d 2h 30m 45s 500ms'}
                 className={cn(
                     inputBaseClassName,
-                    invalid && 'border-red-500 focus:border-red-500 focus:ring-red-500',
-                    disabled && 'bg-[#F8FAFC]',
+                    invalid && 'border-danger focus:border-danger focus:ring-danger',
+                    disabled && 'bg-surface',
                 )}
             />
-            {error && <p className="text-xs text-red-600 mt-0.5">{error}</p>}
-            <p className="text-xs text-gray-700">
+            {error && <p className="text-xs text-danger mt-0.5">{error}</p>}
+            <p className="text-xs text-content-muted">
                 Format: days (d), hours (h), minutes (m), seconds (s), milliseconds (ms) — e.g. 1d 12h or 30m 15s 500ms
             </p>
         </div>

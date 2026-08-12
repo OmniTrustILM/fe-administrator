@@ -857,6 +857,7 @@ export default function FilterWidgetRuleAction({
                                 type="radio"
                                 name="valueMode"
                                 checked={valueMode === 'static'}
+                                className="not-checked:bg-surface-raised border-outline text-brand-solid focus:ring-brand"
                                 onChange={() => {
                                     setValueMode('static');
                                     setSourceFieldSource(undefined);
@@ -870,6 +871,7 @@ export default function FilterWidgetRuleAction({
                                 type="radio"
                                 name="valueMode"
                                 checked={valueMode === 'mapped'}
+                                className="not-checked:bg-surface-raised border-outline text-brand-solid focus:ring-brand"
                                 onChange={() => {
                                     setValueMode('mapped');
                                     setFilterValue(undefined);

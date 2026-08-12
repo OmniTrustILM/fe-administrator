@@ -58,7 +58,7 @@ const ALL_ASSET_TYPES_OPTION_VALUE = '__CBOM_ALL_ASSET_TYPES__';
 const NON_CBOM_NOTICE_MESSAGE = 'The uploaded file does not contain cryptographic assets.';
 
 const NonCbomNotice = () => (
-    <div className="rounded-md border border-base-300 bg-base-200/30 p-4 text-sm" role="status" aria-live="polite" aria-atomic="true">
+    <div className="rounded-md border border-divider bg-surface-sunken p-4 text-sm" role="status" aria-live="polite" aria-atomic="true">
         {NON_CBOM_NOTICE_MESSAGE}
     </div>
 );
@@ -619,7 +619,7 @@ export default function CbomDetail() {
         <Container>
             <div className="min-h-[260px] flex flex-col items-center justify-center gap-3">
                 <Spinner active size="lg" />
-                <p className="text-sm text-base-content/70">Loading tab content...</p>
+                <p className="text-sm text-content-subtle">Loading tab content...</p>
             </div>
         </Container>
     );
@@ -664,7 +664,7 @@ export default function CbomDetail() {
                                     ? 'This CBOM no longer exists in the repository.'
                                     : 'Unable to load CBOM detail.'}
                             </p>
-                            <p className="mt-2 text-sm text-base-content/80">
+                            <p className="mt-2 text-sm text-content-muted">
                                 {isCbomMissingInRepository
                                     ? 'Please synchronize the inventory.'
                                     : (detailError ?? 'Please try again later.')}
@@ -890,7 +890,6 @@ export default function CbomDetail() {
                                                     type="button"
                                                     title="Copy"
                                                     onClick={handleCopyRawJson}
-                                                    className="!text-white hover:!bg-white/10 focus:!bg-white/10"
                                                 >
                                                     <Copy size={18} aria-hidden="true" />
                                                 </Button>
@@ -900,7 +899,6 @@ export default function CbomDetail() {
                                                     type="button"
                                                     title="Download"
                                                     onClick={handleDownloadRawJson}
-                                                    className="!text-white hover:!bg-white/10 focus:!bg-white/10"
                                                 >
                                                     <Download size={18} aria-hidden="true" />
                                                 </Button>
@@ -927,17 +925,11 @@ export default function CbomDetail() {
                         <JsonViewer value={locationModalData?.rawJson ?? ''} height={278} />
 
                         <div className="flex items-center justify-between pt-2">
-                            <Button type="button" variant="solid" color="primary" onClick={handleCopyAssetJson} className="text-black">
+                            <Button type="button" variant="solid" color="primary" onClick={handleCopyAssetJson}>
                                 Copy JSON
                             </Button>
 
-                            <Button
-                                type="button"
-                                variant="outline"
-                                color="secondary"
-                                onClick={handleCloseLocationModal}
-                                className="text-black"
-                            >
+                            <Button type="button" variant="outline" color="secondary" onClick={handleCloseLocationModal}>
                                 Close
                             </Button>
                         </div>

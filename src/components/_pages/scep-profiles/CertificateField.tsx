@@ -54,7 +54,7 @@ export default function CertificateField({ certificates, currentCertificate }: P
                         isClearable={true}
                         error={getFieldErrorMessage(fieldState)}
                         className={cn({
-                            'border-red-500': fieldState.error && fieldState.isTouched,
+                            'border-danger': fieldState.error && fieldState.isTouched,
                         })}
                     />
                 </div>

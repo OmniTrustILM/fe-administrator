@@ -16,13 +16,13 @@ function Footer({ className }: Readonly<Props>) {
                     href="https://docs.otilm.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600"
+                    className="text-brand"
                     data-testid="footer-docs-link"
                 >
                     Documentation
                 </a>
                 <span className="mx-2">·</span>
-                <a href="mailto:ilm@omnitrust.com" className="text-blue-600" data-testid="footer-support-link">
+                <a href="mailto:ilm@omnitrust.com" className="text-brand" data-testid="footer-support-link">
                     Support
                 </a>
                 <span className="mx-2">·</span>
@@ -30,7 +30,7 @@ function Footer({ className }: Readonly<Props>) {
                     href="https://www.omnitrust.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600"
+                    className="text-brand"
                     data-testid="footer-about-link"
                 >
                     About Us

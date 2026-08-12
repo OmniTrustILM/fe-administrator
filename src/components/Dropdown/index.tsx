@@ -45,11 +45,10 @@ function Dropdown({
                     type="button"
                     aria-label={ariaLabel}
                     className={cn(
-                        'group p-2 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg',
+                        'group p-2 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg text-inherit',
                         'focus:outline-hidden disabled:opacity-50 disabled:pointer-events-none',
-                        'dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 text-inherit',
                         {
-                            'border border-gray-200 shadow-2xs bg-white text-gray-800 hover:bg-gray-50 focus:bg-gray-50':
+                            'border border-outline shadow-2xs bg-surface-raised text-content hover:bg-surface-hover focus:bg-surface-hover':
                                 btnStyle !== 'transparent',
                             'bg-transparent': btnStyle === 'transparent',
                         },
@@ -79,8 +78,7 @@ function Dropdown({
                 <DropdownMenu.Portal>
                     <DropdownMenu.Content
                         className={cn(
-                            'min-w-60 z-[100] bg-white shadow-md rounded-lg mt-2',
-                            'dark:bg-neutral-800 dark:border dark:border-neutral-700 dark:divide-neutral-700',
+                            'min-w-60 z-[100] bg-surface-raised border-divider dark:border shadow-md rounded-lg mt-2',
                             menuClassName,
                         )}
                         sideOffset={4}
@@ -93,9 +91,8 @@ function Dropdown({
                                     <DropdownMenu.Item
                                         key={typeof item.title === 'string' ? item.title : `dropdown-item-${index}`}
                                         className={cn(
-                                            'flex items-center gap-x-3.5 py-2 px-3 w-full text-left rounded-lg text-sm text-gray-800',
-                                            'hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100',
-                                            'dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-300 dark:focus:bg-neutral-700',
+                                            'flex items-center gap-x-3.5 py-2 px-3 w-full text-left rounded-lg text-sm text-content',
+                                            'hover:bg-surface-hover focus:outline-hidden focus:bg-surface-hover',
                                             'cursor-pointer',
                                         )}
                                         onSelect={() => item.onClick()}

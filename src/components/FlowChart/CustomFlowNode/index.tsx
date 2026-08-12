@@ -191,60 +191,83 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
     const getStatusClasses = () => {
         switch (data?.certificateNodeData?.certificateNodeValidationStatus) {
             case CertificateValidationStatus.Valid:
-                return 'text-green-700 border-green-700 [&_.certificate-icon]:text-green-700';
+                return 'text-success border-success [&_.certificate-icon]:text-success';
             case CertificateValidationStatus.Expired:
-                return 'text-red-500 border-red-500';
+                return 'text-danger border-danger';
             case CertificateValidationStatus.Revoked:
-                return 'text-[#632828] border-[#632828]';
+                return 'text-node-revoked border-node-revoked';
             case CertificateValidationStatus.Invalid:
-                return 'text-gray-900 border-gray-900 border-2';
+                return 'text-content border-content border-2';
             case CertificateValidationStatus.NotChecked:
-                return 'text-blue-600 border-blue-600';
+                return 'text-brand border-brand';
             case CertificateValidationStatus.Inactive:
-                return 'text-gray-500 border-gray-500';
+                return 'text-content-subtle border-content-subtle';
             case CertificateValidationStatus.Expiring:
-                return 'text-yellow-500 border-yellow-500';
+                return 'text-warning border-warning';
             case CertificateValidationStatus.Failed:
-                return 'text-[#9c0012] border-[#9c0012]';
+                return 'text-node-failed border-node-failed';
         }
 
         switch (data?.group) {
             case 'rules':
-                return 'text-blue-600 border-blue-600';
+                return 'text-brand border-brand';
             case 'actions':
-                return 'text-green-700 border-green-700 [&_.certificate-icon]:text-green-700';
+                return 'text-success border-success [&_.certificate-icon]:text-success';
         }
 
-        return 'text-indigo-300 border-indigo-300';
+        return 'text-node-default-text border-node-default-text';
     };
+
+    // Icon colour needed on top of each fill/state to keep it at 4.5:1 (see theme-tokens.spec.ts):
+    // most statuses read fine with the button's inherited white at rest but need dark text once the
+    // fill saturates on hover/active; revoked and (at hover/active) failed sit on a fill that's dark
+    // in one theme and bright in the other, so they need the opposite pairing instead.
+    const ICON_DARKENING_ON_HOVER_CLASSES = '!border-none !text-node-icon hover:!text-black active:!text-black';
 
     const getExpandButtonStatusClasses = () => {
         switch (data?.certificateNodeData?.certificateNodeValidationStatus) {
             case CertificateValidationStatus.Valid:
-                return '!bg-[#1ab3949f] !border-none hover:!bg-[#1ab394ec] active:!bg-[#1ab394d8]';
+                return cn('!bg-node-valid/62 hover:!bg-node-valid/93 active:!bg-node-valid/85', ICON_DARKENING_ON_HOVER_CLASSES);
             case CertificateValidationStatus.Expired:
-                return '!bg-[#ef4444a4] !border-none hover:!bg-red-500 active:!bg-red-500';
+                return cn(
+                    '!bg-node-expired/64 !border-none !text-node-icon',
+                    'hover:!bg-danger-solid hover:!text-black active:!bg-danger-solid active:!text-black',
+                );
             case CertificateValidationStatus.Revoked:
-                return '!bg-[#632828b7] !border-none hover:!bg-[#632828] active:!bg-[#632828]';
+                return '!bg-node-revoked/72 !border-none hover:!bg-node-revoked active:!bg-node-revoked !text-node-icon-inverse';
             case CertificateValidationStatus.Expiring:
-                return '!bg-[#eab308a6] !border-none hover:!bg-[#eab308ec] active:!bg-[#eab308d8]';
+                return '!bg-node-expiring/65 !border-none hover:!bg-node-expiring/93 active:!bg-node-expiring/85 !text-black';
             case CertificateValidationStatus.Invalid:
-                return '!bg-[#131212a3] !border-none hover:!bg-[#131212ec] active:!bg-[#131212d8]';
+                return '!bg-node-invalid/64 !border-none hover:!bg-node-invalid/93 active:!bg-node-invalid/85';
             case CertificateValidationStatus.NotChecked:
-                return '!bg-[#7fa2c1a1] !border-none hover:!bg-[#7fa2c1ec] active:!bg-[#7fa2c1d8]';
+                return cn(
+                    '!bg-node-unchecked/63 hover:!bg-node-unchecked/93 active:!bg-node-unchecked/85',
+                    ICON_DARKENING_ON_HOVER_CLASSES,
+                );
             case CertificateValidationStatus.Failed:
-                return '!bg-[#9c0012a2] !border-none hover:!bg-[#9c0012ec] active:!bg-[#9c0012d8]';
+                return cn(
+                    '!bg-node-failed/64 !border-none !text-node-icon',
+                    'hover:!bg-node-failed/93 hover:!text-node-icon-inverse',
+                    'active:!bg-node-failed/85 active:!text-node-icon-inverse',
+                );
             case CertificateValidationStatus.Inactive:
-                return '!bg-[#6c757da0] !border-none hover:!bg-[#6c757dec] active:!bg-[#6c757dd8]';
+                return '!bg-node-inactive/63 !border-none hover:!bg-node-inactive/93 active:!bg-node-inactive/85 !text-node-icon';
         }
         switch (data?.group) {
             case 'rules':
-                return '!bg-[#7fa2c1a1] !border-none hover:!bg-[#7fa2c1ec] active:!bg-[#7fa2c1d8]';
+                return cn(
+                    '!bg-node-unchecked/63 hover:!bg-node-unchecked/93 active:!bg-node-unchecked/85',
+                    ICON_DARKENING_ON_HOVER_CLASSES,
+                );
             case 'actions':
-                return '!bg-[#1ab3949f] !border-none hover:!bg-[#1ab394ec] active:!bg-[#1ab394d8]';
+                return cn('!bg-node-valid/62 hover:!bg-node-valid/93 active:!bg-node-valid/85', ICON_DARKENING_ON_HOVER_CLASSES);
         }
 
-        return '!bg-indigo-300 !border-none hover:!bg-[#3754a5ec] active:!bg-[#3754a5d8]';
+        return cn(
+            '!bg-node-default-fill !border-none !text-black',
+            'hover:!bg-node-default/93 hover:!text-content-on-brand',
+            'active:!bg-node-default/85 active:!text-content-on-brand',
+        );
     };
 
     return (
@@ -253,8 +276,8 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
             <div className="flex items-start">
                 <div
                     className={cn(
-                        'relative bg-white p-2 pb-[0.9rem] rounded-[10px] flex flex-col items-start w-[400px] min-h-[55px] border-2 border-indigo-300 text-left z-[1] transition-[width] duration-300 ease-in-out',
-                        { 'bg-gray-200': dragging },
+                        'relative bg-surface-raised p-2 pb-[0.9rem] rounded-[10px] flex flex-col items-start w-[400px] min-h-[55px] border-2 border-node-default-text text-left z-[1] transition-[width] duration-300 ease-in-out',
+                        { 'bg-surface-active': dragging },
                         { 'border-4': data.isMainNode },
                         { 'w-[242.5px]': data.group || thisNodeState?.hidden !== undefined },
                         getStatusClasses(),
@@ -302,7 +325,11 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                     <Button
                                         color="primary"
                                         data-testid="flow-node-add"
-                                        className="mt-1 justify-center !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px] !bg-indigo-300 !border-none hover:!bg-[#3754a5ec] active:!bg-[#3754a5d8]"
+                                        className={cn(
+                                            'mt-1 justify-center !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px] !bg-node-default-fill',
+                                            '!border-none !text-black hover:!bg-node-default/93 hover:!text-content-on-brand',
+                                            'active:!bg-node-default/85 active:!text-content-on-brand',
+                                        )}
                                         title="Add connections to this node"
                                         onClick={() => setAddNodeContentCollapse(!addNodeContentCollapse)}
                                     >
@@ -314,7 +341,11 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                     <Button
                                         color="danger"
                                         data-testid="flow-node-delete"
-                                        className="mt-1 justify-center !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px] !bg-[#e37582] !border-none hover:!bg-[#ef4444ec] active:!bg-[#ef4444d8]"
+                                        className={cn(
+                                            'mt-1 justify-center !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px] !bg-node-danger-action',
+                                            '!border-none !text-black hover:!bg-danger-solid/93 hover:!text-black',
+                                            'active:!bg-danger-solid/85 active:!text-node-icon',
+                                        )}
                                         onClick={() => {
                                             if (data.deleteAction) {
                                                 if (data.deleteAction.disableCondition === 'SingleChild') {
@@ -345,7 +376,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                         }}
                                         title="Delete this node"
                                     >
-                                        <Trash2 size={16} className="text-white" />
+                                        <Trash2 size={16} />
                                     </Button>
                                 )}
                             </div>
@@ -353,15 +384,15 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                     )}
                     <div className="flex items-center mb-2 w-full">
                         <div className="mr-2 shrink-0">{getIconComponent()}</div>
-                        <h6 className="text-[var(--dark-gray-color)] font-bold text-lg min-w-0 break-words">{data.customNodeCardTitle}</h6>
+                        <h6 className="text-content font-bold text-lg min-w-0 break-words">{data.customNodeCardTitle}</h6>
                     </div>
 
                     {data.entityLabel ? (
-                        <div className="flex w-full font-medium text-[#64748b] [&>*]:min-w-0 [&>*]:flex-shrink [&>*]:break-words">
+                        <div className="flex w-full font-medium text-content-muted [&>*]:min-w-0 [&>*]:flex-shrink [&>*]:break-words">
                             <h6>Entity Name:</h6>
                             &nbsp;
                             {data.redirectUrl ? (
-                                <Link to={data.redirectUrl} className="text-[var(--primary-blue-color)] font-semibold">
+                                <Link to={data.redirectUrl} className="text-brand font-semibold">
                                     <h6 className="text-wrap">{data.entityLabel}</h6>
                                 </Link>
                             ) : (
@@ -372,7 +403,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                         <div className="mt-4" />
                     )}
                     {data.description && (
-                        <div className="flex font-medium text-[#64748B]">
+                        <div className="flex font-medium text-content-muted">
                             <h6>Description:</h6>
                             &nbsp;
                             <h6>{data.description}</h6>
@@ -382,21 +413,21 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                     {data.otherProperties && (
                         <div className={cn('w-full py-2', { hidden: !isNodeExpanded })}>
                             <div
-                                className="max-h-[150px] overflow-auto w-full [scrollbar-width:thin] [scrollbar-color:#9ca3af_#e5e7eb] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-track]:bg-gray-200 [&::-webkit-scrollbar-track]:rounded"
+                                className="max-h-[150px] overflow-auto w-full [scrollbar-width:thin] [scrollbar-color:var(--outline)_var(--divider)] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:bg-outline [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-track]:bg-divider [&::-webkit-scrollbar-track]:rounded"
                                 onWheelCapture={(e) => {
                                     // Prevent React Flow from capturing the wheel event so inner table can scroll
                                     e.stopPropagation();
                                 }}
                             >
-                                <div className="border border-gray-100 rounded-md">
+                                <div className="border border-divider rounded-md">
                                     <div className="min-w-full inline-block align-middle">
                                         {/* header */}
-                                        <div className="grid grid-cols-3 bg-[#F8FAFC] text-xs font-medium text-gray-500 uppercase px-3 py-2 rounded-t-md">
+                                        <div className="grid grid-cols-3 bg-surface text-xs font-medium text-content-subtle uppercase px-3 py-2 rounded-t-md">
                                             <div className="col-span-1">Property</div>
                                             <div className="col-span-2">Value</div>
                                         </div>
                                         {/* rows */}
-                                        <div className="divide-y divide-gray-100 bg-white rounded-b-md">
+                                        <div className="divide-y divide-divider bg-surface-raised rounded-b-md">
                                             {data.otherProperties.map((property, index) => {
                                                 const valueContent = (
                                                     <div className="flex items-center gap-2 break-all whitespace-normal">
@@ -427,9 +458,9 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                                 return (
                                                     <div
                                                         key={property?.propertyName ?? `prop-row-${index}`}
-                                                        className="grid grid-cols-3 px-3 py-2 text-sm text-gray-800"
+                                                        className="grid grid-cols-3 px-3 py-2 text-sm text-content"
                                                     >
-                                                        <div className="col-span-1 font-medium text-[#64748B]">
+                                                        <div className="col-span-1 font-medium text-content-muted">
                                                             {property?.propertyName || ''}
                                                         </div>
                                                         <div className="col-span-2">{valueContent}</div>
@@ -450,7 +481,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                     )}
 
                     <div hidden={!addNodeContentCollapse}>
-                        <div className="bg-white p-2 pb-[0.9rem] rounded-[10px] flex flex-col items-start w-[350px] min-h-[55px] text-left z-[2]">
+                        <div className="bg-surface-raised p-2 pb-[0.9rem] rounded-[10px] flex flex-col items-start w-[350px] min-h-[55px] text-left z-[2]">
                             {data.addButtonContent}
                         </div>
                     </div>

@@ -195,7 +195,7 @@ export default function CertificateValidationDialogBody({ raProfile, platformSet
                                                     invalid={!!fieldState.error && fieldState.isTouched}
                                                     error={fieldState.error?.message}
                                                 />
-                                                <p className="mt-1 text-sm text-gray-600">
+                                                <p className="mt-1 text-sm text-content-muted">
                                                     Validation frequency of certificates specified in days.
                                                 </p>
                                             </div>
@@ -217,7 +217,7 @@ export default function CertificateValidationDialogBody({ raProfile, platformSet
                                                     invalid={!!fieldState.error && fieldState.isTouched}
                                                     error={fieldState.error?.message}
                                                 />
-                                                <p className="mt-1 text-sm text-gray-600">
+                                                <p className="mt-1 text-sm text-content-muted">
                                                     How many days before expiration should certificate's validation status change to
                                                     Expiring.
                                                 </p>

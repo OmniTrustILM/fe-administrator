@@ -1,5 +1,5 @@
 {
-  "version": "2.13",
+  "version": "2.14",
   "children": [
     {
       "type": "frame",
@@ -26,7 +26,7 @@
               "type": "text",
               "id": "d05csl",
               "name": "Title",
-              "fill": "$color.neutral-900",
+              "fill": "#1f2937",
               "content": "Spinner",
               "fontFamily": "Inter",
               "fontSize": 28,
@@ -36,7 +36,7 @@
               "type": "text",
               "id": "mDPjO",
               "name": "Subtitle",
-              "fill": "$color.neutral-400",
+              "fill": "$color.neutral-600",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Loading indicator — an animated ring with one open segment. Four sizes and two colors (primary on light, light on dark).",
@@ -59,7 +59,7 @@
               "type": "text",
               "id": "nu2gu",
               "name": "Section Title",
-              "fill": "$color.gray-500",
+              "fill": "#6e6e6e",
               "content": "SIZES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -106,7 +106,7 @@
                       "type": "text",
                       "id": "kKdmA",
                       "name": "Caption sm",
-                      "fill": "$color.neutral-400",
+                      "fill": "#6e6e6e",
                       "content": "sm",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -148,7 +148,7 @@
                       "type": "text",
                       "id": "Y8vbGF",
                       "name": "Caption md",
-                      "fill": "$color.neutral-400",
+                      "fill": "#6e6e6e",
                       "content": "md",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -190,7 +190,7 @@
                       "type": "text",
                       "id": "bGFEQ",
                       "name": "Caption lg",
-                      "fill": "$color.neutral-400",
+                      "fill": "#6e6e6e",
                       "content": "lg",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -232,7 +232,7 @@
                       "type": "text",
                       "id": "Ho4zg",
                       "name": "Caption xl",
-                      "fill": "$color.neutral-400",
+                      "fill": "#6e6e6e",
                       "content": "xl",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -256,7 +256,7 @@
               "type": "text",
               "id": "UTcgy",
               "name": "Section Title",
-              "fill": "$color.gray-500",
+              "fill": "#6e6e6e",
               "content": "COLORS",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -305,7 +305,7 @@
                       "type": "text",
                       "id": "H2Bdo",
                       "name": "Caption primary",
-                      "fill": "$color.neutral-400",
+                      "fill": "#6e6e6e",
                       "content": "primary",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -327,7 +327,7 @@
                       "name": "Box",
                       "width": 64,
                       "height": 64,
-                      "fill": "$color.neutral-900",
+                      "fill": "#111827",
                       "cornerRadius": 10,
                       "justifyContent": "center",
                       "alignItems": "center",
@@ -349,7 +349,7 @@
                       "type": "text",
                       "id": "r33OiJ",
                       "name": "Caption light",
-                      "fill": "$color.neutral-400",
+                      "fill": "#6e6e6e",
                       "content": "light (on dark)",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -388,7 +388,7 @@
               "type": "text",
               "id": "LLwht",
               "name": "Title",
-              "fill": "$color.neutral-200",
+              "fill": "$color.gray-100",
               "content": "Spinner",
               "fontFamily": "Inter",
               "fontSize": 28,
@@ -398,7 +398,7 @@
               "type": "text",
               "id": "A36if3",
               "name": "Subtitle",
-              "fill": "$color.neutral-400",
+              "fill": "$color.neutral-300",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Loading indicator — an animated ring with one open segment. Four sizes and two colors (primary on light, light on dark).",
@@ -421,7 +421,7 @@
               "type": "text",
               "id": "X6ecRe",
               "name": "Section Title",
-              "fill": "$color.gray-500",
+              "fill": "$color.neutral-400",
               "content": "SIZES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -458,7 +458,7 @@
                           "innerRadius": 0.625,
                           "startAngle": 135,
                           "sweepAngle": 270,
-                          "fill": "$color.blue-500",
+                          "fill": "$color.blue-400",
                           "width": 16,
                           "height": 16
                         }
@@ -500,7 +500,7 @@
                           "innerRadius": 0.75,
                           "startAngle": 135,
                           "sweepAngle": 270,
-                          "fill": "$color.blue-500",
+                          "fill": "$color.blue-400",
                           "width": 24,
                           "height": 24
                         }
@@ -542,7 +542,7 @@
                           "innerRadius": 0.8125,
                           "startAngle": 135,
                           "sweepAngle": 270,
-                          "fill": "$color.blue-500",
+                          "fill": "$color.blue-400",
                           "width": 32,
                           "height": 32
                         }
@@ -584,7 +584,7 @@
                           "innerRadius": 0.85,
                           "startAngle": 135,
                           "sweepAngle": 270,
-                          "fill": "$color.blue-500",
+                          "fill": "$color.blue-400",
                           "width": 40,
                           "height": 40
                         }
@@ -618,7 +618,7 @@
               "type": "text",
               "id": "tRYqj",
               "name": "Section Title",
-              "fill": "$color.gray-500",
+              "fill": "$color.neutral-400",
               "content": "COLORS",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -657,7 +657,7 @@
                           "innerRadius": 0.8125,
                           "startAngle": 135,
                           "sweepAngle": 270,
-                          "fill": "$color.blue-500",
+                          "fill": "$color.blue-400",
                           "width": 32,
                           "height": 32
                         }
@@ -689,7 +689,7 @@
                       "name": "Box",
                       "width": 64,
                       "height": 64,
-                      "fill": "$color.neutral-800",
+                      "fill": "$color.neutral-700",
                       "cornerRadius": 10,
                       "justifyContent": "center",
                       "alignItems": "center",
@@ -701,7 +701,7 @@
                           "innerRadius": 0.8125,
                           "startAngle": 135,
                           "sweepAngle": 270,
-                          "fill": "$color.white",
+                          "fill": "$color.gray-100",
                           "width": 32,
                           "height": 32
                         }
@@ -903,5 +903,6 @@
       "type": "color",
       "value": "#854d0e4d"
     }
-  }
+  },
+  "fileToken": "e0af094a-5209-4c43-9927-3aa9212e7085"
 }

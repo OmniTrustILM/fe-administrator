@@ -31,8 +31,8 @@ function DescriptorInputControl({
     const error = getFieldErrorMessage(fieldState);
     const invalid = fieldState.error && fieldState.isTouched;
     const inputClassName = cn(
-        'py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600',
-        { 'border-red-500 focus:border-red-500 focus:ring-red-500': invalid },
+        'py-2.5 sm:py-3 px-4 block w-full border-outline rounded-lg text-sm focus:border-brand focus:ring-brand disabled:opacity-50 disabled:pointer-events-none bg-surface-raised text-content placeholder-content-subtle',
+        { 'border-danger focus:border-danger focus:ring-danger': invalid },
     );
 
     if (inputType === 'checkbox') {
@@ -43,7 +43,7 @@ function DescriptorInputControl({
                 id={name}
                 checked={field.value}
                 onChange={(e) => field.onChange(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 not-checked:bg-surface-raised text-brand-solid focus:ring-brand border-outline rounded"
             />
         );
     }
@@ -71,7 +71,7 @@ function DescriptorInputControl({
                 step={fieldStepValue}
                 placeholder="Default Content"
                 value={field.value || ''}
-                className={`${inputClassName} text-[var(--dark-gray-color)]`}
+                className={`${inputClassName} text-content`}
             />
         );
     }
@@ -171,7 +171,7 @@ export default function ContentDescriptorField({ isList, contentType }: Readonly
                                     />
                                 );
                                 const feedbackComponent = getFieldErrorMessage(fieldState) ? (
-                                    <p className="mt-1 text-sm text-red-600">{getFieldErrorMessage(fieldState)}</p>
+                                    <p className="mt-1 text-sm text-danger">{getFieldErrorMessage(fieldState)}</p>
                                 ) : null;
 
                                 const isBoolean = contentType === AttributeContentType.Boolean;
@@ -205,7 +205,7 @@ export default function ContentDescriptorField({ isList, contentType }: Readonly
             {(isList || !contentValues || contentValues.length === 0) && (
                 <Button
                     variant="transparent"
-                    className="text-blue-600"
+                    className="text-brand"
                     onClick={() =>
                         setValue('content', [
                             ...(isList ? (contentValues ?? []) : []),

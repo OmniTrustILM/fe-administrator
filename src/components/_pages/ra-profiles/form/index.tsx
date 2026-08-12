@@ -453,7 +453,7 @@ export default function RaProfileForm({
                                             placement="bottom"
                                         />
                                         {fieldState.error && fieldState.isTouched && (
-                                            <p className="mt-1 text-sm text-red-600">
+                                            <p className="mt-1 text-sm text-danger">
                                                 {typeof fieldState.error === 'string'
                                                     ? fieldState.error
                                                     : fieldState.error?.message || 'Invalid value'}
@@ -495,7 +495,7 @@ export default function RaProfileForm({
                                     disabled: !watchedAuthority,
                                     content: editMode ? (
                                         <div className="space-y-4">
-                                            <p className="text-sm text-gray-500">Changes are saved when you click Update.</p>
+                                            <p className="text-sm text-content-subtle">Changes are saved when you click Update.</p>
                                             <RequestAttributeAuthoringEditor
                                                 value={requestAttributesForm}
                                                 onChange={onChangeRequestAttributes}
@@ -514,7 +514,7 @@ export default function RaProfileForm({
                                     ) : (
                                         <div className="space-y-4">
                                             {!watchedAuthority && (
-                                                <p className="text-sm text-gray-500">
+                                                <p className="text-sm text-content-subtle">
                                                     Select an authority to configure request attributes.
                                                 </p>
                                             )}

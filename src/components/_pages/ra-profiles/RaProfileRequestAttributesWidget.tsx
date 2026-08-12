@@ -105,7 +105,7 @@ export default function RaProfileRequestAttributesWidget({
         <div className="space-y-4" data-testid="ra-profile-request-attributes-widget">
             {updateError && (
                 <div
-                    className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-800/10 dark:text-red-500"
+                    className="rounded-lg border border-danger bg-danger-surface p-3 text-sm text-danger"
                     data-testid="request-attributes-update-error"
                     role="alert"
                 >
@@ -113,7 +113,7 @@ export default function RaProfileRequestAttributesWidget({
                 </div>
             )}
             {showPlatformDefaultNote && (
-                <p className="text-sm text-gray-500" data-testid="request-attributes-platform-default-note">
+                <p className="text-sm text-content-subtle" data-testid="request-attributes-platform-default-note">
                     No request attributes are defined for this RA profile. The set of request attributes defined in platform settings will
                     be used instead.
                 </p>

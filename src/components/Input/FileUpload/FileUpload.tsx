@@ -152,12 +152,12 @@ export default function FileUpload({
                         value={fileContent}
                         onChange={onFileInputTextChanged}
                         onBlur={onFileInputTextBlurred}
-                        className={editable ? '' : 'bg-gray-50 dark:bg-neutral-800'}
+                        className={editable ? '' : 'bg-surface-sunken'}
                     />
                 </div>
             )}
 
-            <div className="text-sm text-gray-500 mt-4 dark:text-neutral-400 mb-2">{resolvedDropZoneHintText}</div>
+            <div className="text-sm text-content-subtle mt-4 mb-2">{resolvedDropZoneHintText}</div>
             <div>
                 <Label htmlFor={`${id}__fileUpload__file`} className="cursor-pointer">
                     <Button variant="transparent" color="secondary" onClick={() => {}} className="pointer-events-none">

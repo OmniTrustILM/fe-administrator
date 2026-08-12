@@ -60,12 +60,12 @@ function Switch({
                         aria-describedby={ariaDescribedBy}
                         data-testid={dataTestId ? `${dataTestId}-input` : `switch-${id}-input`}
                     />
-                    <span className="absolute inset-0 bg-gray-200 rounded-full transition-colors duration-200 ease-in-out peer-checked:bg-blue-600 dark:bg-neutral-700 dark:peer-checked:bg-blue-500 peer-disabled:opacity-50 peer-disabled:pointer-events-none"></span>
-                    <span className="absolute top-1/2 start-0.5 -translate-y-1/2 size-6 bg-white rounded-full shadow-xs transition-transform duration-200 ease-in-out peer-checked:translate-x-full dark:bg-neutral-400 dark:peer-checked:bg-white"></span>
-                    <span className="absolute top-1/2 start-1 -translate-y-1/2 flex justify-center items-center size-5 text-gray-500 peer-checked:text-white transition-colors duration-200 dark:text-neutral-500">
+                    <span className="absolute inset-0 bg-surface-active rounded-full transition-colors duration-200 ease-in-out peer-checked:bg-brand-solid peer-disabled:opacity-50 peer-disabled:pointer-events-none"></span>
+                    <span className="absolute top-1/2 start-0.5 -translate-y-1/2 size-6 bg-content-inverse rounded-full shadow-xs transition-transform duration-200 ease-in-out peer-checked:translate-x-full"></span>
+                    <span className="absolute top-1/2 start-1 -translate-y-1/2 flex justify-center items-center size-5 text-content-subtle peer-checked:text-content-on-brand transition-colors duration-200">
                         <X size={12} strokeWidth={2.5} />
                     </span>
-                    <span className="absolute top-1/2 end-1 -translate-y-1/2 flex justify-center items-center size-5 text-gray-500 peer-checked:text-blue-600 transition-colors duration-200 dark:text-neutral-500">
+                    <span className="absolute top-1/2 end-1 -translate-y-1/2 flex justify-center items-center size-5 text-content-subtle peer-checked:text-brand-solid transition-colors duration-200">
                         <Check size={12} strokeWidth={2.5} />
                     </span>
                 </Label>

@@ -34,8 +34,8 @@ function NotificationsOverview() {
                                   <Check size={16} />
                               </Button>
                               <div>
-                                  <div className="text-sm leading-[16px] font-medium text-gray-800">{notification.message}</div>
-                                  <span className="text-xs leading-[16px] text-gray-500 mr-2 whitespace-nowrap">
+                                  <div className="text-sm leading-[16px] font-medium text-content">{notification.message}</div>
+                                  <span className="text-xs leading-[16px] text-content-subtle mr-2 whitespace-nowrap">
                                       {formatTimeAgo(notification.sentAt)}
                                   </span>
                                   <Button
@@ -54,7 +54,7 @@ function NotificationsOverview() {
                                   </Button>
                               </div>
                           </div>
-                          {index < overviewNotifications.length - 1 && <hr className="border-gray-200 mb-2" />}
+                          {index < overviewNotifications.length - 1 && <hr className="border-divider mb-2" />}
                       </React.Fragment>
                   )),
         [overviewNotifications, dispatch, navigate],
@@ -65,9 +65,9 @@ function NotificationsOverview() {
     return (
         <Dropdown
             title={
-                <div className="flex items-center gap-2 text-white">
+                <div className="flex items-center gap-2 text-content-on-brand">
                     {hasNewMessages ? (
-                        <BellDot size={24} strokeWidth={1.5} className="[&_circle]:fill-yellow-500 [&_circle]:stroke-yellow-500" />
+                        <BellDot size={24} strokeWidth={1.5} className="[&_circle]:fill-warning-solid [&_circle]:stroke-warning-solid" />
                     ) : (
                         <Bell size={24} strokeWidth={1.5} />
                     )}
@@ -85,7 +85,7 @@ function NotificationsOverview() {
                     hideWidgetButtons={true}
                 >
                     <div className="max-h-[360px] overflow-y-auto pt-2">{notificationsList}</div>
-                    <div className="sticky bottom-0 bg-white pt-2 border-t border-gray-200">
+                    <div className="sticky bottom-0 bg-surface-raised pt-2 border-t border-divider">
                         <Link to="/notifications" className="w-full" onClick={() => setOpen(false)}>
                             <Button color="secondary" className="w-full justify-center">
                                 View all notifications

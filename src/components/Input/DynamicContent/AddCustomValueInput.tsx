@@ -5,8 +5,7 @@ import DatePicker from 'components/DatePicker';
 import Switch from 'components/Switch';
 import { AttributeContentType } from 'types/openapi';
 
-const defaultInputClassName =
-    'py-2.5 px-4 block w-full border border-gray-200 rounded-lg text-sm dark:bg-neutral-900 dark:border-neutral-700';
+const defaultInputClassName = 'py-2.5 px-4 block w-full border border-outline rounded-lg text-sm bg-surface-raised';
 
 type Props = {
     id: string;
@@ -67,7 +66,7 @@ export function AddCustomValueInput({
             <input
                 type="number"
                 step={fieldStepValue}
-                className={cn(inputClassName, { 'border-red-500 focus:border-red-500 focus:ring-red-500': invalid })}
+                className={cn(inputClassName, { 'border-danger focus:border-danger focus:ring-danger': invalid })}
                 value={value === '' ? '' : Number(value)}
                 onChange={handleNumberChange}
                 disabled={readOnly}

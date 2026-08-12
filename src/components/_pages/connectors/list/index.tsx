@@ -255,7 +255,7 @@ export default function ConnectorList() {
                         <span key="url" style={{ whiteSpace: 'nowrap' }}>
                             {connector.url}
                         </span>,
-                        <Badge key="badge" style={{ backgroundColor: connectorStatus[1] }}>
+                        <Badge key="badge" color={connectorStatus[1]}>
                             {connectorStatus[0]}
                         </Badge>,
                     ],

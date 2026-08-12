@@ -1,6 +1,5 @@
-const cardClass =
-    'rounded-xl border border-gray-200 dark:border-neutral-700 p-4 md:p-5 shadow-2xs bg-white dark:bg-neutral-900 animate-pulse';
-const barClass = 'rounded bg-gray-200 dark:bg-neutral-700';
+const cardClass = 'rounded-xl border border-divider p-4 md:p-5 shadow-2xs bg-surface-raised animate-pulse';
+const barClass = 'rounded bg-surface-sunken';
 
 const legendWidths = ['75%', '55%', '85%', '60%', '70%'];
 
@@ -25,7 +24,7 @@ function DonutChartSkeleton() {
             <div className={`${barClass} h-4 w-44 mb-4`} />
             <div className="grid grid-cols-1 items-center justify-items-center gap-4 md:grid-cols-[100px_minmax(0,1fr)] md:justify-items-stretch">
                 {/* Donut ring */}
-                <div className="h-[90px] w-[90px] rounded-full border-[14px] border-gray-200 dark:border-neutral-700 flex-shrink-0" />
+                <div className="h-[90px] w-[90px] rounded-full border-[14px] border-surface-sunken flex-shrink-0" />
                 {/* Legend */}
                 <div
                     className="flex flex-col gap-4 overflow-hidden w-full ml-auto md:mx-auto"

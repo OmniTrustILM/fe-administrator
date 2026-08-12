@@ -24,11 +24,11 @@ function StartTimePicker({
 }>) {
     return (
         <div className="flex items-center gap-2 mt-1 justify-center">
-            <Label className="!mb-0 text-gray-500 whitespace-nowrap">Start time</Label>
+            <Label className="!mb-0 text-content-subtle whitespace-nowrap">Start time</Label>
             <NumberInput value={atHour} onChange={onHourChange} min={0} max={23} zeroPad />
-            <span className="text-gray-400 font-bold">:</span>
+            <span className="text-content-subtle font-bold">:</span>
             <NumberInput value={atMinute} onChange={onMinuteChange} min={0} max={59} zeroPad />
-            <Label className="!mb-0 text-gray-500 dark:text-neutral-400">{CRON_TIME_ZONE}</Label>
+            <Label className="!mb-0 text-content-subtle">{CRON_TIME_ZONE}</Label>
         </div>
     );
 }
@@ -125,7 +125,7 @@ export default function CronBuilder({ value, onChange }: Readonly<Props>) {
                                 max={59}
                                 zeroPad
                             />
-                            <Label className="!mb-0 text-gray-500 dark:text-neutral-400">{CRON_TIME_ZONE}</Label>
+                            <Label className="!mb-0 text-content-subtle">{CRON_TIME_ZONE}</Label>
                         </RadioRow>
                     </Container>
                 ),
@@ -256,7 +256,7 @@ export default function CronBuilder({ value, onChange }: Readonly<Props>) {
                 title: 'Custom',
                 content: (
                     <div className="flex items-center justify-center gap-2 min-h-16">
-                        <Label className="!mb-0 whitespace-nowrap text-[var(--dark-gray-color)]">Expression</Label>
+                        <Label className="!mb-0 whitespace-nowrap text-content">Expression</Label>
                         <div>
                             <TextInput
                                 id="cron-custom"
@@ -277,12 +277,12 @@ export default function CronBuilder({ value, onChange }: Readonly<Props>) {
         <div className="space-y-4">
             <TabLayout tabs={tabs} selectedTab={TABS.findIndex((t) => t.id === state.tab)} onTabChange={handleTabChange} noBorder />
             <div className="flex items-center gap-2 px-1">
-                <div className="flex-1 text-sm bg-gray-100 dark:bg-neutral-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-neutral-700">
+                <div className="flex-1 text-sm bg-surface-sunken px-3 py-2 rounded-lg border border-divider">
                     <CronScheduleHint cronExpression={currentCron} dataTestId="cron-builder-schedule-hint" />
                 </div>
             </div>
             <div className="flex items-center gap-2 px-1">
-                <code className="flex-1 text-sm font-mono bg-gray-100 dark:bg-neutral-800 text-[var(--dark-gray-color)] dark:text-neutral-300 px-3 py-2 rounded-lg border border-gray-200 dark:border-neutral-700">
+                <code className="flex-1 text-sm font-mono bg-surface-sunken text-content px-3 py-2 rounded-lg border border-divider">
                     {currentCron || '—'}
                 </code>
             </div>

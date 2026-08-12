@@ -72,7 +72,7 @@ function tabTitle(title: string, descriptors: AttributeDescriptorModel[] | undef
     return (
         <span>
             {title}
-            <span className="text-red-500 ml-0.5">*</span>
+            <span className="text-danger ml-0.5">*</span>
         </span>
     );
 }
@@ -104,20 +104,20 @@ function renderRequestAttributesTabContent(params: {
     }
     if (isFetchingCsrAttributes) {
         return (
-            <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-loading">
+            <span className="text-content-subtle" data-testid="csrAttributes-loading">
                 Loading request attributes&hellip;
             </span>
         );
     }
     if (selectedRaProfileUuid) {
         return (
-            <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-empty">
+            <span className="text-content-subtle" data-testid="csrAttributes-empty">
                 This RA Profile has no request attributes.
             </span>
         );
     }
     return (
-        <span className="text-gray-500 dark:text-neutral-400" data-testid="csrAttributes-hint">
+        <span className="text-content-subtle" data-testid="csrAttributes-hint">
             Select an RA Profile to see its request attributes.
         </span>
     );
@@ -154,20 +154,20 @@ function renderRegisterAttributesTabContent(params: {
     }
     if (isFetchingRegisterAttributes) {
         return (
-            <span className="text-gray-500 dark:text-neutral-400" data-testid="register_attributes-loading">
+            <span className="text-content-subtle" data-testid="register_attributes-loading">
                 Loading connector attributes&hellip;
             </span>
         );
     }
     if (selectedRaProfileUuid) {
         return (
-            <span className="text-gray-500 dark:text-neutral-400" data-testid="register_attributes-empty">
+            <span className="text-content-subtle" data-testid="register_attributes-empty">
                 This RA Profile has no connector attributes.
             </span>
         );
     }
     return (
-        <span className="text-gray-500 dark:text-neutral-400" data-testid="register_attributes-hint">
+        <span className="text-content-subtle" data-testid="register_attributes-hint">
             Select an RA Profile to see its connector attributes.
         </span>
     );
@@ -558,13 +558,10 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                     dispatch(certificateActions.clearIssueErrors());
                                                 }}
                                             >
-                                                <span
-                                                    className="font-medium text-[var(--dark-gray-color)] dark:text-white"
-                                                    data-testid="requestType-issue"
-                                                >
+                                                <span className="font-medium text-content" data-testid="requestType-issue">
                                                     Request now
                                                 </span>
-                                                <span className="text-gray-500 dark:text-neutral-400">
+                                                <span className="text-content-subtle">
                                                     Submit a certificate request to the authority immediately.
                                                 </span>
                                             </RadioRow>
@@ -576,13 +573,10 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                     dispatch(certificateActions.clearIssueErrors());
                                                 }}
                                             >
-                                                <span
-                                                    className="font-medium text-[var(--dark-gray-color)] dark:text-white"
-                                                    data-testid="requestType-register"
-                                                >
+                                                <span className="font-medium text-content" data-testid="requestType-register">
                                                     Pre-register
                                                 </span>
-                                                <span className="text-gray-500 dark:text-neutral-400">
+                                                <span className="text-content-subtle">
                                                     Register a certificate to be issued later using a challenge secret.
                                                 </span>
                                             </RadioRow>

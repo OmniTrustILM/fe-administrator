@@ -93,7 +93,7 @@ test.describe('TextArea', () => {
         const component = await mount(<TextArea value="" onChange={() => {}} label="Required Field" required={true} />);
 
         const label = component.getByText('Required Field');
-        const requiredSpan = label.locator('..').locator('span.text-red-500');
+        const requiredSpan = label.locator('..').locator('span.text-danger');
         await expect(requiredSpan).toBeVisible();
     });
 
@@ -111,7 +111,7 @@ test.describe('TextArea', () => {
         );
 
         const textarea = component.locator('textarea');
-        await expect(textarea).toHaveClass(/border-red-500/);
+        await expect(textarea).toHaveClass(/border-danger/);
     });
 
     test('should support custom rows', async ({ mount }) => {
