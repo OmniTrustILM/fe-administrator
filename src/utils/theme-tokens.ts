@@ -48,7 +48,6 @@ const parseDeclarations = (body: string): TokenMap => {
     return tokens;
 };
 
-/** Finds the block matched by `pattern` whose declarations include the marker token, wherever it falls in the file. */
 const parseMarkedBlock = (css: string, pattern: RegExp, blockLabel: string): TokenMap => {
     for (const match of css.matchAll(pattern)) {
         const tokens = parseDeclarations(match[1]);

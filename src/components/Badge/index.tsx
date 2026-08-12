@@ -5,8 +5,11 @@ export type BadgeFill = 'solid' | 'surface';
 
 type Props = {
     color?: BadgeColor;
-    /** 'solid' (default) is a vivid fill, used for icon-only indicators like StatusCircle. 'surface' is the
-     *  tinted-background/plain-text treatment used by text status badges (StatusBadge, BooleanBadge). */
+    /** 'surface' (default) is the tinted-background/plain-text treatment, and the only one safe for a badge
+     *  that carries text: the `-solid` status fills are tuned as vivid indicator colours, so white on them
+     *  falls as low as 1.92:1 (dark warning). 'solid' is that vivid fill, and is reserved for icon-only
+     *  indicators such as StatusCircle, where WCAG's 3:1 non-text threshold applies instead of 4.5:1.
+     *  Only the four status colours have both treatments; the rest render the same either way. */
     fill?: BadgeFill;
     onClick?: () => void;
     onRemove?: () => void;
@@ -21,7 +24,7 @@ type Props = {
 
 function Badge({
     color = 'secondary',
-    fill = 'solid',
+    fill = 'surface',
     onClick,
     onRemove,
     children,
@@ -40,11 +43,11 @@ function Badge({
         // surface-raised in both themes (see theme-tokens.spec.ts), and an inset ring draws inside
         // the element, so no badge changes size.
         secondary: 'bg-surface-sunken text-content inset-ring-1 inset-ring-outline',
-        success: fill === 'surface' ? 'bg-success-surface text-success' : 'bg-success-solid text-content-on-brand',
+        success: fill === 'solid' ? 'bg-success-solid text-content-on-brand' : 'bg-success-surface text-success',
         primary: 'bg-brand-solid text-content-on-brand',
-        danger: fill === 'surface' ? 'bg-danger-surface text-danger' : 'bg-danger-solid text-content-on-brand',
-        warning: fill === 'surface' ? 'bg-warning-surface text-warning' : 'bg-warning-solid text-content-on-brand',
-        info: fill === 'surface' ? 'bg-info-surface text-info' : 'bg-info-solid text-content-on-brand',
+        danger: fill === 'solid' ? 'bg-danger-solid text-content-on-brand' : 'bg-danger-surface text-danger',
+        warning: fill === 'solid' ? 'bg-warning-solid text-content-on-brand' : 'bg-warning-surface text-warning',
+        info: fill === 'solid' ? 'bg-info-solid text-content-on-brand' : 'bg-info-surface text-info',
         transparent: 'bg-surface-raised text-content-muted',
     };
     const handleKeyDown = (event: React.KeyboardEvent<HTMLSpanElement>) => {

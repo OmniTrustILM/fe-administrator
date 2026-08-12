@@ -71,7 +71,7 @@ describe('dashboard utils', () => {
             const result = getCertificateDonutChartColorsByDaysOfExpiration(data);
             expect(result?.colors).toHaveLength(3);
             expect(result?.colors).toContain('#6B7280'); // 10
-            expect(result?.colors).toContain('#EAB308'); // 30
+            expect(result?.colors).toContain('#b68b06'); // 30
             expect(result?.colors).toContain('#EF4444'); // Expired
         });
     });
@@ -93,8 +93,8 @@ describe('dashboard utils', () => {
             };
             const result = getSecretDonutChartColors(data);
             expect(result.colors).toHaveLength(3);
-            expect(result.colors).toContain('#14B8A6'); // Active
-            expect(result.colors).toContain('#9CA3AF'); // Expired
+            expect(result.colors).toContain('#12a393'); // Active
+            expect(result.colors).toContain('#8a92a0'); // Expired
             expect(result.colors).toContain('#EF4444'); // Failed
         });
 
@@ -105,7 +105,7 @@ describe('dashboard utils', () => {
                 [SecretState.Revoked]: 1,
             };
             const result = getSecretDonutChartColors(data);
-            expect(result.colors).toEqual(['#14B8A6', '#1F2937', '#6B7280']);
+            expect(result.colors).toEqual(['#12a393', '#4f688c', '#6B7280']);
         });
 
         test('falls back to default gray for unknown status', () => {
@@ -130,7 +130,7 @@ describe('dashboard utils', () => {
                 [CertificateState.PendingIssue]: 3,
             });
 
-            expect(result.colors).toEqual(['#14B8A6', '#EF4444', '#3782a5']);
+            expect(result.colors).toEqual(['#12a393', '#EF4444', '#3782a5']);
         });
 
         test('handles falsey color branch in updateColorObject', async () => {

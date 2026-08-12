@@ -9,14 +9,14 @@ function StatusCircle({ status }: Readonly<Props>) {
     switch (status) {
         case true:
             return (
-                <Badge color="success">
+                <Badge color="success" fill="solid">
                     <Check size={16} />
                 </Badge>
             );
 
         case false:
             return (
-                <Badge color="danger">
+                <Badge color="danger" fill="solid">
                     <X size={16} />
                 </Badge>
             );

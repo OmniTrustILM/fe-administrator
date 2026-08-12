@@ -146,6 +146,13 @@ chart series.
 
 `content-inverse` is light in both themes, because `surface-inverse` (tooltips) is dark in both.
 
+The same split governs `Badge`, whose `fill` prop defaults to `surface`. A badge that carries text
+must stay on the tinted `-surface`/plain-text treatment; `fill="solid"` paints the vivid `-solid`
+fill and is only for icon-only indicators such as `StatusCircle`, where the 3:1 non-text threshold
+applies. Never paint a raw status hex onto a `Badge` as an inline background either — map the
+status to a `BadgeColor` instead (see `getCertificateStatusBadgeColor`), because the indicator
+hexes sit at a luminance where neither black nor white text reaches 4.5:1.
+
 Hand-written CSS must reference the tier-2 variable directly — `var(--surface-raised)`, never
 `var(--color-surface-raised)` — because `@theme inline` does not emit `--color-*` custom properties
 into `:root`; it only feeds Tailwind's utility generator. Using the `--color-*` name in hand-written
@@ -155,6 +162,14 @@ CSS fails silently: the declaration parses but resolves to nothing.
 (`components/FlowChart`, the dashboard chart components) call `useTheme()` from
 `components/ThemeProvider` and select a colour palette keyed on `resolvedTheme`. `JsonViewer`
 does the same, since it builds syntax-highlighted HTML in JS rather than with Tailwind classes.
+
+Chart series and status dots are the exception: they are picked per *datum*, not per theme, so a
+theme-keyed palette would have to be duplicated for every status. They instead use one
+theme-invariant colour drawn from a mid-luminance band that clears 3:1 against `surface-raised` in
+both themes. `src/utils/chart-contrast.ts` holds the rule (`meetsChartContrast`, and `toChartHex`
+for the generated overflow hues), and `chart-contrast.spec.ts` asserts every certificate status,
+secret status and donut palette entry satisfies it — so a new status colour has to be picked inside
+the band, not at either extreme.
 
 **Runtime.** `src/utils/theme.ts` owns theme resolution, persistence and DOM application, and is
 framework-free. `components/ThemeProvider` exposes `useTheme()` (mode, resolvedTheme, setMode,

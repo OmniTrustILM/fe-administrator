@@ -6,13 +6,13 @@ import { PlatformEnum, SecretState, type SecretType } from 'types/openapi';
 export function getSecretStatusColor(status: SecretState): string {
     switch (status) {
         case SecretState.Active:
-            return '#14B8A6';
+            return '#12a393';
         case SecretState.Inactive:
-            return '#1F2937';
+            return '#4f688c';
         case SecretState.Revoked:
             return '#6B7280';
         case SecretState.Expired:
-            return '#9CA3AF';
+            return '#8a92a0';
         case SecretState.Failed:
         case SecretState.Rejected:
             return '#EF4444';
