@@ -200,6 +200,7 @@ function RolePermissionsEditor({
 
                 return (
                     <button
+                        type="button"
                         key={resource.uuid}
                         onClick={() => onResourceSelected(resource)}
                         className={cn(

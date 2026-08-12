@@ -39,6 +39,7 @@ test.describe('TextArea', () => {
         const textarea = component.locator('textarea');
         await textarea.fill('New text');
         await expect.poll(() => newValue).toBe('New text');
+        expect(newValue).toBe('New text');
     });
 
     test('should display placeholder', async ({ mount }) => {

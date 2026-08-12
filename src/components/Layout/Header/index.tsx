@@ -84,7 +84,7 @@ function Header({ sidebarToggle }: Readonly<Props>) {
                     />
                 )}
                 <NotificationsOverview />
-                <button className="text-white md:hidden" onClick={sidebarToggle} data-testid="header-sidebar-toggle">
+                <button type="button" className="text-white md:hidden" onClick={sidebarToggle} data-testid="header-sidebar-toggle">
                     <Menu size={24} />
                 </button>
             </div>

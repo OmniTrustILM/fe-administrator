@@ -128,7 +128,7 @@ test.describe('CodeEditor', () => {
         const { ta, calls } = await mountWithCalls(mount, { initial: '', ignoreTabKey: true });
         await ta.focus();
         await ta.press('Tab');
-        expect(calls.length).toBe(0);
+        expect(calls).toHaveLength(0);
     });
 
     test('Backspace removes the tab character when caret follows it', async ({ mount }) => {

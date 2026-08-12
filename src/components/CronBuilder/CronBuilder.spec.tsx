@@ -90,6 +90,7 @@ test.describe('CronBuilder', () => {
             const component = await mount(cron('0 00 12 * * ?', onChange));
             await component.getByRole('tab', { name: tab }).click();
             await expect.poll(() => getEmitted(), POLL).toMatch(pattern);
+            expect(getEmitted()).toMatch(pattern);
         });
     }
 
@@ -98,6 +99,7 @@ test.describe('CronBuilder', () => {
         const component = await mount(cron('0 00 12 * * ?', onChange));
         await component.getByRole('tab', { name: 'Custom' }).click();
         await expect.poll(() => getEmitted(), POLL).toBe('0 00 12 * * ?');
+        expect(getEmitted()).toBe('0 00 12 * * ?');
     });
 
     test('should emit correct cron after incrementing minutes interval', async ({ mount }) => {
@@ -105,6 +107,7 @@ test.describe('CronBuilder', () => {
         const component = await mount(cron('0 */5 * * * ?', onChange));
         await component.getByLabel('Increase').first().click();
         await expect.poll(() => getEmitted(), POLL).toBe('0 */6 * * * ?');
+        expect(getEmitted()).toBe('0 */6 * * * ?');
     });
 
     test('should display everyN hourly cron correctly', async ({ mount }) => {
@@ -118,6 +121,7 @@ test.describe('CronBuilder', () => {
         const component = await mount(cron('0 00 */3 * * ?', onChange));
         await component.getByRole('radio').nth(1).click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 \d+ \d+ \* \* \?$/);
+        expect(getEmitted()).toMatch(/^0 \d+ \d+ \* \* \?$/);
     });
 
     test('should stay on Hourly tab after switching to atTime mode', async ({ mount }) => {
@@ -132,6 +136,7 @@ test.describe('CronBuilder', () => {
         await component.getByRole('tab', { name: 'Hourly' }).click();
         await component.getByRole('radio').nth(0).click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 \d+ \*\/\d+ \* \* \?$/);
+        expect(getEmitted()).toMatch(/^0 \d+ \*\/\d+ \* \* \?$/);
     });
 
     test('should emit correct cron after changing everyHours in Hourly everyN mode', async ({ mount }) => {
@@ -139,6 +144,7 @@ test.describe('CronBuilder', () => {
         const component = await mount(cron('0 00 */2 * * ?', onChange));
         await component.getByLabel('Increase').first().click();
         await expect.poll(() => getEmitted(), POLL).toBe('0 00 */3 * * ?');
+        expect(getEmitted()).toBe('0 00 */3 * * ?');
     });
 
     test('should emit correct cron after changing atHour in Hourly atTime mode', async ({ mount }) => {
@@ -150,6 +156,7 @@ test.describe('CronBuilder', () => {
         // Hourly tab Increase buttons: nth(0)=everyHours, nth(1)=atMinute(everyN), nth(2)=atHour, nth(3)=atMinute(atTime)
         await component.getByLabel('Increase').nth(2).click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 06 \d+ \* \* \?$/);
+        expect(getEmitted()).toMatch(/^0 06 \d+ \* \* \?$/);
     });
 
     test('should emit weekdays cron when Every week day is selected', async ({ mount }) => {
@@ -158,6 +165,7 @@ test.describe('CronBuilder', () => {
         await component.getByRole('tab', { name: 'Daily' }).click();
         await component.getByRole('radio').nth(1).click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 \d+ \d+ \? \* MON-FRI$/);
+        expect(getEmitted()).toMatch(/^0 \d+ \d+ \? \* MON-FRI$/);
     });
 
     test('should stay on Daily tab after selecting Every week day', async ({ mount }) => {
@@ -172,6 +180,7 @@ test.describe('CronBuilder', () => {
         const component = await mount(cron('0 00 08 ? * MON-FRI', onChange));
         await component.getByRole('radio').nth(0).click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 \d+ \d+ \* \* \?$/);
+        expect(getEmitted()).toMatch(/^0 \d+ \d+ \* \* \?$/);
     });
 
     test('should emit correct cron after incrementing daily everyN days', async ({ mount }) => {
@@ -179,6 +188,7 @@ test.describe('CronBuilder', () => {
         const component = await mount(cron('0 00 08 * * ?', onChange));
         await component.getByLabel('Increase').first().click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 \d+ \d+ \*\/2 \* \?$/);
+        expect(getEmitted()).toMatch(/^0 \d+ \d+ \*\/2 \* \?$/);
     });
 
     test('should emit correct cron after changing start time hour in Daily tab', async ({ mount }) => {
@@ -186,6 +196,7 @@ test.describe('CronBuilder', () => {
         const component = await mount(cron('0 00 12 * * ?', onChange));
         await component.getByLabel('Increase').nth(1).click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 00 13 \* \* \?$/);
+        expect(getEmitted()).toMatch(/^0 00 13 \* \* \?$/);
     });
 
     test('should show weekday checkboxes on Weekly tab', async ({ mount }) => {
@@ -199,6 +210,7 @@ test.describe('CronBuilder', () => {
         const component = await mount(cron('0 00 09 ? * MON', onChange));
         await component.getByLabel('Wednesday').click();
         await expect.poll(() => getEmitted(), POLL).toContain('MON,WED');
+        expect(getEmitted()).toContain('MON,WED');
     });
 
     test('should keep last weekday when unchecking it', async ({ mount }) => {
@@ -206,6 +218,7 @@ test.describe('CronBuilder', () => {
         const component = await mount(cron('0 00 09 ? * MON', onChange));
         await component.getByLabel('Monday').click();
         await expect.poll(() => getEmitted(), POLL).toContain('MON');
+        expect(getEmitted()).toContain('MON');
     });
 
     test('should emit correct cron after changing start time hour in Weekly tab', async ({ mount }) => {
@@ -213,6 +226,7 @@ test.describe('CronBuilder', () => {
         const component = await mount(cron('0 00 09 ? * MON', onChange));
         await component.getByLabel('Increase').first().click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 00 10 \? \* MON$/);
+        expect(getEmitted()).toMatch(/^0 00 10 \? \* MON$/);
     });
 
     test('should emit lastDay cron when Last day option is selected', async ({ mount }) => {
@@ -221,6 +235,7 @@ test.describe('CronBuilder', () => {
         await component.getByRole('tab', { name: 'Monthly' }).click();
         await component.getByRole('radio').nth(1).click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 \d+ \d+ L \* \?$/);
+        expect(getEmitted()).toMatch(/^0 \d+ \d+ L \* \?$/);
     });
 
     test('should emit lastWeekday cron when Last weekday option is selected', async ({ mount }) => {
@@ -229,6 +244,7 @@ test.describe('CronBuilder', () => {
         await component.getByRole('tab', { name: 'Monthly' }).click();
         await component.getByRole('radio').nth(2).click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 \d+ \d+ LW \* \?$/);
+        expect(getEmitted()).toMatch(/^0 \d+ \d+ LW \* \?$/);
     });
 
     test('should stay on Monthly tab after selecting lastDay mode', async ({ mount }) => {
@@ -244,6 +260,7 @@ test.describe('CronBuilder', () => {
         await component.getByRole('tab', { name: 'Monthly' }).click();
         await component.getByRole('radio').nth(3).click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 \d+ \d+ L-\d+ \* \?$/);
+        expect(getEmitted()).toMatch(/^0 \d+ \d+ L-\d+ \* \?$/);
     });
 
     test('should emit everyN monthly cron when everyN option is selected', async ({ mount }) => {
@@ -252,6 +269,7 @@ test.describe('CronBuilder', () => {
         await component.getByRole('tab', { name: 'Monthly' }).click();
         await component.getByRole('radio').nth(4).click();
         await expect.poll(() => getEmitted(), POLL).toMatch(/^0 \d+ \d+ 1\/\d+ \* \?$/);
+        expect(getEmitted()).toMatch(/^0 \d+ \d+ 1\/\d+ \* \?$/);
     });
 
     test('should emit correct cron after incrementing monthDay in Monthly tab', async ({ mount }) => {
@@ -259,6 +277,7 @@ test.describe('CronBuilder', () => {
         const component = await mount(cron('0 00 12 1 * ?', onChange));
         await component.getByLabel('Increase').first().click();
         await expect.poll(() => getEmitted(), POLL).toBe('0 00 12 2 * ?');
+        expect(getEmitted()).toBe('0 00 12 2 * ?');
     });
 
     test('should emit correct cron after incrementing daysBeforeEnd value', async ({ mount }) => {
@@ -267,6 +286,7 @@ test.describe('CronBuilder', () => {
         // Monthly tab Increase order: nth(0)=monthDay, nth(1)=daysBeforeEnd, nth(2)=monthlyEveryN, nth(3)=atHour, nth(4)=atMinute
         await component.getByLabel('Increase').nth(1).click();
         await expect.poll(() => getEmitted(), POLL).toBe('0 00 12 L-4 * ?');
+        expect(getEmitted()).toBe('0 00 12 L-4 * ?');
     });
 
     test('should emit correct cron after incrementing monthlyEveryN value', async ({ mount }) => {
@@ -275,6 +295,7 @@ test.describe('CronBuilder', () => {
         // Monthly tab Increase order: nth(0)=monthDay, nth(1)=daysBeforeEnd, nth(2)=monthlyEveryN, nth(3)=atHour, nth(4)=atMinute
         await component.getByLabel('Increase').nth(2).click();
         await expect.poll(() => getEmitted(), POLL).toBe('0 00 12 1/6 * ?');
+        expect(getEmitted()).toBe('0 00 12 1/6 * ?');
     });
 
     test('should allow editing expression manually in Custom tab', async ({ mount }) => {

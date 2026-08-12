@@ -94,7 +94,7 @@ test.describe('FileUpload', () => {
         await textarea.fill('hello');
         const callsAfterFill = calls.length;
         await textarea.blur();
-        expect(calls.length).toBe(callsAfterFill + 1);
+        expect(calls).toHaveLength(callsAfterFill + 1);
         expect(calls.at(-1)).toBe(btoa('hello'));
     });
 

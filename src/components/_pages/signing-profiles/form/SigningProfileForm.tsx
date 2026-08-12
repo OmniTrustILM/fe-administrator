@@ -389,7 +389,8 @@ export default function SigningProfileForm() {
     const lastResetIdRef = useRef<string | undefined>(undefined);
 
     const valuesToReset = useMemo<FormValues | undefined>(() => {
-        if (!editMode || !id || !signingProfile || signingProfile.uuid !== id || isFetchingDetail) return undefined;
+        if (!editMode || !id || !signingProfile || isFetchingDetail) return undefined;
+        if (signingProfile.uuid !== id) return undefined;
 
         const wf = signingProfile.workflow;
         const sc = signingProfile.signingScheme;

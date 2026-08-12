@@ -43,6 +43,7 @@ test.describe('RadioRow', () => {
         );
         await component.getByRole('radio').click();
         await expect.poll(() => selected, { timeout: 2000 }).toBe(true);
+        expect(selected).toBe(true);
     });
 
     test('should apply active border style when checked', async ({ mount }) => {

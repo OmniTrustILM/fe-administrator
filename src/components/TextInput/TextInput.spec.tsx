@@ -28,6 +28,7 @@ test.describe('TextInput', () => {
         await input.focus(); // TextInput removes readonly on focus to allow editing (anti-autofill)
         await input.fill('New text');
         await expect.poll(() => newValue, { timeout: 2000 }).toBe('New text');
+        expect(newValue).toBe('New text');
     });
 
     test('should display placeholder', async ({ mount }) => {
