@@ -69,7 +69,7 @@ function Toggletip({
                     type="button"
                     aria-label={ariaLabel}
                     className={cn(
-                        'inline-flex items-center justify-center text-[var(--color-gray-800)] hover:text-[var(--color-gray-800)] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-full dark:text-neutral-300 dark:hover:text-neutral-100',
+                        'inline-flex items-center justify-center text-content-muted hover:text-content focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand rounded-full',
                         triggerClassName,
                     )}
                     data-testid={dataTestId ?? 'toggletip-trigger'}
@@ -96,21 +96,21 @@ function Toggletip({
                     onMouseEnter={hoverOpen}
                     onMouseLeave={hoverClose}
                     className={cn(
-                        'relative z-[100] flex max-h-[var(--radix-popover-content-available-height)] max-w-sm flex-col overflow-hidden rounded-lg border border-gray-200 bg-white text-xs text-[var(--dark-gray-color)] shadow-lg dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200',
+                        'relative z-[100] flex max-h-[var(--radix-popover-content-available-height)] max-w-sm flex-col overflow-hidden rounded-lg border border-divider bg-surface-raised text-xs text-content shadow-lg',
                         contentClassName,
                     )}
                     data-testid={dataTestId ? `${dataTestId}-content` : 'toggletip-content'}
                 >
                     <div
                         aria-live="polite"
-                        className="min-h-0 overflow-y-auto break-words py-3 ps-3 pe-7 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500"
+                        className="min-h-0 overflow-y-auto break-words py-3 ps-3 pe-7 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-outline"
                     >
                         {content}
                     </div>
                     {showClose && (
                         <Popover.Close
                             aria-label="Close"
-                            className="absolute top-2 end-2 inline-flex items-center justify-center rounded-full p-0.5 text-gray-400 hover:text-gray-600 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-neutral-500 dark:hover:text-neutral-300"
+                            className="absolute top-2 end-2 inline-flex items-center justify-center rounded-full p-0.5 text-content-subtle hover:text-content-muted focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand"
                         >
                             <X size={14} aria-hidden />
                         </Popover.Close>

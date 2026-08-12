@@ -30,6 +30,7 @@ test.describe('DurationInput', () => {
         await input.fill('2h 30m');
         await input.blur();
         await expect.poll(() => emitted, { timeout: 2000 }).toBe('PT2H30M');
+        expect(emitted).toBe('PT2H30M');
     });
 
     test('should re-format display value to canonical form on blur', async ({ mount }) => {
@@ -55,6 +56,7 @@ test.describe('DurationInput', () => {
         await input.fill('');
         await input.blur();
         await expect.poll(() => emitted, { timeout: 2000 }).toBe('');
+        expect(emitted).toBe('');
     });
 
     test('should emit empty string for invalid/unparseable input on blur', async ({ mount }) => {
@@ -70,6 +72,7 @@ test.describe('DurationInput', () => {
         await input.fill('not a duration');
         await input.blur();
         await expect.poll(() => emitted, { timeout: 2000 }).toBe('');
+        expect(emitted).toBe('');
     });
 
     test('should call onBlur callback when input loses focus', async ({ mount }) => {
@@ -122,7 +125,7 @@ test.describe('DurationInput', () => {
 
     test('should show required indicator when required is true', async ({ mount }) => {
         const component = await mount(<DurationInput onChange={() => {}} label="Duration" required />);
-        await expect(component.locator('span.text-red-500')).toBeVisible();
+        await expect(component.locator('span.text-danger')).toBeVisible();
     });
 
     test('should associate label with input via id', async ({ mount }) => {
@@ -138,7 +141,7 @@ test.describe('DurationInput', () => {
 
     test('should apply invalid styling when invalid is true', async ({ mount }) => {
         const component = await mount(<DurationInput onChange={() => {}} invalid />);
-        await expect(component.getByRole('textbox')).toHaveClass(/border-red-500/);
+        await expect(component.getByRole('textbox')).toHaveClass(/border-danger/);
     });
 
     test('should display custom placeholder when provided', async ({ mount }) => {

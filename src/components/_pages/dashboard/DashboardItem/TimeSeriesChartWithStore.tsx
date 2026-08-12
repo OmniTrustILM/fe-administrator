@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
+import ThemeProvider from 'components/ThemeProvider';
 import { createMockStore } from 'utils/test-helpers';
 import { SigningRecordStatisticsPeriod } from 'types/openapi';
 import TimeSeriesChart from './TimeSeriesChart';
@@ -20,7 +21,9 @@ export default function TimeSeriesChartWithStore({
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>
-                <TimeSeriesChart {...props} period={period} onPeriodChange={setPeriod} />
+                <ThemeProvider>
+                    <TimeSeriesChart {...props} period={period} onPeriodChange={setPeriod} />
+                </ThemeProvider>
             </MemoryRouter>
         </Provider>
     );

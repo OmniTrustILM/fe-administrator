@@ -115,6 +115,7 @@ test.describe('TabLayout', () => {
             ];
             await mount(<TabLayoutWithStore tabUrlParam="tab" initialEntries={['/?tab=flow']} tabs={tabsWithOnClick} />);
             await expect.poll(() => flowActivations).toBe(1);
+            expect(flowActivations).toBe(1);
         });
 
         test('fires tab onClick exactly once on user click', async ({ mount }) => {

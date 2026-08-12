@@ -28,6 +28,7 @@ test.describe('TextInput', () => {
         await input.focus(); // TextInput removes readonly on focus to allow editing (anti-autofill)
         await input.fill('New text');
         await expect.poll(() => newValue, { timeout: 2000 }).toBe('New text');
+        expect(newValue).toBe('New text');
     });
 
     test('should display placeholder', async ({ mount }) => {
@@ -72,7 +73,7 @@ test.describe('TextInput', () => {
         const component = await mount(<TextInput value="" onChange={() => {}} label="Required Field" required={true} />);
 
         const label = component.getByText('Required Field');
-        const requiredSpan = label.locator('..').locator('span.text-red-500');
+        const requiredSpan = label.locator('..').locator('span.text-danger');
         await expect(requiredSpan).toBeVisible();
     });
 
@@ -86,7 +87,7 @@ test.describe('TextInput', () => {
         const component = await mount(<TextInput value="" onChange={() => {}} invalid={true} />);
 
         const input = component.getByRole('textbox');
-        await expect(input).toHaveClass(/border-red-500/);
+        await expect(input).toHaveClass(/border-danger/);
     });
 
     test('should support id prop', async ({ mount }) => {

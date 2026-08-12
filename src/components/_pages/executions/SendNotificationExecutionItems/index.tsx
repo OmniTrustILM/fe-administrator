@@ -68,7 +68,11 @@ export function SendNotificationExecutionItems({ mode, isUpdating, notificationP
                 <Fragment key={itemNumber}>
                     <span>Send notifications to:&nbsp;</span>
                     <b>{label}&nbsp;</b>
-                    {!disableBadgeRemove && <button onClick={() => onRemoveProfileClick(value)}>&times;</button>}
+                    {!disableBadgeRemove && (
+                        <button type="button" onClick={() => onRemoveProfileClick(value)}>
+                            &times;
+                        </button>
+                    )}
                 </Fragment>
             );
         },

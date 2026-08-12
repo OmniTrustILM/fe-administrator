@@ -318,7 +318,7 @@ export function useTransformTriggerObjectToNodesAndEdges(
     const renderAddButtonContent = useMemo(() => {
         return (
             <div className="w-full">
-                <h6 className="text-gray-500">Update Trigger</h6>
+                <h6 className="text-content-subtle">Update Trigger</h6>
                 <div className="w-full" tabIndex={-1}>
                     <div className="mb-4">
                         <Label htmlFor="addnewRuleSelect">Add Rules</Label>

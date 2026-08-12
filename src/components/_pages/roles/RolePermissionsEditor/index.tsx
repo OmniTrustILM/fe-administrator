@@ -200,21 +200,16 @@ function RolePermissionsEditor({
 
                 return (
                     <button
+                        type="button"
                         key={resource.uuid}
                         onClick={() => onResourceSelected(resource)}
-                        className={cn(
-                            'w-full text-left px-3 py-2 rounded-lg transition-colors',
-                            'hover:bg-gray-50 dark:hover:bg-neutral-800',
-                            {
-                                'bg-gray-100 border border-gray-300 dark:bg-neutral-800 dark:border-neutral-700': isSelected,
-                                'border border-gray-200 dark:border-neutral-700': !isSelected,
-                            },
-                        )}
+                        className={cn('w-full text-left px-3 py-2 rounded-lg transition-colors', 'hover:bg-surface-hover', {
+                            'bg-surface-active border border-outline': isSelected,
+                            'border border-divider': !isSelected,
+                        })}
                     >
-                        <div className="font-medium text-sm text-[var(--dark-gray-color)] dark:text-neutral-200">
-                            {resource.displayName}
-                        </div>
-                        <div className="text-xs text-[var(--dark-gray-color)] dark:text-neutral-400 mt-1">{permissionText}</div>
+                        <div className="font-medium text-sm text-content">{resource.displayName}</div>
+                        <div className="text-xs text-content-subtle mt-1">{permissionText}</div>
                     </button>
                 );
             }),
@@ -227,8 +222,8 @@ function RolePermissionsEditor({
         () =>
             currentResource ? (
                 <div>
-                    <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-6">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Resource Action Permissions</h3>
+                    <div className="bg-surface-raised border border-divider rounded-lg p-6">
+                        <h3 className="text-lg font-semibold text-content mb-4">Resource Action Permissions</h3>
 
                         <div className="space-y-4">
                             <div className={cn('flex items-center', { 'opacity-50': allowAllResources })}>
@@ -267,7 +262,7 @@ function RolePermissionsEditor({
                                             htmlFor={`action-${action.uuid}`}
                                             key={action.uuid}
                                             className={cn(
-                                                'flex items-center border border-gray-200 dark:border-neutral-700 px-4 py-3 rounded-lg w-1/2 md:w-[calc(25%-12px)] cursor-pointer',
+                                                'flex items-center border border-divider px-4 py-3 rounded-lg w-1/2 md:w-[calc(25%-12px)] cursor-pointer',
                                                 {
                                                     'opacity-50': isDisabled,
                                                 },
@@ -288,7 +283,7 @@ function RolePermissionsEditor({
                     </div>
                 </div>
             ) : (
-                <div className="flex items-center justify-center h-64 text-gray-500 dark:text-neutral-400">
+                <div className="flex items-center justify-center h-64 text-content-subtle">
                     Select a resource from the left to configure permissions
                 </div>
             ),
@@ -346,7 +341,7 @@ function RolePermissionsEditor({
                 ?.objects?.map((object) => ({
                     id: object.uuid,
                     columns: [
-                        <span key="name" className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                        <span key="name" className="font-medium text-content whitespace-nowrap">
                             {object.name}
                         </span>,
                         ...getObjectRowActions(object),
@@ -506,9 +501,9 @@ function RolePermissionsEditor({
                     {permissionsList}
 
                     {currentResource?.objectAccess && (
-                        <div className="mt-4 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg">
-                            <div className="px-3 py-3 border-b border-gray-200 dark:border-neutral-700 flex items-center justify-between">
-                                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Object Action Permissions</h3>
+                        <div className="mt-4 bg-surface-raised border border-divider rounded-lg">
+                            <div className="px-3 py-3 border-b border-divider flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-content">Object Action Permissions</h3>
                                 <div className="flex items-center gap-2">
                                     <Button
                                         variant="transparent"
@@ -553,7 +548,7 @@ function RolePermissionsEditor({
                             <div className="p-6">
                                 {isFetchingObjects ? (
                                     <div className="flex items-center justify-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
                                     </div>
                                 ) : (
                                     <CustomTable

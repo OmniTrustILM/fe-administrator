@@ -130,7 +130,7 @@ export default function ConnectionDetailsV1({ url, connectionDetails, errorMessa
             )}
 
             {errorMessage && (
-                <p className="mt-2 text-sm text-red-600" data-testid="connector-version-error">
+                <p className="mt-2 text-sm text-danger" data-testid="connector-version-error">
                     {errorMessage}
                 </p>
             )}

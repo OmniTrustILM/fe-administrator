@@ -152,7 +152,7 @@ test.describe('Pagination', () => {
         );
 
         const activePageButton = component.getByRole('button', { name: '2' });
-        await expect(activePageButton).toHaveClass(/bg-gray-200/);
+        await expect(activePageButton).toHaveClass(/bg-surface-active/);
     });
 
     test('should disable all navigation controls when disabled is true', async ({ mount }) => {

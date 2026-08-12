@@ -19,8 +19,7 @@ type Props = Readonly<{
 
 export default function SecretStateBadge({ state, children }: Props) {
     const color = stateColorMap[state] ?? 'secondary';
-    const className =
-        state === SecretState.Expired ? 'border border-gray-500 dark:border-gray-400 !text-[var(--dark-gray-color)]' : undefined;
+    const className = state === SecretState.Expired ? 'border border-outline !text-content' : undefined;
     return (
         <Badge color={color} className={className}>
             {children}

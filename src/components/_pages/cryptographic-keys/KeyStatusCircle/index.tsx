@@ -1,3 +1,4 @@
+import cn from 'classnames';
 import Tooltip from 'components/Tooltip';
 
 type Props = Readonly<{
@@ -6,13 +7,13 @@ type Props = Readonly<{
 }>;
 
 function KeyStatusCircle({ status, dataTestId = 'key-status-circle' }: Props) {
-    const { color, text } = status
-        ? { color: 'var(--status-success-color)', text: 'Enabled' }
-        : { color: 'var(--status-danger-color)', text: 'Disabled' };
+    const { colorClass, text } = status
+        ? { colorClass: 'bg-success-solid', text: 'Enabled' }
+        : { colorClass: 'bg-danger-solid', text: 'Disabled' };
 
     return (
         <Tooltip content={text}>
-            <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: color }} data-testid={dataTestId}>
+            <span className={cn('w-3 h-3 rounded-full inline-block', colorClass)} data-testid={dataTestId}>
                 <span className="sr-only">{text}</span>
             </span>
         </Tooltip>

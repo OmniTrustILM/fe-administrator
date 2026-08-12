@@ -22,25 +22,81 @@
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
-    color: #1f2937;
+    color: var(--content);
 
-    --primary-blue-color: #0073cf;
     --header-height: 68px;
     --sidebar-width: 84px;
-    --main-background-color: #f8fafc;
-    --dark-gray-color: #1f2937;
-    --tooltip-background-color: #111827;
 
-    --status-success-color: #14b8a6;
-    --status-danger-color: #ef4444;
-    --status-secondary-color: #b4b4b4;
-    --status-warning-color: #eab308;
-    --status-dark-color: var(--dark-gray-color);
-    --status-light-gray-color: var(--gray-300);
-    --status-gray-color: var(--color-gray-500);
-    --status-info-color: #2798e7;
-    --modal-footer-background-color: var(--gray-100);
+    /* Semantic colour tokens. Values flip with the .dark class; utilities resolve them at runtime
+       through the @theme inline block below. Hand-written CSS must reference these variables
+       directly (var(--surface-raised)), because @theme inline does not emit --color-* into :root. */
+    --surface: #f8fafc;
+    --surface-raised: #ffffff;
+    --surface-sunken: #f5f5f5;
+    --surface-hover: #ebebeb;
+    --surface-active: #dedede;
+    --surface-inverse: #111827;
+    --surface-header: #0073cf;
+
+    --content: #1f2937;
+    --content-muted: #525252;
+    --content-subtle: #6e6e6e;
+    --content-inverse: #ffffff;
+    --content-on-brand: #ffffff;
+
+    --divider: #e8e8e8;
+    --outline: #8f8f8f;
+
+    --brand: #0073cf;
+    --brand-solid: #0073cf;
+    --brand-solid-hover: #005ba6;
+    --brand-hover: #005ba6;
+    --brand-subtle: #e6f2ff;
+
+    --success: #0f766e;
+    --success-surface: #ccfbf1;
+    --success-solid: #0d9488;
+    --danger: #b91c1c;
+    --danger-surface: #fee2e2;
+    --danger-solid: #ef4444;
+    --danger-fill: #b91c1c;
+    --danger-fill-hover: #991b1b;
+    --warning: #a16207;
+    --warning-surface: #fef9c3;
+    --warning-solid: #b45309;
+    --warning-fill: #a16207;
+    --warning-fill-hover: #854d0e;
+    --info: #0369a1;
+    --info-surface: #e6f2ff;
+    --info-solid: #2798e7;
+
     --code-color: #be185d;
+
+    /* Flowchart node status fills (CustomFlowNode) and the icon text drawn over them. Most fills
+       are identical in both themes; revoked/failed/invalid/default carry their own dark value
+       because the light-mode hue is either too dark to read against the dark node surface or (for
+       revoked/failed) already had a dedicated dark accent for its text/border use. node-icon and
+       node-icon-inverse are the two icon colours needed to keep the button icon at 4.5:1 against
+       every fill/state combination; see theme-tokens.spec.ts for the figures. node-default-text is
+       the default-status node's text/border colour: it is themed independently of node-default
+       (dark blue in light mode, pale in dark mode) because no single value clears 4.5:1 as text in
+       both themes. node-default-fill is that same status's soft rest-state button fill; it keeps
+       its original pale value in both themes to preserve the light-base/dark-hover relationship
+       with node-default on hover/active. */
+    --node-valid: #1ab394;
+    --node-expired: #ef4444;
+    --node-revoked: #632828;
+    --node-expiring: #eab308;
+    --node-invalid: #131212;
+    --node-unchecked: #7fa2c1;
+    --node-failed: #9c0012;
+    --node-inactive: #6c757d;
+    --node-default: #3754a5;
+    --node-default-text: #3754a5;
+    --node-default-fill: #a5b4fc;
+    --node-danger-action: #e37582;
+    --node-icon: #000000;
+    --node-icon-inverse: #ffffff;
 }
 
 @theme {
@@ -67,6 +123,122 @@
     --color-gray-900: #404040;
 }
 
+.dark {
+    --surface: #0a0a0a;
+    --surface-raised: #171717;
+    --surface-sunken: #262626;
+    --surface-hover: #2e2e2e;
+    --surface-active: #404040;
+    --surface-inverse: #404040;
+    --surface-header: #171717;
+
+    --content: #f5f5f5;
+    --content-muted: #d4d4d4;
+    --content-subtle: #a3a3a3;
+    --content-inverse: #f5f5f5;
+    --content-on-brand: #ffffff;
+
+    --divider: #262626;
+    --outline: #666666;
+
+    --brand: #3399ff;
+    --brand-solid: #0073cf;
+    --brand-solid-hover: #005ba6;
+    --brand-hover: #66b2ff;
+    --brand-subtle: #002d59;
+
+    --success: #5eead4;
+    --success-surface: #134e4a;
+    --success-solid: #14b8a6;
+    --danger: #f87171;
+    --danger-surface: #450a0a;
+    --danger-solid: #ef4444;
+    --danger-fill: #b91c1c;
+    --danger-fill-hover: #991b1b;
+    --warning: #facc15;
+    --warning-surface: #713f12;
+    --warning-solid: #eab308;
+    --warning-fill: #a16207;
+    --warning-fill-hover: #854d0e;
+    --info: #38bdf8;
+    --info-surface: #002d59;
+    --info-solid: #2798e7;
+
+    --code-color: #f9a8d4;
+
+    --node-valid: #1ab394;
+    --node-expired: #ef4444;
+    --node-revoked: #fb923c;
+    --node-expiring: #eab308;
+    --node-invalid: #737373;
+    --node-unchecked: #7fa2c1;
+    --node-failed: #f472b6;
+    --node-inactive: #6c757d;
+    --node-default: #5577b8;
+    --node-default-text: #a5b4fc;
+    --node-default-fill: #a5b4fc;
+    --node-danger-action: #e37582;
+    --node-icon: #ffffff;
+    --node-icon-inverse: #000000;
+}
+
+@theme inline {
+    --color-surface: var(--surface);
+    --color-surface-raised: var(--surface-raised);
+    --color-surface-sunken: var(--surface-sunken);
+    --color-surface-hover: var(--surface-hover);
+    --color-surface-active: var(--surface-active);
+    --color-surface-inverse: var(--surface-inverse);
+    --color-surface-header: var(--surface-header);
+
+    --color-content: var(--content);
+    --color-content-muted: var(--content-muted);
+    --color-content-subtle: var(--content-subtle);
+    --color-content-inverse: var(--content-inverse);
+    --color-content-on-brand: var(--content-on-brand);
+
+    --color-divider: var(--divider);
+    --color-outline: var(--outline);
+
+    --color-brand: var(--brand);
+    --color-brand-solid: var(--brand-solid);
+    --color-brand-solid-hover: var(--brand-solid-hover);
+    --color-brand-hover: var(--brand-hover);
+    --color-brand-subtle: var(--brand-subtle);
+
+    --color-success: var(--success);
+    --color-success-surface: var(--success-surface);
+    --color-success-solid: var(--success-solid);
+    --color-danger: var(--danger);
+    --color-danger-surface: var(--danger-surface);
+    --color-danger-solid: var(--danger-solid);
+    --color-danger-fill: var(--danger-fill);
+    --color-danger-fill-hover: var(--danger-fill-hover);
+    --color-warning: var(--warning);
+    --color-warning-surface: var(--warning-surface);
+    --color-warning-solid: var(--warning-solid);
+    --color-warning-fill: var(--warning-fill);
+    --color-warning-fill-hover: var(--warning-fill-hover);
+    --color-info: var(--info);
+    --color-info-surface: var(--info-surface);
+    --color-info-solid: var(--info-solid);
+
+    --color-node-valid: var(--node-valid);
+    --color-node-expired: var(--node-expired);
+    --color-node-revoked: var(--node-revoked);
+    --color-node-expiring: var(--node-expiring);
+    --color-node-invalid: var(--node-invalid);
+    --color-node-unchecked: var(--node-unchecked);
+    --color-node-failed: var(--node-failed);
+    --color-node-inactive: var(--node-inactive);
+    --color-node-default: var(--node-default);
+    --color-node-default-text: var(--node-default-text);
+    --color-node-default-fill: var(--node-default-fill);
+    --color-node-danger-action: var(--node-danger-action);
+    --color-node-icon: var(--node-icon);
+    --color-node-icon-inverse: var(--node-icon-inverse);
+}
+
 /* (optional) explicit sources */
 /* stylelint-disable-next-line at-rule-no-unknown */
 @source "../src/**/*.{ts,tsx,js,jsx,html}";
@@ -84,7 +256,7 @@ button {
 }
 
 table a {
-    color: var(--primary-blue-color);
+    color: var(--brand);
     font-weight: 600;
 }
 
@@ -93,7 +265,6 @@ table .table-badge {
 }
 
 .modal-footer {
-    background-color: var(--modal-footer-background-color);
     width: calc(100% + 4rem);
     margin-left: -2rem;
     padding-left: 2rem;
@@ -101,7 +272,7 @@ table .table-badge {
     padding-bottom: 1rem;
     padding-top: 1rem;
     border-radius: 0 0 1rem 1rem;
-    @apply border-t border-gray-200;
+    border-top: 1px solid var(--divider);
 }
 
 .text-one-row-ellipsis {
@@ -120,14 +291,15 @@ table .table-badge {
 }
 
 .react-flow__controls-button {
-    border: 1px solid var(--color-gray-500);
+    border: 1px solid var(--outline);
     width: 38px;
     height: 38px;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-gray-500);
+    color: var(--content-muted);
+    background: var(--surface-raised);
     transition: all 0.2s ease;
     box-shadow: none;
 }
@@ -135,12 +307,10 @@ table .table-badge {
 .react-flow__controls-button:not(:last-child) {
     border-bottom: none !important;
 }
-.react-flow__controls-button:hover {
-    @apply bg-gray-100;
-}
 
+.react-flow__controls-button:hover,
 .react-flow__controls-button:active {
-    @apply !bg-gray-100;
+    background: var(--surface-hover);
 }
 
 .react-flow__controls-button svg {
@@ -151,7 +321,7 @@ table .table-badge {
 }
 
 .server-content {
-    color: var(--dark-gray-color);
+    color: var(--content);
 }
 .server-content ul {
     list-style-type: disc;
@@ -200,4 +370,47 @@ table .table-badge {
     to {
         width: 0;
     }
+}
+
+/* highlight.js ships a light-only github theme; these restate its token colours for dark mode.
+   The container's own surface and text colour come from tokens on the element itself, so no
+   rule for the bare .hljs class is needed here. */
+.dark .hljs-doctag,
+.dark .hljs-keyword,
+.dark .hljs-meta .hljs-keyword,
+.dark .hljs-template-tag,
+.dark .hljs-template-variable,
+.dark .hljs-type,
+.dark .hljs-variable.language_ {
+    color: #ff7b72;
+}
+.dark .hljs-title,
+.dark .hljs-title.class_,
+.dark .hljs-title.function_ {
+    color: #d2a8ff;
+}
+.dark .hljs-attr,
+.dark .hljs-attribute,
+.dark .hljs-literal,
+.dark .hljs-meta,
+.dark .hljs-number,
+.dark .hljs-selector-attr,
+.dark .hljs-selector-class,
+.dark .hljs-selector-id,
+.dark .hljs-variable {
+    color: #79c0ff;
+}
+.dark .hljs-string,
+.dark .hljs-meta .hljs-string,
+.dark .hljs-regexp {
+    color: #a5d6ff;
+}
+.dark .hljs-built_in,
+.dark .hljs-symbol {
+    color: #ffa657;
+}
+.dark .hljs-comment,
+.dark .hljs-code,
+.dark .hljs-formula {
+    color: #8b949e;
 }

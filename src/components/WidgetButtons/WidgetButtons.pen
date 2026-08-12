@@ -35,7 +35,7 @@
               "type": "text",
               "id": "j3dvv",
               "name": "Title",
-              "fill": "$color.gray-900",
+              "fill": "#1f2937",
               "content": "WidgetButtons",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -45,7 +45,7 @@
               "type": "text",
               "id": "b7hIs",
               "name": "Subtitle",
-              "fill": "$color.gray-700",
+              "fill": "#525252",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Toolbar row of transparent icon buttons — states, justify & examples",
@@ -67,7 +67,7 @@
               "type": "text",
               "id": "O7UZb0",
               "name": "Label",
-              "fill": "$color.gray-700",
+              "fill": "#525252",
               "content": "ANATOMY",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -95,7 +95,7 @@
                   "type": "text",
                   "id": "M61Y1h",
                   "name": "Widget Title",
-                  "fill": "$color.gray-900",
+                  "fill": "#1f2937",
                   "content": "Certificates",
                   "fontFamily": "Inter",
                   "fontSize": 14,
@@ -125,7 +125,7 @@
                           "height": 16,
                           "icon": "refresh-cw",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#6e6e6e"
                         }
                       ]
                     },
@@ -146,7 +146,7 @@
                           "height": 16,
                           "icon": "download",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#6e6e6e"
                         }
                       ]
                     },
@@ -167,7 +167,7 @@
                           "height": 16,
                           "icon": "search",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#6e6e6e"
                         }
                       ]
                     },
@@ -188,7 +188,7 @@
                           "height": 16,
                           "icon": "info",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#6e6e6e"
                         }
                       ]
                     }
@@ -200,7 +200,7 @@
               "type": "text",
               "id": "V2lal",
               "name": "Caption",
-              "fill": "$color.gray-500",
+              "fill": "#6e6e6e",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "flex · items-center · gap-1 · ml-2 — transparent 16px icon buttons, right-aligned in a widget header",
@@ -222,7 +222,7 @@
               "type": "text",
               "id": "vELMm",
               "name": "Label",
-              "fill": "$color.gray-700",
+              "fill": "#525252",
               "content": "BUTTON STATES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -265,7 +265,7 @@
                           "height": 16,
                           "icon": "refresh-cw",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#6e6e6e"
                         }
                       ]
                     },
@@ -273,7 +273,7 @@
                       "type": "text",
                       "id": "U6Fao5",
                       "name": "State Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Default",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -298,7 +298,7 @@
                       "type": "frame",
                       "id": "a8noo3",
                       "name": "Btn download",
-                      "fill": "$color.gray-200",
+                      "fill": "#ebebeb",
                       "cornerRadius": 8,
                       "padding": 8,
                       "justifyContent": "center",
@@ -312,7 +312,7 @@
                           "height": 16,
                           "icon": "download",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#6e6e6e"
                         }
                       ]
                     },
@@ -320,7 +320,7 @@
                       "type": "text",
                       "id": "S0C74",
                       "name": "State Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Hover",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -364,7 +364,7 @@
                           "height": 16,
                           "icon": "search",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#6e6e6e"
                         }
                       ]
                     },
@@ -372,7 +372,7 @@
                       "type": "text",
                       "id": "m67ZQ5",
                       "name": "State Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Focus",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -411,7 +411,7 @@
                           "height": 16,
                           "icon": "info",
                           "library": "lucide",
-                          "fill": "$color.gray-800"
+                          "fill": "#6e6e6e"
                         }
                       ]
                     },
@@ -419,7 +419,7 @@
                       "type": "text",
                       "id": "r6hZnX",
                       "name": "State Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Disabled",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -451,7 +451,7 @@
               "type": "text",
               "id": "qPgQ4",
               "name": "Label",
-              "fill": "$color.gray-700",
+              "fill": "#525252",
               "content": "JUSTIFY",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -470,7 +470,7 @@
                   "type": "text",
                   "id": "S1A2io",
                   "name": "Value",
-                  "fill": "$color.gray-700",
+                  "fill": "#525252",
                   "content": "justify-start",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -483,7 +483,7 @@
                   "width": "fill_container",
                   "fill": "$color.gray-100",
                   "cornerRadius": 10,
-                  "stroke": "$color.gray-300",
+                  "stroke": "#e8e8e8",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -516,7 +516,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         },
@@ -537,7 +537,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         },
@@ -558,7 +558,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         }
@@ -580,7 +580,7 @@
                   "type": "text",
                   "id": "xYz9m",
                   "name": "Value",
-                  "fill": "$color.gray-700",
+                  "fill": "#525252",
                   "content": "justify-center",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -593,7 +593,7 @@
                   "width": "fill_container",
                   "fill": "$color.gray-100",
                   "cornerRadius": 10,
-                  "stroke": "$color.gray-300",
+                  "stroke": "#e8e8e8",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -627,7 +627,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         },
@@ -648,7 +648,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         },
@@ -669,7 +669,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         }
@@ -691,7 +691,7 @@
                   "type": "text",
                   "id": "n3vMn",
                   "name": "Value",
-                  "fill": "$color.gray-700",
+                  "fill": "#525252",
                   "content": "justify-end",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -704,7 +704,7 @@
                   "width": "fill_container",
                   "fill": "$color.gray-100",
                   "cornerRadius": 10,
-                  "stroke": "$color.gray-300",
+                  "stroke": "#e8e8e8",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -738,7 +738,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         },
@@ -759,7 +759,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         },
@@ -780,7 +780,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         }
@@ -812,7 +812,7 @@
               "type": "text",
               "id": "vkkCK",
               "name": "Label",
-              "fill": "$color.gray-700",
+              "fill": "#525252",
               "content": "EXAMPLES",
               "fontFamily": "Inter",
               "fontSize": 11,
@@ -831,7 +831,7 @@
                   "type": "text",
                   "id": "wcmJg",
                   "name": "Caption",
-                  "fill": "$color.gray-500",
+                  "fill": "#6e6e6e",
                   "content": "Widget header — one action disabled (disabledTooltip)",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -858,7 +858,7 @@
                       "type": "text",
                       "id": "gTiXC",
                       "name": "Widget Title",
-                      "fill": "$color.gray-900",
+                      "fill": "#1f2937",
                       "content": "Discovery",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -888,7 +888,7 @@
                               "height": 16,
                               "icon": "refresh-cw",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         },
@@ -909,7 +909,7 @@
                               "height": 16,
                               "icon": "list-restart",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         },
@@ -931,7 +931,7 @@
                               "height": 16,
                               "icon": "download",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         }
@@ -953,7 +953,7 @@
                   "type": "text",
                   "id": "P9zdJ",
                   "name": "Caption",
-                  "fill": "$color.gray-500",
+                  "fill": "#6e6e6e",
                   "content": "Custom slot — buttons[].custom renders any React node inline",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -980,7 +980,7 @@
                       "type": "text",
                       "id": "catDp",
                       "name": "Widget Title",
-                      "fill": "$color.gray-900",
+                      "fill": "#1f2937",
                       "content": "Certificates",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -1021,7 +1021,7 @@
                               "type": "text",
                               "id": "tJV4v",
                               "name": "Label",
-                              "fill": "$color.blue-700",
+                              "fill": "#0073cf",
                               "content": "Auto-refresh",
                               "fontFamily": "Inter",
                               "fontSize": 12,
@@ -1046,7 +1046,7 @@
                               "height": 16,
                               "icon": "search",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         },
@@ -1067,7 +1067,7 @@
                               "height": 16,
                               "icon": "info",
                               "library": "lucide",
-                              "fill": "$color.gray-800"
+                              "fill": "#6e6e6e"
                             }
                           ]
                         }
@@ -1091,7 +1091,7 @@
       "width": 720,
       "fill": "$color.neutral-900",
       "cornerRadius": 12,
-      "stroke": "$color.neutral-700",
+      "stroke": "#262626",
       "strokeWidth": 1,
       "strokeAlignment": "inner",
       "layout": "vertical",
@@ -1115,7 +1115,7 @@
               "type": "text",
               "id": "Lwtbr",
               "name": "Title",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "WidgetButtons",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -1159,9 +1159,9 @@
               "id": "T6xO14",
               "name": "Header Context",
               "width": "fill_container",
-              "fill": "$color.neutral-800",
+              "fill": "#171717",
               "cornerRadius": 10,
-              "stroke": "$color.neutral-700",
+              "stroke": "#262626",
               "strokeWidth": 1,
               "strokeAlignment": "inner",
               "padding": [
@@ -1175,7 +1175,7 @@
                   "type": "text",
                   "id": "dUXqS",
                   "name": "Widget Title",
-                  "fill": "$color.white",
+                  "fill": "#f5f5f5",
                   "content": "Certificates",
                   "fontFamily": "Inter",
                   "fontSize": 14,
@@ -1280,7 +1280,7 @@
               "type": "text",
               "id": "McpBv",
               "name": "Caption",
-              "fill": "$color.neutral-500",
+              "fill": "#a3a3a3",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "flex · items-center · gap-1 · ml-2 — transparent 16px icon buttons, right-aligned in a widget header",
@@ -1378,7 +1378,7 @@
                       "type": "frame",
                       "id": "m4fg8L",
                       "name": "Btn download",
-                      "fill": "$color.neutral-700",
+                      "fill": "#2e2e2e",
                       "cornerRadius": 8,
                       "padding": 8,
                       "justifyContent": "center",
@@ -1515,7 +1515,7 @@
           "type": "rectangle",
           "id": "yQyWE",
           "name": "Section Divider",
-          "fill": "$color.neutral-700",
+          "fill": "#262626",
           "width": "fill_container",
           "height": 1
         },
@@ -1563,7 +1563,7 @@
                   "width": "fill_container",
                   "fill": "$color.neutral-800",
                   "cornerRadius": 10,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -1673,7 +1673,7 @@
                   "width": "fill_container",
                   "fill": "$color.neutral-800",
                   "cornerRadius": 10,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -1784,7 +1784,7 @@
                   "width": "fill_container",
                   "fill": "$color.neutral-800",
                   "cornerRadius": 10,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -1876,7 +1876,7 @@
           "type": "rectangle",
           "id": "KC9P9",
           "name": "Section Divider",
-          "fill": "$color.neutral-700",
+          "fill": "#262626",
           "width": "fill_container",
           "height": 1
         },
@@ -1911,7 +1911,7 @@
                   "type": "text",
                   "id": "nVlkH",
                   "name": "Caption",
-                  "fill": "$color.neutral-500",
+                  "fill": "#a3a3a3",
                   "content": "Widget header — one action disabled (disabledTooltip)",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -1922,9 +1922,9 @@
                   "id": "GZVcu",
                   "name": "Header Card",
                   "width": "fill_container",
-                  "fill": "$color.neutral-800",
+                  "fill": "#171717",
                   "cornerRadius": 10,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -1938,7 +1938,7 @@
                       "type": "text",
                       "id": "qDzxA",
                       "name": "Widget Title",
-                      "fill": "$color.white",
+                      "fill": "#f5f5f5",
                       "content": "Discovery",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -2033,7 +2033,7 @@
                   "type": "text",
                   "id": "GrkG6",
                   "name": "Caption",
-                  "fill": "$color.neutral-500",
+                  "fill": "#a3a3a3",
                   "content": "Custom slot — buttons[].custom renders any React node inline",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -2044,9 +2044,9 @@
                   "id": "KftKI",
                   "name": "Header Card",
                   "width": "fill_container",
-                  "fill": "$color.neutral-800",
+                  "fill": "#171717",
                   "cornerRadius": 10,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "strokeAlignment": "inner",
                   "padding": [
@@ -2060,7 +2060,7 @@
                       "type": "text",
                       "id": "q2D5Z",
                       "name": "Widget Title",
-                      "fill": "$color.white",
+                      "fill": "#f5f5f5",
                       "content": "Certificates",
                       "fontFamily": "Inter",
                       "fontSize": 14,
@@ -2077,7 +2077,7 @@
                           "type": "frame",
                           "id": "xg5Uc",
                           "name": "Custom Pill",
-                          "fill": "$color.blue-950",
+                          "fill": "#002d59",
                           "cornerRadius": 20,
                           "stroke": "$color.blue-800",
                           "strokeWidth": 1,
@@ -2093,7 +2093,7 @@
                               "type": "ellipse",
                               "id": "Svtor",
                               "name": "Dot",
-                              "fill": "$color.blue-500",
+                              "fill": "#0073cf",
                               "width": 6,
                               "height": 6
                             },
@@ -2101,7 +2101,7 @@
                               "type": "text",
                               "id": "r95x53",
                               "name": "Label",
-                              "fill": "$color.blue-300",
+                              "fill": "#3399ff",
                               "content": "Auto-refresh",
                               "fontFamily": "Inter",
                               "fontSize": 12,

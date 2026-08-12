@@ -29,9 +29,10 @@ test.describe('ConfirmRevokeDialog', () => {
             (globalThis as any).__lastDispatchedAction = undefined;
         });
         await page.getByRole('button', { name: /^cancel$/i }).click();
-        await page.waitForTimeout(50);
+        // onClose firing is the observable effect of the click; only then is it meaningful to check
+        // that no action reached the store.
+        await expect.poll(() => closed, { timeout: 2000 }).toBe(true);
         const dispatched = await page.evaluate(() => (globalThis as any).__lastDispatchedAction);
         expect(dispatched).toBeUndefined();
-        expect(closed).toBe(true);
     });
 });

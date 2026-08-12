@@ -1,9 +1,16 @@
 import cn from 'classnames';
 
 export type BadgeColor = 'gray' | 'secondary' | 'success' | 'primary' | 'danger' | 'warning' | 'info' | 'transparent';
+export type BadgeFill = 'solid' | 'surface';
 
 type Props = {
     color?: BadgeColor;
+    /** 'surface' (default) is the tinted-background/plain-text treatment, and the only one safe for a badge
+     *  that carries text: the `-solid` status fills are tuned as vivid indicator colours, so white on them
+     *  falls as low as 1.92:1 (dark warning). 'solid' is that vivid fill, and is reserved for icon-only
+     *  indicators such as StatusCircle, where WCAG's 3:1 non-text threshold applies instead of 4.5:1.
+     *  Only the four status colours have both treatments; the rest render the same either way. */
+    fill?: BadgeFill;
     onClick?: () => void;
     onRemove?: () => void;
     children: React.ReactNode;
@@ -17,6 +24,7 @@ type Props = {
 
 function Badge({
     color = 'secondary',
+    fill = 'surface',
     onClick,
     onRemove,
     children,
@@ -28,14 +36,19 @@ function Badge({
     id,
 }: Readonly<Props>) {
     const colorClasses = {
-        gray: 'bg-gray-800 text-white dark:bg-white dark:text-neutral-800',
-        secondary: 'bg-gray-500 text-white',
-        success: 'bg-[var(--status-success-color)] text-white',
-        primary: 'bg-blue-600 text-white dark:bg-blue-500',
-        danger: 'bg-[var(--status-danger-color)] text-white',
-        warning: 'bg-[var(--status-warning-color)] text-white',
-        info: 'bg-[var(--status-info-color)] text-white',
-        transparent: 'bg-white text-gray-600',
+        gray: 'bg-surface-inverse text-content-inverse',
+        // Inset ring rather than a border: surface-sunken is only ~1.1:1 against the surface-raised
+        // cards and table bodies badges sit on, so without a boundary the chrome disappears and
+        // status badges render as bare text. outline is the token guaranteed at 3:1 against
+        // surface-raised in both themes (see theme-tokens.spec.ts), and an inset ring draws inside
+        // the element, so no badge changes size.
+        secondary: 'bg-surface-sunken text-content inset-ring-1 inset-ring-outline',
+        success: fill === 'solid' ? 'bg-success-solid text-content-on-brand' : 'bg-success-surface text-success',
+        primary: 'bg-brand-solid text-content-on-brand',
+        danger: fill === 'solid' ? 'bg-danger-solid text-content-on-brand' : 'bg-danger-surface text-danger',
+        warning: fill === 'solid' ? 'bg-warning-solid text-content-on-brand' : 'bg-warning-surface text-warning',
+        info: fill === 'solid' ? 'bg-info-solid text-content-on-brand' : 'bg-info-surface text-info',
+        transparent: 'bg-surface-raised text-content-muted',
     };
     const handleKeyDown = (event: React.KeyboardEvent<HTMLSpanElement>) => {
         if (!onClick) return;
@@ -73,7 +86,7 @@ function Badge({
                 {onRemove && (
                     <button
                         type="button"
-                        className="shrink-0 size-4 inline-flex items-center justify-center rounded-full hover:bg-gray-200 focus:outline-hidden focus:bg-gray-200 focus:text-gray-500 dark:hover:bg-gray-900"
+                        className="shrink-0 size-4 inline-flex items-center justify-center rounded-full hover:bg-surface-hover focus:outline-hidden focus:bg-surface-hover focus:text-content-subtle"
                         onClick={(e) => {
                             e.stopPropagation();
                             onRemove();
@@ -107,7 +120,7 @@ function Badge({
             {onRemove && (
                 <button
                     type="button"
-                    className="shrink-0 size-4 inline-flex items-center justify-center rounded-full hover:bg-gray-200 focus:outline-hidden focus:bg-gray-200 focus:text-gray-500 dark:hover:bg-gray-900"
+                    className="shrink-0 size-4 inline-flex items-center justify-center rounded-full hover:bg-surface-hover focus:outline-hidden focus:bg-surface-hover focus:text-content-subtle"
                     onClick={onRemove}
                 >
                     <span className="sr-only">Remove badge</span>

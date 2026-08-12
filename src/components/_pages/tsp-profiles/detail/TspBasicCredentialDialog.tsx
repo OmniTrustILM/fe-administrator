@@ -144,7 +144,7 @@ export default function TspBasicCredentialDialog({ tspProfileUuid, credential, o
                                 error={getFieldErrorMessage(fieldState)}
                             />
                             {editMode && (
-                                <p className="mt-1 text-sm text-gray-500">
+                                <p className="mt-1 text-sm text-content-subtle">
                                     {requirePasswordForUsernameChange
                                         ? 'Changing the username requires a new password.'
                                         : 'Leave blank to keep the current password.'}
@@ -173,7 +173,7 @@ export default function TspBasicCredentialDialog({ tspProfileUuid, credential, o
                     )}
                 />
 
-                {saveErrorMessage.length > 0 && <p className="text-sm text-[var(--status-danger-color)]">{saveErrorMessage}</p>}
+                {saveErrorMessage.length > 0 && <p className="text-sm text-danger">{saveErrorMessage}</p>}
 
                 <Container className="flex-row justify-end modal-footer" gap={4}>
                     <Button variant="outline" type="button" onClick={onClose} disabled={isSubmitting}>

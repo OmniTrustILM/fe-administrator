@@ -324,7 +324,7 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
                                       variant="transparent"
                                       onClick={() => setDisplayKeyData(true)}
                                       title="Show Key Data"
-                                      className="!px-2 !py-0 text-sm text-[var(--primary-blue-color)]"
+                                      className="!px-2 !py-0 text-sm text-brand"
                                   >
                                       Key data
                                   </Button>

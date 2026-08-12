@@ -114,45 +114,41 @@ test.describe('Attribute', () => {
         await expect(page.getByText('42')).toBeVisible();
     });
 
-    test.skip('handleAddNew opens modal (Select is Preline/HS; programmatic change does not trigger React onChange in CT)', async ({
-        mount,
-        page,
-    }) => {
+    test('handleAddNew opens modal', async ({ mount, page }) => {
         const descriptor = dataDescriptor({
             contentType: AttributeContentType.Credential,
             properties: { ...defaultProperties, list: true, label: 'Creds' } as any,
-        });
-        await mount(<AttributeTestWrapper name="field" descriptor={descriptor} options={[{ label: 'Cred A', value: 'ca' }]} />);
-        await expect(page.getByTestId('label-fieldSelect')).toHaveText('Creds');
-        await page.locator('select#fieldSelect').evaluate((el: HTMLSelectElement) => {
-            el.value = '__add_new__';
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-        await expect(page.getByTestId('global-modal')).toBeVisible({ timeout: 5000 });
-    });
-
-    test.skip('onUserInteraction sets userInteractedRef (Select programmatic change does not trigger React onChange in CT)', async ({
-        mount,
-        page,
-    }) => {
-        const ref = { current: false };
-        const descriptor = dataDescriptor({
-            properties: { ...defaultProperties, list: true, label: 'Pick one' } as any,
         });
         await mount(
             <AttributeTestWrapper
                 name="field"
                 descriptor={descriptor}
-                options={[{ label: 'Option A', value: 'a' }]}
-                userInteractedRef={ref}
+                options={[{ label: 'Cred A', value: 'ca' }]}
+                renderGlobalModal={false}
             />,
         );
-        expect(ref.current).toBe(false);
-        await page.locator('select#fieldSelect').evaluate((el: HTMLSelectElement) => {
-            el.value = 'a';
-            el.dispatchEvent(new Event('change', { bubbles: true }));
+        await expect(page.getByTestId('label-fieldSelect')).toHaveText('Creds');
+
+        await page.getByTestId('select-fieldSelect-trigger').click();
+        await page.getByRole('option', { name: '+ Add new' }).click();
+
+        await expect(page.getByTestId('global-modal-state')).toHaveText('Add New Credential');
+    });
+
+    test('onUserInteraction sets userInteractedRef', async ({ mount, page }) => {
+        const descriptor = dataDescriptor({
+            properties: { ...defaultProperties, list: true, label: 'Pick one' } as any,
         });
-        expect(ref.current).toBe(true);
+        // The ref lives in the browser, so it is reported through a probe rather than read from Node.
+        await mount(
+            <AttributeTestWrapper name="field" descriptor={descriptor} options={[{ label: 'Option A', value: 'a' }]} probeUserInteracted />,
+        );
+        await expect(page.getByTestId('user-interacted')).toHaveText('false');
+
+        await page.getByTestId('select-fieldSelect-trigger').click();
+        await page.getByRole('option', { name: 'Option A' }).click();
+
+        await expect(page.getByTestId('user-interacted')).toHaveText('true');
     });
 
     test('attribute callback useEffect: setValue and dispatch when option matches', async ({ mount, page }) => {
@@ -176,20 +172,26 @@ test.describe('Attribute', () => {
         await expect(page.getByTestId('select-fieldSelect')).toBeAttached();
     });
 
-    test.skip('handleSelectChangeSingle with __add_new__ (Select programmatic change does not trigger React onChange in CT)', async ({
-        mount,
-        page,
-    }) => {
+    test('handleSelectChangeSingle with __add_new__ opens the modal without selecting a value', async ({ mount, page }) => {
         const descriptor = dataDescriptor({
             contentType: AttributeContentType.Credential,
             properties: { ...defaultProperties, list: true, label: 'Single Cred' } as any,
         });
-        await mount(<AttributeTestWrapper name="field" descriptor={descriptor} options={[{ label: 'C1', value: 'c1' }]} />);
-        await page.locator('select#fieldSelect').evaluate((el: HTMLSelectElement) => {
-            el.value = '__add_new__';
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-        await expect(page.getByTestId('global-modal')).toBeVisible({ timeout: 5000 });
+        await mount(
+            <AttributeTestWrapper
+                name="field"
+                descriptor={descriptor}
+                options={[{ label: 'C1', value: 'c1' }]}
+                renderGlobalModal={false}
+            />,
+        );
+
+        await page.getByTestId('select-fieldSelect-trigger').click();
+        await page.getByRole('option', { name: '+ Add new' }).click();
+
+        await expect(page.getByTestId('global-modal-state')).toHaveText('Add New Credential');
+        // "+ Add new" is a command, not a value — it must not end up as the field's selection.
+        await expect(page.locator('select#fieldSelect')).not.toHaveValue('__add_new__');
     });
 
     test('passes busy and deleteButton to child', async ({ mount, page }) => {

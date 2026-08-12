@@ -192,7 +192,7 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
                                 error={getFieldErrorMessage(fieldState)}
                             />
                             {!fieldState.error && cbomRepositoryHealthWarning && (
-                                <p className="mt-1 text-sm text-yellow-600" data-testid="cbom-repository-health-warning">
+                                <p className="mt-1 text-sm text-warning" data-testid="cbom-repository-health-warning">
                                     {cbomRepositoryHealthWarning}
                                 </p>
                             )}

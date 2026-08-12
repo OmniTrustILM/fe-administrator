@@ -1341,7 +1341,7 @@ export default function CertificateDetail() {
                                     flowDirection="TB"
                                 />
                             ) : (
-                                <div className="p-4 text-sm text-gray-500">No flow chart data available.</div>
+                                <div className="p-4 text-sm text-content-subtle">No flow chart data available.</div>
                             ),
                         },
                         {
@@ -1443,7 +1443,7 @@ export default function CertificateDetail() {
                                 Cancel
                             </Button>
                         </Container>
-                        {isAlreadyRelatedError ? <span className="text-red-600">Certificate is already related</span> : null}
+                        {isAlreadyRelatedError ? <span className="text-danger">Certificate is already related</span> : null}
                     </>
                 }
             />

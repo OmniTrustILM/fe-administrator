@@ -1,4 +1,4 @@
-const barClass = 'rounded bg-gray-200 dark:bg-neutral-700';
+const barClass = 'rounded bg-surface-sunken';
 
 const cellWidths = [112, 56, 80, 48, 96, 64, 88, 40, 120, 72];
 
@@ -35,10 +35,10 @@ function TableSkeleton({
             )}
 
             <div className="py-2">
-                <div className="rounded-md border border-gray-100 dark:border-neutral-700 overflow-hidden">
+                <div className="rounded-md border border-divider overflow-hidden">
                     <div className="min-w-full inline-block align-middle overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700 bg-white dark:bg-neutral-900">
-                            <thead className="bg-[#F8FAFC] dark:bg-neutral-700">
+                        <table className="min-w-full divide-y divide-divider bg-surface-raised">
+                            <thead className="bg-surface-sunken">
                                 <tr>
                                     {hasCheckboxes && (
                                         <th className="p-3 w-8">
@@ -55,7 +55,7 @@ function TableSkeleton({
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">
+                            <tbody className="divide-y divide-divider">
                                 {rows.map((row) => (
                                     <tr key={row} data-testid="table-skeleton-row">
                                         {hasCheckboxes && (

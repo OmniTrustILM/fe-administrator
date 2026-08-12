@@ -44,8 +44,8 @@ test.describe('PagedCustomTable', () => {
                 />,
             ),
         );
+        // onReloadData fires from a mount effect, so the table becoming visible is enough of a signal.
         await page.getByTestId('paged-custom-table').waitFor({ state: 'visible', timeout: 2000 });
-        await page.waitForTimeout(100);
         expect(callCount).toBeGreaterThanOrEqual(1);
     });
 

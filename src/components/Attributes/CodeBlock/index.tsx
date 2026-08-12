@@ -31,7 +31,7 @@ export default function CodeBlock({ content }: Readonly<Props>) {
             actions.showGlobalModal({
                 title: `${content.data.language} code block`,
                 content: (
-                    <pre className="overflow-y-auto max-h-[60vh] py-2">
+                    <pre className="overflow-y-auto max-h-[60vh] py-2 bg-surface-sunken text-content">
                         <code
                             className={`language-${content.data.language}`}
                             style={{

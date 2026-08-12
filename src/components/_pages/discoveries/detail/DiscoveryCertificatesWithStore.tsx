@@ -5,7 +5,7 @@ import type { DiscoveriesTestState } from 'ducks/test-reducers';
 import { createMockStore } from 'utils/test-helpers';
 import DiscoveryCertificates from './DiscoveryCertificates';
 
-type DiscoveryCertificatesTestList = DiscoveriesTestState['discoveryCertificates'];
+type DiscoveryCertificatesTestList = NonNullable<DiscoveriesTestState['discoveryCertificates']>;
 
 export type DiscoveryCertificatesWithStoreProps = Readonly<{
     initialEntries?: string[];

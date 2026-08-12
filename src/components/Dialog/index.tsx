@@ -39,7 +39,7 @@ export type ModalIconName =
     | 'shuffle'
     | 'minus'
     | 'plug';
-export type ModalIcon = ModalIconName | React.ReactElement | null | undefined;
+export type ModalIcon = ModalIconName | React.ReactElement | null;
 
 export interface DialogButton {
     key?: string;
@@ -86,10 +86,10 @@ export default function Dialog({
     const renderIcon = () => {
         if (!icon) return null;
         const iconColor: Record<string, string> = {
-            delete: '#991B1B',
-            destroy: '#991B1B',
-            warning: '#991B1B',
-            check: '#115E59',
+            delete: 'var(--danger)',
+            destroy: 'var(--danger)',
+            warning: 'var(--danger)',
+            check: 'var(--success)',
         };
         let iconElement: React.ReactNode = null;
         const buttonProps = { size: 26, strokeWidth: 1 };
@@ -149,10 +149,10 @@ export default function Dialog({
                 className={cn(
                     'w-12 h-12 m-2 mb-4 bg-current/12 rounded-full flex items-center justify-center relative z-1 after:content-[""] after:absolute after:w-16 after:h-16 after:bg-current/6 after:rounded-full after:-z-10 after:left-1/2 after:top-1/2 after:-translate-x-1/2 after:-translate-y-1/2',
                     {
-                        '!bg-[#CCFBF1] after:!bg-[#CCFBF1] after:!opacity-30': icon === 'check',
+                        '!bg-success-surface after:!bg-success-surface after:!opacity-30': icon === 'check',
                     },
                 )}
-                style={{ color: iconColor[icon as string] || '#6B7280' }}
+                style={{ color: iconColor[icon as string] || 'var(--content-subtle)' }}
             >
                 {iconElement}
             </div>
@@ -168,7 +168,7 @@ export default function Dialog({
             </VisuallyHidden>
         ) : (
             <RadixDialog.Title asChild>
-                <h3 className="font-bold text-[var(--dark-gray-color)] dark:text-white text-2xl">{caption}</h3>
+                <h3 className="font-bold text-content text-2xl">{caption}</h3>
             </RadixDialog.Title>
         );
 
@@ -195,8 +195,7 @@ export default function Dialog({
                     className={cn(
                         'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[80] w-full',
                         sizeClasses[size],
-                        'bg-white border border-gray-200 shadow-2xs rounded-xl',
-                        'dark:bg-neutral-800 dark:border-neutral-700 dark:shadow-neutral-700/70',
+                        'bg-surface-raised border border-divider shadow-sm rounded-xl',
                         'flex flex-col p-4 md:p-8 !pb-0 overflow-hidden max-h-[calc(100vh-56px)]',
                     )}
                 >
@@ -210,8 +209,8 @@ export default function Dialog({
                     </div>
 
                     <div
-                        className={cn('flex flex-col justify-center dark:border-neutral-700', {
-                            'border-b border-gray-200 pb-4': !hideBorders,
+                        className={cn('flex flex-col justify-center', {
+                            'border-b border-divider pb-4': !hideBorders,
                             'items-center': !!icon,
                         })}
                     >
@@ -220,7 +219,7 @@ export default function Dialog({
                     </div>
                     <RadixDialog.Description asChild>
                         <div
-                            className={cn('pt-4 -mx-1 px-1 text-gray-500 dark:text-white overflow-x-clip overflow-y-auto min-h-0', {
+                            className={cn('pt-4 -mx-1 px-1 text-content-muted overflow-x-clip overflow-y-auto min-h-0', {
                                 'pb-4': !!buttons?.length,
                                 'text-center': icon === 'delete' || icon === 'destroy',
                             })}
@@ -229,7 +228,7 @@ export default function Dialog({
                         </div>
                     </RadixDialog.Description>
                     {buttons && buttons.length > 0 && (
-                        <div className="flex justify-end items-center gap-4 py-4 mt-2 dark:border-neutral-700 modal-footer">
+                        <div className="flex justify-end items-center gap-4 py-4 mt-2 border-divider modal-footer">
                             {buttons.map((button, index) => (
                                 <Button
                                     key={button.key ?? index}

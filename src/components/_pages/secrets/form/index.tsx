@@ -632,7 +632,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                                                         }
                                                     />
                                                     {fieldState.error && (
-                                                        <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                                                        <p className="mt-1 text-sm text-danger">{fieldState.error.message}</p>
                                                     )}
                                                 </div>
                                             )}
@@ -781,7 +781,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                                     {
                                         title: 'Attributes',
                                         content: isFetchingSecretCreationAttributes ? (
-                                            <div className="text-sm text-gray-500">Loading attributes...</div>
+                                            <div className="text-sm text-content-subtle">Loading attributes...</div>
                                         ) : (
                                             <AttributeEditor
                                                 id="secret"

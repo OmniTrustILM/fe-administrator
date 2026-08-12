@@ -13,14 +13,11 @@ export function AttributeInfo({ name, label, content }: Readonly<AttributeInfoPr
     const renderedContent = typeof content === 'string' ? parse(DOMPurify.sanitize(marked.parse(content) as string)) : content;
 
     return (
-        <div
-            id={`${name}Info`}
-            className="flex flex-col bg-white border border-gray-200 shadow-2xs rounded-xl dark:bg-neutral-900 dark:border-neutral-700 dark:shadow-neutral-700/70"
-        >
-            <div className="p-4 border-b border-gray-200 dark:border-neutral-700">
-                <h3 className="text-gray-800 dark:text-white text-sm">{label}</h3>
+        <div id={`${name}Info`} className="flex flex-col bg-surface-raised border border-divider shadow-2xs rounded-xl">
+            <div className="p-4 border-b border-divider">
+                <h3 className="text-content text-sm">{label}</h3>
             </div>
-            <div className="p-4 text-sm text-[var(--dark-gray-color)] server-content">{renderedContent}</div>
+            <div className="p-4 text-sm text-content server-content">{renderedContent}</div>
         </div>
     );
 }

@@ -175,7 +175,7 @@ describe('certificates slice', () => {
         };
         next = reducer(stateWithCerts, actions.revokeCertificateSuccess({ uuid: 'cert-1' }));
         expect(next.isRevoking).toBe(false);
-        expect(next.certificates.length).toBe(1);
+        expect(next.certificates).toHaveLength(1);
         expect(next.certificates[0].uuid).toBe('cert-2');
 
         next = reducer({ ...next, isRevoking: true }, actions.revokeCertificateFailure({ error: 'err' }));
@@ -262,7 +262,7 @@ describe('certificates slice', () => {
         };
         next = reducer(stateWithCerts, actions.deleteCertificateSuccess({ uuid: 'cert-1' }));
         expect(next.isDeleting).toBe(false);
-        expect(next.certificates.length).toBe(1);
+        expect(next.certificates).toHaveLength(1);
         expect(next.certificates[0].uuid).toBe('cert-2');
         expect(next.certificateDetail).toBeUndefined();
 

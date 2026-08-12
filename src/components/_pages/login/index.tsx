@@ -23,34 +23,34 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-neutral-900 px-4 py-12">
+        <div className="min-h-screen flex items-center justify-center bg-surface px-4 py-12">
             <main className="max-w-md w-full">
                 <div className="flex justify-center mb-8">
                     <img src="./logo.svg" alt="ILM Logo" className="h-13" />
                 </div>
 
-                <h1 className="text-xl font-bold mt-8 mb-9 text-center text-gray-800 dark:text-white">Login with</h1>
+                <h1 className="text-xl font-bold mt-8 mb-9 text-center text-content">Login with</h1>
 
                 {(() => {
                     if (isLoading) {
                         return (
                             <div className="text-center py-8">
-                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-                                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading login options...</p>
+                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-content"></div>
+                                <p className="mt-4 text-content-muted">Loading login options...</p>
                             </div>
                         );
                     }
                     if (error) {
                         return (
                             <div className="text-center py-8">
-                                <p className="text-red-600 dark:text-red-400">{error}</p>
+                                <p className="text-danger">{error}</p>
                             </div>
                         );
                     }
                     if (!loginMethods || loginMethods.length === 0) {
                         return (
                             <div className="text-center py-8">
-                                <p className="text-gray-600 dark:text-neutral-400">No login methods available</p>
+                                <p className="text-content-muted">No login methods available</p>
                             </div>
                         );
                     }

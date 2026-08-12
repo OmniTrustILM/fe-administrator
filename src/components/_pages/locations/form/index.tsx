@@ -319,7 +319,7 @@ export default function LocationForm({ locationId, entityId: propEntityId, onCan
                                         placement="bottom"
                                     />
                                     {fieldState.error && fieldState.isTouched && (
-                                        <p className="mt-1 text-sm text-red-600">
+                                        <p className="mt-1 text-sm text-danger">
                                             {typeof fieldState.error === 'string'
                                                 ? fieldState.error
                                                 : fieldState.error?.message || 'Invalid value'}
