@@ -17,7 +17,7 @@ const defaultPreloadedState = {
 };
 
 export type PlatformInfoDialogButtonWithStoreProps = {
-    preloadedState?: Parameters<typeof createMockStore>[0];
+    preloadedState?: NonNullable<Parameters<typeof createMockStore>[0]>;
     initiallyOpen?: boolean;
     forceOpen?: boolean;
 };

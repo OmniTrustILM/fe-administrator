@@ -97,15 +97,22 @@ function renderPagedList(options?: {
 
 test.describe('PagedList', () => {
     test('mounts with default props', async ({ mount }) => {
-        await mount(renderPagedList());
+        const component = await mount(renderPagedList());
+
+        await expect(component.getByText('CBOMs')).toBeVisible();
+        await expect(component.getByText('First row')).toBeVisible();
+        await expect(component.getByText('Third row')).toBeVisible();
     });
 
-    test('mounts with busy state', async ({ mount }) => {
-        await mount(renderPagedList({ isBusy: true }));
+    test('mounts with busy state', async ({ mount, page }) => {
+        const component = await mount(renderPagedList({ isBusy: true }));
+
+        await expect(page.getByTestId('spinner')).toBeVisible();
+        await expect(component.getByTestId('widget-busy-overlay')).toBeVisible();
     });
 
     test('mounts with create and delete controls enabled', async ({ mount }) => {
-        await mount(
+        const component = await mount(
             renderPagedList({
                 addHidden: false,
                 onDeleteCallback: () => {},
@@ -127,6 +134,10 @@ test.describe('PagedList', () => {
                 },
             }),
         );
+
+        await expect(component.getByTestId('create-button')).toBeVisible();
+        // Delete renders but starts disabled: PagedList's initial load clears any preloaded selection.
+        await expect(component.getByTestId('delete-button')).toBeDisabled();
     });
 
     test('hides widget action icons when hideWidgetButtons is true', async ({ mount }) => {
@@ -142,17 +153,23 @@ test.describe('PagedList', () => {
         await expect(component.locator('button:has(svg[class*="lucide-trash"])')).toHaveCount(0);
     });
 
-    test('mounts with preselected rows for delete flow', async ({ mount }) => {
-        await mount(
+    test('renders selectable rows with delete wired up', async ({ mount }) => {
+        const component = await mount(
             renderPagedList({
                 onDeleteCallback: () => {},
                 preloadedState: preloadedDeleteState,
             }),
         );
+
+        await expect(component.getByTestId('delete-button')).toBeVisible();
+        await expect(component.locator('input[type="checkbox"]')).toHaveCount(rows.length + 1);
+
+        await component.locator('#row-1__checkbox__').click();
+        await expect(component.locator('#row-1__checkbox__')).toBeChecked();
     });
 
     test('mounts with additional action buttons', async ({ mount }) => {
-        await mount(
+        const component = await mount(
             renderPagedList({
                 additionalButtons: [
                     {
@@ -164,25 +181,33 @@ test.describe('PagedList', () => {
                 ],
             }),
         );
+
+        await expect(component.getByTestId('sync-button')).toBeVisible();
+        await expect(component.getByTestId('sync-button')).toBeEnabled();
     });
 
     test('mounts filter widget when filter title and API are provided', async ({ mount }) => {
-        await mount(
+        const component = await mount(
             renderPagedList({
                 filterTitle: 'CBOM Filters',
                 getAvailableFiltersApi: () => of([]),
             }),
         );
+
+        await expect(component.getByText('CBOM Filters')).toBeVisible();
     });
 
     test('mounts with details enabled and checkboxes disabled', async ({ mount }) => {
-        await mount(
+        const component = await mount(
             renderPagedList({
                 hasCheckboxes: false,
                 hasDetails: true,
                 columnForDetail: 'name',
             }),
         );
+
+        await expect(component.locator('input[type="checkbox"]')).toHaveCount(0);
+        await expect(component.getByText('First row')).toBeVisible();
     });
 
     test('does not show delete confirmation dialog by default', async ({ mount }) => {

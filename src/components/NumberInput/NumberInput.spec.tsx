@@ -29,6 +29,7 @@ test.describe('NumberInput', () => {
         );
         await component.getByLabel('Increase').click();
         await expect.poll(() => value, { timeout: 2000 }).toBe(6);
+        expect(value).toBe(6);
     });
 
     test('should call onChange with decremented value when - is clicked', async ({ mount }) => {
@@ -43,6 +44,7 @@ test.describe('NumberInput', () => {
         );
         await component.getByLabel('Decrease').click();
         await expect.poll(() => value, { timeout: 2000 }).toBe(4);
+        expect(value).toBe(4);
     });
 
     test('should increment by step value', async ({ mount }) => {
@@ -58,6 +60,7 @@ test.describe('NumberInput', () => {
         );
         await component.getByLabel('Increase').click();
         await expect.poll(() => value, { timeout: 2000 }).toBe(10);
+        expect(value).toBe(10);
     });
 
     test('should disable increase button when value equals max', async ({ mount }) => {
@@ -91,6 +94,7 @@ test.describe('NumberInput', () => {
         );
         await component.getByRole('textbox').fill('20');
         await expect.poll(() => value, { timeout: 2000 }).toBe(20);
+        expect(value).toBe(20);
     });
 
     test('should not call onChange when typed value is out of range', async ({ mount }) => {

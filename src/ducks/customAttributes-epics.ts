@@ -154,7 +154,7 @@ type ContentActionPayload = {
     resource: Resource;
     resourceUuid: string;
     attributeUuid: string;
-    content?: AttributeResponseModel['content'];
+    content?: NonNullable<AttributeResponseModel['content']>;
 };
 
 const createMissingContextError = (operation: ContentOperation, resource: Resource): Error => {

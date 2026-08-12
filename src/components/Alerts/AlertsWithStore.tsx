@@ -4,7 +4,7 @@ import Alerts from './index';
 import { alertsSlice } from 'ducks/alert-slice';
 
 export type AlertsWithStoreProps = {
-    preloadedState?: Parameters<typeof createMockStore>[0];
+    preloadedState?: NonNullable<Parameters<typeof createMockStore>[0]>;
     autoDismissMs?: number;
 };
 

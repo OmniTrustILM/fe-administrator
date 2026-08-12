@@ -101,6 +101,7 @@ test.describe('AddCustomValueInput', () => {
                 message: 'onChange should receive parsed integer',
             })
             .toBe(42);
+        expect(lastValue).toBe(42);
     });
 
     test('number input parses float values via onChange', async ({ mount, page }) => {
@@ -125,6 +126,7 @@ test.describe('AddCustomValueInput', () => {
                 message: 'onChange should receive parsed float',
             })
             .toBeCloseTo(3.14);
+        expect(lastValue).toBeCloseTo(3.14);
     });
 
     test('number input passes empty string when cleared', async ({ mount, page }) => {
@@ -151,6 +153,7 @@ test.describe('AddCustomValueInput', () => {
                 message: 'onChange should receive empty string when cleared',
             })
             .toBe('');
+        expect(lastValue).toBe('');
     });
 
     test('checkbox type renders Switch and toggles onChange', async ({ mount, page }) => {
@@ -173,6 +176,7 @@ test.describe('AddCustomValueInput', () => {
                 message: 'onChange should receive toggled boolean',
             })
             .toBe(true);
+        expect(lastValue).toBe(true);
     });
 
     test('datetime-local normalizes space to T before passing to DatePicker', async ({ mount, page }) => {

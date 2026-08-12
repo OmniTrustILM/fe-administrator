@@ -39,7 +39,7 @@ export type ModalIconName =
     | 'shuffle'
     | 'minus'
     | 'plug';
-export type ModalIcon = ModalIconName | React.ReactElement | null | undefined;
+export type ModalIcon = ModalIconName | React.ReactElement | null;
 
 export interface DialogButton {
     key?: string;

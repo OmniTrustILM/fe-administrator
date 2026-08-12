@@ -200,6 +200,7 @@ function RolePermissionsEditor({
 
                 return (
                     <button
+                        type="button"
                         key={resource.uuid}
                         onClick={() => onResourceSelected(resource)}
                         className={cn('w-full text-left px-3 py-2 rounded-lg transition-colors', 'hover:bg-surface-hover', {

@@ -94,7 +94,10 @@ test.describe('CustomTable', () => {
     });
 
     test('should call onPageChanged when page is changed', async ({ mount }) => {
-        const handlePageChange = (_page: number) => {};
+        let requestedPage: number | undefined;
+        const handlePageChange = (page: number) => {
+            requestedPage = page;
+        };
 
         const paginationData = {
             page: 1,
@@ -117,10 +120,9 @@ test.describe('CustomTable', () => {
             ),
         );
 
-        const nextButton = component.getByRole('button', { name: /next|>/i }).or(component.locator('a').filter({ hasText: /2/ }));
-        if ((await nextButton.count()) > 0) {
-            await nextButton.first().click();
-        }
+        await component.getByTestId('pagination-next').click();
+
+        expect(requestedPage).toBe(2);
     });
 
     test('should call onPageSizeChanged when page size is changed', async ({ mount }) => {
@@ -451,7 +453,7 @@ test.describe('CustomTable', () => {
         await headerCheckbox.click();
         expect(checkedRows.length).toBeGreaterThan(0);
         await headerCheckbox.click();
-        expect(checkedRows.length).toBe(0);
+        expect(checkedRows).toHaveLength(0);
     });
 
     test('should expand and collapse row when hasDetails and row body clicked', async ({ mount }) => {
@@ -692,6 +694,7 @@ test.describe('CustomTable', () => {
 
         await table.getByText('Name').click();
         await expect.poll(() => (store.getState() as any).tablePagination.byKey[persistKey]?.sortDirection).toBe('desc');
+        expect((store.getState() as any).tablePagination.byKey[persistKey]?.sortDirection).toBe('desc');
         await table.unmount();
     });
 
@@ -716,6 +719,7 @@ test.describe('CustomTable', () => {
         await table.getByText('Name').click();
         await expect.poll(() => (store.getState() as any).tablePagination.byKey[routeKey]?.sortColumn).toBe('name');
         await expect.poll(() => (store.getState() as any).tablePagination.byKey[routeKey]?.sortDirection).toBe('asc');
+        expect((store.getState() as any).tablePagination.byKey[routeKey]?.sortDirection).toBe('asc');
         await table.unmount();
     });
 
