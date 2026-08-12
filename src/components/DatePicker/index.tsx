@@ -307,7 +307,7 @@ function DatePicker({
         <div ref={containerRef} className={cn('relative', className)}>
             <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <CalendarRange size={16} className="text-gray-400 dark:text-neutral-500" />
+                    <CalendarRange size={16} className="text-content-subtle" />
                 </div>
                 <input
                     ref={inputRef}
@@ -325,11 +325,11 @@ function DatePicker({
                         inputBaseClassName,
                         'pl-10 cursor-pointer',
                         {
-                            'border-red-500 focus:border-red-500 focus:ring-red-500': invalid,
+                            'border-danger focus:border-danger focus:ring-danger': invalid,
                         },
                         {
-                            'bg-[#F8FAFC]': disabled,
-                            'bg-white dark:bg-neutral-900': !disabled,
+                            'bg-surface': disabled,
+                            'bg-surface-raised': !disabled,
                         },
                     )}
                 />
@@ -340,7 +340,7 @@ function DatePicker({
                 createPortal(
                     <div
                         ref={dropdownRef}
-                        className="fixed z-[9999] w-80 flex flex-col bg-white border border-gray-200 shadow-lg rounded-xl overflow-hidden dark:bg-neutral-900 dark:border-neutral-700"
+                        className="fixed z-[9999] w-80 flex flex-col bg-surface-raised border border-divider shadow-lg rounded-xl overflow-hidden"
                         style={{
                             top: `${dropdownPosition.top}px`,
                             left: `${dropdownPosition.left}px`,
@@ -354,7 +354,7 @@ function DatePicker({
                                 <div className="col-span-1">
                                     <button
                                         type="button"
-                                        className="size-8 flex justify-center items-center text-[var(--dark-gray-color)] hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:pointer-events-none focus:outline-hidden focus:bg-gray-100 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:focus:bg-neutral-800"
+                                        className="size-8 flex justify-center items-center text-content hover:bg-surface-hover rounded-full disabled:opacity-50 disabled:pointer-events-none focus:outline-hidden focus:bg-surface-hover"
                                         aria-label="Previous"
                                         onClick={handlePrevMonth}
                                     >
@@ -377,20 +377,16 @@ function DatePicker({
 
                                 {/* Month / Year */}
                                 <div className="col-span-3 flex justify-center items-center gap-x-1">
-                                    <span className="text-sm font-medium text-[var(--dark-gray-color)] dark:text-neutral-200">
-                                        {MONTHS[currentMonth]}
-                                    </span>
-                                    <span className="text-[var(--dark-gray-color)] dark:text-neutral-200">/</span>
-                                    <span className="text-sm font-medium text-[var(--dark-gray-color)] dark:text-neutral-200">
-                                        {currentYear}
-                                    </span>
+                                    <span className="text-sm font-medium text-content">{MONTHS[currentMonth]}</span>
+                                    <span className="text-content">/</span>
+                                    <span className="text-sm font-medium text-content">{currentYear}</span>
                                 </div>
 
                                 {/* Next Button */}
                                 <div className="col-span-1 flex justify-end">
                                     <button
                                         type="button"
-                                        className="size-8 flex justify-center items-center text-[var(--dark-gray-color)] hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:pointer-events-none focus:outline-hidden focus:bg-gray-100 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:focus:bg-neutral-800"
+                                        className="size-8 flex justify-center items-center text-content hover:bg-surface-hover rounded-full disabled:opacity-50 disabled:pointer-events-none focus:outline-hidden focus:bg-surface-hover"
                                         aria-label="Next"
                                         onClick={handleNextMonth}
                                     >
@@ -414,10 +410,7 @@ function DatePicker({
                             {/* Weekday Headers */}
                             <div className="flex pb-1.5">
                                 {WEEKDAYS.map((day) => (
-                                    <span
-                                        key={day}
-                                        className="m-px w-10 block text-center text-sm text-[var(--dark-gray-color)] dark:text-neutral-500"
-                                    >
+                                    <span key={day} className="m-px w-10 block text-center text-sm text-content">
                                         {day}
                                     </span>
                                 ))}
@@ -437,11 +430,11 @@ function DatePicker({
                                                     className={cn(
                                                         'm-px size-10 flex justify-center items-center border-[1.5px] border-transparent text-sm rounded-full disabled:opacity-50 disabled:pointer-events-none focus:outline-hidden',
                                                         {
-                                                            'bg-blue-600 border-transparent text-white font-medium hover:border-blue-600 dark:bg-blue-500':
+                                                            'bg-brand-solid border-transparent text-content-on-brand font-medium hover:border-brand-solid':
                                                                 isSelected,
-                                                            'text-[var(--dark-gray-color)] hover:border-blue-600 hover:text-blue-600 focus:border-blue-600 focus:text-blue-600 dark:text-neutral-200 dark:hover:border-blue-500 dark:hover:text-blue-500 dark:focus:border-blue-500 dark:focus:text-blue-500':
+                                                            'text-content hover:border-brand hover:text-brand focus:border-brand focus:text-brand':
                                                                 !isSelected && isCurrentMonth,
-                                                            'text-[var(--dark-gray-color)] hover:border-blue-600 hover:text-blue-600 rounded-full disabled:opacity-50 disabled:pointer-events-none focus:outline-hidden focus:bg-gray-100 dark:text-neutral-200 dark:hover:border-neutral-500 dark:focus:bg-neutral-700':
+                                                            'text-content hover:border-brand hover:text-brand rounded-full disabled:opacity-50 disabled:pointer-events-none focus:outline-hidden focus:bg-surface-hover':
                                                                 !isCurrentMonth,
                                                         },
                                                     )}
@@ -459,12 +452,9 @@ function DatePicker({
 
                         {/* Time Picker */}
                         {timePicker && (
-                            <div className="border-t border-gray-200 dark:border-neutral-700 p-3">
+                            <div className="border-t border-divider p-3">
                                 <div className="flex items-center justify-center gap-2">
-                                    <label
-                                        htmlFor="datepicker-time-hours"
-                                        className="text-sm font-medium text-[var(--dark-gray-color)] dark:text-neutral-300"
-                                    >
+                                    <label htmlFor="datepicker-time-hours" className="text-sm font-medium text-content">
                                         Time:
                                     </label>
                                     <div className="flex items-center gap-1">
@@ -478,9 +468,9 @@ function DatePicker({
                                                 const val = Number.parseInt(e.target.value, 10) || 0;
                                                 handleTimeChange('hours', Math.max(0, Math.min(23, val)));
                                             }}
-                                            className="w-12 px-2 py-1 text-sm border border-gray-300 rounded-md text-center focus:outline-hidden focus:ring-2 focus:ring-blue-500 dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            className="w-12 px-2 py-1 text-sm border border-outline rounded-md text-center focus:outline-hidden focus:ring-2 focus:ring-brand bg-surface-sunken text-content [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                         />
-                                        <span className="text-[var(--dark-gray-color)] dark:text-neutral-400">:</span>
+                                        <span className="text-content">:</span>
                                         <input
                                             type="number"
                                             min="0"
@@ -490,9 +480,9 @@ function DatePicker({
                                                 const val = Number.parseInt(e.target.value, 10) || 0;
                                                 handleTimeChange('minutes', Math.max(0, Math.min(59, val)));
                                             }}
-                                            className="w-12 px-2 py-1 text-sm border border-gray-300 rounded-md text-center focus:outline-hidden focus:ring-2 focus:ring-blue-500 dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            className="w-12 px-2 py-1 text-sm border border-outline rounded-md text-center focus:outline-hidden focus:ring-2 focus:ring-brand bg-surface-sunken text-content [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                         />
-                                        <span className="text-[var(--dark-gray-color)] dark:text-neutral-400">:</span>
+                                        <span className="text-content">:</span>
                                         <input
                                             type="number"
                                             min="0"
@@ -502,7 +492,7 @@ function DatePicker({
                                                 const val = Number.parseInt(e.target.value, 10) || 0;
                                                 handleTimeChange('seconds', Math.max(0, Math.min(59, val)));
                                             }}
-                                            className="w-12 px-2 py-1 text-sm border border-gray-300 rounded-md text-center focus:outline-hidden focus:ring-2 focus:ring-blue-500 dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            className="w-12 px-2 py-1 text-sm border border-outline rounded-md text-center focus:outline-hidden focus:ring-2 focus:ring-brand bg-surface-sunken text-content [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                         />
                                     </div>
                                 </div>
@@ -519,7 +509,7 @@ function DatePicker({
                     </div>,
                     document.body,
                 )}
-            {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-1 text-sm text-danger">{error}</p>}
         </div>
     );
 }

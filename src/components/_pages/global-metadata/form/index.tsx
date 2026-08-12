@@ -159,8 +159,8 @@ export default function GlobalMetadataForm({ globalMetadataId, onCancel, onSucce
                         />
 
                         <div>
-                            <Label htmlFor="contentType" className="block text-sm font-medium mb-2 text-gray-700 dark:text-white">
-                                Content Type <span className="text-red-500">*</span>
+                            <Label htmlFor="contentType" className="block text-sm font-medium mb-2 text-content">
+                                Content Type <span className="text-danger">*</span>
                             </Label>
                             <Controller
                                 name="contentType"
@@ -182,7 +182,7 @@ export default function GlobalMetadataForm({ globalMetadataId, onCancel, onSucce
                                             showSelectedDescriptionAsHelp
                                         />
                                         {fieldState.error && fieldState.isTouched && (
-                                            <p className="mt-1 text-sm text-red-600">
+                                            <p className="mt-1 text-sm text-danger">
                                                 {typeof fieldState.error === 'string'
                                                     ? fieldState.error
                                                     : fieldState.error?.message || 'Invalid value'}

@@ -18,7 +18,7 @@ type Props = {
 };
 
 function Label({ htmlFor, title, children, required, className, onClick, dataTestId, labelTooltip }: Readonly<Props>) {
-    const defaultClasses = 'block text-left text-sm font-medium mb-2 text-center dark:text-white text-[var(--dark-gray-color)]';
+    const defaultClasses = 'block text-left text-sm font-medium mb-2 text-center text-content';
     if (onClick) {
         return (
             <button
@@ -34,7 +34,7 @@ function Label({ htmlFor, title, children, required, className, onClick, dataTes
                 data-testid={dataTestId ?? (htmlFor ? `label-${htmlFor}` : 'label')}
             >
                 {title || children}
-                {required && <span className="text-red-500"> *</span>}
+                {required && <span className="text-danger"> *</span>}
             </button>
         );
     }
@@ -45,11 +45,11 @@ function Label({ htmlFor, title, children, required, className, onClick, dataTes
             data-testid={dataTestId ?? (htmlFor ? `label-${htmlFor}` : 'label')}
         >
             {title || children}
-            {required && <span className="text-red-500"> *</span>}
+            {required && <span className="text-danger"> *</span>}
             {labelTooltip && (
                 <Tooltip content={labelTooltip}>
                     <span
-                        className="ml-1 inline-flex align-middle text-gray-600 hover:text-gray-800 dark:text-neutral-400 dark:hover:text-neutral-200 cursor-help"
+                        className="ml-1 inline-flex align-middle text-content-muted hover:text-content cursor-help"
                         data-testid={htmlFor ? `label-tooltip-${htmlFor}` : 'label-tooltip'}
                     >
                         <Info size={13} aria-hidden />

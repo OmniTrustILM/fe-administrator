@@ -113,7 +113,7 @@ export default function MultipleValueTextInput({
             <div className="flex gap-2">
                 <input
                     type="text"
-                    className="text-[var(--dark-gray-color)] py-2.5 sm:py-3 px-4 block border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                    className="text-content py-2.5 sm:py-3 px-4 block border-outline rounded-lg text-sm focus:border-brand focus:ring-brand bg-surface-raised placeholder-content-subtle"
                     value={newValue}
                     onChange={(e) => setNewValue(e.target.value)}
                     placeholder={addPlaceholder}

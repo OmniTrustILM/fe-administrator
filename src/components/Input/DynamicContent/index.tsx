@@ -33,7 +33,7 @@ export default function DynamicContent({ editable, isList }: Readonly<Props>) {
     const attributeContentTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.AttributeContentType));
 
     return (
-        <Widget noBorder className="!bg-gray-50 !dark:bg-neutral-800 !p-4 !rounded-none !border-none">
+        <Widget noBorder className="!bg-surface-sunken !p-4 !rounded-none !border-none">
             <div className="mb-4">
                 <Label htmlFor="contentType" required>
                     Content Type
@@ -62,7 +62,7 @@ export default function DynamicContent({ editable, isList }: Readonly<Props>) {
                                 showSelectedDescriptionAsHelp
                             />
                             {fieldState.error && fieldState.isTouched && (
-                                <p className="mt-1 text-sm text-red-600">
+                                <p className="mt-1 text-sm text-danger">
                                     {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message || 'Invalid value'}
                                 </p>
                             )}

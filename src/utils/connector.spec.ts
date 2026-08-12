@@ -85,39 +85,39 @@ describe('connector utils', () => {
 
     describe('inventoryStatus', () => {
         test('returns label and color for Success', () => {
-            expect(inventoryStatus('Success')).toEqual(['Success', 'var(--status-success-color)']);
+            expect(inventoryStatus('Success')).toEqual(['Success', 'success']);
         });
 
         test('returns label and color for registered', () => {
-            expect(inventoryStatus('registered')).toEqual(['Reistered', 'var(--status-success-color)']);
+            expect(inventoryStatus('registered')).toEqual(['Reistered', 'success']);
         });
 
         test('returns label and color for connected', () => {
-            expect(inventoryStatus('connected')).toEqual(['Connected', 'var(--status-success-color)']);
+            expect(inventoryStatus('connected')).toEqual(['Connected', 'success']);
         });
 
         test('returns label and color for failed', () => {
-            expect(inventoryStatus('failed')).toEqual(['Failed', 'var(--status-danger-color)']);
+            expect(inventoryStatus('failed')).toEqual(['Failed', 'danger']);
         });
 
         test('returns label and color for Failed', () => {
-            expect(inventoryStatus('Failed')).toEqual(['Failed', 'var(--status-danger-color)']);
+            expect(inventoryStatus('Failed')).toEqual(['Failed', 'danger']);
         });
 
         test('returns label and color for offline', () => {
-            expect(inventoryStatus('offline')).toEqual(['Offline', 'var(--status-danger-color)']);
+            expect(inventoryStatus('offline')).toEqual(['Offline', 'danger']);
         });
 
         test('returns label and color for waitingForApproval', () => {
-            expect(inventoryStatus('waitingForApproval')).toEqual(['Waiting for Approval', 'var(--status-warning-color)']);
+            expect(inventoryStatus('waitingForApproval')).toEqual(['Waiting for Approval', 'warning']);
         });
 
         test('returns status and gray color for unknown status', () => {
-            expect(inventoryStatus('custom')).toEqual(['custom', 'var(--status-gray-color)']);
+            expect(inventoryStatus('custom')).toEqual(['custom', 'secondary']);
         });
 
         test('returns Unknown and gray for empty string', () => {
-            expect(inventoryStatus('')).toEqual(['Unknown', 'var(--status-gray-color)']);
+            expect(inventoryStatus('')).toEqual(['Unknown', 'secondary']);
         });
     });
 });

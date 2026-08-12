@@ -101,10 +101,7 @@ export default function AssociateComplianceProfileDialogBody({
 
                             return (
                                 <div className="mb-4">
-                                    <Label
-                                        htmlFor="complianceProfile"
-                                        className="block text-sm font-medium mb-2 text-gray-700 dark:text-white"
-                                    >
+                                    <Label htmlFor="complianceProfile" className="block text-sm font-medium mb-2 text-content">
                                         Select Compliance profile
                                     </Label>
 
@@ -115,11 +112,11 @@ export default function AssociateComplianceProfileDialogBody({
                                         onChange={(value) => field.onChange(value)}
                                         placeholder="Select Compliance profile to be associated"
                                         className={cn({
-                                            'border-red-500': !!fieldError,
+                                            'border-danger': !!fieldError,
                                         })}
                                     />
 
-                                    {fieldError && <p className="mt-1 text-sm text-red-600">{fieldError}</p>}
+                                    {fieldError && <p className="mt-1 text-sm text-danger">{fieldError}</p>}
                                 </div>
                             );
                         }}

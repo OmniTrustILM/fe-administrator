@@ -76,7 +76,7 @@ export const TimeQualityConfigurationsList = () => {
                         <Link to={`./detail/${config.uuid}`}>{config.name}</Link>
                     </span>,
 
-                    <span key="ntpServers-value" className="text-sm text-gray-600">
+                    <span key="ntpServers-value" className="text-sm text-content-muted">
                         {config.ntpServers?.join(', ') || '—'}
                     </span>,
                 ],

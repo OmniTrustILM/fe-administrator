@@ -177,7 +177,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                                         error={getFieldErrorMessage(fieldState)}
                                     />
                                     {!(fieldState.error && fieldState.isTouched) && (
-                                        <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">
+                                        <p className="mt-1 text-xs text-content-subtle">
                                             Dot-separated numeric format, starting with 0, 1, or 2
                                         </p>
                                     )}
@@ -238,7 +238,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                                         showSelectedDescriptionAsHelp
                                     />
                                     {fieldState.error && fieldState.isTouched && (
-                                        <p className="mt-1 text-sm text-red-600">
+                                        <p className="mt-1 text-sm text-danger">
                                             {typeof fieldState.error === 'string'
                                                 ? fieldState.error
                                                 : fieldState.error?.message || 'Invalid value'}
@@ -293,7 +293,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                                                 }
                                             />
                                             {fieldState.error && fieldState.isTouched && (
-                                                <p className="mt-1 text-sm text-red-600">
+                                                <p className="mt-1 text-sm text-danger">
                                                     {typeof fieldState.error === 'string'
                                                         ? fieldState.error
                                                         : fieldState.error?.message || 'Invalid value'}
@@ -336,7 +336,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                                                 placement="bottom"
                                             />
                                             {fieldState.error && fieldState.isTouched && (
-                                                <p className="mt-1 text-sm text-red-600">
+                                                <p className="mt-1 text-sm text-danger">
                                                     {typeof fieldState.error === 'string'
                                                         ? fieldState.error
                                                         : fieldState.error?.message || 'Invalid value'}

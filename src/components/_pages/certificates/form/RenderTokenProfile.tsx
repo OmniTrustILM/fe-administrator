@@ -89,7 +89,7 @@ const RenderTokenProfile = ({ type, name }: Props) => {
                         }}
                         placeholder={type === 'alt' ? 'Select Alternative Token Profile' : 'Select Token Profile'}
                     />
-                    {error && <div className="text-red-500 mt-1">{error.message ?? 'Token profile is required.'}</div>}
+                    {error && <div className="text-danger mt-1">{error.message ?? 'Token profile is required.'}</div>}
                 </div>
             )}
         />

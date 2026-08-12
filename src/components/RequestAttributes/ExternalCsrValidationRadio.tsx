@@ -13,16 +13,16 @@ export default function ExternalCsrValidationRadio({ strict, onChange, disabled 
     return (
         <div role="radiogroup" aria-label="External CSR validation mode" className="space-y-2">
             <RadioRow name={name} checked={strict} onSelect={() => onChange(true)} disabled={disabled}>
-                <span className="font-medium text-[var(--dark-gray-color)] dark:text-white" data-testid="request-validation-strict">
+                <span className="font-medium text-content" data-testid="request-validation-strict">
                     {externalCsrValidationModeLabel(true)}
                 </span>
-                <span className="text-gray-500 dark:text-neutral-400">{externalCsrValidationModeDescription(true)}</span>
+                <span className="text-content-subtle">{externalCsrValidationModeDescription(true)}</span>
             </RadioRow>
             <RadioRow name={name} checked={!strict} onSelect={() => onChange(false)} disabled={disabled}>
-                <span className="font-medium text-[var(--dark-gray-color)] dark:text-white" data-testid="request-validation-lenient">
+                <span className="font-medium text-content" data-testid="request-validation-lenient">
                     {externalCsrValidationModeLabel(false)}
                 </span>
-                <span className="text-gray-500 dark:text-neutral-400">{externalCsrValidationModeDescription(false)}</span>
+                <span className="text-content-subtle">{externalCsrValidationModeDescription(false)}</span>
             </RadioRow>
         </div>
     );

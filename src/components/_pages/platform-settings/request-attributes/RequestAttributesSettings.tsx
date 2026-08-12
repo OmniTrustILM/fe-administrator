@@ -112,13 +112,13 @@ export default function RequestAttributesSettings() {
     return (
         <Widget title="Default Request Attributes" titleSize="large" busy={isFetching} enableBusyOverlay noBorder>
             <div className="space-y-4">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-content-subtle">
                     The platform default request-attribute set is the terminal fallback used when an RA Profile does not define its own set.
                     Changes are saved automatically.
                 </p>
                 {updateError && (
                     <div
-                        className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-800/10 dark:text-red-500"
+                        className="rounded-lg border border-danger bg-danger-surface p-3 text-sm text-danger"
                         data-testid="request-attributes-update-error"
                         role="alert"
                     >

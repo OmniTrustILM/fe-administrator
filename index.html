@@ -11,6 +11,27 @@
                 location.replace(location.pathname + '/' + location.search + location.hash);
             }
         </script>
+        <script>
+            // Apply the stored theme before first paint so dark-mode users never see a white flash.
+            // Mirrors utils/theme.ts; it cannot import from it because no module has loaded yet.
+            (function () {
+                // Start from the operating system preference, then let an explicit stored choice
+                // override it. Reading storage can throw outright when storage is blocked, so the
+                // system preference is resolved first and remains the fallback in that case.
+                var prefersDark = globalThis.matchMedia && globalThis.matchMedia('(prefers-color-scheme: dark)').matches;
+                var resolved = prefersDark ? 'dark' : 'light';
+                try {
+                    var stored = localStorage.getItem('theme-mode');
+                    if (stored === 'light' || stored === 'dark') {
+                        resolved = stored;
+                    }
+                } catch {
+                    // Storage unavailable; the system preference resolved above stands.
+                }
+                document.documentElement.classList.toggle('dark', resolved === 'dark');
+                document.documentElement.style.colorScheme = resolved;
+            })();
+        </script>
         <script type="text/javascript" src="./config.js"></script>
         <meta charset="utf-8" />
         <link rel="icon" href="./ot-sign-color.svg" />

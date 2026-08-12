@@ -52,7 +52,7 @@ function Pagination({ page, totalPages, onPageChange, dataTestId, disabled = fal
             <nav className="flex items-center gap-x-1" aria-label="Pagination">
                 <button
                     type="button"
-                    className="min-h-9.5 min-w-9.5 py-2 px-2.5 inline-flex jusify-center items-center gap-x-2 text-sm rounded-lg text-gray-800 hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:text-white dark:hover:bg-white/10 dark:focus:bg-white/10"
+                    className="min-h-9.5 min-w-9.5 py-2 px-2.5 inline-flex jusify-center items-center gap-x-2 text-sm rounded-lg text-content hover:bg-surface-hover focus:outline-hidden focus:bg-surface-hover disabled:opacity-50 disabled:pointer-events-none"
                     aria-label="Previous"
                     onClick={() => {
                         if (disabled) return;
@@ -89,7 +89,7 @@ function Pagination({ page, totalPages, onPageChange, dataTestId, disabled = fal
                             <div key={ellipsisKey} className="inline-block">
                                 <button
                                     type="button"
-                                    className="min-h-9.5 min-w-9.5 flex justify-center items-center text-gray-400 p-2 text-sm rounded-lg pointer-events-none dark:text-neutral-500"
+                                    className="min-h-9.5 min-w-9.5 flex justify-center items-center text-content-subtle p-2 text-sm rounded-lg pointer-events-none"
                                     disabled
                                 >
                                     <span className="text-xs">•••</span>
@@ -101,8 +101,8 @@ function Pagination({ page, totalPages, onPageChange, dataTestId, disabled = fal
                                 type="button"
                                 className={
                                     pageNum === page
-                                        ? 'min-h-9.5 min-w-9.5 flex justify-center items-center bg-gray-200 text-gray-800 py-2 px-3 text-sm rounded-lg focus:outline-hidden focus:bg-gray-300 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-600 dark:text-white dark:focus:bg-neutral-500'
-                                        : 'min-h-9.5 min-w-9.5 flex justify-center items-center text-gray-800 hover:bg-gray-100 py-2 px-3 text-sm rounded-lg focus:outline-hidden focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:text-white dark:hover:bg-white/10 dark:focus:bg-white/10'
+                                        ? 'min-h-9.5 min-w-9.5 flex justify-center items-center bg-surface-active text-content py-2 px-3 text-sm rounded-lg focus:outline-hidden focus:bg-surface-active disabled:opacity-50 disabled:pointer-events-none'
+                                        : 'min-h-9.5 min-w-9.5 flex justify-center items-center text-content hover:bg-surface-hover py-2 px-3 text-sm rounded-lg focus:outline-hidden focus:bg-surface-hover disabled:opacity-50 disabled:pointer-events-none'
                                 }
                                 onClick={() => {
                                     if (disabled) return;
@@ -119,7 +119,7 @@ function Pagination({ page, totalPages, onPageChange, dataTestId, disabled = fal
                 </div>
                 <button
                     type="button"
-                    className="min-h-9.5 min-w-9.5 py-2 px-2.5 inline-flex jusify-center items-center gap-x-2 text-sm rounded-lg text-gray-800 hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:text-white dark:hover:bg-white/10 dark:focus:bg-white/10"
+                    className="min-h-9.5 min-w-9.5 py-2 px-2.5 inline-flex jusify-center items-center gap-x-2 text-sm rounded-lg text-content hover:bg-surface-hover focus:outline-hidden focus:bg-surface-hover disabled:opacity-50 disabled:pointer-events-none"
                     aria-label="Next"
                     onClick={() => {
                         if (disabled) return;

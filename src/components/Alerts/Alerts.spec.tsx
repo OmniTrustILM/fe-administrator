@@ -41,9 +41,9 @@ test.describe('Alerts', () => {
         ];
         await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 9 } }} />);
 
-        await expect(page.getByTestId('alert-7')).toHaveClass(/border-l-blue-500/);
+        await expect(page.getByTestId('alert-7')).toHaveClass(/border-l-info-solid/);
         await expect(page.getByTestId('alert-7')).not.toHaveAttribute('role');
-        await expect(page.getByTestId('alert-8')).toHaveClass(/border-l-red-500/);
+        await expect(page.getByTestId('alert-8')).toHaveClass(/border-l-danger-solid/);
     });
 
     test('should show progress bar for success and info alerts', async ({ mount, page }) => {

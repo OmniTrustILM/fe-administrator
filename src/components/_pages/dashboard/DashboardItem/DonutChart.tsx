@@ -36,7 +36,7 @@ function DonutTooltip({ active, payload }: DonutTooltipProps) {
     if (!active || !payload?.length) return null;
     const { name, value, payload: entry } = payload[0];
     return (
-        <div className="py-1 px-2 bg-[var(--tooltip-background-color)] text-xs font-medium text-white shadow-2xs dark:bg-neutral-700 border-[var(--tooltip-background-color)]">
+        <div className="py-1 px-2 bg-surface-inverse text-xs font-medium text-content-inverse shadow-2xs border-surface-inverse">
             <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry?.color }} />
                 <span>

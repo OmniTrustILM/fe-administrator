@@ -26,7 +26,7 @@ export function EnumValueDescription({ platformEnum, value, iconSize, dataTestId
             content={
                 <>
                     <div className="font-semibold mb-1">{label}</div>
-                    <div className="text-[var(--dark-gray-color)] dark:text-neutral-300">{description}</div>
+                    <div className="text-content">{description}</div>
                 </>
             }
         />
@@ -59,7 +59,7 @@ export function EnumColumnDescription({ platformEnum, title, iconSize, dataTestI
         <Toggletip
             ariaLabel={`${title} value descriptions`}
             iconSize={iconSize}
-            triggerClassName="!text-current hover:!text-current dark:!text-current"
+            triggerClassName="!text-current hover:!text-current"
             dataTestId={dataTestId ?? `enum-column-info-${platformEnum}`}
             content={
                 <>
@@ -79,7 +79,7 @@ export function EnumColumnDescription({ platformEnum, title, iconSize, dataTestI
                                     <div className="min-w-0">
                                         <dt className="font-medium inline">{item.label}</dt>
                                         {item.description && (
-                                            <dd className="inline text-[var(--dark-gray-color)] dark:text-neutral-300">
+                                            <dd className="inline text-content">
                                                 {' — '}
                                                 {item.description}
                                             </dd>

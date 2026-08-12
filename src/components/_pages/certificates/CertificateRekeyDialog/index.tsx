@@ -331,7 +331,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                         label="Key Source"
                                     />
                                     {fieldState.error && fieldState.isTouched && (
-                                        <p className="mt-1 text-sm text-red-600">
+                                        <p className="mt-1 text-sm text-danger">
                                             {typeof fieldState.error === 'string'
                                                 ? fieldState.error
                                                 : fieldState.error?.message || 'Invalid value'}
@@ -392,7 +392,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                                 label="Token Profile"
                                             />
                                             {fieldState.error && fieldState.isTouched && (
-                                                <p className="mt-1 text-sm text-red-600">
+                                                <p className="mt-1 text-sm text-danger">
                                                     {typeof fieldState.error === 'string'
                                                         ? fieldState.error
                                                         : fieldState.error?.message || 'Invalid value'}
@@ -424,7 +424,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                                 label="Select Key"
                                             />
                                             {fieldState.error && fieldState.isTouched && (
-                                                <p className="mt-1 text-sm text-red-600">
+                                                <p className="mt-1 text-sm text-danger">
                                                     {typeof fieldState.error === 'string'
                                                         ? fieldState.error
                                                         : fieldState.error?.message || 'Invalid value'}
@@ -473,7 +473,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                                         label="Alternative Token Profile"
                                                     />
                                                     {fieldState.error && fieldState.isTouched && (
-                                                        <p className="mt-1 text-sm text-red-600">
+                                                        <p className="mt-1 text-sm text-danger">
                                                             {typeof fieldState.error === 'string'
                                                                 ? fieldState.error
                                                                 : fieldState.error?.message || 'Invalid value'}
@@ -510,7 +510,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                                         placeholder="Select Alternative Key"
                                                     />
                                                     {fieldState.error && fieldState.isTouched && (
-                                                        <p className="mt-1 text-sm text-red-600">
+                                                        <p className="mt-1 text-sm text-danger">
                                                             {typeof fieldState.error === 'string'
                                                                 ? fieldState.error
                                                                 : fieldState.error?.message || 'Invalid value'}

@@ -83,7 +83,6 @@ export default function AssignedRulesAndGroup({ profile, setSelectedEntityDetail
                                         data-testid="status-badge"
                                         id={`status-${ruleOrGroup.uuid.replaceAll('-', '_')}`}
                                         color={statusColor}
-                                        style={{ background: statusColor }}
                                     >
                                         {capitalize(ruleOrGroup.availabilityStatus as ComplianceRuleAvailabilityStatus)}
                                     </Badge>
@@ -93,7 +92,6 @@ export default function AssignedRulesAndGroup({ profile, setSelectedEntityDetail
                                     data-testid="status-badge"
                                     id={`status-${ruleOrGroup.uuid.replaceAll('-', '_')}`}
                                     color={statusColor}
-                                    style={{ background: statusColor }}
                                 >
                                     {capitalize(ruleOrGroup.availabilityStatus as ComplianceRuleAvailabilityStatus)}
                                 </Badge>

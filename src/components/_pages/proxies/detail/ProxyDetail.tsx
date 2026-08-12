@@ -270,7 +270,9 @@ export const ProxyDetail = () => {
                                 className="mt-6"
                                 refreshAction={fetchInstallationInstructions}
                             >
-                                <div className={'text-gray-500 mb-3'}>Run the Helm command below in the customer Kubernetes cluster.</div>
+                                <div className={'text-content-subtle mb-3'}>
+                                    Run the Helm command below in the customer Kubernetes cluster.
+                                </div>
                                 <InstallationInstructions title={'Installation instructions'} instructions={installationInstructions} />
                             </Widget>
                         )}

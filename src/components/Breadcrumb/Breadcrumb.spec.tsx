@@ -72,7 +72,7 @@ test.describe('Breadcrumb', () => {
         const component = await mountBreadcrumb(mount, [{ label: 'First', href: '/first' }, { label: 'Last' }]);
 
         const firstItem = component.getByRole('link', { name: 'First' }).locator('..');
-        await expect(firstItem).toHaveClass(/text-gray-700|text-neutral-600/);
+        await expect(firstItem).toHaveClass(/text-content-muted/);
     });
 
     test('should render custom title and right content', async ({ mount }) => {

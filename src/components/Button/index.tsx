@@ -20,42 +20,35 @@ export type Props = {
 };
 
 const baseButton =
-    'inline-flex items-center gap-x-2 text-sm font-medium rounded-lg disabled:opacity-35 disabled:pointer-events-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 border';
+    'inline-flex items-center gap-x-2 text-sm font-medium rounded-lg disabled:opacity-35 disabled:pointer-events-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 border';
 
 const buttonClasses = {
     solid: 'py-2.5 px-3.5',
     outline: 'py-2.5 px-3.5',
-    transparent: 'p-2 border-transparent dark:text-white',
+    transparent: 'p-2 border-transparent text-content',
 };
 
 const colorClasses = {
     solid: {
-        primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:bg-blue-700 dark:border-blue-500 dark:text-white',
-        danger: 'bg-red-500 text-white hover:bg-red-600 focus:bg-red-600',
-        secondary: 'bg-gray-800 text-white hover:bg-gray-900 focus:bg-gray-900 dark:bg-white dark:text-neutral-800',
-        warning: 'bg-yellow-500 text-white hover:bg-yellow-600 focus:bg-yellow-600',
-        lightGray:
-            'bg-gray-100 text-gray-800 hover:bg-gray-200 focus:bg-gray-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:hover:text-white dark:focus:bg-white/20 dark:focus:text-white',
+        primary: 'bg-brand-solid text-content-on-brand hover:bg-brand-solid-hover focus:bg-brand-solid-hover border-brand',
+        danger: 'bg-danger-fill text-content-on-brand hover:bg-danger-fill-hover focus:bg-danger-fill-hover',
+        secondary: 'bg-surface-inverse text-content-inverse hover:opacity-90 focus:opacity-90',
+        warning: 'bg-warning-fill text-content-on-brand hover:bg-warning-fill-hover focus:bg-warning-fill-hover',
+        lightGray: 'bg-surface-sunken text-content hover:bg-surface-hover focus:bg-surface-hover',
     },
     outline: {
-        primary:
-            'border-blue-600 text-blue-600 hover:border-blue-500 hover:text-blue-500 focus:border-blue-500 focus:text-blue-500 dark:border-blue-500 dark:text-blue-500 dark:hover:text-blue-400 dark:hover:border-blue-400',
-        danger: 'border-red-500 text-red-500 hover:border-red-400 hover:text-red-400 focus:border-red-400 focus:text-red-400',
-        secondary:
-            'border-gray-300 hover:border-gray-400 focus:border-gray-400 dark:border-white dark:text-white dark:hover:text-neutral-300 dark:hover:border-neutral-300',
-        warning:
-            'border-yellow-500 text-yellow-500 hover:border-yellow-400 hover:text-yellow-400 focus:border-yellow-400 focus:text-yellow-400',
-        lightGray:
-            'border-transparent bg-gray-100 text-gray-800 hover:bg-gray-200 focus:bg-gray-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:hover:text-white dark:focus:bg-white/20 dark:focus:text-white',
+        primary: 'border-brand text-brand hover:border-brand-hover hover:text-brand-hover focus:border-brand-hover focus:text-brand-hover',
+        danger: 'border-danger text-danger hover:bg-danger-surface focus:bg-danger-surface',
+        secondary: 'border-outline text-content hover:bg-surface-hover focus:bg-surface-hover',
+        warning: 'border-warning text-warning hover:bg-warning-surface focus:bg-warning-surface',
+        lightGray: 'border-transparent bg-surface-sunken text-content hover:bg-surface-hover focus:bg-surface-hover',
     },
     transparent: {
-        primary: 'hover:bg-gray-200',
-        danger: 'text-red-500 hover:bg-red-100 focus:bg-red-100 hover:text-red-800 dark:hover:bg-red-800/30 dark:hover:text-red-400 dark:focus:bg-red-800/30 dark:focus:text-red-400',
-        secondary: 'hover:bg-gray-100 focus:bg-gray-100 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700',
-        warning:
-            'text-yellow-500 hover:bg-yellow-100 focus:bg-yellow-100 hover:text-yellow-800 dark:hover:bg-yellow-800/30 dark:hover:text-yellow-400 dark:focus:bg-yellow-800/30 dark:focus:text-yellow-400',
-        lightGray:
-            'bg-gray-100 text-gray-800 hover:bg-gray-200 focus:bg-gray-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:hover:text-white dark:focus:bg-white/20 dark:focus:text-white',
+        primary: 'hover:bg-surface-hover',
+        danger: 'text-danger hover:bg-danger-surface focus:bg-danger-surface',
+        secondary: 'hover:bg-surface-hover focus:bg-surface-hover',
+        warning: 'text-warning hover:bg-warning-surface focus:bg-warning-surface',
+        lightGray: 'bg-surface-sunken text-content hover:bg-surface-hover focus:bg-surface-hover',
     },
 };
 

@@ -1,3 +1,4 @@
+import type { BadgeColor } from 'components/Badge';
 import { ProxyStatus } from 'types/openapi';
 
 const PROXY_STATUS_LABELS: Record<ProxyStatus, string> = {
@@ -19,23 +20,23 @@ export function getProxyStatus(status: ProxyStatus): string {
 }
 
 /**
- * Maps proxy status to CSS color variable
+ * Maps proxy status to a semantic badge color
  * @param status The proxy status
- * @returns CSS color variable string
+ * @returns Badge color token
  */
-export function getProxyStatusColor(status: ProxyStatus): string {
+export function getProxyStatusColor(status: ProxyStatus): BadgeColor {
     switch (status) {
         case ProxyStatus.Connected:
-            return 'var(--status-success-color)';
+            return 'success';
         case ProxyStatus.Disconnected:
-            return 'var(--status-dark-color)';
+            return 'gray';
         case ProxyStatus.Failed:
-            return 'var(--status-danger-color)';
+            return 'danger';
         case ProxyStatus.WaitingForInstallation:
-            return 'var(--status-warning-color)';
+            return 'warning';
         case ProxyStatus.Provisioning:
-            return 'var(--status-gray-color)';
+            return 'secondary';
         default:
-            return 'var(--status-gray-color)';
+            return 'secondary';
     }
 }

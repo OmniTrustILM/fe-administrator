@@ -71,8 +71,8 @@ function SidebarSubmenuItem({
                 data-testid={`sidebar-${parentSlug}-${childSlug}`}
                 className={({ isActive }) =>
                     cn(
-                        'font-medium text-sm block px-4 ml-8 py-2 no-underline hover:bg-gray-200 rounded-lg h-[38px] items-center',
-                        isActive && 'text-blue-600',
+                        'font-medium text-sm block px-4 ml-8 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center',
+                        isActive && 'text-brand',
                     )
                 }
             >
@@ -487,7 +487,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                         aria-expanded={isActive}
                         aria-controls={mapping._key}
                     >
-                        <div className={cn('flex items-center gap-x-2', { 'text-blue-600': isChildActive })}>
+                        <div className={cn('flex items-center gap-x-2', { 'text-brand': isChildActive })}>
                             {mapping.icon}
                             <span className={cn('text-sm', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
                         </div>
@@ -495,7 +495,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                     </Button>
                     <ul
                         className={cn(
-                            `transition-[max-height] duration-300 ease-in-out overflow-hidden relative before:content-[''] before:absolute before:left-6 before:top-0 before:h-full before:w-0.5 before:bg-gray-200`,
+                            `transition-[max-height] duration-300 ease-in-out overflow-hidden relative before:content-[''] before:absolute before:left-6 before:top-0 before:h-full before:w-0.5 before:bg-divider`,
                             { 'w-0': !isActive },
                         )}
                         style={{ maxHeight: isActive ? `${38 * mapping.children.length}px` : 0 }}
@@ -526,8 +526,8 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                         }
                     }}
                     className={({ isActive }) =>
-                        cn('font-medium flex px-4 py-2 no-underline hover:bg-gray-200 rounded-lg h-[38px] items-center dark:text-white', {
-                            'text-blue-600': isActive,
+                        cn('font-medium flex px-4 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center text-content', {
+                            'text-brand': isActive,
                             'w-full gap-x-2': menuSize !== 'small',
                         })
                     }
@@ -543,7 +543,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
             {menuSize === 'flying' && (
                 <section
                     aria-label="Sidebar menu"
-                    className="fixed top-[var(--header-height)] left-0 h-[calc(100vh-var(--header-height))] bg-white shadow-lg w-[260px] z-50"
+                    className="fixed top-[var(--header-height)] left-0 h-[calc(100vh-var(--header-height))] bg-surface-raised shadow-lg w-[260px] z-50"
                     onMouseLeave={() => {
                         setMenuSize('small');
                         setOpenMenuItems([]);
@@ -574,12 +574,12 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                 }}
                 data-testid="sidebar-sticky"
             >
-                <div className="p-4 w-full h-full dark:bg-neutral-900">
+                <div className="p-4 w-full h-full bg-surface-raised">
                     <nav className="pb-4">
                         <ul className="list-none m-0 flex flex-col gap-y-1">{allowedMenuItems.map((item) => renderMenuItem(item))}</ul>
                     </nav>
 
-                    <hr className="border-gray-200" />
+                    <hr className="border-divider" />
                     <div className="flex justify-center pt-4">
                         <Button
                             variant="transparent"

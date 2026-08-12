@@ -431,7 +431,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                                         isDisabled={false}
                                     />
                                     {fieldState.error && fieldState.isTouched && (
-                                        <p className="mt-1 text-sm text-red-600">
+                                        <p className="mt-1 text-sm text-danger">
                                             {typeof fieldState.error === 'string'
                                                 ? fieldState.error
                                                 : fieldState.error?.message || 'Invalid value'}
@@ -470,7 +470,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                                     placement="bottom"
                                 />
                                 {fieldState.error && fieldState.isTouched && (
-                                    <p className="mt-1 text-sm text-red-600">
+                                    <p className="mt-1 text-sm text-danger">
                                         {typeof fieldState.error === 'string'
                                             ? fieldState.error
                                             : fieldState.error?.message || 'Invalid value'}
@@ -487,11 +487,8 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                         render={({ field, fieldState }) => (
                             <>
                                 <div>
-                                    <label
-                                        htmlFor="tokenProfileSelect"
-                                        className="block text-sm font-medium mb-2 text-gray-700 dark:text-white"
-                                    >
-                                        Token Profile {!editMode && <span className="text-red-500">*</span>}
+                                    <label htmlFor="tokenProfileSelect" className="block text-sm font-medium mb-2 text-content">
+                                        Token Profile {!editMode && <span className="text-danger">*</span>}
                                     </label>
                                     <Select
                                         id="tokenProfileSelect"
@@ -513,7 +510,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                                     />
                                 </div>
                                 {fieldState.error && fieldState.isTouched && (
-                                    <p className="mt-1 text-sm text-red-600">
+                                    <p className="mt-1 text-sm text-danger">
                                         {typeof fieldState.error === 'string'
                                             ? fieldState.error
                                             : fieldState.error?.message || 'Invalid value'}
@@ -531,11 +528,8 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                             render={({ field, fieldState }) => (
                                 <>
                                     <div>
-                                        <label
-                                            htmlFor="typeSelect"
-                                            className="block text-sm font-medium mb-2 text-gray-700 dark:text-white"
-                                        >
-                                            Select Key Type <span className="text-red-500">*</span>
+                                        <label htmlFor="typeSelect" className="block text-sm font-medium mb-2 text-content">
+                                            Select Key Type <span className="text-danger">*</span>
                                         </label>
                                         <Select
                                             id="typeSelect"
@@ -552,7 +546,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                                         />
                                     </div>
                                     {fieldState.error && fieldState.isTouched && (
-                                        <p className="mt-1 text-sm text-red-600">
+                                        <p className="mt-1 text-sm text-danger">
                                             {typeof fieldState.error === 'string'
                                                 ? fieldState.error
                                                 : fieldState.error?.message || 'Invalid value'}

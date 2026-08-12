@@ -46,23 +46,20 @@ const WidgetLock = ({
     return (
         <Container>
             <div data-testid={dataTestId || 'widget-lock'} className={`${maxWidthClass} mx-auto`}>
-                <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4">
-                    <div className="shrink-0 text-[var(--status-danger-color)] dark:text-neutral-400">{getIcon()}</div>
+                <div className="bg-surface-sunken border border-divider rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4">
+                    <div className="shrink-0 text-danger">{getIcon()}</div>
                     <div className="text-center sm:text-left">
-                        <h5 className="flex justify-center sm:justify-start items-center gap-1.5 font-semibold text-[var(--dark-gray-color)] dark:text-neutral-200">
+                        <h5 className="flex justify-center sm:justify-start items-center gap-1.5 font-semibold text-content">
                             {lockTitle}
                             {lockDetails && (
                                 <Tooltip content={lockDetails}>
-                                    <button
-                                        type="button"
-                                        className="inline-flex items-center text-[var(--gray-400)] hover:text-[var(--dark-gray-color)] dark:text-neutral-500 dark:hover:text-neutral-300"
-                                    >
+                                    <button type="button" className="inline-flex items-center text-content-subtle hover:text-content">
                                         <Info size={15} />
                                     </button>
                                 </Tooltip>
                             )}
                         </h5>
-                        <p className="text-sm text-[var(--dark-gray-color)] dark:text-neutral-400 mt-1">{lockText}</p>
+                        <p className="text-sm text-content mt-1">{lockText}</p>
                     </div>
                 </div>
             </div>

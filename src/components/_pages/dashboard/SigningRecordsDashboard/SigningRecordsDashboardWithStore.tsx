@@ -1,5 +1,6 @@
 import { Provider, useSelector } from 'react-redux';
 import { MemoryRouter } from 'react-router';
+import ThemeProvider from 'components/ThemeProvider';
 import { createMockStore } from 'utils/test-helpers';
 import TestRouteDisplay from 'utils/TestRouteDisplay';
 import { EntityType, selectors as filterSelectors } from 'ducks/filters';
@@ -61,9 +62,11 @@ export default function SigningRecordsDashboardWithStore() {
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/dashboard/signing-records']}>
-                <SigningRecordsDashboard />
-                <TestRouteDisplay />
-                <CurrentFiltersProbe />
+                <ThemeProvider>
+                    <SigningRecordsDashboard />
+                    <TestRouteDisplay />
+                    <CurrentFiltersProbe />
+                </ThemeProvider>
             </MemoryRouter>
         </Provider>
     );

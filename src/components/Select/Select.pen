@@ -1,5 +1,5 @@
 {
-  "version": "2.13",
+  "version": "2.14",
   "children": [
     {
       "type": "frame",
@@ -35,7 +35,7 @@
               "type": "text",
               "id": "z9UMC",
               "name": "Title",
-              "fill": "$color.gray-900",
+              "fill": "#1f2937",
               "content": "Select",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -45,7 +45,7 @@
               "type": "text",
               "id": "pgXms",
               "name": "Subtitle",
-              "fill": "$color.gray-700",
+              "fill": "#525252",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Dropdown select — single, multi, searchable & states",
@@ -94,7 +94,7 @@
                       "type": "text",
                       "id": "rLUmV",
                       "name": "Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Default",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -114,7 +114,7 @@
                       "type": "text",
                       "id": "M0YAp",
                       "name": "Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Hover",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -134,7 +134,7 @@
                       "type": "text",
                       "id": "upYVy",
                       "name": "Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Focus",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -154,7 +154,7 @@
                       "type": "text",
                       "id": "k5sQR",
                       "name": "Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Disabled",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -194,7 +194,7 @@
                       "type": "text",
                       "id": "RVtcD",
                       "name": "Row Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Single",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -218,7 +218,7 @@
                       "height": 44,
                       "fill": "$color.white",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -234,7 +234,7 @@
                           "type": "text",
                           "id": "BAJP8",
                           "name": "Value",
-                          "fill": "$color.gray-400",
+                          "fill": "#6e6e6e",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -250,7 +250,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -270,9 +270,9 @@
                       "name": "Select Trigger",
                       "width": 160,
                       "height": 44,
-                      "fill": "$color.gray-100",
+                      "fill": "#ebebeb",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -288,7 +288,7 @@
                           "type": "text",
                           "id": "QfkOW",
                           "name": "Value",
-                          "fill": "$color.gray-400",
+                          "fill": "#6e6e6e",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -304,7 +304,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -348,7 +348,7 @@
                           "type": "text",
                           "id": "Z5Psj",
                           "name": "Value",
-                          "fill": "$color.gray-400",
+                          "fill": "#6e6e6e",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -364,7 +364,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -387,7 +387,7 @@
                       "height": 44,
                       "fill": "$color.white",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -403,7 +403,7 @@
                           "type": "text",
                           "id": "bmbmZ",
                           "name": "Value",
-                          "fill": "$color.gray-400",
+                          "fill": "#6e6e6e",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -419,7 +419,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -457,7 +457,7 @@
                       "type": "text",
                       "id": "VEkHf",
                       "name": "Row Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Selected",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -481,7 +481,7 @@
                       "height": 44,
                       "fill": "$color.white",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -497,7 +497,7 @@
                           "type": "text",
                           "id": "qHCWu",
                           "name": "Value",
-                          "fill": "$color.gray-900",
+                          "fill": "#1f2937",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Certificate",
@@ -513,7 +513,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -533,9 +533,9 @@
                       "name": "Select Trigger",
                       "width": 160,
                       "height": 44,
-                      "fill": "$color.gray-100",
+                      "fill": "#ebebeb",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -551,7 +551,7 @@
                           "type": "text",
                           "id": "s7Njh",
                           "name": "Value",
-                          "fill": "$color.gray-900",
+                          "fill": "#1f2937",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Certificate",
@@ -567,7 +567,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -611,7 +611,7 @@
                           "type": "text",
                           "id": "lS6lP",
                           "name": "Value",
-                          "fill": "$color.gray-900",
+                          "fill": "#1f2937",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Certificate",
@@ -627,7 +627,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -650,7 +650,7 @@
                       "height": 44,
                       "fill": "$color.white",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -666,7 +666,7 @@
                           "type": "text",
                           "id": "y9Acd8",
                           "name": "Value",
-                          "fill": "$color.gray-900",
+                          "fill": "#1f2937",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Certificate",
@@ -682,7 +682,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -720,7 +720,7 @@
                       "type": "text",
                       "id": "qa6f0",
                       "name": "Row Label",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Multi",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -744,7 +744,7 @@
                       "height": 44,
                       "fill": "$color.white",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 4,
@@ -786,7 +786,7 @@
                                   "type": "text",
                                   "id": "q6Nef",
                                   "name": "Chip Label",
-                                  "fill": "$color.gray-900",
+                                  "fill": "#1f2937",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -811,7 +811,7 @@
                                       "height": 12,
                                       "icon": "x",
                                       "library": "lucide",
-                                      "fill": "$color.gray-800"
+                                      "fill": "#525252"
                                     }
                                   ]
                                 }
@@ -827,7 +827,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -847,9 +847,9 @@
                       "name": "Multi Trigger",
                       "width": 160,
                       "height": 44,
-                      "fill": "$color.gray-100",
+                      "fill": "#ebebeb",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 4,
@@ -891,7 +891,7 @@
                                   "type": "text",
                                   "id": "vtnnt",
                                   "name": "Chip Label",
-                                  "fill": "$color.gray-900",
+                                  "fill": "#1f2937",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -916,7 +916,7 @@
                                       "height": 12,
                                       "icon": "x",
                                       "library": "lucide",
-                                      "fill": "$color.gray-800"
+                                      "fill": "#525252"
                                     }
                                   ]
                                 }
@@ -932,7 +932,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -1002,7 +1002,7 @@
                                   "type": "text",
                                   "id": "q6wAM",
                                   "name": "Chip Label",
-                                  "fill": "$color.gray-900",
+                                  "fill": "#1f2937",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -1027,7 +1027,7 @@
                                       "height": 12,
                                       "icon": "x",
                                       "library": "lucide",
-                                      "fill": "$color.gray-800"
+                                      "fill": "#525252"
                                     }
                                   ]
                                 }
@@ -1043,7 +1043,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -1066,7 +1066,7 @@
                       "height": 44,
                       "fill": "$color.white",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 4,
@@ -1108,7 +1108,7 @@
                                   "type": "text",
                                   "id": "D1JVR3",
                                   "name": "Chip Label",
-                                  "fill": "$color.gray-900",
+                                  "fill": "#1f2937",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -1133,7 +1133,7 @@
                                       "height": 12,
                                       "icon": "x",
                                       "library": "lucide",
-                                      "fill": "$color.gray-800"
+                                      "fill": "#525252"
                                     }
                                   ]
                                 }
@@ -1149,7 +1149,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -1179,7 +1179,7 @@
               "type": "text",
               "id": "dhQyl",
               "name": "Section: Examples",
-              "fill": "$color.gray-900",
+              "fill": "#1f2937",
               "content": "Examples",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -1204,7 +1204,7 @@
                       "type": "text",
                       "id": "L4zhGB",
                       "name": "Caption",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Open menu",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -1240,7 +1240,7 @@
                           "type": "text",
                           "id": "NM6i3",
                           "name": "Value",
-                          "fill": "$color.gray-900",
+                          "fill": "#1f2937",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Certificate",
@@ -1256,7 +1256,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     },
@@ -1294,7 +1294,7 @@
                               "type": "text",
                               "id": "m5nevp",
                               "name": "Option Label",
-                              "fill": "$color.gray-900",
+                              "fill": "#1f2937",
                               "content": "Certificate",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -1317,7 +1317,7 @@
                           "id": "waEah",
                           "name": "Option",
                           "width": "fill_container",
-                          "fill": "$color.gray-100",
+                          "fill": "#ebebeb",
                           "cornerRadius": 8,
                           "gap": 8,
                           "padding": [
@@ -1331,7 +1331,7 @@
                               "type": "text",
                               "id": "TKemE",
                               "name": "Option Label",
-                              "fill": "$color.gray-900",
+                              "fill": "#1f2937",
                               "content": "Certificate Profile",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -1358,7 +1358,7 @@
                               "type": "text",
                               "id": "XA1Cw",
                               "name": "Option Label",
-                              "fill": "$color.gray-900",
+                              "fill": "#1f2937",
                               "content": "Authority",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -1386,7 +1386,7 @@
                               "type": "text",
                               "id": "NPUaM",
                               "name": "Option Label",
-                              "fill": "$color.gray-900",
+                              "fill": "#1f2937",
                               "content": "Discovery",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -1410,7 +1410,7 @@
                       "type": "text",
                       "id": "m3iTn8",
                       "name": "Caption",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Searchable",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -1446,7 +1446,7 @@
                           "type": "text",
                           "id": "HQSqr",
                           "name": "Value",
-                          "fill": "$color.gray-400",
+                          "fill": "#6e6e6e",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -1462,7 +1462,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     },
@@ -1488,7 +1488,7 @@
                           "width": "fill_container",
                           "fill": "$color.white",
                           "cornerRadius": 8,
-                          "stroke": "$color.gray-200",
+                          "stroke": "#8f8f8f",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner",
                           "padding": [
@@ -1501,7 +1501,7 @@
                               "type": "text",
                               "id": "W8SPe",
                               "name": "Search Query",
-                              "fill": "$color.gray-900",
+                              "fill": "#1f2937",
                               "content": "Cert",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -1514,7 +1514,7 @@
                           "id": "xMSHS",
                           "name": "Option",
                           "width": "fill_container",
-                          "fill": "$color.gray-100",
+                          "fill": "#ebebeb",
                           "cornerRadius": 8,
                           "gap": 8,
                           "padding": [
@@ -1528,7 +1528,7 @@
                               "type": "text",
                               "id": "hYtXg",
                               "name": "Option Label",
-                              "fill": "$color.gray-900",
+                              "fill": "#1f2937",
                               "content": "Certificate",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -1555,7 +1555,7 @@
                               "type": "text",
                               "id": "ih3wx",
                               "name": "Option Label",
-                              "fill": "$color.gray-900",
+                              "fill": "#1f2937",
                               "content": "Certificate Profile",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -1588,7 +1588,7 @@
                       "type": "text",
                       "id": "sotwK",
                       "name": "Caption",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Multi-select (clearable)",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -1650,7 +1650,7 @@
                                   "type": "text",
                                   "id": "O9eu34",
                                   "name": "Chip Label",
-                                  "fill": "$color.gray-900",
+                                  "fill": "#1f2937",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -1675,7 +1675,7 @@
                                       "height": 12,
                                       "icon": "x",
                                       "library": "lucide",
-                                      "fill": "$color.gray-800"
+                                      "fill": "#525252"
                                     }
                                   ]
                                 }
@@ -1703,7 +1703,7 @@
                                   "type": "text",
                                   "id": "hBr4o",
                                   "name": "Chip Label",
-                                  "fill": "$color.gray-900",
+                                  "fill": "#1f2937",
                                   "content": "Pending",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -1728,7 +1728,7 @@
                                       "height": 12,
                                       "icon": "x",
                                       "library": "lucide",
-                                      "fill": "$color.gray-800"
+                                      "fill": "#525252"
                                     }
                                   ]
                                 }
@@ -1756,7 +1756,7 @@
                                   "type": "text",
                                   "id": "FAHMT",
                                   "name": "Chip Label",
-                                  "fill": "$color.gray-900",
+                                  "fill": "#1f2937",
                                   "content": "Revoked",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -1781,7 +1781,7 @@
                                       "height": 12,
                                       "icon": "x",
                                       "library": "lucide",
-                                      "fill": "$color.gray-800"
+                                      "fill": "#525252"
                                     }
                                   ]
                                 }
@@ -1797,7 +1797,7 @@
                           "height": 14,
                           "icon": "x",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         },
                         {
                           "type": "icon",
@@ -1807,7 +1807,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     }
@@ -1825,7 +1825,7 @@
                       "type": "text",
                       "id": "CAj4I",
                       "name": "Caption",
-                      "fill": "$color.gray-700",
+                      "fill": "#525252",
                       "content": "Validation",
                       "fontFamily": "Inter",
                       "fontSize": 12,
@@ -1842,7 +1842,7 @@
                           "type": "text",
                           "id": "CZi7m",
                           "name": "Label Text",
-                          "fill": "$color.gray-700",
+                          "fill": "#525252",
                           "content": "Resource Type",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -1852,7 +1852,7 @@
                           "type": "text",
                           "id": "q6AMV",
                           "name": "Required",
-                          "fill": "$color.red-500",
+                          "fill": "#b91c1c",
                           "content": "*",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -1868,7 +1868,7 @@
                       "height": 44,
                       "fill": "$color.white",
                       "cornerRadius": 8,
-                      "stroke": "$color.gray-200",
+                      "stroke": "#8f8f8f",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -1884,7 +1884,7 @@
                           "type": "text",
                           "id": "ixvX4",
                           "name": "Value",
-                          "fill": "$color.gray-400",
+                          "fill": "#6e6e6e",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -1900,7 +1900,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.gray-700"
+                          "fill": "#525252"
                         }
                       ]
                     },
@@ -1908,7 +1908,7 @@
                       "type": "text",
                       "id": "olFjb",
                       "name": "Error",
-                      "fill": "$color.red-500",
+                      "fill": "#b91c1c",
                       "content": "This field is required.",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -1932,7 +1932,7 @@
       "width": 820,
       "fill": "$color.neutral-900",
       "cornerRadius": 12,
-      "stroke": "$color.neutral-700",
+      "stroke": "#262626",
       "strokeWidth": 1,
       "strokeAlignment": "inner",
       "layout": "vertical",
@@ -1956,7 +1956,7 @@
               "type": "text",
               "id": "D8isX",
               "name": "Title",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "Select",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -2089,7 +2089,7 @@
               "type": "rectangle",
               "id": "jHhIC",
               "name": "Divider",
-              "fill": "$color.neutral-700",
+              "fill": "#262626",
               "width": "fill_container",
               "height": 1
             },
@@ -2139,7 +2139,7 @@
                       "height": 44,
                       "fill": "$color.neutral-900",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -2155,7 +2155,7 @@
                           "type": "text",
                           "id": "soZaO",
                           "name": "Value",
-                          "fill": "$color.neutral-500",
+                          "fill": "#a3a3a3",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -2171,7 +2171,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -2191,9 +2191,9 @@
                       "name": "Select Trigger",
                       "width": 160,
                       "height": 44,
-                      "fill": "$color.neutral-800",
+                      "fill": "#2e2e2e",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -2209,7 +2209,7 @@
                           "type": "text",
                           "id": "IBwX7",
                           "name": "Value",
-                          "fill": "$color.neutral-500",
+                          "fill": "#a3a3a3",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -2225,7 +2225,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -2269,7 +2269,7 @@
                           "type": "text",
                           "id": "ldVWn",
                           "name": "Value",
-                          "fill": "$color.neutral-500",
+                          "fill": "#a3a3a3",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -2285,7 +2285,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -2308,7 +2308,7 @@
                       "height": 44,
                       "fill": "$color.neutral-900",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -2324,7 +2324,7 @@
                           "type": "text",
                           "id": "bSSQ1",
                           "name": "Value",
-                          "fill": "$color.neutral-500",
+                          "fill": "#a3a3a3",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -2340,7 +2340,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -2352,7 +2352,7 @@
               "type": "rectangle",
               "id": "CRxD9",
               "name": "Divider",
-              "fill": "$color.neutral-700",
+              "fill": "#262626",
               "width": "fill_container",
               "height": 1
             },
@@ -2402,7 +2402,7 @@
                       "height": 44,
                       "fill": "$color.neutral-900",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -2418,7 +2418,7 @@
                           "type": "text",
                           "id": "wCtov",
                           "name": "Value",
-                          "fill": "$color.neutral-300",
+                          "fill": "#f5f5f5",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Certificate",
@@ -2434,7 +2434,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -2454,9 +2454,9 @@
                       "name": "Select Trigger",
                       "width": 160,
                       "height": 44,
-                      "fill": "$color.neutral-800",
+                      "fill": "#2e2e2e",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -2472,7 +2472,7 @@
                           "type": "text",
                           "id": "ZOuAn",
                           "name": "Value",
-                          "fill": "$color.neutral-300",
+                          "fill": "#f5f5f5",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Certificate",
@@ -2488,7 +2488,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -2532,7 +2532,7 @@
                           "type": "text",
                           "id": "mNjkB",
                           "name": "Value",
-                          "fill": "$color.neutral-300",
+                          "fill": "#f5f5f5",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Certificate",
@@ -2548,7 +2548,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -2571,7 +2571,7 @@
                       "height": 44,
                       "fill": "$color.neutral-900",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -2587,7 +2587,7 @@
                           "type": "text",
                           "id": "d9SXcl",
                           "name": "Value",
-                          "fill": "$color.neutral-300",
+                          "fill": "#f5f5f5",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Certificate",
@@ -2603,7 +2603,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -2615,7 +2615,7 @@
               "type": "rectangle",
               "id": "ODJyX",
               "name": "Divider",
-              "fill": "$color.neutral-700",
+              "fill": "#262626",
               "width": "fill_container",
               "height": 1
             },
@@ -2665,7 +2665,7 @@
                       "height": 44,
                       "fill": "$color.neutral-900",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 4,
@@ -2691,7 +2691,7 @@
                               "name": "Chip",
                               "fill": "$color.neutral-800",
                               "cornerRadius": 999,
-                              "stroke": "$color.neutral-600",
+                              "stroke": "#666666",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner",
                               "gap": 6,
@@ -2707,7 +2707,7 @@
                                   "type": "text",
                                   "id": "CHx2l",
                                   "name": "Chip Label",
-                                  "fill": "$color.neutral-300",
+                                  "fill": "#f5f5f5",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -2748,7 +2748,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -2768,9 +2768,9 @@
                       "name": "Multi Trigger",
                       "width": 160,
                       "height": 44,
-                      "fill": "$color.neutral-800",
+                      "fill": "#2e2e2e",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 4,
@@ -2796,7 +2796,7 @@
                               "name": "Chip",
                               "fill": "$color.neutral-800",
                               "cornerRadius": 999,
-                              "stroke": "$color.neutral-600",
+                              "stroke": "#666666",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner",
                               "gap": 6,
@@ -2812,7 +2812,7 @@
                                   "type": "text",
                                   "id": "khrER",
                                   "name": "Chip Label",
-                                  "fill": "$color.neutral-300",
+                                  "fill": "#f5f5f5",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -2853,7 +2853,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -2907,7 +2907,7 @@
                               "name": "Chip",
                               "fill": "$color.neutral-800",
                               "cornerRadius": 999,
-                              "stroke": "$color.neutral-600",
+                              "stroke": "#666666",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner",
                               "gap": 6,
@@ -2923,7 +2923,7 @@
                                   "type": "text",
                                   "id": "MKi1B",
                                   "name": "Chip Label",
-                                  "fill": "$color.neutral-300",
+                                  "fill": "#f5f5f5",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -2964,7 +2964,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -2987,7 +2987,7 @@
                       "height": 44,
                       "fill": "$color.neutral-900",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 4,
@@ -3013,7 +3013,7 @@
                               "name": "Chip",
                               "fill": "$color.neutral-800",
                               "cornerRadius": 999,
-                              "stroke": "$color.neutral-600",
+                              "stroke": "#666666",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner",
                               "gap": 6,
@@ -3029,7 +3029,7 @@
                                   "type": "text",
                                   "id": "CeqxH",
                                   "name": "Chip Label",
-                                  "fill": "$color.neutral-300",
+                                  "fill": "#f5f5f5",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -3070,7 +3070,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -3084,7 +3084,7 @@
           "type": "rectangle",
           "id": "w6C1W",
           "name": "Section Divider",
-          "fill": "$color.neutral-700",
+          "fill": "#262626",
           "width": "fill_container",
           "height": 1
         },
@@ -3100,7 +3100,7 @@
               "type": "text",
               "id": "KShO3",
               "name": "Section: Examples",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "Examples",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -3161,7 +3161,7 @@
                           "type": "text",
                           "id": "Q07Isr",
                           "name": "Value",
-                          "fill": "$color.neutral-300",
+                          "fill": "#f5f5f5",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Certificate",
@@ -3177,7 +3177,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     },
@@ -3189,7 +3189,7 @@
                       "width": "fill_container",
                       "fill": "$color.neutral-900",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "layout": "vertical",
@@ -3215,7 +3215,7 @@
                               "type": "text",
                               "id": "n27Nxm",
                               "name": "Option Label",
-                              "fill": "$color.neutral-300",
+                              "fill": "#f5f5f5",
                               "content": "Certificate",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -3229,7 +3229,7 @@
                               "height": 14,
                               "icon": "check",
                               "library": "lucide",
-                              "fill": "$color.blue-500"
+                              "fill": "#3399ff"
                             }
                           ]
                         },
@@ -3238,7 +3238,7 @@
                           "id": "Rz1rw",
                           "name": "Option",
                           "width": "fill_container",
-                          "fill": "$color.neutral-800",
+                          "fill": "#2e2e2e",
                           "cornerRadius": 8,
                           "gap": 8,
                           "padding": [
@@ -3252,7 +3252,7 @@
                               "type": "text",
                               "id": "suC98",
                               "name": "Option Label",
-                              "fill": "$color.neutral-300",
+                              "fill": "#f5f5f5",
                               "content": "Certificate Profile",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -3279,7 +3279,7 @@
                               "type": "text",
                               "id": "Ny3WN",
                               "name": "Option Label",
-                              "fill": "$color.neutral-300",
+                              "fill": "#f5f5f5",
                               "content": "Authority",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -3307,7 +3307,7 @@
                               "type": "text",
                               "id": "nhOAC",
                               "name": "Option Label",
-                              "fill": "$color.neutral-300",
+                              "fill": "#f5f5f5",
                               "content": "Discovery",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -3367,7 +3367,7 @@
                           "type": "text",
                           "id": "Opm09",
                           "name": "Value",
-                          "fill": "$color.neutral-500",
+                          "fill": "#a3a3a3",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -3383,7 +3383,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     },
@@ -3395,7 +3395,7 @@
                       "width": "fill_container",
                       "fill": "$color.neutral-900",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#262626",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "layout": "vertical",
@@ -3409,7 +3409,7 @@
                           "width": "fill_container",
                           "fill": "$color.neutral-900",
                           "cornerRadius": 8,
-                          "stroke": "$color.neutral-700",
+                          "stroke": "#666666",
                           "strokeWidth": 1,
                           "strokeAlignment": "inner",
                           "padding": [
@@ -3422,7 +3422,7 @@
                               "type": "text",
                               "id": "H0VTXE",
                               "name": "Search Query",
-                              "fill": "$color.neutral-300",
+                              "fill": "#f5f5f5",
                               "content": "Cert",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -3435,7 +3435,7 @@
                           "id": "QFJhE",
                           "name": "Option",
                           "width": "fill_container",
-                          "fill": "$color.neutral-800",
+                          "fill": "#2e2e2e",
                           "cornerRadius": 8,
                           "gap": 8,
                           "padding": [
@@ -3449,7 +3449,7 @@
                               "type": "text",
                               "id": "SaTHw",
                               "name": "Option Label",
-                              "fill": "$color.neutral-300",
+                              "fill": "#f5f5f5",
                               "content": "Certificate",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -3476,7 +3476,7 @@
                               "type": "text",
                               "id": "mL3Jq",
                               "name": "Option Label",
-                              "fill": "$color.neutral-300",
+                              "fill": "#f5f5f5",
                               "content": "Certificate Profile",
                               "fontFamily": "Inter",
                               "fontSize": 14,
@@ -3555,7 +3555,7 @@
                               "name": "Chip",
                               "fill": "$color.neutral-800",
                               "cornerRadius": 999,
-                              "stroke": "$color.neutral-600",
+                              "stroke": "#666666",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner",
                               "gap": 6,
@@ -3571,7 +3571,7 @@
                                   "type": "text",
                                   "id": "d9rAm",
                                   "name": "Chip Label",
-                                  "fill": "$color.neutral-300",
+                                  "fill": "#f5f5f5",
                                   "content": "Active",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -3608,7 +3608,7 @@
                               "name": "Chip",
                               "fill": "$color.neutral-800",
                               "cornerRadius": 999,
-                              "stroke": "$color.neutral-600",
+                              "stroke": "#666666",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner",
                               "gap": 6,
@@ -3624,7 +3624,7 @@
                                   "type": "text",
                                   "id": "cg9TM",
                                   "name": "Chip Label",
-                                  "fill": "$color.neutral-300",
+                                  "fill": "#f5f5f5",
                                   "content": "Pending",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -3661,7 +3661,7 @@
                               "name": "Chip",
                               "fill": "$color.neutral-800",
                               "cornerRadius": 999,
-                              "stroke": "$color.neutral-600",
+                              "stroke": "#666666",
                               "strokeWidth": 1,
                               "strokeAlignment": "inner",
                               "gap": 6,
@@ -3677,7 +3677,7 @@
                                   "type": "text",
                                   "id": "DX8XK",
                                   "name": "Chip Label",
-                                  "fill": "$color.neutral-300",
+                                  "fill": "#f5f5f5",
                                   "content": "Revoked",
                                   "fontFamily": "Inter",
                                   "fontSize": 13,
@@ -3718,7 +3718,7 @@
                           "height": 14,
                           "icon": "x",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         },
                         {
                           "type": "icon",
@@ -3728,7 +3728,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     }
@@ -3773,7 +3773,7 @@
                           "type": "text",
                           "id": "K478oo",
                           "name": "Required",
-                          "fill": "$color.red-500",
+                          "fill": "#f87171",
                           "content": "*",
                           "fontFamily": "Inter",
                           "fontSize": 13,
@@ -3789,7 +3789,7 @@
                       "height": 44,
                       "fill": "$color.neutral-900",
                       "cornerRadius": 8,
-                      "stroke": "$color.neutral-700",
+                      "stroke": "#666666",
                       "strokeWidth": 1,
                       "strokeAlignment": "inner",
                       "gap": 8,
@@ -3805,7 +3805,7 @@
                           "type": "text",
                           "id": "bddSD",
                           "name": "Value",
-                          "fill": "$color.neutral-500",
+                          "fill": "#a3a3a3",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "Select...",
@@ -3821,7 +3821,7 @@
                           "height": 14,
                           "icon": "chevrons-up-down",
                           "library": "lucide",
-                          "fill": "$color.neutral-500"
+                          "fill": "#d4d4d4"
                         }
                       ]
                     },
@@ -3829,7 +3829,7 @@
                       "type": "text",
                       "id": "v6m9i",
                       "name": "Error",
-                      "fill": "$color.red-500",
+                      "fill": "#f87171",
                       "content": "This field is required.",
                       "fontFamily": "Inter",
                       "fontSize": 13,
@@ -4021,5 +4021,6 @@
       "type": "color",
       "value": "#854d0e4d"
     }
-  }
+  },
+  "fileToken": "dc4810dd-e22a-48cc-bfa1-3b2c1faa66b5"
 }

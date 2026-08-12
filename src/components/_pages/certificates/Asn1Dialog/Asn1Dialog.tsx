@@ -57,7 +57,7 @@ export default function Asn1Dialog({ content, isCSR }: Readonly<Props>) {
                         isOpen: true,
                         size: 'xl',
                         title: 'ASN.1 Structure',
-                        content: <pre className="text-sm whitespace-pre-wrap break-all text-[var(--dark-gray-color)]">{asn1String}</pre>,
+                        content: <pre className="text-sm whitespace-pre-wrap break-all text-content">{asn1String}</pre>,
                         showCloseButton: true,
                         cancelButtonCallback: onClose,
                     }),
@@ -75,7 +75,7 @@ export default function Asn1Dialog({ content, isCSR }: Readonly<Props>) {
                         isOpen: true,
                         size: 'xl',
                         title: 'ASN.1 Structure',
-                        content: <pre className="text-sm whitespace-pre-wrap break-all text-[var(--dark-gray-color)]">{asn1String}</pre>,
+                        content: <pre className="text-sm whitespace-pre-wrap break-all text-content">{asn1String}</pre>,
                         showCloseButton: true,
                         cancelButtonCallback: onClose,
                     }),
@@ -110,7 +110,7 @@ export default function Asn1Dialog({ content, isCSR }: Readonly<Props>) {
                     }
                 }}
                 title="Show ASN.1 Structure"
-                className="text-[var(--primary-blue-color)] !p-0 hover:bg-transparent"
+                className="text-brand !p-0 hover:bg-transparent"
             >
                 Show
             </Button>

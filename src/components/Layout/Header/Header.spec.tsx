@@ -25,4 +25,9 @@ test.describe('Header', () => {
         await page.getByTestId('header-sidebar-toggle').click();
         expect(toggled).toBe(true);
     });
+
+    test('should render the theme toggle', async ({ mount, page }) => {
+        await mount(<HeaderWithStore sidebarToggle={() => {}} />);
+        await expect(page.getByTestId('theme-toggle')).toBeVisible();
+    });
 });

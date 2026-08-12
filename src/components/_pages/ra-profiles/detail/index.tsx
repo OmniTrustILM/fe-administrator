@@ -921,7 +921,7 @@ export default function RaProfileDetail() {
                     'Request Validation',
                     <span key="requestValidationMode">
                         {externalCsrValidationModeLabel(strict)}{' '}
-                        <span className="text-gray-500">({externalCsrValidationModeDescription(strict)})</span>
+                        <span className="text-content-subtle">({externalCsrValidationModeDescription(strict)})</span>
                     </span>,
                 ],
             },
@@ -1270,8 +1270,8 @@ export default function RaProfileDetail() {
                             {raProfile?.name}. Is this what you want to do?
                         </p>
                         <p>
-                            <b className="text-red-600">Warning:</b> This will remove approval process for all certificate actions on this
-                            RA profile.
+                            <b className="text-danger">Warning:</b> This will remove approval process for all certificate actions on this RA
+                            profile.
                         </p>
                     </div>
                 }

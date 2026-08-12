@@ -69,7 +69,7 @@ export default function HostnameListInput({
                 <input
                     id={id}
                     type="text"
-                    className={`${inputBaseClassName} flex-1${invalid || draftError ? ' border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                    className={`${inputBaseClassName} flex-1${invalid || draftError ? ' border-danger focus:border-danger focus:ring-danger' : ''}`}
                     value={draft}
                     onChange={(e) => {
                         setDraft(e.target.value);
@@ -84,19 +84,19 @@ export default function HostnameListInput({
                     {addLabel}
                 </Button>
             </div>
-            {draftError && <p className="text-xs text-red-600">{draftError}</p>}
+            {draftError && <p className="text-xs text-danger">{draftError}</p>}
             {values.length > 0 && (
                 <ul className="flex flex-wrap gap-2" data-testid={id ? `hostname-list-tags-${id}` : 'hostname-list-tags'}>
                     {values.map((value) => (
                         <li
                             key={value}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 py-1 pl-3 pr-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-200"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-brand-subtle py-1 pl-3 pr-1 text-xs font-medium text-brand-hover"
                         >
                             <span>{value}</span>
                             <button
                                 type="button"
                                 onClick={() => removeValue(value)}
-                                className="inline-flex items-center justify-center rounded-full p-0.5 text-blue-700 hover:bg-blue-100 hover:text-blue-900 focus:outline-none focus:bg-blue-100 dark:text-blue-200 dark:hover:bg-blue-800/50"
+                                className="inline-flex items-center justify-center rounded-full p-0.5 text-brand-hover hover:bg-surface-hover focus:outline-none focus:bg-surface-hover"
                                 aria-label={`Remove ${value}`}
                                 data-testid={`hostname-list-remove-${value}`}
                             >

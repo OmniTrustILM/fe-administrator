@@ -122,7 +122,7 @@ export default function VaultProfileEditForm({ profile, vaultUuid, onCancel, onS
                             setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                         />
                     ) : (
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-content-subtle">
                             {isFetchingVaultProfileAttributes ? 'Loading attributes...' : 'No vault profile attributes configured.'}
                         </div>
                     ),

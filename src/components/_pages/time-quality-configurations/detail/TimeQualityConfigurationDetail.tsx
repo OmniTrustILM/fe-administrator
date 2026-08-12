@@ -247,7 +247,7 @@ export const TimeQualityConfigurationDetail = () => {
                             <CustomTable headers={signingProfilesTableHeaders} data={signingProfilesTableData} />
                         ) : (
                             !isFetchingAssociatedSigningProfiles && (
-                                <p className="text-sm text-gray-400">
+                                <p className="text-sm text-content-subtle">
                                     No Signing Profiles are currently using this Time Quality Configuration.
                                 </p>
                             )

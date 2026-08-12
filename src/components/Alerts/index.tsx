@@ -40,7 +40,7 @@ function Alerts({ autoDismissMs }: Readonly<Props>) {
             {alerts.length >= DISMISS_ALL_THRESHOLD && (
                 <button
                     type="button"
-                    className="pointer-events-auto self-end rounded-md px-2 py-1 text-xs font-medium text-gray-800 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    className="pointer-events-auto self-end rounded-md px-2 py-1 text-xs font-medium text-content-muted hover:text-content"
                     onClick={() => dispatch(actions.dismissAll())}
                 >
                     Dismiss all

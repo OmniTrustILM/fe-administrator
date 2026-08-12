@@ -55,8 +55,8 @@ function StandardInputControl({
     const textValue = transformed ? String(transformed) : '';
     const validationVisible = fieldState.isTouched || submitCount > 0;
     const inputClassName = cn(inputBaseClassName, {
-        'border-red-500 focus:border-red-500 focus:ring-red-500': validationVisible && fieldState.invalid,
-        'bg-[#F8FAFC]': descriptor.properties.readOnly,
+        'border-danger focus:border-danger focus:ring-danger': validationVisible && fieldState.invalid,
+        '!bg-surface': descriptor.properties.readOnly,
     });
 
     if (descriptor.contentType === AttributeContentType.Boolean) {
@@ -226,7 +226,7 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                         <>
                             {showDescription && (
                                 <p
-                                    className={cn('text-xs text-gray-700 dark:text-neutral-400', {
+                                    className={cn('text-xs text-content-muted', {
                                         'block -mt-2': descriptor.contentType === AttributeContentType.Boolean,
                                         'mt-1': descriptor.contentType !== AttributeContentType.Boolean,
                                     })}
@@ -237,14 +237,14 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                             {descriptor.contentType !== AttributeContentType.Boolean &&
                                 fieldState.invalid &&
                                 (fieldState.isTouched || submitCount > 0) && (
-                                    <div className="mt-1 text-sm text-red-600">
+                                    <div className="mt-1 text-sm text-danger">
                                         {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message}
                                         {(regexpConstraint?.description || regexpConstraint?.data) && (
-                                            <div className="mt-1 text-xs text-gray-700 dark:text-neutral-400">
+                                            <div className="mt-1 text-xs text-content-muted">
                                                 {regexpConstraint.description && <div>{regexpConstraint.description}</div>}
                                                 {regexpConstraint?.data && (
                                                     <details className="mt-1">
-                                                        <summary className="cursor-pointer select-none font-semibold focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1">
+                                                        <summary className="cursor-pointer select-none font-semibold focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1">
                                                             Show regex pattern
                                                         </summary>
                                                         <div className="mt-1 font-mono break-all">{regexpConstraint.data}</div>

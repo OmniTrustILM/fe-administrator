@@ -163,13 +163,13 @@ test.describe('Select', () => {
         expect(changes).toBe(0);
     });
 
-    test('colorizeVersionLabel renders blue + gray spans on trigger', async ({ mount, page }) => {
+    test('colorizeVersionLabel renders brand + content spans on trigger', async ({ mount, page }) => {
         const opts = [{ value: 'v1', label: 'Version 1 (Latest)' }];
         await mount(<Select id="vv" value="v1" onChange={() => {}} options={opts} colorizeVersionLabel dataTestId="sel" />);
         const trigger = page.getByTestId('sel-trigger');
         await expect(trigger).toContainText('Version 1');
         await expect(trigger).toContainText('(Latest)');
-        await expect(trigger.locator(String.raw`span.text-\[var\(--primary-blue-color\)\]`)).toBeVisible();
+        await expect(trigger.locator('span.text-brand')).toBeVisible();
     });
 
     test('showOptionDescriptionInDropdown renders second line in option', async ({ mount, page }) => {
@@ -196,7 +196,7 @@ test.describe('Select', () => {
         await expect(page.getByTestId('sel-selected-description')).toHaveCount(0);
     });
 
-    test('"+ Add new" option gets blue medium-weight styling', async ({ mount, page }) => {
+    test('"+ Add new" option gets brand medium-weight styling', async ({ mount, page }) => {
         const opts = [
             { value: '1', label: 'One' },
             { value: '__add_new__', label: '+ Add new' },
@@ -205,7 +205,7 @@ test.describe('Select', () => {
         await page.getByTestId('sel-trigger').click();
         const addNew = page.getByRole('option', { name: '+ Add new' });
         await expect(addNew).toBeVisible();
-        await expect(addNew.locator(String.raw`span.text-blue-600, span.dark\:text-blue-400`)).toHaveCount(1);
+        await expect(addNew.locator('span.text-brand-hover')).toHaveCount(1);
     });
 
     test('object-valued options match selected via value matchers', async ({ mount, page }) => {

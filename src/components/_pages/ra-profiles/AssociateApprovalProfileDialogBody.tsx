@@ -78,7 +78,7 @@ const AssociateApprovalProfileDialogBody = ({ raProfile, visible, onClose, avail
                     rules={buildValidationRules([validateRequired()])}
                     render={({ field, fieldState }) => (
                         <div className="mb-4">
-                            <Label htmlFor="approvalProfileSelect" className="block text-sm font-medium mb-2 text-gray-700 dark:text-white">
+                            <Label htmlFor="approvalProfileSelect" className="block text-sm font-medium mb-2 text-content">
                                 Select Approval profile
                             </Label>
 
@@ -89,12 +89,12 @@ const AssociateApprovalProfileDialogBody = ({ raProfile, visible, onClose, avail
                                 onChange={(value) => field.onChange(value)}
                                 placeholder="Select Approval profile to be associated"
                                 className={cn({
-                                    'border-red-500': fieldState.error && fieldState.isTouched,
+                                    'border-danger': fieldState.error && fieldState.isTouched,
                                 })}
                             />
 
                             {fieldState.error && fieldState.isTouched && (
-                                <p className="mt-1 text-sm text-red-600">
+                                <p className="mt-1 text-sm text-danger">
                                     {typeof fieldState.error === 'string'
                                         ? fieldState.error
                                         : fieldState.error?.message || 'Required Field'}

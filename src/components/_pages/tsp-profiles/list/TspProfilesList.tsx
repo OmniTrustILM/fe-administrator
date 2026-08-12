@@ -108,7 +108,7 @@ export const TspProfilesList = () => {
                     <span key="name-link" style={{ whiteSpace: 'nowrap' }}>
                         <Link to={`./detail/${config.uuid}`}>{config.name}</Link>
                     </span>,
-                    <span key="description-value" className="text-sm text-gray-600">
+                    <span key="description-value" className="text-sm text-content-muted">
                         {config.description || '—'}
                     </span>,
                     config.defaultSigningProfile ? (

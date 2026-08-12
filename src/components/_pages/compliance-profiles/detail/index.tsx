@@ -166,7 +166,7 @@ export default function ComplianceProfileDetail() {
                 id: 'status',
                 columns: [
                     'Status',
-                    <Badge key={selectedEntityDetails?.uuid} color={statusColor} style={{ background: statusColor }}>
+                    <Badge key={selectedEntityDetails?.uuid} color={statusColor}>
                         {capitalize(selectedEntityDetails?.availabilityStatus || '')}
                     </Badge>,
                 ],

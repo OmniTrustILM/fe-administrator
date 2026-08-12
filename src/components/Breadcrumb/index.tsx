@@ -20,13 +20,13 @@ function Breadcrumb({ items, title: titleProp, rightContent }: Readonly<Props>) 
                     <li
                         key={item.label}
                         className={cn('inline-flex items-center text-sm', {
-                            'text-gray-700 dark:text-neutral-600': index < items.length - 1,
+                            'text-content-muted': index < items.length - 1,
                         })}
                     >
                         {item.href ? <Link to={item.href}>{item.label}</Link> : <span>{item.label}</span>}
                         {index < items.length - 1 && (
                             <svg
-                                className="shrink-0 size-5 text-gray-400 dark:text-neutral-600 mx-2"
+                                className="shrink-0 size-5 text-content-subtle mx-2"
                                 width="16"
                                 height="16"
                                 viewBox="0 0 16 16"

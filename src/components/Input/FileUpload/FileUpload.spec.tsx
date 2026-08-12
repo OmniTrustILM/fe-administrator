@@ -121,7 +121,7 @@ test.describe('FileUpload', () => {
         );
 
         await expect(component.getByText('Invalid CSR')).toBeVisible();
-        await expect(component.locator('textarea')).toHaveClass(/border-red-500/);
+        await expect(component.locator('textarea')).toHaveClass(/border-danger/);
     });
 
     test('should show required indicator on label when required prop is true', async ({ mount }) => {
@@ -131,7 +131,7 @@ test.describe('FileUpload', () => {
             </div>,
         );
 
-        await expect(component.locator('span.text-red-500')).toBeVisible();
+        await expect(component.locator('span.text-danger')).toBeVisible();
     });
 
     test('should call onContentChange on every keystroke', async ({ mount }) => {

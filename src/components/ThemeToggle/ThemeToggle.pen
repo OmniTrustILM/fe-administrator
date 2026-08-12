@@ -1,0 +1,1366 @@
+{
+  "version": "2.14",
+  "children": [
+    {
+      "type": "frame",
+      "id": "S7ndD",
+      "x": 0,
+      "y": 0,
+      "name": "Light",
+      "clip": true,
+      "width": 700,
+      "fill": "#ffffff",
+      "cornerRadius": 12,
+      "stroke": "#e8e8e8",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "layout": "vertical",
+      "gap": 28,
+      "padding": [
+        44,
+        40,
+        40,
+        40
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "vNBgP",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "CqVaJ",
+              "name": "Title",
+              "fill": "#1f2937",
+              "content": "ThemeToggle",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "Ms1uM",
+              "name": "Subtitle",
+              "fill": "#525252",
+              "content": "Component design system - states, sizes & examples",
+              "fontFamily": "Inter",
+              "fontSize": 12
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "n3twk5",
+          "name": "States Table",
+          "width": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "h6EkF",
+              "name": "Column Headers",
+              "width": "fill_container",
+              "padding": [
+                10,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "GORoW",
+                  "name": "Label Spacer",
+                  "width": 90,
+                  "height": 16
+                },
+                {
+                  "type": "frame",
+                  "id": "u7ynCc",
+                  "name": "Default Header Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "iqca1",
+                      "name": "Default Header",
+                      "fill": "#525252",
+                      "content": "Default",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "v4Cdc",
+                  "name": "Hover Header Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "M1a0xh",
+                      "name": "Hover Header",
+                      "fill": "#525252",
+                      "content": "Hover",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "WI6Xj",
+                  "name": "Focus Header Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "f0zk1U",
+                      "name": "Focus Header",
+                      "fill": "#525252",
+                      "content": "Focus",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "nZiTQ",
+              "name": "System Divider",
+              "fill": "#e8e8e8",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "tGzNz",
+              "name": "System Row",
+              "width": "fill_container",
+              "padding": [
+                14,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "OEJlb",
+                  "name": "System Label Cell",
+                  "width": 90,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ZqSKl",
+                      "name": "System Label",
+                      "fill": "#525252",
+                      "content": "System",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "l2B6pa",
+                  "name": "System Default Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "h8qTI3",
+                      "name": "System Default Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#0073cf",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "GgFRR",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "monitor",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "A38Zv",
+                  "name": "System Hover Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "sJ80w",
+                      "name": "System Hover Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": [
+                        "#0073cf",
+                        "#ffffff1A"
+                      ],
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "SUdXx",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "monitor",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "cZNJc",
+                  "name": "System Focus Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "YoSl7",
+                      "name": "System Focus Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#0073cf",
+                      "cornerRadius": 8,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#ffffff99",
+                        "spread": 2
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "nshkG",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "monitor",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "I9OBY",
+              "name": "Light Divider",
+              "fill": "#e8e8e8",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "JYrl9",
+              "name": "Light Row",
+              "width": "fill_container",
+              "padding": [
+                14,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Sh3lp",
+                  "name": "Light Label Cell",
+                  "width": 90,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "bmBwI",
+                      "name": "Light Label",
+                      "fill": "#525252",
+                      "content": "Light",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yTiff",
+                  "name": "Light Default Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "LmA44",
+                      "name": "Light Default Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#0073cf",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "j2kRp",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "sun",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "o1twe",
+                  "name": "Light Hover Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "kQjoU",
+                      "name": "Light Hover Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": [
+                        "#0073cf",
+                        "#ffffff1A"
+                      ],
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "ofAJU",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "sun",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "XzSv1",
+                  "name": "Light Focus Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "TTs3e",
+                      "name": "Light Focus Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#0073cf",
+                      "cornerRadius": 8,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#ffffff99",
+                        "spread": 2
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "k0vCp",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "sun",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "w67Rdp",
+              "name": "Dark Divider",
+              "fill": "#e8e8e8",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "tDd1b",
+              "name": "Dark Row",
+              "width": "fill_container",
+              "padding": [
+                14,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "e2TER",
+                  "name": "Dark Label Cell",
+                  "width": 90,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "NVDjU",
+                      "name": "Dark Label",
+                      "fill": "#525252",
+                      "content": "Dark",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "WrMDP",
+                  "name": "Dark Default Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "lwOvK",
+                      "name": "Dark Default Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#0073cf",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "OWPKp",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "moon",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "NfR5q",
+                  "name": "Dark Hover Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "fhbAA",
+                      "name": "Dark Hover Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": [
+                        "#0073cf",
+                        "#ffffff1A"
+                      ],
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "G0Zjy5",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "moon",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yYHD6",
+                  "name": "Dark Focus Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "HNcjU",
+                      "name": "Dark Focus Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#0073cf",
+                      "cornerRadius": 8,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#ffffff99",
+                        "spread": 2
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "KlIDt",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "moon",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "I23qm",
+          "name": "Section Divider",
+          "fill": "#e8e8e8",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "p5vMS",
+          "name": "Examples",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "text",
+              "id": "Uw4iZ",
+              "name": "Examples Heading",
+              "fill": "#1f2937",
+              "content": "Examples",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "Fvg86",
+              "name": "Header Bar",
+              "width": "fill_container",
+              "height": 68,
+              "fill": "#0073cf",
+              "cornerRadius": 8,
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "bZvav",
+                  "name": "Brand Name",
+                  "fill": "#ffffff",
+                  "content": "OmniTrust",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "CIOdr",
+                  "name": "Header Actions",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "noCrc",
+                      "name": "Theme Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#0073cf",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "K2v21H",
+                          "name": "Moon Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "moon",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon",
+                      "id": "s7zHE",
+                      "name": "Bell Icon",
+                      "width": 24,
+                      "height": 24,
+                      "icon": "bell",
+                      "library": "lucide",
+                      "fill": "#ffffff"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "lA0cF",
+              "name": "Caption",
+              "fill": "#525252",
+              "content": "One click cycles System, Light, Dark",
+              "fontFamily": "Inter",
+              "fontSize": 12
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ihX3e",
+      "x": 740,
+      "y": 0,
+      "name": "Dark",
+      "clip": true,
+      "width": 700,
+      "fill": "#171717",
+      "cornerRadius": 12,
+      "stroke": "#404040",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "layout": "vertical",
+      "gap": 28,
+      "padding": [
+        44,
+        40,
+        40,
+        40
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "zDAsD",
+          "name": "Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "N8Sbku",
+              "name": "Title",
+              "fill": "#ffffff",
+              "content": "ThemeToggle",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "bMv11",
+              "name": "Subtitle",
+              "fill": "#d4d4d4",
+              "content": "Component design system - states, sizes & examples",
+              "fontFamily": "Inter",
+              "fontSize": 12
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "nw1RO",
+          "name": "States Table",
+          "width": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Uf64x",
+              "name": "Column Headers",
+              "width": "fill_container",
+              "padding": [
+                10,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ERbNU",
+                  "name": "Label Spacer",
+                  "width": 90,
+                  "height": 16
+                },
+                {
+                  "type": "frame",
+                  "id": "r5zRN",
+                  "name": "Default Header Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "nsdLB",
+                      "name": "Default Header",
+                      "fill": "#d4d4d4",
+                      "content": "Default",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "PUtrq",
+                  "name": "Hover Header Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ruPbD",
+                      "name": "Hover Header",
+                      "fill": "#d4d4d4",
+                      "content": "Hover",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "RbZ4Q",
+                  "name": "Focus Header Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "fJPeF",
+                      "name": "Focus Header",
+                      "fill": "#d4d4d4",
+                      "content": "Focus",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "P6vumA",
+              "name": "System Divider",
+              "fill": "#262626",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "Z01JyU",
+              "name": "System Row",
+              "width": "fill_container",
+              "padding": [
+                14,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "c31vdR",
+                  "name": "System Label Cell",
+                  "width": 90,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KxkQy",
+                      "name": "System Label",
+                      "fill": "#d4d4d4",
+                      "content": "System",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "s8aUMH",
+                  "name": "System Default Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "wPtbx",
+                      "name": "System Default Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#171717",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "yK1YG",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "monitor",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "OJhJh",
+                  "name": "System Hover Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "xjpQ4",
+                      "name": "System Hover Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": [
+                        "#171717",
+                        "#ffffff1A"
+                      ],
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "IfC00",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "monitor",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MVHDX",
+                  "name": "System Focus Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "wK8BZ",
+                      "name": "System Focus Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#171717",
+                      "cornerRadius": 8,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#ffffff99",
+                        "spread": 2
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "TpEKf",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "monitor",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "Blwiu",
+              "name": "Light Divider",
+              "fill": "#262626",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "I978j9",
+              "name": "Light Row",
+              "width": "fill_container",
+              "padding": [
+                14,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Fbxw3",
+                  "name": "Light Label Cell",
+                  "width": 90,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "O5xbB",
+                      "name": "Light Label",
+                      "fill": "#d4d4d4",
+                      "content": "Light",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "h8LVq",
+                  "name": "Light Default Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Jbdo0",
+                      "name": "Light Default Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#171717",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "vGwB2",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "sun",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "i7mlO",
+                  "name": "Light Hover Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "v6SV4",
+                      "name": "Light Hover Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": [
+                        "#171717",
+                        "#ffffff1A"
+                      ],
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "y3PA1",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "sun",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "K9ITq8",
+                  "name": "Light Focus Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "WNcqy",
+                      "name": "Light Focus Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#171717",
+                      "cornerRadius": 8,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#ffffff99",
+                        "spread": 2
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "xocA3",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "sun",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "T8oobQ",
+              "name": "Dark Divider",
+              "fill": "#262626",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "cRVu8",
+              "name": "Dark Row",
+              "width": "fill_container",
+              "padding": [
+                14,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "A0AIz5",
+                  "name": "Dark Label Cell",
+                  "width": 90,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "QDI0A",
+                      "name": "Dark Label",
+                      "fill": "#d4d4d4",
+                      "content": "Dark",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "N7Kfe",
+                  "name": "Dark Default Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SOdyB",
+                      "name": "Dark Default Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#171717",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "iqCEV",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "moon",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "b78fjD",
+                  "name": "Dark Hover Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "peNl2",
+                      "name": "Dark Hover Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": [
+                        "#171717",
+                        "#ffffff1A"
+                      ],
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "yNgNa",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "moon",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "PjJxS",
+                  "name": "Dark Focus Cell",
+                  "width": "fill_container",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "eeHAa",
+                      "name": "Dark Focus Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#171717",
+                      "cornerRadius": 8,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#ffffff99",
+                        "spread": 2
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "eW4Y8",
+                          "name": "Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "moon",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "B3Nqj",
+          "name": "Section Divider",
+          "fill": "#262626",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "K9nnrc",
+          "name": "Examples",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "children": [
+            {
+              "type": "text",
+              "id": "GDhMl",
+              "name": "Examples Heading",
+              "fill": "#ffffff",
+              "content": "Examples",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "U3fUB",
+              "name": "Header Bar",
+              "width": "fill_container",
+              "height": 68,
+              "fill": "#171717",
+              "cornerRadius": 8,
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "XjRNs",
+                  "name": "Brand Name",
+                  "fill": "#ffffff",
+                  "content": "OmniTrust",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "Z86LPu",
+                  "name": "Header Actions",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ASDQL",
+                      "name": "Theme Button",
+                      "width": 40,
+                      "height": 40,
+                      "fill": "#171717",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "G2CXEZ",
+                          "name": "Moon Icon",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "moon",
+                          "library": "lucide",
+                          "fill": "#ffffff"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon",
+                      "id": "c7H4MS",
+                      "name": "Bell Icon",
+                      "width": 24,
+                      "height": 24,
+                      "icon": "bell",
+                      "library": "lucide",
+                      "fill": "#ffffff"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "raPZG",
+              "name": "Caption",
+              "fill": "#a3a3a3",
+              "content": "One click cycles System, Light, Dark",
+              "fontFamily": "Inter",
+              "fontSize": 12
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "fileToken": "9ea51152-2417-4fa0-82e4-fc80fbe34ee0"
+}

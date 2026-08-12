@@ -27,7 +27,7 @@ export function TableRowCell({ column, index, row, tblHeaders, hasDetails = fals
     const contentClassName = maxWidthCss ? 'min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap' : '';
 
     return (
-        <td style={cellStyle} className="px-2.5 py-2 whitespace-nowrap text-sm font-medium text-gray-800 dark:text-neutral-200">
+        <td style={cellStyle} className="px-2.5 py-2 whitespace-nowrap text-sm font-medium text-content">
             {shouldShowButton ? (
                 <Button
                     variant="transparent"
@@ -35,10 +35,7 @@ export function TableRowCell({ column, index, row, tblHeaders, hasDetails = fals
                         e.stopPropagation();
                         onDetailClick(row.id);
                     }}
-                    className={cn(
-                        '!p-0 hover:bg-transparent text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-0 h-auto font-medium',
-                        contentClassName,
-                    )}
+                    className={cn('!p-0 hover:bg-transparent text-brand hover:text-brand-hover p-0 h-auto font-medium', contentClassName)}
                 >
                     {column}
                 </Button>
