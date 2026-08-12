@@ -43,13 +43,13 @@ import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-hel
 
 const workflowTypeLabels: Record<SigningWorkflowType, string> = {
     [SigningWorkflowType.Timestamping]: 'Timestamping',
-    [SigningWorkflowType.ContentSigning]: 'Content Signing (coming soon)',
+    [SigningWorkflowType.DocumentSigning]: 'Document Signing (coming soon)',
     [SigningWorkflowType.RawSigning]: 'Raw Signing (coming soon)',
 };
 
 const workflowTypeTabLabels: Record<SigningWorkflowType, string> = {
     [SigningWorkflowType.Timestamping]: 'Timestamping',
-    [SigningWorkflowType.ContentSigning]: 'Content Signing',
+    [SigningWorkflowType.DocumentSigning]: 'Document Signing',
     [SigningWorkflowType.RawSigning]: 'Raw Signing',
 };
 
@@ -326,9 +326,9 @@ export default function SigningProfileForm() {
     const retentionIndefiniteValue = useWatch({ control, name: 'retentionIndefinite' });
     const persistenceModeValue = useWatch({ control, name: 'persistenceMode' });
 
-    // recordSignedDocument is only valid for CONTENT_SIGNING and TIMESTAMPING workflows.
+    // recordSignedDocument is only valid for DOCUMENT_SIGNING and TIMESTAMPING workflows.
     const recordSignedDocumentAllowed =
-        workflowTypeValue === SigningWorkflowType.ContentSigning || workflowTypeValue === SigningWorkflowType.Timestamping;
+        workflowTypeValue === SigningWorkflowType.DocumentSigning || workflowTypeValue === SigningWorkflowType.Timestamping;
 
     // For the timestamping (TSP) workflow the raw signature value and DTBS are intentionally not stored
     // separately: the RFC 3161 timestamp token is self-contained and already embeds both, so they are
@@ -505,7 +505,7 @@ export default function SigningProfileForm() {
                 recordRequestMetadata: values.recordRequestMetadata,
                 // Not stored for the timestamping workflow; force false when the toggle is hidden.
                 recordSignature: signatureAndDtbsRecordable ? values.recordSignature : false,
-                // Only valid for CONTENT_SIGNING / TIMESTAMPING; force false otherwise.
+                // Only valid for DOCUMENT_SIGNING / TIMESTAMPING; force false otherwise.
                 recordSignedDocument: recordSignedDocumentAllowed ? values.recordSignedDocument : false,
                 recordDtbs: signatureAndDtbsRecordable ? values.recordDtbs : false,
                 retentionDays: values.retentionIndefinite ? undefined : Number(values.retentionDays),
@@ -623,7 +623,7 @@ export default function SigningProfileForm() {
     const tab2Content = (
         <div className="space-y-4">
             {/* #219: signature formatting connector is required for the managed scheme when timestamping
-                (and content signing); it is hidden/omitted for raw and delegated signing — those
+                (and document signing); it is hidden/omitted for raw and delegated signing — those
                 workflows/schemes are not offered here, so the connector is always required. */}
             <Controller
                 name="signatureFormattingConnectorUuid"
@@ -1003,7 +1003,7 @@ export default function SigningProfileForm() {
                         />
                         {!recordSignedDocumentAllowed && (
                             <p className="ml-16 mt-1 text-xs text-content-subtle">
-                                Only available for the Content Signing and Timestamping workflows.
+                                Only available for the Document Signing and Timestamping workflows.
                             </p>
                         )}
                     </div>

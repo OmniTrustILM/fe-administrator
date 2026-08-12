@@ -20,7 +20,7 @@ import type { SearchRequestModel } from 'types/certificate';
 
 const workflowTypeLabels: Record<SigningWorkflowType, string> = {
     [SigningWorkflowType.Timestamping]: 'Timestamping',
-    [SigningWorkflowType.ContentSigning]: 'Content Signing',
+    [SigningWorkflowType.DocumentSigning]: 'Document Signing',
     [SigningWorkflowType.RawSigning]: 'Raw Signing',
 };
 

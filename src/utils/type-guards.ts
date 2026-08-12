@@ -1,5 +1,5 @@
 import {
-    type ContentSigningWorkflowDto,
+    type DocumentSigningWorkflowDto,
     type ManagedSigningSchemeInterface,
     ManagedSigningType,
     type RawSigningWorkflowDto,
@@ -17,8 +17,8 @@ export function isTimestampingWorkflow(wf: WorkflowInterface): wf is Timestampin
     return wf.type === SigningWorkflowType.Timestamping;
 }
 
-export function isContentSigningWorkflow(wf: WorkflowInterface): wf is ContentSigningWorkflowDto {
-    return wf.type === SigningWorkflowType.ContentSigning;
+export function isDocumentSigningWorkflow(wf: WorkflowInterface): wf is DocumentSigningWorkflowDto {
+    return wf.type === SigningWorkflowType.DocumentSigning;
 }
 
 export function isRawSigningWorkflow(wf: WorkflowInterface): wf is RawSigningWorkflowDto {

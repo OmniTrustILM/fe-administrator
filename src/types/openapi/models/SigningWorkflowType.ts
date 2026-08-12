@@ -17,7 +17,7 @@
  * @enum {string}
  */
 export enum SigningWorkflowType {
-    ContentSigning = 'content_signing',
+    DocumentSigning = 'document_signing',
     RawSigning = 'raw_signing',
     Timestamping = 'timestamping',
 }
