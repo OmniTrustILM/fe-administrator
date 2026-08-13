@@ -25,6 +25,7 @@ import {
     ProtectionMethod,
     Resource,
 } from 'types/openapi';
+import { ProtocolChallengeSource, ProtocolChallengeSourcePlatformEnum } from 'types/protocol-challenge-source';
 import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
 import { useAreDefaultValuesSame } from 'utils/common-hooks';
 import { validateAlphaNumericWithoutAccents, validateLength, validateRequired } from 'utils/validators';
@@ -43,6 +44,7 @@ interface FormValues {
     name: string;
     description: string;
     variant: string;
+    challengeSource: ProtocolChallengeSource;
     requestProtectionMethod: string;
     responseProtectionMethod: string;
     raProfileUuid: string;
@@ -77,6 +79,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const protectionMethodEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ProtectionMethod));
     const cmpCmpProfileVariantEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CmpProfileVariant));
+    const challengeSourceEnum = useSelector(enumSelectors.platformEnum(ProtocolChallengeSourcePlatformEnum));
     const multipleResourceCustomAttributes = useSelector(
         customAttributesSelectors.multipleResourceCustomAttributes([Resource.CmpProfiles, Resource.Certificates]),
     );
@@ -101,6 +104,15 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
             { value: ProtectionMethod.Signature, label: getEnumLabel(protectionMethodEnum, ProtectionMethod.Signature) },
         ],
         [protectionMethodEnum],
+    );
+
+    const challengeSourceOptions = useMemo(
+        () =>
+            Object.values(ProtocolChallengeSource).map((source) => ({
+                value: source,
+                label: getEnumLabel(challengeSourceEnum, source),
+            })),
+        [challengeSourceEnum],
     );
 
     const cmpProfileVariantOptions = useMemo(
@@ -191,6 +203,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                 name: '',
                 description: '',
                 variant: '',
+                challengeSource: ProtocolChallengeSource.ProtocolDefault,
                 requestProtectionMethod: '',
                 responseProtectionMethod: '',
                 raProfileUuid: '',
@@ -211,6 +224,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
             name: cmpProfile?.name || '',
             description: cmpProfile?.description || '',
             variant: variant || '',
+            challengeSource: cmpProfile.challengeSource ?? ProtocolChallengeSource.ProtocolDefault,
             requestProtectionMethod: requestProtectionMethod || '',
             responseProtectionMethod: responseProtectionMethod || '',
             raProfileUuid: raProfile?.uuid || '',
@@ -243,6 +257,12 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
         control,
         name: 'requestProtectionMethod',
     });
+
+    const watchedChallengeSource = useWatch({
+        control,
+        name: 'challengeSource',
+    });
+    const isRegistrationChallengeSource = watchedChallengeSource === ProtocolChallengeSource.CertificateRegistration;
 
     const watchedResponseProtectionMethod = useWatch({
         control,
@@ -295,6 +315,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                     name: cmpProfile?.name || '',
                     description: cmpProfile?.description || '',
                     variant: variant || '',
+                    challengeSource: cmpProfile.challengeSource ?? ProtocolChallengeSource.ProtocolDefault,
                     requestProtectionMethod: requestProtectionMethod || '',
                     responseProtectionMethod: responseProtectionMethod || '',
                     raProfileUuid: raProfile?.uuid || '',
@@ -337,6 +358,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                         name: '',
                         description: '',
                         variant: '',
+                        challengeSource: ProtocolChallengeSource.ProtocolDefault,
                         requestProtectionMethod: '',
                         responseProtectionMethod: '',
                         raProfileUuid: '',
@@ -381,11 +403,13 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                     name: values.name,
                     description: normalizeOptionalValue(values.description),
                     variant: values.variant as CmpProfileEditRequestDtoVariantEnum,
+                    challengeSource: values.challengeSource,
                     requestProtectionMethod: values.requestProtectionMethod as ProtectionMethod,
                     responseProtectionMethod: values.responseProtectionMethod as ProtectionMethod,
                     raProfileUuid: normalizeOptionalValue(values.raProfileUuid),
                     sharedSecret:
-                        values.requestProtectionMethod === ProtectionMethod.SharedSecret
+                        values.requestProtectionMethod === ProtectionMethod.SharedSecret &&
+                        values.challengeSource !== ProtocolChallengeSource.CertificateRegistration
                             ? normalizeOptionalValue(values.sharedSecret)
                             : undefined,
                     signingCertificateUuid:
@@ -412,11 +436,13 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                     name: values.name,
                     description: normalizeOptionalValue(values.description),
                     variant: values.variant as CmpProfileRequestDtoVariantEnum,
+                    challengeSource: values.challengeSource,
                     requestProtectionMethod: values.requestProtectionMethod as ProtectionMethod,
                     responseProtectionMethod: values.responseProtectionMethod as ProtectionMethod,
                     raProfileUuid: normalizeOptionalValue(values.raProfileUuid),
                     sharedSecret:
-                        values.requestProtectionMethod === ProtectionMethod.SharedSecret
+                        values.requestProtectionMethod === ProtectionMethod.SharedSecret &&
+                        values.challengeSource !== ProtocolChallengeSource.CertificateRegistration
                             ? normalizeOptionalValue(values.sharedSecret)
                             : undefined,
                     signingCertificateUuid:
@@ -602,6 +628,26 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                     )}
                                 />
 
+                                <Controller
+                                    name="challengeSource"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Select
+                                            id="challengeSource"
+                                            label="Challenge Source"
+                                            value={field.value}
+                                            onChange={(value) => {
+                                                field.onChange(value);
+                                                if (value === ProtocolChallengeSource.CertificateRegistration) {
+                                                    setValue('sharedSecret', '');
+                                                }
+                                            }}
+                                            options={challengeSourceOptions}
+                                            placement="bottom"
+                                        />
+                                    )}
+                                />
+
                                 <Widget title="CMP Variant Configuration">
                                     <div>
                                         <label
@@ -679,25 +725,26 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                                 />
                                             )}
                                         />
-                                        {watchedRequestProtectionMethod === ProtectionMethod.SharedSecret && (
-                                            <Controller
-                                                name="sharedSecret"
-                                                control={control}
-                                                rules={buildValidationRules(editMode ? [] : [validateRequired()])}
-                                                render={({ field, fieldState }) => (
-                                                    <TextInput
-                                                        {...field}
-                                                        id="sharedSecret"
-                                                        type="password"
-                                                        label="Shared Secret"
-                                                        required={!editMode}
-                                                        placeholder={editMode ? 'Leave blank to keep current' : 'Shared Secret'}
-                                                        invalid={fieldState.error && fieldState.isTouched}
-                                                        error={getFieldErrorMessage(fieldState)}
-                                                    />
-                                                )}
-                                            />
-                                        )}
+                                        {watchedRequestProtectionMethod === ProtectionMethod.SharedSecret &&
+                                            !isRegistrationChallengeSource && (
+                                                <Controller
+                                                    name="sharedSecret"
+                                                    control={control}
+                                                    rules={buildValidationRules(editMode ? [] : [validateRequired()])}
+                                                    render={({ field, fieldState }) => (
+                                                        <TextInput
+                                                            {...field}
+                                                            id="sharedSecret"
+                                                            type="password"
+                                                            label="Shared Secret"
+                                                            required={!editMode}
+                                                            placeholder={editMode ? 'Leave blank to keep current' : 'Shared Secret'}
+                                                            invalid={fieldState.error && fieldState.isTouched}
+                                                            error={getFieldErrorMessage(fieldState)}
+                                                        />
+                                                    )}
+                                                />
+                                            )}
                                     </div>
                                 </Widget>
 
