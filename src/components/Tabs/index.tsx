@@ -31,11 +31,11 @@ function Tabs({ tabs, selectedTab, onTabChange }: Readonly<Props>) {
                                 tab.onClick?.();
                             }}
                             className={cn(
-                                'data-[state=active]:bg-gray-200 data-[state=active]:text-gray-800 data-[state=active]:hover:text-gray-800',
-                                'dark:data-[state=active]:bg-neutral-700 dark:data-[state=active]:text-white',
-                                'py-3 px-4 inline-flex items-center gap-x-2 bg-transparent text-sm font-medium text-center text-gray-500 rounded-lg',
-                                'focus:outline-hidden disabled:opacity-50 disabled:pointer-events-none',
-                                'dark:text-neutral-500 dark:hover:text-neutral-400 dark:focus:text-neutral-400 whitespace-nowrap',
+                                'data-[state=active]:bg-surface-active data-[state=active]:text-content data-[state=active]:hover:text-content',
+                                'data-[state=inactive]:hover:bg-surface-hover data-[state=inactive]:hover:text-content',
+                                'data-[state=inactive]:focus:bg-surface-hover data-[state=inactive]:focus:text-content',
+                                'py-3 px-4 inline-flex items-center gap-x-2 bg-transparent text-sm font-medium text-center text-content-subtle rounded-lg',
+                                'focus:outline-hidden disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap',
                             )}
                         >
                             {tab.title}

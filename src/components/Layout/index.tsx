@@ -22,7 +22,7 @@ function Layout() {
             <Header sidebarToggle={toggleSidebar} />
             <div className="flex">
                 <Sidebar allowedResources={profile?.permissions.allowedListings} />
-                <main className="flex flex-col bg-[var(--main-background-color)] w-[calc(100%-var(--sidebar-width))] p-4 md:p-8 !pb-0 dark:bg-gray-900">
+                <main className="flex flex-col bg-surface w-[calc(100%-var(--sidebar-width))] p-4 md:p-8 !pb-0">
                     <ErrorBoundary>
                         <Outlet />
                     </ErrorBoundary>

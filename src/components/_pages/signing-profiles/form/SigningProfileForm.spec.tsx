@@ -2,6 +2,13 @@ import { test, expect } from 'playwright/ct-test';
 import { SigningProfileFormTestWrapper } from './SigningProfileFormTestWrapper';
 import { ADDED_POLICY_ID, EXISTING_POLICY_ID } from './signingProfileFormFixtures';
 
+// Switch renders its checkbox as `sr-only` underneath the styled track, so the input itself is
+// never a valid hit target. Clicking the associated <label> drives it the way a user does.
+async function toggleSwitch(page: import('@playwright/test').Page, id: string, expected: boolean) {
+    await page.locator(`label[for="${id}"]`).first().click();
+    await expect(page.locator(`#${id}`)).toBeChecked({ checked: expected });
+}
+
 // Regression for issue #1820: the Create button must not stay disabled when Qualified
 // Timestamp is toggled on (making Time Quality Configuration required) and then back off
 // (making it optional again). Previously the stale "required" validation error on the
@@ -46,7 +53,7 @@ test.describe('SigningProfileForm - Qualified Timestamp / Time Quality Configura
         await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
         // Qualified Timestamp on makes Time Quality Configuration required; with it empty the
         // form must be invalid.
-        await page.locator('#qualifiedTimestamp').check({ force: true });
+        await toggleSwitch(page, 'qualifiedTimestamp', true);
         await expect(page.getByTestId('progress-button')).toBeDisabled();
     });
 
@@ -58,11 +65,11 @@ test.describe('SigningProfileForm - Qualified Timestamp / Time Quality Configura
         await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
 
         // Turn it on (Time Quality Configuration becomes required, but is empty) → invalid.
-        await page.locator('#qualifiedTimestamp').check({ force: true });
+        await toggleSwitch(page, 'qualifiedTimestamp', true);
         await expect(page.getByTestId('progress-button')).toBeDisabled();
 
         // Turn it back off → Time Quality Configuration is optional again → valid.
-        await page.locator('#qualifiedTimestamp').uncheck({ force: true });
+        await toggleSwitch(page, 'qualifiedTimestamp', false);
         await expect(page.getByTestId('progress-button')).toBeEnabled();
     });
 
@@ -75,15 +82,15 @@ test.describe('SigningProfileForm - Qualified Timestamp / Time Quality Configura
         await expect(page.getByTestId('progress-button')).toBeEnabled();
 
         await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
-        await page.locator('#qualifiedTimestamp').check({ force: true });
+        await toggleSwitch(page, 'qualifiedTimestamp', true);
         await expect(page.getByTestId('progress-button')).toBeDisabled();
 
         // Edit another field while Qualified Timestamp is on (and the form is invalid).
-        await page.locator('#validateTokenSignature').check({ force: true });
+        await toggleSwitch(page, 'validateTokenSignature', true);
         await expect(page.getByTestId('progress-button')).toBeDisabled();
 
         // Turning Qualified Timestamp off makes Time Quality Configuration optional again.
-        await page.locator('#qualifiedTimestamp').uncheck({ force: true });
+        await toggleSwitch(page, 'qualifiedTimestamp', false);
         await expect(page.getByTestId('progress-button')).toBeEnabled();
     });
 });
@@ -207,15 +214,15 @@ test.describe('SigningProfileForm - required-field indicators (#1820)', () => {
         await expect(page.getByTestId('label-timeQualityConfigurationUuid')).not.toContainText('*');
 
         // Qualified Timestamp on → required → asterisk shown.
-        await page.locator('#qualifiedTimestamp').check({ force: true });
+        await toggleSwitch(page, 'qualifiedTimestamp', true);
         await expect(page.getByTestId('label-timeQualityConfigurationUuid')).toContainText('*');
     });
 
     test('Retention (days) label shows the required asterisk when the field is shown', async ({ mount, page }) => {
         await mount(<SigningProfileFormTestWrapper />);
         await page.getByRole('tab', { name: TAB_RECORD_POLICY }).click();
-        await page.locator('#recordingEnabled').check({ force: true });
-        await page.locator('#retentionIndefinite').uncheck({ force: true });
+        await toggleSwitch(page, 'recordingEnabled', true);
+        await toggleSwitch(page, 'retentionIndefinite', false);
         await expect(page.getByTestId('label-retentionDays')).toContainText('*');
     });
 });

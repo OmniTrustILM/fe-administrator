@@ -6,7 +6,7 @@ import Widget from './index';
 import { LockWidgetNameEnum, LockTypeEnum, type WidgetLockModel } from 'types/user-interface';
 
 export type WidgetWithStoreProps = {
-    preloadedState?: Parameters<typeof createMockStore>[0];
+    preloadedState?: NonNullable<Parameters<typeof createMockStore>[0]>;
     title?: string;
     titleLink?: string;
     dataTestId?: string;

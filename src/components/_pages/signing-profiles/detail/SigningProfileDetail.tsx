@@ -40,7 +40,7 @@ import { createWidgetDetailHeaders } from 'utils/widget';
 
 const workflowTypeLabels: Record<SigningWorkflowType, string> = {
     [SigningWorkflowType.Timestamping]: 'Timestamping',
-    [SigningWorkflowType.ContentSigning]: 'Content Signing',
+    [SigningWorkflowType.DocumentSigning]: 'Document Signing',
     [SigningWorkflowType.RawSigning]: 'Raw Signing',
 };
 
@@ -210,7 +210,7 @@ export default function SigningProfileDetail() {
                           columns: [
                               'Signing Workflow Type',
                               <span key="value" className="inline-flex items-center gap-1">
-                                  <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
+                                  <span className="inline-flex items-center rounded-full bg-info-surface px-2.5 py-0.5 text-xs font-medium text-info">
                                       {workflowTypeLabels[(signingProfile.workflow as TimestampingWorkflowDto)?.type] ??
                                           (signingProfile.workflow as TimestampingWorkflowDto)?.type ??
                                           '—'}
@@ -230,7 +230,7 @@ export default function SigningProfileDetail() {
                                   <div key="value" className="flex flex-wrap gap-1">
                                       {signingProfile.enabledProtocols.map((p) => (
                                           <span key={p} className="inline-flex items-center gap-1">
-                                              <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                                              <span className="inline-flex items-center rounded-full bg-success-surface px-2.5 py-0.5 text-xs font-medium text-success">
                                                   {protocolLabels[p] ?? p}
                                               </span>
                                               <EnumValueDescription platformEnum={PlatformEnum.SigningProtocol} value={p} />
@@ -238,7 +238,7 @@ export default function SigningProfileDetail() {
                                       ))}
                                   </div>
                               ) : (
-                                  <span key="value" className="text-gray-400 text-sm">
+                                  <span key="value" className="text-content-subtle text-sm">
                                       None
                                   </span>
                               ),
@@ -266,7 +266,7 @@ export default function SigningProfileDetail() {
                             {timestampingWorkflow.signatureFormattingConnector.name}
                         </Link>
                     ) : (
-                        <span key="value" className="text-gray-400 text-sm">
+                        <span key="value" className="text-content-subtle text-sm">
                             Not configured
                         </span>
                     ),
@@ -277,7 +277,7 @@ export default function SigningProfileDetail() {
                 columns: [
                     'Signature Formatting Connector UUID',
                     timestampingWorkflow.signatureFormattingConnector?.uuid ?? (
-                        <span key="value" className="text-gray-400 text-sm">
+                        <span key="value" className="text-content-subtle text-sm">
                             —
                         </span>
                     ),
@@ -306,7 +306,7 @@ export default function SigningProfileDetail() {
                             {timestampingWorkflow.timeQualityConfiguration.name ?? timestampingWorkflow.timeQualityConfiguration.uuid}
                         </Link>
                     ) : (
-                        <span key="value" className="text-gray-400 text-sm">
+                        <span key="value" className="text-content-subtle text-sm">
                             Not configured
                         </span>
                     ),
@@ -317,7 +317,7 @@ export default function SigningProfileDetail() {
                 columns: [
                     'Default TSA Policy ID',
                     timestampingWorkflow.defaultPolicyId || (
-                        <span key="value" className="text-gray-400 text-sm">
+                        <span key="value" className="text-content-subtle text-sm">
                             —
                         </span>
                     ),
@@ -332,14 +332,14 @@ export default function SigningProfileDetail() {
                             {timestampingWorkflow.allowedPolicyIds.map((p) => (
                                 <span
                                     key={p}
-                                    className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+                                    className="inline-flex items-center rounded-full bg-info-surface px-2.5 py-0.5 text-xs font-medium text-info"
                                 >
                                     {p}
                                 </span>
                             ))}
                         </div>
                     ) : (
-                        <span key="value" className="text-gray-400 text-sm">
+                        <span key="value" className="text-content-subtle text-sm">
                             All policy IDs accepted
                         </span>
                     ),
@@ -354,14 +354,14 @@ export default function SigningProfileDetail() {
                             {timestampingWorkflow.allowedDigestAlgorithms.map((alg: DigestAlgorithm) => (
                                 <span
                                     key={alg}
-                                    className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700"
+                                    className="inline-flex items-center rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-medium text-content-muted"
                                 >
                                     {alg}
                                 </span>
                             ))}
                         </div>
                     ) : (
-                        <span key="value" className="text-gray-400 text-sm">
+                        <span key="value" className="text-content-subtle text-sm">
                             All digest algorithms accepted
                         </span>
                     ),
@@ -381,7 +381,7 @@ export default function SigningProfileDetail() {
                 columns: [
                     'Signing Scheme',
                     <span key="value" className="inline-flex items-center gap-1">
-                        <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                        <span className="inline-flex items-center rounded-full bg-info-surface px-2.5 py-0.5 text-xs font-medium text-info">
                             {signingSchemeLabels[sc?.signingScheme] ?? sc?.signingScheme ?? '—'}
                         </span>
                         <EnumValueDescription platformEnum={PlatformEnum.SigningScheme} value={sc?.signingScheme} />
@@ -412,10 +412,10 @@ export default function SigningProfileDetail() {
                     cert ? (
                         <Link key="value" to={`/${Resource.Certificates.toLowerCase()}/detail/${cert.uuid}`}>
                             {cert.commonName || cert.uuid}
-                            {cert.serialNumber ? <span className="ml-2 text-gray-500 text-xs">SN: {cert.serialNumber}</span> : null}
+                            {cert.serialNumber ? <span className="ml-2 text-content-subtle text-xs">SN: {cert.serialNumber}</span> : null}
                         </Link>
                     ) : (
-                        <span key="value" className="text-gray-400 text-sm">
+                        <span key="value" className="text-content-subtle text-sm">
                             —
                         </span>
                     ),
@@ -482,13 +482,13 @@ export default function SigningProfileDetail() {
                 columns: ['Data-to-be-signed', <StatusBadge key="value" enabled={rp.recordDtbs ?? false} />],
             });
         }
+        const retentionDaySuffix = rp.retentionDays === 1 ? '' : 's';
+        const retentionLabel = rp.retentionDays == null ? 'Indefinite' : `${rp.retentionDays} day${retentionDaySuffix}`;
+
         rows.push(
             {
                 id: 'retentionDays',
-                columns: [
-                    'Retention',
-                    rp.retentionDays != null ? `${rp.retentionDays} day${rp.retentionDays === 1 ? '' : 's'}` : 'Indefinite',
-                ],
+                columns: ['Retention', retentionLabel],
             },
             {
                 id: 'persistenceMode',
@@ -592,8 +592,10 @@ export default function SigningProfileDetail() {
 
             <Widget widgetLockName={LockWidgetNameEnum.SigningProfileDetails} busy={isBusy} noBorder>
                 <TabLayout
+                    tabUrlParam="tab"
                     tabs={[
                         {
+                            tabKey: 'details',
                             title: 'Details',
                             content: (
                                 <Container className="md:flex-row">
@@ -621,6 +623,9 @@ export default function SigningProfileDetail() {
                             ),
                         },
                         {
+                            // Stable key: the display title changes once the profile loads, which would
+                            // otherwise change the URL slug and break links captured before load.
+                            tabKey: 'workflow',
                             title: workflowTabTitle,
                             content: (
                                 <>
@@ -628,7 +633,7 @@ export default function SigningProfileDetail() {
                                         {workflowData.length > 0 ? (
                                             <CustomTable headers={detailHeaders} data={workflowData} />
                                         ) : (
-                                            <p className="text-gray-400 text-sm">No workflow configuration available.</p>
+                                            <p className="text-content-subtle text-sm">No workflow configuration available.</p>
                                         )}
                                     </Widget>
                                     {timestampingWorkflow?.signatureFormattingConnector &&
@@ -642,6 +647,7 @@ export default function SigningProfileDetail() {
                             ),
                         },
                         {
+                            tabKey: 'signing-scheme',
                             title: 'Signing Scheme',
                             content: (
                                 <Widget title="Signing Scheme Configuration" titleSize="large">
@@ -650,6 +656,7 @@ export default function SigningProfileDetail() {
                             ),
                         },
                         {
+                            tabKey: 'record-policy',
                             title: 'Record Policy',
                             content: (
                                 <Widget title="Signing Record Policy" titleSize="large">
@@ -657,18 +664,19 @@ export default function SigningProfileDetail() {
                                         <>
                                             <CustomTable headers={detailHeaders} data={recordPolicyData} />
                                             {!(signingProfile?.recordPolicy?.recordingEnabled ?? false) && (
-                                                <p className="mt-2 text-sm text-gray-500">
+                                                <p className="mt-2 text-sm text-content-subtle">
                                                     No Signing Records are created for this profile.
                                                 </p>
                                             )}
                                         </>
                                     ) : (
-                                        <p className="text-gray-400 text-sm">No record policy configured.</p>
+                                        <p className="text-content-subtle text-sm">No record policy configured.</p>
                                     )}
                                 </Widget>
                             ),
                         },
                         {
+                            tabKey: 'protocols',
                             title: 'Protocols',
                             content: (
                                 <Widget

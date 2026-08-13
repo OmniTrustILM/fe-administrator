@@ -83,6 +83,13 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
     let root: Root;
     let dispatchFn: ReturnType<typeof vi.fn>;
 
+    const setInput = (id: string, val: string) => {
+        const el = container.querySelector<HTMLInputElement>(`[data-testid="input-${id}"]`);
+        const setter = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value')?.set;
+        setter?.call(el, val);
+        el?.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+
     beforeEach(() => {
         container = document.createElement('div');
         document.body.appendChild(container);
@@ -133,13 +140,6 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
         selectValueById = { categorySelect: OidCategory.CertificateExtension, valueEncodingSelect: ExtensionValueEncoding.Der };
         await render();
 
-        const setInput = (id: string, val: string) => {
-            const el = container.querySelector<HTMLInputElement>(`[data-testid="input-${id}"]`);
-            const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-            setter?.call(el, val);
-            el?.dispatchEvent(new Event('input', { bubbles: true }));
-        };
-
         await act(async () => setInput('oid', '2.5.29.37'));
         await act(async () => setInput('displayName', 'Extended Key Usage'));
         await act(async () => {
@@ -171,13 +171,6 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
     it('enables submit after switching category from RDN to Certificate Extension', async () => {
         selectValueById = { categorySelect: OidCategory.RdnAttributeType };
         await render();
-
-        const setInput = (id: string, val: string) => {
-            const el = container.querySelector<HTMLInputElement>(`[data-testid="input-${id}"]`);
-            const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-            setter?.call(el, val);
-            el?.dispatchEvent(new Event('input', { bubbles: true }));
-        };
 
         await act(async () => setInput('oid', '2.5.29.37'));
         await act(async () => setInput('displayName', 'Extended Key Usage'));
@@ -222,6 +215,6 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
 
         const encoding = container.querySelector<HTMLButtonElement>('[data-testid="select-valueEncodingSelect"]');
         expect(encoding).not.toBeNull();
-        expect(encoding?.getAttribute('data-value')).toBe(ExtensionValueEncoding.Der);
+        expect(encoding?.dataset.value).toBe(ExtensionValueEncoding.Der);
     });
 });

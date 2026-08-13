@@ -18,16 +18,18 @@ export const validateRequired = () => (value: unknown) => {
     return isValid ? undefined : 'Required Field';
 };
 
-const getValueFromObject = (value: unknown): unknown => {
+type ValidatableValue = string | number | boolean | null | undefined;
+
+const getValueFromObject = (value: unknown): ValidatableValue => {
     if (typeof value === 'object' && value && Object.hasOwn(value, 'label') && Object.hasOwn(value, 'value')) {
-        return (value as { value: { data: unknown } }).value.data;
+        return (value as { value: { data: ValidatableValue } }).value.data;
     }
     // Attribute content objects from list (select) fields are stored as {data, reference}.
     // Extract the primitive data value so pattern validators can test it correctly.
     if (typeof value === 'object' && value && Object.hasOwn(value, 'data')) {
-        return (value as { data: unknown }).data;
+        return (value as { data: ValidatableValue }).data;
     }
-    return value;
+    return value as ValidatableValue;
 };
 
 export const validatePattern = (pattern: RegExp, message?: string) => (value: unknown) => {

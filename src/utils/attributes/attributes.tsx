@@ -226,7 +226,7 @@ export const getAttributeFormValue = (
     if (contentType === AttributeContentType.Datetime) return getDatetimeFormValue(item);
     if (contentType === AttributeContentType.Date) return getDateFormValue(item);
     if (contentType === AttributeContentType.Codeblock) {
-        const codeItem = (item ?? {}) as { code?: unknown; language?: ProgrammingLanguageEnum };
+        const codeItem = (item ?? {}) as { code?: string | number | boolean; language?: ProgrammingLanguageEnum };
         const language = getCodeBlockLanguage(codeItem.language, descriptorContent);
         return { data: { code: utf8ToBase64(String(codeItem.code ?? '')), language } } as CodeBlockAttributeContentDtoV2;
     }

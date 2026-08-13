@@ -44,6 +44,9 @@ import type { FieldMappingModel, MappedFieldModel } from 'types/requestAttribute
  *    applies once the feature is re-enabled.
  */
 
+/** Primitive an authored attribute value can take, mirroring the content types this editor offers. */
+export type AuthoredAttributeValue = string | number | boolean;
+
 export interface AuthoredAttributeFormValues {
     uuid?: string;
     name: string;
@@ -74,9 +77,9 @@ export interface AuthoredAttributeFormValues {
      * Persisted in the attribute's `content` array (ValueSource itself carries no values). Typed by
      * `contentType`, mirroring how custom attributes store predefined content.
      */
-    staticValues: (string | number | boolean)[];
+    staticValues: AuthoredAttributeValue[];
     /** Free-input default (valueSourceType === NONE) — pre-fills the field. Persisted as a single `content` entry. */
-    defaultValue?: string | number | boolean;
+    defaultValue?: AuthoredAttributeValue;
     /** Reserved for the COLLECTION source (stubbed for now). */
     collectionRef?: string;
     /** Cascading dependency params, preserved on round-trip (no authoring UI yet). */
@@ -308,7 +311,7 @@ function buildValueSource(form: AuthoredAttributeFormValues): ValueSource | unde
  * string), a boolean for boolean, and a trimmed string otherwise — so the persisted `content`
  * matches the blank/uniqueness rules that compare trimmed.
  */
-function normalizeStaticContentValue(value: string | number | boolean, contentType: AttributeContentType): string | number | boolean {
+function normalizeStaticContentValue(value: AuthoredAttributeValue, contentType: AttributeContentType): AuthoredAttributeValue {
     switch (contentType) {
         case AttributeContentType.Integer: {
             const n = typeof value === 'number' ? value : Number.parseInt(String(value).trim(), 10);
@@ -398,7 +401,7 @@ export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): Da
     } else if (form.valueSourceType === ValueSourceType.None && hasFreeInputDefault(form)) {
         dto.content = [
             {
-                data: normalizeStaticContentValue(form.defaultValue as string | number | boolean, form.contentType),
+                data: normalizeStaticContentValue(form.defaultValue as AuthoredAttributeValue, form.contentType),
                 contentType: form.contentType,
             },
         ] as DataAttributeV3['content'];
@@ -413,9 +416,9 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
     const view = dto as AuthoredAttributeView;
     const mapping = view.fieldMapping as unknown as FieldMappingModel | undefined;
     const firstField = mapping?.fields?.[0];
-    const rdn = firstField && firstField.fieldType === FieldType.Rdn ? firstField : undefined;
-    const san = firstField && firstField.fieldType === FieldType.San ? firstField : undefined;
-    const ext = firstField && firstField.fieldType === FieldType.Extension ? firstField : undefined;
+    const rdn = firstField?.fieldType === FieldType.Rdn ? firstField : undefined;
+    const san = firstField?.fieldType === FieldType.San ? firstField : undefined;
+    const ext = firstField?.fieldType === FieldType.Extension ? firstField : undefined;
     const valueSourceKind = view.valueSource?.kind ?? ValueSourceType.None;
     const constraints = view.constraints ?? [];
     const regex = constraints.find((c) => c.type === AttributeConstraintType.RegExp);
@@ -442,11 +445,11 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
         // for an actual static list — otherwise a free-input default leaks into the static-list editor.
         staticValues:
             valueSourceKind === ValueSourceType.StaticList
-                ? (view.content ?? []).map((item) => (item as { data: string | number | boolean }).data)
+                ? (view.content ?? []).map((item) => (item as { data: AuthoredAttributeValue }).data)
                 : [],
         defaultValue:
             valueSourceKind === ValueSourceType.None
-                ? (view.content?.[0] as { data?: string | number | boolean } | undefined)?.data
+                ? (view.content?.[0] as { data?: AuthoredAttributeValue } | undefined)?.data
                 : undefined,
         collectionRef: '',
         valueSourceParams: view.valueSource?.params,
@@ -458,12 +461,12 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
 }
 
 /** Normalize a static value for equality comparison — strings compared trimmed, others by value. */
-function normalizeStaticValue(v: string | number | boolean): string {
+function normalizeStaticValue(v: AuthoredAttributeValue): string {
     return typeof v === 'string' ? v.trim() : String(v);
 }
 
 /** True when the same value appears more than once (strings compared trimmed). */
-export function hasDuplicateStaticValues(values: (string | number | boolean)[]): boolean {
+export function hasDuplicateStaticValues(values: AuthoredAttributeValue[]): boolean {
     const seen = new Set<string>();
     for (const v of values) {
         const key = normalizeStaticValue(v);
@@ -478,7 +481,7 @@ export function hasDuplicateStaticValues(values: (string | number | boolean)[]):
 const BOOLEAN_LITERALS = new Set(['true', 'false']);
 
 /** Blank counts as "no value" (left to the required-ness rules); otherwise guards `normalizeStaticContentValue`, which turns `"abc"` into `0`. */
-export function isValueValidForContentType(value: string | number | boolean, contentType: AttributeContentType): boolean {
+export function isValueValidForContentType(value: AuthoredAttributeValue, contentType: AttributeContentType): boolean {
     if (typeof value === 'string' && value.trim() === '') {
         return true;
     }

@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
@@ -19,7 +19,16 @@ export type AttributeEditorTestWrapperProps = {
     kind?: string;
     withRemoveAction?: boolean;
     preloadedState?: Record<string, unknown>;
+    renderFormValues?: boolean;
+    /** Renders a button that hands AttributeEditor the same descriptors under a new identity, the way a
+     *  parent re-render or a resolved group callback does. */
+    withDescriptorRefresh?: boolean;
 };
+
+function FormValuesProbe() {
+    const values = ReactHookForm.useWatch();
+    return <pre data-testid="form-values">{JSON.stringify(values)}</pre>;
+}
 
 /** Build form defaultValues so Data/Custom fields exist on first paint (before AttributeEditor effects run) */
 function buildAttributeDefaultValues(
@@ -38,19 +47,31 @@ function buildAttributeDefaultValues(
     return { [key]: inner };
 }
 
+// Stable defaults: a fresh array here would change prop identity on every wrapper render, which
+// AttributeEditor's initial effect reads as "descriptors changed" and resets user-shown attributes.
+const EMPTY_ATTRIBUTES: AttributeResponseModel[] = [];
+const EMPTY_GROUP_CALLBACK_ATTRIBUTES: AttributeDescriptorModel[] = [];
+
 export function AttributeEditorTestWrapper({
     id,
     attributeDescriptors,
-    attributes = [],
-    groupAttributesCallbackAttributes = [],
+    attributes = EMPTY_ATTRIBUTES,
+    groupAttributesCallbackAttributes = EMPTY_GROUP_CALLBACK_ATTRIBUTES,
     setGroupAttributesCallbackAttributes,
     connectorUuid,
     functionGroupCode,
     kind,
     withRemoveAction = true,
     preloadedState,
+    renderFormValues = false,
+    withDescriptorRefresh = false,
 }: Readonly<AttributeEditorTestWrapperProps>) {
     const store = useMemo(() => createMockStore(preloadedState), [preloadedState]);
+    const [refreshCount, setRefreshCount] = useState(0);
+    const currentDescriptors = useMemo(
+        () => (refreshCount === 0 ? attributeDescriptors : [...attributeDescriptors]),
+        [attributeDescriptors, refreshCount],
+    );
     const defaultValues = useMemo(
         () => ({ ...buildAttributeDefaultValues(id, attributeDescriptors, attributes) }),
         [id, attributeDescriptors, attributes],
@@ -64,7 +85,7 @@ export function AttributeEditorTestWrapper({
                 <ReactHookForm.FormProvider {...methods}>
                     <AttributeEditor
                         id={id}
-                        attributeDescriptors={attributeDescriptors}
+                        attributeDescriptors={currentDescriptors}
                         attributes={attributes}
                         groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                         setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes ?? (() => {})}
@@ -73,6 +94,12 @@ export function AttributeEditorTestWrapper({
                         kind={kind}
                         withRemoveAction={withRemoveAction}
                     />
+                    {withDescriptorRefresh && (
+                        <button type="button" data-testid="refresh-descriptors" onClick={() => setRefreshCount((count) => count + 1)}>
+                            Refresh descriptors
+                        </button>
+                    )}
+                    {renderFormValues && <FormValuesProbe />}
                 </ReactHookForm.FormProvider>
             </MemoryRouter>
         </Provider>

@@ -34,6 +34,7 @@ import {
     mapAttributeContentToOptionValue,
 } from 'utils/attributes/attributes';
 import { deepEqual } from 'utils/deep-equal';
+import { contentItemLabel } from 'utils/displayValue';
 import Button from 'components/Button';
 import { Trash } from 'lucide-react';
 
@@ -64,31 +65,6 @@ const emptyGroupAttributesCallbackAttributes: AttributeDescriptorModel[] = [];
 
 /** Form changes are collected for this long before the change-driven callback pass runs. */
 export const CALLBACK_DEBOUNCE_MS = 600;
-
-/**
- * Select-option label for a content item: reference first, then a RESOURCE-style object's name
- * (never the object's default stringification), then the primitive value. Null-safe.
- */
-const contentItemLabel = (value: { reference?: string; data?: unknown } | null | undefined): string => {
-    if (value?.reference) return value.reference;
-    const data = value?.data;
-    if (data == null) return '';
-    if (typeof data === 'object') {
-        const name = (data as { name?: unknown }).name;
-        return typeof name === 'string' ? name : String(data);
-    }
-    return String(data);
-};
-
-/**
- * A descriptor carries a configured default value when it holds content and is neither a list nor a
- * RESOURCE — for those `content` is the set of selectable options, not a value to pre-fill.
- */
-const hasDefaultValue = (descriptor: CustomAttributeModel): boolean =>
-    !descriptor.properties.list &&
-    descriptor.contentType !== AttributeContentType.Resource &&
-    Array.isArray(descriptor.content) &&
-    descriptor.content.length > 0;
 
 export type Props = {
     id: string;
@@ -398,15 +374,16 @@ function AttributeEditorInner({
     /* c8 ignore stop */
 
     /*
-     * Get non-required custom attributes, without a value assigned and without a default value.
-     * An attribute with a default value is rendered right away so its default is visible and editable.
+     * Get non-required custom attributes, without a value assigned. They stay behind the
+     * "Show custom attribute" selector even when the descriptor carries a default value — the user
+     * opts in per attribute, and only then the default is pre-filled (see Issue: #1906).
      */
     const initiallyHiddenCustomAttributeDescriptors = useMemo(
         () =>
             attributeDescriptors.filter((descriptor) => {
                 if (isCustomAttributeModel(descriptor)) {
                     const attribute = attributes.find((el) => el.name === descriptor.name);
-                    return !descriptor.properties.required && !attribute?.content && !hasDefaultValue(descriptor);
+                    return !descriptor.properties.required && !attribute?.content;
                 }
                 return false;
             }),
@@ -782,13 +759,15 @@ function AttributeEditorInner({
         setPrevGroupDescriptors(groupAttributesCallbackAttributes);
         setPrevDescriptors(attributeDescriptors);
         setPrevAttributes(attributes);
-        setShownCustomAttributes(
-            attributeDescriptors.filter(
+        setShownCustomAttributes((prev) => {
+            const next = attributeDescriptors.filter(
                 (descriptor) =>
                     isCustomAttributeModel(descriptor) &&
-                    (attributes.some((attr) => attr.uuid === descriptor.uuid) || hasDefaultValue(descriptor)),
-            ),
-        );
+                    (attributes.some((attr) => attr.uuid === descriptor.uuid) || prev.some((el) => el.uuid === descriptor.uuid)),
+            );
+            const unchanged = next.length === prev.length && next.every((descriptor, index) => descriptor.uuid === prev[index].uuid);
+            return unchanged ? prev : next;
+        });
 
         descriptorsToLoad.forEach((descriptor) => {
             if (isDataAttributeModel(descriptor) || isGroupAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) {
@@ -796,6 +775,10 @@ function AttributeEditorInner({
 
                 // Skip if this attribute was deleted
                 if (deletedAttributes.includes(descriptor.name)) {
+                    return;
+                }
+
+                if (initiallyHiddenCustomAttributeDescriptors.some((el) => el.uuid === descriptor.uuid)) {
                     return;
                 }
 
@@ -840,6 +823,7 @@ function AttributeEditorInner({
         getAttributeStaticOptions,
         deletedAttributes,
         reAddedAttributes,
+        initiallyHiddenCustomAttributeDescriptors,
     ]);
 
     /**

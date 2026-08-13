@@ -1,6 +1,8 @@
 import cronstrue from 'cronstrue';
 import { AttributeContentType, FilterConditionOperator, FilterFieldType, type SearchFieldDataDto } from 'types/openapi';
 
+export type DateInput = number | string | Date;
+
 function leading0(s: string, count: number) {
     while (s.length < count) {
         s = '0' + s;
@@ -20,7 +22,7 @@ export function durationFormatter(startDate: string | null | undefined, endDate:
     }
 }
 
-export function timeFormatter(date: number | string | Date): string {
+export function timeFormatter(date: DateInput): string {
     try {
         const dateObj = new Date(date);
 
@@ -36,9 +38,9 @@ export function timeFormatter(date: number | string | Date): string {
     }
 }
 
-export function dateFormatter(date: number | string | Date | null | undefined): string {
+export function dateFormatter(date: DateInput | null | undefined): string {
     try {
-        const dateObj = new Date(date as number | string | Date);
+        const dateObj = new Date(date as DateInput);
 
         const year = dateObj.getFullYear().toString();
         const month = leading0((dateObj.getMonth() + 1).toString(), 2);
@@ -63,7 +65,7 @@ export const getStrongFromCronExpression = (cronExpression: string | undefined) 
     return undefined;
 };
 
-export const formatTimeAgo = (input: number | string | Date) => {
+export const formatTimeAgo = (input: DateInput) => {
     const date = input instanceof Date ? input : new Date(input);
     const formatter = new Intl.RelativeTimeFormat('en');
     const ranges = {

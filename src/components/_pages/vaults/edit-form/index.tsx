@@ -122,7 +122,7 @@ export default function VaultEditForm({ vault, onCancel, onSuccess }: VaultEditF
                             setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                         />
                     ) : (
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-content-subtle">
                             {connectorUuid && isFetchingVaultInstanceAttributes
                                 ? 'Loading attributes...'
                                 : 'No connector attributes configured for vaults.'}

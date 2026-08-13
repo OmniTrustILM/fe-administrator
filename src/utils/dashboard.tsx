@@ -9,6 +9,7 @@ import type {
 } from 'types/openapi';
 import type { DashboardDict } from 'types/statisticsDashboard';
 import { getCertificateStatusColor, useGetStatusText } from './certificate';
+import { toChartHex } from './chart-contrast';
 import { getSecretStatusColor, useGetSecretStatusText } from './secret';
 
 type Status =
@@ -46,7 +47,7 @@ export function useGetLabels(data: DashboardDict) {
     return labels;
 }
 export function getDefaultColors() {
-    return ['#1473b5', '#3fb24d', '#2c7c35', '#438fc3', '#73b514'];
+    return ['#1473b5', '#3aa547', '#2c7c35', '#438fc3', '#66a012'];
 }
 
 export function getValues(data: DashboardDict) {
@@ -101,11 +102,11 @@ export function getSecretDonutChartColors(secretStatByStatus?: { [key: string]: 
 
 const colorMapByDaysOfExpiration: { [key: string]: string } = {
     '10': '#6B7280',
-    '20': '#1F2937',
-    '30': '#EAB308',
-    '60': '#14B8A6',
+    '20': '#4f688c',
+    '30': '#b68b06',
+    '60': '#12a393',
     '90': '#2798E7',
-    More: '#14B8A6',
+    More: '#12a393',
     Expired: '#EF4444',
 };
 
@@ -123,20 +124,7 @@ export function getCertificateDonutChartColorsByDaysOfExpiration(certificateStat
     return { colors: Object.keys(certificateStatByExpirationDays).map((key) => getColorByDaysOfExpiration(key)) };
 }
 
-const baseColors = ['#5d80f9', '#00a0e3', '#2b2a29', '#EF4444', '#14B8A6', '#f3c363', '#6c757d', '#3754a5', '#3fb24d', '#1473b5'];
-
-function hslToHex(h: number, s: number, l: number): string {
-    l /= 100;
-    const a = (s * Math.min(l, 1 - l)) / 100;
-    const f = (n: number) => {
-        const k = (n + h / 30) % 12;
-        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-        return Math.round(255 * color)
-            .toString(16)
-            .padStart(2, '0');
-    };
-    return `#${f(0)}${f(8)}${f(4)}`;
-}
+const baseColors = ['#5d80f9', '#009bdb', '#686663', '#EF4444', '#12a393', '#c2870f', '#6c757d', '#3f61be', '#3aa547', '#1473b5'];
 
 export function getDonutChartColorsByRandomNumberOfOptions(numberOfOptions: number): ColorOptions {
     const colors = [...baseColors];
@@ -148,7 +136,7 @@ export function getDonutChartColorsByRandomNumberOfOptions(numberOfOptions: numb
         const hueStep = 360 / additionalColorsNeeded;
         for (let i = 0; i < additionalColorsNeeded; i++) {
             const hue = (i * hueStep) % 360; // evenly spaced hues for additional colors
-            colors.push(hslToHex(hue, saturation, lightness));
+            colors.push(toChartHex(hue, saturation, lightness));
         }
     }
 

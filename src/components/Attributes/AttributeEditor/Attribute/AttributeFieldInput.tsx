@@ -1,7 +1,7 @@
 import type React from 'react';
 import { Controller, type ControllerRenderProps, useFormContext, useFormState } from 'react-hook-form';
 import Label from 'components/Label';
-import TextInput from 'components/TextInput';
+import TextInput, { inputBaseClassName } from 'components/TextInput';
 import DatePicker from 'components/DatePicker';
 import Switch from 'components/Switch';
 import Editor from 'components/Input/CodeEditor/CodeEditor';
@@ -54,10 +54,10 @@ function StandardInputControl({
     const transformed = transformInputValueForDescriptor(field.value, descriptor);
     const textValue = transformed ? String(transformed) : '';
     const validationVisible = fieldState.isTouched || submitCount > 0;
-    const inputClassName = cn(
-        'py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600',
-        { 'border-red-500 focus:border-red-500 focus:ring-red-500': validationVisible && fieldState.invalid },
-    );
+    const inputClassName = cn(inputBaseClassName, {
+        'border-danger focus:border-danger focus:ring-danger': validationVisible && fieldState.invalid,
+        '!bg-surface': descriptor.properties.readOnly,
+    });
 
     if (descriptor.contentType === AttributeContentType.Boolean) {
         return (
@@ -226,7 +226,7 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                         <>
                             {showDescription && (
                                 <p
-                                    className={cn('text-xs text-gray-700 dark:text-neutral-400', {
+                                    className={cn('text-xs text-content-muted', {
                                         'block -mt-2': descriptor.contentType === AttributeContentType.Boolean,
                                         'mt-1': descriptor.contentType !== AttributeContentType.Boolean,
                                     })}
@@ -237,14 +237,14 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                             {descriptor.contentType !== AttributeContentType.Boolean &&
                                 fieldState.invalid &&
                                 (fieldState.isTouched || submitCount > 0) && (
-                                    <div className="mt-1 text-sm text-red-600">
+                                    <div className="mt-1 text-sm text-danger">
                                         {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message}
                                         {(regexpConstraint?.description || regexpConstraint?.data) && (
-                                            <div className="mt-1 text-xs text-gray-700 dark:text-neutral-400">
+                                            <div className="mt-1 text-xs text-content-muted">
                                                 {regexpConstraint.description && <div>{regexpConstraint.description}</div>}
                                                 {regexpConstraint?.data && (
                                                     <details className="mt-1">
-                                                        <summary className="cursor-pointer select-none font-semibold focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1">
+                                                        <summary className="cursor-pointer select-none font-semibold focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1">
                                                             Show regex pattern
                                                         </summary>
                                                         <div className="mt-1 font-mono break-all">{regexpConstraint.data}</div>

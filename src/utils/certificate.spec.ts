@@ -8,7 +8,7 @@ import {
     ComplianceStatus,
 } from 'types/openapi';
 import { runDownloadFileSuite } from './__tests__/anchor-download-mock';
-import { formatPEM, getCertificateStatusColor, downloadFile } from './certificate';
+import { formatPEM, getCertificateStatusBadgeColor, getCertificateStatusColor, downloadFile } from './certificate';
 
 vi.mock('react-redux', () => ({
     useSelector: vi.fn((selector: any) => selector({ enums: { platformEnums: {} } })),
@@ -58,45 +58,45 @@ describe('certificate utils', () => {
 
     describe('getCertificateStatusColor', () => {
         test('should return correct colors for CertificateState', () => {
-            expect(getCertificateStatusColor(CertificateState.Issued)).toBe('#14B8A6');
-            expect(getCertificateStatusColor(CertificateState.Revoked)).toBe('#632828');
+            expect(getCertificateStatusColor(CertificateState.Issued)).toBe('#12a393');
+            expect(getCertificateStatusColor(CertificateState.Revoked)).toBe('#aa4545');
             expect(getCertificateStatusColor(CertificateState.Failed)).toBe('#EF4444');
-            expect(getCertificateStatusColor(CertificateState.Requested)).toBe('#3754a5');
+            expect(getCertificateStatusColor(CertificateState.Requested)).toBe('#3f61be');
         });
 
         test('should return correct colors for CertificateValidationStatus', () => {
-            expect(getCertificateStatusColor(CertificateValidationStatus.Valid)).toBe('#14B8A6');
+            expect(getCertificateStatusColor(CertificateValidationStatus.Valid)).toBe('#12a393');
             expect(getCertificateStatusColor(CertificateValidationStatus.Expired)).toBe('#EF4444');
-            expect(getCertificateStatusColor(CertificateValidationStatus.Expiring)).toBe('#EAB308');
+            expect(getCertificateStatusColor(CertificateValidationStatus.Expiring)).toBe('#b68b06');
             expect(getCertificateStatusColor(CertificateValidationStatus.NotChecked)).toBe('#2798E7');
         });
 
         test('should return correct colors for ComplianceStatus', () => {
-            expect(getCertificateStatusColor(ComplianceStatus.Ok)).toBe('#14B8A6');
+            expect(getCertificateStatusColor(ComplianceStatus.Ok)).toBe('#12a393');
             expect(getCertificateStatusColor(ComplianceStatus.Nok)).toBe('#EF4444');
             expect(getCertificateStatusColor(ComplianceStatus.Na)).toBe('#6c757d');
         });
 
         test('should return correct colors for CertificateEventHistoryDtoStatusEnum', () => {
-            expect(getCertificateStatusColor(CertificateEventHistoryDtoStatusEnum.Success)).toBe('#14B8A6');
+            expect(getCertificateStatusColor(CertificateEventHistoryDtoStatusEnum.Success)).toBe('#12a393');
             expect(getCertificateStatusColor(CertificateEventHistoryDtoStatusEnum.Failed)).toBe('#EF4444');
         });
 
         test('should return correct colors for CertificateSubjectType', () => {
-            expect(getCertificateStatusColor(CertificateSubjectType.RootCa)).toBe('#14B8A6');
+            expect(getCertificateStatusColor(CertificateSubjectType.RootCa)).toBe('#12a393');
             expect(getCertificateStatusColor(CertificateSubjectType.EndEntity)).toBe('#6c757d');
         });
 
         test('should return correct colors for remaining CertificateState cases', () => {
-            expect(getCertificateStatusColor(CertificateState.PendingApproval)).toBe('#3754a5');
+            expect(getCertificateStatusColor(CertificateState.PendingApproval)).toBe('#3f61be');
             expect(getCertificateStatusColor(CertificateState.PendingIssue)).toBe('#3782a5');
             expect(getCertificateStatusColor(CertificateState.PendingRevoke)).toBe('#eb3f33');
             expect(getCertificateStatusColor(CertificateState.Rejected)).toBe('#EF4444');
         });
 
         test('should return correct colors for remaining CertificateValidationStatus cases', () => {
-            expect(getCertificateStatusColor(CertificateValidationStatus.Revoked)).toBe('#632828');
-            expect(getCertificateStatusColor(CertificateValidationStatus.Invalid)).toBe('#1F2937');
+            expect(getCertificateStatusColor(CertificateValidationStatus.Revoked)).toBe('#aa4545');
+            expect(getCertificateStatusColor(CertificateValidationStatus.Invalid)).toBe('#4f688c');
             expect(getCertificateStatusColor(CertificateValidationStatus.Inactive)).toBe('#6c757d');
         });
 
@@ -106,17 +106,59 @@ describe('certificate utils', () => {
 
         test('should return correct colors for ComplianceRuleStatus', () => {
             expect(getCertificateStatusColor(ComplianceRuleStatus.Nok)).toBe('#EF4444');
-            expect(getCertificateStatusColor(ComplianceRuleStatus.Ok)).toBe('#14B8A6');
+            expect(getCertificateStatusColor(ComplianceRuleStatus.Ok)).toBe('#12a393');
             expect(getCertificateStatusColor(ComplianceRuleStatus.Na)).toBe('#6c757d');
         });
 
         test('should return correct colors for remaining CertificateSubjectType cases', () => {
-            expect(getCertificateStatusColor(CertificateSubjectType.SelfSignedEndEntity)).toBe('#EAB308');
-            expect(getCertificateStatusColor(CertificateSubjectType.IntermediateCa)).toBe('#3754a5');
+            expect(getCertificateStatusColor(CertificateSubjectType.SelfSignedEndEntity)).toBe('#b68b06');
+            expect(getCertificateStatusColor(CertificateSubjectType.IntermediateCa)).toBe('#3f61be');
         });
 
         test('should return default gray for unknown status', () => {
             expect(getCertificateStatusColor('unknown' as any)).toBe('#6c757d');
+        });
+    });
+
+    describe('getCertificateStatusBadgeColor', () => {
+        test.each([
+            [CertificateState.Issued, 'success'],
+            [CertificateValidationStatus.Valid, 'success'],
+            [ComplianceStatus.Ok, 'success'],
+            [ComplianceRuleStatus.Ok, 'success'],
+            [CertificateEventHistoryDtoStatusEnum.Success, 'success'],
+            [CertificateSubjectType.RootCa, 'success'],
+            [CertificateState.Failed, 'danger'],
+            [CertificateState.Rejected, 'danger'],
+            [CertificateState.Revoked, 'danger'],
+            [CertificateState.PendingRevoke, 'danger'],
+            [CertificateValidationStatus.Expired, 'danger'],
+            [CertificateValidationStatus.Revoked, 'danger'],
+            [CertificateValidationStatus.Failed, 'danger'],
+            [CertificateValidationStatus.Invalid, 'danger'],
+            [ComplianceStatus.Nok, 'danger'],
+            [ComplianceRuleStatus.Nok, 'danger'],
+            [CertificateEventHistoryDtoStatusEnum.Failed, 'danger'],
+            [CertificateValidationStatus.Expiring, 'warning'],
+            [CertificateSubjectType.SelfSignedEndEntity, 'warning'],
+            [CertificateState.Requested, 'info'],
+            [CertificateState.PendingApproval, 'info'],
+            [CertificateState.PendingIssue, 'info'],
+            [CertificateState.Registered, 'info'],
+            [CertificateState.PendingRegistration, 'info'],
+            [CertificateValidationStatus.NotChecked, 'info'],
+            [ComplianceStatus.NotChecked, 'info'],
+            [CertificateSubjectType.IntermediateCa, 'info'],
+            [CertificateValidationStatus.Inactive, 'secondary'],
+            [ComplianceStatus.Na, 'secondary'],
+            [ComplianceRuleStatus.Na, 'secondary'],
+            [CertificateSubjectType.EndEntity, 'secondary'],
+        ] as const)('should map %s to the %s badge', (status, expected) => {
+            expect(getCertificateStatusBadgeColor(status)).toBe(expected);
+        });
+
+        test('should fall back to the neutral badge for an unknown status', () => {
+            expect(getCertificateStatusBadgeColor('unknown' as any)).toBe('secondary');
         });
     });
 
@@ -198,6 +240,6 @@ describe('getCertificateStatusColor registration states', () => {
         expect(getCertificateStatusColor(CertificateState.Registered)).toBe('#8B5CF6');
     });
     test('returns a distinct color for PendingRegistration', () => {
-        expect(getCertificateStatusColor(CertificateState.PendingRegistration)).toBe('#A78BFA');
+        expect(getCertificateStatusColor(CertificateState.PendingRegistration)).toBe('#9c7cf9');
     });
 });

@@ -35,10 +35,10 @@ test.describe('TimeSeriesChart', () => {
                 onSetFilter={() => []}
             />,
         );
-        await expect(component.getByRole('button', { name: '24h' })).toHaveClass(/text-white/);
+        await expect(component.getByRole('button', { name: '24h' })).toHaveClass(/text-content-on-brand/);
         await component.getByRole('button', { name: '7d' }).click();
-        await expect(component.getByRole('button', { name: '7d' })).toHaveClass(/text-white/);
-        await expect(component.getByRole('button', { name: '24h' })).not.toHaveClass(/text-white/);
+        await expect(component.getByRole('button', { name: '7d' })).toHaveClass(/text-content-on-brand/);
+        await expect(component.getByRole('button', { name: '24h' })).not.toHaveClass(/text-content-on-brand/);
     });
 
     test('clicking a data point drills down (navigates to the redirect)', async ({ mount, page }) => {

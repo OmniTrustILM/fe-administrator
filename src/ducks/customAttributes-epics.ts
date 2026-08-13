@@ -21,13 +21,7 @@ import {
 import { actions as vaultProfileActions } from './vault-profiles';
 import { actions as secretActions } from './secrets';
 import { actions as vaultActions } from './vaults';
-import type {
-    AttributeRequestModel,
-    AttributeResponseDto,
-    AttributeResponseModel,
-    BaseAttributeContentDtoV2,
-    BaseAttributeContentDtoV3,
-} from 'types/attributes';
+import type { AttributeRequestModel, AttributeResponseDto, AttributeResponseModel, BaseAttributeContentDtoV3 } from 'types/attributes';
 
 const normalizeAttributeVersion = (version: unknown): AttributeVersion => {
     if (version === AttributeVersion.V3 || version === 'v3' || version === '3' || version === 3) {
@@ -58,7 +52,7 @@ const toAttributeRequestModel = (attribute: AttributeResponseModel): AttributeRe
         name: attribute.name,
         contentType: attribute.contentType,
         version,
-        content: content as BaseAttributeContentDtoV2[],
+        content,
     };
 };
 
@@ -160,7 +154,7 @@ type ContentActionPayload = {
     resource: Resource;
     resourceUuid: string;
     attributeUuid: string;
-    content?: AttributeResponseModel['content'];
+    content?: NonNullable<AttributeResponseModel['content']>;
 };
 
 const createMissingContextError = (operation: ContentOperation, resource: Resource): Error => {

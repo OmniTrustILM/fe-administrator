@@ -24,11 +24,11 @@ function CountBadge({ data, title, link, extraComponent, entity, onSetFilter }: 
             onTitleLinkClick={applyFilter}
             title={title}
             className="h-full"
-            titleColor="var(--primary-blue-color)"
+            titleColor="var(--brand)"
             titleBoldness="semi-bold"
             titleSize="large"
         >
-            <div className="text-3xl !text-[var(--dark-gray-color)]">{data}</div>
+            <div className="text-3xl !text-content">{data}</div>
             {extraComponent && <div className="mt-4">{extraComponent}</div>}
         </Widget>
     );

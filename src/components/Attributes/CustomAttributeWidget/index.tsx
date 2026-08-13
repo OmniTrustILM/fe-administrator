@@ -145,7 +145,7 @@ export default function CustomAttributeWidget({ resource, resourceUuid, attribut
                                             value={field.value}
                                             onChange={(value) => {
                                                 field.onChange(value);
-                                                setSelectedAttributeUuid(typeof value === 'string' ? value : String(value ?? ''));
+                                                setSelectedAttributeUuid(typeof value === 'string' ? value : '');
                                             }}
                                         />
                                     )}
@@ -164,7 +164,7 @@ export default function CustomAttributeWidget({ resource, resourceUuid, attribut
                                                 setSelectedAttributeUuid('');
                                             }}
                                         />
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">{selectedAttribute.description}</p>
+                                        <p className="text-xs text-content-muted mt-2">{selectedAttribute.description}</p>
                                     </div>
                                 )}
                             </div>

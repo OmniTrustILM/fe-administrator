@@ -1,7 +1,7 @@
 import Widget from 'components/Widget';
 import TableSkeleton from 'components/CustomTable/TableSkeleton';
 
-const barClass = 'rounded bg-gray-200 dark:bg-neutral-700';
+const barClass = 'rounded bg-surface-sunken';
 const tabWidths = ['w-16', 'w-20', 'w-24', 'w-14', 'w-20'];
 
 type Props = {
@@ -38,7 +38,7 @@ function TabLayoutSkeleton({
                     <div key={i} className={`${barClass} h-11 ${tabWidths[i % tabWidths.length]}`} />
                 ))}
             </div>
-            <hr className="my-4 border-gray-200" />
+            <hr className="my-4 border-divider" />
             <TableSkeleton columnsCount={columnsCount} hasCheckboxes={false} hasPagination={hasPagination} rowCount={rowCount} />
         </Widget>
     );

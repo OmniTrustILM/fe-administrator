@@ -235,7 +235,7 @@ export default function CustomAttributeForm({ customAttributeId, onCancel, onSuc
                                         <Checkbox id="required" checked={field.value ?? false} onChange={field.onChange} label="Required" />
                                     )}
                                 />
-                                <div className="h-6 w-[1px] bg-gray-200" />
+                                <div className="h-6 w-[1px] bg-divider" />
                                 <Controller
                                     name="readOnly"
                                     control={control}
@@ -248,7 +248,7 @@ export default function CustomAttributeForm({ customAttributeId, onCancel, onSuc
                                         />
                                     )}
                                 />
-                                <div className="h-6 w-[1px] bg-gray-200" />
+                                <div className="h-6 w-[1px] bg-divider" />
                                 <Controller
                                     name="list"
                                     control={control}

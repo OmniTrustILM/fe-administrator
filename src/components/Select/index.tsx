@@ -95,8 +95,8 @@ const getUuidFromValue = (val: unknown): string | null => {
 };
 
 const getOptionValueString = (val: OptionValue): string => {
-    const obj = asRecord(val);
-    if (obj) {
+    if (typeof val === 'object' && val !== null) {
+        const obj = val as Record<string, unknown>;
         if ('reference' in obj && typeof obj.reference === 'string') {
             return obj.reference;
         }
@@ -124,7 +124,7 @@ const valuesMatch = (val1: unknown, val2: unknown): boolean => {
     if (obj1 && typeof val2 === 'string' && obj1.name) {
         return obj1.name === val2;
     }
-    if (typeof val1 === 'string' && obj2 && obj2.name) {
+    if (typeof val1 === 'string' && obj2?.name) {
         return val1 === obj2.name;
     }
     if (!obj1 || !obj2) {
@@ -151,8 +151,8 @@ const renderColorizedVersionLabel = (text: string): React.ReactNode => {
     if (!match) return text;
     return (
         <>
-            <span className="text-[var(--primary-blue-color)] pointer-events-none">{match[1]}</span>{' '}
-            <span className="text-[var(--dark-gray-color)] pointer-events-none">{match[2].trim()}</span>
+            <span className="text-brand pointer-events-none">{match[1]}</span>{' '}
+            <span className="text-content pointer-events-none">{match[2].trim()}</span>
         </>
     );
 };
@@ -421,7 +421,7 @@ function Select({
             return (
                 <span className={OPTION_LABEL_WRAP_CLASSES} title={`${opt.label} ${opt.description}`}>
                     <span className="block leading-5">{opt.label}</span>
-                    <span className="block truncate text-xs text-gray-500 leading-4 dark:text-neutral-500">{opt.description}</span>
+                    <span className="block truncate text-xs text-content-subtle leading-4">{opt.description}</span>
                 </span>
             );
         }
@@ -624,10 +624,10 @@ function Select({
                     </Button>
                 )}
             </div>
-            {error && <div className="text-red-500 mt-1">{error}</div>}
+            {error && <div className="text-danger mt-1">{error}</div>}
             {selectedDescription && (
                 <div
-                    className="mt-2 rounded-r border-l-4 border-blue-300 bg-blue-50/50 px-3 py-2 text-sm text-[var(--dark-gray-color)] dark:border-blue-400 dark:bg-neutral-800/50 dark:text-neutral-300"
+                    className="mt-2 rounded-r border-l-4 border-brand bg-brand-subtle px-3 py-2 text-sm text-content"
                     data-testid={dataTestId ? `${dataTestId}-selected-description` : `select-${id}-selected-description`}
                 >
                     {selectedDescription}

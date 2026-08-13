@@ -456,7 +456,7 @@ const NotificationInstanceForm = ({ notificationInstanceId, onCancel, onSuccess 
                                         required
                                     />
                                     {fieldState.error && fieldState.isTouched && (
-                                        <p className="mt-1 text-sm text-red-600">
+                                        <p className="mt-1 text-sm text-danger">
                                             {typeof fieldState.error === 'string'
                                                 ? fieldState.error
                                                 : fieldState.error?.message || 'Invalid value'}
@@ -488,7 +488,7 @@ const NotificationInstanceForm = ({ notificationInstanceId, onCancel, onSuccess 
                                         required
                                     />
                                     {fieldState.error && fieldState.isTouched && (
-                                        <p className="mt-1 text-sm text-red-600">
+                                        <p className="mt-1 text-sm text-danger">
                                             {typeof fieldState.error === 'string'
                                                 ? fieldState.error
                                                 : fieldState.error?.message || 'Invalid value'}
@@ -534,7 +534,7 @@ const NotificationInstanceForm = ({ notificationInstanceId, onCancel, onSuccess 
                                                             placeholder={`Select Custom Attribute for ${displayLabel}`}
                                                             label={`${displayLabel} (${mappingAttribute.contentType})`}
                                                         />
-                                                        <p className="mt-1 text-sm text-gray-500">{mappingAttribute?.description}</p>
+                                                        <p className="mt-1 text-sm text-content-subtle">{mappingAttribute?.description}</p>
                                                     </div>
                                                 );
                                             })}

@@ -1,6 +1,7 @@
 import type React from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
+import ThemeProvider from 'components/ThemeProvider';
 import { createMockStore } from 'utils/test-helpers';
 import Header from './index';
 
@@ -11,7 +12,9 @@ export default function HeaderWithStore(props: Readonly<HeaderWithStoreProps>) {
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>
-                <Header {...props} />
+                <ThemeProvider>
+                    <Header {...props} />
+                </ThemeProvider>
             </MemoryRouter>
         </Provider>
     );

@@ -32,16 +32,16 @@ const pristineState = () => ({
     tablePagination: { byKey: {} },
 });
 
+const renderInto = async (root: Root, element: React.ReactElement) => {
+    await act(async () => {
+        root.render(element);
+    });
+};
+
 describe('Widget reset-view action', () => {
     let container: HTMLDivElement;
     let root: Root;
     let dispatch: ReturnType<typeof vi.fn>;
-
-    const render = async (element: React.ReactElement) => {
-        await act(async () => {
-            root.render(element);
-        });
-    };
 
     beforeEach(() => {
         container = document.createElement('div');
@@ -67,7 +67,7 @@ describe('Widget reset-view action', () => {
 
     it('renders an explicit reset-view action and invokes it on click', async () => {
         const resetViewAction = vi.fn();
-        await render(<Widget title="Explicit" resetViewAction={resetViewAction} />);
+        await renderInto(root, <Widget title="Explicit" resetViewAction={resetViewAction} />);
 
         const button = resetButton();
         expect(button).toBeTruthy();
@@ -80,18 +80,18 @@ describe('Widget reset-view action', () => {
     });
 
     it('does not render a reset-view action without a refresh action or resettable state', async () => {
-        await render(<Widget title="Plain" />);
+        await renderInto(root, <Widget title="Plain" />);
         expect(resetButton()).toBeNull();
     });
 
     it('does not derive a reset-view action when the route has no resettable table state', async () => {
-        await render(<Widget title="No state" refreshAction={() => {}} />);
+        await renderInto(root, <Widget title="No state" refreshAction={() => {}} />);
         expect(resetButton()).toBeNull();
     });
 
     it('derives a reset-view action from refreshAction when the route has resettable table state', async () => {
         mockState = resettableState('/certificates');
-        await render(<Widget title="Derived" refreshAction={() => {}} />);
+        await renderInto(root, <Widget title="Derived" refreshAction={() => {}} />);
 
         const button = resetButton();
         expect(button).toBeTruthy();
@@ -108,7 +108,7 @@ describe('Widget reset-view action', () => {
     it('prefers an explicit reset-view action over the derived one', async () => {
         mockState = resettableState('/certificates');
         const resetViewAction = vi.fn();
-        await render(<Widget title="Both" refreshAction={() => {}} resetViewAction={resetViewAction} />);
+        await renderInto(root, <Widget title="Both" refreshAction={() => {}} resetViewAction={resetViewAction} />);
 
         await act(async () => {
             resetButton()!.click();
@@ -122,12 +122,6 @@ describe('Widget reset-view action', () => {
 describe('Widget refresh action disabled state', () => {
     let container: HTMLDivElement;
     let root: Root;
-
-    const render = async (element: React.ReactElement) => {
-        await act(async () => {
-            root.render(element);
-        });
-    };
 
     beforeEach(() => {
         container = document.createElement('div');
@@ -151,17 +145,17 @@ describe('Widget refresh action disabled state', () => {
     const refreshButton = () => container.querySelector('[data-testid="refresh-icon"]') as HTMLButtonElement | null;
 
     it('enables the refresh button when neither busy nor disableRefresh is set', async () => {
-        await render(<Widget title="Idle" refreshAction={() => {}} />);
+        await renderInto(root, <Widget title="Idle" refreshAction={() => {}} />);
         expect(refreshButton()!.disabled).toBe(false);
     });
 
     it('disables the refresh button via disableRefresh even when busy is false', async () => {
-        await render(<Widget title="Fetching" refreshAction={() => {}} busy={false} disableRefresh />);
+        await renderInto(root, <Widget title="Fetching" refreshAction={() => {}} busy={false} disableRefresh />);
         expect(refreshButton()!.disabled).toBe(true);
     });
 
     it('disables the refresh button while busy', async () => {
-        await render(<Widget title="Busy" refreshAction={() => {}} busy />);
+        await renderInto(root, <Widget title="Busy" refreshAction={() => {}} busy />);
         expect(refreshButton()!.disabled).toBe(true);
     });
 });

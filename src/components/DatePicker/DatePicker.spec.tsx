@@ -335,7 +335,7 @@ test.describe('DatePicker', () => {
         );
 
         const input = component.locator('input[type="text"]');
-        await expect(input).toHaveClass(/border-red-500/);
+        await expect(input).toHaveClass(/border-danger/);
     });
 
     test('should support time picker when timePicker is true', async ({ mount }) => {

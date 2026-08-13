@@ -22,7 +22,7 @@ describe('oid utils', () => {
         });
         test('false for other / empty', () => {
             expect(isCertificateExtensionCategory(OidCategory.RdnAttributeType)).toBe(false);
-            expect(isCertificateExtensionCategory(undefined)).toBe(false);
+            expect(isCertificateExtensionCategory()).toBe(false);
             expect(isCertificateExtensionCategory('')).toBe(false);
         });
     });
@@ -31,7 +31,7 @@ describe('oid utils', () => {
         test('true only for the RDN category', () => {
             expect(isRdnAttributeTypeCategory(OidCategory.RdnAttributeType)).toBe(true);
             expect(isRdnAttributeTypeCategory(OidCategory.CertificateExtension)).toBe(false);
-            expect(isRdnAttributeTypeCategory(undefined)).toBe(false);
+            expect(isRdnAttributeTypeCategory()).toBe(false);
         });
     });
 
@@ -50,7 +50,7 @@ describe('oid utils', () => {
             expect(isExtensionValueEncoding('DER')).toBe(true);
             expect(isExtensionValueEncoding('not-an-encoding')).toBe(false);
             expect(isExtensionValueEncoding('')).toBe(false);
-            expect(isExtensionValueEncoding(undefined)).toBe(false);
+            expect(isExtensionValueEncoding()).toBe(false);
         });
     });
 
@@ -102,12 +102,12 @@ describe('oid utils', () => {
         test('isCertificateExtensionProperties', () => {
             expect(isCertificateExtensionProperties(ext)).toBe(true);
             expect(isCertificateExtensionProperties(rdn)).toBe(false);
-            expect(isCertificateExtensionProperties(undefined)).toBe(false);
+            expect(isCertificateExtensionProperties()).toBe(false);
         });
         test('isRdnProperties', () => {
             expect(isRdnProperties(rdn)).toBe(true);
             expect(isRdnProperties(ext)).toBe(false);
-            expect(isRdnProperties(undefined)).toBe(false);
+            expect(isRdnProperties()).toBe(false);
         });
     });
 
@@ -201,7 +201,7 @@ describe('oid utils', () => {
         });
 
         test('undefined inputs produce an empty list', () => {
-            expect(toMergedOidSelectOptions(undefined, undefined)).toEqual([]);
+            expect(toMergedOidSelectOptions()).toEqual([]);
         });
     });
 
@@ -245,7 +245,7 @@ describe('oid utils', () => {
 
         test('rdnCodeClarification returns undefined for an unknown or missing code', () => {
             expect(rdnCodeClarification('CN')).toBeUndefined();
-            expect(rdnCodeClarification(undefined)).toBeUndefined();
+            expect(rdnCodeClarification()).toBeUndefined();
         });
     });
 });

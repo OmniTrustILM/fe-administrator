@@ -144,10 +144,10 @@ function TextInput({
                     className={cn(
                         inputBaseClassName,
                         {
-                            'border-red-500 focus:border-red-500 focus:ring-red-500': invalid,
+                            'border-danger focus:border-danger focus:ring-danger': invalid,
                         },
                         {
-                            'bg-[#F8FAFC]': disabled,
+                            'bg-surface': disabled,
                             'pr-10': !!buttonRight || type === 'password',
                         },
                         className,
@@ -168,7 +168,7 @@ function TextInput({
                     <button
                         type="button"
                         onClick={() => setPasswordVisible((v) => !v)}
-                        className="absolute inset-y-0 end-0 flex items-center z-10 p-3.5 text-gray-400 hover:text-gray-600 focus:outline-none disabled:pointer-events-none"
+                        className="absolute inset-y-0 end-0 flex items-center z-10 p-3.5 text-content-subtle hover:text-content-muted focus:outline-none disabled:pointer-events-none"
                         aria-label={passwordVisible ? 'Hide password' : 'Show password'}
                         tabIndex={-1}
                     >
@@ -180,12 +180,12 @@ function TextInput({
                     </button>
                 )}
                 {buttonRight && (
-                    <div className="absolute right-0 top-[50%] translate-y-[-50%] h-full flex items-center justify-center w-[40px] border-l border-gray-200">
+                    <div className="absolute right-0 top-[50%] translate-y-[-50%] h-full flex items-center justify-center w-[40px] border-l border-divider">
                         {buttonRight}
                     </div>
                 )}
             </div>
-            {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-1 text-sm text-danger">{error}</p>}
         </>
     );
 }

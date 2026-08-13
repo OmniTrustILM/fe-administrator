@@ -138,7 +138,7 @@ function withCurrentValue(options: OidSelectOption[], resolved?: string): OidSel
 function FieldError({ testId, message }: Readonly<{ testId: string; message?: string }>) {
     if (!message) return null;
     return (
-        <p className="text-sm text-red-600" data-testid={testId}>
+        <p className="text-sm text-danger" data-testid={testId}>
             {message}
         </p>
     );
@@ -179,14 +179,14 @@ function OidMappingSelect({
     return (
         <>
             {optionsError && (
-                <p className="text-sm text-red-600" data-testid={`${testIdPrefix}-error`}>
+                <p className="text-sm text-danger" data-testid={`${testIdPrefix}-error`}>
                     {errorHint}
                 </p>
             )}
             {withCurrent.length === 0 ? (
                 !optionsError &&
                 optionsLoaded && (
-                    <p className="text-sm text-gray-400" data-testid={`${testIdPrefix}-empty`}>
+                    <p className="text-sm text-content-subtle" data-testid={`${testIdPrefix}-empty`}>
                         {emptyHint}
                     </p>
                 )
@@ -262,7 +262,7 @@ export default function RequestAttributeAuthoringEditor({
     const renderMergeMode = () =>
         showMergeMode ? (
             <div className="space-y-2" data-testid={`${dataTestId}-merge-mode`}>
-                <p className="text-sm font-medium text-gray-700">Merge mode</p>
+                <p className="text-sm font-medium text-content-muted">Merge mode</p>
                 <Container className="flex-col" gap={2}>
                     {MERGE_MODE_OPTIONS.map((opt) => (
                         <RadioRow
@@ -274,7 +274,7 @@ export default function RequestAttributeAuthoringEditor({
                                 <span className="font-medium" data-testid={`${dataTestId}-merge-${opt.value}`}>
                                     {opt.label}
                                 </span>
-                                <span className="text-xs text-gray-500" data-testid={`${dataTestId}-merge-${opt.value}-description`}>
+                                <span className="text-xs text-content-subtle" data-testid={`${dataTestId}-merge-${opt.value}-description`}>
                                     {opt.description}
                                 </span>
                             </span>
@@ -341,9 +341,9 @@ export default function RequestAttributeAuthoringEditor({
 
     const renderAttributeList = () => (
         <div className="space-y-2" data-testid={`${dataTestId}-attributes`}>
-            <p className="text-sm font-medium text-gray-700">Authored attributes</p>
+            <p className="text-sm font-medium text-content-muted">Authored attributes</p>
             {value.attributes.length === 0 ? (
-                <p className="text-sm text-gray-400" data-testid={`${dataTestId}-attributes-empty`}>
+                <p className="text-sm text-content-subtle" data-testid={`${dataTestId}-attributes-empty`}>
                     No request attributes authored yet.
                 </p>
             ) : (
@@ -355,21 +355,21 @@ export default function RequestAttributeAuthoringEditor({
                         return (
                             <li
                                 key={attr.uuid ?? `${attr.name}-${index}`}
-                                className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm"
+                                className="flex items-center justify-between gap-2 rounded-md border border-divider px-3 py-2 text-sm"
                                 data-testid={`${dataTestId}-attribute-row`}
                             >
                                 <span className="truncate">
                                     <span className="font-medium">{attr.label || attr.name || '(unnamed)'}</span>
-                                    <span className="text-gray-500">
+                                    <span className="text-content-subtle">
                                         {' · '}
                                         {attr.contentType}
                                         {attr.required ? ' · required' : ''} {mappingSummary(attr)}
-                                        {attr.valueSourceType !== ValueSourceType.None
-                                            ? ` · ${valueSourceLabel(attr.valueSourceType)}`
-                                            : ''}
+                                        {attr.valueSourceType === ValueSourceType.None
+                                            ? ''
+                                            : ` · ${valueSourceLabel(attr.valueSourceType)}`}
                                     </span>
                                     {rowError && (
-                                        <span className="block text-red-600" data-testid={`${dataTestId}-attribute-row-invalid`}>
+                                        <span className="block text-danger" data-testid={`${dataTestId}-attribute-row-invalid`}>
                                             {rowError}
                                         </span>
                                     )}
@@ -443,7 +443,7 @@ export default function RequestAttributeAuthoringEditor({
                     ariaDescribedBy={attrNameDuplicate ? ATTR_NAME_ERROR_ID : undefined}
                 />
                 {nameDuplicateVisible ? (
-                    <p className="text-sm text-red-600" id={ATTR_NAME_ERROR_ID} data-testid={`${dataTestId}-attribute-name-duplicate`}>
+                    <p className="text-sm text-danger" id={ATTR_NAME_ERROR_ID} data-testid={`${dataTestId}-attribute-name-duplicate`}>
                         An attribute with this name already exists in the set.
                     </p>
                 ) : (
@@ -732,7 +732,7 @@ export default function RequestAttributeAuthoringEditor({
                 <FieldError testId={`${dataTestId}-static-values-error`} message={attrErrors.staticValues} />
                 <Button
                     variant="transparent"
-                    className="text-blue-600"
+                    className="text-brand"
                     onClick={addValue}
                     disabled={disabled}
                     type="button"
@@ -793,10 +793,12 @@ export default function RequestAttributeAuthoringEditor({
 
     const renderBindings = () => (
         <div className="space-y-2" data-testid={`${dataTestId}-bindings`}>
-            <p className="text-sm font-medium text-gray-700">Value-source bindings</p>
-            <p className="text-xs text-gray-400">Attach a value source onto a connector-supplied attribute by reference (UUID or name).</p>
+            <p className="text-sm font-medium text-content-muted">Value-source bindings</p>
+            <p className="text-xs text-content-subtle">
+                Attach a value source onto a connector-supplied attribute by reference (UUID or name).
+            </p>
             {value.valueSourceBindings.length === 0 ? (
-                <p className="text-sm text-gray-400" data-testid={`${dataTestId}-bindings-empty`}>
+                <p className="text-sm text-content-subtle" data-testid={`${dataTestId}-bindings-empty`}>
                     No value-source bindings.
                 </p>
             ) : (
@@ -804,12 +806,12 @@ export default function RequestAttributeAuthoringEditor({
                     {value.valueSourceBindings.map((b, index) => (
                         <li
                             key={b.attributeUuid || b.attributeName || index}
-                            className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm"
+                            className="flex items-center justify-between gap-2 rounded-md border border-divider px-3 py-2 text-sm"
                             data-testid={`${dataTestId}-binding-row`}
                         >
                             <span className="truncate">
                                 <span className="font-medium">{bindingTargetLabel(b)}</span>
-                                <span className="text-gray-500">{` → ${valueSourceLabel(b.valueSourceType)}`}</span>
+                                <span className="text-content-subtle">{` → ${valueSourceLabel(b.valueSourceType)}`}</span>
                             </span>
                             <span className="flex shrink-0 gap-2">
                                 <Button
@@ -896,7 +898,7 @@ export default function RequestAttributeAuthoringEditor({
                     options={VALUE_SOURCE_OPTIONS}
                 />
                 {!bindingValid && (
-                    <p className="text-sm text-red-600" data-testid={`${dataTestId}-binding-error`}>
+                    <p className="text-sm text-danger" data-testid={`${dataTestId}-binding-error`}>
                         A binding requires either a UUID or a name.
                     </p>
                 )}

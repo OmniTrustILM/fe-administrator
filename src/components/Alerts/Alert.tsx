@@ -1,6 +1,5 @@
 import cn from 'classnames';
-import DOMPurify from 'dompurify';
-import { type AnimationEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type AnimationEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
 import { Check, ChevronDown, ChevronUp, CircleAlert, CircleCheck, Copy, Info, X } from 'lucide-react';
@@ -8,7 +7,7 @@ import { Check, ChevronDown, ChevronUp, CircleAlert, CircleCheck, Copy, Info, X 
 import { actions } from 'ducks/alerts';
 import type { MessageModel } from 'types/alerts';
 
-import { AUTO_DISMISS_MS, COPY_CONFIRMATION_MS, EXIT_ANIMATION_MS, PROGRESS_ANIMATION_NAME, SANITIZE_CONFIG } from './constants';
+import { AUTO_DISMISS_MS, COPY_CONFIRMATION_MS, EXIT_ANIMATION_MS, PROGRESS_ANIMATION_NAME } from './constants';
 
 // Success and info toasts carry no ARIA role: their announcements come from the persistent
 // live region in the stack container, so a role here would only cause double announcements.
@@ -17,30 +16,29 @@ const severityConfig = {
         icon: CircleCheck,
         role: undefined,
         autoDismiss: true,
-        iconClassName: 'text-teal-500',
-        accentClassName: 'border-l-teal-500 dark:border-l-teal-500',
-        progressClassName: 'bg-teal-500',
+        iconClassName: 'text-success',
+        accentClassName: 'border-l-success-solid',
+        progressClassName: 'bg-success-solid',
     },
     danger: {
         icon: CircleAlert,
         role: 'alert',
         autoDismiss: false,
-        iconClassName: 'text-red-500',
-        accentClassName: 'border-l-red-500 dark:border-l-red-500',
-        progressClassName: 'bg-red-500',
+        iconClassName: 'text-danger',
+        accentClassName: 'border-l-danger-solid',
+        progressClassName: 'bg-danger-solid',
     },
     info: {
         icon: Info,
         role: undefined,
         autoDismiss: true,
-        iconClassName: 'text-blue-500',
-        accentClassName: 'border-l-blue-500 dark:border-l-blue-500',
-        progressClassName: 'bg-blue-500',
+        iconClassName: 'text-info',
+        accentClassName: 'border-l-info-solid',
+        progressClassName: 'bg-info-solid',
     },
 } as const;
 
-const actionButtonClassName =
-    'flex items-center gap-1 text-xs font-medium text-gray-800 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-neutral-200';
+const actionButtonClassName = 'flex items-center gap-1 text-xs font-medium text-content-muted hover:text-content';
 
 type Props = {
     alert: MessageModel;
@@ -61,8 +59,6 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
 
     const isHiding = Boolean(alert.isHiding);
     const autoDismissEnabled = config.autoDismiss && !wasExpanded && !isHiding;
-
-    const sanitizedMessage = useMemo(() => DOMPurify.sanitize(alert.message, SANITIZE_CONFIG), [alert.message]);
 
     const beginDismiss = useCallback(() => {
         dispatch(actions.hide(alert.id));
@@ -110,14 +106,13 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
     }, []);
 
     const copyMessage = useCallback(async () => {
-        const text = contentRef.current?.textContent ?? '';
         try {
-            await navigator.clipboard.writeText(text);
+            await navigator.clipboard.writeText(alert.message);
             setIsCopied(true);
         } catch {
             setIsCopied(false);
         }
-    }, []);
+    }, [alert.message]);
 
     return (
         <div
@@ -132,7 +127,7 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
                     data-testid={`alert-${alert.id}`}
                     className={cn(
                         'group pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-lg border border-l-4 p-3 text-sm shadow-lg',
-                        'bg-white border-gray-200 text-gray-800 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-200',
+                        'bg-surface-raised border-divider text-content',
                         'animate-[toast-in_200ms_ease-out] motion-reduce:animate-[toast-fade-in_200ms_ease-out]',
                         config.accentClassName,
                     )}
@@ -141,10 +136,10 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
                     <div className="min-w-0 flex-1">
                         <div
                             ref={contentRef}
-                            className={cn('break-words', isExpanded ? 'max-h-[50vh] overflow-y-auto' : 'line-clamp-4')}
-                            // biome-ignore lint/security/noDangerouslySetInnerHtml: alert messages may contain backend-provided HTML; sanitized with DOMPurify above
-                            dangerouslySetInnerHTML={{ __html: sanitizedMessage }}
-                        />
+                            className={cn('break-words whitespace-pre-line', isExpanded ? 'max-h-[50vh] overflow-y-auto' : 'line-clamp-4')}
+                        >
+                            {alert.message.trimEnd()}
+                        </div>
                         {(isOverflowing || isExpanded) && (
                             <div className="mt-2 flex items-center gap-4">
                                 <button type="button" className={actionButtonClassName} onClick={toggleExpanded}>
@@ -165,8 +160,7 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
                         aria-label="Dismiss"
                         className={cn(
                             '-my-1 -mr-1 flex size-8 shrink-0 items-center justify-center rounded-md',
-                            'text-gray-800 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2',
-                            'dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200',
+                            'text-content-muted hover:bg-surface-hover hover:text-content focus-visible:outline-2 focus-visible:outline-offset-2',
                         )}
                         onClick={beginDismiss}
                     >

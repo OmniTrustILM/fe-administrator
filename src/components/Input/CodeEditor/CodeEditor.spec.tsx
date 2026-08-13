@@ -128,7 +128,7 @@ test.describe('CodeEditor', () => {
         const { ta, calls } = await mountWithCalls(mount, { initial: '', ignoreTabKey: true });
         await ta.focus();
         await ta.press('Tab');
-        expect(calls.length).toBe(0);
+        expect(calls).toHaveLength(0);
     });
 
     test('Backspace removes the tab character when caret follows it', async ({ mount }) => {
@@ -202,7 +202,7 @@ test.describe('CodeEditor', () => {
         await ta.pressSequentially('hello', { delay: 5 });
         expect(await ta.inputValue()).toBe('hello');
 
-        const isMac = await component.page().evaluate(() => /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform));
+        const isMac = await component.page().evaluate(() => /(Mac|iPhone|iPod|iPad)/i.test(navigator.userAgent));
         await ta.press(isMac ? 'Meta+KeyZ' : 'Control+KeyZ');
 
         expect(calls.at(-1)).not.toBe('hello');

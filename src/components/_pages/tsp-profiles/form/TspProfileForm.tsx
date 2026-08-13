@@ -335,7 +335,7 @@ export const TspProfileForm = () => {
                                             placement="bottom"
                                             error={fieldState.error?.message}
                                         />
-                                        <p className="mt-1 text-sm text-gray-500">
+                                        <p className="mt-1 text-sm text-content-subtle">
                                             Stores Basic credentials — required when Basic password authentication is allowed.
                                         </p>
                                     </div>

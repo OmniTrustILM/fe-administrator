@@ -5,7 +5,7 @@ import type { DiscoveriesTestState } from 'ducks/test-reducers';
 import { createMockStore } from 'utils/test-helpers';
 import DiscoveryCertificates from './DiscoveryCertificates';
 
-type DiscoveryCertificatesTestList = DiscoveriesTestState['discoveryCertificates'];
+type DiscoveryCertificatesTestList = NonNullable<DiscoveriesTestState['discoveryCertificates']>;
 
 export type DiscoveryCertificatesWithStoreProps = Readonly<{
     initialEntries?: string[];
@@ -39,7 +39,7 @@ const preloadedState: Parameters<typeof createMockStore>[0] = {
 
 function RequestProbe() {
     const requests = useSelector((state: { discoveries: DiscoveriesTestState }) => state.discoveries.certificatesRequests);
-    const lastRequest = requests[requests.length - 1];
+    const lastRequest = requests.at(-1);
     return (
         <div
             data-testid="certificates-request-probe"

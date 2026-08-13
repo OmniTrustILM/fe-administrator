@@ -904,7 +904,7 @@
               "type": "text",
               "id": "fSbef",
               "name": "Title",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "JsonViewer",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -914,7 +914,7 @@
               "type": "text",
               "id": "d2fYB",
               "name": "Subtitle",
-              "fill": "$color.neutral-300",
+              "fill": "$color.neutral-400",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Read-only syntax-highlighted JSON — always dark, token colors & examples",
@@ -936,7 +936,7 @@
               "type": "text",
               "id": "P0fbFY",
               "name": "Section: Viewer",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "Viewer",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -1279,7 +1279,7 @@
               "type": "text",
               "id": "mXzc6",
               "name": "Section: Token colors",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "Token colors",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -1517,7 +1517,7 @@
               "type": "text",
               "id": "m7Rm4",
               "name": "Section: Examples",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "Examples",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -1527,7 +1527,7 @@
               "type": "text",
               "id": "zVSnp",
               "name": "Nested Caption",
-              "fill": "$color.neutral-300",
+              "fill": "$color.neutral-400",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Nested objects & arrays, pretty-printed with 2-space indent:",
@@ -1726,7 +1726,7 @@
               "type": "text",
               "id": "W49YD",
               "name": "Behavior",
-              "fill": "$color.neutral-300",
+              "fill": "$color.neutral-400",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "Wraps long values (break-words) · vertical scroll with a thin custom scrollbar · falls back to raw text when input isn't valid JSON.",
@@ -1771,15 +1771,15 @@
     },
     "color.gray-700": {
       "type": "color",
-      "value": "#8c8c8c"
+      "value": "#6e6e6e"
     },
     "color.gray-800": {
       "type": "color",
-      "value": "#666666"
+      "value": "#525252"
     },
     "color.gray-900": {
       "type": "color",
-      "value": "#404040"
+      "value": "#1f2937"
     },
     "color.neutral-300": {
       "type": "color",
@@ -1791,7 +1791,7 @@
     },
     "color.neutral-700": {
       "type": "color",
-      "value": "#404040"
+      "value": "#262626"
     },
     "color.neutral-800": {
       "type": "color",

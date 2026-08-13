@@ -142,19 +142,19 @@ export function FilterWidgetSkeleton({
                     <div className={`grid w-full ${filterGridCols === 2 ? 'grid-cols-2 gap-4' : 'grid-cols-4 gap-2'}`}>
                         {Array.from({ length: colCount }, (_, i) => (
                             <div key={i} className="flex flex-col gap-2">
-                                <div className="h-4 w-24 rounded bg-gray-200 dark:bg-neutral-700 mb-1" />
-                                <div className="h-[46px] w-full rounded bg-gray-200 dark:bg-neutral-700" />
+                                <div className="h-4 w-24 rounded bg-surface-sunken mb-1" />
+                                <div className="h-[46px] w-full rounded bg-surface-sunken" />
                             </div>
                         ))}
                     </div>
-                    <div className="h-[46px] min-w-[62px] rounded bg-gray-200 dark:bg-neutral-700" />
+                    <div className="h-[46px] min-w-[62px] rounded bg-surface-sunken" />
                 </div>
                 {hasExtraFilter && (
                     <>
-                        <div className="border-t border-gray-200 mt-8 mb-4" />
+                        <div className="border-t border-divider mt-8 mb-4" />
                         <div className="flex items-center gap-3">
-                            <div className="h-4 w-28 rounded bg-gray-200 dark:bg-neutral-700" />
-                            <div className="h-7 w-13 rounded-full bg-gray-200 dark:bg-neutral-700" />
+                            <div className="h-4 w-28 rounded bg-surface-sunken" />
+                            <div className="h-7 w-13 rounded-full bg-surface-sunken" />
                         </div>
                     </>
                 )}
@@ -325,7 +325,7 @@ export default function FilterWidget({
                     }
                 } else {
                     const name = typeof v === 'object' && v !== null && 'name' in v ? (v as { name?: unknown }).name : undefined;
-                    label = name ? String(name) : JSON.stringify(v);
+                    label = name && (typeof name === 'string' || typeof name === 'number') ? String(name) : JSON.stringify(v);
                 }
                 return { label, value };
             });
@@ -524,7 +524,7 @@ export default function FilterWidget({
                         }}
                         placeholder="eg. 2d 30m"
                     />
-                    <p className="mt-1 text-sm text-gray-600">Duration in format: 0d 0h 0m 0s</p>
+                    <p className="mt-1 text-sm text-content-muted">Duration in format: 0d 0h 0m 0s</p>
                 </>
             );
         }
@@ -571,7 +571,7 @@ export default function FilterWidget({
                         disabled={isDisabled}
                         invalid={isRegex && !!regexError}
                     />
-                    {isRegex && regexError && <p className="mt-1 text-sm text-red-600">{regexError}</p>}
+                    {isRegex && regexError && <p className="mt-1 text-sm text-danger">{regexError}</p>}
                 </>
             );
         }
@@ -826,7 +826,7 @@ export default function FilterWidget({
             </div>
             {extraFilterComponent && (
                 <>
-                    <div className="border-t border-gray-200 my-4"></div>
+                    <div className="border-t border-divider my-4"></div>
                     <div className="mt-4">{extraFilterComponent}</div>
                 </>
             )}

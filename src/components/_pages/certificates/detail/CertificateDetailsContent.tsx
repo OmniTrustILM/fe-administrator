@@ -276,7 +276,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
             registrationWindowElapsed;
         let completeTooltip = 'Complete';
         if (registrationInactive) {
-            completeTooltip = `Complete unavailable — registration is ${registrationStateLabels[registration!.state!] ?? registration!.state}`;
+            completeTooltip = `Complete unavailable — registration is ${registrationStateLabels[registration.state!] ?? registration.state}`;
         } else if (registrationWindowElapsed) {
             completeTooltip = 'Complete unavailable — the issuance window has elapsed';
         }

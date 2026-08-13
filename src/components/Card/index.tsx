@@ -11,16 +11,16 @@ type Props = {
 function Card({ title, subtitle, content, children, isLoading }: Readonly<Props>) {
     if (isLoading) {
         return (
-            <div className="flex flex-col bg-white border border-gray-200 shadow-2xs rounded-xl p-4 md:p-5 dark:bg-neutral-900 dark:border-neutral-700 dark:shadow-neutral-700/70">
+            <div className="flex flex-col bg-surface-raised border border-divider shadow-sm rounded-xl p-4 md:p-5">
                 <Spinner />
             </div>
         );
     }
     return (
-        <div className="flex flex-col bg-white border border-gray-200 shadow-2xs rounded-xl p-4 md:p-5 dark:bg-neutral-900 dark:border-neutral-700 dark:shadow-neutral-700/70">
-            {title && <h3 className="text-lg font-bold text-gray-800 dark:text-white">{title}</h3>}
-            {subtitle && <p className="mt-1 text-xs font-medium uppercase text-gray-500 dark:text-neutral-500">{subtitle}</p>}
-            {content && <p className="mt-2 text-gray-500 dark:text-neutral-400">{content}</p>}
+        <div className="flex flex-col bg-surface-raised border border-divider shadow-sm rounded-xl p-4 md:p-5">
+            {title && <h3 className="text-lg font-bold text-content">{title}</h3>}
+            {subtitle && <p className="mt-1 text-xs font-medium uppercase text-content-subtle">{subtitle}</p>}
+            {content && <p className="mt-2 text-content-subtle">{content}</p>}
             {children}
         </div>
     );

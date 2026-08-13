@@ -42,6 +42,13 @@ const customAttrDescriptor: AttributeDescriptorModel = {
     properties: { label: 'Custom Field', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
 } as AttributeDescriptorModel;
 
+async function fillRegisterBasics(page: import('@playwright/test').Page) {
+    await page.getByTestId('requestType-register').click();
+    await page.getByTestId('select-raProfile-trigger').click();
+    await page.getByRole('option', { name: 'RA One' }).click();
+    await page.getByTestId('authorizationSecret').fill('challenge-secret');
+}
+
 test.describe('CertificateForm', () => {
     test('request mode radio is labelled "Request now"', async ({ mount, page }) => {
         await mount(<CertificateFormTestWrapper />);
@@ -75,7 +82,7 @@ test.describe('CertificateForm', () => {
 
         // Core treats authorizationSecret as optional — omitting it creates an unchallenged pre-registration.
         await expect(page.getByTestId('label-authorizationSecret')).toContainText('Challenge (optional)');
-        await expect(page.getByTestId('label-authorizationSecret').locator('.text-red-500')).toHaveCount(0);
+        await expect(page.getByTestId('label-authorizationSecret').locator('.text-danger')).toHaveCount(0);
     });
 
     test('switching back to Request mode restores the key-source select and hides the challenge input', async ({ mount, page }) => {
@@ -279,8 +286,8 @@ test.describe('CertificateForm', () => {
         await expect(page.getByTestId('select-registerGroups-trigger')).toBeVisible();
 
         // Both are optional: no required (red-star) indicator on their labels.
-        await expect(page.getByTestId('label-registerOwner').locator('.text-red-500')).toHaveCount(0);
-        await expect(page.getByTestId('label-registerGroups').locator('.text-red-500')).toHaveCount(0);
+        await expect(page.getByTestId('label-registerOwner').locator('.text-danger')).toHaveCount(0);
+        await expect(page.getByTestId('label-registerGroups').locator('.text-danger')).toHaveCount(0);
     });
 
     test('Issue now mode does not show the Owner or Groups fields', async ({ mount, page }) => {
@@ -354,13 +361,6 @@ test.describe('CertificateForm', () => {
         await page.getByRole('tab', { name: 'Custom Attributes' }).click();
         await expect(page.getByTestId('text-input-__attributes__customCertificate__.customField')).toHaveValue('keep-me');
     });
-
-    async function fillRegisterBasics(page: import('@playwright/test').Page) {
-        await page.getByTestId('requestType-register').click();
-        await page.getByTestId('select-raProfile-trigger').click();
-        await page.getByRole('option', { name: 'RA One' }).click();
-        await page.getByTestId('authorizationSecret').fill('challenge-secret');
-    }
 
     test('Create is enabled in Pre-register mode with an empty Challenge', async ({ mount, page }) => {
         await mount(

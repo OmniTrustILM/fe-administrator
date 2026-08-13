@@ -76,11 +76,11 @@ const CertificateSettings = ({ platformSettings }: Props) => {
     return (
         <div style={{ paddingTop: '1.5em', paddingBottom: '1.5em' }} className="space-y-6">
             <div className="space-y-2">
-                <h3 className="text-lg font-bold text-[var(--dark-gray-color)] dark:text-neutral-200">Validation</h3>
+                <h3 className="text-lg font-bold text-content">Validation</h3>
                 <CustomTable headers={headers} data={validationData} />
             </div>
             <div className="space-y-2">
-                <h3 className="text-lg font-bold text-[var(--dark-gray-color)] dark:text-neutral-200">Registration</h3>
+                <h3 className="text-lg font-bold text-content">Registration</h3>
                 <CustomTable headers={headers} data={registrationData} />
             </div>
         </div>

@@ -102,7 +102,7 @@ describe('authorities epics - listAuthorityProviders', () => {
             connectorsV2: { listConnectorsV2 },
         });
 
-        const { searchRequestDto } = listConnectorsV2.mock.calls[0][0] as any;
+        const { searchRequestDto } = listConnectorsV2.mock.calls[0][0];
         expect(searchRequestDto.filters).toEqual([
             expect.objectContaining({ fieldIdentifier: 'CONNECTOR_INTERFACE', value: ConnectorInterface.Authority }),
         ]);
@@ -220,7 +220,10 @@ describe('authorities epics - listAuthorityProviders', () => {
             },
         });
 
-        expect(queried.sort()).toEqual([FunctionGroupCode.AuthorityProvider, FunctionGroupCode.LegacyAuthorityProvider].sort());
+        const byName = (a: string, b: string) => a.localeCompare(b);
+        expect(queried.toSorted(byName)).toEqual(
+            [FunctionGroupCode.AuthorityProvider, FunctionGroupCode.LegacyAuthorityProvider].toSorted(byName),
+        );
         expect(emitted[0].payload.connectors.map((c: any) => c.uuid).sort()).toEqual(['legacy-1', 'legacy-old']);
     });
 });

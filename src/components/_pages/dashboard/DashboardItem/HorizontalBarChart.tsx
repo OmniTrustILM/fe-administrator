@@ -1,11 +1,17 @@
 import Widget from 'components/Widget';
+import { useTheme } from 'components/ThemeProvider';
 import { type EntityType, actions as filterActions } from 'ducks/filters';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router';
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { SearchFilterModel } from 'types/certificate';
 import { getDonutChartColorsByRandomNumberOfOptions } from 'utils/dashboard';
 import type { ColorOptions } from './DonutChart';
+
+const CHART_COLORS = {
+    light: { axis: '#6e6e6e', grid: '#e8e8e8', tooltipBg: '#ffffff', tooltipBorder: '#d4d4d4', tooltipText: '#1f2937' },
+    dark: { axis: '#a3a3a3', grid: '#262626', tooltipBg: '#171717', tooltipBorder: '#404040', tooltipText: '#f5f5f5' },
+} as const;
 
 type Props = Readonly<{
     title: string;
@@ -39,6 +45,8 @@ function YAxisTick({ x, y, payload, maxChars = 12 }: YAxisTickProps) {
 function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, overflowCount, topN = 10, colorOptions }: Props) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const { resolvedTheme } = useTheme();
+    const themeColors = CHART_COLORS[resolvedTheme];
 
     const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
     const shown = sorted.slice(0, topN);
@@ -46,7 +54,7 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
     const colors = colorOptions?.colors ?? getDonutChartColorsByRandomNumberOfOptions(labels.length).colors;
     const remaining = (overflowCount ?? labels.length) - labels.length;
 
-    const chartData = shown.map(([label, value], index) => ({ label, value, color: colors[index] ?? '#6B7280' }));
+    const chartData = shown.map(([label, value], index) => ({ label, value, fill: colors[index] ?? '#6B7280', cursor: 'pointer' }));
 
     const longestLabel = labels.reduce((max, label) => Math.max(max, label.length), 0);
     const yAxisWidth = Math.min(180, Math.max(80, longestLabel * 7 + 8));
@@ -62,11 +70,12 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
         <Widget title={title} titleBoldness="bold" className="flex-1">
             <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={chartData} layout="vertical" margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
-                    <CartesianGrid vertical={false} stroke="var(--border-color, #e5e7eb)" strokeDasharray="4" />
+                    <CartesianGrid vertical={false} stroke={themeColors.grid} strokeDasharray="4" />
                     <XAxis
                         type="number"
                         tickFormatter={(value: number) => String(Math.round(value))}
                         tick={{ fontSize: 12 }}
+                        stroke={themeColors.axis}
                         axisLine={false}
                         tickLine={false}
                     />
@@ -75,6 +84,7 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
                         dataKey="label"
                         width={yAxisWidth}
                         tick={<YAxisTick maxChars={yAxisMaxChars} />}
+                        stroke={themeColors.axis}
                         axisLine={false}
                         tickLine={false}
                         interval={0}
@@ -82,16 +92,17 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
                     <Tooltip
                         cursor={{ fill: 'transparent' }}
                         formatter={(value) => [String(value), 'Count']}
-                        contentStyle={{ fontSize: 12 }}
+                        contentStyle={{
+                            fontSize: 12,
+                            backgroundColor: themeColors.tooltipBg,
+                            border: `1px solid ${themeColors.tooltipBorder}`,
+                            color: themeColors.tooltipText,
+                        }}
                     />
-                    <Bar dataKey="value" radius={[0, 2, 2, 0]} isAnimationActive onClick={(_entry, index) => handleBarClick(index)}>
-                        {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} cursor="pointer" />
-                        ))}
-                    </Bar>
+                    <Bar dataKey="value" radius={[0, 2, 2, 0]} isAnimationActive onClick={(_entry, index) => handleBarClick(index)} />
                 </BarChart>
             </ResponsiveContainer>
-            {remaining > 0 && <div className="text-sm text-gray-500 mt-1">+{remaining} more</div>}
+            {remaining > 0 && <div className="text-sm text-content-subtle mt-1">+{remaining} more</div>}
         </Widget>
     );
 }

@@ -9,24 +9,32 @@ import cn from 'classnames';
 
 type Props = Readonly<{
     certificates: CertificateListResponseModel[] | undefined;
+    currentCertificate?: CertificateListResponseModel;
 }>;
 
-export default function CertificateField({ certificates }: Props) {
+export default function CertificateField({ certificates, currentCertificate }: Props) {
     const { control, setValue } = useFormContext();
     const watchedCertificate = useWatch({ control, name: 'certificate' });
 
+    const availableCertificates = useMemo(() => {
+        if (!certificates) return certificates;
+        return currentCertificate && !certificates.some((c) => c.uuid === currentCertificate.uuid)
+            ? [currentCertificate, ...certificates]
+            : certificates;
+    }, [certificates, currentCertificate]);
+
     useEffect(() => {
-        if (watchedCertificate && certificates && !certificates?.find((c) => c.uuid === watchedCertificate)) {
+        if (watchedCertificate && availableCertificates && !availableCertificates.some((c) => c.uuid === watchedCertificate)) {
             setValue('certificate', undefined);
         }
-    }, [certificates, watchedCertificate, setValue]);
+    }, [availableCertificates, watchedCertificate, setValue]);
 
     const optionsForCertificates = useMemo(() => {
-        return certificates?.map((certificate) => ({
+        return availableCertificates?.map((certificate) => ({
             value: certificate.uuid,
             label: `${certificate.commonName} (${certificate.serialNumber})`,
         }));
-    }, [certificates]);
+    }, [availableCertificates]);
 
     return (
         <Controller
@@ -46,7 +54,7 @@ export default function CertificateField({ certificates }: Props) {
                         isClearable={true}
                         error={getFieldErrorMessage(fieldState)}
                         className={cn({
-                            'border-red-500': fieldState.error && fieldState.isTouched,
+                            'border-danger': fieldState.error && fieldState.isTouched,
                         })}
                     />
                 </div>

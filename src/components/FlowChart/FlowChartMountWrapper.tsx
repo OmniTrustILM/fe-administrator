@@ -1,6 +1,7 @@
 import React from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
+import ThemeProvider from 'components/ThemeProvider';
 import FlowChart, { type FlowChartProps } from './index';
 import { createMockStore } from 'utils/test-helpers';
 import { testInitialState } from 'ducks/test-reducers';
@@ -23,7 +24,9 @@ export default function FlowChartMountWrapper({ flowChartProps, initialStoreStat
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>
-                <FlowChart {...flowChartProps} />
+                <ThemeProvider>
+                    <FlowChart {...flowChartProps} />
+                </ThemeProvider>
             </MemoryRouter>
         </Provider>
     );

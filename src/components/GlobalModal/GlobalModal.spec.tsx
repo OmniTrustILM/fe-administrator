@@ -37,9 +37,12 @@ function baseGlobalModal(overrides: Partial<GlobalModalModel> = {}): GlobalModal
 }
 
 test.describe('GlobalModal', () => {
-    test('mounts with closed modal via wrapper', async ({ mount }) => {
+    test('mounts with closed modal via wrapper', async ({ mount, page }) => {
         const store = createMockStore(createGlobalModalPreload());
         await mount(withProviders(<GlobalModalMountWrapper />, { store }));
+
+        // globalModal defaults to isOpen: false, so nothing should be portalled into the document.
+        await expect(page.locator('[data-testid="global-modal"]')).toHaveCount(0);
     });
 
     test('Dialog with getGlobalModalDialogProps OK button runs in browser', async ({ mount, page }) => {

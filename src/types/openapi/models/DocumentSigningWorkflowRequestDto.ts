@@ -14,27 +14,27 @@
 import type { RequestAttribute, SigningWorkflowType } from './';
 
 /**
- * Content signing workflow configuration request
+ * Document signing workflow configuration request
  * @export
- * @interface ContentSigningWorkflowRequestDto
+ * @interface DocumentSigningWorkflowRequestDto
  */
-export interface ContentSigningWorkflowRequestDto {
+export interface DocumentSigningWorkflowRequestDto {
     /**
      * Signing workflow type
      * @type {SigningWorkflowType}
-     * @memberof ContentSigningWorkflowRequestDto
+     * @memberof DocumentSigningWorkflowRequestDto
      */
     type: SigningWorkflowType;
     /**
-     * UUID of the Signature Formatting Provider that constructs the data-to-be-signed (DTBS) for Content signing. Required for ILM-managed signing; must be omitted for delegated signing.
+     * UUID of the Signature Formatting Provider that constructs the data-to-be-signed (DTBS) for Document signing. Required for ILM-managed signing; must be omitted for delegated signing.
      * @type {string}
-     * @memberof ContentSigningWorkflowRequestDto
+     * @memberof DocumentSigningWorkflowRequestDto
      */
     signatureFormattingConnectorUuid?: string;
     /**
-     * Attributes for the Signature Formatting Provider that control DTBS construction for the content signing workflow. Applicable only when ILM-managed signing is used.
+     * Attributes for the Signature Formatting Provider that control DTBS construction for the document signing workflow. Applicable only when ILM-managed signing is used.
      * @type {Array<RequestAttribute>}
-     * @memberof ContentSigningWorkflowRequestDto
+     * @memberof DocumentSigningWorkflowRequestDto
      */
     signatureFormattingConnectorAttributes?: Array<RequestAttribute>;
 }

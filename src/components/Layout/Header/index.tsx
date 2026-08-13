@@ -2,6 +2,7 @@ import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router';
 import { Menu } from 'lucide-react';
 import Dropdown from 'components/Dropdown';
+import ThemeToggle from 'components/ThemeToggle';
 import NotificationsOverview from 'components/_pages/notifications/overview';
 
 import { selectors } from 'ducks/auth';
@@ -18,7 +19,7 @@ function Header({ sidebarToggle }: Readonly<Props>) {
 
     return (
         <header
-            className="flex items-center justify-between sticky top-0 left-0 w-full z-50 bg-blue-500 px-4 py-2 h-[var(--header-height)]"
+            className="flex items-center justify-between sticky top-0 left-0 w-full z-50 bg-surface-header px-4 py-2 h-[var(--header-height)]"
             data-testid="header"
         >
             <Link to="/dashboard" data-testid="header-logo-link">
@@ -66,7 +67,7 @@ function Header({ sidebarToggle }: Readonly<Props>) {
                             </div>
                         }
                         btnStyle="transparent"
-                        className="text-white"
+                        className="text-content-on-brand"
                         items={[
                             {
                                 title: 'Profile',
@@ -77,14 +78,20 @@ function Header({ sidebarToggle }: Readonly<Props>) {
                             {
                                 title: 'Log out',
                                 onClick: () => {
-                                    globalThis.location.href = window.__ENV__.LOGOUT_URL;
+                                    globalThis.location.href = (globalThis as typeof globalThis & { __ENV__: Env }).__ENV__.LOGOUT_URL;
                                 },
                             },
                         ]}
                     />
                 )}
+                <ThemeToggle />
                 <NotificationsOverview />
-                <button className="text-white md:hidden" onClick={sidebarToggle} data-testid="header-sidebar-toggle">
+                <button
+                    type="button"
+                    className="text-content-on-brand md:hidden"
+                    onClick={sidebarToggle}
+                    data-testid="header-sidebar-toggle"
+                >
                     <Menu size={24} />
                 </button>
             </div>

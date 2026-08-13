@@ -78,6 +78,114 @@ Vite is configured with path aliases — always use these instead of relative pa
 
 Tailwind CSS 4 with Preline UI components. The main CSS entry is `src/tailwindcss.css`.
 
+### Theming
+
+The application supports light, dark and system themes, defaulting to system. Colour is expressed
+through semantic tokens, never through raw palette utilities or `dark:` colour variants.
+
+**Three tiers in `src/tailwindcss.css`:**
+
+1. **Primitives** — the `@theme` palette (`--color-blue-*`, `--color-gray-*`). Raw values, never
+   themed, not used directly by components.
+2. **Semantic custom properties** — declared once under `:root` (light values) and again under
+   `.dark` (dark values), e.g. `--surface-raised`, `--content`, `--brand-solid`.
+3. **`@theme inline`** — maps each semantic property onto a `--color-*` Tailwind token (e.g.
+   `--color-surface-raised: var(--surface-raised)`). The `inline` keyword is essential: it makes
+   Tailwind emit `var(--surface-raised)` into the generated utility instead of baking in a literal
+   value, which is what lets the theme flip at runtime by toggling the `.dark` class.
+
+**Always use semantic tokens in components:**
+
+```tsx
+<div className="bg-surface-raised text-content border border-divider" />
+```
+
+Never write `bg-white`, `text-gray-700`, or a `dark:` colour utility — the token already carries
+both themes, so a `dark:` colour utility is a sign the wrong token was chosen. A `dark:` utility on
+a *non-colour* property is fine, e.g. `border-divider dark:border`: `border` alone is a width
+utility, so it can toggle per theme while the colour token stays unconditional. This is how a
+component gets a border in dark mode only.
+
+**Semantic roles**, grouped by tier-2 custom property name (same name minus the `--` prefix is the
+Tailwind utility suffix, e.g. `--surface-raised` → `bg-surface-raised`):
+
+| Group | Tokens |
+|---|---|
+| Surfaces | `surface`, `surface-raised`, `surface-sunken`, `surface-hover`, `surface-active`, `surface-inverse`, `surface-header` |
+| Content | `content`, `content-muted`, `content-subtle`, `content-inverse`, `content-on-brand` |
+| Lines | `divider`, `outline` |
+| Brand | `brand`, `brand-solid`, `brand-solid-hover`, `brand-hover`, `brand-subtle` |
+| Status | `success`, `danger`, `warning`, `info`, each with a `-surface` and `-solid` variant (`danger` and `warning` also have `-fill`/`-fill-hover`) |
+
+`code-color` is a semantic custom property too (used by `.server-content code`), but it has no
+`@theme inline` mapping, so there is no `text-code-color` utility — it is only reachable from
+hand-written CSS via `var(--code-color)`.
+
+A further `node-*` token family (`node-valid`, `node-expired`, `node-revoked`, `node-expiring`,
+`node-invalid`, `node-unchecked`, `node-failed`, `node-inactive`, `node-default`,
+`node-default-text`, `node-default-fill`, `node-danger-action`, `node-icon`, `node-icon-inverse`)
+exists solely for `components/FlowChart` — per-certificate-status node and expand-button colours,
+used with Tailwind opacity modifiers (e.g. `!bg-node-valid/62`). Don't reach for these outside the
+flow chart; they are not part of the general vocabulary.
+
+**Foreground and fill roles are separate tokens.** `brand` is for text, links and icons, and
+lightens in dark mode for contrast. `brand-solid` is the button fill and stays the same dark blue in
+both themes so white text keeps contrast against it; `brand-solid-hover` is its hover state.
+`brand-hover` is the *foreground* hover (for text/links built on `brand`) — using it as a fill hover
+drops white text to a contrast ratio that fails accessibility. Status colours split the same way:
+the plain token for text and icons, `-surface` for tinted backgrounds, `-solid` for non-text
+indicators such as status dots and chart series.
+
+`danger` and `warning` additionally have `-fill`/`-fill-hover` tokens, theme-invariant like
+`brand-solid`. They exist because `-solid` is tuned to be a vivid *indicator* colour (a status dot,
+a chart series), not a button fill — white text on `danger-solid`/`warning-solid` fails AA, and no
+amount of darkening the text fixes it, since the fill itself is too light. A solid `danger` or
+`warning` `Button` therefore uses `danger-fill`/`warning-fill` (and their `-hover` variants) so
+`content-on-brand` white text stays AA in both themes, while `-solid` is left alone for dots and
+chart series.
+
+`content-inverse` is light in both themes, because `surface-inverse` (tooltips) is dark in both.
+
+The same split governs `Badge`, whose `fill` prop defaults to `surface`. A badge that carries text
+must stay on the tinted `-surface`/plain-text treatment; `fill="solid"` paints the vivid `-solid`
+fill and is only for icon-only indicators such as `StatusCircle`, where the 3:1 non-text threshold
+applies. Never paint a raw status hex onto a `Badge` as an inline background either — map the
+status to a `BadgeColor` instead (see `getCertificateStatusBadgeColor`), because the indicator
+hexes sit at a luminance where neither black nor white text reaches 4.5:1.
+
+Hand-written CSS must reference the tier-2 variable directly — `var(--surface-raised)`, never
+`var(--color-surface-raised)` — because `@theme inline` does not emit `--color-*` custom properties
+into `:root`; it only feeds Tailwind's utility generator. Using the `--color-*` name in hand-written
+CSS fails silently: the declaration parses but resolves to nothing.
+
+**Recharts and reactflow take colours as JS props, not classes**, so components that colour them
+(`components/FlowChart`, the dashboard chart components) call `useTheme()` from
+`components/ThemeProvider` and select a colour palette keyed on `resolvedTheme`. `JsonViewer`
+does the same, since it builds syntax-highlighted HTML in JS rather than with Tailwind classes.
+
+Chart series and status dots are the exception: they are picked per *datum*, not per theme, so a
+theme-keyed palette would have to be duplicated for every status. They instead use one
+theme-invariant colour drawn from a mid-luminance band that clears 3:1 against `surface-raised` in
+both themes. `src/utils/chart-contrast.ts` holds the rule (`meetsChartContrast`, and `toChartHex`
+for the generated overflow hues), and `chart-contrast.spec.ts` asserts every certificate status,
+secret status and donut palette entry satisfies it — so a new status colour has to be picked inside
+the band, not at either extreme.
+
+**Runtime.** `src/utils/theme.ts` owns theme resolution, persistence and DOM application, and is
+framework-free. `components/ThemeProvider` exposes `useTheme()` (mode, resolvedTheme, setMode,
+cycleMode) and tracks the OS preference live via a `matchMedia` listener; `useTheme()` throws when
+called outside the provider, so any component test harness that renders a theme-consuming component
+needs a `ThemeProvider` wrapper. An inline script in `index.html` applies the persisted theme before
+first paint so dark-mode users never see a white flash; it duplicates the resolution logic from
+`theme.ts` deliberately, because it runs before any module has loaded, and the two must be kept in
+step by hand. The user-facing control is a single header icon (`components/ThemeToggle`) that cycles
+System → Light → Dark → System.
+
+**Accessibility.** `src/utils/theme-tokens.spec.ts` parses the semantic tokens out of the stylesheet
+and asserts WCAG AA (4.5:1) contrast for every text/background pairing, in both themes, plus AA
+non-text contrast (WCAG 1.4.11, 3:1) for `outline` and each `-solid` status token against
+`surface-raised`. Changing a token value to something that fails either threshold fails the suite.
+
 ### Code Style
 
 Biome enforces linting and formatting: 4-space indent, 140-char line width, single quotes, trailing commas everywhere, semicolons required. Suppress rules only with a justified `biome-ignore` comment.

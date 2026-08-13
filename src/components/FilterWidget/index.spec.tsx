@@ -117,7 +117,7 @@ test.describe('FilterWidget', () => {
         await configureMetaFilter(page, 'Status', 'status', 'Matches', FilterConditionOperator.Matches);
         await fillEditableInput(page, 'Enter regex value', '(');
         await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeDisabled();
-        await expect(page.locator('p.text-red-600')).toBeVisible();
+        await expect(page.locator('p.text-danger')).toBeVisible();
     });
 
     test('interval condition renders duration input helper', async ({ mount, page }) => {

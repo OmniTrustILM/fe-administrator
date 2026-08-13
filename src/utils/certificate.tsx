@@ -1,3 +1,4 @@
+import type { BadgeColor } from 'components/Badge';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { useCallback } from 'react';
 import { useSelector } from 'react-redux';
@@ -72,60 +73,107 @@ export function downloadFile(content: BlobPart, fileName: string) {
     element.click();
 }
 
-export function getCertificateStatusColor(
-    status:
-        | CertificateState
-        | CertificateValidationStatus
-        | CertificateEventHistoryDtoStatusEnum
-        | ComplianceStatus
-        | ComplianceRuleStatus
-        | CertificateSubjectType,
-) {
+export type CertificateStatusLike =
+    | CertificateState
+    | CertificateValidationStatus
+    | CertificateEventHistoryDtoStatusEnum
+    | ComplianceStatus
+    | ComplianceRuleStatus
+    | CertificateSubjectType;
+
+/**
+ * The semantic Badge colour a status reads as. Text badges must go through this rather than paint
+ * `getCertificateStatusColor` on as a background: those hexes are indicator colours picked for a
+ * dot on a surface, and several of them (teal #12a393, amber #b68b06) cannot carry legible text of
+ * any colour. The Badge tokens carry a contrast-safe foreground for both themes, and the status
+ * label itself is what distinguishes, say, Revoked from Failed.
+ */
+export function getCertificateStatusBadgeColor(status: CertificateStatusLike): BadgeColor {
+    switch (status) {
+        case CertificateState.Issued:
+        case CertificateValidationStatus.Valid:
+        case ComplianceStatus.Ok:
+        case ComplianceRuleStatus.Ok:
+        case CertificateEventHistoryDtoStatusEnum.Success:
+        case CertificateSubjectType.RootCa:
+            return 'success';
+
+        case CertificateState.Rejected:
+        case CertificateState.Failed:
+        case CertificateState.PendingRevoke:
+        case CertificateState.Revoked:
+        case CertificateValidationStatus.Expired:
+        case CertificateValidationStatus.Revoked:
+        case CertificateValidationStatus.Invalid:
+        case CertificateValidationStatus.Failed:
+        case ComplianceStatus.Nok:
+        case ComplianceRuleStatus.Nok:
+        case CertificateEventHistoryDtoStatusEnum.Failed:
+            return 'danger';
+
+        case CertificateValidationStatus.Expiring:
+        case CertificateSubjectType.SelfSignedEndEntity:
+            return 'warning';
+
+        case CertificateState.Requested:
+        case CertificateState.PendingApproval:
+        case CertificateState.PendingIssue:
+        case CertificateState.Registered:
+        case CertificateState.PendingRegistration:
+        case CertificateValidationStatus.NotChecked:
+        case ComplianceStatus.NotChecked:
+        case CertificateSubjectType.IntermediateCa:
+            return 'info';
+
+        default:
+            return 'secondary';
+    }
+}
+
+export function getCertificateStatusColor(status: CertificateStatusLike) {
     switch (status) {
         case CertificateState.Requested:
-            return '#3754a5';
+        case CertificateState.PendingApproval:
+            return '#3f61be';
         case CertificateState.Rejected:
-            return '#EF4444';
-        case CertificateState.Issued:
-            return '#14B8A6';
         case CertificateState.Failed:
             return '#EF4444';
-        case CertificateState.PendingApproval:
-            return '#3754a5';
+        case CertificateState.Issued:
+            return '#12a393';
         case CertificateState.PendingIssue:
             return '#3782a5';
         case CertificateState.PendingRevoke:
             return '#eb3f33';
         case CertificateState.Revoked:
-            return '#632828';
+            return '#aa4545';
         case CertificateState.Registered:
             return '#8B5CF6';
         case CertificateState.PendingRegistration:
-            return '#A78BFA';
+            return '#9c7cf9';
 
         case CertificateValidationStatus.Valid:
-            return '#14B8A6';
+            return '#12a393';
         case CertificateValidationStatus.Expired:
             return '#EF4444';
         case CertificateValidationStatus.Revoked:
-            return '#632828';
+            return '#aa4545';
         case CertificateValidationStatus.Expiring:
-            return '#EAB308';
+            return '#b68b06';
         case CertificateValidationStatus.Invalid:
-            return '#1F2937';
+            return '#4f688c';
         case CertificateValidationStatus.Inactive:
             return '#6c757d';
         case CertificateValidationStatus.NotChecked:
             return '#2798E7';
         case CertificateValidationStatus.Failed:
-            return '#9c0012';
+            return '#cf0018';
 
         case ComplianceStatus.Na:
             return '#6c757d';
         case ComplianceStatus.Nok:
             return '#EF4444';
         case ComplianceStatus.Ok:
-            return '#14B8A6';
+            return '#12a393';
         case ComplianceStatus.NotChecked:
             return '#2798E7';
 
@@ -134,21 +182,21 @@ export function getCertificateStatusColor(
         case ComplianceRuleStatus.Nok:
             return '#EF4444';
         case ComplianceRuleStatus.Ok:
-            return '#14B8A6';
+            return '#12a393';
 
         case CertificateEventHistoryDtoStatusEnum.Failed:
             return '#EF4444';
         case CertificateEventHistoryDtoStatusEnum.Success:
-            return '#14B8A6';
+            return '#12a393';
 
         case CertificateSubjectType.EndEntity:
             return '#6c757d';
         case CertificateSubjectType.SelfSignedEndEntity:
-            return '#EAB308';
+            return '#b68b06';
         case CertificateSubjectType.IntermediateCa:
-            return '#3754a5';
+            return '#3f61be';
         case CertificateSubjectType.RootCa:
-            return '#14B8A6';
+            return '#12a393';
 
         default:
             return '#6c757d';

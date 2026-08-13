@@ -214,7 +214,7 @@ export default function TriggerEditorWidget({ resource, event, selectedTriggers,
 
     return (
         <Widget title="Triggers">
-            {noteText && <p className="text-gray-500 mb-2">Note: {noteText}</p>}
+            {noteText && <p className="text-content-subtle mb-2">Note: {noteText}</p>}
             <CustomTable
                 hasHeader={!!triggerTableData.length}
                 data={triggerTableData}

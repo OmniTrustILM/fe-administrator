@@ -4,11 +4,12 @@ type SelectValueMap = Record<string, unknown>;
 
 type MockButton = {
     tooltip?: string;
-    icon?: ReactNode;
+    icon?: string;
     onClick?: () => void;
 };
 
 type MockDialogButton = {
+    key?: string;
     body?: ReactNode;
     onClick?: () => void;
     disabled?: boolean;
@@ -42,7 +43,7 @@ export const widgetMockModule = () => ({
     default: ({ title, widgetButtons, children }: { title?: string; widgetButtons?: MockButton[]; children?: ReactNode }) => (
         <div data-testid={`widget-${title || 'root'}`}>
             {(widgetButtons || []).map((button) => (
-                <button key={button.tooltip ?? String(button.icon)} title={button.tooltip} onClick={button.onClick}>
+                <button type="button" key={button.tooltip ?? button.icon} title={button.tooltip} onClick={button.onClick}>
                     {button.icon}
                 </button>
             ))}
@@ -69,9 +70,11 @@ export const dialogMockModule = () => ({
             <div data-testid="dialog">
                 <div>{caption}</div>
                 <div>{body}</div>
-                <button onClick={toggle}>toggle</button>
-                {(buttons || []).map((button) => (
-                    <button key={String(button.body)} onClick={button.onClick} disabled={button.disabled}>
+                <button type="button" onClick={toggle}>
+                    toggle
+                </button>
+                {(buttons || []).map((button, index) => (
+                    <button type="button" key={button.key ?? index} onClick={button.onClick} disabled={button.disabled}>
                         {button.body}
                     </button>
                 ))}
@@ -97,7 +100,7 @@ export const widgetButtonsMockModule = () => ({
     default: ({ buttons }: { buttons?: MockButton[] }) => (
         <div>
             {(buttons || []).map((button) => (
-                <button key={button.tooltip ?? String(button.icon)} title={button.tooltip} onClick={button.onClick}>
+                <button type="button" key={button.tooltip ?? button.icon} title={button.tooltip} onClick={button.onClick}>
                     {button.icon}
                 </button>
             ))}
@@ -108,6 +111,7 @@ export const widgetButtonsMockModule = () => ({
 export const createSelectMockModule = (valuesById: SelectValueMap, defaultValue: unknown = 'user-1') => ({
     default: ({ id, onChange, isMulti }: { id?: string; onChange: (value: unknown) => void; isMulti?: boolean }) => (
         <button
+            type="button"
             data-testid={`select-${id}`}
             onClick={() => {
                 if (isMulti) {

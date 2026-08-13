@@ -4,11 +4,13 @@ type Props = {
 };
 
 function ObjectValues({ className, obj }: Readonly<Props>) {
-    if (!obj) return null;
+    if (obj == null) return null;
 
     if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') return <>{obj}</>;
 
-    if (typeof obj !== 'object') return <>{String(obj)}</>;
+    if (typeof obj === 'bigint' || typeof obj === 'symbol') return <>{String(obj)}</>;
+
+    if (typeof obj !== 'object') return null;
 
     return (
         <ul className={className}>

@@ -89,15 +89,15 @@ export default function CbomVersionsHistory() {
                 id: version.uuid,
                 columns: [
                     <div key={`version-link-wrap-${version.uuid}`} className="inline-flex items-center gap-1">
-                        <Link className="text-[var(--primary-blue-color)]" to={`/cboms/detail/${version.uuid}`}>
+                        <Link className="text-brand" to={`/cboms/detail/${version.uuid}`}>
                             {`Version ${version.version}`}
                         </Link>
                         {(() => {
                             if (version.version === latestVersionNumber) {
-                                return <span className="text-[var(--dark-gray-color)]">(Latest)</span>;
+                                return <span className="text-content">(Latest)</span>;
                             }
                             if (version.version === originalVersionNumber) {
-                                return <span className="text-[var(--dark-gray-color)]">(Original)</span>;
+                                return <span className="text-content">(Original)</span>;
                             }
                             return null;
                         })()}

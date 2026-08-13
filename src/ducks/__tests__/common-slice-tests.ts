@@ -31,6 +31,7 @@ export function runCommonSliceTests<TState extends Record<string, unknown>>(opts
         test('clearDeleteErrorMessages clears error fields', () => {
             const state = { ...initialState, ...deleteErrorOverrides };
             const next = reducer(state, actions.clearDeleteErrorMessages!());
+            expect(next).not.toBe(state);
             deleteErrorAssertions(next);
         });
     }

@@ -1,5 +1,5 @@
 {
-  "version": "2.13",
+  "version": "2.14",
   "children": [
     {
       "type": "frame",
@@ -9,7 +9,7 @@
       "clip": true,
       "width": 1000,
       "height": 620,
-      "fill": "$color.gray-100",
+      "fill": "#f8fafc",
       "cornerRadius": 12,
       "layout": "vertical",
       "gap": 32,
@@ -32,7 +32,7 @@
               "type": "text",
               "id": "Ymo6u",
               "name": "Page Title",
-              "fill": "$color.gray-900",
+              "fill": "#1f2937",
               "content": "Light",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -42,7 +42,7 @@
               "type": "text",
               "id": "eF182",
               "name": "Page Subtitle",
-              "fill": "$color.gray-700",
+              "fill": "#525252",
               "content": "Card design system — variants and states",
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -94,7 +94,7 @@
                   "type": "text",
                   "id": "DzbGe",
                   "name": "Empty Label",
-                  "fill": "$color.gray-700",
+                  "fill": "#6e6e6e",
                   "content": "Empty",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -139,7 +139,7 @@
                       "type": "text",
                       "id": "WJFa8",
                       "name": "Card Title",
-                      "fill": "$color.gray-800",
+                      "fill": "#1f2937",
                       "content": "Card title",
                       "fontFamily": "Inter",
                       "fontSize": 18,
@@ -151,7 +151,7 @@
                   "type": "text",
                   "id": "dVLRC",
                   "name": "Title Label",
-                  "fill": "$color.gray-700",
+                  "fill": "#6e6e6e",
                   "content": "Title",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -196,7 +196,7 @@
                       "type": "text",
                       "id": "C0VbFm",
                       "name": "Subtitle Text",
-                      "fill": "$color.gray-500",
+                      "fill": "#6e6e6e",
                       "content": "CATEGORY",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -206,7 +206,7 @@
                       "type": "text",
                       "id": "OGDaB",
                       "name": "Title Text",
-                      "fill": "$color.gray-800",
+                      "fill": "#1f2937",
                       "content": "Card title",
                       "fontFamily": "Inter",
                       "fontSize": 18,
@@ -218,7 +218,7 @@
                   "type": "text",
                   "id": "WbcbW",
                   "name": "TitleSub Label",
-                  "fill": "$color.gray-700",
+                  "fill": "#6e6e6e",
                   "content": "Title + Subtitle",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -263,7 +263,7 @@
                       "type": "text",
                       "id": "kgtXr",
                       "name": "Subtitle Text",
-                      "fill": "$color.gray-500",
+                      "fill": "#6e6e6e",
                       "content": "CATEGORY",
                       "fontFamily": "Inter",
                       "fontSize": 11,
@@ -273,7 +273,7 @@
                       "type": "text",
                       "id": "O5Bw9",
                       "name": "Title Text",
-                      "fill": "$color.gray-800",
+                      "fill": "#1f2937",
                       "content": "Card title",
                       "fontFamily": "Inter",
                       "fontSize": 18,
@@ -283,7 +283,7 @@
                       "type": "text",
                       "id": "bjIIK",
                       "name": "Body Text",
-                      "fill": "$color.gray-500",
+                      "fill": "#525252",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "This is the card body content with some descriptive text.",
@@ -297,7 +297,7 @@
                   "type": "text",
                   "id": "vsGo6",
                   "name": "FullContent Label",
-                  "fill": "$color.gray-700",
+                  "fill": "#6e6e6e",
                   "content": "Full content",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -349,7 +349,7 @@
                       "fill": "$color.transparent",
                       "width": 24,
                       "height": 24,
-                      "stroke": "$color.blue-500",
+                      "stroke": "#0073cf",
                       "strokeWidth": 2.5,
                       "strokeLinecap": "round"
                     }
@@ -359,7 +359,7 @@
                   "type": "text",
                   "id": "FKIfW",
                   "name": "Loading Label",
-                  "fill": "$color.gray-700",
+                  "fill": "#6e6e6e",
                   "content": "Loading",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -379,7 +379,7 @@
       "clip": true,
       "width": 1000,
       "height": 620,
-      "fill": "$color.neutral-950",
+      "fill": "#0a0a0a",
       "cornerRadius": 12,
       "layout": "vertical",
       "gap": 32,
@@ -400,7 +400,7 @@
             {
               "type": "text",
               "id": "FrCDW",
-              "fill": "$color.white",
+              "fill": "#f5f5f5",
               "content": "Dark",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -438,7 +438,7 @@
                   "height": 160,
                   "fill": "$color.neutral-900",
                   "cornerRadius": 12,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "effect": {
                     "type": "shadow",
@@ -454,7 +454,7 @@
                 {
                   "type": "text",
                   "id": "P81Z5",
-                  "fill": "$color.neutral-300",
+                  "fill": "#a3a3a3",
                   "content": "Empty",
                   "textAlign": "center",
                   "fontFamily": "Inter",
@@ -477,7 +477,7 @@
                   "height": 160,
                   "fill": "$color.neutral-900",
                   "cornerRadius": 12,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "effect": {
                     "type": "shadow",
@@ -496,7 +496,7 @@
                     {
                       "type": "text",
                       "id": "kbNMV",
-                      "fill": "$color.white",
+                      "fill": "#f5f5f5",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Card title",
@@ -509,7 +509,7 @@
                 {
                   "type": "text",
                   "id": "KKkpF",
-                  "fill": "$color.neutral-300",
+                  "fill": "#a3a3a3",
                   "content": "Title",
                   "textAlign": "center",
                   "fontFamily": "Inter",
@@ -532,7 +532,7 @@
                   "height": 160,
                   "fill": "$color.neutral-900",
                   "cornerRadius": 12,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "effect": {
                     "type": "shadow",
@@ -551,7 +551,7 @@
                     {
                       "type": "text",
                       "id": "yeKWJ",
-                      "fill": "$color.neutral-500",
+                      "fill": "#a3a3a3",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "CATEGORY",
@@ -562,7 +562,7 @@
                     {
                       "type": "text",
                       "id": "ZRFC2",
-                      "fill": "$color.white",
+                      "fill": "#f5f5f5",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Card title",
@@ -575,7 +575,7 @@
                 {
                   "type": "text",
                   "id": "wzria",
-                  "fill": "$color.neutral-300",
+                  "fill": "#a3a3a3",
                   "content": "Title + Subtitle",
                   "textAlign": "center",
                   "fontFamily": "Inter",
@@ -598,7 +598,7 @@
                   "height": 160,
                   "fill": "$color.neutral-900",
                   "cornerRadius": 12,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "effect": {
                     "type": "shadow",
@@ -617,7 +617,7 @@
                     {
                       "type": "text",
                       "id": "x8xHW",
-                      "fill": "$color.neutral-500",
+                      "fill": "#a3a3a3",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "CATEGORY",
@@ -628,7 +628,7 @@
                     {
                       "type": "text",
                       "id": "GHh9w",
-                      "fill": "$color.white",
+                      "fill": "#f5f5f5",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "Card title",
@@ -639,7 +639,7 @@
                     {
                       "type": "text",
                       "id": "dLIKp",
-                      "fill": "$color.neutral-400",
+                      "fill": "#d4d4d4",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "This is the card body content with some descriptive text.",
@@ -652,7 +652,7 @@
                 {
                   "type": "text",
                   "id": "cynQ9",
-                  "fill": "$color.neutral-300",
+                  "fill": "#a3a3a3",
                   "content": "Full content",
                   "textAlign": "center",
                   "fontFamily": "Inter",
@@ -675,7 +675,7 @@
                   "height": 160,
                   "fill": "$color.neutral-900",
                   "cornerRadius": 12,
-                  "stroke": "$color.neutral-700",
+                  "stroke": "#262626",
                   "strokeWidth": 1,
                   "effect": {
                     "type": "shadow",
@@ -698,7 +698,7 @@
                       "fill": "$color.transparent",
                       "width": 24,
                       "height": 24,
-                      "stroke": "$color.blue-500",
+                      "stroke": "#3399ff",
                       "strokeWidth": 2.5,
                       "strokeLinecap": "round"
                     }
@@ -707,7 +707,7 @@
                 {
                   "type": "text",
                   "id": "J2K8A",
-                  "fill": "$color.neutral-300",
+                  "fill": "#a3a3a3",
                   "content": "Loading",
                   "textAlign": "center",
                   "fontFamily": "Inter",
@@ -794,5 +794,6 @@
       "type": "color",
       "value": "#00000000"
     }
-  }
+  },
+  "fileToken": "2a2c001b-3f53-47ef-9862-90a1c510424c"
 }

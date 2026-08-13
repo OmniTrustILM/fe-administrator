@@ -42,7 +42,7 @@ test.describe('SecretStateBadge', () => {
 
         const badge = component.getByText('Expired');
         await expect(badge).toBeVisible();
-        await expect(badge).toHaveClass(/border-gray-500/);
-        await expect(badge).toHaveClass(/text-\[var\(--dark-gray-color\)\]/);
+        await expect(badge).toHaveClass(/border-outline/);
+        await expect(badge).toHaveClass(/text-content/);
     });
 });

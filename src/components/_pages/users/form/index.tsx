@@ -508,7 +508,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
                                                 isClearable
                                             />
                                             {fieldState.error && fieldState.isTouched && (
-                                                <p className="mt-1 text-sm text-red-600">
+                                                <p className="mt-1 text-sm text-danger">
                                                     {typeof fieldState.error === 'string'
                                                         ? fieldState.error
                                                         : fieldState.error?.message || 'Invalid value'}
@@ -609,7 +609,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
                                                 isDisabled={user?.systemUser}
                                             />
                                             {fieldState.error && fieldState.isTouched && (
-                                                <p className="mt-1 text-sm text-red-600">
+                                                <p className="mt-1 text-sm text-danger">
                                                     {typeof fieldState.error === 'string'
                                                         ? fieldState.error
                                                         : fieldState.error?.message || 'Invalid value'}
@@ -627,7 +627,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
                                         {certToUpload ? (
                                             <CertificateAttributes certificate={certToUpload} />
                                         ) : (
-                                            <span className="text-sm text-gray-600 dark:text-neutral-400">
+                                            <span className="text-sm text-content-muted">
                                                 {certFileContent
                                                     ? 'Certificate to be uploaded selected.'
                                                     : 'Certificate to be uploaded not selected'}
@@ -638,7 +638,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
                                             Choose File
                                         </Button>
                                     </div>
-                                    <p className="text-sm text-gray-500 dark:text-neutral-400">
+                                    <p className="text-sm text-content-subtle">
                                         Upload certificate of client based on which will be authenticated to RA profile.
                                     </p>
                                 </div>
@@ -674,7 +674,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
                                                     isClearable
                                                 />
                                                 {fieldState.error && fieldState.isTouched && (
-                                                    <p className="mt-1 text-sm text-red-600">
+                                                    <p className="mt-1 text-sm text-danger">
                                                         {typeof fieldState.error === 'string'
                                                             ? fieldState.error
                                                             : fieldState.error?.message || 'Invalid value'}

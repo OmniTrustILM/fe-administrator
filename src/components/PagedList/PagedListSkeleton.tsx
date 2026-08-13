@@ -1,9 +1,8 @@
 import { FilterWidgetSkeleton } from 'components/FilterWidget';
 import TableSkeleton from 'components/CustomTable/TableSkeleton';
 
-const barClass = 'rounded bg-gray-200 dark:bg-neutral-700';
-const cardClass =
-    'relative flex flex-col rounded-xl border border-gray-200 dark:border-neutral-700 p-4 md:p-5 shadow-2xs bg-white dark:bg-neutral-900 w-full';
+const barClass = 'rounded bg-surface-sunken';
+const cardClass = 'relative flex flex-col rounded-xl border border-divider p-4 md:p-5 shadow-2xs bg-surface-raised w-full';
 
 type Props = {
     hasFilter?: boolean;

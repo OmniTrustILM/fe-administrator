@@ -1341,7 +1341,7 @@ export default function CertificateDetail() {
                                     flowDirection="TB"
                                 />
                             ) : (
-                                <div className="p-4 text-sm text-gray-500">No flow chart data available.</div>
+                                <div className="p-4 text-sm text-content-subtle">No flow chart data available.</div>
                             ),
                         },
                         {
@@ -1443,7 +1443,7 @@ export default function CertificateDetail() {
                                 Cancel
                             </Button>
                         </Container>
-                        {isAlreadyRelatedError ? <span className="text-red-600">Certificate is already related</span> : null}
+                        {isAlreadyRelatedError ? <span className="text-danger">Certificate is already related</span> : null}
                     </>
                 }
             />
@@ -1498,6 +1498,7 @@ export default function CertificateDetail() {
             <Dialog
                 isOpen={confirmRemove}
                 caption={`Remove Certificate from Location`}
+                size="lg"
                 body={
                     <>
                         You are about to remove a Certificate from selected locations:
@@ -1520,8 +1521,8 @@ export default function CertificateDetail() {
                 }
                 toggle={() => setConfirmRemove(false)}
                 buttons={[
-                    { color: 'primary', onClick: onRemove, body: 'Remove' },
                     { color: 'secondary', variant: 'outline', onClick: () => setConfirmRemove(false), body: 'Cancel' },
+                    { color: 'primary', onClick: onRemove, body: 'Remove' },
                 ]}
             />
         </div>

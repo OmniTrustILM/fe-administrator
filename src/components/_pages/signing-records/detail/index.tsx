@@ -72,9 +72,8 @@ export default function SigningRecordDetail() {
 
     const generalData: TableDataRow[] = useMemo(
         () =>
-            !detail
-                ? []
-                : [
+            detail
+                ? [
                       { id: 'uuid', columns: ['UUID', detail.uuid] },
                       { id: 'name', columns: ['Name', detail.name] },
                       {
@@ -100,7 +99,8 @@ export default function SigningRecordDetail() {
                               detail.signedDocumentRetrievedAt ? dateFormatter(detail.signedDocumentRetrievedAt) : '-',
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [detail],
     );
 
@@ -123,7 +123,7 @@ export default function SigningRecordDetail() {
                             <p className="text-base font-medium">
                                 {isMissing ? 'This Signing Record no longer exists.' : 'Unable to load Signing Record detail.'}
                             </p>
-                            <p className="mt-2 text-sm text-base-content/80">{detailError ?? 'Please try again later.'}</p>
+                            <p className="mt-2 text-sm text-content-muted">{detailError ?? 'Please try again later.'}</p>
                             <div className="mt-4">
                                 <Button
                                     type="button"
@@ -152,6 +152,7 @@ export default function SigningRecordDetail() {
 
             <Widget widgetLockName={LockWidgetNameEnum.SigningRecordDetail} busy={isBusy} noBorder>
                 <TabLayout
+                    tabUrlParam="tab"
                     tabs={[
                         {
                             title: 'Details',
@@ -177,7 +178,7 @@ export default function SigningRecordDetail() {
                                     {detail?.requestMetadataJson ? (
                                         <JsonViewer value={detail.requestMetadataJson} height={600} />
                                     ) : (
-                                        <p className="text-gray-400 text-sm">No request metadata available.</p>
+                                        <p className="text-content-subtle text-sm">No request metadata available.</p>
                                     )}
                                 </Widget>
                             ),

@@ -1,4 +1,5 @@
 import Widget from 'components/Widget';
+import { useTheme } from 'components/ThemeProvider';
 import { type EntityType, actions as filterActions } from 'ducks/filters';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router';
@@ -6,6 +7,11 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { SigningRecordStatisticsPeriod } from 'types/openapi';
 import type { SearchFilterModel } from 'types/certificate';
 import type { ColorOptions } from './DonutChart';
+
+const CHART_COLORS = {
+    light: { axis: '#6e6e6e', grid: '#e8e8e8', tooltipBg: '#ffffff', tooltipBorder: '#d4d4d4', tooltipText: '#1f2937' },
+    dark: { axis: '#a3a3a3', grid: '#262626', tooltipBg: '#171717', tooltipBorder: '#404040', tooltipText: '#f5f5f5' },
+} as const;
 
 type Props = Readonly<{
     title: string;
@@ -39,6 +45,8 @@ function TimeSeriesChart({
 }: Props) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const { resolvedTheme } = useTheme();
+    const colors = CHART_COLORS[resolvedTheme];
 
     const isoKeys = Object.keys(data);
     const isHourly = period === SigningRecordStatisticsPeriod._24h;
@@ -55,7 +63,7 @@ function TimeSeriesChart({
     const bucketEndIso = (index: number): string => {
         if (index + 1 < isoKeys.length) return isoKeys[index + 1];
         const startMs = new Date(isoKeys[index]).getTime();
-        const intervalMs = isoKeys.length > 1 ? new Date(isoKeys[1]).getTime() - new Date(isoKeys[0]).getTime() : 3600_000;
+        const intervalMs = isoKeys.length > 1 ? new Date(isoKeys[1]).getTime() - new Date(isoKeys[0]).getTime() : 3_600_000;
         return new Date(startMs + intervalMs).toISOString();
     };
 
@@ -85,7 +93,7 @@ function TimeSeriesChart({
                 }}
             >
                 <circle cx={cx} cy={cy} r={12} fill="transparent" />
-                <circle cx={cx} cy={cy} r={4} fill={color} stroke="#fff" strokeWidth={1} />
+                <circle cx={cx} cy={cy} r={4} fill={color} stroke={colors.tooltipBg} strokeWidth={1} />
             </g>
         );
     };
@@ -93,7 +101,7 @@ function TimeSeriesChart({
     return (
         <Widget title={title} titleBoldness="bold" className="col-span-full" busy={isLoading}>
             <div className="flex justify-end mb-2">
-                <div className="inline-flex rounded-md border border-gray-200 dark:border-neutral-700 overflow-hidden" role="group">
+                <fieldset className="inline-flex rounded-md border border-divider overflow-hidden" aria-label="Time period">
                     {PERIOD_OPTIONS.map((option) => (
                         <button
                             key={option}
@@ -102,15 +110,13 @@ function TimeSeriesChart({
                                 if (option !== period) onPeriodChange(option);
                             }}
                             className={`px-3 py-1 text-sm ${
-                                option === period
-                                    ? 'bg-[var(--primary-blue-color)] text-white'
-                                    : 'bg-transparent text-gray-600 dark:text-neutral-300'
+                                option === period ? 'bg-brand-solid text-content-on-brand' : 'bg-transparent text-content-muted'
                             }`}
                         >
                             {option}
                         </button>
                     ))}
-                </div>
+                </fieldset>
             </div>
             <ResponsiveContainer width="100%" height={260}>
                 <AreaChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
@@ -121,23 +127,33 @@ function TimeSeriesChart({
                             <stop offset="100%" stopColor={color} stopOpacity={0.05} />
                         </linearGradient>
                     </defs>
-                    <CartesianGrid stroke="var(--border-color, #e5e7eb)" strokeDasharray="4" />
+                    <CartesianGrid stroke={colors.grid} strokeDasharray="4" />
                     <XAxis
                         dataKey="label"
                         interval="preserveStartEnd"
                         minTickGap={24}
                         tick={{ fontSize: 12 }}
+                        stroke={colors.axis}
                         axisLine={false}
                         tickLine={false}
                     />
                     <YAxis
                         tickFormatter={(value: number) => String(Math.round(value))}
                         tick={{ fontSize: 12 }}
+                        stroke={colors.axis}
                         axisLine={false}
                         tickLine={false}
                         width={32}
                     />
-                    <Tooltip cursor={{ stroke: color, strokeDasharray: '4' }} contentStyle={{ fontSize: 12 }} />
+                    <Tooltip
+                        cursor={{ stroke: color, strokeDasharray: '4' }}
+                        contentStyle={{
+                            fontSize: 12,
+                            backgroundColor: colors.tooltipBg,
+                            border: `1px solid ${colors.tooltipBorder}`,
+                            color: colors.tooltipText,
+                        }}
+                    />
                     <Area
                         type="monotone"
                         dataKey="value"

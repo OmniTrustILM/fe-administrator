@@ -422,7 +422,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                         <Controller
                             name="name"
                             control={control}
-                            rules={buildValidationRules([validateRequired(), validateAlphaNumericWithoutAccents()])}
+                            rules={buildValidationRules(editMode ? [] : [validateRequired(), validateAlphaNumericWithoutAccents()])}
                             render={({ field, fieldState }) => (
                                 <TextInput
                                     {...field}
@@ -486,7 +486,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                         />
 
                         <div>
-                            <p className="text-sm text-gray-500 mb-2">Minimum expiry days to allow renewal of certificate.</p>
+                            <p className="text-sm text-content-subtle mb-2">Minimum expiry days to allow renewal of certificate.</p>
                             <Controller
                                 name="renewalThreshold"
                                 control={control}
@@ -593,7 +593,12 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                             )}
                         />
 
-                        <CertificateField certificates={certificates} />
+                        <CertificateField
+                            certificates={certificates}
+                            currentCertificate={
+                                watchedEnableIntune === (scepProfile?.enableIntune ?? false) ? scepProfile?.caCertificate : undefined
+                            }
+                        />
 
                         <Widget
                             title="RA Profile Configuration"

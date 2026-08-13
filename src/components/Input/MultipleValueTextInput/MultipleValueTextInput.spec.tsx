@@ -330,6 +330,7 @@ test.describe('MultipleValueTextInput', () => {
         const option = page.getByRole('option', { name: 'Choice 1' });
         await option.click();
         await expect.poll(() => values, { timeout: 2000 }).toContain('choice1');
+        expect(values).toContain('choice1');
     });
 
     test('should sync internal options when initialOptions change via wrapper', async ({ mount }) => {

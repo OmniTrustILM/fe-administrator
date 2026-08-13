@@ -190,16 +190,67 @@ Always set `name` on every node. Use descriptive, hierarchical names:
 
 ## 7. Light vs Dark Color Map
 
+Code consumes these roles as Tailwind tokens defined in `src/tailwindcss.css` (e.g.
+`bg-surface-raised`, `text-content`), where a single class resolves to the right colour in either
+theme at runtime. `.pen` files cannot reference a CSS variable or a theme class, so each Light and
+Dark page instead sets the literal hex value directly via `$color.semantic.<role>.light` /
+`$color.semantic.<role>.dark` (see `src/design-system/tokens.json`).
+
 | Role | Light | Dark |
 |------|-------|------|
-| Page background | `$color.white` | `$color.neutral-900` |
-| Page border | `$color.gray-200` | `$color.neutral-700` |
-| Page title | `$color.gray-900` | `$color.white` |
-| Subtitle / meta | `$color.gray-700` | `$color.neutral-300` |
-| Body text | `$color.gray-500` | `$color.neutral-400` |
-| Divider | `$color.gray-200` | `$color.neutral-700` |
-| Subtle bg / surface | `$color.gray-100` | `$color.neutral-800` |
-| Border on surface | `$color.gray-200` | `$color.neutral-700` |
+| `surface` | `#f8fafc` | `#0a0a0a` |
+| `surface-raised` | `#ffffff` | `#171717` |
+| `surface-sunken` | `#f5f5f5` | `#262626` |
+| `surface-hover` | `#ebebeb` | `#2e2e2e` |
+| `surface-active` | `#dedede` | `#404040` |
+| `surface-inverse` | `#111827` | `#404040` |
+| `surface-header` | `#0073cf` | `#171717` |
+| `content` | `#1f2937` | `#f5f5f5` |
+| `content-muted` | `#525252` | `#d4d4d4` |
+| `content-subtle` | `#6e6e6e` | `#a3a3a3` |
+| `content-inverse` | `#ffffff` | `#f5f5f5` |
+| `content-on-brand` | `#ffffff` | `#ffffff` |
+| `divider` | `#e8e8e8` | `#262626` |
+| `outline` | `#8f8f8f` | `#666666` |
+| `brand` | `#0073cf` | `#3399ff` |
+| `brand-solid` | `#0073cf` | `#0073cf` |
+| `brand-solid-hover` | `#005ba6` | `#005ba6` |
+| `brand-hover` | `#005ba6` | `#66b2ff` |
+| `brand-subtle` | `#e6f2ff` | `#002d59` |
+| `success` | `#0f766e` | `#5eead4` |
+| `success-surface` | `#ccfbf1` | `#134e4a` |
+| `success-solid` | `#0d9488` | `#14b8a6` |
+| `danger` | `#b91c1c` | `#f87171` |
+| `danger-surface` | `#fee2e2` | `#450a0a` |
+| `danger-solid` | `#ef4444` | `#ef4444` |
+| `danger-fill` | `#b91c1c` | `#b91c1c` |
+| `danger-fill-hover` | `#991b1b` | `#991b1b` |
+| `warning` | `#a16207` | `#facc15` |
+| `warning-surface` | `#fef9c3` | `#713f12` |
+| `warning-solid` | `#b45309` | `#eab308` |
+| `warning-fill` | `#a16207` | `#a16207` |
+| `warning-fill-hover` | `#854d0e` | `#854d0e` |
+| `info` | `#0369a1` | `#38bdf8` |
+| `info-surface` | `#e6f2ff` | `#002d59` |
+| `info-solid` | `#2798e7` | `#2798e7` |
+| `code-color` | `#be185d` | `#f9a8d4` |
+
+`brand` is the foreground role (text, links, icons) and lightens in dark mode; `brand-solid` is the
+button/fill role and stays the same dark blue in both themes so `content-on-brand` white text keeps
+contrast, with `brand-solid-hover` as its hover state. `brand-hover` is the foreground hover, paired
+with `brand`, not with `brand-solid`. Each status colour (`success`, `danger`, `warning`, `info`)
+follows the same split: the plain role for text/icons, `-surface` for a tinted background, `-solid`
+for non-text indicators such as status dots and chart series.
+
+`danger` and `warning` additionally carry `-fill`/`-fill-hover` tokens, theme-invariant like
+`brand-solid`. These exist because their `-solid` value is a vivid indicator colour tuned for dots
+and chart series, not for a filled button: white text on `danger-solid`/`warning-solid` fails AA,
+and darkening the text cannot fix it either, so a solid danger or warning button uses `danger-fill`/
+`warning-fill` (and their `-hover` variants) instead, keeping `-solid` untouched for indicators.
+
+A separate `node-*` family (`semantic.node-*` in `tokens.json`) exists solely for the FlowChart's
+per-certificate-status node text/borders and expand-button fills. It is not part of the general
+role table above and should not appear in any other component's `.pen` file.
 
 ---
 
@@ -240,6 +291,7 @@ Always set `name` on every node. Use descriptive, hierarchical names:
 | CustomTable | `src/components/CustomTable/CustomTable.pen` |
 | JsonViewer | `src/components/JsonViewer/JsonViewer.pen` |
 | SimpleBar | `src/components/SimpleBar/SimpleBar.pen` |
+| ThemeToggle | `src/components/ThemeToggle/ThemeToggle.pen` |
 
 Button.pen is the most complete reference — it has 6 pages (Light/Dark × Solid/Outline/Transparent) showing all 5 color variants across 4 states.
 
@@ -287,7 +339,7 @@ Switch.pen has the richest single-page structure: States Table + Sizes + Example
 | WidgetButtons visual (toolbar row of transparent icon `Button`s: `flex ml-2 items-center gap-1`; each = 16px lucide icon in a `p-2` transparent button, hover `bg-gray-200` (dark `neutral-700`), `disabled` → `opacity-35` (+ `disabledTooltip`); `justify` start/center/end; per-button `custom` slot renders any React node inline) | plain demo — no reusable (composite of transparent `Button`s); showcase `WidgetButtons Group` (`VEgLI`) shows a widget-header card with a `Certificates` title + a right-aligned refresh/download(hover)/search/info icon cluster |
 | WidgetLock visual (error / empty-state card wrapped in a `Container`, centered `max-w-md`/`xl`/`full` by `size`: `bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl p-6 flex items-center gap-4`; danger-colored (`--status-danger` red) icon that **switches to `neutral-400` in dark mode**, varying by `lockType` (Generic/`triangle-alert`, Network/`wifi`, Permission/`lock`, Client/`house`, ServiceError/`database`, ServerError/`server`), icon size 24/32/48 by `size`; `h5` semibold title + optional `lockDetails` `Info` tooltip button; `text-sm` muted body) | plain demo — no reusable (composite of Container + icon + text); showcase `WidgetLock Group` (`i4MJSC`) shows the default lock card (`triangle-alert` + `There was some problem` title + info tooltip + muted body) |
 | CustomTable visual (feature-rich data table: bordered `rounded-md` container (`border-gray-100`), `thead` (`bg-gray-50` light / `bg-neutral-700` dark) with uppercase `text-xs` `text-gray-500`/`neutral-400` `th`; sortable columns toggle an `arrow-down-up` icon; `divide-y divide-gray-200`/`neutral-700` rows on `bg-white`/`neutral-800`; optional row + select-all `Checkbox` column (checked = `blue-600`/`blue-500`); optional right-aligned `Search` input; optional bottom pagination bar (page-size `Select` + `Pagination` + `Showing X to Y of Z`); `hasDetails` opens a nested `CustomTable` in a modal; empty state = `table-properties` icon in a gray circle + `No items to show`/`No matching items`; `isLoading` → `TableSkeleton`) | plain demo — no reusable (composite of Checkbox/Select/Pagination/SimpleBar); showcase `CustomTable Group` (`ana3z`) shows a mini sortable+selectable table (select-all + `NAME`/`STATUS` headers, one checked row) |
-| JsonViewer visual (read-only syntax-highlighted JSON in a `<pre>`; **always dark** regardless of app theme — `bg #0B1220`, base text `#c8d3f5`, `rounded-lg`, `p-3`, `text-xs`/`leading-5`, monospace; token colors key `#7AA2F7`, string `#9ECE6A`, number `#F7768E`, boolean `#BB9AF7`, null `#E0AF68`; input pretty-printed to 2-space indent (falls back to raw text on parse error); `whitespace-pre-wrap break-words` wrapping + thin custom scrollbar) | plain demo — no reusable (syntax highlighting = per-token colored text nodes on a `$color.json-bg` block); needs `json-bg`/`json-key`/`json-string`/`json-number`/`json-boolean`/`json-null` tokens in Design.pen; showcase `JsonViewer Group` (`L5nHF`, Row 6) shows a colored JSON block |
+| JsonViewer visual (read-only syntax-highlighted JSON in a `<pre>`; **follows the active theme** via `useTheme()`/`resolvedTheme`, not always dark — light palette `bg #f5f5f5`, base text `#1f2937`, key `#0550ae`, string `#0a7c42`, number `#b3246b`, boolean `#7c3aed`, null `#8a5a00`; dark palette `bg #0b1220`, base text `#c8d3f5`, key `#7aa2f7`, string `#9ece6a`, number `#f7768e`, boolean `#bb9af7`, null `#e0af68`; `rounded-lg`, `p-3`, `text-xs`/`leading-5`, monospace; input pretty-printed to 2-space indent (falls back to raw text on parse error); `whitespace-pre-wrap break-words` wrapping + thin custom scrollbar) | plain demo — no reusable (syntax highlighting = per-token colored text nodes on a `$color.json-bg` block, one set of tokens per theme page); needs light and dark `json-bg`/`json-key`/`json-string`/`json-number`/`json-boolean`/`json-null` tokens in Design.pen; showcase `JsonViewer Group` (`L5nHF`, Row 6) shows a colored JSON block |
 | SimpleBar visual (thin wrapper over `simplebar-react`: a custom **overlay** scrollbar — sits above content with no layout shift; thin rounded thumb + subtle track on the scroll edge, appears on scroll/hover and auto-hides; works vertical (right edge) & horizontal (bottom edge); adds a `ResizeObserver` to recalculate on container resize) | plain demo — no reusable (a clipped content box + absolute-positioned rounded `track`/`thumb` rects); showcase `SimpleBar Group` (`zDSF7`) shows a vertical scroll box with the thumb on the right edge |
 | NumberInput visual (container, stepper buttons, value) | `NumberInput` |
 | Input sub-component visual (any of the 6 types) | `Input/DurationInput`, `Input/HostnameListInput`, `Input/FileUpload`, `Input/MultipleValueTextInput`, `Input/CodeEditor`, `Input/DynamicContent` |

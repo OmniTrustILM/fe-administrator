@@ -66,7 +66,7 @@ export default function ConnectionDetailsV2({ connectInfo, errorMessage }: Props
     const v2ConnectionDetailsData: TableDataRow[] = useMemo(() => {
         if (!v2Connector) return [];
 
-        const metadata = v2Connector.metadata as Record<string, unknown> | undefined;
+        const metadata = v2Connector.metadata;
         const metadataString = metadata
             ? Object.entries(metadata)
                   .map(([key, value]) => `${key}:${String(value)}`)
@@ -146,7 +146,7 @@ export default function ConnectionDetailsV2({ connectInfo, errorMessage }: Props
     }, [v2PrimaryInfo]);
 
     if (!v2Connector && (!v2PrimaryInfo || !Array.isArray(v2PrimaryInfo?.interfaces))) {
-        return <div className="text-sm text-gray-500">No v2 connection details available.</div>;
+        return <div className="text-sm text-content-subtle">No v2 connection details available.</div>;
     }
 
     return (
@@ -161,7 +161,7 @@ export default function ConnectionDetailsV2({ connectInfo, errorMessage }: Props
             )}
 
             {errorMessage && (
-                <p className="mt-2 text-sm text-red-600" data-testid="connector-version-error">
+                <p className="mt-2 text-sm text-danger" data-testid="connector-version-error">
                     {errorMessage}
                 </p>
             )}

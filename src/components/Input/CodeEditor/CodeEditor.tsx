@@ -51,9 +51,9 @@ type History = {
 const HISTORY_LIMIT = 100;
 const HISTORY_TIME_GAP = 3000;
 
-const platform = typeof globalThis !== 'undefined' && globalThis.navigator ? globalThis.navigator.platform : '';
-const isWindows = /Win/i.test(platform);
-const isMacLike = /(Mac|iPhone|iPod|iPad)/i.test(platform);
+const userAgent = typeof globalThis !== 'undefined' && globalThis.navigator ? globalThis.navigator.userAgent : '';
+const isWindows = /Win/i.test(userAgent);
+const isMacLike = /(Mac|iPhone|iPod|iPad)/i.test(userAgent);
 
 const WRAP_KEY_CHARS: Record<string, { plain?: [string, string]; shift?: [string, string] }> = {
     Digit9: { shift: ['(', ')'] },

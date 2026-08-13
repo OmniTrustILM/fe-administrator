@@ -143,9 +143,8 @@ export const TspProfileDetail = () => {
 
     const detailData: TableDataRow[] = useMemo(
         () =>
-            !tspProfile
-                ? []
-                : [
+            tspProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', tspProfile.uuid],
@@ -166,15 +165,15 @@ export const TspProfileDetail = () => {
                           id: 'signingUrl',
                           columns: ['TSP Signing URL', tspProfile.signingUrl ? tspProfile.signingUrl : '-'],
                       },
-                  ],
+                  ]
+                : [],
         [tspProfile],
     );
 
     const signingProfileData: TableDataRow[] = useMemo(
         () =>
-            !tspProfile?.defaultSigningProfile
-                ? []
-                : [
+            tspProfile?.defaultSigningProfile
+                ? [
                       {
                           id: 'uuid',
                           columns: ['UUID', tspProfile.defaultSigningProfile.uuid],
@@ -195,7 +194,8 @@ export const TspProfileDetail = () => {
                           id: 'status',
                           columns: ['Status', <StatusBadge key="status" enabled={tspProfile.defaultSigningProfile.enabled} />],
                       },
-                  ],
+                  ]
+                : [],
         [tspProfile],
     );
 
@@ -206,9 +206,8 @@ export const TspProfileDetail = () => {
 
     const authenticationData: TableDataRow[] = useMemo(
         () =>
-            !tspProfile
-                ? []
-                : [
+            tspProfile
+                ? [
                       {
                           id: 'allowedMethods',
                           columns: [
@@ -239,7 +238,8 @@ export const TspProfileDetail = () => {
                               ),
                           ],
                       },
-                  ],
+                  ]
+                : [],
         [tspProfile, authenticationMethodEnum],
     );
 
@@ -352,13 +352,13 @@ export const TspProfileDetail = () => {
                             widgetButtons={credentialWidgetButtons}
                         >
                             {!basicPasswordAllowed && basicCredentials.length > 0 && (
-                                <p className="mb-2 text-sm text-[var(--status-warning-color)]">
+                                <p className="mb-2 text-sm text-warning">
                                     Basic authentication is not enabled for this profile — these credentials are not accepted until Basic
                                     password is re-allowed.
                                 </p>
                             )}
                             {basicCredentials.length === 0 ? (
-                                <p className="text-sm text-gray-500">No Basic credentials configured yet.</p>
+                                <p className="text-sm text-content-subtle">No Basic credentials configured yet.</p>
                             ) : (
                                 <CustomTable headers={credentialHeaders} data={credentialData} />
                             )}

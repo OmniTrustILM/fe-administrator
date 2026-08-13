@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { isTimestampingWorkflow, isContentSigningWorkflow, isRawSigningWorkflow, isStaticKeyManagedSigning } from './type-guards';
+import { isTimestampingWorkflow, isDocumentSigningWorkflow, isRawSigningWorkflow, isStaticKeyManagedSigning } from './type-guards';
 import { ManagedSigningType, SigningScheme, SigningWorkflowType } from '../types/openapi';
 
 describe('type-guards', () => {
@@ -10,18 +10,18 @@ describe('type-guards', () => {
         });
 
         test('isTimestampingWorkflow should return false for other types', () => {
-            const wf: any = { type: SigningWorkflowType.ContentSigning };
+            const wf: any = { type: SigningWorkflowType.DocumentSigning };
             expect(isTimestampingWorkflow(wf)).toBe(false);
         });
 
-        test('isContentSigningWorkflow should return true for ContentSigning type', () => {
-            const wf: any = { type: SigningWorkflowType.ContentSigning };
-            expect(isContentSigningWorkflow(wf)).toBe(true);
+        test('isDocumentSigningWorkflow should return true for DocumentSigning type', () => {
+            const wf: any = { type: SigningWorkflowType.DocumentSigning };
+            expect(isDocumentSigningWorkflow(wf)).toBe(true);
         });
 
-        test('isContentSigningWorkflow should return false for other types', () => {
+        test('isDocumentSigningWorkflow should return false for other types', () => {
             const wf: any = { type: SigningWorkflowType.Timestamping };
-            expect(isContentSigningWorkflow(wf)).toBe(false);
+            expect(isDocumentSigningWorkflow(wf)).toBe(false);
         });
 
         test('isRawSigningWorkflow should return true for RawSigning type', () => {

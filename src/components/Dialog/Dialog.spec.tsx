@@ -32,7 +32,7 @@ test.describe('Dialog', () => {
             toggleCount++;
         };
         await mount(<Dialog isOpen={true} caption="Test Dialog" body="Dialog content" toggle={toggle} dataTestId="test-dialog" />);
-        await page.waitForTimeout(50);
+        await expect(page.getByRole('dialog')).toBeVisible();
         await page.getByRole('dialog').press('Escape');
         expect(toggleCount).toBe(1);
     });
@@ -87,7 +87,8 @@ test.describe('Dialog', () => {
 
     test('locks page scroll while open', async ({ mount, page }) => {
         await mount(<Dialog isOpen={true} caption="Test Dialog" body="Dialog content" dataTestId="test-dialog" />);
-        await page.waitForTimeout(100);
+        // Radix applies the scroll lock as it mounts the dialog, so its visibility is the signal.
+        await expect(page.getByRole('dialog')).toBeVisible();
         const isLocked = await page.evaluate(() => {
             const html = document.documentElement;
             const body = document.body;
@@ -98,7 +99,7 @@ test.describe('Dialog', () => {
 
     test('restores page scroll after close via toggle', async ({ mount, page }) => {
         await mount(<DialogWithState />);
-        await page.waitForTimeout(50);
+        await expect(page.getByRole('dialog')).toBeVisible();
         const lockedWhileOpen = await page.evaluate(() => {
             const html = document.documentElement;
             const body = document.body;
@@ -107,7 +108,8 @@ test.describe('Dialog', () => {
         expect(lockedWhileOpen).toBe(true);
 
         await page.getByRole('button', { name: 'Close' }).click();
-        await page.waitForTimeout(150);
+        // The lock is released on unmount, so wait for the dialog to actually leave the DOM.
+        await expect(page.getByRole('dialog')).toHaveCount(0);
         const lockedAfterClose = await page.evaluate(() => {
             const html = document.documentElement;
             const body = document.body;

@@ -91,7 +91,7 @@ export default function AssociateComplianceProfileDialogBody({ raProfile, availa
                         rules={buildValidationRules([validateRequired()])}
                         render={({ field, fieldState }) => (
                             <div className="mb-4">
-                                <Label htmlFor="complianceProfile" className="block text-sm font-medium mb-2 text-gray-700 dark:text-white">
+                                <Label htmlFor="complianceProfile" className="block text-sm font-medium mb-2 text-content">
                                     Select Compliance profile
                                 </Label>
 
@@ -102,12 +102,12 @@ export default function AssociateComplianceProfileDialogBody({ raProfile, availa
                                     onChange={(value) => field.onChange(value)}
                                     placeholder="Select Compliance profile to be associated"
                                     className={cn({
-                                        'border-red-500': fieldState.error && fieldState.isTouched,
+                                        'border-danger': fieldState.error && fieldState.isTouched,
                                     })}
                                 />
 
                                 {fieldState.error && fieldState.isTouched && (
-                                    <p className="mt-1 text-sm text-red-600">
+                                    <p className="mt-1 text-sm text-danger">
                                         {typeof fieldState.error === 'string'
                                             ? fieldState.error
                                             : fieldState.error?.message || 'Required Field'}

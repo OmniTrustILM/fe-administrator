@@ -15,10 +15,10 @@ export default function NumberInput({ value, onChange, min = 0, max = 999, step 
     const increment = () => onChange(Math.min(max, value + step));
 
     const buttonClass =
-        'size-6 inline-flex justify-center items-center text-sm font-medium rounded-md bg-white border border-gray-200 text-[var(--dark-gray-color)] shadow-xs hover:bg-gray-50 focus:outline-none disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-800';
+        'size-6 inline-flex justify-center items-center text-sm font-medium rounded-md bg-surface-raised border border-outline text-content shadow-xs hover:bg-surface-hover focus:outline-none disabled:opacity-50 disabled:pointer-events-none';
 
     return (
-        <div className="py-1.5 px-2 inline-flex bg-white border border-gray-200 rounded-lg dark:bg-neutral-900 dark:border-neutral-700">
+        <div className="py-1.5 px-2 inline-flex bg-surface-raised border border-outline rounded-lg">
             <div className="flex items-center gap-x-1.5">
                 <button type="button" onClick={decrement} disabled={disabled || value <= min} aria-label="Decrease" className={buttonClass}>
                     <Minus className="size-3.5 shrink-0" />
@@ -33,7 +33,7 @@ export default function NumberInput({ value, onChange, min = 0, max = 999, step 
                         if (!Number.isNaN(n) && n >= min && n <= max) onChange(n);
                     }}
                     aria-roledescription="Number field"
-                    className="p-0 w-8 bg-transparent border-0 text-[var(--dark-gray-color)] text-center text-sm focus:ring-0 dark:text-white"
+                    className="p-0 w-8 bg-transparent border-0 text-content text-center text-sm focus:ring-0"
                 />
                 <button type="button" onClick={increment} disabled={disabled || value >= max} aria-label="Increase" className={buttonClass}>
                     <Plus className="size-3.5 shrink-0" />

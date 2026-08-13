@@ -32,7 +32,7 @@ const ConditionsItemsList = ({ conditionItems = [], conditionName, conditionUuid
 
     return smallerBadges ? (
         <div className="flex flex-col gap-1 w-full min-w-0">
-            <h6 className="text-gray-500 break-words">{`${conditionName}'s Condition Items`}</h6>
+            <h6 className="text-content-subtle break-words">{`${conditionName}'s Condition Items`}</h6>
             <div className="flex flex-col gap-1 w-full min-w-0">
                 {renderConditionItems(conditionItems, availableFilters, platformEnums, searchGroupEnum, filterConditionOperatorEnum, {
                     className: 'break-words',
@@ -42,7 +42,7 @@ const ConditionsItemsList = ({ conditionItems = [], conditionName, conditionUuid
         </div>
     ) : (
         <div key={conditionUuid} className="flex gap-2 items-center">
-            <h6 className="text-gray-500">{`${conditionName}`}</h6>
+            <h6 className="text-content-subtle">{`${conditionName}`}</h6>
             {renderConditionItems(conditionItems, availableFilters, platformEnums, searchGroupEnum, filterConditionOperatorEnum, {
                 className: '',
                 variant: 'badge',

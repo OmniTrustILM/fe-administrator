@@ -196,7 +196,7 @@ export default function VaultForm({ onCancel, onSuccess }: VaultFormProps) {
                             setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                         />
                     ) : (
-                        <div className="text-sm text-gray-500">No connector attributes configured for vaults.</div>
+                        <div className="text-sm text-content-subtle">No connector attributes configured for vaults.</div>
                     ),
             },
             {

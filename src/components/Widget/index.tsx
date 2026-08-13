@@ -54,7 +54,7 @@ function Widget({
     titleSize = 'medium',
     widgetButtons,
     titleBoldness = 'bold',
-    titleColor = 'var(--dark-gray-color)',
+    titleColor = 'var(--content)',
     className,
     children = [],
     busy = false,
@@ -104,7 +104,7 @@ function Widget({
 
     const renderTitle = () =>
         titleLink ? (
-            <Link to={titleLink} className="text-blue-600" onClick={onTitleLinkClick}>
+            <Link to={titleLink} className="text-brand" onClick={onTitleLinkClick}>
                 {getTitleText()}
             </Link>
         ) : (
@@ -167,10 +167,9 @@ function Widget({
         <section
             data-testid={dataTestId}
             className={cn(
-                'relative flex flex-col rounded-xl dark:text-neutral-400 w-full',
+                'relative flex flex-col rounded-xl text-content w-full',
                 {
-                    'border border-gray-200 dark:border-neutral-700 p-4 md:p-5 shadow-2xs bg-white dark:bg-neutral-900':
-                        !noBorder || widgetLock,
+                    'border border-divider p-4 md:p-5 shadow-2xs bg-surface-raised': !noBorder || widgetLock,
                 },
                 className,
             )}
@@ -198,21 +197,19 @@ function Widget({
                         'max-h-[1000px] opacity-100': showWidgetInfo,
                     })}
                 >
-                    <div className="my-2 border border-gray-200 dark:border-neutral-700 rounded-lg">
+                    <div className="my-2 border border-divider rounded-lg">
                         {widgetInfoCard.heading && (
-                            <h2 className="px-4 pt-3 mb-0 text-base font-semibold text-gray-800 dark:text-white">
-                                {widgetInfoCard.heading}
-                            </h2>
+                            <h2 className="px-4 pt-3 mb-0 text-base font-semibold text-content">{widgetInfoCard.heading}</h2>
                         )}
                         <div className="px-4 py-3">
                             {widgetInfoCard.description && (
-                                <p className="text-sm text-gray-700 dark:text-neutral-300 mb-0">
+                                <p className="text-sm text-content-muted mb-0">
                                     {widgetInfoCard.title}: {widgetInfoCard.description}
                                 </p>
                             )}
 
                             {widgetInfoCard.notesList && (
-                                <ul className="mt-2 space-y-1 list-disc list-inside text-sm text-gray-700 dark:text-neutral-300">
+                                <ul className="mt-2 space-y-1 list-disc list-inside text-sm text-content-muted">
                                     {widgetInfoCard.notesList.map((note) => (
                                         <li key={note}>{note}</li>
                                     ))}
@@ -234,7 +231,7 @@ function Widget({
                 <div className="relative" {...innerContainerProps}>
                     {children}
                     {busy && enableBusyOverlay && (
-                        <div className="absolute inset-0 z-10 bg-white/35 dark:bg-neutral-900/35" data-testid="widget-busy-overlay" />
+                        <div className="absolute inset-0 z-10 bg-surface-raised/35" data-testid="widget-busy-overlay" />
                     )}
                 </div>
             )}
