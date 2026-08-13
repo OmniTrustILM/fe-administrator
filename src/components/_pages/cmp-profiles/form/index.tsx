@@ -106,14 +106,16 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
         [protectionMethodEnum],
     );
 
-    const challengeSourceOptions = useMemo(
-        () =>
-            Object.values(ProtocolChallengeSource).map((source) => ({
-                value: source,
-                label: getEnumLabel(challengeSourceEnum, source),
-            })),
-        [challengeSourceEnum],
-    );
+    const challengeSourceOptions = useMemo(() => {
+        const codes =
+            challengeSourceEnum && Object.keys(challengeSourceEnum).length > 0
+                ? Object.keys(challengeSourceEnum)
+                : Object.values(ProtocolChallengeSource);
+        return codes.map((code) => ({
+            value: code,
+            label: getEnumLabel(challengeSourceEnum, code),
+        }));
+    }, [challengeSourceEnum]);
 
     const cmpProfileVariantOptions = useMemo(
         () => [
@@ -398,70 +400,47 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                     values,
                 ),
             };
+            const commonFields = {
+                name: values.name,
+                description: normalizeOptionalValue(values.description),
+                challengeSource: values.challengeSource,
+                requestProtectionMethod: values.requestProtectionMethod as ProtectionMethod,
+                responseProtectionMethod: values.responseProtectionMethod as ProtectionMethod,
+                raProfileUuid: normalizeOptionalValue(values.raProfileUuid),
+                // In registration mode the per-registration challenge is the MAC secret,
+                // so a stored profile secret is rejected by the backend.
+                sharedSecret:
+                    values.requestProtectionMethod === ProtectionMethod.SharedSecret &&
+                    values.challengeSource !== ProtocolChallengeSource.CertificateRegistration
+                        ? normalizeOptionalValue(values.sharedSecret)
+                        : undefined,
+                signingCertificateUuid:
+                    values.responseProtectionMethod === ProtectionMethod.Signature
+                        ? normalizeOptionalValue(values.signingCertificateUuid)
+                        : undefined,
+                issueCertificateAttributes: collectFormAttributes(
+                    'issuanceAttributes',
+                    [...(raProfileIssuanceAttrDescs ?? []), ...issueGroupAttributesCallbackAttributes],
+                    values,
+                ),
+                revokeCertificateAttributes: collectFormAttributes(
+                    'revocationAttributes',
+                    [...(raProfileRevocationAttrDescs ?? []), ...revokeGroupAttributesCallbackAttributes],
+                    values,
+                ),
+                customAttributes,
+                certificateAssociations,
+            };
             if (editMode && cmpProfile && cmpProfile?.uuid === id) {
                 const valuesToSubmit: CmpProfileEditRequestModel = {
-                    name: values.name,
-                    description: normalizeOptionalValue(values.description),
+                    ...commonFields,
                     variant: values.variant as CmpProfileEditRequestDtoVariantEnum,
-                    challengeSource: values.challengeSource,
-                    requestProtectionMethod: values.requestProtectionMethod as ProtectionMethod,
-                    responseProtectionMethod: values.responseProtectionMethod as ProtectionMethod,
-                    raProfileUuid: normalizeOptionalValue(values.raProfileUuid),
-                    sharedSecret:
-                        values.requestProtectionMethod === ProtectionMethod.SharedSecret &&
-                        values.challengeSource !== ProtocolChallengeSource.CertificateRegistration
-                            ? normalizeOptionalValue(values.sharedSecret)
-                            : undefined,
-                    signingCertificateUuid:
-                        values.responseProtectionMethod === ProtectionMethod.Signature
-                            ? normalizeOptionalValue(values.signingCertificateUuid)
-                            : undefined,
-
-                    issueCertificateAttributes: collectFormAttributes(
-                        'issuanceAttributes',
-                        [...(raProfileIssuanceAttrDescs ?? []), ...issueGroupAttributesCallbackAttributes],
-                        values,
-                    ),
-                    revokeCertificateAttributes: collectFormAttributes(
-                        'revocationAttributes',
-                        [...(raProfileRevocationAttrDescs ?? []), ...revokeGroupAttributesCallbackAttributes],
-                        values,
-                    ),
-                    customAttributes,
-                    certificateAssociations,
                 };
                 dispatch(cmpProfileActions.updateCmpProfile({ uuid: cmpProfile.uuid, updateCmpRequest: valuesToSubmit }));
             } else {
                 const valuesToSubmit: CmpProfileRequestModel = {
-                    name: values.name,
-                    description: normalizeOptionalValue(values.description),
+                    ...commonFields,
                     variant: values.variant as CmpProfileRequestDtoVariantEnum,
-                    challengeSource: values.challengeSource,
-                    requestProtectionMethod: values.requestProtectionMethod as ProtectionMethod,
-                    responseProtectionMethod: values.responseProtectionMethod as ProtectionMethod,
-                    raProfileUuid: normalizeOptionalValue(values.raProfileUuid),
-                    sharedSecret:
-                        values.requestProtectionMethod === ProtectionMethod.SharedSecret &&
-                        values.challengeSource !== ProtocolChallengeSource.CertificateRegistration
-                            ? normalizeOptionalValue(values.sharedSecret)
-                            : undefined,
-                    signingCertificateUuid:
-                        values.responseProtectionMethod === ProtectionMethod.Signature
-                            ? normalizeOptionalValue(values.signingCertificateUuid)
-                            : undefined,
-
-                    issueCertificateAttributes: collectFormAttributes(
-                        'issuanceAttributes',
-                        [...(raProfileIssuanceAttrDescs ?? []), ...issueGroupAttributesCallbackAttributes],
-                        values,
-                    ),
-                    revokeCertificateAttributes: collectFormAttributes(
-                        'revocationAttributes',
-                        [...(raProfileRevocationAttrDescs ?? []), ...revokeGroupAttributesCallbackAttributes],
-                        values,
-                    ),
-                    customAttributes,
-                    certificateAssociations,
                 };
                 dispatch(cmpProfileActions.createCmpProfile(valuesToSubmit));
             }
