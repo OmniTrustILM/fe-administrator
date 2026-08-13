@@ -176,4 +176,38 @@ describe('ScepProfileForm (edit mode)', () => {
         await changeCustomAttribute('changed-value');
         expect(submitButton().disabled).toBe(false);
     });
+
+    it('defaults the challenge source to protocolDefault and sends it on submit', async () => {
+        const store = createStore();
+        const dispatched: unknown[] = [];
+        const originalDispatch = store.dispatch;
+        (store as any).dispatch = (action: any) => {
+            dispatched.push(action);
+            return originalDispatch(action);
+        };
+        await renderForm(store);
+
+        const challengeSourceTrigger = container.querySelector('[data-testid="select-challengeSource-trigger"]') as HTMLElement;
+        expect(challengeSourceTrigger).toBeTruthy();
+
+        await changeCustomAttribute('changed-value');
+        const form = container.querySelector('form') as HTMLFormElement;
+        await act(async () => {
+            form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        });
+        await act(async () => {});
+
+        const update = dispatched.find((a: any) => a.type === scepActions.updateScepProfile.type) as any;
+        expect(update).toBeTruthy();
+        expect(update.payload.updateScepRequest.challengeSource).toBe('protocolDefault');
+    });
+
+    it('disables the challenge password and Intune switches for a stored certificateRegistration profile', async () => {
+        await renderForm(createStore(), { ...profile, challengeSource: 'certificateRegistration' });
+
+        const challengePasswordSwitch = container.querySelector('[data-testid="switch-enableChallengePassword-input"]') as HTMLInputElement;
+        const intuneSwitch = container.querySelector('[data-testid="switch-enableIntune-input"]') as HTMLInputElement;
+        expect(challengePasswordSwitch.disabled).toBe(true);
+        expect(intuneSwitch.disabled).toBe(true);
+    });
 });
