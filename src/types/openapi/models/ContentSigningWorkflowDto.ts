@@ -14,27 +14,27 @@
 import type { NameAndUuidDto, ResponseAttribute, SigningWorkflowType } from './';
 
 /**
- * Document signing workflow configuration
+ * Content signing workflow configuration
  * @export
- * @interface DocumentSigningWorkflowDto
+ * @interface ContentSigningWorkflowDto
  */
-export interface DocumentSigningWorkflowDto {
+export interface ContentSigningWorkflowDto {
     /**
      * Signing workflow type
      * @type {SigningWorkflowType}
-     * @memberof DocumentSigningWorkflowDto
+     * @memberof ContentSigningWorkflowDto
      */
     type: SigningWorkflowType;
     /**
-     * Signature Formatting Provider that constructs the data-to-be-signed (DTBS) for Document signing. Present only when ILM-managed signing is used; null for delegated signing.
+     * Signature Formatting Provider that constructs the data-to-be-signed (DTBS) for Content signing. Present only when ILM-managed signing is used; null for delegated signing.
      * @type {NameAndUuidDto}
-     * @memberof DocumentSigningWorkflowDto
+     * @memberof ContentSigningWorkflowDto
      */
     signatureFormattingConnector?: NameAndUuidDto;
     /**
-     * Attributes configured on the Signature Formatting Provider that control DTBS construction for the document signing workflow. Applicable only when ILM-managed signing is used.
+     * Attributes configured on the Signature Formatting Provider that control DTBS construction for the content signing workflow. Applicable only when ILM-managed signing is used.
      * @type {Array<ResponseAttribute>}
-     * @memberof DocumentSigningWorkflowDto
+     * @memberof ContentSigningWorkflowDto
      */
     signatureFormattingConnectorAttributes?: Array<ResponseAttribute>;
 }
