@@ -24,7 +24,7 @@ const descriptor = {
     properties: { label: 'Text Custom Attr', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
 };
 
-const caCert = { uuid: 'cert-1', commonName: 'Demo CA', serialNumber: '0123' };
+const caCert = { uuid: 'cert-1', commonName: 'Demo CA', serialNumber: '0123', publicKeyAlgorithm: 'RSA' };
 
 const profile = {
     uuid: 'sp-1',
@@ -209,5 +209,72 @@ describe('ScepProfileForm (edit mode)', () => {
         const intuneSwitch = container.querySelector('[data-testid="switch-enableIntune-input"]') as HTMLInputElement;
         expect(challengePasswordSwitch.disabled).toBe(true);
         expect(intuneSwitch.disabled).toBe(true);
+    });
+
+    async function pickChallengeSource(code: string) {
+        const trigger = container.querySelector('[data-testid="select-challengeSource-trigger"]') as HTMLButtonElement;
+        await act(async () => {
+            trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+            trigger.click();
+        });
+        await act(async () => {});
+        const option = Array.from(document.querySelectorAll('[role="option"]')).find((el) => el.textContent === code) as HTMLElement;
+        expect(option).toBeTruthy();
+        await act(async () => {
+            option.click();
+        });
+        await act(async () => {});
+    }
+
+    it('offers only RSA CA certificates in registration mode and restores the full list on switch back', async () => {
+        const ecdsaCert = { uuid: 'cert-ec', commonName: 'EC CA', serialNumber: '9', publicKeyAlgorithm: 'ECDSA' };
+        await renderForm(createStore(), profile, [caCert, ecdsaCert]);
+
+        const nativeOptions = () =>
+            Array.from(container.querySelectorAll('[data-testid="select-certificateSelect-input"] option')).map((o) => o.textContent);
+        expect(nativeOptions().join()).toContain('EC CA');
+
+        await pickChallengeSource('certificateRegistration');
+        // Registration-mode requests are enveloped via RSA key transport — core rejects other keys.
+        expect(nativeOptions().join()).not.toContain('EC CA');
+        expect(nativeOptions().join()).toContain('Demo CA');
+
+        await pickChallengeSource('protocolDefault');
+        expect(nativeOptions().join()).toContain('EC CA');
+    });
+
+    it('restores the toggles and normalizes the payload when flipping the challenge source', async () => {
+        const store = createStore();
+        const dispatched: unknown[] = [];
+        const originalDispatch = store.dispatch;
+        (store as any).dispatch = (action: any) => {
+            dispatched.push(action);
+            return originalDispatch(action);
+        };
+        await renderForm(store, { ...profile, enableIntune: true, intuneTenant: 't', intuneApplicationId: 'a' });
+
+        const intuneSwitch = () => container.querySelector('[data-testid="switch-enableIntune-input"]') as HTMLInputElement;
+        expect(intuneSwitch().checked).toBe(true);
+
+        await pickChallengeSource('certificateRegistration');
+        // The toggle renders as off while registration mode is active, but the value is only
+        // normalized in the payload, so switching back must restore it.
+        expect(intuneSwitch().checked).toBe(false);
+        expect(intuneSwitch().disabled).toBe(true);
+
+        const form = container.querySelector('form') as HTMLFormElement;
+        await act(async () => {
+            form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        });
+        await act(async () => {});
+        const update = dispatched.find((a: any) => a.type === scepActions.updateScepProfile.type) as any;
+        expect(update).toBeTruthy();
+        expect(update.payload.updateScepRequest.enableIntune).toBe(false);
+        expect(update.payload.updateScepRequest.enableChallengePassword).toBe(false);
+        expect(update.payload.updateScepRequest.challengePassword).toBeUndefined();
+
+        await pickChallengeSource('protocolDefault');
+        expect(intuneSwitch().checked).toBe(true);
+        expect(intuneSwitch().disabled).toBe(false);
     });
 });

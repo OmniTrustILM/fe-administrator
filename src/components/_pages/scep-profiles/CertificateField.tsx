@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import Select from 'components/Select';
 import type { CertificateListResponseModel } from 'types/certificate';
+import { KeyAlgorithm } from 'types/openapi';
 
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { validateRequired } from 'utils/validators';
@@ -10,18 +11,21 @@ import cn from 'classnames';
 type Props = Readonly<{
     certificates: CertificateListResponseModel[] | undefined;
     currentCertificate?: CertificateListResponseModel;
+    rsaOnly?: boolean;
 }>;
 
-export default function CertificateField({ certificates, currentCertificate }: Props) {
+export default function CertificateField({ certificates, currentCertificate, rsaOnly = false }: Props) {
     const { control, setValue } = useFormContext();
     const watchedCertificate = useWatch({ control, name: 'certificate' });
 
     const availableCertificates = useMemo(() => {
         if (!certificates) return certificates;
-        return currentCertificate && !certificates.some((c) => c.uuid === currentCertificate.uuid)
-            ? [currentCertificate, ...certificates]
-            : certificates;
-    }, [certificates, currentCertificate]);
+        const withCurrent =
+            currentCertificate && !certificates.some((c) => c.uuid === currentCertificate.uuid)
+                ? [currentCertificate, ...certificates]
+                : certificates;
+        return rsaOnly ? withCurrent.filter((c) => c.publicKeyAlgorithm === KeyAlgorithm.Rsa) : withCurrent;
+    }, [certificates, currentCertificate, rsaOnly]);
 
     useEffect(() => {
         if (watchedCertificate && availableCertificates && !availableCertificates.some((c) => c.uuid === watchedCertificate)) {

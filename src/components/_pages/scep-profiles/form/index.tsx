@@ -28,7 +28,7 @@ import { validateAlphaNumericWithoutAccents, validateInteger, validateLength, va
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { Resource } from '../../../../types/openapi';
 import { ProtocolChallengeSource, ProtocolChallengeSourcePlatformEnum } from 'types/protocol-challenge-source';
-import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
+import { selectors as enumSelectors, getEnumAsSelectOptions, getEnumLabel } from 'ducks/enums';
 import CertificateField from '../CertificateField';
 import useAttributeEditor, { buildGroups, buildOwner } from 'utils/widget';
 import CertificateAssociationsFormWidget from 'components/CertificateAssociationsFormWidget/CertificateAssociationsFormWidget';
@@ -227,22 +227,26 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
     });
     const isRegistrationChallengeSource = watchedChallengeSource === ProtocolChallengeSource.CertificateRegistration;
 
-    const challengeSourceOptions = useMemo(
-        () =>
-            Object.values(ProtocolChallengeSource).map((source) => ({
-                value: source,
-                label: getEnumLabel(challengeSourceEnum, source),
-            })),
-        [challengeSourceEnum],
-    );
+    const challengeSourceOptions = useMemo(() => {
+        const fromPlatformEnum = getEnumAsSelectOptions(challengeSourceEnum);
+        return fromPlatformEnum.length > 0
+            ? fromPlatformEnum
+            : Object.values(ProtocolChallengeSource).map((source) => ({
+                  value: source,
+                  label: getEnumLabel(challengeSourceEnum, source),
+              }));
+    }, [challengeSourceEnum]);
+
+    const effectiveEnableChallengePassword = !isRegistrationChallengeSource && watchedEnableChallengePassword;
+    const effectiveEnableIntune = !isRegistrationChallengeSource && watchedEnableIntune;
 
     const challengePasswordRequired =
-        watchedEnableChallengePassword && !(editMode && (scepProfileSelector?.enableChallengePassword ?? false));
-    const intuneKeyRequired = watchedEnableIntune && !(editMode && (scepProfileSelector?.enableIntune ?? false));
+        effectiveEnableChallengePassword && !(editMode && (scepProfileSelector?.enableChallengePassword ?? false));
+    const intuneKeyRequired = effectiveEnableIntune && !(editMode && (scepProfileSelector?.enableIntune ?? false));
 
     useEffect(() => {
-        setIntune(watchedEnableIntune);
-    }, [watchedEnableIntune]);
+        setIntune(effectiveEnableIntune);
+    }, [effectiveEnableIntune]);
 
     const onSubmit = useCallback(
         (values: FormValues) => {
@@ -252,9 +256,13 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                 includeCaCertificate: values.includeCaCertificate,
                 includeCaCertificateChain: values.includeCaCertificateChain,
                 challengeSource: values.challengeSource,
-                enableChallengePassword: values.enableChallengePassword,
-                challengePassword: values.enableChallengePassword ? values.challengePassword || undefined : undefined,
-                enableIntune: values.enableIntune,
+                enableChallengePassword:
+                    values.challengeSource !== ProtocolChallengeSource.CertificateRegistration && values.enableChallengePassword,
+                challengePassword:
+                    values.challengeSource !== ProtocolChallengeSource.CertificateRegistration && values.enableChallengePassword
+                        ? values.challengePassword || undefined
+                        : undefined,
+                enableIntune: values.challengeSource !== ProtocolChallengeSource.CertificateRegistration && values.enableIntune,
                 intuneTenant: values.intuneTenant,
                 intuneApplicationId: values.intuneApplicationId,
                 intuneApplicationKey: values.intuneApplicationKey,
@@ -484,14 +492,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                                     id="challengeSource"
                                     label="Challenge Source"
                                     value={field.value}
-                                    onChange={(value) => {
-                                        field.onChange(value);
-                                        if (value === ProtocolChallengeSource.CertificateRegistration) {
-                                            setValue('enableChallengePassword', false);
-                                            setValue('challengePassword', '');
-                                            setValue('enableIntune', false);
-                                        }
-                                    }}
+                                    onChange={field.onChange}
                                     options={challengeSourceOptions}
                                     placement="bottom"
                                 />
@@ -504,7 +505,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                             render={({ field }) => (
                                 <Switch
                                     id="enableChallengePassword"
-                                    checked={field.value}
+                                    checked={effectiveEnableChallengePassword}
                                     onChange={field.onChange}
                                     disabled={isRegistrationChallengeSource}
                                     secondaryLabel="Enable Challenge Password"
@@ -523,7 +524,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                                     type="password"
                                     label="Challenge Password"
                                     required={challengePasswordRequired}
-                                    disabled={!watchedEnableChallengePassword}
+                                    disabled={!effectiveEnableChallengePassword}
                                     placeholder={editMode ? 'Leave blank to keep current' : undefined}
                                     invalid={fieldState.error && fieldState.isTouched}
                                     error={getFieldErrorMessage(fieldState)}
@@ -582,7 +583,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                             render={({ field }) => (
                                 <Switch
                                     id="enableIntune"
-                                    checked={field.value}
+                                    checked={effectiveEnableIntune}
                                     onChange={field.onChange}
                                     disabled={isRegistrationChallengeSource}
                                     secondaryLabel="Enable Intune"
@@ -593,15 +594,15 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                         <Controller
                             name="intuneTenant"
                             control={control}
-                            rules={watchedEnableIntune ? buildValidationRules([validateRequired()]) : buildValidationRules([])}
+                            rules={effectiveEnableIntune ? buildValidationRules([validateRequired()]) : buildValidationRules([])}
                             render={({ field, fieldState }) => (
                                 <TextInput
                                     {...field}
                                     id="intuneTenant"
                                     type="text"
                                     label="Intune Tenant"
-                                    required={watchedEnableIntune}
-                                    disabled={!watchedEnableIntune}
+                                    required={effectiveEnableIntune}
+                                    disabled={!effectiveEnableIntune}
                                     invalid={fieldState.error && fieldState.isTouched}
                                     error={getFieldErrorMessage(fieldState)}
                                 />
@@ -611,15 +612,15 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                         <Controller
                             name="intuneApplicationId"
                             control={control}
-                            rules={watchedEnableIntune ? buildValidationRules([validateRequired()]) : buildValidationRules([])}
+                            rules={effectiveEnableIntune ? buildValidationRules([validateRequired()]) : buildValidationRules([])}
                             render={({ field, fieldState }) => (
                                 <TextInput
                                     {...field}
                                     id="intuneApplicationId"
                                     type="text"
                                     label="Intune Application ID"
-                                    required={watchedEnableIntune}
-                                    disabled={!watchedEnableIntune}
+                                    required={effectiveEnableIntune}
+                                    disabled={!effectiveEnableIntune}
                                     invalid={fieldState.error && fieldState.isTouched}
                                     error={getFieldErrorMessage(fieldState)}
                                 />
@@ -650,6 +651,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
                             currentCertificate={
                                 watchedEnableIntune === (scepProfile?.enableIntune ?? false) ? scepProfile?.caCertificate : undefined
                             }
+                            rsaOnly={isRegistrationChallengeSource}
                         />
 
                         <Widget
