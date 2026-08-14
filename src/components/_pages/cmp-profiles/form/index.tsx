@@ -265,6 +265,8 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
         name: 'challengeSource',
     });
     const isRegistrationChallengeSource = watchedChallengeSource === ProtocolChallengeSource.CertificateRegistration;
+    const sharedSecretRequired =
+        !editMode || (cmpProfile?.uuid === id && cmpProfile?.challengeSource === ProtocolChallengeSource.CertificateRegistration);
 
     const watchedResponseProtectionMethod = useWatch({
         control,
@@ -618,6 +620,10 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                             onChange={(value) => {
                                                 field.onChange(value);
                                                 if (value === ProtocolChallengeSource.CertificateRegistration) {
+                                                    setValue('variant', CmpProfileRequestDtoVariantEnum.V2, { shouldValidate: true });
+                                                    setValue('requestProtectionMethod', ProtectionMethod.SharedSecret, {
+                                                        shouldValidate: true,
+                                                    });
                                                     setValue('sharedSecret', '');
                                                 }
                                             }}
@@ -652,6 +658,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                                                     value={option.value}
                                                                     checked={field.value === option.value}
                                                                     onChange={() => field.onChange(option.value)}
+                                                                    disabled={isRegistrationChallengeSource}
                                                                     className="shrink-0 mt-0.5 rounded-full not-checked:bg-surface-raised border-outline text-brand-solid focus:ring-brand disabled:opacity-50 disabled:pointer-events-none"
                                                                 />
                                                                 <span className="ml-2">
@@ -700,6 +707,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                                     placeholder="Select Requested Protection Method"
                                                     isClearable
                                                     placement="bottom"
+                                                    isDisabled={isRegistrationChallengeSource}
                                                     error={getFieldErrorMessage(fieldState)}
                                                 />
                                             )}
@@ -709,15 +717,17 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                                 <Controller
                                                     name="sharedSecret"
                                                     control={control}
-                                                    rules={buildValidationRules(editMode ? [] : [validateRequired()])}
+                                                    rules={buildValidationRules(sharedSecretRequired ? [validateRequired()] : [])}
                                                     render={({ field, fieldState }) => (
                                                         <TextInput
                                                             {...field}
                                                             id="sharedSecret"
                                                             type="password"
                                                             label="Shared Secret"
-                                                            required={!editMode}
-                                                            placeholder={editMode ? 'Leave blank to keep current' : 'Shared Secret'}
+                                                            required={sharedSecretRequired}
+                                                            placeholder={
+                                                                sharedSecretRequired ? 'Shared Secret' : 'Leave blank to keep current'
+                                                            }
                                                             invalid={fieldState.error && fieldState.isTouched}
                                                             error={getFieldErrorMessage(fieldState)}
                                                         />

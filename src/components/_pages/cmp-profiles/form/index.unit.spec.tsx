@@ -124,6 +124,59 @@ describe('CmpProfileForm (edit mode) challenge source', () => {
         expect(update.payload.updateCmpRequest.sharedSecret).toBeUndefined();
     });
 
+    it('locks the variant and request protection method for a certificateRegistration profile', async () => {
+        await renderForm(createStore(), { ...profile, challengeSource: 'certificateRegistration' });
+
+        // Core accepts registration mode only with the v2 variant and shared-secret request protection.
+        const variantRadios = container.querySelectorAll('input[name="variant"]');
+        expect(variantRadios.length).toBeGreaterThan(0);
+        for (const radio of variantRadios) {
+            expect((radio as HTMLInputElement).disabled).toBe(true);
+        }
+        const protectionTrigger = container.querySelector(
+            '[data-testid="select-selectedRequestProtectionMethodSelect-trigger"]',
+        ) as HTMLButtonElement;
+        expect(protectionTrigger.disabled).toBe(true);
+    });
+
+    it('requires a new shared secret when switching a certificateRegistration profile back to protocolDefault', async () => {
+        const { store, dispatched } = trackedStore();
+        await renderForm(store, { ...profile, challengeSource: 'certificateRegistration' });
+
+        const trigger = container.querySelector('[data-testid="select-challengeSource-trigger"]') as HTMLButtonElement;
+        await act(async () => {
+            trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+            trigger.click();
+        });
+        await act(async () => {});
+        const option = Array.from(document.querySelectorAll('[role="option"]')).find(
+            (el) => el.textContent === 'protocolDefault',
+        ) as HTMLElement;
+        expect(option).toBeTruthy();
+        await act(async () => {
+            option.click();
+        });
+        await act(async () => {});
+
+        // Registration mode cleared the stored secret, so there is nothing to "keep current":
+        // submitting without a new secret must be blocked by validation.
+        const secretInput = container.querySelector('#sharedSecret') as HTMLInputElement;
+        expect(secretInput).toBeTruthy();
+        expect(await submitAndCaptureUpdate(store, dispatched)).toBeUndefined();
+
+        const setValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+        await act(async () => {
+            setValue.call(secretInput, 'new-secret');
+            secretInput.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        await act(async () => {});
+
+        const update = await submitAndCaptureUpdate(store, dispatched);
+        expect(update).toBeTruthy();
+        expect(update.payload.updateCmpRequest.sharedSecret).toBe('new-secret');
+        expect(update.payload.updateCmpRequest.challengeSource).toBe('protocolDefault');
+    });
+
     it('defaults the challenge source to protocolDefault when the profile has none', async () => {
         const { store, dispatched } = trackedStore();
         await renderForm(store);
