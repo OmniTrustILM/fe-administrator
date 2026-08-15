@@ -5,4 +5,5 @@ globalThis.__ENV__ = {
     LOGOUT_URL: '/logout',
     ENABLE_PROXIES: false,
     ENABLE_TRUSTED_CERTIFICATES: false,
+    ENABLE_BRANDING: false,
 };

@@ -75,6 +75,36 @@ describe('feature-flags', () => {
     });
 
     // -------------------------------------------------------------------------
+    // isBrandingEnabled
+    // -------------------------------------------------------------------------
+
+    describe('isBrandingEnabled', () => {
+        test('is true when ENABLE_BRANDING is explicitly true', async () => {
+            vi.stubGlobal('__ENV__', { ENABLE_BRANDING: true });
+            const { featureFlags } = await import('./feature-flags');
+            expect(featureFlags.isBrandingEnabled).toBe(true);
+        });
+
+        test('is false when ENABLE_BRANDING is explicitly false', async () => {
+            vi.stubGlobal('__ENV__', { ENABLE_BRANDING: false });
+            const { featureFlags } = await import('./feature-flags');
+            expect(featureFlags.isBrandingEnabled).toBe(false);
+        });
+
+        test('is false when ENABLE_BRANDING is absent (opt-in semantics)', async () => {
+            vi.stubGlobal('__ENV__', {});
+            const { featureFlags } = await import('./feature-flags');
+            expect(featureFlags.isBrandingEnabled).toBe(false);
+        });
+
+        test('is false when __ENV__ is undefined entirely', async () => {
+            vi.stubGlobal('__ENV__', undefined);
+            const { featureFlags } = await import('./feature-flags');
+            expect(featureFlags.isBrandingEnabled).toBe(false);
+        });
+    });
+
+    // -------------------------------------------------------------------------
     // Both flags together (realistic deployment scenarios)
     // -------------------------------------------------------------------------
 

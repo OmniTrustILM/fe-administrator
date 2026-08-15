@@ -5,6 +5,7 @@ type Env = {
     LOGOUT_URL: string;
     ENABLE_PROXIES?: boolean;
     ENABLE_TRUSTED_CERTIFICATES?: boolean;
+    ENABLE_BRANDING?: boolean;
 };
 
 interface Window {

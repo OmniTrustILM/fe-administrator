@@ -15,6 +15,7 @@ import approvalsEpic from './approvals-epic';
 
 import authEpics from './auth-epics';
 import authSettingsEpics from './auth-settings-epics';
+import brandingEpics from './branding-epics';
 import authoritiesEpics from './authorities-epics';
 import groupsEpics from './certificateGroups-epics';
 import certificatesEpics from './certificates-epics';
@@ -79,6 +80,7 @@ export const epics = combineEpics(
     ...startupEpics,
     ...authEpics,
     ...authSettingsEpics,
+    ...brandingEpics,
     ...appRedirectEpics,
     ...dashboardEpics,
     ...groupsEpics,
