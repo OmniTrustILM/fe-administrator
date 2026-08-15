@@ -16,6 +16,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import ScepProfileForm from '../form';
 import { PlatformEnum, Resource } from 'types/openapi';
+import { ProtocolChallengeSourcePlatformEnum } from 'types/protocol-challenge-source';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders, getGroupNames, getOwnerName } from 'utils/widget';
 import { actions as groupsActions, selectors as groupsSelectors } from 'ducks/certificateGroups';
@@ -40,6 +41,7 @@ export default function ScepProfileDetail() {
     const users = useSelector(userSelectors.users);
     const groups = useSelector(groupsSelectors.certificateGroups);
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
+    const challengeSourceEnum = useSelector(enumSelectors.platformEnum(ProtocolChallengeSourcePlatformEnum));
     const deleteErrorMessage = useSelector(selectors.deleteErrorMessage);
 
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
@@ -167,6 +169,13 @@ export default function ScepProfileDetail() {
                           columns: ['Status', <StatusBadge key="status" enabled={scepProfile.enabled} />],
                       },
                       {
+                          id: 'challengeSource',
+                          columns: [
+                              'Challenge Source',
+                              scepProfile.challengeSource ? getEnumLabel(challengeSourceEnum, scepProfile.challengeSource) : 'N/A',
+                          ],
+                      },
+                      {
                           id: 'renewThreshold',
                           columns: ['Renew Threshold', scepProfile.renewThreshold?.toString() || 'N/A'],
                       },
@@ -218,7 +227,7 @@ export default function ScepProfileDetail() {
                       },
                   ]
                 : [],
-        [scepProfile],
+        [scepProfile, challengeSourceEnum],
     );
 
     const intuneDetailData: TableDataRow[] = useMemo(
