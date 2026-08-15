@@ -1,6 +1,7 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
 import type { CertificateListResponseModel } from './certificate';
 import type { ScepProfileDetailDto, ScepProfileEditRequestDto, ScepProfileRequestDto } from './openapi';
+import type { ProtocolChallengeSource } from './protocol-challenge-source';
 import type { RaProfileSimplifiedModel } from './ra-profiles';
 
 export type {
@@ -14,11 +15,13 @@ export type {
 export type ScepProfileAddRequestModel = Omit<ScepProfileRequestDto, 'issueCertificateAttributes | customAttributes'> & {
     issueCertificateAttributes: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
+    challengeSource?: ProtocolChallengeSource;
 };
 
 export type ScepProfileEditRequestModel = Omit<ScepProfileEditRequestDto, 'issueCertificateAttributes | customAttributes'> & {
     issueCertificateAttributes: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
+    challengeSource?: ProtocolChallengeSource;
 };
 
 export type ScepProfileResponseModel = Omit<
@@ -29,4 +32,5 @@ export type ScepProfileResponseModel = Omit<
     issueCertificateAttributes?: Array<AttributeResponseModel>;
     customAttributes?: Array<AttributeResponseModel>;
     caCertificate?: CertificateListResponseModel;
+    challengeSource?: ProtocolChallengeSource;
 };
