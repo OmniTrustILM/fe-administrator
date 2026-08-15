@@ -326,7 +326,6 @@ export default function SigningProfileForm() {
     const retentionIndefiniteValue = useWatch({ control, name: 'retentionIndefinite' });
     const persistenceModeValue = useWatch({ control, name: 'persistenceMode' });
 
-    // recordSignedDocument is only valid for CONTENT_SIGNING and TIMESTAMPING workflows.
     const recordSignedDocumentAllowed =
         workflowTypeValue === SigningWorkflowType.ContentSigning || workflowTypeValue === SigningWorkflowType.Timestamping;
 
@@ -505,7 +504,6 @@ export default function SigningProfileForm() {
                 recordRequestMetadata: values.recordRequestMetadata,
                 // Not stored for the timestamping workflow; force false when the toggle is hidden.
                 recordSignature: signatureAndDtbsRecordable ? values.recordSignature : false,
-                // Only valid for CONTENT_SIGNING / TIMESTAMPING; force false otherwise.
                 recordSignedDocument: recordSignedDocumentAllowed ? values.recordSignedDocument : false,
                 recordDtbs: signatureAndDtbsRecordable ? values.recordDtbs : false,
                 retentionDays: values.retentionIndefinite ? undefined : Number(values.retentionDays),
