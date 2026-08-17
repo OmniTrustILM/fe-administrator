@@ -139,24 +139,26 @@ describe('CmpProfileForm (edit mode) challenge source', () => {
         expect(protectionTrigger.disabled).toBe(true);
     });
 
-    it('requires a new shared secret when switching a certificateRegistration profile back to protocolDefault', async () => {
-        const { store, dispatched } = trackedStore();
-        await renderForm(store, { ...profile, challengeSource: 'certificateRegistration' });
-
-        const trigger = container.querySelector('[data-testid="select-challengeSource-trigger"]') as HTMLButtonElement;
+    async function pickSelectOption(triggerTestId: string, code: string) {
+        const trigger = container.querySelector(`[data-testid="${triggerTestId}"]`) as HTMLButtonElement;
         await act(async () => {
             trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
             trigger.click();
         });
         await act(async () => {});
-        const option = Array.from(document.querySelectorAll('[role="option"]')).find(
-            (el) => el.textContent === 'protocolDefault',
-        ) as HTMLElement;
+        const option = Array.from(document.querySelectorAll('[role="option"]')).find((el) => el.textContent === code) as HTMLElement;
         expect(option).toBeTruthy();
         await act(async () => {
             option.click();
         });
         await act(async () => {});
+    }
+
+    it('requires a new shared secret when switching a certificateRegistration profile back to protocolDefault', async () => {
+        const { store, dispatched } = trackedStore();
+        await renderForm(store, { ...profile, challengeSource: 'certificateRegistration' });
+
+        await pickSelectOption('select-challengeSource-trigger', 'protocolDefault');
 
         // Registration mode cleared the stored secret, so there is nothing to "keep current":
         // submitting without a new secret must be blocked by validation.
@@ -184,5 +186,46 @@ describe('CmpProfileForm (edit mode) challenge source', () => {
         const update = await submitAndCaptureUpdate(store, dispatched);
         expect(update).toBeTruthy();
         expect(update.payload.updateCmpRequest.challengeSource).toBe('protocolDefault');
+    });
+
+    it('restores the stored variant and protection method after a registration round trip', async () => {
+        const { store, dispatched } = trackedStore();
+        await renderForm(store, {
+            ...profile,
+            variant: 'v3',
+            requestProtectionMethod: ProtectionMethod.Signature,
+        });
+
+        const checkedVariant = () =>
+            (Array.from(container.querySelectorAll('input[name="variant"]')) as HTMLInputElement[]).find((r) => r.checked)?.value;
+        expect(checkedVariant()).toBe('v3');
+
+        await pickSelectOption('select-challengeSource-trigger', 'certificateRegistration');
+        // Registration mode renders the forced v2, but the form value is only normalized in the payload.
+        expect(checkedVariant()).toBe('v2');
+
+        await pickSelectOption('select-challengeSource-trigger', 'protocolDefault');
+        expect(checkedVariant()).toBe('v3');
+
+        const update = await submitAndCaptureUpdate(store, dispatched);
+        expect(update).toBeTruthy();
+        expect(update.payload.updateCmpRequest.variant).toBe('v3');
+        expect(update.payload.updateCmpRequest.requestProtectionMethod).toBe(ProtectionMethod.Signature);
+    });
+
+    it('requires a fresh secret when a signature-protected profile switches to shared-secret protection', async () => {
+        const { store, dispatched } = trackedStore();
+        await renderForm(store, {
+            ...profile,
+            requestProtectionMethod: ProtectionMethod.Signature,
+        });
+
+        await pickSelectOption('select-selectedRequestProtectionMethodSelect-trigger', 'sharedSecret');
+
+        // A signature-protected profile stores no MAC secret, so there is nothing to "keep current".
+        const secretInput = container.querySelector('#sharedSecret') as HTMLInputElement;
+        expect(secretInput).toBeTruthy();
+        expect(secretInput.placeholder).toBe('Shared Secret');
+        expect(await submitAndCaptureUpdate(store, dispatched)).toBeUndefined();
     });
 });
