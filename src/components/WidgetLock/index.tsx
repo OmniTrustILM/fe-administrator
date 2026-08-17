@@ -1,7 +1,8 @@
+import Button from 'components/Button';
 import Container from 'components/Container';
 import Tooltip from 'components/Tooltip';
 import { LockTypeEnum } from 'types/user-interface';
-import { Info, TriangleAlert, Home, Lock, Wifi, Database, Server } from 'lucide-react';
+import { Info, TriangleAlert, Home, Lock, Wifi, Database, Server, RotateCw } from 'lucide-react';
 
 interface Props {
     size?: 'small' | 'normal' | 'large';
@@ -10,6 +11,8 @@ interface Props {
     lockDetails?: string;
     lockType?: LockTypeEnum;
     dataTestId?: string;
+    onRefresh?: () => void;
+    refreshLabel?: string;
 }
 
 const WidgetLock = ({
@@ -19,6 +22,8 @@ const WidgetLock = ({
     lockType = LockTypeEnum.GENERIC,
     lockDetails,
     dataTestId,
+    onRefresh,
+    refreshLabel = 'Retry',
 }: Props) => {
     const smallIconSize = size === 'small' ? 24 : 32;
     const iconSize = size === 'large' ? 48 : smallIconSize;
@@ -53,7 +58,11 @@ const WidgetLock = ({
                             {lockTitle}
                             {lockDetails && (
                                 <Tooltip content={lockDetails}>
-                                    <button type="button" className="inline-flex items-center text-content-subtle hover:text-content">
+                                    <button
+                                        type="button"
+                                        data-testid="widget-lock-details"
+                                        className="inline-flex items-center text-content-subtle hover:text-content"
+                                    >
                                         <Info size={15} />
                                     </button>
                                 </Tooltip>
@@ -61,6 +70,14 @@ const WidgetLock = ({
                         </h5>
                         <p className="text-sm text-content mt-1">{lockText}</p>
                     </div>
+                    {onRefresh && (
+                        <div className="sm:ms-auto shrink-0">
+                            <Button variant="outline" color="secondary" onClick={onRefresh} data-testid="widget-lock-refresh">
+                                <RotateCw size={15} />
+                                {refreshLabel}
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
         </Container>

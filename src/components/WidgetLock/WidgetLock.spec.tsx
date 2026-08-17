@@ -76,6 +76,42 @@ test.describe('WidgetLock', () => {
         await expect(component.getByText('There was some problem')).toBeVisible();
     });
 
+    test('should not render a refresh button when onRefresh is not provided', async ({ mount }) => {
+        const component = await mount(<WidgetLock lockTitle="Test Lock" />);
+
+        await expect(component.locator('[data-testid="widget-lock-refresh"]')).toHaveCount(0);
+    });
+
+    test('should render a refresh button when onRefresh is provided', async ({ mount }) => {
+        const component = await mount(<WidgetLock lockTitle="Test Lock" onRefresh={() => {}} />);
+
+        await expect(component.locator('[data-testid="widget-lock-refresh"]')).toBeVisible();
+        await expect(component.getByRole('button', { name: 'Retry' })).toBeVisible();
+    });
+
+    test('should call onRefresh when the refresh button is clicked', async ({ mount }) => {
+        let refreshCount = 0;
+        const component = await mount(
+            <WidgetLock
+                lockTitle="Test Lock"
+                onRefresh={() => {
+                    refreshCount += 1;
+                }}
+            />,
+        );
+
+        await component.locator('[data-testid="widget-lock-refresh"]').click();
+
+        await expect.poll(() => refreshCount).toBe(1);
+    });
+
+    test('should render both the details tooltip and the refresh button together', async ({ mount }) => {
+        const component = await mount(<WidgetLock lockTitle="Test Lock" lockDetails="Test details" onRefresh={() => {}} />);
+
+        await expect(component.locator('[data-testid="widget-lock-details"]')).toBeVisible();
+        await expect(component.locator('[data-testid="widget-lock-refresh"]')).toBeVisible();
+    });
+
     test('should use custom data-testid when provided', async ({ mount }) => {
         const component = await mount(<WidgetLock lockTitle="Test" dataTestId="custom-lock-id" />);
 
