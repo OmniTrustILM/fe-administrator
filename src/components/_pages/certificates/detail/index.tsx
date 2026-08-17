@@ -63,6 +63,7 @@ import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
 import CertificateDetailsContent from './CertificateDetailsContent';
 import CertificateRequestContent from './CertificateRequestContent';
+import { getValidationPanelState, validationPanelMessages } from '../validationPanel';
 import Label from 'components/Label';
 import ObjectEventHistoryWidget from 'components/_pages/notifications/events-settings/ObjectEventHistoryWidget';
 
@@ -689,6 +690,8 @@ export default function CertificateDetail() {
         return validationDataRows;
     }, [certificate, validationResult, certificateValidationCheck]);
 
+    const validationPanelState = useMemo(() => getValidationPanelState(certificate, validationResult), [certificate, validationResult]);
+
     const setRelatedCertificatesRelation = (relatedCertificates: CertificateSimpleDto[], type: 'predecessor' | 'successor') => {
         const withRelationType = relatedCertificates.map((c) => ({
             ...c,
@@ -1257,9 +1260,17 @@ export default function CertificateDetail() {
                                         title="Validation Status"
                                         busy={isFetchingValidationResult}
                                         titleSize="large"
-                                        refreshAction={certificate && getFreshCertificateValidations}
+                                        refreshAction={
+                                            validationPanelState === 'pending-issuance' ? undefined : getFreshCertificateValidations
+                                        }
                                     >
-                                        <CustomTable headers={validationHeaders} data={validationData} />
+                                        {validationPanelState === 'results' ? (
+                                            <CustomTable headers={validationHeaders} data={validationData} />
+                                        ) : (
+                                            <div data-testid="validation-panel-notice" className="text-center text-content-muted">
+                                                {validationPanelMessages[validationPanelState]}
+                                            </div>
+                                        )}
                                     </Widget>
                                     <ComplianceCheckResultWidget
                                         resource={Resource.Certificates}
