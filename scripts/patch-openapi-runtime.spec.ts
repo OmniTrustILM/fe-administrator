@@ -177,22 +177,25 @@ describe('patchTree', () => {
         expect(patchTree(root)).toBe(0);
     });
 
-    it('skips directories listed in skipDirs', () => {
+    it('reaches the nested utils client', () => {
         writeFileSync(path.join(root, 'runtime.ts'), runtimeSource());
         writeFileSync(path.join(root, 'utils', 'runtime.ts'), runtimeSource(false));
 
-        expect(patchTree(root, { skipDirs: [path.join(root, 'utils')] })).toBe(1);
-        expect(readFileSync(path.join(root, 'utils', 'runtime.ts'), 'utf8')).toContain('query?: HttpQuery');
+        expect(patchTree(root)).toBe(2);
+        expect(readFileSync(path.join(root, 'utils', 'runtime.ts'), 'utf8')).toContain('queryParams?: HttpQuery;');
     });
 });
 
-describe('the checked-in generated tree', () => {
+describe('the checked-in generated trees', () => {
     // A regeneration that the hook failed to patch still compiles, because the runtime and the
     // operations would agree on the old name again. These assertions are what makes that visible.
     const openapi = path.resolve(__dirname, '..', 'src', 'types', 'openapi');
 
-    it('declares queryParams on RequestOpts and no custom query prop', () => {
-        const source = readFileSync(path.join(openapi, 'runtime.ts'), 'utf8');
+    it.each([
+        ['core', path.join(openapi, 'runtime.ts')],
+        ['utils', path.join(openapi, 'utils', 'runtime.ts')],
+    ])('declares queryParams on the %s RequestOpts and no custom query prop', (_client, file) => {
+        const source = readFileSync(file, 'utf8');
 
         expect(source).toContain("export interface RequestOpts extends Omit<AjaxConfig, 'queryParams'> {");
         expect(source).toContain('queryParams?: HttpQuery;');
@@ -201,9 +204,7 @@ describe('the checked-in generated tree', () => {
     });
 
     it('has no operation left passing a query prop', () => {
-        const offenders = [...walkTypeScriptFiles(path.join(openapi, 'apis'))].filter((file: string) =>
-            /^[ \t]*query[,[:]/m.test(readFileSync(file, 'utf8')),
-        );
+        const offenders = [...walkTypeScriptFiles(openapi)].filter((file: string) => /^[ \t]*query[,[:]/m.test(readFileSync(file, 'utf8')));
 
         expect(offenders).toEqual([]);
     });
@@ -222,16 +223,19 @@ describe('run', () => {
         vi.restoreAllMocks();
     });
 
-    it('patches the core tree, skips utils, and logs the count', () => {
+    // Both clients get the rename, unlike the sibling contact hook: the utils runtime is the same
+    // generated file from the same template, so leaving it behind would keep the trap in place there.
+    it('patches the core and the utils tree, and logs the count', () => {
         const log = vi.spyOn(console, 'log').mockImplementation(() => {});
         const coreFile = path.join(root, 'src', 'types', 'openapi', 'runtime.ts');
         const utilsFile = path.join(root, 'src', 'types', 'openapi', 'utils', 'runtime.ts');
         writeFileSync(coreFile, runtimeSource());
         writeFileSync(utilsFile, runtimeSource(false));
 
-        expect(run(root)).toBe(1);
+        expect(run(root)).toBe(2);
         expect(readFileSync(coreFile, 'utf8')).toContain('queryParams?: HttpQuery;');
-        expect(readFileSync(utilsFile, 'utf8')).toContain('query?: HttpQuery');
-        expect(log).toHaveBeenCalledWith('replaced the custom query prop with queryParams in 1 generated file(s)');
+        expect(readFileSync(utilsFile, 'utf8')).toContain('queryParams?: HttpQuery;');
+        expect(readFileSync(utilsFile, 'utf8')).not.toContain('query?: HttpQuery');
+        expect(log).toHaveBeenCalledWith('replaced the custom query prop with queryParams in 2 generated file(s)');
     });
 });

@@ -10,7 +10,9 @@
 // helper rather than handing the params to rxjs, which joins arrays with a comma
 // instead of repeating the key.
 //
-// Runs after every generation, because the generated files are overwritten each time.
+// Runs after every generation, because the generated files are overwritten each time. Both
+// clients are patched — unlike the sibling contact hook, which has a reason to leave the utils
+// tree alone — since the two runtimes come from the same template and carry the same trap.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -60,9 +62,9 @@ export function patchSource(source) {
 }
 
 /** Patch a generated tree; returns how many files changed. */
-export function patchTree(dir, { skipDirs = [] } = {}) {
+export function patchTree(dir) {
     let changed = 0;
-    for (const file of walkTypeScriptFiles(dir, skipDirs)) {
+    for (const file of walkTypeScriptFiles(dir)) {
         const source = readFileSync(file, 'utf8');
         const updated = patchSource(source);
         if (updated !== source) {
@@ -74,8 +76,7 @@ export function patchTree(dir, { skipDirs = [] } = {}) {
 }
 
 export function run(root) {
-    const coreDir = path.join(root, 'src', 'types', 'openapi');
-    const changed = patchTree(coreDir, { skipDirs: [path.join(coreDir, 'utils')] });
+    const changed = patchTree(path.join(root, 'src', 'types', 'openapi'));
     console.log(`replaced the custom query prop with queryParams in ${changed} generated file(s)`);
     return changed;
 }

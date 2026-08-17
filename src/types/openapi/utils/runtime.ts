@@ -93,11 +93,11 @@ export class BaseAPI {
         );
     }
 
-    private createRequestArgs = ({ url: baseUrl, query, method, headers, body, responseType }: RequestOpts): AjaxConfig => {
+    private createRequestArgs = ({ url: baseUrl, queryParams, method, headers, body, responseType }: RequestOpts): AjaxConfig => {
         // only add the queryString to the URL if there are query parameters.
         // this is done to avoid urls ending with a '?' character which buggy webservers
         // do not handle correctly sometimes.
-        const url = `${this.configuration.basePath}${baseUrl}${query && Object.keys(query).length ? `?${queryString(query)}` : ''}`;
+        const url = `${this.configuration.basePath}${baseUrl}${queryParams && Object.keys(queryParams).length ? `?${queryString(queryParams)}` : ''}`;
 
         return {
             url,
@@ -152,8 +152,9 @@ export type HttpHeaders = { [key: string]: string };
 export type HttpQuery = Partial<{ [key: string]: string | number | null | boolean | Array<string | number | null | boolean> }>; // partial is needed for strict mode
 export type HttpBody = Json | FormData;
 
-export interface RequestOpts extends AjaxConfig {
-    query?: HttpQuery; // additional prop
+export interface RequestOpts extends Omit<AjaxConfig, 'queryParams'> {
+    // narrowed from AjaxConfig: this runtime serializes the query string itself
+    queryParams?: HttpQuery;
     // the following props have improved types over AjaxRequest
     method: HttpMethod;
     headers?: HttpHeaders;
