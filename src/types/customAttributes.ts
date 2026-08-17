@@ -13,9 +13,9 @@ export type {
     CustomAttributeUpdateRequestDto,
 } from './openapi';
 
-// OpenAPI list DTO omits `label` and `required` (core#2011), but the backend returns them.
+// OpenAPI list DTO omits `required` (core#2011), but the backend returns it.
 // Drop this override once the spec is regenerated.
-export type CustomAttributeResponseModel = CustomAttributeDefinitionDto & { label?: string; required?: boolean };
+export type CustomAttributeResponseModel = CustomAttributeDefinitionDto & { required?: boolean };
 
 export type CustomAttributeDetailResponseModel = Omit<CustomAttributeDefinitionDetailDto, 'content'> & {
     content?: Array<BaseAttributeContentModel>;

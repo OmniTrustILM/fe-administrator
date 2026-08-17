@@ -169,11 +169,11 @@ export default function CustomAttributesList() {
                     <Link key={customAttribute.uuid} to={`./detail/${customAttribute.uuid}`}>
                         {customAttribute.name}
                     </Link>,
-                    customAttribute.label ?? '',
+                    customAttribute.label,
                     customAttribute.version || '',
                     <StatusBadge key="enabled" enabled={customAttribute.enabled} />,
                     // Older backends omit the flag; leave the cell empty rather than show a misleading "No".
-                    customAttribute.required === undefined ? '' : <BooleanBadge key="required" value={customAttribute.required} />,
+                    customAttribute.required == null ? '' : <BooleanBadge key="required" value={customAttribute.required} />,
                     getEnumLabel(attributeContentTypeEnum, customAttribute.contentType),
                     customAttribute.description,
                     <>
