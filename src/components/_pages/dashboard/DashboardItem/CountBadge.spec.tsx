@@ -21,4 +21,58 @@ test.describe('CountBadge', () => {
         await expect(component.getByTestId('extra')).toBeVisible();
         await expect(component.getByTestId('extra')).toHaveText('Extra');
     });
+
+    test('should render zero count instead of a lock when data is zero', async ({ mount }) => {
+        const component = await mount(<CountBadgeWithStore title="Zero" link="/zero" data={0} />);
+        await expect(component.getByText('0')).toBeVisible();
+        await expect(component.locator('[data-testid="count-badge-lock"]')).toHaveCount(0);
+    });
+
+    test('should not render a lock when data is undefined', async ({ mount }) => {
+        const component = await mount(<CountBadgeWithStore title="Unknown" link="/unknown" />);
+        await expect(component.locator('[data-testid="count-badge-lock"]')).toHaveCount(0);
+    });
+
+    test('should render a lock when data is null', async ({ mount }) => {
+        const component = await mount(<CountBadgeWithStore title="Unavailable" link="/unavailable" data={null} />);
+        await expect(component.getByRole('heading', { name: 'Unavailable' })).toBeVisible();
+        await expect(component.locator('[data-testid="count-badge-lock"]')).toBeVisible();
+        await expect(component.getByText('Count is not available')).toBeVisible();
+    });
+
+    test('should keep the extra component visible when data is null', async ({ mount }) => {
+        const component = await mount(
+            <CountBadgeWithStore
+                title="Unavailable"
+                link="/unavailable"
+                data={null}
+                extraComponent={<span data-testid="extra">Extra</span>}
+            />,
+        );
+        await expect(component.locator('[data-testid="count-badge-lock"]')).toBeVisible();
+        await expect(component.getByTestId('extra')).toBeVisible();
+    });
+
+    test('should not render a refresh button in the lock when onRefresh is not provided', async ({ mount }) => {
+        const component = await mount(<CountBadgeWithStore title="Unavailable" link="/unavailable" data={null} />);
+        await expect(component.locator('[data-testid="widget-lock-refresh"]')).toHaveCount(0);
+    });
+
+    test('should call onRefresh when the lock refresh button is clicked', async ({ mount }) => {
+        let refreshCount = 0;
+        const component = await mount(
+            <CountBadgeWithStore
+                title="Unavailable"
+                link="/unavailable"
+                data={null}
+                onRefresh={() => {
+                    refreshCount += 1;
+                }}
+            />,
+        );
+
+        await component.locator('[data-testid="widget-lock-refresh"]').click();
+
+        await expect.poll(() => refreshCount).toBe(1);
+    });
 });
