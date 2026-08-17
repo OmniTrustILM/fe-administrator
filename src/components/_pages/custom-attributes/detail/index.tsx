@@ -18,6 +18,7 @@ import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
 import { Copy } from 'lucide-react';
 import CustomAttributeForm from '../form';
+import { getContentDescriptorLabels } from 'components/Input/DynamicContent/contentDescriptorLabels';
 import Button from 'components/Button';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
@@ -203,7 +204,7 @@ export default function CustomAttributeDetail() {
                       {
                           id: 'content',
                           columns: [
-                              'Content',
+                              getContentDescriptorLabels(!!customAttribute.list).label,
                               <div key="content-actions" className="flex items-center gap-2">
                                   {getAttributeContent(customAttribute.contentType, customAttribute.content)}
                                   {customAttribute?.content?.length ? (

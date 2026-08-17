@@ -27,7 +27,7 @@ test.describe('ContentDescriptorField', () => {
         await expect(page.getByPlaceholder('Default Content')).toHaveCount(1);
     });
 
-    test('isList true: shows multiple fields and Add Content', async ({ mount, page }) => {
+    test('isList true: shows multiple fields and Add Option', async ({ mount, page }) => {
         await mount(
             <ContentDescriptorFieldTestWrapper
                 isList
@@ -35,11 +35,19 @@ test.describe('ContentDescriptorField', () => {
                 defaultContent={[{ data: 'first' }, { data: 'second' }]}
             />,
         );
-        const inputs = page.getByPlaceholder('Default Content');
+        const inputs = page.getByPlaceholder('Option');
         await expect(inputs).toHaveCount(2);
         await expect(inputs.first()).toHaveValue('first');
         await expect(inputs.nth(1)).toHaveValue('second');
-        await expect(page.getByRole('button', { name: 'Add Content' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Add Option' })).toBeVisible();
+    });
+
+    test('isList true: labels the content as options, not as a default value', async ({ mount, page }) => {
+        await mount(
+            <ContentDescriptorFieldTestWrapper isList contentType={AttributeContentType.String} defaultContent={[{ data: 'a' }]} />,
+        );
+        await expect(page.getByText('Options')).toBeVisible();
+        await expect(page.getByText('Default Content')).toHaveCount(0);
     });
 
     test('checkbox type renders checkbox and boolean layout', async ({ mount, page }) => {
@@ -137,13 +145,13 @@ test.describe('ContentDescriptorField', () => {
         await expect(page.locator('[id="content.0.data"]')).toBeVisible();
     });
 
-    test('Add Content adds new item', async ({ mount, page }) => {
+    test('Add Option adds new item', async ({ mount, page }) => {
         await mount(
             <ContentDescriptorFieldTestWrapper isList contentType={AttributeContentType.String} defaultContent={[{ data: 'one' }]} />,
         );
-        await expect(page.getByPlaceholder('Default Content')).toHaveCount(1);
-        await page.getByRole('button', { name: 'Add Content' }).click();
-        await expect(page.getByPlaceholder('Default Content')).toHaveCount(2);
+        await expect(page.getByPlaceholder('Option')).toHaveCount(1);
+        await page.getByRole('button', { name: 'Add Option' }).click();
+        await expect(page.getByPlaceholder('Option')).toHaveCount(2);
     });
 
     test('Remove button removes item', async ({ mount, page }) => {
@@ -157,11 +165,11 @@ test.describe('ContentDescriptorField', () => {
         const removeButtons = page
             .getByRole('button')
             .filter({ has: page.locator('svg') })
-            .filter({ hasNotText: 'Add Content' });
+            .filter({ hasNotText: 'Add Option' });
         await expect(removeButtons).toHaveCount(2);
         await removeButtons.first().click();
-        await expect(page.getByPlaceholder('Default Content')).toHaveCount(1);
-        await expect(page.getByPlaceholder('Default Content')).toHaveValue('b');
+        await expect(page.getByPlaceholder('Option')).toHaveCount(1);
+        await expect(page.getByPlaceholder('Option')).toHaveValue('b');
     });
 
     test('readOnly: Remove disabled when single item', async ({ mount, page }) => {
