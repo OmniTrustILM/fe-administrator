@@ -7,8 +7,16 @@ import type { EventTriggerAssociationModel, TriggerModel } from 'types/rules';
 // It must NOT import the real duck modules
 
 export type ReactFlowUITest = {
-    flowChartNodes: Array<{ id: string; parentId?: string; hidden?: boolean; position?: { x: number; y: number } }>;
+    flowChartNodes: Array<{
+        id: string;
+        type?: string;
+        parentId?: string;
+        hidden?: boolean;
+        position?: { x: number; y: number };
+        data?: unknown;
+    }>;
     flowChartEdges: unknown[];
+    flowDirection?: 'TB' | 'BT' | 'LR' | 'RL' | 'STAR';
     expandedHiddenNodeId?: string;
 };
 

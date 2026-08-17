@@ -27,9 +27,11 @@ export interface LegendItem {
     onClick?: () => void;
 }
 
+export type FlowDirection = 'TB' | 'BT' | 'LR' | 'RL' | 'STAR';
+
 export interface FlowChartProps {
     flowChartTitle?: string;
-    flowDirection?: 'TB' | 'BT' | 'LR' | 'RL' | 'STAR';
+    flowDirection?: FlowDirection;
     flowChartNodes: CustomNode[];
     flowChartEdges: Edge[];
     defaultViewport?: Viewport;
@@ -171,6 +173,65 @@ export const getLayoutedElements = (nodes: CustomNode[], edges: Edge[], directio
     }
 };
 
+export interface ExistingFlowLayout {
+    nodes?: CustomNode[];
+    edges?: Edge[];
+    flowDirection?: FlowDirection;
+}
+
+// The transform hooks rebuild the nodes and edges on every render of the page that owns the chart,
+// so the layout effect fires again for a flowchart that is already on screen. Only its shape decides
+// whether the positions still hold: same nodes, same edges, same direction means the previous layout
+// is still valid and the dagre/star pass can be skipped.
+export const canReuseLayout = (
+    nodes: CustomNode[],
+    edges: Edge[],
+    direction: FlowDirection | undefined,
+    existing: ExistingFlowLayout | undefined,
+): boolean => {
+    if (!existing?.nodes?.length || !existing.edges) return false;
+    if (existing.flowDirection !== direction) return false;
+    if (existing.nodes.length !== nodes.length || existing.edges.length !== edges.length) return false;
+
+    const existingNodeIds = new Set(existing.nodes.map((node) => node.id));
+    if (!nodes.every((node) => existingNodeIds.has(node.id))) return false;
+
+    const existingEdgeIds = new Set(existing.edges.map((edge) => edge.id));
+    return edges.every((edge) => existingEdgeIds.has(edge.id));
+};
+
+// The lighter path: take the fresh node data (labels, statuses, callbacks) but keep everything the
+// on-screen layout owns — the plotted positions, the handle orientation, and which children the user
+// has expanded, none of which the incoming nodes know about.
+export const replotExistingLayout = (nodes: CustomNode[], edges: Edge[], existing: ExistingFlowLayout) => {
+    const existingNodes = new Map((existing.nodes ?? []).map((node) => [node.id, node]));
+
+    return {
+        nodes: nodes.map((node) => {
+            const existingNode = existingNodes.get(node.id);
+            return {
+                ...node,
+                position: { ...(existingNode?.position ?? node.position) },
+                sourcePosition: existingNode?.sourcePosition ?? node.sourcePosition,
+                targetPosition: existingNode?.targetPosition ?? node.targetPosition,
+                hidden: existingNode?.hidden ?? node.hidden,
+                data: { ...node.data },
+            };
+        }),
+        edges,
+    };
+};
+
+export const reconcileLayout = (
+    nodes: CustomNode[],
+    edges: Edge[],
+    direction: FlowDirection | undefined,
+    existing: ExistingFlowLayout | undefined,
+) =>
+    existing && canReuseLayout(nodes, edges, direction, existing)
+        ? replotExistingLayout(nodes, edges, existing)
+        : getLayoutedElements(nodes, edges, direction);
+
 export const createOnNodesChange = (dispatch: Dispatch, flowChartNodesState?: CustomNode[]) => {
     return (changes: NodeChange[]) => {
         const newNodes = ReactFlowLib.applyNodeChanges(changes, flowChartNodesState ?? []);
@@ -198,17 +259,24 @@ const FlowChartContent = ({
     const { resolvedTheme } = useTheme();
     const flowChartNodesState = useSelector(userInterfaceSelectors.flowChartNodes);
     const flowChartEdgesState = useSelector(userInterfaceSelectors.flowChartEdges);
+    const flowDirectionState = useSelector(userInterfaceSelectors.flowDirection);
     const dispatch = useDispatch();
 
     const onNodesChange = useMemo(() => createOnNodesChange(dispatch, flowChartNodesState), [dispatch, flowChartNodesState]);
     const onEdgesChange = useMemo(() => createOnEdgesChange(dispatch, flowChartEdgesState), [dispatch, flowChartEdgesState]);
 
+    // The stored layout is a starting point, not a trigger: this effect writes it, so depending on it would loop.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: reading the layout this effect itself writes
     useEffect(() => {
         if (!flowChartNodes.length) {
             dispatch(userInterfaceActions.clearReactFlowUI());
             return;
         }
-        const { nodes, edges } = getLayoutedElements(flowChartNodes, flowChartEdges, flowDirection);
+        const { nodes, edges } = reconcileLayout(flowChartNodes, flowChartEdges, flowDirection, {
+            nodes: flowChartNodesState,
+            edges: flowChartEdgesState,
+            flowDirection: flowDirectionState,
+        });
 
         dispatch(
             userInterfaceActions.setReactFlowUI({
