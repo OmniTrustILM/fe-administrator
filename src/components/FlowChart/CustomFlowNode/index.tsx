@@ -9,6 +9,7 @@ import Button from 'components/Button';
 import type { EntityNodeProps } from 'types/flowchart';
 import { CertificateValidationStatus } from 'types/openapi';
 import { useCopyToClipboard } from 'utils/common-hooks';
+import { getNodeClasses } from './nodeStatusClasses';
 import {
     Plus,
     Minus,
@@ -137,6 +138,8 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
         if (isNodeExpanded && data?.expandAction) data.expandAction();
     }, [data, isNodeExpanded]);
 
+    const statusClasses = getNodeClasses(data);
+
     const getIconComponent = () => {
         if (!data.icon) return null;
         // Normalize icon string (remove extra spaces, handle both 'fa fa-icon' and 'fa-icon' formats)
@@ -182,40 +185,10 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
 
         if (!IconComponent) {
             // Default to FileText if icon not found
-            return <FileText size={24} className={getStatusClasses()} />;
+            return <FileText size={24} className={statusClasses} />;
         }
 
-        return <IconComponent size={24} className={getStatusClasses()} />;
-    };
-
-    const getStatusClasses = () => {
-        switch (data?.certificateNodeData?.certificateNodeValidationStatus) {
-            case CertificateValidationStatus.Valid:
-                return 'text-success border-success [&_.certificate-icon]:text-success';
-            case CertificateValidationStatus.Expired:
-                return 'text-danger border-danger';
-            case CertificateValidationStatus.Revoked:
-                return 'text-node-revoked border-node-revoked';
-            case CertificateValidationStatus.Invalid:
-                return 'text-content border-content border-2';
-            case CertificateValidationStatus.NotChecked:
-                return 'text-brand border-brand';
-            case CertificateValidationStatus.Inactive:
-                return 'text-content-subtle border-content-subtle';
-            case CertificateValidationStatus.Expiring:
-                return 'text-warning border-warning';
-            case CertificateValidationStatus.Failed:
-                return 'text-node-failed border-node-failed';
-        }
-
-        switch (data?.group) {
-            case 'rules':
-                return 'text-brand border-brand';
-            case 'actions':
-                return 'text-success border-success [&_.certificate-icon]:text-success';
-        }
-
-        return 'text-node-default-text border-node-default-text';
+        return <IconComponent size={24} className={statusClasses} />;
     };
 
     // Icon colour needed on top of each fill/state to keep it at 4.5:1 (see theme-tokens.spec.ts):
@@ -280,7 +253,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                         { 'bg-surface-active': dragging },
                         { 'border-4': data.isMainNode },
                         { 'w-[242.5px]': data.group || thisNodeState?.hidden !== undefined },
-                        getStatusClasses(),
+                        statusClasses,
                         { 'w-[600px]': isNodeExpanded },
                     )}
                 >
