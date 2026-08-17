@@ -39,17 +39,17 @@ export class OAuth2LoginManagementV2Api extends BaseAPI {
         { error }: GetOAuth2ProvidersRequest,
         opts?: OperationOpts,
     ): Observable<Array<LoginProviderDto> | AjaxResponse<Array<LoginProviderDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (error != null) {
-            query['error'] = error;
+            queryParams['error'] = error;
         }
 
         return this.request<Array<LoginProviderDto>>(
             {
                 url: '/v2/oauth2/providers',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -64,17 +64,17 @@ export class OAuth2LoginManagementV2Api extends BaseAPI {
     loginWithProvider({ provider, redirect }: LoginWithProviderRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>> {
         throwIfNullOrUndefined(provider, 'provider', 'loginWithProvider');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (redirect != null) {
-            query['redirect'] = redirect;
+            queryParams['redirect'] = redirect;
         }
 
         return this.request<void>(
             {
                 url: '/v2/oauth2/providers/{provider}/login'.replace('{provider}', encodeURI(provider)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

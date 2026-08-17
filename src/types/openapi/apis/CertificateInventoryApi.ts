@@ -378,7 +378,7 @@ export class CertificateInventoryApi extends BaseAPI {
         throwIfNullOrUndefined(certificateFormat, 'certificateFormat', 'downloadCertificate');
         throwIfNullOrUndefined(encoding, 'encoding', 'downloadCertificate');
 
-        const query: HttpQuery = {
+        const queryParams: HttpQuery = {
             // required parameters are used directly since they are already checked by throwIfNullOrUndefined
             encoding: encoding,
         };
@@ -389,7 +389,7 @@ export class CertificateInventoryApi extends BaseAPI {
                     .replace('{uuid}', encodeURI(uuid))
                     .replace('{certificateFormat}', encodeURI(certificateFormat)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -416,13 +416,13 @@ export class CertificateInventoryApi extends BaseAPI {
         throwIfNullOrUndefined(certificateFormat, 'certificateFormat', 'downloadCertificateChain');
         throwIfNullOrUndefined(encoding, 'encoding', 'downloadCertificateChain');
 
-        const query: HttpQuery = {
+        const queryParams: HttpQuery = {
             // required parameters are used directly since they are already checked by throwIfNullOrUndefined
             encoding: encoding,
         };
 
         if (withEndCertificate != null) {
-            query['withEndCertificate'] = withEndCertificate;
+            queryParams['withEndCertificate'] = withEndCertificate;
         }
 
         return this.request<CertificateChainDownloadResponseDto>(
@@ -431,7 +431,7 @@ export class CertificateInventoryApi extends BaseAPI {
                     .replace('{uuid}', encodeURI(uuid))
                     .replace('{certificateFormat}', encodeURI(certificateFormat)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -472,17 +472,17 @@ export class CertificateInventoryApi extends BaseAPI {
     ): Observable<CertificateChainResponseDto | AjaxResponse<CertificateChainResponseDto>> {
         throwIfNullOrUndefined(uuid, 'uuid', 'getCertificateChain');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (withEndCertificate != null) {
-            query['withEndCertificate'] = withEndCertificate;
+            queryParams['withEndCertificate'] = withEndCertificate;
         }
 
         return this.request<CertificateChainResponseDto>(
             {
                 url: '/v1/certificates/{uuid}/chain'.replace('{uuid}', encodeURI(uuid)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -616,17 +616,17 @@ export class CertificateInventoryApi extends BaseAPI {
         { raProfileUuid }: GetCsrGenerationAttributesRequest,
         opts?: OperationOpts,
     ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (raProfileUuid != null) {
-            query['raProfileUuid'] = raProfileUuid;
+            queryParams['raProfileUuid'] = raProfileUuid;
         }
 
         return this.request<Array<BaseAttributeDto>>(
             {
                 url: '/v1/certificates/csr/attributes',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -646,20 +646,20 @@ export class CertificateInventoryApi extends BaseAPI {
     ): Observable<ApprovalResponseDto | AjaxResponse<ApprovalResponseDto>> {
         throwIfNullOrUndefined(uuid, 'uuid', 'listCertificateApprovals');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (itemsPerPage != null) {
-            query['itemsPerPage'] = itemsPerPage;
+            queryParams['itemsPerPage'] = itemsPerPage;
         }
         if (pageNumber != null) {
-            query['pageNumber'] = pageNumber;
+            queryParams['pageNumber'] = pageNumber;
         }
 
         return this.request<ApprovalResponseDto>(
             {
                 url: '/v1/certificates/{uuid}/approvals'.replace('{uuid}', encodeURI(uuid)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

@@ -147,7 +147,7 @@ export class NotificationProfileInventoryApi extends BaseAPI {
         throwIfNullOrUndefined(uuid, 'uuid', 'getNotificationProfile');
         throwIfNullOrUndefined(version, 'version', 'getNotificationProfile');
 
-        const query: HttpQuery = {
+        const queryParams: HttpQuery = {
             // required parameters are used directly since they are already checked by throwIfNullOrUndefined
             version: version,
         };
@@ -156,7 +156,7 @@ export class NotificationProfileInventoryApi extends BaseAPI {
             {
                 url: '/v1/notificationProfiles/{uuid}'.replace('{uuid}', encodeURI(uuid)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -174,20 +174,20 @@ export class NotificationProfileInventoryApi extends BaseAPI {
         { itemsPerPage, pageNumber }: ListNotificationProfilesRequest,
         opts?: OperationOpts,
     ): Observable<NotificationProfileResponseDto | AjaxResponse<NotificationProfileResponseDto>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (itemsPerPage != null) {
-            query['itemsPerPage'] = itemsPerPage;
+            queryParams['itemsPerPage'] = itemsPerPage;
         }
         if (pageNumber != null) {
-            query['pageNumber'] = pageNumber;
+            queryParams['pageNumber'] = pageNumber;
         }
 
         return this.request<NotificationProfileResponseDto>(
             {
                 url: '/v1/notificationProfiles',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

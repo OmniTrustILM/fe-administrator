@@ -133,20 +133,20 @@ export class ApprovalInventoryApi extends BaseAPI {
         { itemsPerPage, pageNumber }: ListApprovalsRequest,
         opts?: OperationOpts,
     ): Observable<ApprovalResponseDto | AjaxResponse<ApprovalResponseDto>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (itemsPerPage != null) {
-            query['itemsPerPage'] = itemsPerPage;
+            queryParams['itemsPerPage'] = itemsPerPage;
         }
         if (pageNumber != null) {
-            query['pageNumber'] = pageNumber;
+            queryParams['pageNumber'] = pageNumber;
         }
 
         return this.request<ApprovalResponseDto>(
             {
                 url: '/v1/approvals',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -164,23 +164,23 @@ export class ApprovalInventoryApi extends BaseAPI {
         { itemsPerPage, pageNumber, history }: ListUserApprovalsRequest,
         opts?: OperationOpts,
     ): Observable<ApprovalResponseDto | AjaxResponse<ApprovalResponseDto>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (itemsPerPage != null) {
-            query['itemsPerPage'] = itemsPerPage;
+            queryParams['itemsPerPage'] = itemsPerPage;
         }
         if (pageNumber != null) {
-            query['pageNumber'] = pageNumber;
+            queryParams['pageNumber'] = pageNumber;
         }
         if (history != null) {
-            query['history'] = history;
+            queryParams['history'] = history;
         }
 
         return this.request<ApprovalResponseDto>(
             {
                 url: '/v1/approvals/user',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

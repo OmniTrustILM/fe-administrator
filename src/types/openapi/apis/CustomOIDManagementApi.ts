@@ -240,17 +240,17 @@ export class CustomOIDManagementApi extends BaseAPI {
         { category }: ListSystemOidEntriesRequest,
         opts?: OperationOpts,
     ): Observable<Array<CustomOidEntryDetailResponseDto> | AjaxResponse<Array<CustomOidEntryDetailResponseDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (category != null) {
-            query['category'] = category;
+            queryParams['category'] = category;
         }
 
         return this.request<Array<CustomOidEntryDetailResponseDto>>(
             {
                 url: '/v1/oids/system',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

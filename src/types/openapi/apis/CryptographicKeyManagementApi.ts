@@ -1074,17 +1074,17 @@ export class CryptographicKeyManagementApi extends BaseAPI {
     listKeyPairs({ tokenProfileUuid }: ListKeyPairsRequest): Observable<Array<KeyDto>>;
     listKeyPairs({ tokenProfileUuid }: ListKeyPairsRequest, opts?: OperationOpts): Observable<AjaxResponse<Array<KeyDto>>>;
     listKeyPairs({ tokenProfileUuid }: ListKeyPairsRequest, opts?: OperationOpts): Observable<Array<KeyDto> | AjaxResponse<Array<KeyDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (tokenProfileUuid != null) {
-            query['tokenProfileUuid'] = tokenProfileUuid;
+            queryParams['tokenProfileUuid'] = tokenProfileUuid;
         }
 
         return this.request<Array<KeyDto>>(
             {
                 url: '/v1/keys/pairs',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

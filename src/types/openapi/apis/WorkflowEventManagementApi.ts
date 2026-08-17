@@ -108,13 +108,13 @@ export class WorkflowEventManagementApi extends BaseAPI {
         throwIfNullOrUndefined(resource, 'resource', 'getObjectEventHistory');
         throwIfNullOrUndefined(uuid, 'uuid', 'getObjectEventHistory');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (itemsPerPage != null) {
-            query['itemsPerPage'] = itemsPerPage;
+            queryParams['itemsPerPage'] = itemsPerPage;
         }
         if (pageNumber != null) {
-            query['pageNumber'] = pageNumber;
+            queryParams['pageNumber'] = pageNumber;
         }
 
         return this.request<PaginationResponseDtoObjectEventHistoryDto>(
@@ -123,7 +123,7 @@ export class WorkflowEventManagementApi extends BaseAPI {
                     .replace('{resource}', encodeURI(resource))
                     .replace('{uuid}', encodeURI(uuid)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
