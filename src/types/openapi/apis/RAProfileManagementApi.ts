@@ -986,17 +986,17 @@ export class RAProfileManagementApi extends BaseAPI {
         { enabled }: ListRaProfilesRequest,
         opts?: OperationOpts,
     ): Observable<Array<RaProfileDto> | AjaxResponse<Array<RaProfileDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (enabled != null) {
-            query['enabled'] = enabled;
+            queryParams['enabled'] = enabled;
         }
 
         return this.request<Array<RaProfileDto>>(
             {
                 url: '/v1/raProfiles',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

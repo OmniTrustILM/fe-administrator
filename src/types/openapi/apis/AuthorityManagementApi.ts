@@ -257,17 +257,17 @@ export class AuthorityManagementApi extends BaseAPI {
     ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
         throwIfNullOrUndefined(connectorUuid, 'connectorUuid', 'listAuthorityInstanceAttributes');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (interfaceUuid != null) {
-            query['interfaceUuid'] = interfaceUuid;
+            queryParams['interfaceUuid'] = interfaceUuid;
         }
 
         return this.request<Array<BaseAttributeDto>>(
             {
                 url: '/v1/authorities/{connectorUuid}/attributes'.replace('{connectorUuid}', encodeURI(connectorUuid)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

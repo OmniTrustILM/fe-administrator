@@ -27,8 +27,9 @@ export default defineConfig({
                 'src/ducks/**/*.{ts,tsx}',
                 'src/components/PagedList/PagedList.tsx',
                 'src/components/Widget/index.tsx',
-                // Build hook with its own unit tests; report it so Sonar sees the coverage.
+                // Build hooks with their own unit tests; report them so Sonar sees the coverage.
                 'scripts/set-openapi-contact.mjs',
+                'scripts/patch-openapi-runtime.mjs',
             ],
             exclude: [
                 'node_modules',

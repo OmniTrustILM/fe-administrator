@@ -383,20 +383,20 @@ export class ComplianceProfileManagementApi extends BaseAPI {
         { complianceProvider, kind }: GetComplianceGroupsRequest,
         opts?: OperationOpts,
     ): Observable<Array<ComplianceGroupsListResponseDto> | AjaxResponse<Array<ComplianceGroupsListResponseDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (complianceProvider != null) {
-            query['complianceProvider'] = complianceProvider;
+            queryParams['complianceProvider'] = complianceProvider;
         }
         if (kind != null) {
-            query['kind'] = kind;
+            queryParams['kind'] = kind;
         }
 
         return this.request<Array<ComplianceGroupsListResponseDto>>(
             {
                 url: '/v1/complianceProfiles/groups',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -438,23 +438,23 @@ export class ComplianceProfileManagementApi extends BaseAPI {
         { complianceProvider, kind, certificateType }: GetComplianceRulesRequest,
         opts?: OperationOpts,
     ): Observable<Array<ComplianceRulesListResponseDto> | AjaxResponse<Array<ComplianceRulesListResponseDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (complianceProvider != null) {
-            query['complianceProvider'] = complianceProvider;
+            queryParams['complianceProvider'] = complianceProvider;
         }
         if (kind != null) {
-            query['kind'] = kind;
+            queryParams['kind'] = kind;
         }
         if (certificateType != null) {
-            query['certificateType'] = certificateType;
+            queryParams['certificateType'] = certificateType;
         }
 
         return this.request<Array<ComplianceRulesListResponseDto>>(
             {
                 url: '/v1/complianceProfiles/rules',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

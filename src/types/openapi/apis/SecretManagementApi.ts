@@ -165,17 +165,17 @@ export class SecretManagementApi extends BaseAPI {
     deleteSecret({ uuid, deleteInVaults }: DeleteSecretRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>> {
         throwIfNullOrUndefined(uuid, 'uuid', 'deleteSecret');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (deleteInVaults != null) {
-            query['deleteInVaults'] = deleteInVaults;
+            queryParams['deleteInVaults'] = deleteInVaults;
         }
 
         return this.request<void>(
             {
                 url: '/v1/secrets/{uuid}'.replace('{uuid}', encodeURI(uuid)),
                 method: 'DELETE',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -327,10 +327,10 @@ export class SecretManagementApi extends BaseAPI {
         throwIfNullOrUndefined(uuid, 'uuid', 'removeVaultProfileFromSecret');
         throwIfNullOrUndefined(vaultProfileUuid, 'vaultProfileUuid', 'removeVaultProfileFromSecret');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (deleteInVault != null) {
-            query['deleteInVault'] = deleteInVault;
+            queryParams['deleteInVault'] = deleteInVault;
         }
 
         return this.request<void>(
@@ -339,7 +339,7 @@ export class SecretManagementApi extends BaseAPI {
                     .replace('{uuid}', encodeURI(uuid))
                     .replace('{vaultProfileUuid}', encodeURI(vaultProfileUuid)),
                 method: 'DELETE',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

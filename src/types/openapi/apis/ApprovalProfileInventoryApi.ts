@@ -222,17 +222,17 @@ export class ApprovalProfileInventoryApi extends BaseAPI {
     ): Observable<ApprovalProfileDetailDto | AjaxResponse<ApprovalProfileDetailDto>> {
         throwIfNullOrUndefined(uuid, 'uuid', 'getApprovalProfile');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (version != null) {
-            query['version'] = version;
+            queryParams['version'] = version;
         }
 
         return this.request<ApprovalProfileDetailDto>(
             {
                 url: '/v1/approvalProfiles/{uuid}'.replace('{uuid}', encodeURI(uuid)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -299,20 +299,20 @@ export class ApprovalProfileInventoryApi extends BaseAPI {
         { itemsPerPage, pageNumber }: ListApprovalProfilesRequest,
         opts?: OperationOpts,
     ): Observable<ApprovalProfileResponseDto | AjaxResponse<ApprovalProfileResponseDto>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (itemsPerPage != null) {
-            query['itemsPerPage'] = itemsPerPage;
+            queryParams['itemsPerPage'] = itemsPerPage;
         }
         if (pageNumber != null) {
-            query['pageNumber'] = pageNumber;
+            queryParams['pageNumber'] = pageNumber;
         }
 
         return this.request<ApprovalProfileResponseDto>(
             {
                 url: '/v1/approvalProfiles',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

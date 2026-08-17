@@ -166,17 +166,17 @@ export class ProxyManagementApi extends BaseAPI {
     listProxies({ status }: ListProxiesRequest): Observable<Array<ProxyListDto>>;
     listProxies({ status }: ListProxiesRequest, opts?: OperationOpts): Observable<AjaxResponse<Array<ProxyListDto>>>;
     listProxies({ status }: ListProxiesRequest, opts?: OperationOpts): Observable<Array<ProxyListDto> | AjaxResponse<Array<ProxyListDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (status != null) {
-            query['status'] = status;
+            queryParams['status'] = status;
         }
 
         return this.request<Array<ProxyListDto>>(
             {
                 url: '/v1/proxies',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

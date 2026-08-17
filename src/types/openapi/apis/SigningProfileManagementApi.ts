@@ -335,17 +335,17 @@ export class SigningProfileManagementApi extends BaseAPI {
     ): Observable<SigningProfileDto | AjaxResponse<SigningProfileDto>> {
         throwIfNullOrUndefined(uuid, 'uuid', 'getSigningProfile');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (version != null) {
-            query['version'] = version;
+            queryParams['version'] = version;
         }
 
         return this.request<SigningProfileDto>(
             {
                 url: '/v1/signingProfiles/{uuid}'.replace('{uuid}', encodeURI(uuid)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -421,10 +421,10 @@ export class SigningProfileManagementApi extends BaseAPI {
     ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
         throwIfNullOrUndefined(connectorUuid, 'connectorUuid', 'listSignatureFormattingConnectorAttributes');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (signingProfileUuid != null) {
-            query['signingProfileUuid'] = signingProfileUuid;
+            queryParams['signingProfileUuid'] = signingProfileUuid;
         }
 
         return this.request<Array<BaseAttributeDto>>(
@@ -434,7 +434,7 @@ export class SigningProfileManagementApi extends BaseAPI {
                     encodeURI(connectorUuid),
                 ),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -454,20 +454,20 @@ export class SigningProfileManagementApi extends BaseAPI {
     ): Observable<Array<CertificateDto> | AjaxResponse<Array<CertificateDto>>> {
         throwIfNullOrUndefined(signingWorkflowType, 'signingWorkflowType', 'listSigningCertificates');
 
-        const query: HttpQuery = {
+        const queryParams: HttpQuery = {
             // required parameters are used directly since they are already checked by throwIfNullOrUndefined
             signingWorkflowType: signingWorkflowType,
         };
 
         if (qualifiedTimestamp != null) {
-            query['qualifiedTimestamp'] = qualifiedTimestamp;
+            queryParams['qualifiedTimestamp'] = qualifiedTimestamp;
         }
 
         return this.request<Array<CertificateDto>>(
             {
                 url: '/v1/signingProfiles/signingCertificates',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -567,7 +567,7 @@ export class SigningProfileManagementApi extends BaseAPI {
     ): Observable<Array<SigningProtocol> | AjaxResponse<Array<SigningProtocol>>> {
         throwIfNullOrUndefined(signingWorkflowType, 'signingWorkflowType', 'listSupportedProtocols');
 
-        const query: HttpQuery = {
+        const queryParams: HttpQuery = {
             // required parameters are used directly since they are already checked by throwIfNullOrUndefined
             signingWorkflowType: signingWorkflowType,
         };
@@ -576,7 +576,7 @@ export class SigningProfileManagementApi extends BaseAPI {
             {
                 url: '/v1/signingProfiles/supportedProtocols',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

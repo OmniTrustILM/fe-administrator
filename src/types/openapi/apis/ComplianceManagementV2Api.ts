@@ -60,13 +60,13 @@ export class ComplianceManagementV2Api extends BaseAPI {
             'Content-Type': 'application/json',
         };
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (resource != null) {
-            query['resource'] = resource;
+            queryParams['resource'] = resource;
         }
         if (type != null) {
-            query['type'] = type;
+            queryParams['type'] = type;
         }
 
         return this.request<void>(
@@ -74,7 +74,7 @@ export class ComplianceManagementV2Api extends BaseAPI {
                 url: '/v2/compliance',
                 method: 'POST',
                 headers,
-                query,
+                queryParams,
                 body: requestBody,
             },
             opts?.responseOpts,

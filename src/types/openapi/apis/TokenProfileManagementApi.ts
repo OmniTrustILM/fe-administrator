@@ -353,17 +353,17 @@ export class TokenProfileManagementApi extends BaseAPI {
         { enabled }: ListTokenProfilesRequest,
         opts?: OperationOpts,
     ): Observable<Array<TokenProfileDto> | AjaxResponse<Array<TokenProfileDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (enabled != null) {
-            query['enabled'] = enabled;
+            queryParams['enabled'] = enabled;
         }
 
         return this.request<Array<TokenProfileDto>>(
             {
                 url: '/v1/tokenProfiles',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

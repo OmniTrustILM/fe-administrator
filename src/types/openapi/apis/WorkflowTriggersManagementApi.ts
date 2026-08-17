@@ -247,17 +247,17 @@ export class WorkflowTriggersManagementApi extends BaseAPI {
     listTriggers({ resource }: ListTriggersRequest): Observable<Array<TriggerDto>>;
     listTriggers({ resource }: ListTriggersRequest, opts?: OperationOpts): Observable<AjaxResponse<Array<TriggerDto>>>;
     listTriggers({ resource }: ListTriggersRequest, opts?: OperationOpts): Observable<Array<TriggerDto> | AjaxResponse<Array<TriggerDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (resource != null) {
-            query['resource'] = resource;
+            queryParams['resource'] = resource;
         }
 
         return this.request<Array<TriggerDto>>(
             {
                 url: '/v1/workflows/triggers',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

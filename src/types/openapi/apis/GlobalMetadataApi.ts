@@ -174,17 +174,17 @@ export class GlobalMetadataApi extends BaseAPI {
         { connectorUuid }: GetConnectorMetadataRequest,
         opts?: OperationOpts,
     ): Observable<Array<ConnectorMetadataResponseDto> | AjaxResponse<Array<ConnectorMetadataResponseDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (connectorUuid != null) {
-            query['connectorUuid'] = connectorUuid;
+            queryParams['connectorUuid'] = connectorUuid;
         }
 
         return this.request<Array<ConnectorMetadataResponseDto>>(
             {
                 url: '/v1/attributes/metadata/promote',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
