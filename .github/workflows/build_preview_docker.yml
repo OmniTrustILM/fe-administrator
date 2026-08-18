@@ -221,7 +221,9 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           CHECK_ID: ${{ needs.create_check.outputs.check_id }}
-          CONCLUSION: ${{ cancelled() && 'cancelled' || 'failure' }}
+          # cancelled() cannot be called outside an `if:`, so the conclusion is
+          # read off the upstream job results instead.
+          JOB_RESULTS: ${{ needs.create_check.result }} ${{ needs.build.result }} ${{ needs.publish_manifest.result }}
         with:
           github-token: ${{ steps.app_token.outputs.token }}
           script: |
@@ -229,10 +231,13 @@ jobs:
               core.info("No check was created, nothing to finalize.");
               return;
             }
+            const results = process.env.JOB_RESULTS.split(" ");
+            const conclusion = results.includes("failure") ? "failure" : "cancelled";
+            core.info(`Upstream results: ${results.join(", ")} -> ${conclusion}`);
             await github.rest.checks.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
               check_run_id: Number(process.env.CHECK_ID),
               status: "completed",
-              conclusion: process.env.CONCLUSION
+              conclusion
             });
