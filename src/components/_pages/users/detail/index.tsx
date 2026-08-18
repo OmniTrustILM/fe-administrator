@@ -244,9 +244,8 @@ export default function UserDetail() {
                         titleSize="large"
                         refreshAction={user?.certificate?.uuid ? getFreshCertificateDetails : undefined}
                     >
-                        {user?.certificate?.uuid ? (
-                            <CertificateAttributes certificate={certificate} />
-                        ) : (
+                        {user?.certificate?.uuid && <CertificateAttributes certificate={certificate} />}
+                        {user && !user.certificate?.uuid && (
                             <div data-testid="user-no-certificate" className="text-center text-content-muted">
                                 No certificate is associated with this user.
                             </div>

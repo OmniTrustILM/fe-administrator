@@ -146,6 +146,12 @@ describe('UserDetail - user certificate details', () => {
         expect(container.querySelector('[data-testid="row-subjectDN"]')?.textContent).toContain('CN=jsmith');
     });
 
+    it('does not show the empty state before the user detail has been loaded', async () => {
+        await render(buildState({ user: undefined }));
+
+        expect(container.querySelector('[data-testid="user-no-certificate"]')).toBeNull();
+    });
+
     it('does not show the empty state while the associated certificate has not been loaded yet', async () => {
         await render(buildState({ user: { ...baseUser, certificate: { uuid: 'cert-1' } }, certificateDetail: undefined }));
 
