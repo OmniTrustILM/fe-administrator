@@ -77,6 +77,13 @@ describe('branding slice', () => {
             expect(state.updateSucceeded).toBe(false);
         });
 
+        test('updateBranding clears a preceding reset success so the two cannot both read true', () => {
+            const state = reducer({ ...initialState, resetSucceeded: true }, actions.updateBranding({ branding: {} }));
+
+            expect(state.resetSucceeded).toBe(false);
+            expect(state.updateSucceeded).toBe(false);
+        });
+
         test('updateBrandingSuccess replaces the stored branding with what was saved', () => {
             const branding = { primaryColor: '#00A3E0' };
 
@@ -103,6 +110,14 @@ describe('branding slice', () => {
     });
 
     describe('resetting to default', () => {
+        test('resetBranding clears a preceding update success so the two cannot both read true', () => {
+            const state = reducer({ ...initialState, updateSucceeded: true }, actions.resetBranding());
+
+            expect(state.isResettingBranding).toBe(true);
+            expect(state.updateSucceeded).toBe(false);
+            expect(state.resetSucceeded).toBe(false);
+        });
+
         test('resetBrandingSuccess empties the stored branding', () => {
             const state = reducer(
                 { ...initialState, branding: { primaryColor: '#0073CF', darkLogo: 'data:image/svg+xml;base64,PHN2Zy8+' } },

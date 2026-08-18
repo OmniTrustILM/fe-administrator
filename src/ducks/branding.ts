@@ -84,6 +84,7 @@ export const slice = createSlice({
         updateBranding: (state, action: PayloadAction<{ branding: BrandingSettingsUpdateModel }>) => {
             state.isUpdatingBranding = true;
             state.updateSucceeded = false;
+            state.resetSucceeded = false;
             state.error = undefined;
         },
 
@@ -106,6 +107,7 @@ export const slice = createSlice({
         resetBranding: (state, action: PayloadAction<void>) => {
             state.isResettingBranding = true;
             state.resetSucceeded = false;
+            state.updateSucceeded = false;
             state.error = undefined;
         },
 
