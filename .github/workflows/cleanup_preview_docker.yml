@@ -1,0 +1,86 @@
+name: Clean up preview Docker tags
+
+# Preview builds publish one immutable pr-<number>-<sha> tag per push. Without
+# this workflow they accumulate forever, so the tags are removed once the PR
+# closes or loses its preview label.
+#
+# pull_request_target rather than pull_request: forked pull_request events get
+# no secrets, and deleting from the registry needs credentials. Nothing here
+# checks out or executes PR code — it only calls the registry API — so running
+# in the base repo context carries no untrusted-code risk.
+
+on:
+  pull_request_target:
+    types: [closed, unlabeled]
+
+permissions: {}
+
+jobs:
+  cleanup:
+    name: Delete preview tags for PR #${{ github.event.pull_request.number }}
+    runs-on: ubuntu-latest
+
+    # Run when a PR that had the preview label closes, or when the preview
+    # label itself is removed.
+    if: |
+      (github.event.action == 'closed' &&
+        contains(github.event.pull_request.labels.*.name, 'preview')) ||
+      (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
+
+    steps:
+      - name: Delete pr-<number>-* tags from the preview project
+        env:
+          REGISTRY: hub.omnitrustregistry.com
+          PROJECT: ilm-preview
+          REPOSITORY: frontend-administrator
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REGISTRY_USERNAME: ${{ secrets.PREVIEW_REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.PREVIEW_REGISTRY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          api="https://${REGISTRY}/api/v2.0/projects/${PROJECT}/repositories/${REPOSITORY}/artifacts"
+          prefix="pr-${PR_NUMBER}-"
+          targets="$(mktemp)"
+
+          # Collect every matching tag first: deleting while paginating would
+          # shift the remaining pages and skip entries.
+          page=1
+          while :; do
+            body="$(curl -sS -f -u "${REGISTRY_USERNAME}:${REGISTRY_PASSWORD}" \
+              "${api}?with_tag=true&page=${page}&page_size=100")"
+
+            count="$(jq 'length' <<< "${body}")"
+            [ "${count}" -eq 0 ] && break
+
+            jq -r --arg p "${prefix}" '
+              .[]
+              | .digest as $digest
+              | (.tags // [])[]
+              | select(.name | startswith($p))
+              | "\($digest)\t\(.name)"
+            ' <<< "${body}" >> "${targets}"
+
+            [ "${count}" -lt 100 ] && break
+            page=$((page + 1))
+          done
+
+          if [ ! -s "${targets}" ]; then
+            echo "No preview tags found for PR #${PR_NUMBER}."
+            exit 0
+          fi
+
+          # 404 is success for our purposes: the tag is already gone, so a
+          # re-run after a partial failure stays idempotent.
+          while IFS=$'\t' read -r digest tag; do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' \
+              -X DELETE -u "${REGISTRY_USERNAME}:${REGISTRY_PASSWORD}" \
+              "${api}/${digest}/tags/${tag}")"
+
+            case "${status}" in
+              2??|404) echo "Deleted tag ${tag} (HTTP ${status})" ;;
+              *)       echo "Failed to delete tag ${tag}: HTTP ${status}" >&2; exit 1 ;;
+            esac
+          done < "${targets}"
+
+          echo "Deleted $(wc -l < "${targets}") preview tag(s) for PR #${PR_NUMBER}."
