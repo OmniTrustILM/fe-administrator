@@ -27,8 +27,11 @@ describe('getValidationPanelState', () => {
         expect(validationPanelMessages['not-run']).toBe('This certificate has not been validated yet.');
     });
 
-    it('reports that validation has not run when the result carries neither a status nor any checks', () => {
-        const state = getValidationPanelState({ state: CertificateState.Issued }, { validationChecks: {} });
+    it('reports that validation has not run while the backend still reports the certificate as not checked', () => {
+        const state = getValidationPanelState(
+            { state: CertificateState.Issued },
+            { resultStatus: CertificateValidationStatus.NotChecked, validationChecks: {} },
+        );
 
         expect(state).toBe('not-run');
     });
@@ -42,7 +45,22 @@ describe('getValidationPanelState', () => {
     it('reports results when the certificate has individual validation checks', () => {
         const state = getValidationPanelState(
             { state: CertificateState.Issued },
-            { validationChecks: { signature: { status: CertificateValidationStatus.Valid } } },
+            {
+                resultStatus: CertificateValidationStatus.Valid,
+                validationChecks: { signature: { status: CertificateValidationStatus.Valid } },
+            },
+        );
+
+        expect(state).toBe('results');
+    });
+
+    it('reports results when checks came back even though the overall status is still not checked', () => {
+        const state = getValidationPanelState(
+            { state: CertificateState.Issued },
+            {
+                resultStatus: CertificateValidationStatus.NotChecked,
+                validationChecks: { signature: { status: CertificateValidationStatus.Valid } },
+            },
         );
 
         expect(state).toBe('results');

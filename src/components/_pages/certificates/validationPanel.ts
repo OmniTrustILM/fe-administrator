@@ -1,4 +1,4 @@
-import { CertificateState, type CertificateValidationResultDto } from 'types/openapi';
+import { CertificateState, CertificateValidationStatus, type CertificateValidationResultDto } from 'types/openapi';
 
 export type ValidationPanelState = 'pending-issuance' | 'not-run' | 'results';
 
@@ -13,6 +13,9 @@ export function getValidationPanelState(
 ): ValidationPanelState {
     if (!certificate) return 'not-run';
     if (certificate.state === CertificateState.Requested) return 'pending-issuance';
-    if (validationResult?.resultStatus) return 'results';
-    return Object.keys(validationResult?.validationChecks ?? {}).length > 0 ? 'results' : 'not-run';
+    if (!validationResult) return 'not-run';
+    if (Object.keys(validationResult.validationChecks ?? {}).length > 0) return 'results';
+
+    const resultStatus = validationResult.resultStatus;
+    return resultStatus && resultStatus !== CertificateValidationStatus.NotChecked ? 'results' : 'not-run';
 }
