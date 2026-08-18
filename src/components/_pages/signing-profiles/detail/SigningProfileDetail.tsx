@@ -40,7 +40,7 @@ import { createWidgetDetailHeaders } from 'utils/widget';
 
 const workflowTypeLabels: Record<SigningWorkflowType, string> = {
     [SigningWorkflowType.Timestamping]: 'Timestamping',
-    [SigningWorkflowType.DocumentSigning]: 'Document Signing',
+    [SigningWorkflowType.ContentSigning]: 'Content Signing',
     [SigningWorkflowType.RawSigning]: 'Raw Signing',
 };
 

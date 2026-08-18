@@ -21,7 +21,7 @@ export enum FeatureFlag {
     OpenMetrics = 'openMetrics',
     SecretVersioning = 'secretVersioning',
     SecretRotation = 'secretRotation',
-    DocumentSigning = 'documentSigning',
+    ContentSigning = 'contentSigning',
     Timestamping = 'timestamping',
     CertificateRegistration = 'certificateRegistration',
     CertificateStatusPolling = 'certificateStatusPolling',

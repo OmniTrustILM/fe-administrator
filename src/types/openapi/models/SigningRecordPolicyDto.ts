@@ -38,7 +38,7 @@ export interface SigningRecordPolicyDto {
      */
     recordSignature?: boolean;
     /**
-     * Content policy: capture assembled signed document (only valid for DOCUMENT_SIGNING and TIMESTAMPING workflows)
+     * Content policy: capture assembled signed document (only valid for CONTENT_SIGNING and TIMESTAMPING workflows)
      * @type {boolean}
      * @memberof SigningRecordPolicyDto
      */
