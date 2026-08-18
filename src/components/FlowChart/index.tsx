@@ -179,10 +179,24 @@ export interface ExistingFlowLayout {
     flowDirection?: FlowDirection;
 }
 
+// Everything getLayoutedElements reads off a node when it plots one: dagre sizes it by whether it
+// carries a description, and the STAR pass centres on isMainNode and rings the rest by group. Ids
+// alone are not enough, because an id survives a node changing any of those.
+const nodeLayoutSignature = (node: CustomNode) =>
+    [node.id, node.data?.isMainNode ? 'main' : '', node.data?.group ?? '', node.data?.description ? 'described' : ''].join('|');
+
+// Dagre ranks by the wiring, not by edge identity, and ids such as `e1-chain-0` are positional — the
+// same id can point at a different pair after the underlying collection changes.
+const edgeLayoutSignature = (edge: Edge) => [edge.id, edge.source, edge.target].join('|');
+
 // The transform hooks rebuild the nodes and edges on every render of the page that owns the chart,
 // so the layout effect fires again for a flowchart that is already on screen. Only its shape decides
-// whether the positions still hold: same nodes, same edges, same direction means the previous layout
-// is still valid and the dagre/star pass can be skipped.
+// whether the positions still hold: same layout signatures and same direction means the previous
+// layout is still valid and the dagre/star pass can be skipped.
+//
+// `hidden` is deliberately not part of the signature. It is the one layout input the on-screen chart
+// owns rather than the incoming data — it tracks which children the user has expanded — so folding it
+// in would force a full re-plot on every expand and move the nodes out from under them.
 export const canReuseLayout = (
     nodes: CustomNode[],
     edges: Edge[],
@@ -193,11 +207,11 @@ export const canReuseLayout = (
     if (existing.flowDirection !== direction) return false;
     if (existing.nodes.length !== nodes.length || existing.edges.length !== edges.length) return false;
 
-    const existingNodeIds = new Set(existing.nodes.map((node) => node.id));
-    if (!nodes.every((node) => existingNodeIds.has(node.id))) return false;
+    const existingNodes = new Set(existing.nodes.map(nodeLayoutSignature));
+    if (!nodes.every((node) => existingNodes.has(nodeLayoutSignature(node)))) return false;
 
-    const existingEdgeIds = new Set(existing.edges.map((edge) => edge.id));
-    return edges.every((edge) => existingEdgeIds.has(edge.id));
+    const existingEdges = new Set(existing.edges.map(edgeLayoutSignature));
+    return edges.every((edge) => existingEdges.has(edgeLayoutSignature(edge)));
 };
 
 // The lighter path: take the fresh node data (labels, statuses, callbacks) but keep everything the

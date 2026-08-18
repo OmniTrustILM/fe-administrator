@@ -82,6 +82,49 @@ describe('canReuseLayout', () => {
             false,
         );
     });
+
+    // Edge ids like `e1-chain-0` are positional, so the same id can point at a different pair once the
+    // underlying collection changes. Dagre ranks by the wiring, so the old positions no longer hold.
+    it('lays out from scratch when an edge kept its id but was rewired', () => {
+        const rewired: Edge[] = [{ id: 'e1', source: 'child', target: 'main' }];
+
+        expect(canReuseLayout(makeIncomingNodes(), rewired, 'TB', makeExistingLayout())).toBe(false);
+    });
+
+    // Dagre sizes a node 35px taller when it carries a description, which moves every rank below it.
+    it('lays out from scratch when a node gained or lost its description', () => {
+        const described = makeIncomingNodes();
+        described[1] = { ...described[1], data: { ...described[1].data, description: 'now has one' } };
+
+        expect(canReuseLayout(described, incomingEdges, 'TB', makeExistingLayout())).toBe(false);
+    });
+
+    // The STAR pass centres on isMainNode and rings everything else around it.
+    it('lays out from scratch when the main node moved to another node', () => {
+        const remained = makeIncomingNodes();
+        remained[0] = { ...remained[0], data: { ...remained[0].data, isMainNode: false } };
+        remained[1] = { ...remained[1], data: { ...remained[1].data, isMainNode: true } };
+
+        expect(canReuseLayout(remained, incomingEdges, 'STAR', { ...makeExistingLayout(), flowDirection: 'STAR' })).toBe(false);
+    });
+
+    // STAR clusters the surrounding nodes by group, so regrouping repositions them.
+    it('lays out from scratch when a node changed group', () => {
+        const regrouped = makeIncomingNodes();
+        regrouped[1] = { ...regrouped[1], data: { ...regrouped[1].data, group: 'locations' } };
+
+        expect(canReuseLayout(regrouped, incomingEdges, 'TB', makeExistingLayout())).toBe(false);
+    });
+
+    // `hidden` is the one layout input the on-screen chart owns rather than the incoming data: it is how
+    // an expanded parent is remembered. Folding it into the signature would re-plot on every expand.
+    it('still reuses the layout when only the expansion state differs', () => {
+        const collapsed = makeIncomingNodes();
+
+        expect(collapsed[1].hidden).toBe(true);
+        expect(makeExistingLayout().nodes[1].hidden).toBe(false);
+        expect(canReuseLayout(collapsed, incomingEdges, 'TB', makeExistingLayout())).toBe(true);
+    });
 });
 
 describe('replotExistingLayout', () => {
