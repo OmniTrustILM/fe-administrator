@@ -18,11 +18,12 @@ run-name: >-
 permissions: {}
 
 env:
-  REGISTRY: harbor.3key.company
-  IMAGE: harbor.3key.company/ilm/frontend-administrator
+  REGISTRY: hub.omnitrustregistry.com
+  IMAGE: hub.omnitrustregistry.com/ilm/frontend-administrator
   PREVIEW_TAG: pr-${{ inputs.pr_number }}-${{ inputs.head_sha }}
-  # cache scope so both jobs share the same cache namespace
-  CACHE_SCOPE: ilm-fe-admin-preview
+  # Base cache namespace. Each arch appends its own suffix so the two builds
+  # do not overwrite one another's layers.
+  CACHE_SCOPE: frontend-administrator-preview
 
 jobs:
   # Create the GitHub check once, and reuse the check_id in other jobs
@@ -33,32 +34,18 @@ jobs:
     outputs:
       check_id: ${{ steps.create_check.outputs.check_id }}
     steps:
-      - name: Export context
-        env:
-          INPUT_PR_NUMBER: ${{ inputs.pr_number }}
-          INPUT_HEAD_SHA: ${{ inputs.head_sha }}
-          INPUT_HEAD_REPO: ${{ inputs.head_repo }}
-          INPUT_HEAD_BRANCH: ${{ inputs.head_branch }}
-          INPUT_BASE_REF: ${{ inputs.base_ref }}
-        run: |
-          {
-            echo "PR_NUMBER=${INPUT_PR_NUMBER}"
-            echo "HEAD_SHA=${INPUT_HEAD_SHA}"
-            echo "HEAD_REPO=${INPUT_HEAD_REPO}"
-            echo "PR_BRANCH=${INPUT_HEAD_BRANCH}"
-            echo "BASE_BRANCH=${INPUT_BASE_REF}"
-          } >> "$GITHUB_ENV"
-
       - name: Generate token
         id: app_token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app_id: ${{ secrets.SONAR_GH_APP_ID }}
-          private_key: ${{ secrets.SONAR_GH_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.SONAR_GH_APP_ID }}
+          private-key: ${{ secrets.SONAR_GH_APP_PRIVATE_KEY }}
 
       - name: Create GitHub Check (in_progress)
         id: create_check
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          HEAD_SHA: ${{ inputs.head_sha }}
         with:
           github-token: ${{ steps.app_token.outputs.token }}
           script: |
@@ -81,46 +68,22 @@ jobs:
       digest: ${{ steps.build.outputs.digest }}
 
     steps:
-      - name: Export context
-        env:
-          INPUT_PR_NUMBER: ${{ inputs.pr_number }}
-          INPUT_HEAD_SHA: ${{ inputs.head_sha }}
-          INPUT_HEAD_REPO: ${{ inputs.head_repo }}
-          INPUT_HEAD_BRANCH: ${{ inputs.head_branch }}
-          INPUT_BASE_REF: ${{ inputs.base_ref }}
-        run: |
-          {
-            echo "PR_NUMBER=${INPUT_PR_NUMBER}"
-            echo "HEAD_SHA=${INPUT_HEAD_SHA}"
-            echo "HEAD_REPO=${INPUT_HEAD_REPO}"
-            echo "PR_BRANCH=${INPUT_HEAD_BRANCH}"
-            echo "BASE_BRANCH=${INPUT_BASE_REF}"
-          } >> "$GITHUB_ENV"
-
-      # Checkout fork PR branch + fetch base to compute diff
+      # Check out the exact commit PREVIEW_TAG names, so the image content always
+      # matches the tag even if the branch moved on after the dispatch.
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          repository: ${{ env.HEAD_REPO }}
-          ref: ${{ env.PR_BRANCH }}
-          fetch-depth: 0
-
-      - name: Fetch base branch
-        run: |
-          git remote add upstream ${{ github.event.repository.clone_url }}
-          git fetch upstream $BASE_BRANCH
-          git checkout -B "$BASE_BRANCH" "upstream/$BASE_BRANCH"
-          git checkout "$PR_BRANCH"
-          git clean -ffdx && git reset --hard HEAD
+          repository: ${{ inputs.head_repo }}
+          ref: ${{ inputs.head_sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
-      - name: Log in to Harbor
+      - name: Log in to the registry
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.HARBOR_3KEY_USERNAME }}
-          password: ${{ secrets.HARBOR_3KEY_PASSWORD }}
+          username: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
 
       - name: Build + push (amd64) by digest only (no tags)
         id: build
@@ -131,8 +94,8 @@ jobs:
           platforms: linux/amd64
           # Push without creating an extra tag
           outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=${{ env.CACHE_SCOPE }}
-          cache-to: type=gha,mode=max,scope=${{ env.CACHE_SCOPE }}
+          cache-from: type=gha,scope=${{ env.CACHE_SCOPE }}-amd64
+          cache-to: type=gha,mode=max,scope=${{ env.CACHE_SCOPE }}-amd64
 
   build_arm64:
     name: Build arm64 • PR #${{ inputs.pr_number }}
@@ -143,45 +106,20 @@ jobs:
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
-      - name: Export context
-        env:
-          INPUT_PR_NUMBER: ${{ inputs.pr_number }}
-          INPUT_HEAD_SHA: ${{ inputs.head_sha }}
-          INPUT_HEAD_REPO: ${{ inputs.head_repo }}
-          INPUT_HEAD_BRANCH: ${{ inputs.head_branch }}
-          INPUT_BASE_REF: ${{ inputs.base_ref }}
-        run: |
-          {
-            echo "PR_NUMBER=${INPUT_PR_NUMBER}"
-            echo "HEAD_SHA=${INPUT_HEAD_SHA}"
-            echo "HEAD_REPO=${INPUT_HEAD_REPO}"
-            echo "PR_BRANCH=${INPUT_HEAD_BRANCH}"
-            echo "BASE_BRANCH=${INPUT_BASE_REF}"
-          } >> "$GITHUB_ENV"
-
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          repository: ${{ env.HEAD_REPO }}
-          ref: ${{ env.PR_BRANCH }}
-          fetch-depth: 0
-
-      - name: Fetch base branch
-        run: |
-          git remote add upstream ${{ github.event.repository.clone_url }}
-          git fetch upstream $BASE_BRANCH
-          git checkout -B "$BASE_BRANCH" "upstream/$BASE_BRANCH"
-          git checkout "$PR_BRANCH"
-          git clean -ffdx && git reset --hard HEAD
+          repository: ${{ inputs.head_repo }}
+          ref: ${{ inputs.head_sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
-      - name: Log in to Harbor
+      - name: Log in to the registry
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.HARBOR_3KEY_USERNAME }}
-          password: ${{ secrets.HARBOR_3KEY_PASSWORD }}
+          username: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
 
       - name: Build + push (arm64) by digest only (no tags)
         id: build
@@ -191,8 +129,8 @@ jobs:
           file: ./Dockerfile
           platforms: linux/arm64
           outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=${{ env.CACHE_SCOPE }}
-          cache-to: type=gha,mode=max,scope=${{ env.CACHE_SCOPE }}
+          cache-from: type=gha,scope=${{ env.CACHE_SCOPE }}-arm64
+          cache-to: type=gha,mode=max,scope=${{ env.CACHE_SCOPE }}-arm64
 
   publish_manifest:
     name: Publish multiarch manifest • PR #${{ inputs.pr_number }}
@@ -200,20 +138,22 @@ jobs:
     needs: [create_check, build_amd64, build_arm64]
     permissions: {}
     steps:
-      - name: Log in to Harbor
+      - name: Log in to the registry
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.HARBOR_3KEY_USERNAME }}
-          password: ${{ secrets.HARBOR_3KEY_PASSWORD }}
+          username: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
       - name: Create + push multiarch manifest (single tag)
+        env:
+          AMD_DIGEST: ${{ needs.build_amd64.outputs.digest }}
+          ARM_DIGEST: ${{ needs.build_arm64.outputs.digest }}
         run: |
-          AMD_DIGEST="${{ needs.build_amd64.outputs.digest }}"
-          ARM_DIGEST="${{ needs.build_arm64.outputs.digest }}"
+          set -euo pipefail
 
           echo "amd64 digest: ${AMD_DIGEST}"
           echo "arm64 digest: ${ARM_DIGEST}"
@@ -227,21 +167,23 @@ jobs:
 
       - name: Generate token (for check update)
         id: app_token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app_id: ${{ secrets.SONAR_GH_APP_ID }}
-          private_key: ${{ secrets.SONAR_GH_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.SONAR_GH_APP_ID }}
+          private-key: ${{ secrets.SONAR_GH_APP_PRIVATE_KEY }}
 
       - name: Mark GitHub Check as success
         if: success()
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          CHECK_ID: ${{ needs.create_check.outputs.check_id }}
         with:
           github-token: ${{ steps.app_token.outputs.token }}
           script: |
             await github.rest.checks.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              check_run_id: Number("${{ needs.create_check.outputs.check_id }}"),
+              check_run_id: Number(process.env.CHECK_ID),
               status: "completed",
               conclusion: "success"
             });
@@ -255,20 +197,22 @@ jobs:
     steps:
       - name: Generate token
         id: app_token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app_id: ${{ secrets.SONAR_GH_APP_ID }}
-          private_key: ${{ secrets.SONAR_GH_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.SONAR_GH_APP_ID }}
+          private-key: ${{ secrets.SONAR_GH_APP_PRIVATE_KEY }}
 
       - name: Mark GitHub Check as failure
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          CHECK_ID: ${{ needs.create_check.outputs.check_id }}
         with:
           github-token: ${{ steps.app_token.outputs.token }}
           script: |
             await github.rest.checks.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              check_run_id: Number("${{ needs.create_check.outputs.check_id }}"),
+              check_run_id: Number(process.env.CHECK_ID),
               status: "completed",
               conclusion: "failure"
             });
