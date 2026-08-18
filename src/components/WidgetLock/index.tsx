@@ -60,10 +60,11 @@ const WidgetLock = ({
                                 <Tooltip content={lockDetails}>
                                     <button
                                         type="button"
+                                        aria-label="Show details"
                                         data-testid="widget-lock-details"
-                                        className="inline-flex items-center text-content-subtle hover:text-content"
+                                        className="inline-flex items-center rounded-full text-content-subtle hover:text-content focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand"
                                     >
-                                        <Info size={15} />
+                                        <Info size={15} aria-hidden />
                                     </button>
                                 </Tooltip>
                             )}
@@ -73,7 +74,7 @@ const WidgetLock = ({
                     {onRefresh && (
                         <div className="sm:ms-auto shrink-0">
                             <Button variant="outline" color="secondary" onClick={onRefresh} data-testid="widget-lock-refresh">
-                                <RotateCw size={15} />
+                                <RotateCw size={15} aria-hidden />
                                 {refreshLabel}
                             </Button>
                         </div>

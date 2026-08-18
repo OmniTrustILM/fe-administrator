@@ -105,6 +105,19 @@ test.describe('WidgetLock', () => {
         await expect.poll(() => refreshCount).toBe(1);
     });
 
+    test('should render a custom refresh label when refreshLabel is provided', async ({ mount }) => {
+        const component = await mount(<WidgetLock lockTitle="Test Lock" onRefresh={() => {}} refreshLabel="Try again" />);
+
+        await expect(component.getByRole('button', { name: 'Try again' })).toBeVisible();
+        await expect(component.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+    });
+
+    test('should give the details button an accessible name', async ({ mount }) => {
+        const component = await mount(<WidgetLock lockTitle="Test Lock" lockDetails="Test details" />);
+
+        await expect(component.getByRole('button', { name: 'Show details' })).toBeVisible();
+    });
+
     test('should render both the details tooltip and the refresh button together', async ({ mount }) => {
         const component = await mount(<WidgetLock lockTitle="Test Lock" lockDetails="Test details" onRefresh={() => {}} />);
 
