@@ -13,6 +13,7 @@ import CustomAttributeForm from '../form';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumColumnDescription } from 'components/EnumDescription';
 import Badge from 'components/Badge';
+import BooleanBadge from 'components/BooleanBadge/BooleanBadge';
 import { PlatformEnum } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 
@@ -123,6 +124,12 @@ export default function CustomAttributesList() {
                 width: '5%',
             },
             {
+                id: 'required',
+                content: 'Required',
+                sortable: true,
+                width: '5%',
+            },
+            {
                 id: 'contentType',
                 content: (
                     <span className="inline-flex items-center gap-1">
@@ -162,9 +169,11 @@ export default function CustomAttributesList() {
                     <Link key={customAttribute.uuid} to={`./detail/${customAttribute.uuid}`}>
                         {customAttribute.name}
                     </Link>,
-                    customAttribute.label ?? '',
+                    customAttribute.label,
                     customAttribute.version || '',
                     <StatusBadge key="enabled" enabled={customAttribute.enabled} />,
+                    // Older backends omit the flag; leave the cell empty rather than show a misleading "No".
+                    customAttribute.required == null ? '' : <BooleanBadge key="required" value={customAttribute.required} />,
                     getEnumLabel(attributeContentTypeEnum, customAttribute.contentType),
                     customAttribute.description,
                     <>
