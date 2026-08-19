@@ -4,6 +4,7 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import Dialog from 'components/Dialog';
 import StatusBadge from 'components/StatusBadge';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
+import { ProtocolChallengeSourcePlatformEnum } from 'types/protocol-challenge-source';
 
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
@@ -38,6 +39,7 @@ export default function AdministratorDetail() {
     const updateCmpProfileSucceeded = useSelector(selectors.updateCmpProfileSucceeded);
     const cmpCmpProfileVariantEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CmpProfileVariant));
     const protectionMethodEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ProtectionMethod));
+    const challengeSourceEnum = useSelector(enumSelectors.platformEnum(ProtocolChallengeSourcePlatformEnum));
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const deleteErrorMessage = useSelector(selectors.deleteErrorMessage);
     const users = useSelector(userSelectors.users);
@@ -170,6 +172,13 @@ export default function AdministratorDetail() {
                           ],
                       },
                       {
+                          id: 'challengeSource',
+                          columns: [
+                              'Challenge Source',
+                              cmpProfile.challengeSource ? getEnumLabel(challengeSourceEnum, cmpProfile.challengeSource) : 'N/A',
+                          ],
+                      },
+                      {
                           id: 'status',
                           columns: ['Status', <StatusBadge key="status" enabled={cmpProfile.enabled} />],
                       },
@@ -179,7 +188,7 @@ export default function AdministratorDetail() {
                       },
                   ]
                 : [],
-        [cmpProfile, cmpCmpProfileVariantEnum],
+        [cmpProfile, cmpCmpProfileVariantEnum, challengeSourceEnum],
     );
 
     const raProfileDetailData: TableDataRow[] = useMemo(

@@ -5,7 +5,7 @@ import Widget from 'components/Widget';
 import { actions as cmpProfileActions, selectors as cmpProfileSelectors } from 'ducks/cmp-profiles';
 import { actions as connectorActions } from 'ducks/connectors';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
-import { selectors as enumSelectors, getEnumDescription, getEnumLabel } from 'ducks/enums';
+import { selectors as enumSelectors, getEnumAsSelectOptions, getEnumDescription, getEnumLabel } from 'ducks/enums';
 import { actions as raProfileActions, selectors as raProfileSelectors } from 'ducks/ra-profiles';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
@@ -19,12 +19,13 @@ import TextArea from 'components/TextArea';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { CmpProfileEditRequestModel, CmpProfileRequestModel } from 'types/cmp-profiles';
 import {
-    type CmpProfileEditRequestDtoVariantEnum,
+    CmpProfileEditRequestDtoVariantEnum,
     CmpProfileRequestDtoVariantEnum,
     PlatformEnum,
     ProtectionMethod,
     Resource,
 } from 'types/openapi';
+import { ProtocolChallengeSource, ProtocolChallengeSourcePlatformEnum } from 'types/protocol-challenge-source';
 import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
 import { useAreDefaultValuesSame } from 'utils/common-hooks';
 import { validateAlphaNumericWithoutAccents, validateLength, validateRequired } from 'utils/validators';
@@ -43,6 +44,7 @@ interface FormValues {
     name: string;
     description: string;
     variant: string;
+    challengeSource: ProtocolChallengeSource;
     requestProtectionMethod: string;
     responseProtectionMethod: string;
     raProfileUuid: string;
@@ -77,6 +79,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const protectionMethodEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ProtectionMethod));
     const cmpCmpProfileVariantEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CmpProfileVariant));
+    const challengeSourceEnum = useSelector(enumSelectors.platformEnum(ProtocolChallengeSourcePlatformEnum));
     const multipleResourceCustomAttributes = useSelector(
         customAttributesSelectors.multipleResourceCustomAttributes([Resource.CmpProfiles, Resource.Certificates]),
     );
@@ -102,6 +105,16 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
         ],
         [protectionMethodEnum],
     );
+
+    const challengeSourceOptions = useMemo(() => {
+        const fromPlatformEnum = getEnumAsSelectOptions(challengeSourceEnum);
+        return fromPlatformEnum.length > 0
+            ? fromPlatformEnum
+            : Object.values(ProtocolChallengeSource).map((source) => ({
+                  value: source,
+                  label: getEnumLabel(challengeSourceEnum, source),
+              }));
+    }, [challengeSourceEnum]);
 
     const cmpProfileVariantOptions = useMemo(
         () => [
@@ -191,6 +204,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                 name: '',
                 description: '',
                 variant: '',
+                challengeSource: ProtocolChallengeSource.ProtocolDefault,
                 requestProtectionMethod: '',
                 responseProtectionMethod: '',
                 raProfileUuid: '',
@@ -211,6 +225,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
             name: cmpProfile?.name || '',
             description: cmpProfile?.description || '',
             variant: variant || '',
+            challengeSource: cmpProfile.challengeSource ?? ProtocolChallengeSource.ProtocolDefault,
             requestProtectionMethod: requestProtectionMethod || '',
             responseProtectionMethod: responseProtectionMethod || '',
             raProfileUuid: raProfile?.uuid || '',
@@ -243,6 +258,17 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
         control,
         name: 'requestProtectionMethod',
     });
+
+    const watchedChallengeSource = useWatch({
+        control,
+        name: 'challengeSource',
+    });
+    const isRegistrationChallengeSource = watchedChallengeSource === ProtocolChallengeSource.CertificateRegistration;
+    const storedProfileHasSecret =
+        cmpProfile?.uuid === id &&
+        cmpProfile?.requestProtectionMethod === ProtectionMethod.SharedSecret &&
+        cmpProfile?.challengeSource !== ProtocolChallengeSource.CertificateRegistration;
+    const sharedSecretRequired = !editMode || !storedProfileHasSecret;
 
     const watchedResponseProtectionMethod = useWatch({
         control,
@@ -295,6 +321,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                     name: cmpProfile?.name || '',
                     description: cmpProfile?.description || '',
                     variant: variant || '',
+                    challengeSource: cmpProfile.challengeSource ?? ProtocolChallengeSource.ProtocolDefault,
                     requestProtectionMethod: requestProtectionMethod || '',
                     responseProtectionMethod: responseProtectionMethod || '',
                     raProfileUuid: raProfile?.uuid || '',
@@ -337,6 +364,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                         name: '',
                         description: '',
                         variant: '',
+                        challengeSource: ProtocolChallengeSource.ProtocolDefault,
                         requestProtectionMethod: '',
                         responseProtectionMethod: '',
                         raProfileUuid: '',
@@ -376,66 +404,49 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                     values,
                 ),
             };
+            const registrationMode = values.challengeSource === ProtocolChallengeSource.CertificateRegistration;
+            const commonFields = {
+                name: values.name,
+                description: normalizeOptionalValue(values.description),
+                challengeSource: values.challengeSource,
+                requestProtectionMethod: registrationMode
+                    ? ProtectionMethod.SharedSecret
+                    : (values.requestProtectionMethod as ProtectionMethod),
+                responseProtectionMethod: values.responseProtectionMethod as ProtectionMethod,
+                raProfileUuid: normalizeOptionalValue(values.raProfileUuid),
+                sharedSecret:
+                    values.requestProtectionMethod === ProtectionMethod.SharedSecret && !registrationMode
+                        ? normalizeOptionalValue(values.sharedSecret)
+                        : undefined,
+                signingCertificateUuid:
+                    values.responseProtectionMethod === ProtectionMethod.Signature
+                        ? normalizeOptionalValue(values.signingCertificateUuid)
+                        : undefined,
+                issueCertificateAttributes: collectFormAttributes(
+                    'issuanceAttributes',
+                    [...(raProfileIssuanceAttrDescs ?? []), ...issueGroupAttributesCallbackAttributes],
+                    values,
+                ),
+                revokeCertificateAttributes: collectFormAttributes(
+                    'revocationAttributes',
+                    [...(raProfileRevocationAttrDescs ?? []), ...revokeGroupAttributesCallbackAttributes],
+                    values,
+                ),
+                customAttributes,
+                certificateAssociations,
+            };
             if (editMode && cmpProfile && cmpProfile?.uuid === id) {
                 const valuesToSubmit: CmpProfileEditRequestModel = {
-                    name: values.name,
-                    description: normalizeOptionalValue(values.description),
-                    variant: values.variant as CmpProfileEditRequestDtoVariantEnum,
-                    requestProtectionMethod: values.requestProtectionMethod as ProtectionMethod,
-                    responseProtectionMethod: values.responseProtectionMethod as ProtectionMethod,
-                    raProfileUuid: normalizeOptionalValue(values.raProfileUuid),
-                    sharedSecret:
-                        values.requestProtectionMethod === ProtectionMethod.SharedSecret
-                            ? normalizeOptionalValue(values.sharedSecret)
-                            : undefined,
-                    signingCertificateUuid:
-                        values.responseProtectionMethod === ProtectionMethod.Signature
-                            ? normalizeOptionalValue(values.signingCertificateUuid)
-                            : undefined,
-
-                    issueCertificateAttributes: collectFormAttributes(
-                        'issuanceAttributes',
-                        [...(raProfileIssuanceAttrDescs ?? []), ...issueGroupAttributesCallbackAttributes],
-                        values,
-                    ),
-                    revokeCertificateAttributes: collectFormAttributes(
-                        'revocationAttributes',
-                        [...(raProfileRevocationAttrDescs ?? []), ...revokeGroupAttributesCallbackAttributes],
-                        values,
-                    ),
-                    customAttributes,
-                    certificateAssociations,
+                    ...commonFields,
+                    variant: registrationMode
+                        ? CmpProfileEditRequestDtoVariantEnum.V2
+                        : (values.variant as CmpProfileEditRequestDtoVariantEnum),
                 };
                 dispatch(cmpProfileActions.updateCmpProfile({ uuid: cmpProfile.uuid, updateCmpRequest: valuesToSubmit }));
             } else {
                 const valuesToSubmit: CmpProfileRequestModel = {
-                    name: values.name,
-                    description: normalizeOptionalValue(values.description),
-                    variant: values.variant as CmpProfileRequestDtoVariantEnum,
-                    requestProtectionMethod: values.requestProtectionMethod as ProtectionMethod,
-                    responseProtectionMethod: values.responseProtectionMethod as ProtectionMethod,
-                    raProfileUuid: normalizeOptionalValue(values.raProfileUuid),
-                    sharedSecret:
-                        values.requestProtectionMethod === ProtectionMethod.SharedSecret
-                            ? normalizeOptionalValue(values.sharedSecret)
-                            : undefined,
-                    signingCertificateUuid:
-                        values.responseProtectionMethod === ProtectionMethod.Signature
-                            ? normalizeOptionalValue(values.signingCertificateUuid)
-                            : undefined,
-
-                    issueCertificateAttributes: collectFormAttributes(
-                        'issuanceAttributes',
-                        [...(raProfileIssuanceAttrDescs ?? []), ...issueGroupAttributesCallbackAttributes],
-                        values,
-                    ),
-                    revokeCertificateAttributes: collectFormAttributes(
-                        'revocationAttributes',
-                        [...(raProfileRevocationAttrDescs ?? []), ...revokeGroupAttributesCallbackAttributes],
-                        values,
-                    ),
-                    customAttributes,
-                    certificateAssociations,
+                    ...commonFields,
+                    variant: registrationMode ? CmpProfileRequestDtoVariantEnum.V2 : (values.variant as CmpProfileRequestDtoVariantEnum),
                 };
                 dispatch(cmpProfileActions.createCmpProfile(valuesToSubmit));
             }
@@ -602,6 +613,21 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                     )}
                                 />
 
+                                <Controller
+                                    name="challengeSource"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Select
+                                            id="challengeSource"
+                                            label="Challenge Source"
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            options={challengeSourceOptions}
+                                            placement="bottom"
+                                        />
+                                    )}
+                                />
+
                                 <Widget title="CMP Variant Configuration">
                                     <div>
                                         <label
@@ -614,7 +640,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                         <Controller
                                             name="variant"
                                             control={control}
-                                            rules={buildValidationRules([validateRequired()])}
+                                            rules={buildValidationRules(isRegistrationChallengeSource ? [] : [validateRequired()])}
                                             render={({ field, fieldState }) => (
                                                 <>
                                                     <div className="flex flex-col gap-3" role="radiogroup" aria-labelledby="variant-label">
@@ -625,8 +651,13 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                                                     type="radio"
                                                                     name="variant"
                                                                     value={option.value}
-                                                                    checked={field.value === option.value}
+                                                                    checked={
+                                                                        isRegistrationChallengeSource
+                                                                            ? option.value === CmpProfileRequestDtoVariantEnum.V2
+                                                                            : field.value === option.value
+                                                                    }
                                                                     onChange={() => field.onChange(option.value)}
+                                                                    disabled={isRegistrationChallengeSource}
                                                                     className="shrink-0 mt-0.5 rounded-full not-checked:bg-surface-raised border-outline text-brand-solid focus:ring-brand disabled:opacity-50 disabled:pointer-events-none"
                                                                 />
                                                                 <span className="ml-2">
@@ -640,6 +671,12 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                                             </label>
                                                         ))}
                                                     </div>
+                                                    {isRegistrationChallengeSource && (
+                                                        <p className="mt-2 text-xs text-content-subtle">
+                                                            The certificate-registration challenge source requires the v2 variant; the
+                                                            selection above is restored when another challenge source is picked.
+                                                        </p>
+                                                    )}
                                                     {fieldState.error && fieldState.isTouched && (
                                                         <p className="mt-1 text-sm text-danger">
                                                             {typeof fieldState.error === 'string'
@@ -657,47 +694,64 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                         <Controller
                                             name="requestProtectionMethod"
                                             control={control}
-                                            rules={buildValidationRules([validateRequired()])}
+                                            rules={buildValidationRules(isRegistrationChallengeSource ? [] : [validateRequired()])}
                                             render={({ field, fieldState }) => (
-                                                <Select
-                                                    id="selectedRequestProtectionMethodSelect"
-                                                    label="Requested Protection Method"
-                                                    required
-                                                    value={field.value || ''}
-                                                    onChange={(value) => {
-                                                        field.onChange(value);
-                                                        setValue('sharedSecret', '');
-                                                    }}
-                                                    options={protectionMethodOptions.map((opt) => ({
-                                                        value: opt.value,
-                                                        label: opt.label,
-                                                    }))}
-                                                    placeholder="Select Requested Protection Method"
-                                                    isClearable
-                                                    placement="bottom"
-                                                    error={getFieldErrorMessage(fieldState)}
-                                                />
-                                            )}
-                                        />
-                                        {watchedRequestProtectionMethod === ProtectionMethod.SharedSecret && (
-                                            <Controller
-                                                name="sharedSecret"
-                                                control={control}
-                                                rules={buildValidationRules(editMode ? [] : [validateRequired()])}
-                                                render={({ field, fieldState }) => (
-                                                    <TextInput
-                                                        {...field}
-                                                        id="sharedSecret"
-                                                        type="password"
-                                                        label="Shared Secret"
-                                                        required={!editMode}
-                                                        placeholder={editMode ? 'Leave blank to keep current' : 'Shared Secret'}
-                                                        invalid={fieldState.error && fieldState.isTouched}
+                                                <>
+                                                    <Select
+                                                        id="selectedRequestProtectionMethodSelect"
+                                                        label="Requested Protection Method"
+                                                        required
+                                                        value={
+                                                            isRegistrationChallengeSource
+                                                                ? ProtectionMethod.SharedSecret
+                                                                : field.value || ''
+                                                        }
+                                                        onChange={(value) => {
+                                                            field.onChange(value);
+                                                            setValue('sharedSecret', '');
+                                                        }}
+                                                        options={protectionMethodOptions.map((opt) => ({
+                                                            value: opt.value,
+                                                            label: opt.label,
+                                                        }))}
+                                                        placeholder="Select Requested Protection Method"
+                                                        isClearable
+                                                        placement="bottom"
+                                                        isDisabled={isRegistrationChallengeSource}
                                                         error={getFieldErrorMessage(fieldState)}
                                                     />
-                                                )}
-                                            />
-                                        )}
+                                                    {isRegistrationChallengeSource && (
+                                                        <p className="mt-2 text-xs text-content-subtle">
+                                                            The certificate-registration challenge source requires shared-secret request
+                                                            protection; the selection above is restored when another challenge source is
+                                                            picked.
+                                                        </p>
+                                                    )}
+                                                </>
+                                            )}
+                                        />
+                                        {watchedRequestProtectionMethod === ProtectionMethod.SharedSecret &&
+                                            !isRegistrationChallengeSource && (
+                                                <Controller
+                                                    name="sharedSecret"
+                                                    control={control}
+                                                    rules={buildValidationRules(sharedSecretRequired ? [validateRequired()] : [])}
+                                                    render={({ field, fieldState }) => (
+                                                        <TextInput
+                                                            {...field}
+                                                            id="sharedSecret"
+                                                            type="password"
+                                                            label="Shared Secret"
+                                                            required={sharedSecretRequired}
+                                                            placeholder={
+                                                                sharedSecretRequired ? 'Shared Secret' : 'Leave blank to keep current'
+                                                            }
+                                                            invalid={fieldState.error && fieldState.isTouched}
+                                                            error={getFieldErrorMessage(fieldState)}
+                                                        />
+                                                    )}
+                                                />
+                                            )}
                                     </div>
                                 </Widget>
 
