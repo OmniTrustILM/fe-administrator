@@ -193,7 +193,48 @@ Biome enforces linting and formatting: 4-space indent, 140-char line width, sing
 ## Git & Pull Requests
 
 - Do NOT put a PR number or issue number in the PR title. Describe the change itself. (Referencing the issue in the PR body, e.g. "Closes #NNNN", is fine.)
-- Do NOT write a PR description/body — Copilot generates it automatically. Create PRs with the title only (and, if needed, a short issue reference like "Closes #NNNN"); leave the body empty otherwise.
+- DO write the PR description by hand. Describe only what the change does, factual and properly markdown formatted. No AI or assistant attribution, no follow-up/task/plan sections, and no unrelated context such as links to other pull requests. An empty body stays empty — nothing backfills it.
+
+## CI Workflows
+
+Container builds call first-party reusable workflows from `OmniTrustILM/.github`, referenced as
+`@main` on purpose: edits there are meant to reach every repo without a version bump here.
+
+| Workflow | Trigger | Reusable workflow | Result |
+|---|---|---|---|
+| `publish_docker.yaml` | push to `main`, tags | `containers-build-and-push.yml` | `ilm/frontend-administrator` |
+| `test_docker_image.yaml` | pull request | `containers-test.yml` | builds and scans, pushes nothing |
+| `build_preview_docker.yml` | `workflow_dispatch` | `containers-build-and-push.yml` | `ilm-preview/frontend-administrator` |
+
+### Preview image pipeline
+
+A preview image cannot be built on `pull_request`, because a fork PR has no access to registry
+credentials. Three workflows relay the context instead:
+
+1. `prepare_preview.yml` — `pull_request`, gated on the `preview` label. Writes `pr-context.json`
+   (`pr_number`, `head_sha`, `head_repo`, `head_branch`, `base_ref`) as an artifact.
+2. `dispatch-preview-docker.yml` — `workflow_run` on the above. Has secrets, reads the artifact, and
+   dispatches the build on `base_ref`.
+3. `build_preview_docker.yml` — `workflow_dispatch`. Calls the reusable workflow with
+   `ref: <head_sha>`, and reports a `Docker preview build` check against that commit because a
+   dispatched run does not attach to the PR on its own.
+
+`dispatch-sonar.yml` consumes the same `pr-context.json` to drive `sonar.yml`, so changing what
+`prepare_preview.yml` writes affects both paths.
+
+Passing the head SHA works for a fork PR because fork objects live in this repository's network, so
+`actions/checkout` resolves them without a `repository` override. Pinning the commit rather than the
+branch also keeps the published tag honest when a push lands mid-run.
+
+The preview call passes `sign: false` and `push-readme: false`: a preview is not a release, so it
+carries no cosign signature and must not overwrite the registry README from a fork branch. It also
+overrides `tag-rules` with a single `pr-<number>-<sha>` tag, because the default rules would publish
+rolling `develop-latest` and `develop-<sha>` tags onto the preview path.
+
+Trivy gates the preview build under the org-default policy. Per-architecture images are pushed by
+digest before the scan runs, so a PR introducing a CRITICAL or HIGH vulnerability still leaves those
+digests in the registry — but no `pr-<number>-<sha>` tag or multiarch manifest is published.
+`test_docker_image.yaml` already fails that same PR.
 
 ## Environment Variables (Runtime)
 
