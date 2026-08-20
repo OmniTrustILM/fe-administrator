@@ -26,26 +26,37 @@ jobs:
         id: ctx
         run: |
           cat pr_context/pr-context.json
-          echo "pr_number=$(jq -r '.pr_number' pr_context/pr-context.json)" >> $GITHUB_OUTPUT
-          echo "head_sha=$(jq -r '.head_sha' pr_context/pr-context.json)" >> $GITHUB_OUTPUT
-          echo "head_repo=$(jq -r '.head_repo' pr_context/pr-context.json)" >> $GITHUB_OUTPUT
-          echo "head_branch=$(jq -r '.head_branch' pr_context/pr-context.json)" >> $GITHUB_OUTPUT
-          echo "base_ref=$(jq -r '.base_ref' pr_context/pr-context.json)" >> $GITHUB_OUTPUT
+          {
+            echo "pr_number=$(jq -r '.pr_number' pr_context/pr-context.json)"
+            echo "head_sha=$(jq -r '.head_sha' pr_context/pr-context.json)"
+            echo "head_repo=$(jq -r '.head_repo' pr_context/pr-context.json)"
+            echo "head_branch=$(jq -r '.head_branch' pr_context/pr-context.json)"
+            echo "base_ref=$(jq -r '.base_ref' pr_context/pr-context.json)"
+          } >> "$GITHUB_OUTPUT"
 
+      # The PR context comes from a fork, so every value is read from the
+      # environment. Interpolating it into the script body would let a branch
+      # name containing a quote execute arbitrary code with this token.
       - name: Dispatch build preview docker workflow with inputs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ steps.ctx.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.ctx.outputs.head_sha }}
+          HEAD_REPO: ${{ steps.ctx.outputs.head_repo }}
+          HEAD_BRANCH: ${{ steps.ctx.outputs.head_branch }}
+          BASE_REF: ${{ steps.ctx.outputs.base_ref }}
         with:
           script: |
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'build_preview_docker.yml',
-              ref: '${{ steps.ctx.outputs.base_ref }}',
+              ref: process.env.BASE_REF,
               inputs: {
-                pr_number:  '${{ steps.ctx.outputs.pr_number }}',
-                head_sha:   '${{ steps.ctx.outputs.head_sha }}',
-                head_repo:  '${{ steps.ctx.outputs.head_repo }}',
-                head_branch:'${{ steps.ctx.outputs.head_branch }}',
-                base_ref:   '${{ steps.ctx.outputs.base_ref }}'
+                pr_number: process.env.PR_NUMBER,
+                head_sha: process.env.HEAD_SHA,
+                head_repo: process.env.HEAD_REPO,
+                head_branch: process.env.HEAD_BRANCH,
+                base_ref: process.env.BASE_REF
               }
             });
