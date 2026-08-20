@@ -77,7 +77,11 @@ echo "Configuring SonarQube..."
 # case, digit, symbol) so the rest of the script can authenticate. The value
 # never leaves this process and the container is removed by the EXIT trap, so
 # nothing is persisted — and no credential is hardcoded in the repo.
-ADMIN_PASSWORD="Aa1!$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)"
+# Piping tr into a truncating `head -c` leaves tr writing to a closed pipe; the
+# resulting SIGPIPE is fatal under `pipefail`. Read a bounded chunk instead and
+# slice it in bash, so no process is killed mid-write.
+ADMIN_RANDOM=$(LC_ALL=C head -c 1024 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9')
+ADMIN_PASSWORD="Aa1!${ADMIN_RANDOM:0:24}"
 
 curl -s -o /dev/null -u admin:admin -X POST \
     --data-urlencode "login=admin" \
