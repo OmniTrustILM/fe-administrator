@@ -101,7 +101,12 @@ export const slice = createSlice({
             state.error = undefined;
         },
 
-        updateBrandingSuccess: (state, action: PayloadAction<{ branding: BrandingSettingsModel }>) => {
+        /**
+         * The write answers 204, so the branding that was sent is the branding that is now stored: the request carries
+         * the full desired state, and a field left out of it has been cleared. The payload is therefore the update
+         * model the epic sent rather than a response it never received.
+         */
+        updateBrandingSuccess: (state, action: PayloadAction<{ branding: BrandingSettingsUpdateModel }>) => {
             state.branding = action.payload.branding;
             state.isUpdatingBranding = false;
             state.updateSucceeded = true;
