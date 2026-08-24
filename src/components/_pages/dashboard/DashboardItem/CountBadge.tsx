@@ -13,9 +13,24 @@ type Props = Readonly<{
     entity?: EntityType;
     onSetFilter?: () => SearchFilterModel[];
     onRefresh?: () => void;
+    // Why the count is missing is the caller's knowledge, not the badge's: a denied permission, a
+    // down data source and a failed request all arrive as `null`. Defaults to GENERIC rather than
+    // guessing a cause, so the lock never asserts a reason nobody supplied.
+    lockType?: LockTypeEnum;
+    lockText?: string;
 }>;
 
-function CountBadge({ data, title, link, extraComponent, entity, onSetFilter, onRefresh }: Props) {
+function CountBadge({
+    data,
+    title,
+    link,
+    extraComponent,
+    entity,
+    onSetFilter,
+    onRefresh,
+    lockType = LockTypeEnum.GENERIC,
+    lockText = 'This count could not be loaded.',
+}: Props) {
     const dispatch = useDispatch();
 
     const applyFilter =
@@ -34,9 +49,9 @@ function CountBadge({ data, title, link, extraComponent, entity, onSetFilter, on
             {data === null ? (
                 <WidgetLock
                     size="small"
-                    lockType={LockTypeEnum.SERVICE_ERROR}
+                    lockType={lockType}
                     lockTitle="Count is not available"
-                    lockText="This count could not be loaded."
+                    lockText={lockText}
                     dataTestId="count-badge-lock"
                     onRefresh={onRefresh}
                 />
