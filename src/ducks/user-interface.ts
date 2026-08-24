@@ -165,6 +165,7 @@ const selectInitiateFormCallback = createSelector(selectState, (state) => state.
 const reactFlowUI = createSelector(selectState, (state) => state.reactFlowUI);
 const flowChartNodes = createSelector(reactFlowUI, (state) => state?.flowChartNodes);
 const flowChartEdges = createSelector(reactFlowUI, (state) => state?.flowChartEdges);
+const flowDirection = createSelector(reactFlowUI, (state) => state?.flowDirection);
 const expandedHiddenNodeId = createSelector(reactFlowUI, (state) => state?.expandedHiddenNodeId);
 
 export const selectors = {
@@ -178,6 +179,7 @@ export const selectors = {
     reactFlowUI,
     flowChartNodes,
     flowChartEdges,
+    flowDirection,
     expandedHiddenNodeId,
 };
 
