@@ -125,6 +125,50 @@ test.describe('WidgetLock', () => {
         await expect(component.locator('[data-testid="widget-lock-refresh"]')).toBeVisible();
     });
 
+    // Reproduces the dashboard count badge: a ~240px card on a full-width viewport. A `sm:`
+    // breakpoint stays in row layout there and pushes the panel out past its card.
+    test('should stack and stay inside its card when dropped into a narrow container', async ({ mount }) => {
+        const component = await mount(
+            <div style={{ width: '240px' }}>
+                <WidgetLock
+                    size="small"
+                    lockTitle="Count is not available"
+                    lockText="This count could not be loaded."
+                    onRefresh={() => {}}
+                />
+            </div>,
+        );
+
+        const card = component.locator('[data-testid="widget-lock"]');
+        const cardBox = (await card.boundingBox()) ?? { width: 0, x: 0 };
+        expect(cardBox.width).toBeLessThanOrEqual(240);
+
+        // Stacked, not side by side: the button starts below the text rather than beside it.
+        const text = component.getByText('This count could not be loaded.');
+        const button = component.locator('[data-testid="widget-lock-refresh"]');
+        const textBox = (await text.boundingBox()) ?? { y: 0, height: 0, width: 0 };
+        const buttonBox = (await button.boundingBox()) ?? { y: 0, x: 0, width: 0 };
+        expect(buttonBox.y).toBeGreaterThanOrEqual(textBox.y + textBox.height);
+
+        // Nothing overflows the 240px card.
+        expect(buttonBox.x + buttonBox.width).toBeLessThanOrEqual(cardBox.x + 240);
+        // The text is not squeezed to one word per line.
+        expect(textBox.width).toBeGreaterThan(120);
+    });
+
+    test('should lay out in a row when the container is wide enough', async ({ mount }) => {
+        const component = await mount(
+            <div style={{ width: '700px' }}>
+                <WidgetLock lockTitle="Count is not available" lockText="This count could not be loaded." onRefresh={() => {}} />
+            </div>,
+        );
+
+        const textBox = (await component.getByText('This count could not be loaded.').boundingBox()) ?? { y: 0, height: 0 };
+        const buttonBox = (await component.locator('[data-testid="widget-lock-refresh"]').boundingBox()) ?? { y: 0 };
+
+        expect(buttonBox.y).toBeLessThan(textBox.y + textBox.height);
+    });
+
     test('should use custom data-testid when provided', async ({ mount }) => {
         const component = await mount(<WidgetLock lockTitle="Test" dataTestId="custom-lock-id" />);
 

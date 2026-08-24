@@ -50,11 +50,15 @@ const WidgetLock = ({
 
     return (
         <Container>
-            <div data-testid={dataTestId || 'widget-lock'} className={`${maxWidthClass} mx-auto`}>
-                <div className="bg-surface-sunken border border-divider rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4">
+            {/* Container query, not `sm:`: the lock is dropped into narrow cards (a dashboard count
+                badge is ~240px) on wide viewports, where a viewport breakpoint keeps the row layout
+                and squeezes the text to one word per line while the un-shrinkable icon and button
+                push the panel out past its card. `min-w-0` lets the text block shrink. */}
+            <div data-testid={dataTestId || 'widget-lock'} className={`${maxWidthClass} w-full mx-auto @container`}>
+                <div className="bg-surface-sunken border border-divider rounded-xl p-6 flex flex-col @md:flex-row items-center gap-4">
                     <div className="shrink-0 text-danger">{getIcon()}</div>
-                    <div className="text-center sm:text-left">
-                        <h5 className="flex justify-center sm:justify-start items-center gap-1.5 font-semibold text-content">
+                    <div className="min-w-0 text-center @md:text-left">
+                        <h5 className="flex flex-wrap justify-center @md:justify-start items-center gap-1.5 font-semibold text-content">
                             {lockTitle}
                             {lockDetails && (
                                 <Tooltip content={lockDetails}>
@@ -72,7 +76,7 @@ const WidgetLock = ({
                         <p className="text-sm text-content mt-1">{lockText}</p>
                     </div>
                     {onRefresh && (
-                        <div className="sm:ms-auto shrink-0">
+                        <div className="@md:ms-auto shrink-0">
                             <Button variant="outline" color="secondary" onClick={onRefresh} data-testid="widget-lock-refresh">
                                 <RotateCw size={15} aria-hidden />
                                 {refreshLabel}
