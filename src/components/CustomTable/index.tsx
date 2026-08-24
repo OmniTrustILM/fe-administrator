@@ -62,10 +62,12 @@ type Props = {
 
 const emptyCheckedRows: (string | number)[] = [];
 
+// ARIA asks for aria-sort on the sorted header only, so an unsorted column carries no attribute
+// rather than an explicit "none" — otherwise every sortable header announces a sort state at once.
 const ariaSortValue = (sort: SortDirection | undefined) => {
     if (sort === 'asc') return 'ascending';
     if (sort === 'desc') return 'descending';
-    return 'none';
+    return undefined;
 };
 
 function CustomTable({
@@ -315,6 +317,25 @@ function CustomTable({
         }
     }, [tblHeaders]);
 
+    // A persisted sort is restored into the headers on mount, which paints the arrow and suppresses
+    // local sorting. A server-driven table has to be told about it as well, or the indicator claims
+    // an ordering the caller never fetched and the two disagree until the user clicks. The signature
+    // is also stamped by the click handler, which announces its own change, so no click is repeated.
+    const announcedServerSort = useRef<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (!serverSortEnabled || !tblHeaders) return;
+
+        const sortCol = tblHeaders.find((h) => h.sort);
+        if (!sortCol?.sort) return;
+
+        const signature = `${sortCol.id}:${sortCol.sort}`;
+        if (announcedServerSort.current === signature) return;
+
+        announcedServerSort.current = signature;
+        onSortChanged?.(sortCol.id, sortCol.sort);
+    }, [tblHeaders, serverSortEnabled, onSortChanged]);
+
     useEffect(
         () => {
             const filtered = searchKey
@@ -506,6 +527,7 @@ function CustomTable({
                 dispatch(tablePaginationActions.setSort({ key: internalPaginationStorageKey, sortColumn, sortDirection: sort }));
             }
 
+            announcedServerSort.current = `${sortColumn}:${sort}`;
             onSortChanged?.(sortColumn, sort);
         },
         [tblHeaders, hasPagination, internalPaginationStorageKey, dispatch, onSortChanged],
@@ -584,7 +606,7 @@ function CustomTable({
                         header.sort ? 'text-content' : 'text-content-subtle',
                     )}
                     data-id={header.id}
-                    {...(header.sortable ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
+                    {...(header.sortable && ariaSortValue(header.sort) ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
                     style={{
                         ...(header.width ? { width: header.width } : {}),
                         ...(header.minWidth ? { minWidth: header.minWidth } : {}),

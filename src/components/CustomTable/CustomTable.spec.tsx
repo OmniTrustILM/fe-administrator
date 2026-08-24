@@ -1,5 +1,6 @@
 import { test, expect } from '../../../playwright/ct-test';
 import CustomTable, { type TableHeader, type TableDataRow } from './index';
+import CustomTableWithStore from './CustomTableWithStore';
 import { createMockStore, withProviders } from 'utils/test-helpers';
 
 test.describe('CustomTable', () => {
@@ -1192,8 +1193,66 @@ test.describe('CustomTable', () => {
                     ['name', 'asc'],
                     ['email', 'asc'],
                 ]);
-            await expect(component.locator('th[data-id="name"]')).toHaveAttribute('aria-sort', 'none');
+            expect(await component.locator('th[data-id="name"]').getAttribute('aria-sort')).toBeNull();
             await expect(component.locator('th[data-id="email"]')).toHaveAttribute('aria-sort', 'ascending');
+        });
+
+        // A restored sort suppresses local sorting and paints the arrow. Without announcing it, the
+        // caller fetches its own default ordering and the indicator describes rows that never arrived.
+        // The store has to be built browser-side (CustomTableWithStore): a store created here in the
+        // Node test body never crosses into the page, so a preloaded slice would be silently dropped.
+        test('announces a sort restored from persistence so the caller can fetch that ordering', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const component = await mount(
+                <CustomTableWithStore
+                    headers={mockHeaders}
+                    data={mockData}
+                    persistedSortColumn="name"
+                    persistedSortDirection="desc"
+                    onSortChanged={(id, direction) => calls.push([id, direction])}
+                />,
+            );
+
+            await expect(component.locator('th[data-id="name"]')).toHaveAttribute('aria-sort', 'descending');
+            await expect.poll(() => calls).toEqual([['name', 'desc']]);
+        });
+
+        test('does not re-announce a hydrated sort, and a click still reports once', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const component = await mount(
+                <CustomTableWithStore
+                    headers={mockHeaders}
+                    data={mockData}
+                    persistedSortColumn="name"
+                    persistedSortDirection="desc"
+                    onSortChanged={(id, direction) => calls.push([id, direction])}
+                />,
+            );
+
+            await expect.poll(() => calls).toEqual([['name', 'desc']]);
+
+            await component.getByRole('button', { name: 'Name' }).click();
+
+            await expect
+                .poll(() => calls)
+                .toEqual([
+                    ['name', 'desc'],
+                    ['name', 'asc'],
+                ]);
+        });
+
+        test('says nothing on mount when there is no persisted sort', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const component = await mount(
+                <CustomTableWithStore
+                    headers={mockHeaders}
+                    data={mockData}
+                    onSortChanged={(id, direction) => calls.push([id, direction])}
+                />,
+            );
+
+            await expect(component.locator('th[aria-sort]')).toHaveCount(0);
+            expect(calls).toEqual([]);
         });
     });
 
@@ -1202,7 +1261,8 @@ test.describe('CustomTable', () => {
             const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
 
             const nameCell = component.locator('th[data-id="name"]');
-            await expect(nameCell).toHaveAttribute('aria-sort', 'none');
+            // ARIA wants aria-sort on the sorted header only, so an idle column carries no attribute.
+            expect(await nameCell.getAttribute('aria-sort')).toBeNull();
 
             const nameButton = component.getByRole('button', { name: 'Name' });
             await nameButton.click();
@@ -1225,6 +1285,22 @@ test.describe('CustomTable', () => {
             await nameButton.press('Enter');
 
             await expect.poll(() => calls).toEqual([['name', 'asc']]);
+        });
+
+        test('carries aria-sort on the sorted header only', async ({ mount }) => {
+            const sortableHeaders: TableHeader[] = [
+                { id: 'name', content: 'Name', sortable: true },
+                { id: 'email', content: 'Email', sortable: true },
+                { id: 'status', content: 'Status', sortable: true },
+            ];
+            const component = await mount(withProviders(<CustomTable headers={sortableHeaders} data={mockData} />));
+
+            await expect(component.locator('th[aria-sort]')).toHaveCount(0);
+
+            await component.getByRole('button', { name: 'Name' }).click();
+
+            await expect(component.locator('th[aria-sort]')).toHaveCount(1);
+            await expect(component.locator('th[aria-sort]')).toHaveAttribute('data-id', 'name');
         });
 
         test('a non-sortable header is inert: no button, no aria-sort, no indicator', async ({ mount }) => {
