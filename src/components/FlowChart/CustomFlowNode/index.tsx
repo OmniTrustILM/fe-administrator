@@ -7,8 +7,8 @@ import { Link } from 'react-router';
 import { Handle, Position } from 'reactflow';
 import Button from 'components/Button';
 import type { EntityNodeProps } from 'types/flowchart';
-import { CertificateValidationStatus } from 'types/openapi';
 import { useCopyToClipboard } from 'utils/common-hooks';
+import { getExpandButtonClasses } from './expandButtonClasses';
 import { getNodeClasses } from './nodeStatusClasses';
 import {
     Plus,
@@ -191,57 +191,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
         return <IconComponent size={24} className={statusClasses} />;
     };
 
-    // Icon colour needed on top of each fill/state to keep it at 4.5:1 (see theme-tokens.spec.ts):
-    // most statuses read fine with the button's inherited white at rest but need dark text once the
-    // fill saturates on hover/active; revoked and (at hover/active) failed sit on a fill that's dark
-    // in one theme and bright in the other, so they need the opposite pairing instead.
-    const ICON_DARKENING_ON_HOVER_CLASSES = '!border-none !text-node-icon hover:!text-black active:!text-black';
-
-    const getExpandButtonStatusClasses = () => {
-        switch (data?.certificateNodeData?.certificateNodeValidationStatus) {
-            case CertificateValidationStatus.Valid:
-                return cn('!bg-node-valid/62 hover:!bg-node-valid/93 active:!bg-node-valid/85', ICON_DARKENING_ON_HOVER_CLASSES);
-            case CertificateValidationStatus.Expired:
-                return cn(
-                    '!bg-node-expired/64 !border-none !text-node-icon',
-                    'hover:!bg-danger-solid hover:!text-black active:!bg-danger-solid active:!text-black',
-                );
-            case CertificateValidationStatus.Revoked:
-                return '!bg-node-revoked/72 !border-none hover:!bg-node-revoked active:!bg-node-revoked !text-node-icon-inverse';
-            case CertificateValidationStatus.Expiring:
-                return '!bg-node-expiring/65 !border-none hover:!bg-node-expiring/93 active:!bg-node-expiring/85 !text-black';
-            case CertificateValidationStatus.Invalid:
-                return '!bg-node-invalid/64 !border-none hover:!bg-node-invalid/93 active:!bg-node-invalid/85';
-            case CertificateValidationStatus.NotChecked:
-                return cn(
-                    '!bg-node-unchecked/63 hover:!bg-node-unchecked/93 active:!bg-node-unchecked/85',
-                    ICON_DARKENING_ON_HOVER_CLASSES,
-                );
-            case CertificateValidationStatus.Failed:
-                return cn(
-                    '!bg-node-failed/64 !border-none !text-node-icon',
-                    'hover:!bg-node-failed/93 hover:!text-node-icon-inverse',
-                    'active:!bg-node-failed/85 active:!text-node-icon-inverse',
-                );
-            case CertificateValidationStatus.Inactive:
-                return '!bg-node-inactive/63 !border-none hover:!bg-node-inactive/93 active:!bg-node-inactive/85 !text-node-icon';
-        }
-        switch (data?.group) {
-            case 'rules':
-                return cn(
-                    '!bg-node-unchecked/63 hover:!bg-node-unchecked/93 active:!bg-node-unchecked/85',
-                    ICON_DARKENING_ON_HOVER_CLASSES,
-                );
-            case 'actions':
-                return cn('!bg-node-valid/62 hover:!bg-node-valid/93 active:!bg-node-valid/85', ICON_DARKENING_ON_HOVER_CLASSES);
-        }
-
-        return cn(
-            '!bg-node-default-fill !border-none !text-black',
-            'hover:!bg-node-default/93 hover:!text-content-on-brand',
-            'active:!bg-node-default/85 active:!text-content-on-brand',
-        );
-    };
+    const expandButtonClasses = getExpandButtonClasses(data);
 
     return (
         <>
@@ -265,10 +215,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                         color="primary"
                                         title={isNodeExpanded ? 'Collapse details' : 'Expand details'}
                                         onClick={expandToggle}
-                                        className={cn(
-                                            '!rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px]',
-                                            getExpandButtonStatusClasses(),
-                                        )}
+                                        className={cn('!rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px]', expandButtonClasses)}
                                     >
                                         <span className="sr-only">{isNodeExpanded ? 'Collapse' : 'Expand'}</span>
                                         {isNodeExpanded ? <ArrowUp width="100%" height="70%" /> : <ArrowDown width="100%" height="70%" />}
@@ -287,7 +234,7 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                             }}
                                             className={cn(
                                                 'mt-1 justify-center !rounded-full !w-[26px] !h-[26px] !p-0 !text-[10px]',
-                                                getExpandButtonStatusClasses(),
+                                                expandButtonClasses,
                                             )}
                                         >
                                             {isExpanded ? <EyeOff size={16} /> : <Eye size={16} />}
