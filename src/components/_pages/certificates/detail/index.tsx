@@ -63,7 +63,7 @@ import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
 import CertificateDetailsContent from './CertificateDetailsContent';
 import CertificateRequestContent from './CertificateRequestContent';
-import { getValidationPanelState, validationPanelMessages } from '../validationPanel';
+import { getValidationPanelState, isValidationTabVisible, validationPanelMessages } from '../validationPanel';
 import Label from 'components/Label';
 import ObjectEventHistoryWidget from 'components/_pages/notifications/events-settings/ObjectEventHistoryWidget';
 
@@ -1253,7 +1253,7 @@ export default function CertificateDetail() {
                         },
                         {
                             title: 'Validation',
-                            hidden: !certificate?.certificateContent,
+                            hidden: !isValidationTabVisible(certificate),
                             content: (
                                 <Container>
                                     <Widget
@@ -1272,12 +1272,14 @@ export default function CertificateDetail() {
                                             </div>
                                         )}
                                     </Widget>
-                                    <ComplianceCheckResultWidget
-                                        resource={Resource.Certificates}
-                                        widgetLockName={LockWidgetNameEnum.CertificateDetailsWidget}
-                                        objectUuid={certificate?.uuid ?? ''}
-                                        setSelectedAttributesInfo={setSelectedAttributesInfo}
-                                    />
+                                    {certificate?.certificateContent ? (
+                                        <ComplianceCheckResultWidget
+                                            resource={Resource.Certificates}
+                                            widgetLockName={LockWidgetNameEnum.CertificateDetailsWidget}
+                                            objectUuid={certificate?.uuid ?? ''}
+                                            setSelectedAttributesInfo={setSelectedAttributesInfo}
+                                        />
+                                    ) : null}
                                 </Container>
                             ),
                         },

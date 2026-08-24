@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getValidationPanelState, validationPanelMessages } from './validationPanel';
+import { getValidationPanelState, isValidationTabVisible, validationPanelMessages } from './validationPanel';
 import { CertificateState, CertificateValidationStatus } from 'types/openapi';
 
 describe('getValidationPanelState', () => {
@@ -68,5 +68,23 @@ describe('getValidationPanelState', () => {
 
     it('reports that validation has not run when the certificate is not loaded', () => {
         expect(getValidationPanelState(undefined, undefined)).toBe('not-run');
+    });
+});
+
+describe('isValidationTabVisible', () => {
+    it('keeps the tab available for a requested certificate so the pending notice can be shown', () => {
+        expect(isValidationTabVisible({ state: CertificateState.Requested })).toBe(true);
+    });
+
+    it('shows the tab for an issued certificate that has content', () => {
+        expect(isValidationTabVisible({ state: CertificateState.Issued, certificateContent: 'MIIB...' })).toBe(true);
+    });
+
+    it('hides the tab for a content-less certificate that is not awaiting issuance', () => {
+        expect(isValidationTabVisible({ state: CertificateState.Revoked })).toBe(false);
+    });
+
+    it('hides the tab while the certificate is not loaded', () => {
+        expect(isValidationTabVisible(undefined)).toBe(false);
     });
 });

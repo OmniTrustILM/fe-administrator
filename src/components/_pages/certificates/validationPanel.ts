@@ -7,6 +7,14 @@ export const validationPanelMessages: Record<Exclude<ValidationPanelState, 'resu
     'not-run': 'This certificate has not been validated yet.',
 };
 
+// The Validation tab was gated on certificate content alone, which hid it for every Requested
+// certificate — the one state the pending notice exists to explain. Content still gates the
+// results table and the compliance widget; this only decides whether the tab is reachable.
+export function isValidationTabVisible(certificate: { state?: CertificateState; certificateContent?: string } | undefined): boolean {
+    if (!certificate) return false;
+    return Boolean(certificate.certificateContent) || certificate.state === CertificateState.Requested;
+}
+
 export function getValidationPanelState(
     certificate: { state?: CertificateState } | undefined,
     validationResult: CertificateValidationResultDto | undefined,
