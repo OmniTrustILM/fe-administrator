@@ -197,8 +197,12 @@ Biome enforces linting and formatting: 4-space indent, 140-char line width, sing
 
 ## CI Workflows
 
-Container builds call first-party reusable workflows from `OmniTrustILM/.github`, referenced as
-`@main` on purpose: edits there are meant to reach every repo without a version bump here.
+Container builds call first-party reusable workflows from `OmniTrustILM/.github`. `publish_docker.yaml`
+and `test_docker_image.yaml` reference them as `@main` on purpose: edits there are meant to reach every
+repo without a version bump here. `build_preview_docker.yml` is the exception — it is pinned to a commit
+SHA with a trailing `# main` comment, because it is the only container workflow that runs against a fork
+head with registry credentials, so its reusable workflow has to be a reviewed revision rather than
+whatever `main` points at. Renovate bumps the digest.
 
 | Workflow | Trigger | Reusable workflow | Result |
 |---|---|---|---|
