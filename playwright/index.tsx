@@ -25,6 +25,7 @@ if (typeof window !== 'undefined') {
             LOGOUT_URL: '/logout',
             ENABLE_PROXIES: true,
             ENABLE_TRUSTED_CERTIFICATES: true,
+            ENABLE_BRANDING: false,
         };
     }
 }
