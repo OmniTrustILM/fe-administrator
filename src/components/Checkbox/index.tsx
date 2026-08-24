@@ -20,7 +20,7 @@ function Checkbox({ checked, onChange, id, label, disabled = false, dataTestId }
                 checked={checked}
                 onChange={(e) => onChange(e.target.checked)}
                 data-testid={dataTestId ?? 'checkbox'}
-                className="border-outline rounded-sm bg-surface-raised text-brand-solid focus:ring-brand"
+                className="border-outline rounded-sm not-checked:bg-surface-raised text-brand-solid focus:ring-brand"
                 disabled={disabled}
             />
             <Label htmlFor={id} className={cn('ml-2 !mb-0', { 'sr-only': !label, 'cursor-pointer': !disabled, 'opacity-60': disabled })}>

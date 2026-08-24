@@ -95,6 +95,28 @@ test.describe('Checkbox', () => {
         await expect(label).toHaveAttribute('for', 'test-checkbox');
     });
 
+    // @tailwindcss/forms paints the checked box with `background-color: currentColor` from the
+    // base layer, and any unconditional bg-* utility outranks it because utilities is the later
+    // cascade layer. The checkmark is a white SVG, so clobbering that fill with a light surface
+    // makes a checked box look unchecked. Hence not-checked:bg-surface-raised rather than
+    // bg-surface-raised, and hence these two tests assert computed colour: class-name assertions
+    // cannot tell the two apart.
+    test('should keep the brand fill on the checked box', async ({ mount }) => {
+        const component = await mount(<Checkbox checked={true} onChange={() => {}} />);
+
+        await expect(component.getByTestId('checkbox')).toHaveCSS('background-color', 'rgb(0, 115, 207)');
+    });
+
+    test('should give the unchecked box the themed surface rather than hardcoded white', async ({ mount, page }) => {
+        const component = await mount(<Checkbox checked={false} onChange={() => {}} />);
+
+        await expect(component.getByTestId('checkbox')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+
+        await page.evaluate(() => document.documentElement.classList.add('dark'));
+        await expect(component.getByTestId('checkbox')).toHaveCSS('background-color', 'rgb(23, 23, 23)');
+        await page.evaluate(() => document.documentElement.classList.remove('dark'));
+    });
+
     test('should update when checked prop changes', async ({ mount }) => {
         const component = await mount(<Checkbox checked={false} onChange={() => {}} />);
 
