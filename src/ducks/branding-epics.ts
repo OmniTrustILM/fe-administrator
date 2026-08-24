@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { of } from 'rxjs';
-import { catchError, filter, mergeMap } from 'rxjs/operators';
+import { catchError, filter, mergeMap, switchMap } from 'rxjs/operators';
 import { featureFlags } from 'utils/feature-flags';
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
@@ -12,7 +12,8 @@ const BRANDING_DISABLED = 'Branding is disabled for this instance.';
 const getBranding: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getBranding.match),
-        mergeMap(() => {
+        // switchMap, as the sibling settings epics do: a superseded read must not land after the one that replaced it.
+        switchMap(() => {
             // Nothing to read when the feature is off, and asking would 404 on a deployment that predates it.
             if (!featureFlags.isBrandingEnabled) {
                 return of(slice.actions.getBrandingSuccess({ branding: {} }));
@@ -38,7 +39,7 @@ const getBranding: AppEpic = (action$, state$, deps) => {
 const getPublicBranding: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getPublicBranding.match),
-        mergeMap(() => {
+        switchMap(() => {
             if (!featureFlags.isBrandingEnabled) {
                 return of(slice.actions.getPublicBrandingSuccess({ branding: platformDefaultBranding }));
             }
