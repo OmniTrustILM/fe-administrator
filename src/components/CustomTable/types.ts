@@ -1,11 +1,13 @@
 import type React from 'react';
 
+export type SortDirection = 'asc' | 'desc';
+
 export interface TableHeader {
     id: string;
     content: string | React.ReactNode;
     align?: 'left' | 'center' | 'right';
     sortable?: boolean;
-    sort?: 'asc' | 'desc';
+    sort?: SortDirection;
     sortType?: 'string' | 'numeric' | 'date';
     width?: string;
     minWidth?: string;

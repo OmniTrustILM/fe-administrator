@@ -8,17 +8,17 @@ import { actions as tablePaginationActions, selectors as tablePaginationSelector
 
 import NewRowWidget, { type NewRowWidgetProps } from './NewRowWidget';
 import { TableRowCell } from './TableRowCell';
-import type { TableDataRow, TableHeader } from './types';
+import type { SortDirection, TableDataRow, TableHeader } from './types';
 import Select from 'components/Select';
 import Pagination from 'components/Pagination';
 import Checkbox from 'components/Checkbox';
-import SimpleBar from 'simplebar-react';
+import SimpleBar from 'components/SimpleBar';
 import cn from 'classnames';
 import { useLocation } from 'react-router';
-import { TableProperties } from 'lucide-react';
+import { ArrowDown, ArrowDownUp, ArrowUp, TableProperties } from 'lucide-react';
 import TableSkeleton from './TableSkeleton';
 
-export type { TableDataRow, TableHeader } from './types';
+export type { SortDirection, TableDataRow, TableHeader } from './types';
 
 type Props = {
     headers: TableHeader[];
@@ -40,6 +40,12 @@ type Props = {
         itemsPerPageOptions?: number[];
     };
     onCheckedRowsChanged?: (checkedRows: (string | number)[]) => void;
+    /**
+     * Opting a table into server-driven sorting. When supplied the component stops ordering the rows it was
+     * given and only reports which column was clicked and in which direction; the caller re-fetches. When
+     * absent the table keeps sorting the loaded page locally, so every existing caller is unaffected.
+     */
+    onSortChanged?: (fieldIdentifier: string, direction: SortDirection) => void;
     onPageSizeChanged?: (pageSize: number) => void;
     onPageChanged?: (page: number) => void;
     itemsPerPageOptions?: number[];
@@ -56,6 +62,12 @@ type Props = {
 
 const emptyCheckedRows: (string | number)[] = [];
 
+const ariaSortValue = (sort: SortDirection | undefined) => {
+    if (sort === 'asc') return 'ascending';
+    if (sort === 'desc') return 'descending';
+    return 'none';
+};
+
 function CustomTable({
     headers,
     data,
@@ -69,6 +81,7 @@ function CustomTable({
     paginationData,
     checkedRows,
     onCheckedRowsChanged,
+    onSortChanged,
     onPageSizeChanged,
     onPageChanged,
     itemsPerPageOptions,
@@ -88,7 +101,8 @@ function CustomTable({
     const [totalPages, setTotalPages] = useState(1);
 
     const [sortColumn, setSortColumn] = useState<string>('');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [sortOrder, setSortOrder] = useState<SortDirection>('asc');
+    const serverSortEnabled = onSortChanged !== undefined;
 
     const [expandedRow, setExpandedRow] = useState<string | number>();
     const internalPaginationHydratedKeyRef = useRef<string | undefined>(undefined);
@@ -312,7 +326,7 @@ function CustomTable({
                       return rowStr.toLowerCase().includes(searchKey.toLowerCase());
                   })
                 : [...data];
-            const sortCol = tblHeaders ? tblHeaders.find((h) => h.sort) : undefined;
+            const sortCol = tblHeaders && !serverSortEnabled ? tblHeaders.find((h) => h.sort) : undefined;
 
             if (!tblHeaders || !sortCol) {
                 setTblCheckedRows(tblCheckedRows.filter((row) => data.find((data) => data.id === row)));
@@ -356,7 +370,7 @@ function CustomTable({
             setTblCheckedRows(tblCheckedRows.filter((row) => data.find((data) => data.id === row)));
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [data, searchKey, sortColumn, sortOrder],
+        [data, searchKey, sortColumn, sortOrder, serverSortEnabled],
     );
 
     useEffect(() => {
@@ -471,19 +485,16 @@ function CustomTable({
     );
 
     const onColumnSortClick = useCallback(
-        (e: React.MouseEvent<HTMLTableCellElement>) => {
+        (sortColumn: string) => {
             if (!tblHeaders) return;
 
-            const sortColumn = e.currentTarget.dataset.id;
-
-            const hdr = tblHeaders?.find((header) => header.id === sortColumn);
+            const hdr = tblHeaders.find((header) => header.id === sortColumn);
             if (!hdr) return;
 
-            const column = tblHeaders?.findIndex((header) => header.id === sortColumn);
-            if (column === undefined || column === -1) return;
+            const sort: SortDirection = hdr.sort === 'asc' ? 'desc' : 'asc';
 
-            const sort = hdr.sort === 'asc' ? 'desc' : 'asc';
-
+            // Only one column carries a sort: the request contract takes a single sort field, so a click on
+            // another column moves the sort rather than adding to it.
             const headers: TableHeader[] = tblHeaders.map((header) => ({
                 ...header,
                 sort: header.id === sortColumn ? sort : undefined,
@@ -494,8 +505,10 @@ function CustomTable({
             if (hasPagination) {
                 dispatch(tablePaginationActions.setSort({ key: internalPaginationStorageKey, sortColumn, sortDirection: sort }));
             }
+
+            onSortChanged?.(sortColumn, sort);
         },
-        [tblHeaders, hasPagination, internalPaginationStorageKey, dispatch],
+        [tblHeaders, hasPagination, internalPaginationStorageKey, dispatch, onSortChanged],
     );
 
     const onPageSizeChange = useCallback(
@@ -530,27 +543,31 @@ function CustomTable({
         return tblCheckedRows.length === tblData.length && tblData.length > 0;
     }, [tblData, tblCheckedRows]);
 
-    const getSortIcon = useCallback((sort: 'asc' | 'desc' | undefined) => {
+    const getSortIcon = useCallback((sort: SortDirection | undefined) => {
+        // Idle columns keep the neutral double arrow as the affordance; only the sorted column states a
+        // direction, and it does so in the brand colour so it can be found across a wide column set.
+        if (!sort) {
+            return (
+                <ArrowDownUp
+                    data-testid="sort-indicator"
+                    data-direction="none"
+                    aria-hidden="true"
+                    className="size-3.5 shrink-0"
+                    strokeWidth={2.5}
+                />
+            );
+        }
+
+        const DirectionIcon = sort === 'asc' ? ArrowUp : ArrowDown;
+
         return (
-            <div className="w-[14px]">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="lucide lucide-arrow-down-up-icon lucide-arrow-down-up"
-                >
-                    <path d="m3 16 4 4 4-4" color={sort && sort === 'desc' ? 'var(--content)' : 'currentColor'} />
-                    <path d="M7 20V4" color={sort && sort === 'desc' ? 'var(--content)' : 'currentColor'} />
-                    <path d="m21 8-4-4-4 4" color={sort && sort === 'asc' ? 'var(--content)' : 'currentColor'} />
-                    <path d="M17 4v16" color={sort && sort === 'asc' ? 'var(--content)' : 'currentColor'} />
-                </svg>
-            </div>
+            <DirectionIcon
+                data-testid="sort-indicator"
+                data-direction={sort}
+                aria-hidden="true"
+                className="size-3.5 shrink-0 text-brand"
+                strokeWidth={2.5}
+            />
         );
     }, []);
 
@@ -563,13 +580,11 @@ function CustomTable({
                 <th
                     scope="col"
                     className={cn(
-                        'p-2.5 text-start text-xs font-medium text-content-subtle uppercase bg-surface-sunken whitespace-nowrap',
-                        {
-                            'cursor-pointer': header.sortable,
-                        },
+                        'p-2.5 text-start text-xs font-medium uppercase bg-surface-sunken whitespace-nowrap',
+                        header.sort ? 'text-content' : 'text-content-subtle',
                     )}
                     data-id={header.id}
-                    {...(header.sortable ? { onClick: onColumnSortClick } : {})}
+                    {...(header.sortable ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
                     style={{
                         ...(header.width ? { width: header.width } : {}),
                         ...(header.minWidth ? { minWidth: header.minWidth } : {}),
@@ -590,11 +605,23 @@ function CustomTable({
                                 <div>&nbsp;</div>
                             );
                         const sortableContent = (
-                            <div className={cn('flex items-center gap-1', { 'justify-center': header.align === 'center' })}>
+                            <button
+                                type="button"
+                                onClick={() => onColumnSortClick(header.id)}
+                                className={cn(
+                                    'flex w-full items-center gap-1 cursor-pointer',
+                                    'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 rounded-xs',
+                                    {
+                                        'justify-center': header.align === 'center',
+                                        'justify-end': header.align === 'right',
+                                    },
+                                )}
+                            >
                                 {header.content}
-                                &nbsp;
+                                {/* An explicit space keeps the cell's text content separated from the next header's,
+                                    so text-based selectors over the header row keep matching as they did. */}{' '}
                                 {getSortIcon(header.sort)}
-                            </div>
+                            </button>
                         );
                         if (header.id === '__checkbox__') return checkboxContent;
                         if (header.sortable) return sortableContent;
