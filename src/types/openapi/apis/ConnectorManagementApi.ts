@@ -419,23 +419,23 @@ export class ConnectorManagementApi extends BaseAPI {
         { functionGroup, kind, status }: ListConnectorsRequest,
         opts?: OperationOpts,
     ): Observable<Array<ConnectorDto> | AjaxResponse<Array<ConnectorDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (functionGroup != null) {
-            query['functionGroup'] = functionGroup;
+            queryParams['functionGroup'] = functionGroup;
         }
         if (kind != null) {
-            query['kind'] = kind;
+            queryParams['kind'] = kind;
         }
         if (status != null) {
-            query['status'] = status;
+            queryParams['status'] = status;
         }
 
         return this.request<Array<ConnectorDto>>(
             {
                 url: '/v1/connectors',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

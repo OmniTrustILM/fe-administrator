@@ -402,17 +402,17 @@ export class CustomAttributesApi extends BaseAPI {
         { attributeContentType }: ListCustomAttributesRequest,
         opts?: OperationOpts,
     ): Observable<Array<CustomAttributeDefinitionDto> | AjaxResponse<Array<CustomAttributeDefinitionDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (attributeContentType != null) {
-            query['attributeContentType'] = attributeContentType;
+            queryParams['attributeContentType'] = attributeContentType;
         }
 
         return this.request<Array<CustomAttributeDefinitionDto>>(
             {
                 url: '/v1/attributes/custom',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

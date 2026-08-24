@@ -165,23 +165,23 @@ export class DiscoveryManagementApi extends BaseAPI {
     ): Observable<DiscoveryCertificateResponseDto | AjaxResponse<DiscoveryCertificateResponseDto>> {
         throwIfNullOrUndefined(uuid, 'uuid', 'getDiscoveryCertificates');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (newlyDiscovered != null) {
-            query['newlyDiscovered'] = newlyDiscovered;
+            queryParams['newlyDiscovered'] = newlyDiscovered;
         }
         if (itemsPerPage != null) {
-            query['itemsPerPage'] = itemsPerPage;
+            queryParams['itemsPerPage'] = itemsPerPage;
         }
         if (pageNumber != null) {
-            query['pageNumber'] = pageNumber;
+            queryParams['pageNumber'] = pageNumber;
         }
 
         return this.request<DiscoveryCertificateResponseDto>(
             {
                 url: '/v1/discoveries/{uuid}/certificates'.replace('{uuid}', encodeURI(uuid)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

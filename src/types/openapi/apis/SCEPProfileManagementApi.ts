@@ -328,7 +328,7 @@ export class SCEPProfileManagementApi extends BaseAPI {
     ): Observable<Array<CertificateDto> | AjaxResponse<Array<CertificateDto>>> {
         throwIfNullOrUndefined(intuneEnabled, 'intuneEnabled', 'listScepCaCertificates');
 
-        const query: HttpQuery = {
+        const queryParams: HttpQuery = {
             // required parameters are used directly since they are already checked by throwIfNullOrUndefined
             intuneEnabled: intuneEnabled,
         };
@@ -337,7 +337,7 @@ export class SCEPProfileManagementApi extends BaseAPI {
             {
                 url: '/v1/scepProfiles/caCertificates',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

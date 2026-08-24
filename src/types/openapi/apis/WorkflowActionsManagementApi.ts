@@ -200,17 +200,17 @@ export class WorkflowActionsManagementApi extends BaseAPI {
     listActions({ resource }: ListActionsRequest): Observable<Array<ActionDto>>;
     listActions({ resource }: ListActionsRequest, opts?: OperationOpts): Observable<AjaxResponse<Array<ActionDto>>>;
     listActions({ resource }: ListActionsRequest, opts?: OperationOpts): Observable<Array<ActionDto> | AjaxResponse<Array<ActionDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (resource != null) {
-            query['resource'] = resource;
+            queryParams['resource'] = resource;
         }
 
         return this.request<Array<ActionDto>>(
             {
                 url: '/v1/workflows/actions',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -225,17 +225,17 @@ export class WorkflowActionsManagementApi extends BaseAPI {
         { resource }: ListExecutionsRequest,
         opts?: OperationOpts,
     ): Observable<Array<ExecutionDto> | AjaxResponse<Array<ExecutionDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (resource != null) {
-            query['resource'] = resource;
+            queryParams['resource'] = resource;
         }
 
         return this.request<Array<ExecutionDto>>(
             {
                 url: '/v1/workflows/executions',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

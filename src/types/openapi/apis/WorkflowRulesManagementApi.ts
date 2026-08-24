@@ -200,17 +200,17 @@ export class WorkflowRulesManagementApi extends BaseAPI {
         { resource }: ListConditionsRequest,
         opts?: OperationOpts,
     ): Observable<Array<ConditionDto> | AjaxResponse<Array<ConditionDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (resource != null) {
-            query['resource'] = resource;
+            queryParams['resource'] = resource;
         }
 
         return this.request<Array<ConditionDto>>(
             {
                 url: '/v1/workflows/conditions',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -222,17 +222,17 @@ export class WorkflowRulesManagementApi extends BaseAPI {
     listRules({ resource }: ListRulesRequest): Observable<Array<RuleDto>>;
     listRules({ resource }: ListRulesRequest, opts?: OperationOpts): Observable<AjaxResponse<Array<RuleDto>>>;
     listRules({ resource }: ListRulesRequest, opts?: OperationOpts): Observable<Array<RuleDto> | AjaxResponse<Array<RuleDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (resource != null) {
-            query['resource'] = resource;
+            queryParams['resource'] = resource;
         }
 
         return this.request<Array<RuleDto>>(
             {
                 url: '/v1/workflows/rules',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

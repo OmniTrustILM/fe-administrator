@@ -124,23 +124,23 @@ export class InternalNotificationApi extends BaseAPI {
         { unread, itemsPerPage, pageNumber }: ListNotificationsRequest,
         opts?: OperationOpts,
     ): Observable<NotificationResponseDto | AjaxResponse<NotificationResponseDto>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (unread != null) {
-            query['unread'] = unread;
+            queryParams['unread'] = unread;
         }
         if (itemsPerPage != null) {
-            query['itemsPerPage'] = itemsPerPage;
+            queryParams['itemsPerPage'] = itemsPerPage;
         }
         if (pageNumber != null) {
-            query['pageNumber'] = pageNumber;
+            queryParams['pageNumber'] = pageNumber;
         }
 
         return this.request<NotificationResponseDto>(
             {
                 url: '/v1/notifications',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

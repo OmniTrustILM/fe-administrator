@@ -408,7 +408,7 @@ export class ComplianceProfileManagementV2Api extends BaseAPI {
         throwIfNullOrUndefined(connectorUuid, 'connectorUuid', 'getComplianceGroupRulesV2');
         throwIfNullOrUndefined(kind, 'kind', 'getComplianceGroupRulesV2');
 
-        const query: HttpQuery = {
+        const queryParams: HttpQuery = {
             // required parameters are used directly since they are already checked by throwIfNullOrUndefined
             connectorUuid: connectorUuid,
             kind: kind,
@@ -418,7 +418,7 @@ export class ComplianceProfileManagementV2Api extends BaseAPI {
             {
                 url: '/v2/complianceProfiles/groups/{groupUuid}/rules'.replace('{groupUuid}', encodeURI(groupUuid)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -439,21 +439,21 @@ export class ComplianceProfileManagementV2Api extends BaseAPI {
         throwIfNullOrUndefined(connectorUuid, 'connectorUuid', 'getComplianceGroupsV2');
         throwIfNullOrUndefined(kind, 'kind', 'getComplianceGroupsV2');
 
-        const query: HttpQuery = {
+        const queryParams: HttpQuery = {
             // required parameters are used directly since they are already checked by throwIfNullOrUndefined
             connectorUuid: connectorUuid,
             kind: kind,
         };
 
         if (resource != null) {
-            query['resource'] = resource;
+            queryParams['resource'] = resource;
         }
 
         return this.request<Array<ComplianceGroupListDto>>(
             {
                 url: '/v2/complianceProfiles/groups',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -498,29 +498,29 @@ export class ComplianceProfileManagementV2Api extends BaseAPI {
         { connectorUuid, kind, resource, type, format }: GetComplianceRulesV2Request,
         opts?: OperationOpts,
     ): Observable<Array<ComplianceRuleListDto> | AjaxResponse<Array<ComplianceRuleListDto>>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (connectorUuid != null) {
-            query['connectorUuid'] = connectorUuid;
+            queryParams['connectorUuid'] = connectorUuid;
         }
         if (kind != null) {
-            query['kind'] = kind;
+            queryParams['kind'] = kind;
         }
         if (resource != null) {
-            query['resource'] = resource;
+            queryParams['resource'] = resource;
         }
         if (type != null) {
-            query['type'] = type;
+            queryParams['type'] = type;
         }
         if (format != null) {
-            query['format'] = format;
+            queryParams['format'] = format;
         }
 
         return this.request<Array<ComplianceRuleListDto>>(
             {
                 url: '/v2/complianceProfiles/rules',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

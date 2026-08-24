@@ -70,9 +70,9 @@
         "test:all": "npm run test:vitest && npm run test:playwright",
         "test:cov": "npm run test:vitest:cov && npm run test:chromium",
         "prepare": "husky",
-        "generate-types": "openapi-generator-cli generate --generator-key typescript-rxjs-remote && node scripts/set-openapi-contact.mjs && biome format --write src/types/openapi",
-        "generate-types-local": "openapi-generator-cli generate --generator-key typescript-rxjs-local && node scripts/set-openapi-contact.mjs && biome format --write src/types/openapi",
-        "generate-types-utils": "openapi-generator-cli generate --generator-key typescript-rxjs-utils && biome format --write src/types/openapi/utils"
+        "generate-types": "openapi-generator-cli generate --generator-key typescript-rxjs-remote && node scripts/set-openapi-contact.mjs && node scripts/patch-openapi-runtime.mjs && biome format --write src/types/openapi",
+        "generate-types-local": "openapi-generator-cli generate --generator-key typescript-rxjs-local && node scripts/set-openapi-contact.mjs && node scripts/patch-openapi-runtime.mjs && biome format --write src/types/openapi",
+        "generate-types-utils": "openapi-generator-cli generate --generator-key typescript-rxjs-utils && node scripts/patch-openapi-runtime.mjs && biome format --write src/types/openapi/utils"
     },
     "browserslist": {
         "production": [

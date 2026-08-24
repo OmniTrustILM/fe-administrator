@@ -89,17 +89,17 @@ export class ResourceManagementApi extends BaseAPI {
     ): Observable<Array<SearchFieldDataByGroupDto> | AjaxResponse<Array<SearchFieldDataByGroupDto>>> {
         throwIfNullOrUndefined(resource, 'resource', 'listResourceRuleFilterFields');
 
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (settable != null) {
-            query['settable'] = settable;
+            queryParams['settable'] = settable;
         }
 
         return this.request<Array<SearchFieldDataByGroupDto>>(
             {
                 url: '/v1/resources/{resource}/filters/rules'.replace('{resource}', encodeURI(resource)),
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );

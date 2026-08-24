@@ -47,17 +47,17 @@ export class StatisticsDashboardApi extends BaseAPI {
         { period }: GetSigningRecordStatisticsRequest,
         opts?: OperationOpts,
     ): Observable<SigningRecordStatisticsDto | AjaxResponse<SigningRecordStatisticsDto>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (period != null) {
-            query['period'] = period;
+            queryParams['period'] = period;
         }
 
         return this.request<SigningRecordStatisticsDto>(
             {
                 url: '/v1/statistics/signingRecords',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
@@ -72,17 +72,17 @@ export class StatisticsDashboardApi extends BaseAPI {
         { includeArchived }: GetStatisticsRequest,
         opts?: OperationOpts,
     ): Observable<StatisticsDto | AjaxResponse<StatisticsDto>> {
-        const query: HttpQuery = {};
+        const queryParams: HttpQuery = {};
 
         if (includeArchived != null) {
-            query['includeArchived'] = includeArchived;
+            queryParams['includeArchived'] = includeArchived;
         }
 
         return this.request<StatisticsDto>(
             {
                 url: '/v1/statistics',
                 method: 'GET',
-                query,
+                queryParams,
             },
             opts?.responseOpts,
         );
