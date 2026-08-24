@@ -7,8 +7,21 @@ import type { BrandingSettingsModel, BrandingSettingsUpdateModel, PublicBranding
  * What an instance with no branding configured looks like. Held here rather than assembled at each call site so the
  * ENV-disabled path, the unbranded-instance path and a failed read all resolve to the same thing: a client that reads
  * `configured: false` applies the platform's own themes.
+ *
+ * Every colour and logo is spelled out as `null` because the anonymous response keeps a fixed shape: the fields are
+ * required and nullable, so that "no logo configured" and "response not understood" cannot look alike to a client
+ * reading this before it has any session. `defaultTheme` is the one field that is absent rather than null.
  */
-export const platformDefaultBranding: PublicBrandingModel = { configured: false };
+export const platformDefaultBranding: PublicBrandingModel = {
+    configured: false,
+    primaryColor: null,
+    secondaryColor: null,
+    tertiaryColor: null,
+    backgroundColor: null,
+    textColor: null,
+    lightLogo: null,
+    darkLogo: null,
+};
 
 export type State = {
     /** The operator's stored branding, read through the authenticated settings API for the Appearance tab. */

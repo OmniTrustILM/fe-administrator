@@ -1,11 +1,21 @@
 import { describe, expect, test } from 'vitest';
 import { BrandingTheme } from 'types/branding';
+import type { PublicBrandingModel } from 'types/branding';
 import reducer, { actions, initialState, platformDefaultBranding, selectors, slice, type State } from './branding';
+
+/**
+ * The anonymous response is a fixed shape — every colour and logo is a required, nullable key — so a fixture is built
+ * by overriding the platform default rather than by listing only the fields a test cares about.
+ */
+const publicBranding = (overrides: Partial<PublicBrandingModel>): PublicBrandingModel => ({
+    ...platformDefaultBranding,
+    ...overrides,
+});
 
 const populated: State = {
     ...initialState,
     branding: { primaryColor: '#0073CF', defaultTheme: BrandingTheme.Dark },
-    publicBranding: { configured: true, primaryColor: '#0073CF' },
+    publicBranding: publicBranding({ configured: true, primaryColor: '#0073CF' }),
     error: 'stale',
 };
 
@@ -45,7 +55,7 @@ describe('branding slice', () => {
 
     describe('reading the anonymous branding', () => {
         test('getPublicBrandingSuccess stores what the login page will render', () => {
-            const branding = { configured: true, darkLogo: 'data:image/svg+xml;base64,PHN2Zy8+' };
+            const branding = publicBranding({ configured: true, darkLogo: 'data:image/svg+xml;base64,PHN2Zy8+' });
 
             const state = reducer({ ...initialState, isFetchingPublicBranding: true }, actions.getPublicBrandingSuccess({ branding }));
 

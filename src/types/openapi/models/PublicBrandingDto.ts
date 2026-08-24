@@ -19,7 +19,7 @@ import type { BrandingTheme } from './';
  */
 export interface PublicBrandingDto {
     /**
-     * Whether the operator has configured branding. When false, every other field is null and a client applies the platform\'s own themes.
+     * Whether the operator has configured branding. When false, every colour and logo field is null, defaultTheme is absent, and a client applies the platform\'s own themes.
      * @type {boolean}
      * @memberof PublicBrandingDto
      */
@@ -29,45 +29,45 @@ export interface PublicBrandingDto {
      * @type {string}
      * @memberof PublicBrandingDto
      */
-    primaryColor?: string;
+    primaryColor: string | null;
     /**
      * Secondary brand color, used as an accent
      * @type {string}
      * @memberof PublicBrandingDto
      */
-    secondaryColor?: string;
+    secondaryColor: string | null;
     /**
      * Tertiary brand color, used as an additional accent
      * @type {string}
      * @memberof PublicBrandingDto
      */
-    tertiaryColor?: string;
+    tertiaryColor: string | null;
     /**
      * Page background color of the branded theme
      * @type {string}
      * @memberof PublicBrandingDto
      */
-    backgroundColor?: string;
+    backgroundColor: string | null;
     /**
      * Body text color of the branded theme
      * @type {string}
      * @memberof PublicBrandingDto
      */
-    textColor?: string;
+    textColor: string | null;
     /**
      * Logo shown by the branded light theme, as a base64 data URI
      * @type {string}
      * @memberof PublicBrandingDto
      */
-    lightLogo?: string;
+    lightLogo: string | null;
     /**
      * Logo shown by the branded dark theme, as a base64 data URI
      * @type {string}
      * @memberof PublicBrandingDto
      */
-    darkLogo?: string;
+    darkLogo: string | null;
     /**
-     * Branded theme applied when the user has expressed no preference of their own
+     * Branded theme applied when the user has expressed no preference of their own. Absent when branding is not configured.
      * @type {BrandingTheme}
      * @memberof PublicBrandingDto
      */

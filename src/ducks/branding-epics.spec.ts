@@ -1,9 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { firstValueFrom, type Observable, of, throwError } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
+import type { PublicBrandingModel } from 'types/branding';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { platformDefaultBranding, slice } from './branding';
+
+/** The anonymous response is a fixed shape, so a fixture overrides the platform default rather than listing fields. */
+const publicBranding = (overrides: Partial<PublicBrandingModel>): PublicBrandingModel => ({
+    ...platformDefaultBranding,
+    ...overrides,
+});
 
 type BrandingApiStubs = {
     getBrandingSettings: () => unknown;
@@ -81,7 +88,7 @@ describe('branding epics', () => {
         });
 
         test('getPublicBranding emits what an anonymous caller received', async () => {
-            const branding = { configured: true, primaryColor: '#0073CF' };
+            const branding = publicBranding({ configured: true, primaryColor: '#0073CF' });
             const epics = await loadEpics(true);
             const deps = createDeps({ getBranding: () => of(branding) });
 
@@ -179,13 +186,13 @@ describe('branding epics', () => {
 
         test('getPublicBranding resolves to the platform default and calls nothing', async () => {
             const epics = await loadEpics(false);
-            const getBranding = vi.fn(() => of({ configured: true }));
+            const getBranding = vi.fn(() => of(publicBranding({ configured: true })));
             const deps = createDeps({ getBranding });
 
             const emitted = await run(epics[GET_PUBLIC_BRANDING], slice.actions.getPublicBranding(), deps, 1);
 
             expect(emitted).toEqual([slice.actions.getPublicBrandingSuccess({ branding: platformDefaultBranding })]);
-            expect(emitted[0].payload.branding.configured).toBe(false);
+            expect(platformDefaultBranding.configured).toBe(false);
             expect(getBranding).not.toHaveBeenCalled();
         });
 
