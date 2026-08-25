@@ -11,6 +11,9 @@ import { platformDefaultBranding, slice } from './branding';
 
 const BRANDING_DISABLED = 'Branding is disabled for this instance.';
 
+/** The write committed and only the read-back failed, which is not the same thing as the save having failed. */
+const READ_BACK_FAILED = 'Branding was saved but could not be read back';
+
 const getBranding: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getBranding.match),
@@ -58,9 +61,21 @@ const runUpdate = (deps: EpicDependencies, branding: BrandingSettingsUpdateModel
     return deps.apiClients.settings.updateBrandingSettings({ brandingSettingsUpdateDto: branding }).pipe(
         // The write answers 204 and Core rewrites SVG logos before storing them, so the stored branding is read back
         // instead of echoing the request, which would leave the store holding markup Core deliberately removed.
-        mergeMap(() => deps.apiClients.settings.getBrandingSettings()),
-        mergeMap((stored) =>
-            of(slice.actions.updateBrandingSuccess({ branding: stored }), alertActions.success('Branding updated successfully.')),
+        mergeMap(() =>
+            deps.apiClients.settings.getBrandingSettings().pipe(
+                mergeMap((stored) =>
+                    of(slice.actions.updateBrandingSuccess({ branding: stored }), alertActions.success('Branding updated successfully.')),
+                ),
+                // Reporting this as a failed save would invite a retry that changes nothing, because the write landed.
+                // The slice is what is wrong — it still holds the pre-write branding — so a fresh read repairs it.
+                catchError((err) =>
+                    of(
+                        slice.actions.updateBrandingFailure({ error: extractError(err, READ_BACK_FAILED) }),
+                        appRedirectActions.fetchError({ error: err, message: READ_BACK_FAILED }),
+                        slice.actions.getBranding(),
+                    ),
+                ),
+            ),
         ),
         catchError((err) =>
             of(

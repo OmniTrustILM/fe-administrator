@@ -113,6 +113,24 @@ describe('branding slice', () => {
             expect(state.updateSucceeded).toBe(false);
             expect(state.error).toBe('rejected');
         });
+
+        /**
+         * The sequence a failed read-back produces: the save is never reported as having succeeded, and the repair
+         * read that follows it replaces the pre-write branding the slice was left holding.
+         */
+        test('a failed read-back is repaired by the read dispatched behind it', () => {
+            const stored = { primaryColor: '#00A3E0' };
+            const failed = reducer(
+                { ...initialState, branding: { primaryColor: '#0073CF' }, isUpdatingBranding: true },
+                actions.updateBrandingFailure({ error: 'Branding was saved but could not be read back. unreadable' }),
+            );
+            const repaired = [actions.getBranding(), actions.getBrandingSuccess({ branding: stored })].reduce(reducer, failed);
+
+            expect(repaired.branding).toEqual(stored);
+            expect(repaired.updateSucceeded).toBe(false);
+            expect(repaired.isUpdatingBranding).toBe(false);
+            expect(repaired.isFetchingBranding).toBe(false);
+        });
     });
 
     describe('resetting to default', () => {
