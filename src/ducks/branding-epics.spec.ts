@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { firstValueFrom, type Observable, of, throwError } from 'rxjs';
-import { take, toArray } from 'rxjs/operators';
+import { delay, take, toArray } from 'rxjs/operators';
 import type { PublicBrandingModel } from 'types/branding';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
@@ -47,7 +47,8 @@ async function loadEpics(brandingEnabled: boolean) {
     return (await import('./branding-epics')).default;
 }
 
-const [GET_BRANDING, GET_PUBLIC_BRANDING, UPDATE_BRANDING, RESET_BRANDING] = [0, 1, 2, 3];
+/** Saves and resets share the write epic, so both indexes point at the same pipeline. */
+const [GET_BRANDING, GET_PUBLIC_BRANDING, WRITE_BRANDING] = [0, 1, 2];
 
 /** Epics are invoked directly with stub deps rather than through the store, as the sibling epic specs do. */
 type EpicUnderTest = (action$: unknown, state$: unknown, deps: unknown) => Observable<{ type: string; payload?: never }>;
@@ -78,13 +79,16 @@ describe('branding epics', () => {
         });
 
         test('getBranding failure reports the error and redirects', async () => {
+            const err = new Error('boom');
             const epics = await loadEpics(true);
-            const deps = createDeps({ getBrandingSettings: () => throwError(() => new Error('boom')) });
+            const deps = createDeps({ getBrandingSettings: () => throwError(() => err) });
 
             const emitted = await run(epics[GET_BRANDING], slice.actions.getBranding(), deps, 2);
 
-            expect(emitted[0].type).toBe(slice.actions.getBrandingFailure.type);
-            expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+            expect(emitted).toEqual([
+                slice.actions.getBrandingFailure({ error: 'Failed to get branding. boom' }),
+                appRedirectActions.fetchError({ error: err, message: 'Failed to get branding' }),
+            ]);
         });
 
         test('getPublicBranding emits what an anonymous caller received', async () => {
@@ -97,22 +101,20 @@ describe('branding epics', () => {
             expect(emitted).toEqual([slice.actions.getPublicBrandingSuccess({ branding })]);
         });
 
-        /**
-         * No redirect on this path: it runs on the login page, where a redirect to log in is exactly where the user
-         * already is, and the reducer settles on the platform default instead.
-         */
         test('getPublicBranding failure reports the error without redirecting', async () => {
             const epics = await loadEpics(true);
             const deps = createDeps({ getBranding: () => throwError(() => new Error('offline')) });
 
             const emitted = await run(epics[GET_PUBLIC_BRANDING], slice.actions.getPublicBranding(), deps, 1);
 
-            expect(emitted[0].type).toBe(slice.actions.getPublicBrandingFailure.type);
+            expect(emitted).toEqual([slice.actions.getPublicBrandingFailure({ error: 'Failed to get branding. offline' })]);
             expect(emitted.map((action: { type: string }) => action.type)).not.toContain(appRedirectActions.fetchError.type);
         });
 
-        test('updateBranding sends the branding and confirms', async () => {
-            const branding = { primaryColor: '#00A3E0' };
+        /** Core rewrites SVG logos on the way in, so the epic has to report the stored branding, not the one it sent. */
+        test('updateBranding sends the branding and confirms with what Core stored', async () => {
+            const branding = { lightLogo: 'data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9ImFsZXJ0KDEpIi8+' };
+            const stored = { lightLogo: 'data:image/svg+xml;base64,PHN2Zy8+' };
             const sent: unknown[] = [];
             const epics = await loadEpics(true);
             const deps = createDeps({
@@ -120,23 +122,41 @@ describe('branding epics', () => {
                     sent.push(brandingSettingsUpdateDto);
                     return of(undefined);
                 },
+                getBrandingSettings: () => of(stored),
             });
 
-            const emitted = await run(epics[UPDATE_BRANDING], slice.actions.updateBranding({ branding }), deps, 2);
+            const emitted = await run(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding }), deps, 2);
 
             expect(sent).toEqual([branding]);
-            expect(emitted[0]).toEqual(slice.actions.updateBrandingSuccess({ branding }));
+            expect(emitted[0]).toEqual(slice.actions.updateBrandingSuccess({ branding: stored }));
             expect(emitted[1].type).toBe(alertActions.success.type);
         });
 
         test('updateBranding failure reports the error and redirects', async () => {
+            const err = new Error('rejected');
             const epics = await loadEpics(true);
-            const deps = createDeps({ updateBrandingSettings: () => throwError(() => new Error('rejected')) });
+            const deps = createDeps({ updateBrandingSettings: () => throwError(() => err) });
 
-            const emitted = await run(epics[UPDATE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps, 2);
+            const emitted = await run(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps, 2);
 
-            expect(emitted[0].type).toBe(slice.actions.updateBrandingFailure.type);
-            expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+            expect(emitted).toEqual([
+                slice.actions.updateBrandingFailure({ error: 'Failed to update branding. rejected' }),
+                appRedirectActions.fetchError({ error: err, message: 'Failed to update branding' }),
+            ]);
+        });
+
+        /** A failed read-back is still a failed update: the write landed, but the store must not claim a fresh value. */
+        test('updateBranding fails when the branding cannot be read back', async () => {
+            const err = new Error('unreadable');
+            const epics = await loadEpics(true);
+            const deps = createDeps({ getBrandingSettings: () => throwError(() => err) });
+
+            const emitted = await run(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps, 2);
+
+            expect(emitted).toEqual([
+                slice.actions.updateBrandingFailure({ error: 'Failed to update branding. unreadable' }),
+                appRedirectActions.fetchError({ error: err, message: 'Failed to update branding' }),
+            ]);
         });
 
         /** Reset is one empty update rather than a field-by-field clear, so the body sent has to actually be empty. */
@@ -150,7 +170,7 @@ describe('branding epics', () => {
                 },
             });
 
-            const emitted = await run(epics[RESET_BRANDING], slice.actions.resetBranding(), deps, 2);
+            const emitted = await run(epics[WRITE_BRANDING], slice.actions.resetBranding(), deps, 2);
 
             expect(sent).toEqual([{}]);
             expect(emitted[0]).toEqual(slice.actions.resetBrandingSuccess());
@@ -158,21 +178,43 @@ describe('branding epics', () => {
         });
 
         test('resetBranding failure reports the error and redirects', async () => {
+            const err = new Error('denied');
             const epics = await loadEpics(true);
-            const deps = createDeps({ updateBrandingSettings: () => throwError(() => new Error('denied')) });
+            const deps = createDeps({ updateBrandingSettings: () => throwError(() => err) });
 
-            const emitted = await run(epics[RESET_BRANDING], slice.actions.resetBranding(), deps, 2);
+            const emitted = await run(epics[WRITE_BRANDING], slice.actions.resetBranding(), deps, 2);
 
-            expect(emitted[0].type).toBe(slice.actions.resetBrandingFailure.type);
-            expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+            expect(emitted).toEqual([
+                slice.actions.resetBrandingFailure({ error: 'Failed to reset branding. denied' }),
+                appRedirectActions.fetchError({ error: err, message: 'Failed to reset branding' }),
+            ]);
+        });
+
+        /** The point of the shared write epic: a save and a reset dispatched together settle in the order they were sent. */
+        test('a save and a reset settle in dispatch order even when the save is slower', async () => {
+            const epics = await loadEpics(true);
+            const deps = createDeps({
+                updateBrandingSettings: ({ brandingSettingsUpdateDto }) =>
+                    Object.keys(brandingSettingsUpdateDto as object).length === 0 ? of(undefined) : of(undefined).pipe(delay(10)),
+            });
+
+            const output$ = (epics[WRITE_BRANDING] as EpicUnderTest)(
+                of(slice.actions.updateBranding({ branding: { primaryColor: '#00A3E0' } }), slice.actions.resetBranding()),
+                of({}),
+                deps,
+            );
+            const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
+
+            expect(emitted.map((action: { type: string }) => action.type)).toEqual([
+                slice.actions.updateBrandingSuccess.type,
+                alertActions.success.type,
+                slice.actions.resetBrandingSuccess.type,
+                alertActions.success.type,
+            ]);
         });
     });
 
     describe('with branding disabled by ENV', () => {
-        /**
-         * The flag is what keeps this deployable against a Core that predates branding, so "no request" is the
-         * assertion that matters — resolving to defaults without one is the whole contract.
-         */
         test('getBranding resolves to empty branding and calls nothing', async () => {
             const epics = await loadEpics(false);
             const getBrandingSettings = vi.fn(() => of({ primaryColor: '#0073CF' }));
@@ -201,9 +243,9 @@ describe('branding epics', () => {
             const updateBrandingSettings = vi.fn(() => of(undefined));
             const deps = createDeps({ updateBrandingSettings });
 
-            const emitted = await run(epics[UPDATE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps, 1);
+            const emitted = await run(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps, 1);
 
-            expect(emitted[0].type).toBe(slice.actions.updateBrandingFailure.type);
+            expect(emitted).toEqual([slice.actions.updateBrandingFailure({ error: 'Branding is disabled for this instance.' })]);
             expect(updateBrandingSettings).not.toHaveBeenCalled();
         });
 
@@ -212,9 +254,9 @@ describe('branding epics', () => {
             const updateBrandingSettings = vi.fn(() => of(undefined));
             const deps = createDeps({ updateBrandingSettings });
 
-            const emitted = await run(epics[RESET_BRANDING], slice.actions.resetBranding(), deps, 1);
+            const emitted = await run(epics[WRITE_BRANDING], slice.actions.resetBranding(), deps, 1);
 
-            expect(emitted[0].type).toBe(slice.actions.resetBrandingFailure.type);
+            expect(emitted).toEqual([slice.actions.resetBrandingFailure({ error: 'Branding is disabled for this instance.' })]);
             expect(updateBrandingSettings).not.toHaveBeenCalled();
         });
     });

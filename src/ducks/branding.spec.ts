@@ -63,10 +63,6 @@ describe('branding slice', () => {
             expect(state.isFetchingPublicBranding).toBe(false);
         });
 
-        /**
-         * The login page renders whatever this settles on, and it renders before there is anyone to show an error to,
-         * so a failure has to leave a usable value rather than nothing.
-         */
         test('getPublicBrandingFailure still settles on the platform default', () => {
             const state = reducer(
                 { ...initialState, isFetchingPublicBranding: true },
@@ -94,7 +90,7 @@ describe('branding slice', () => {
             expect(state.updateSucceeded).toBe(false);
         });
 
-        test('updateBrandingSuccess replaces the stored branding with what was saved', () => {
+        test('updateBrandingSuccess replaces the stored branding with what the server read back', () => {
             const branding = { primaryColor: '#00A3E0' };
 
             const state = reducer(

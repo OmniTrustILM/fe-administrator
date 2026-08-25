@@ -1,6 +1,8 @@
-import type { AppEpic } from 'ducks';
-import { of } from 'rxjs';
-import { catchError, filter, mergeMap, switchMap } from 'rxjs/operators';
+import type { AppEpic, EpicDependencies } from 'ducks';
+import { type Observable, of } from 'rxjs';
+import { catchError, concatMap, filter, mergeMap, switchMap } from 'rxjs/operators';
+import type { UnknownAction } from 'redux';
+import type { BrandingSettingsUpdateModel } from 'types/branding';
 import { featureFlags } from 'utils/feature-flags';
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
@@ -32,10 +34,6 @@ const getBranding: AppEpic = (action$, state$, deps) => {
     );
 };
 
-/**
- * The anonymous read. Dispatched without a session, so a failure resolves to the platform default rather than
- * redirecting: this runs on the login page, where there is nowhere to redirect to and nobody to tell.
- */
 const getPublicBranding: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getPublicBranding.match),
@@ -52,54 +50,58 @@ const getPublicBranding: AppEpic = (action$, state$, deps) => {
     );
 };
 
-const updateBranding: AppEpic = (action$, state$, deps) => {
-    return action$.pipe(
-        filter(slice.actions.updateBranding.match),
-        mergeMap((action) => {
-            if (!featureFlags.isBrandingEnabled) {
-                return of(slice.actions.updateBrandingFailure({ error: BRANDING_DISABLED }));
-            }
+const runUpdate = (deps: EpicDependencies, branding: BrandingSettingsUpdateModel): Observable<UnknownAction> => {
+    if (!featureFlags.isBrandingEnabled) {
+        return of(slice.actions.updateBrandingFailure({ error: BRANDING_DISABLED }));
+    }
 
-            return deps.apiClients.settings.updateBrandingSettings({ brandingSettingsUpdateDto: action.payload.branding }).pipe(
-                mergeMap(() =>
-                    of(
-                        slice.actions.updateBrandingSuccess({ branding: action.payload.branding }),
-                        alertActions.success('Branding updated successfully.'),
-                    ),
-                ),
-                catchError((err) =>
-                    of(
-                        slice.actions.updateBrandingFailure({ error: extractError(err, 'Failed to update branding') }),
-                        appRedirectActions.fetchError({ error: err, message: 'Failed to update branding' }),
-                    ),
-                ),
-            );
-        }),
+    return deps.apiClients.settings.updateBrandingSettings({ brandingSettingsUpdateDto: branding }).pipe(
+        // The write answers 204 and Core rewrites SVG logos before storing them, so the stored branding is read back
+        // instead of echoing the request, which would leave the store holding markup Core deliberately removed.
+        mergeMap(() => deps.apiClients.settings.getBrandingSettings()),
+        mergeMap((stored) =>
+            of(slice.actions.updateBrandingSuccess({ branding: stored }), alertActions.success('Branding updated successfully.')),
+        ),
+        catchError((err) =>
+            of(
+                slice.actions.updateBrandingFailure({ error: extractError(err, 'Failed to update branding') }),
+                appRedirectActions.fetchError({ error: err, message: 'Failed to update branding' }),
+            ),
+        ),
     );
 };
 
-const resetBranding: AppEpic = (action$, state$, deps) => {
-    return action$.pipe(
-        filter(slice.actions.resetBranding.match),
-        mergeMap(() => {
-            if (!featureFlags.isBrandingEnabled) {
-                return of(slice.actions.resetBrandingFailure({ error: BRANDING_DISABLED }));
-            }
+const runReset = (deps: EpicDependencies): Observable<UnknownAction> => {
+    if (!featureFlags.isBrandingEnabled) {
+        return of(slice.actions.resetBrandingFailure({ error: BRANDING_DISABLED }));
+    }
 
-            // An empty update clears every field, which is what makes reset one request rather than one per field.
-            return deps.apiClients.settings.updateBrandingSettings({ brandingSettingsUpdateDto: {} }).pipe(
-                mergeMap(() => of(slice.actions.resetBrandingSuccess(), alertActions.success('Branding reset to default.'))),
-                catchError((err) =>
-                    of(
-                        slice.actions.resetBrandingFailure({ error: extractError(err, 'Failed to reset branding') }),
-                        appRedirectActions.fetchError({ error: err, message: 'Failed to reset branding' }),
-                    ),
-                ),
-            );
-        }),
+    // An empty update clears every field, which is what makes reset one request rather than one per field. Nothing is
+    // left stored afterwards, so there is no read-back: the reducer settles on an empty branding.
+    return deps.apiClients.settings.updateBrandingSettings({ brandingSettingsUpdateDto: {} }).pipe(
+        mergeMap(() => of(slice.actions.resetBrandingSuccess(), alertActions.success('Branding reset to default.'))),
+        catchError((err) =>
+            of(
+                slice.actions.resetBrandingFailure({ error: extractError(err, 'Failed to reset branding') }),
+                appRedirectActions.fetchError({ error: err, message: 'Failed to reset branding' }),
+            ),
+        ),
     );
 };
 
-const epics = [getBranding, getPublicBranding, updateBranding, resetBranding];
+const isBrandingWrite = (action: UnknownAction) => slice.actions.updateBranding.match(action) || slice.actions.resetBranding.match(action);
+
+/**
+ * Saves and resets share one pipeline so that concurrent writes commit in dispatch order: run separately and
+ * concurrently, a save and a reset could reach Core in one order and settle the store in the other.
+ */
+const writeBranding: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(isBrandingWrite),
+        concatMap((action) => (slice.actions.resetBranding.match(action) ? runReset(deps) : runUpdate(deps, action.payload.branding))),
+    );
+};
+
+const epics = [getBranding, getPublicBranding, writeBranding];
 
 export default epics;

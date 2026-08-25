@@ -105,29 +105,32 @@ describe('feature-flags', () => {
     });
 
     // -------------------------------------------------------------------------
-    // Both flags together (realistic deployment scenarios)
+    // Flags together (realistic deployment scenarios)
     // -------------------------------------------------------------------------
 
     describe('combined flags', () => {
-        test('both flags are true when both env variables are true', async () => {
-            vi.stubGlobal('__ENV__', { ENABLE_PROXIES: true, ENABLE_TRUSTED_CERTIFICATES: true });
+        test('every flag is true when every env variable is true', async () => {
+            vi.stubGlobal('__ENV__', { ENABLE_PROXIES: true, ENABLE_TRUSTED_CERTIFICATES: true, ENABLE_BRANDING: true });
             const { featureFlags } = await import('./feature-flags');
             expect(featureFlags.isProxiesEnabled).toBe(true);
             expect(featureFlags.isTrustedCertificatesEnabled).toBe(true);
+            expect(featureFlags.isBrandingEnabled).toBe(true);
         });
 
-        test('flags are independent — one true, one false', async () => {
-            vi.stubGlobal('__ENV__', { ENABLE_PROXIES: true, ENABLE_TRUSTED_CERTIFICATES: false });
+        test('flags are independent — one true, the others false', async () => {
+            vi.stubGlobal('__ENV__', { ENABLE_PROXIES: true, ENABLE_TRUSTED_CERTIFICATES: false, ENABLE_BRANDING: false });
             const { featureFlags } = await import('./feature-flags');
             expect(featureFlags.isProxiesEnabled).toBe(true);
             expect(featureFlags.isTrustedCertificatesEnabled).toBe(false);
+            expect(featureFlags.isBrandingEnabled).toBe(false);
         });
 
-        test('both flags are false when env is empty', async () => {
+        test('every flag is false when env is empty', async () => {
             vi.stubGlobal('__ENV__', {});
             const { featureFlags } = await import('./feature-flags');
             expect(featureFlags.isProxiesEnabled).toBe(false);
             expect(featureFlags.isTrustedCertificatesEnabled).toBe(false);
+            expect(featureFlags.isBrandingEnabled).toBe(false);
         });
     });
 });

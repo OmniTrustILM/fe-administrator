@@ -4,13 +4,8 @@ import { resetSliceState } from 'ducks/reducerUtils';
 import type { BrandingSettingsModel, BrandingSettingsUpdateModel, PublicBrandingModel } from 'types/branding';
 
 /**
- * What an instance with no branding configured looks like. Held here rather than assembled at each call site so the
- * ENV-disabled path, the unbranded-instance path and a failed read all resolve to the same thing: a client that reads
- * `configured: false` applies the platform's own themes.
- *
- * Every colour and logo is spelled out as `null` because the anonymous response keeps a fixed shape: the fields are
- * required and nullable, so that "no logo configured" and "response not understood" cannot look alike to a client
- * reading this before it has any session. `defaultTheme` is the one field that is absent rather than null.
+ * What an instance with no branding configured looks like. Every colour and logo is explicitly `null` because the
+ * anonymous response has a fixed shape; `defaultTheme` is absent rather than null.
  */
 export const platformDefaultBranding: PublicBrandingModel = {
     configured: false,
@@ -101,12 +96,8 @@ export const slice = createSlice({
             state.error = undefined;
         },
 
-        /**
-         * The write answers 204, so the branding that was sent is the branding that is now stored: the request carries
-         * the full desired state, and a field left out of it has been cleared. The payload is therefore the update
-         * model the epic sent rather than a response it never received.
-         */
-        updateBrandingSuccess: (state, action: PayloadAction<{ branding: BrandingSettingsUpdateModel }>) => {
+        /** Carries the branding read back after the write, not the branding that was sent: Core rewrites SVG logos. */
+        updateBrandingSuccess: (state, action: PayloadAction<{ branding: BrandingSettingsModel }>) => {
             state.branding = action.payload.branding;
             state.isUpdatingBranding = false;
             state.updateSucceeded = true;
