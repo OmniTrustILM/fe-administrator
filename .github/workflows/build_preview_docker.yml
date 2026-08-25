@@ -9,15 +9,13 @@ on:
       head_branch: { description: "Fork branch", required: true }
       base_ref:    { description: "Base branch", required: true }
 
-# What appears in the Actions list
 run-name: >-
   Docker Preview • PR #${{ inputs.pr_number }}
   • ${{ inputs.head_repo }}@${{ inputs.head_branch }} → ${{ inputs.base_ref }}
   • ${{ inputs.head_sha }}
 
-# Superseding an earlier run cancels it. finalize_check still reports, because
-# always() also covers cancellation, so the stale commit's check is closed as
-# cancelled rather than left at in_progress.
+# Superseding an earlier run cancels it, and finalize_check closes the stale
+# commit's check as cancelled rather than leaving it at in_progress.
 concurrency:
   group: preview-pr-${{ inputs.pr_number }}-docker
   cancel-in-progress: true
@@ -89,7 +87,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [create_check, build]
     permissions: {}
-    if: ${{ always() && needs.create_check.result == 'success' }}
+    # Keyed on the check id rather than on create_check's conclusion, which reads
+    # 'cancelled' or 'failure' in exactly the cases where a created check still
+    # needs closing. The id is recorded a round trip after the check exists, so a
+    # run cancelled inside that window strands its check on the superseded commit.
+    # The current commit always gets a fresh check either way.
+    if: ${{ always() && needs.create_check.outputs.check_id != '' }}
     steps:
       - name: Generate token
         id: app_token
@@ -102,13 +105,26 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           CHECK_ID: ${{ needs.create_check.outputs.check_id }}
+          CREATE_RESULT: ${{ needs.create_check.result }}
           BUILD_RESULT: ${{ needs.build.result }}
         with:
           github-token: ${{ steps.app_token.outputs.token }}
           script: |
-            const result = process.env.BUILD_RESULT;
-            const conclusion =
-              result === "success" ? "success" : result === "cancelled" ? "cancelled" : "failure";
+            const build = process.env.BUILD_RESULT;
+            const create = process.env.CREATE_RESULT;
+
+            // The build is skipped whenever create_check did not succeed, so the
+            // check reports that job's outcome instead. create_check can fail
+            // after emitting the check id, because the token action revokes the
+            // token in a post step.
+            let conclusion;
+            if (build === "success") {
+              conclusion = "success";
+            } else if (build === "cancelled" || create === "cancelled") {
+              conclusion = "cancelled";
+            } else {
+              conclusion = "failure";
+            }
 
             await github.rest.checks.update({
               owner: context.repo.owner,
