@@ -6,6 +6,7 @@ apis/ApprovalProfileInventoryApi.ts
 apis/AuditLogApi.ts
 apis/AuthenticationManagementApi.ts
 apis/AuthorityManagementApi.ts
+apis/BrandingApi.ts
 apis/CBOMManagementApi.ts
 apis/CMPProfileManagementApi.ts
 apis/CallbackApi.ts
@@ -130,6 +131,9 @@ models/BaseAttributeDtoV3.ts
 models/BasicAuthSecretContent.ts
 models/BooleanAttributeContentV2.ts
 models/BooleanAttributeContentV3.ts
+models/BrandingSettingsDto.ts
+models/BrandingSettingsUpdateDto.ts
+models/BrandingTheme.ts
 models/BuildInfoDto.ts
 models/BulkActionMessageDto.ts
 models/BulkCompromiseKeyItemRequestDto.ts
@@ -462,6 +466,7 @@ models/ProxyListDto.ts
 models/ProxyRequestDto.ts
 models/ProxyStatus.ts
 models/ProxyUpdateRequestDto.ts
+models/PublicBrandingDto.ts
 models/PushToLocationRequestDto.ts
 models/QcType.ts
 models/RaProfileAcmeDetailResponseDto.ts

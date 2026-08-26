@@ -6,6 +6,7 @@ import {
     AuditLogApi,
     AuthenticationManagementApi,
     AuthorityManagementApi,
+    BrandingApi,
     CBOMManagementApi,
     CMPProfileManagementApi,
     CallbackApi,
@@ -106,6 +107,7 @@ export interface ApiClients {
     customAttributes: CustomAttributesApi;
     globalMetadata: GlobalMetadataApi;
     settings: SettingsApi;
+    branding: BrandingApi;
     scheduler: ScheduledJobsManagementApi;
     approvalProfiles: ApprovalProfileInventoryApi;
     approvals: ApprovalInventoryApi;
@@ -172,6 +174,7 @@ const factories: Partial<{ [K in ApiClientKey]: () => ApiClients[K] }> = {
     customAttributes: () => new CustomAttributesApi(configuration),
     globalMetadata: () => new GlobalMetadataApi(configuration),
     settings: () => new SettingsApi(configuration),
+    branding: () => new BrandingApi(configuration),
     scheduler: () => new ScheduledJobsManagementApi(configuration),
     approvalProfiles: () => new ApprovalProfileInventoryApi(configuration),
     approvals: () => new ApprovalInventoryApi(configuration),
