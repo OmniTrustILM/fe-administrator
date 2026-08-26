@@ -75,62 +75,29 @@ describe('feature-flags', () => {
     });
 
     // -------------------------------------------------------------------------
-    // isBrandingEnabled
-    // -------------------------------------------------------------------------
-
-    describe('isBrandingEnabled', () => {
-        test('is true when ENABLE_BRANDING is explicitly true', async () => {
-            vi.stubGlobal('__ENV__', { ENABLE_BRANDING: true });
-            const { featureFlags } = await import('./feature-flags');
-            expect(featureFlags.isBrandingEnabled).toBe(true);
-        });
-
-        test('is false when ENABLE_BRANDING is explicitly false', async () => {
-            vi.stubGlobal('__ENV__', { ENABLE_BRANDING: false });
-            const { featureFlags } = await import('./feature-flags');
-            expect(featureFlags.isBrandingEnabled).toBe(false);
-        });
-
-        test('is false when ENABLE_BRANDING is absent (opt-in semantics)', async () => {
-            vi.stubGlobal('__ENV__', {});
-            const { featureFlags } = await import('./feature-flags');
-            expect(featureFlags.isBrandingEnabled).toBe(false);
-        });
-
-        test('is false when __ENV__ is undefined entirely', async () => {
-            vi.stubGlobal('__ENV__', undefined);
-            const { featureFlags } = await import('./feature-flags');
-            expect(featureFlags.isBrandingEnabled).toBe(false);
-        });
-    });
-
-    // -------------------------------------------------------------------------
-    // Flags together (realistic deployment scenarios)
+    // Both flags together (realistic deployment scenarios)
     // -------------------------------------------------------------------------
 
     describe('combined flags', () => {
-        test('every flag is true when every env variable is true', async () => {
-            vi.stubGlobal('__ENV__', { ENABLE_PROXIES: true, ENABLE_TRUSTED_CERTIFICATES: true, ENABLE_BRANDING: true });
+        test('both flags are true when both env variables are true', async () => {
+            vi.stubGlobal('__ENV__', { ENABLE_PROXIES: true, ENABLE_TRUSTED_CERTIFICATES: true });
             const { featureFlags } = await import('./feature-flags');
             expect(featureFlags.isProxiesEnabled).toBe(true);
             expect(featureFlags.isTrustedCertificatesEnabled).toBe(true);
-            expect(featureFlags.isBrandingEnabled).toBe(true);
         });
 
-        test('flags are independent — one true, the others false', async () => {
-            vi.stubGlobal('__ENV__', { ENABLE_PROXIES: true, ENABLE_TRUSTED_CERTIFICATES: false, ENABLE_BRANDING: false });
+        test('flags are independent — one true, the other false', async () => {
+            vi.stubGlobal('__ENV__', { ENABLE_PROXIES: true, ENABLE_TRUSTED_CERTIFICATES: false });
             const { featureFlags } = await import('./feature-flags');
             expect(featureFlags.isProxiesEnabled).toBe(true);
             expect(featureFlags.isTrustedCertificatesEnabled).toBe(false);
-            expect(featureFlags.isBrandingEnabled).toBe(false);
         });
 
-        test('every flag is false when env is empty', async () => {
+        test('both flags are false when env is empty', async () => {
             vi.stubGlobal('__ENV__', {});
             const { featureFlags } = await import('./feature-flags');
             expect(featureFlags.isProxiesEnabled).toBe(false);
             expect(featureFlags.isTrustedCertificatesEnabled).toBe(false);
-            expect(featureFlags.isBrandingEnabled).toBe(false);
         });
     });
 });

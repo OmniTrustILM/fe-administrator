@@ -1,64 +1,62 @@
 import type { AppEpic, EpicDependencies } from 'ducks';
 import { type Observable, of } from 'rxjs';
+import { AjaxError } from 'rxjs/ajax';
 import { catchError, concatMap, filter, mergeMap, switchMap } from 'rxjs/operators';
 import type { UnknownAction } from 'redux';
 import type { BrandingSettingsUpdateModel } from 'types/branding';
-import { featureFlags } from 'utils/feature-flags';
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { platformDefaultBranding, slice } from './branding';
 
-const BRANDING_DISABLED = 'Branding is disabled for this instance.';
-
 /** The write committed and only the read-back failed, which is not the same thing as the save having failed. */
 const READ_BACK_FAILED = 'Branding was saved but could not be read back';
+
+/**
+ * A Core that predates branding does not serve these endpoints at all. That is indistinguishable from an instance that
+ * has simply never been branded, and neither is something an operator can act on, so both settle on the default rather
+ * than surfacing an error. Only reads are treated this way: a *write* against a Core without branding is a real failure.
+ */
+const isBrandingAbsent = (err: unknown) => err instanceof AjaxError && err.status === 404;
 
 const getBranding: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getBranding.match),
         // switchMap, as the sibling settings epics do: a superseded read must not land after the one that replaced it.
-        switchMap(() => {
-            // Nothing to read when the feature is off, and asking would 404 on a deployment that predates it.
-            if (!featureFlags.isBrandingEnabled) {
-                return of(slice.actions.getBrandingSuccess({ branding: {} }));
-            }
-
-            return deps.apiClients.settings.getBrandingSettings().pipe(
+        switchMap(() =>
+            deps.apiClients.settings.getBrandingSettings().pipe(
                 mergeMap((branding) => of(slice.actions.getBrandingSuccess({ branding }))),
                 catchError((err) =>
-                    of(
-                        slice.actions.getBrandingFailure({ error: extractError(err, 'Failed to get branding') }),
-                        appRedirectActions.fetchError({ error: err, message: 'Failed to get branding' }),
-                    ),
+                    isBrandingAbsent(err)
+                        ? of(slice.actions.getBrandingSuccess({ branding: {} }))
+                        : of(
+                              slice.actions.getBrandingFailure({ error: extractError(err, 'Failed to get branding') }),
+                              appRedirectActions.fetchError({ error: err, message: 'Failed to get branding' }),
+                          ),
                 ),
-            );
-        }),
+            ),
+        ),
     );
 };
 
 const getPublicBranding: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getPublicBranding.match),
-        switchMap(() => {
-            if (!featureFlags.isBrandingEnabled) {
-                return of(slice.actions.getPublicBrandingSuccess({ branding: platformDefaultBranding }));
-            }
-
-            return deps.apiClients.branding.getBranding().pipe(
+        switchMap(() =>
+            deps.apiClients.branding.getBranding().pipe(
                 mergeMap((branding) => of(slice.actions.getPublicBrandingSuccess({ branding }))),
-                catchError((err) => of(slice.actions.getPublicBrandingFailure({ error: extractError(err, 'Failed to get branding') }))),
-            );
-        }),
+                catchError((err) =>
+                    isBrandingAbsent(err)
+                        ? of(slice.actions.getPublicBrandingSuccess({ branding: platformDefaultBranding }))
+                        : of(slice.actions.getPublicBrandingFailure({ error: extractError(err, 'Failed to get branding') })),
+                ),
+            ),
+        ),
     );
 };
 
-const runUpdate = (deps: EpicDependencies, branding: BrandingSettingsUpdateModel): Observable<UnknownAction> => {
-    if (!featureFlags.isBrandingEnabled) {
-        return of(slice.actions.updateBrandingFailure({ error: BRANDING_DISABLED }));
-    }
-
-    return deps.apiClients.settings.updateBrandingSettings({ brandingSettingsUpdateDto: branding }).pipe(
+const runUpdate = (deps: EpicDependencies, branding: BrandingSettingsUpdateModel): Observable<UnknownAction> =>
+    deps.apiClients.settings.updateBrandingSettings({ brandingSettingsUpdateDto: branding }).pipe(
         // The write answers 204 and Core rewrites SVG logos before storing them, so the stored branding is read back
         // instead of echoing the request, which would leave the store holding markup Core deliberately removed.
         mergeMap(() =>
@@ -84,16 +82,11 @@ const runUpdate = (deps: EpicDependencies, branding: BrandingSettingsUpdateModel
             ),
         ),
     );
-};
 
-const runReset = (deps: EpicDependencies): Observable<UnknownAction> => {
-    if (!featureFlags.isBrandingEnabled) {
-        return of(slice.actions.resetBrandingFailure({ error: BRANDING_DISABLED }));
-    }
-
+const runReset = (deps: EpicDependencies): Observable<UnknownAction> =>
     // An empty update clears every field, which is what makes reset one request rather than one per field. Nothing is
     // left stored afterwards, so there is no read-back: the reducer settles on an empty branding.
-    return deps.apiClients.settings.updateBrandingSettings({ brandingSettingsUpdateDto: {} }).pipe(
+    deps.apiClients.settings.updateBrandingSettings({ brandingSettingsUpdateDto: {} }).pipe(
         mergeMap(() => of(slice.actions.resetBrandingSuccess(), alertActions.success('Branding reset to default.'))),
         catchError((err) =>
             of(
@@ -102,7 +95,6 @@ const runReset = (deps: EpicDependencies): Observable<UnknownAction> => {
             ),
         ),
     );
-};
 
 const isBrandingWrite = (action: UnknownAction) => slice.actions.updateBranding.match(action) || slice.actions.resetBranding.match(action);
 

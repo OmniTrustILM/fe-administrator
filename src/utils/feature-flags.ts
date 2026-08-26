@@ -13,7 +13,4 @@ export const featureFlags = {
 
     /** When `false`, all trusted-certificate-related UI is hidden. */
     isTrustedCertificatesEnabled: env?.ENABLE_TRUSTED_CERTIFICATES === true,
-
-    /** When `false`, the platform renders its own identity and the branding duck resolves to defaults without a request. */
-    isBrandingEnabled: env?.ENABLE_BRANDING === true,
 } as const;
