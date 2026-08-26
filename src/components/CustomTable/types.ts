@@ -5,6 +5,12 @@ export type SortDirection = 'asc' | 'desc';
 export interface TableHeader {
     id: string;
     content: string | React.ReactNode;
+    /**
+     * Auxiliary content rendered beside the heading and outside the sort button — a legend toggletip,
+     * for example. A sortable heading is a `<button>`, so an interactive control belongs here rather
+     * than in `content`, where it would nest one interactive element inside another.
+     */
+    info?: React.ReactNode;
     align?: 'left' | 'center' | 'right';
     sortable?: boolean;
     sort?: SortDirection;

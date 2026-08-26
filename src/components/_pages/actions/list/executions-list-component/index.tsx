@@ -65,12 +65,8 @@ const ExecutionsList = () => {
                 sortable: true,
             },
             {
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Type
-                        <EnumColumnDescription platformEnum={PlatformEnum.ExecutionType} title="Type" />
-                    </span>
-                ),
+                content: 'Type',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.ExecutionType} title="Type" />,
                 align: 'left',
                 id: 'type',
                 width: '25%',

@@ -82,12 +82,8 @@ function SchedulerJobsList() {
                 width: '60%',
             },
             {
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Last Execution Status
-                        <EnumColumnDescription platformEnum={PlatformEnum.SchedulerJobExecutionStatus} title="Last Execution Status" />
-                    </span>
-                ),
+                content: 'Last Execution Status',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.SchedulerJobExecutionStatus} title="Last Execution Status" />,
                 sortable: true,
                 sort: 'asc',
                 id: 'status',

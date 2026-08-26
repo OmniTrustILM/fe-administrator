@@ -73,23 +73,15 @@ export default function SecretsList() {
             },
             {
                 id: 'type',
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Type
-                        <EnumColumnDescription platformEnum={PlatformEnum.SecretType} title="Type" />
-                    </span>
-                ),
+                content: 'Type',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.SecretType} title="Type" />,
                 width: '10%',
                 sortable: true,
             },
             {
                 id: 'state',
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        State
-                        <EnumColumnDescription platformEnum={PlatformEnum.SecretState} title="State" />
-                    </span>
-                ),
+                content: 'State',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.SecretState} title="State" />,
                 width: '10%',
                 align: 'center',
                 sortable: true,

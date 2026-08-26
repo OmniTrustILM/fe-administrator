@@ -83,12 +83,8 @@ const NotificationProfilesList = () => {
             },
             {
                 id: 'recipientType',
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Recipient Type
-                        <EnumColumnDescription platformEnum={PlatformEnum.RecipientType} title="Recipient Type" />
-                    </span>
-                ),
+                content: 'Recipient Type',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.RecipientType} title="Recipient Type" />,
                 sortable: true,
                 align: 'center',
             },
