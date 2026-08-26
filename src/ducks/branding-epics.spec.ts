@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { firstValueFrom, type Observable, of, throwError } from 'rxjs';
+import { firstValueFrom, lastValueFrom, type Observable, of, throwError } from 'rxjs';
 import { delay, take, toArray } from 'rxjs/operators';
 import type { PublicBrandingModel } from 'types/branding';
 import { actions as alertActions } from './alerts';
@@ -56,6 +56,11 @@ type EpicUnderTest = (action$: unknown, state$: unknown, deps: unknown) => Obser
 async function run(epic: EpicUnderTest, action: unknown, deps: unknown, expected: number) {
     const output$ = epic(of(action), of({}), deps);
     return firstValueFrom(output$.pipe(take(expected), toArray()));
+}
+
+/** Collects the whole emission, so a test asserting a failure path also asserts that nothing follows it. */
+async function runAll(epic: EpicUnderTest, action: unknown, deps: unknown) {
+    return lastValueFrom(epic(of(action), of({}), deps).pipe(toArray()));
 }
 
 describe('branding epics', () => {
@@ -137,7 +142,7 @@ describe('branding epics', () => {
             const epics = await loadEpics(true);
             const deps = createDeps({ updateBrandingSettings: () => throwError(() => err) });
 
-            const emitted = await run(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps, 2);
+            const emitted = await runAll(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps);
 
             expect(emitted).toEqual([
                 slice.actions.updateBrandingFailure({ error: 'Failed to update branding. rejected' }),
@@ -145,17 +150,21 @@ describe('branding epics', () => {
             ]);
         });
 
-        /** A failed read-back is still a failed update: the write landed, but the store must not claim a fresh value. */
-        test('updateBranding fails when the branding cannot be read back', async () => {
+        /**
+         * The write landed and only the read-back failed, so the save must not be reported as the thing that went
+         * wrong. What is actually wrong is the slice, which still holds the pre-write branding, so a read repairs it.
+         */
+        test('updateBranding reports a failed read-back apart from a failed save', async () => {
             const err = new Error('unreadable');
             const epics = await loadEpics(true);
             const deps = createDeps({ getBrandingSettings: () => throwError(() => err) });
 
-            const emitted = await run(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps, 2);
+            const emitted = await runAll(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps);
 
             expect(emitted).toEqual([
-                slice.actions.updateBrandingFailure({ error: 'Failed to update branding. unreadable' }),
-                appRedirectActions.fetchError({ error: err, message: 'Failed to update branding' }),
+                slice.actions.updateBrandingFailure({ error: 'Branding was saved but could not be read back. unreadable' }),
+                appRedirectActions.fetchError({ error: err, message: 'Branding was saved but could not be read back' }),
+                slice.actions.getBranding(),
             ]);
         });
 
