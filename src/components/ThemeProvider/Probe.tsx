@@ -1,18 +1,19 @@
 import { useTheme } from './index';
+import { THEME_MODES } from 'utils/theme';
 
 export default function Probe() {
-    const { mode, resolvedTheme, setMode, cycleMode } = useTheme();
+    const { mode, resolvedTheme, setMode, modes } = useTheme();
 
     return (
         <div>
             <span data-testid="mode">{mode}</span>
             <span data-testid="resolved">{resolvedTheme}</span>
-            <button type="button" data-testid="cycle" onClick={cycleMode}>
-                cycle
-            </button>
-            <button type="button" data-testid="set-dark" onClick={() => setMode('dark')}>
-                dark
-            </button>
+            <span data-testid="modes">{modes.join(',')}</span>
+            {THEME_MODES.map((option) => (
+                <button key={option} type="button" data-testid={`set-${option}`} onClick={() => setMode(option)}>
+                    {option}
+                </button>
+            ))}
         </div>
     );
 }
