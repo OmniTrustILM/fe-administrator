@@ -69,8 +69,10 @@ export function getColumnHeading(column: ColumnDefinition): string {
 /**
  * A stable key for a column. A field identifier is unique only within its source, so the source has
  * to qualify it — `property:name` and `custom:name` are different columns.
+ *
+ * Takes only the two fields it needs, so a catalogue field keys the same way a column does.
  */
-export function getColumnKey(column: ColumnDefinition): string {
+export function getColumnKey(column: Pick<ColumnDefinition, 'fieldSource' | 'fieldIdentifier'>): string {
     return `${column.fieldSource}:${column.fieldIdentifier}`;
 }
 
