@@ -1,4 +1,5 @@
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
+import AppearanceSettings from 'components/_pages/platform-settings/appearance/AppearanceSettings';
 import CertificateSettings from 'components/_pages/platform-settings/certificates/CertificateSettings';
 import RequestAttributesSettings from 'components/_pages/platform-settings/request-attributes/RequestAttributesSettings';
 import UtilsSettings from 'components/_pages/platform-settings/utils/UtilsSettings';
@@ -7,10 +8,12 @@ import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 
 import { actions, selectors } from 'ducks/settings';
+import { selectors as authSelectors } from 'ducks/auth';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { Resource } from 'types/openapi';
 import Dialog from 'components/Dialog';
 import PlatformSettingsForm from '../form';
 
@@ -18,6 +21,7 @@ export default function PlatformSettingsDetail() {
     const dispatch = useDispatch();
 
     const platformSettings = useSelector(selectors.platformSettings);
+    const profile = useSelector(authSelectors.profile);
     const isFetchingPlatform = useSelector(selectors.isFetchingPlatform);
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
 
@@ -60,6 +64,14 @@ export default function PlatformSettingsDetail() {
         [onEditClick],
     );
 
+    /**
+     * Core gates the branding write on `ResourceAction.UPDATE_BRANDING`, which the user profile does not expose - it
+     * carries `allowedListings` only, a per-resource listing grant. Settings access is therefore the closest signal
+     * available, and a viewer holding `SETTINGS` + `UPDATE` but not `UPDATE_BRANDING` is refused by Core on save and
+     * shown its message rather than being disabled up front. Tracked in OmniTrustILM/interfaces#920.
+     */
+    const canUpdateBranding = !!profile?.permissions?.allowedListings?.includes(Resource.Settings);
+
     if (isFetchingPlatform && !isEditModalOpen) {
         return <DetailPageSkeleton layout="tabs" tabCount={2} rowCount={2} showBreadcrumb={false} tabWidgetButtonsCount={1} />;
     }
@@ -89,6 +101,10 @@ export default function PlatformSettingsDetail() {
                         {
                             title: 'Request Attributes',
                             content: <RequestAttributesSettings />,
+                        },
+                        {
+                            title: 'Appearance',
+                            content: <AppearanceSettings canUpdate={canUpdateBranding} />,
                         },
                     ]}
                 />
