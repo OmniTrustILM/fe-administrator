@@ -11,6 +11,7 @@ export * from './CMPProfileManagementApi';
 export * from './CallbackApi';
 export * from './CertificateInventoryApi';
 export * from './ClientOperationsV2Api';
+export * from './CommentsApi';
 export * from './ComplianceManagementV2Api';
 export * from './ComplianceProfileManagementApi';
 export * from './ComplianceProfileManagementV2Api';

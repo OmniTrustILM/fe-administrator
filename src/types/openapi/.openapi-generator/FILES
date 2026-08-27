@@ -12,6 +12,7 @@ apis/CMPProfileManagementApi.ts
 apis/CallbackApi.ts
 apis/CertificateInventoryApi.ts
 apis/ClientOperationsV2Api.ts
+apis/CommentsApi.ts
 apis/ComplianceManagementV2Api.ts
 apis/ComplianceProfileManagementApi.ts
 apis/ComplianceProfileManagementV2Api.ts
@@ -205,6 +206,9 @@ models/CmpProfileDetailDto.ts
 models/CmpProfileDto.ts
 models/CmpProfileEditRequestDto.ts
 models/CmpProfileRequestDto.ts
+models/CommentCreateRequestDto.ts
+models/CommentDto.ts
+models/CommentResponseDto.ts
 models/CodeBlockAttributeContentData.ts
 models/CodeBlockAttributeContentV2.ts
 models/CodeBlockAttributeContentV3.ts
