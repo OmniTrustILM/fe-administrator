@@ -88,12 +88,8 @@ export default function GlobalMetadataList() {
             },
             {
                 id: 'contentType',
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Content Type
-                        <EnumColumnDescription platformEnum={PlatformEnum.AttributeContentType} title="Content Type" />
-                    </span>
-                ),
+                content: 'Content Type',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.AttributeContentType} title="Content Type" />,
                 sortable: true,
                 width: '20%',
             },

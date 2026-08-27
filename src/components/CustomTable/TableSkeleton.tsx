@@ -1,3 +1,5 @@
+import SimpleBar from 'components/SimpleBar';
+
 const barClass = 'rounded bg-surface-sunken';
 
 const cellWidths = [112, 56, 80, 48, 96, 64, 88, 40, 120, 72];
@@ -35,45 +37,47 @@ function TableSkeleton({
             )}
 
             <div className="py-2">
-                <div className="rounded-md border border-divider overflow-hidden">
-                    <div className="min-w-full inline-block align-middle overflow-hidden">
-                        <table className="min-w-full divide-y divide-divider bg-surface-raised">
-                            <thead className="bg-surface-sunken">
-                                <tr>
-                                    {hasCheckboxes && (
-                                        <th className="p-3 w-8">
-                                            <div className={`${barClass} h-4 w-4`} />
-                                        </th>
-                                    )}
-                                    {columns.map((col) => (
-                                        <th key={col} className="p-3">
-                                            <div
-                                                className={`${barClass} h-3`}
-                                                style={{ width: `${headerWidths[col % headerWidths.length]}px` }}
-                                            />
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-divider">
-                                {rows.map((row) => (
-                                    <tr key={row} data-testid="table-skeleton-row">
+                <SimpleBar forceVisible="x">
+                    <div className="rounded-md border border-divider">
+                        <div className="min-w-full inline-block align-middle overflow-hidden">
+                            <table className="min-w-full divide-y divide-divider bg-surface-raised">
+                                <thead className="bg-surface-sunken">
+                                    <tr>
                                         {hasCheckboxes && (
-                                            <td className="p-3">
+                                            <th className="p-3 w-8">
                                                 <div className={`${barClass} h-4 w-4`} />
-                                            </td>
+                                            </th>
                                         )}
                                         {columns.map((col) => (
-                                            <td key={col} className="p-3">
-                                                <div className={`${barClass} h-3`} style={{ width: `${getCellWidth(row, col)}px` }} />
-                                            </td>
+                                            <th key={col} className="p-3">
+                                                <div
+                                                    className={`${barClass} h-3`}
+                                                    style={{ width: `${headerWidths[col % headerWidths.length]}px` }}
+                                                />
+                                            </th>
                                         ))}
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-divider">
+                                    {rows.map((row) => (
+                                        <tr key={row} data-testid="table-skeleton-row">
+                                            {hasCheckboxes && (
+                                                <td className="p-3">
+                                                    <div className={`${barClass} h-4 w-4`} />
+                                                </td>
+                                            )}
+                                            {columns.map((col) => (
+                                                <td key={col} className="p-3">
+                                                    <div className={`${barClass} h-3`} style={{ width: `${getCellWidth(row, col)}px` }} />
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                </SimpleBar>
             </div>
 
             {hasPagination && (

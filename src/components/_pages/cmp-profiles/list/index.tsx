@@ -178,12 +178,8 @@ export default function AdministratorsList() {
             },
             {
                 id: 'variant',
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Variant
-                        <EnumColumnDescription platformEnum={PlatformEnum.CmpProfileVariant} title="Variant" />
-                    </span>
-                ),
+                content: 'Variant',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.CmpProfileVariant} title="Variant" />,
                 sortable: true,
                 width: 'auto',
             },

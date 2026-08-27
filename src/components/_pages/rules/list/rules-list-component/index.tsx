@@ -84,12 +84,8 @@ const RulesList = () => {
                 sortable: true,
             },
             {
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Resource
-                        <EnumColumnDescription platformEnum={PlatformEnum.Resource} title="Resource" />
-                    </span>
-                ),
+                content: 'Resource',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.Resource} title="Resource" />,
                 align: 'left',
                 id: 'resource',
                 width: '30%',

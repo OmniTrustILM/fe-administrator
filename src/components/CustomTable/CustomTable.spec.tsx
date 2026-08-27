@@ -1,5 +1,8 @@
 import { test, expect } from '../../../playwright/ct-test';
 import CustomTable, { type TableHeader, type TableDataRow } from './index';
+import CustomTableWithStore from './CustomTableWithStore';
+import CustomTableSortRefetch from './CustomTableSortRefetch';
+import Toggletip from 'components/Toggletip';
 import { createMockStore, withProviders } from 'utils/test-helpers';
 
 test.describe('CustomTable', () => {
@@ -1120,5 +1123,304 @@ test.describe('CustomTable', () => {
             }),
         );
         await expect(component.getByText(/Showing 1 to 3 of 3/)).toBeVisible();
+    });
+    test.describe('server-driven sorting', () => {
+        test('sorts locally when onSortChanged is absent', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
+
+            await component.getByRole('button', { name: 'Name' }).click();
+
+            await expect(component.locator('tbody tr td:first-child')).toHaveText(['Bob Johnson', 'Jane Smith', 'John Doe']);
+        });
+
+        test('reports the click and leaves row order alone when onSortChanged is supplied', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const component = await mount(
+                withProviders(
+                    <CustomTable headers={mockHeaders} data={mockData} onSortChanged={(id, direction) => calls.push([id, direction])} />,
+                ),
+            );
+
+            await component.getByRole('button', { name: 'Name' }).click();
+
+            await expect.poll(() => calls).toEqual([['name', 'asc']]);
+            await expect(component.locator('tbody tr td:first-child')).toHaveText(['John Doe', 'Jane Smith', 'Bob Johnson']);
+        });
+
+        test('a second click reports desc, and a third reports asc again', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const component = await mount(
+                withProviders(
+                    <CustomTable headers={mockHeaders} data={mockData} onSortChanged={(id, direction) => calls.push([id, direction])} />,
+                ),
+            );
+
+            const nameHeader = component.getByRole('button', { name: 'Name' });
+            await nameHeader.click();
+            await nameHeader.click();
+            await nameHeader.click();
+
+            await expect
+                .poll(() => calls)
+                .toEqual([
+                    ['name', 'asc'],
+                    ['name', 'desc'],
+                    ['name', 'asc'],
+                ]);
+        });
+
+        test('a click on another sortable column moves the sort rather than adding to it', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const sortableHeaders: TableHeader[] = [
+                { id: 'name', content: 'Name', sortable: true },
+                { id: 'email', content: 'Email', sortable: true },
+                { id: 'status', content: 'Status' },
+            ];
+            const component = await mount(
+                withProviders(
+                    <CustomTable
+                        headers={sortableHeaders}
+                        data={mockData}
+                        onSortChanged={(id, direction) => calls.push([id, direction])}
+                    />,
+                ),
+            );
+
+            await component.getByRole('button', { name: 'Name' }).click();
+            await component.getByRole('button', { name: 'Email' }).click();
+
+            await expect
+                .poll(() => calls)
+                .toEqual([
+                    ['name', 'asc'],
+                    ['email', 'asc'],
+                ]);
+            expect(await component.locator('th[data-id="name"]').getAttribute('aria-sort')).toBeNull();
+            await expect(component.locator('th[data-id="email"]')).toHaveAttribute('aria-sort', 'ascending');
+        });
+
+        // A restored sort suppresses local sorting and paints the arrow. Without announcing it, the
+        // caller fetches its own default ordering and the indicator describes rows that never arrived.
+        // The store has to be built browser-side (CustomTableWithStore): a store created here in the
+        // Node test body never crosses into the page, so a preloaded slice would be silently dropped.
+        test('announces a sort restored from persistence so the caller can fetch that ordering', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const component = await mount(
+                <CustomTableWithStore
+                    headers={mockHeaders}
+                    data={mockData}
+                    persistedSortColumn="name"
+                    persistedSortDirection="desc"
+                    onSortChanged={(id, direction) => calls.push([id, direction])}
+                />,
+            );
+
+            await expect(component.locator('th[data-id="name"]')).toHaveAttribute('aria-sort', 'descending');
+            await expect.poll(() => calls).toEqual([['name', 'desc']]);
+        });
+
+        test('does not re-announce a hydrated sort, and a click still reports once', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const component = await mount(
+                <CustomTableWithStore
+                    headers={mockHeaders}
+                    data={mockData}
+                    persistedSortColumn="name"
+                    persistedSortDirection="desc"
+                    onSortChanged={(id, direction) => calls.push([id, direction])}
+                />,
+            );
+
+            await expect.poll(() => calls).toEqual([['name', 'desc']]);
+
+            await component.getByRole('button', { name: 'Name' }).click();
+
+            await expect
+                .poll(() => calls)
+                .toEqual([
+                    ['name', 'desc'],
+                    ['name', 'asc'],
+                ]);
+        });
+
+        // Reporting a sort makes the caller refetch, and a caller re-derives its headers when the fetch
+        // settles. If that newly built array overwrote the active sort, the arrow would vanish and the
+        // next click on the same column would report asc again instead of toggling to desc.
+        test('keeps the active sort when the caller hands back a rebuilt headers array', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const record = (id: string, direction: string) => {
+                calls.push([id, direction]);
+            };
+            const buildHeaders = (): TableHeader[] => [
+                { id: 'name', content: 'Name', sortable: true },
+                { id: 'email', content: 'Email' },
+                { id: 'status', content: 'Status' },
+            ];
+
+            const component = await mount(<CustomTableSortRefetch headers={buildHeaders()} data={mockData} onSortChanged={record} />);
+
+            await component.getByRole('button', { name: 'Name' }).click();
+            await expect(component.locator('th[data-id="name"]')).toHaveAttribute('aria-sort', 'ascending');
+
+            await component.getByRole('button', { name: 'Name' }).click();
+
+            await expect
+                .poll(() => calls)
+                .toEqual([
+                    ['name', 'asc'],
+                    ['name', 'desc'],
+                ]);
+        });
+
+        test('says nothing on mount when there is no persisted sort', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const component = await mount(
+                <CustomTableWithStore
+                    headers={mockHeaders}
+                    data={mockData}
+                    onSortChanged={(id, direction) => calls.push([id, direction])}
+                />,
+            );
+
+            await expect(component.locator('th[aria-sort]')).toHaveCount(0);
+            expect(calls).toEqual([]);
+        });
+    });
+
+    test.describe('sortable header accessibility', () => {
+        test('a sortable header is a button and carries aria-sort through both directions', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
+
+            const nameCell = component.locator('th[data-id="name"]');
+            // ARIA wants aria-sort on the sorted header only, so an idle column carries no attribute.
+            expect(await nameCell.getAttribute('aria-sort')).toBeNull();
+
+            const nameButton = component.getByRole('button', { name: 'Name' });
+            await nameButton.click();
+            await expect(nameCell).toHaveAttribute('aria-sort', 'ascending');
+
+            await nameButton.click();
+            await expect(nameCell).toHaveAttribute('aria-sort', 'descending');
+        });
+
+        test('a sortable header can be operated from the keyboard', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const component = await mount(
+                withProviders(
+                    <CustomTable headers={mockHeaders} data={mockData} onSortChanged={(id, direction) => calls.push([id, direction])} />,
+                ),
+            );
+
+            const nameButton = component.getByRole('button', { name: 'Name' });
+            await nameButton.focus();
+            await nameButton.press('Enter');
+
+            await expect.poll(() => calls).toEqual([['name', 'asc']]);
+        });
+
+        test('carries aria-sort on the sorted header only', async ({ mount }) => {
+            const sortableHeaders: TableHeader[] = [
+                { id: 'name', content: 'Name', sortable: true },
+                { id: 'email', content: 'Email', sortable: true },
+                { id: 'status', content: 'Status', sortable: true },
+            ];
+            const component = await mount(withProviders(<CustomTable headers={sortableHeaders} data={mockData} />));
+
+            await expect(component.locator('th[aria-sort]')).toHaveCount(0);
+
+            await component.getByRole('button', { name: 'Name' }).click();
+
+            await expect(component.locator('th[aria-sort]')).toHaveCount(1);
+            await expect(component.locator('th[aria-sort]')).toHaveAttribute('data-id', 'name');
+        });
+
+        test('a non-sortable header is inert: no button, no aria-sort, no indicator', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
+
+            const emailCell = component.locator('th[data-id="email"]');
+            await expect(emailCell).toHaveText('Email');
+            await expect(emailCell.getByRole('button')).toHaveCount(0);
+            await expect(emailCell.locator('[data-testid="sort-indicator"]')).toHaveCount(0);
+            expect(await emailCell.getAttribute('aria-sort')).toBeNull();
+        });
+
+        test('shows an indicator only on the sorted column, with the idle affordance kept for hover', async ({ mount }) => {
+            const sortableHeaders: TableHeader[] = [
+                { id: 'name', content: 'Name', sortable: true },
+                { id: 'email', content: 'Email', sortable: true },
+            ];
+            const component = await mount(withProviders(<CustomTable headers={sortableHeaders} data={mockData} />));
+
+            const nameIndicator = component.locator('th[data-id="name"] [data-testid="sort-indicator"]');
+            const emailIndicator = component.locator('th[data-id="email"] [data-testid="sort-indicator"]');
+
+            // #1100 is about the arrow on every header, so nothing is drawn until a column is sorted.
+            await expect(nameIndicator).toBeHidden();
+            await expect(emailIndicator).toBeHidden();
+
+            const nameButton = component.getByRole('button', { name: 'Name' });
+            await nameButton.hover();
+            await expect(nameIndicator).toBeVisible();
+            await expect(nameIndicator).toHaveAttribute('data-direction', 'none');
+            await expect(emailIndicator).toBeHidden();
+
+            await nameButton.click();
+
+            await expect(nameIndicator).toBeVisible();
+            await expect(nameIndicator).toHaveAttribute('data-direction', 'asc');
+            await expect(emailIndicator).toBeHidden();
+        });
+
+        test('collapses headers that all declare a sort down to a single active column', async ({ mount }) => {
+            // Roles, Scheduler and a dozen other lists mark every sortable header `sort: 'asc'`, but only
+            // one column is ever really sorted — the local sort has always read the first of them.
+            const sortableHeaders: TableHeader[] = [
+                { id: 'name', content: 'Name', sortable: true, sort: 'asc' },
+                { id: 'email', content: 'Email', sortable: true, sort: 'asc' },
+                { id: 'status', content: 'Status', sortable: true, sort: 'asc' },
+            ];
+            const component = await mount(withProviders(<CustomTable headers={sortableHeaders} data={mockData} />));
+
+            await expect(component.locator('th[aria-sort]')).toHaveCount(1);
+            await expect(component.locator('th[aria-sort]')).toHaveAttribute('data-id', 'name');
+            await expect(component.locator('[data-testid="sort-indicator"][data-direction="asc"]')).toHaveCount(1);
+        });
+
+        test('renders header info beside the sort button instead of inside it', async ({ mount, page }) => {
+            const sortableHeaders: TableHeader[] = [
+                {
+                    id: 'name',
+                    content: 'Name',
+                    sortable: true,
+                    info: <Toggletip ariaLabel="Name value descriptions" content={<span>What the names mean</span>} />,
+                },
+                {
+                    id: 'email',
+                    content: 'Email',
+                    info: <Toggletip ariaLabel="Email value descriptions" content={<span>What the addresses mean</span>} />,
+                },
+                { id: 'status', content: 'Status' },
+            ];
+            const component = await mount(withProviders(<CustomTable headers={sortableHeaders} data={mockData} />));
+
+            // A non-sortable header keeps its info too, alongside a heading that is still not a control.
+            const emailCell = component.locator('th[data-id="email"]');
+            await expect(emailCell).toHaveText('Email');
+            await expect(emailCell.getByRole('button')).toHaveCount(1);
+            await expect(emailCell.locator('[data-testid="sort-indicator"]')).toHaveCount(0);
+
+            const nameCell = component.locator('th[data-id="name"]');
+            // A control inside the sort button would be a nested interactive element: invalid markup, and
+            // undefined keyboard and screen-reader behaviour for both.
+            await expect(nameCell.locator('button button')).toHaveCount(0);
+            await expect(nameCell.getByRole('button')).toHaveCount(2);
+
+            await nameCell.getByRole('button', { name: 'Name value descriptions' }).click();
+            await expect(page.getByText('What the names mean')).toBeVisible();
+            expect(await nameCell.getAttribute('aria-sort')).toBeNull();
+
+            await nameCell.getByRole('button', { name: 'Name', exact: true }).click();
+            await expect(nameCell).toHaveAttribute('aria-sort', 'ascending');
+        });
     });
 });
