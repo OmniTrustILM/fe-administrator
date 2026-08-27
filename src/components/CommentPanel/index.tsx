@@ -1,5 +1,4 @@
 import Dialog from 'components/Dialog';
-import Pagination from 'components/Pagination';
 import Widget from 'components/Widget';
 import { actions, panelKey, selectors } from 'ducks/comments';
 import { MessagesSquare } from 'lucide-react';
@@ -7,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { CommentDto, Resource } from 'types/openapi';
 import CommentComposer from './CommentComposer';
+import CommentPagination from './CommentPagination';
 import CommentThread from './CommentThread';
 
 type Props = {
@@ -37,12 +37,20 @@ export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) 
     }, [dispatch, resource, objectUuid]);
 
     const reload = useCallback(
-        () => dispatch(actions.listThreads({ resource, objectUuid, pageNumber: threads?.pageNumber ?? 1 })),
-        [dispatch, resource, objectUuid, threads?.pageNumber],
+        () =>
+            dispatch(
+                actions.listThreads({ resource, objectUuid, pageNumber: threads?.pageNumber ?? 1, itemsPerPage: threads?.itemsPerPage }),
+            ),
+        [dispatch, resource, objectUuid, threads?.pageNumber, threads?.itemsPerPage],
     );
 
     const onPageChange = useCallback(
-        (pageNumber: number) => dispatch(actions.listThreads({ resource, objectUuid, pageNumber })),
+        (pageNumber: number) => dispatch(actions.listThreads({ resource, objectUuid, pageNumber, itemsPerPage: threads?.itemsPerPage })),
+        [dispatch, resource, objectUuid, threads?.itemsPerPage],
+    );
+
+    const onPageSizeChange = useCallback(
+        (itemsPerPage: number) => dispatch(actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage })),
         [dispatch, resource, objectUuid],
     );
 
@@ -108,12 +116,12 @@ export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) 
                     </div>
                 )}
 
-                {threads && threads.totalPages > 1 && (
-                    <Pagination
-                        page={threads.pageNumber}
-                        totalPages={threads.totalPages}
-                        onPageChange={onPageChange}
+                {threads && (
+                    <CommentPagination
+                        page={threads}
                         disabled={threads.isFetching}
+                        onPageChange={onPageChange}
+                        onPageSizeChange={onPageSizeChange}
                         dataTestId={`comment-panel-${objectUuid}-pagination`}
                     />
                 )}

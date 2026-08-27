@@ -378,12 +378,36 @@ test.describe('CommentPanel', () => {
 
         const pagination = page.getByTestId('comment-panel-obj-1-pagination');
         await expect(pagination).toBeVisible();
+        await expect(page.getByTestId('comment-panel-obj-1-pagination-summary')).toHaveText('Showing 1 to 1 items of 25');
         await pagination.getByRole('button', { name: '2', exact: true }).click();
 
         expect((await dispatched(page)).at(-1)).toEqual({
             type: 'comments/listThreads',
-            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 2 },
+            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 2, itemsPerPage: 10 },
         });
+    });
+
+    test('changing the page size restarts from the first page', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                comments={{ threads: { [KEY]: threadsPage([comment('r1', 'x')], { totalPages: 3, totalItems: 25, pageNumber: 2 }) } }}
+            />,
+        );
+
+        await page.getByTestId('comment-panel-obj-1-pagination-page-size').click();
+        await page.getByRole('option', { name: '50', exact: true }).click();
+
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/listThreads',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1, itemsPerPage: 50 },
+        });
+    });
+
+    test('a single page still shows the range but no page switcher', async ({ mount, page }) => {
+        await mount(<CommentPanelWithStore comments={{ threads: { [KEY]: threadsPage([comment('r1', 'x'), comment('r2', 'y')]) } }} />);
+
+        await expect(page.getByTestId('comment-panel-obj-1-pagination-summary')).toHaveText('Showing 1 to 2 items of 2');
+        await expect(page.getByTestId('comment-panel-obj-1-pagination-pages')).toHaveCount(0);
     });
 
     test('two panels on one page do not interfere', async ({ mount, page }) => {

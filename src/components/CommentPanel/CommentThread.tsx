@@ -1,5 +1,4 @@
 import Button from 'components/Button';
-import Pagination from 'components/Pagination';
 import Spinner from 'components/Spinner';
 import { actions, selectors } from 'ducks/comments';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -7,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { CommentDto, Resource } from 'types/openapi';
 import CommentComposer from './CommentComposer';
+import CommentPagination from './CommentPagination';
 import CommentItem from './CommentItem';
 
 type Props = {
@@ -44,7 +44,12 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
     }, [isPosting, postingDenied]);
 
     const onPageChange = useCallback(
-        (pageNumber: number) => dispatch(actions.listReplies({ rootUuid: uuid, pageNumber })),
+        (pageNumber: number) => dispatch(actions.listReplies({ rootUuid: uuid, pageNumber, itemsPerPage: replies?.itemsPerPage })),
+        [dispatch, uuid, replies?.itemsPerPage],
+    );
+
+    const onPageSizeChange = useCallback(
+        (itemsPerPage: number) => dispatch(actions.listReplies({ rootUuid: uuid, pageNumber: 1, itemsPerPage })),
         [dispatch, uuid],
     );
 
@@ -98,11 +103,11 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
                                 />
                             ))}
                             {replies && replies.totalPages > 1 && (
-                                <Pagination
-                                    page={replies.pageNumber}
-                                    totalPages={replies.totalPages}
-                                    onPageChange={onPageChange}
+                                <CommentPagination
+                                    page={replies}
                                     disabled={replies.isFetching}
+                                    onPageChange={onPageChange}
+                                    onPageSizeChange={onPageSizeChange}
                                     dataTestId={`thread-${uuid}-replies-pagination`}
                                 />
                             )}
