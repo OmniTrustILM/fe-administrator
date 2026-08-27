@@ -1070,6 +1070,38 @@ function rulesTestReducer(state: RulesTestState | undefined, _action: UnknownAct
     return state ?? rulesTestInitialState;
 }
 
+export type CommentsTestPage = {
+    comments: unknown[];
+    totalItems: number;
+    totalPages: number;
+    pageNumber: number;
+    itemsPerPage: number;
+    isFetching: boolean;
+    isPosting: boolean;
+    postingDenied?: string;
+};
+
+export type CommentsTestState = {
+    threads: Record<string, CommentsTestPage & { lock?: unknown }>;
+    replies: Record<string, CommentsTestPage>;
+    busy: Record<string, boolean>;
+    /** Every `comments/*` action the panel dispatched, so a test can assert the request without an epic. */
+    dispatched: Array<{ type: string; payload?: unknown }>;
+};
+
+const commentsTestInitialState: CommentsTestState = {
+    threads: {},
+    replies: {},
+    busy: {},
+    dispatched: [],
+};
+
+function commentsTestReducer(state: CommentsTestState | undefined, action: UnknownAction): CommentsTestState {
+    const current = state ?? commentsTestInitialState;
+    if (!action.type.startsWith('comments/')) return current;
+    return { ...current, dispatched: [...current.dispatched, { type: action.type, payload: action.payload }] };
+}
+
 export const testReducers = combineReducers({
     raProfileRequestAttributes: raProfileRequestAttributesTestReducer,
     userInterface: userInterfaceTestReducer,
@@ -1103,6 +1135,7 @@ export const testReducers = combineReducers({
     discoveries: discoveriesTestReducer,
     oids: oidsTestReducer,
     rules: rulesTestReducer,
+    comments: commentsTestReducer,
 });
 
 export const testInitialState = {
@@ -1138,4 +1171,5 @@ export const testInitialState = {
     discoveries: discoveriesTestInitialState,
     oids: oidsTestInitialState,
     rules: rulesTestInitialState,
+    comments: commentsTestInitialState,
 };
