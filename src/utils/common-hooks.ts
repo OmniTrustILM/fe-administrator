@@ -134,3 +134,53 @@ export function useRunOnFinish(isLoading: boolean, callback?: () => void) {
 export function useAreDefaultValuesSame(defaultValues: Record<string, unknown>) {
     return useCallback((values: Record<string, unknown>) => isObjectSame(values, defaultValues), [defaultValues]);
 }
+
+/**
+ * Tracks whether an element's content is wider than the element itself, i.e. whether the browser is
+ * applying the ellipsis. A list cell only reveals its full value when it is actually cut off, and a
+ * column set the user rearranges changes cell widths with no window resize, so the check is driven
+ * by a ResizeObserver on the element rather than by a window listener.
+ *
+ * The returned ref is a callback ref on purpose. Acting on truncation usually means wrapping the
+ * element — in a tooltip, say — which remounts it; an object ref would then still point at the
+ * detached node, whose width is zero, and the truncation would immediately unset itself. Following
+ * the node also means a detached one is never measured.
+ *
+ * `value` is what the element renders; passing it re-measures when the text changes, which a
+ * ResizeObserver alone would miss whenever a longer value happens to occupy the same box.
+ */
+export function useIsTruncated<T extends HTMLElement>(value: unknown): [(node: T | null) => void, boolean] {
+    const [isTruncated, setIsTruncated] = useState(false);
+    const nodeRef = useRef<T | null>(null);
+    const observerRef = useRef<ResizeObserver | null>(null);
+
+    const measure = useCallback(() => {
+        const node = nodeRef.current;
+        if (!node?.isConnected) return;
+        setIsTruncated(node.scrollWidth > node.clientWidth);
+    }, []);
+
+    const ref = useCallback(
+        (node: T | null) => {
+            observerRef.current?.disconnect();
+            observerRef.current = null;
+            nodeRef.current = node;
+            if (!node) return;
+
+            measure();
+            if (typeof ResizeObserver === 'undefined') return;
+            const observer = new ResizeObserver(measure);
+            observer.observe(node);
+            observerRef.current = observer;
+        },
+        [measure],
+    );
+
+    useEffect(() => {
+        measure();
+    }, [value, measure]);
+
+    useEffect(() => () => observerRef.current?.disconnect(), []);
+
+    return [ref, isTruncated];
+}

@@ -1,7 +1,12 @@
 import { test, expect } from '../../../../playwright/ct-test';
-import { buildCertificateRowColumns, buildCertificateDetailBaseRows, buildCertificateProtocolRows } from './certificateTableHelpers';
+import {
+    buildCertificateRowColumns,
+    buildCertificateDetailBaseRows,
+    buildCertificateProtocolRows,
+    CERTIFICATE_COLUMNS,
+} from './certificateTableHelpers';
 import type { CertificateListResponseModel, CertificateDetailResponseModel } from 'types/certificate';
-import { CertificateProtocol, type CertificateProtocolDto, CertificateType } from 'types/openapi';
+import { AttributeContentType, CertificateProtocol, type CertificateProtocolDto, CertificateType, FilterFieldSource } from 'types/openapi';
 
 const mockDateFormatter = (d: Date) => d.toISOString().slice(0, 10);
 const mockGetEnumLabel = (_e: any, key: string) => key;
@@ -80,13 +85,62 @@ test.describe('certificateTableHelpers', () => {
             expect(commonNameColumn).toBe('test.example.com');
         });
 
-        test('groups Unassigned when no groups', () => {
+        test('renders the shared empty state for a certificate with no groups', async ({ mount, page }) => {
             const cert = buildListCertificate();
+            const columns = buildCertificateRowColumns(cert, baseOpts);
 
-            const result = buildCertificateRowColumns(cert, baseOpts);
-            // groups is 8th column (index 7): state, validationStatus, compliance, key, commonName, notBefore, notAfter, groups
-            const groupsColumn = result[7];
-            expect(groupsColumn).toBe('Unassigned');
+            // Groups is the 8th column: state, validation, compliance, key, common name, valid from,
+            // expires at, groups. An unset value is the em dash every column uses, not the
+            // per-column 'Unassigned' copy this cell used to invent.
+            await mount(<div>{columns[7]}</div>);
+
+            await expect(page.getByTestId('empty-cell')).toBeVisible();
+            await expect(page.getByText('Unassigned')).toHaveCount(0);
+        });
+
+        test('renders one group as a plain value and the rest behind a count', async ({ mount, page }) => {
+            const cert = buildListCertificate({
+                groups: [
+                    { uuid: 'g-1', name: 'Production' },
+                    { uuid: 'g-2', name: 'PCI' },
+                    { uuid: 'g-3', name: 'EU' },
+                ],
+            } as Partial<CertificateListResponseModel>);
+
+            await mount(<div>{buildCertificateRowColumns(cert, baseOpts)[7]}</div>);
+
+            await expect(page.getByText('Production')).toBeVisible();
+            await expect(page.getByText('+2')).toBeVisible();
+            // Joining every group into the cell is what made this column grow without bound.
+            await expect(page.getByText('Production, PCI, EU')).toHaveCount(0);
+        });
+
+        test('renders a row for a column set given in a different order', () => {
+            const cert = buildListCertificate({ commonName: 'cn.example.com', serialNumber: 'SN123' });
+            const reordered = [CERTIFICATE_COLUMNS[10], CERTIFICATE_COLUMNS[4]];
+
+            const result = buildCertificateRowColumns(cert, baseOpts, reordered);
+
+            expect(result).toHaveLength(2);
+            expect(result[0]).toBe('SN123');
+            expect(result[1]).toBe('cn.example.com');
+        });
+
+        test('renders an attribute-sourced column the registry knows nothing about', async ({ mount, page }) => {
+            const cert = buildListCertificate({
+                attributeValues: { custom: { costCentre: [{ data: 4820 }] } },
+            } as Partial<CertificateListResponseModel>);
+
+            const column = {
+                fieldSource: FilterFieldSource.Custom,
+                fieldIdentifier: 'costCentre',
+                catalogueLabel: 'Cost centre',
+                attributeContentType: AttributeContentType.Integer,
+            };
+
+            await mount(<div>{buildCertificateRowColumns(cert, baseOpts, [column])[0]}</div>);
+
+            await expect(page.getByText('4820')).toBeVisible();
         });
     });
 

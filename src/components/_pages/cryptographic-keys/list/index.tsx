@@ -9,18 +9,16 @@ import { actions, selectors } from 'ducks/cryptographic-keys';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EntityType } from 'ducks/filters';
 import { selectors as pagingSelectors } from 'ducks/paging';
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router';
 import Select from 'components/Select';
 import type { SearchRequestModel } from 'types/certificate';
 import { KeyCompromiseReason, type KeyUsage, PlatformEnum } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { dateFormatter } from 'utils/dateUtil';
-import KeyStateCircle from '../KeyStateCircle';
-import KeyStatusCircle from '../KeyStatusCircle';
 import KeyUsageSelect from '../KeyUsageSelect';
-import Badge from 'components/Badge';
+import { buildKeyCellRegistry, KEY_COLUMNS } from '../keyTableHelpers';
+import { buildTableRows } from 'components/CustomTable/columns';
 import { EnumColumnDescription } from 'components/EnumDescription';
 import CryptographicKeyForm from '../form';
 
@@ -231,54 +229,9 @@ function CryptographicKeyList() {
 
     const cryptographicKeysList: TableDataRow[] = useMemo(
         () =>
-            cryptographicKeys.map((cryptographicKey) => {
-                return {
-                    id: cryptographicKey.uuid,
-                    columns: [
-                        <KeyStatusCircle key="status" status={cryptographicKey.enabled} />,
-                        <KeyStateCircle key="state" state={cryptographicKey.state} />,
-                        <span key="name" style={{ whiteSpace: 'nowrap' }}>
-                            <Link to={`./detail/${cryptographicKey.keyWrapperUuid}/${cryptographicKey.uuid}`}>{cryptographicKey.name}</Link>
-                        </span>,
-                        <Badge key="type" color="secondary">
-                            {getEnumLabel(keyTypeEnum, cryptographicKey.type)}
-                        </Badge>,
-                        cryptographicKey.keyAlgorithm,
-                        cryptographicKey.length?.toString() || 'unknown',
-                        cryptographicKey.format || 'unknown',
-                        <span key="created" style={{ whiteSpace: 'nowrap' }}>
-                            {dateFormatter(cryptographicKey.creationTime) || ''}
-                        </span>,
-                        cryptographicKey?.groups?.length
-                            ? cryptographicKey?.groups.map((group, i) => (
-                                  <Fragment key={group.uuid}>
-                                      <Link to={`../../groups/detail/${group.uuid}`}>{group.name}</Link>
-                                      {cryptographicKey?.groups?.length && i !== cryptographicKey.groups.length - 1 ? `, ` : ``}
-                                  </Fragment>
-                              ))
-                            : 'Unassigned',
-                        cryptographicKey.ownerUuid ? (
-                            <Link to={`../users/detail/${cryptographicKey.ownerUuid}`}>{cryptographicKey.owner ?? 'Unassigned'}</Link>
-                        ) : (
-                            (cryptographicKey.owner ?? 'Unassigned')
-                        ),
-                        cryptographicKey.tokenProfileName ? (
-                            <Link to={`../tokenprofiles/detail/${cryptographicKey.tokenInstanceUuid}/${cryptographicKey.tokenProfileUuid}`}>
-                                {cryptographicKey.tokenProfileName ?? 'Unassigned'}
-                            </Link>
-                        ) : (
-                            (cryptographicKey.tokenProfileName ?? 'Unassigned')
-                        ),
-                        cryptographicKey.tokenInstanceName ? (
-                            <Link to={`../tokens/detail/${cryptographicKey.tokenInstanceUuid}`}>
-                                {cryptographicKey.tokenInstanceName ?? 'Unassigned'}
-                            </Link>
-                        ) : (
-                            (cryptographicKey.tokenInstanceName ?? 'Unassigned')
-                        ),
-                        cryptographicKey.associations?.toString() || '',
-                    ],
-                };
+            buildTableRows(cryptographicKeys, KEY_COLUMNS, {
+                getRowId: (cryptographicKey) => cryptographicKey.uuid,
+                registry: buildKeyCellRegistry({ keyTypeEnum, getEnumLabel, dateFormatter }),
             }),
         [cryptographicKeys, keyTypeEnum],
     );
