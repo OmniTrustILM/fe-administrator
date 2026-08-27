@@ -22,8 +22,8 @@ FROM nginxinc/nginx-unprivileged:1.31.4-alpine
 # Pin the minimum fixed version so the build fails fast if the patched package
 # is ever unavailable, keeping the Trivy scan gate reliably green.
 USER root
-RUN apk add --no-cache --upgrade "c-ares>=1.34.8-r0" "curl>=8.20.0-r0" "libcurl>=8.20.0-r0" \
-    "libcrypto3>=3.5.8-r0" "libssl3>=3.5.8-r0"
+RUN apk add --no-cache --upgrade "c-ares>=1.34.8-r0" "curl>=8.20.0-r0" "libcrypto3>=3.5.8-r0" \
+    "libcurl>=8.20.0-r0" "libssl3>=3.5.8-r0"
 USER 101
 
 WORKDIR /usr/share/nginx/html
