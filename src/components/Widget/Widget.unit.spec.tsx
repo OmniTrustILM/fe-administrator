@@ -159,3 +159,51 @@ describe('Widget refresh action disabled state', () => {
         expect(refreshButton()!.disabled).toBe(true);
     });
 });
+
+describe('Widget caller-owned lock', () => {
+    let container: HTMLDivElement;
+    let root: Root;
+
+    beforeEach(() => {
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        root = createRoot(container);
+
+        mockPathname = '/certificates';
+        mockState = pristineState();
+        useDispatchMock.mockReturnValue(vi.fn());
+        useSelectorMock.mockImplementation((selector: any) => selector(mockState));
+    });
+
+    afterEach(async () => {
+        await act(async () => {
+            root.unmount();
+        });
+        container.remove();
+        vi.clearAllMocks();
+    });
+
+    it('renders the widget lock passed by the caller instead of the children', async () => {
+        await renderInto(
+            root,
+            <Widget title="Locked" widgetLock={{ lockTitle: 'Access Denied', lockText: 'Denied', lockType: 2 }}>
+                <span data-testid="child">child</span>
+            </Widget>,
+        );
+
+        expect(container.querySelector('[data-testid="widget-lock"]')?.textContent).toContain('Access Denied');
+        expect(container.querySelector('[data-testid="child"]')).toBeNull();
+    });
+
+    it('renders the children when no lock is passed and none is registered globally', async () => {
+        await renderInto(
+            root,
+            <Widget title="Open">
+                <span data-testid="child">child</span>
+            </Widget>,
+        );
+
+        expect(container.querySelector('[data-testid="widget-lock"]')).toBeNull();
+        expect(container.querySelector('[data-testid="child"]')).toBeTruthy();
+    });
+});
