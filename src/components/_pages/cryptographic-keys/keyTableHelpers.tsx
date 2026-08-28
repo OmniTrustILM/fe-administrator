@@ -127,8 +127,7 @@ export function buildKeyCellRegistry({
         ),
         'property:CKI_TYPE': (item) => (item.type ? <Badge color="secondary">{getEnumLabel(keyTypeEnum, item.type)}</Badge> : null),
         'property:CKI_CRYPTOGRAPHIC_ALGORITHM': (item) => item.keyAlgorithm,
-        // An unset size or format is the shared empty state rather than the literal 'unknown' this
-        // cell used to print, which claimed a value the platform does not have.
+        // An unset size or format resolves to the shared empty state.
         'property:CKI_LENGTH': (item) => item.length?.toString(),
         'property:CKI_FORMAT': (item) => item.format,
         'property:CKI_CREATED': (item) =>

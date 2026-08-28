@@ -1,6 +1,6 @@
 import type { BaseAttributeContentModel } from 'types/attributes';
-import { AttributeContentType, type FileAttributeContentData } from 'types/openapi';
-import { getFormattedDate, getFormattedDateTime } from 'utils/dateUtil';
+import { AttributeContentType, AttributeResource, type FileAttributeContentData } from 'types/openapi';
+import { getFormattedDateTime } from 'utils/dateUtil';
 
 /** One value of an attribute, prepared for a list cell. */
 export interface ListCellValue {
@@ -14,6 +14,23 @@ export interface ListCellValue {
 
 type ResourceContentData = { resource?: string; uuid?: string; name?: string };
 
+/**
+ * The attribute resources whose detail route is `/<resource>/detail/<uuid>`. An allow-list rather
+ * than an exclusion, so a resource added to the contract later is unlinked until its route is known
+ * to fit. `Locations` is the one that does not: its route also takes the parent entity, which a
+ * projected value does not carry.
+ */
+const LINKABLE_RESOURCES: ReadonlySet<string> = new Set([
+    AttributeResource.Certificates,
+    AttributeResource.Credentials,
+    AttributeResource.Authorities,
+    AttributeResource.Entities,
+    AttributeResource.Secrets,
+]);
+
+/** The detail route of a linked value. */
+export const listCellLinkPath = (link: NonNullable<ListCellValue['link']>): string => `/${link.resource}/detail/${link.uuid}`;
+
 function isFileContentData(data: unknown): data is FileAttributeContentData {
     return typeof data === 'object' && data !== null && 'fileName' in data && 'mimeType' in data;
 }
@@ -22,7 +39,8 @@ function toResourceValue(item: BaseAttributeContentModel): ListCellValue | undef
     const data = (item.data ?? {}) as ResourceContentData;
     const label = item.reference ?? data.name ?? data.uuid;
     if (!label) return undefined;
-    const link = data.resource && data.uuid ? { resource: data.resource, uuid: data.uuid } : undefined;
+    const link =
+        data.resource && data.uuid && LINKABLE_RESOURCES.has(data.resource) ? { resource: data.resource, uuid: data.uuid } : undefined;
     return { label, ...(link ? { link } : {}) };
 }
 
@@ -44,7 +62,10 @@ function toLabel(contentType: AttributeContentType, item: BaseAttributeContentMo
             // 'true' / 'false' is developer-facing copy; a column reads as a table of answers.
             return item.data ? 'Yes' : 'No';
         case AttributeContentType.Date:
-            return getFormattedDate(String(item.data));
+            // Date-only, and passed through as the contract carries it. Formatting it would parse
+            // `yyyy-MM-dd` as UTC midnight and read it back with local getters, which shows the
+            // previous day west of UTC.
+            return String(item.data);
         case AttributeContentType.Datetime:
             return getFormattedDateTime(String(item.data));
         case AttributeContentType.Time:

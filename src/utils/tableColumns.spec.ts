@@ -138,14 +138,33 @@ describe('buildColumnHeaders', () => {
     });
 
     it('marks the sorted column with its direction and leaves the others unmarked', () => {
-        const headers = buildColumnHeaders(columns, { sort: { fieldIdentifier: 'COMMON_NAME', direction: 'desc' } });
+        const headers = buildColumnHeaders(columns, {
+            sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+        });
         expect(headers[0].sort).toBe('desc');
         expect(headers[1].sort).toBeUndefined();
     });
 
     it('ignores a sort on a column that is not displayed', () => {
-        const headers = buildColumnHeaders(columns, { sort: { fieldIdentifier: 'NOT_SHOWN', direction: 'asc' } });
+        const headers = buildColumnHeaders(columns, {
+            sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_SHOWN', direction: 'asc' },
+        });
         expect(headers.every((header) => header.sort === undefined)).toBe(true);
+    });
+
+    /** An identifier is unique only within its source, so two sources may publish the same one. */
+    it('marks only the sorted source when two columns share an identifier', () => {
+        const shared: ColumnDefinition[] = [
+            column({ fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'name', catalogueLabel: 'Name', sortable: true }),
+            column({ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'name', catalogueLabel: 'Name', sortable: true }),
+        ];
+
+        const headers = buildColumnHeaders(shared, {
+            sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'name', direction: 'asc' },
+        });
+
+        expect(headers[0].sort).toBeUndefined();
+        expect(headers[1].sort).toBe('asc');
     });
 
     it('right-aligns numeric columns so digits line up down the column', () => {

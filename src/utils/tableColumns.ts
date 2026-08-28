@@ -1,6 +1,6 @@
 import type { SortDirection, TableHeader } from 'components/CustomTable/types';
 import type { BaseAttributeContentModel } from 'types/attributes';
-import { AttributeContentType, FilterFieldType } from 'types/openapi';
+import { AttributeContentType, type FilterFieldSource, FilterFieldType } from 'types/openapi';
 import type { AttributeProjectable, ColumnDefinition, ProjectedAttributeValues } from 'types/tableColumns';
 
 /** Width bounds of one generated column, in pixels. */
@@ -48,10 +48,20 @@ const DEFAULT_SIZING: ColumnSizing = SIZING_BY_CONTENT_TYPE[AttributeContentType
 
 const NUMERIC_CONTENT_TYPES: ReadonlySet<AttributeContentType> = new Set([AttributeContentType.Integer, AttributeContentType.Float]);
 
-/** Ordering the whole result set is sorted by, as a saved view carries it. */
+/**
+ * Ordering the whole result set is sorted by, as a saved view carries it. The source is part of the
+ * identity for the same reason it is in {@link getColumnKey}: an identifier alone does not say which
+ * column was sorted when two sources publish the same one.
+ */
 export interface ColumnSort {
+    fieldSource: FilterFieldSource;
     fieldIdentifier: string;
     direction: SortDirection;
+}
+
+/** A sort's column key, in the same shape {@link getColumnKey} produces. */
+export function getSortKey(sort: ColumnSort): string {
+    return `${sort.fieldSource}:${sort.fieldIdentifier}`;
 }
 
 export interface BuildColumnHeadersOptions {
@@ -112,9 +122,10 @@ function getColumnAlign(column: ColumnDefinition): TableHeader['align'] {
 export function buildColumnHeaders(columns: ColumnDefinition[], options: BuildColumnHeadersOptions = {}): TableHeader[] {
     return columns.map((column) => {
         const sizing = getColumnSizing(column);
-        const isSorted = options.sort?.fieldIdentifier === column.fieldIdentifier;
+        const key = getColumnKey(column);
+        const isSorted = options.sort !== undefined && getSortKey(options.sort) === key;
         return {
-            id: getColumnKey(column),
+            id: key,
             content: getColumnHeading(column),
             sortable: column.sortable === true,
             sort: isSorted ? options.sort?.direction : undefined,

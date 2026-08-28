@@ -10,6 +10,12 @@ const inBox = (width: number, value: string) => (
     </div>
 );
 
+const linkInBox = (width: number, value: string) => (
+    <div style={{ width: `${width}px` }} data-testid="box">
+        <TruncatedCell value={value} to="/certificates/detail/u-1" dataTestId="cell" />
+    </div>
+);
+
 test.describe('TruncatedCell', () => {
     test('shows the value on one line when the column is wide enough', async ({ mount, page }) => {
         await mount(withProviders(inBox(600, 'api.acme.test')));
@@ -42,5 +48,23 @@ test.describe('TruncatedCell', () => {
         await page.getByTestId('cell').hover();
 
         await expect(page.getByRole('tooltip')).toHaveText(LONG_VALUE);
+    });
+
+    test('measures a link the same way, so a linked value is not cut off unreadably', async ({ mount, page }) => {
+        await mount(withProviders(linkInBox(120, LONG_VALUE)));
+
+        await expect(page.getByTestId('cell')).toHaveAttribute('href', '/certificates/detail/u-1');
+
+        await page.getByTestId('cell').hover();
+
+        await expect(page.getByRole('tooltip')).toHaveText(LONG_VALUE);
+    });
+
+    test('leaves a linked value that fits without a tooltip', async ({ mount, page }) => {
+        await mount(withProviders(linkInBox(600, 'api.acme.test')));
+
+        await page.getByTestId('cell').hover();
+
+        await expect(page.getByRole('tooltip')).toHaveCount(0);
     });
 });

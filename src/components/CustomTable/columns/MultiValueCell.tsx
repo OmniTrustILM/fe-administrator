@@ -1,6 +1,7 @@
+import { Link } from 'react-router';
 import Badge from 'components/Badge';
 import Toggletip from 'components/Toggletip';
-import type { ListCellValue } from 'utils/attributes/listCellValues';
+import { listCellLinkPath, type ListCellValue } from 'utils/attributes/listCellValues';
 import ValueCell from './ValueCell';
 
 type Props = Readonly<{
@@ -10,10 +11,9 @@ type Props = Readonly<{
 }>;
 
 /**
- * A multi-valued attribute in a list cell: the first value plus a `+N` pill that reveals the rest.
- * Joining values with `', '` — which the certificates Groups cell does today — turns five values
- * into one ever-widening line, and that does not survive a user adding ten more columns. The `+N`
- * treatment is the connector capability cell's, adopted rather than reinvented.
+ * A multi-valued attribute in a list cell: the first value on the cell's single line, with the rest
+ * behind a `+N` pill. Every value is repeated inside the reveal, so the first one does not have to
+ * be read twice, and a value that was navigable in the cell stays navigable there.
  */
 export default function MultiValueCell({ values, dataTestId }: Props) {
     const [first, ...rest] = values;
@@ -39,7 +39,15 @@ export default function MultiValueCell({ values, dataTestId }: Props) {
                         {values.map((value, index) => (
                             // Values are free text and may repeat, so a value's position in
                             // item_order is the only stable identity it has here.
-                            <li key={`${value.label}-${index}`}>{value.detail ? `${value.label} (${value.detail})` : value.label}</li>
+                            <li key={`${value.label}-${index}`}>
+                                {value.link ? (
+                                    <Link to={listCellLinkPath(value.link)}>{value.label}</Link>
+                                ) : value.detail ? (
+                                    `${value.label} (${value.detail})`
+                                ) : (
+                                    value.label
+                                )}
+                            </li>
                         ))}
                     </ul>
                 }

@@ -105,11 +105,7 @@ function buildCertTypeCell(
     );
 }
 
-/**
- * Renders the Groups cell. Joining group names with `', '` — which this cell used to do — turns five
- * groups into one ever-widening line, and that does not survive a user adding more columns beside
- * it, so the extra groups move behind a `+N` reveal.
- */
+/** Prepares a certificate's groups for a single-line cell: the first name, the rest behind a `+N` reveal. */
 function buildGroupsValues(certificate: CertificateListResponseModel, isLinkDisabled: boolean): ListCellValue[] {
     return (certificate.groups ?? []).map((group) => ({
         label: group.name,
@@ -120,10 +116,8 @@ function buildGroupsValues(certificate: CertificateListResponseModel, isLinkDisa
 /**
  * The platform default column set for the certificates inventory — the "Standard" tab. Field
  * identifiers are the catalogue's own (`FilterField` enum names), so a saved view referring to the
- * same field resolves to the same registry entry.
- *
- * The labels here are the headings the page ships today; the wiring ticket resolves them from the
- * live catalogue instead, which is also where the set stops being hardcoded.
+ * same field resolves to the same registry entry. The labels are the headings the page ships with,
+ * standing in until the set is resolved from the live catalogue.
  */
 export const CERTIFICATE_COLUMNS: ColumnDefinition[] = [
     {
