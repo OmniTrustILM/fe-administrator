@@ -6,6 +6,7 @@ import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 
 import { actions as vaultActions, selectors as vaultSelectors } from 'ducks/vaults';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
@@ -142,6 +143,12 @@ function VaultDetail() {
                                 resourceUuid={vault.uuid}
                                 attributes={vault.customAttributes}
                             />
+                        </Container>
+                    )}
+
+                    {vault && (
+                        <Container>
+                            <CommentPanel resource={Resource.Vaults} objectUuid={vault.uuid} />
                         </Container>
                     )}
                 </div>

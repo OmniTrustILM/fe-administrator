@@ -11,6 +11,7 @@ import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
 import TabLayout from 'components/Layout/TabLayout';
 import ObjectEventHistoryWidget from 'components/_pages/notifications/events-settings/ObjectEventHistoryWidget';
+import CommentPanel from 'components/CommentPanel';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -335,6 +336,9 @@ export default function ApprovalDetails() {
                                     <Widget title="Approval Steps" busy={isBusy}>
                                         <CustomTable headers={stepsHeaders} data={stepsRows} hasDetails={true} />
                                     </Widget>
+                                    {approvalDetails && (
+                                        <CommentPanel resource={Resource.Approvals} objectUuid={approvalDetails.approvalUuid} />
+                                    )}
                                 </>
                             ),
                         },

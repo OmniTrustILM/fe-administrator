@@ -8,6 +8,7 @@ import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE } from 'components/Attributes/At
 import Badge from 'components/Badge';
 import Breadcrumb from 'components/Breadcrumb';
 import Button from 'components/Button';
+import CommentPanel from 'components/CommentPanel';
 import Container from 'components/Container';
 import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
@@ -624,6 +625,8 @@ function SecretDetail() {
                                                 </Widget>
                                             </Container>
                                         )}
+
+                                        {secret && <CommentPanel resource={Resource.Secrets} objectUuid={secret.uuid} />}
                                     </div>
                                 ),
                             },

@@ -40,6 +40,7 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumColumnDescription } from 'components/EnumDescription';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 import Select from 'components/Select';
 import { ArrowRight } from 'lucide-react';
 
@@ -738,6 +739,8 @@ export default function LocationDetail() {
                                                 hasDetails
                                             />
                                         </Widget>
+
+                                        {location && <CommentPanel resource={Resource.Locations} objectUuid={location.uuid} />}
                                     </Container>
                                 ),
                             },

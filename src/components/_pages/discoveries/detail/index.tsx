@@ -28,6 +28,7 @@ import ObjectEventHistoryWidget from 'components/_pages/notifications/events-set
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
+import CommentPanel from 'components/CommentPanel';
 
 export default function DiscoveryDetail() {
     const dispatch = useDispatch();
@@ -302,6 +303,12 @@ export default function DiscoveryDetail() {
                                             <DiscoveryCertificates id={discovery.uuid} triggerHistorySummary={triggerHistorySummary} />
                                         )}
                                     </Container>
+
+                                    {discovery && (
+                                        <Container marginTop>
+                                            <CommentPanel resource={Resource.Discoveries} objectUuid={discovery.uuid} />
+                                        </Container>
+                                    )}
                                 </div>
                             ),
                         },

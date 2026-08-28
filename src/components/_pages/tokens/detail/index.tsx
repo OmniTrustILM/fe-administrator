@@ -24,6 +24,7 @@ import { createWidgetDetailHeaders } from 'utils/widget';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 
 export default function TokenDetail() {
     const dispatch = useDispatch();
@@ -250,6 +251,8 @@ export default function TokenDetail() {
                             <Widget title="Metadata" titleSize="large">
                                 <AttributeViewer viewerType={ATTRIBUTE_VIEWER_TYPE.METADATA} metadata={token?.metadata} />
                             </Widget>
+
+                            {token && <CommentPanel resource={Resource.Tokens} objectUuid={token.uuid} />}
                         </Container>
                     </Widget>
                 </>

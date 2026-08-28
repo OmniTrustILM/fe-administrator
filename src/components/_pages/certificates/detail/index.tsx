@@ -66,6 +66,7 @@ import CertificateRequestContent from './CertificateRequestContent';
 import { getValidationPanelState, isValidationTabVisible, validationPanelMessages } from '../validationPanel';
 import Label from 'components/Label';
 import ObjectEventHistoryWidget from 'components/_pages/notifications/events-settings/ObjectEventHistoryWidget';
+import CommentPanel from 'components/CommentPanel';
 
 type LocationPushFormProps = Readonly<{
     onSubmit: (values: FieldValues) => void;
@@ -1189,12 +1190,19 @@ export default function CertificateDetail() {
                         {
                             title: 'Details',
                             content: (
-                                <CertificateDetailsContent
-                                    certificate={certificate}
-                                    validationResult={validationResult}
-                                    isBusy={isBusy}
-                                    getFreshCertificateDetail={getFreshCertificateDetail}
-                                />
+                                <>
+                                    <CertificateDetailsContent
+                                        certificate={certificate}
+                                        validationResult={validationResult}
+                                        isBusy={isBusy}
+                                        getFreshCertificateDetail={getFreshCertificateDetail}
+                                    />
+                                    {certificate && (
+                                        <Container marginTop>
+                                            <CommentPanel resource={Resource.Certificates} objectUuid={certificate.uuid} />
+                                        </Container>
+                                    )}
+                                </>
                             ),
                         },
                         {

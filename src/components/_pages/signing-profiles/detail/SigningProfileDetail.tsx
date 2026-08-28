@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import Breadcrumb from 'components/Breadcrumb';
 import ProgressButton from 'components/ProgressButton';
 import Container from 'components/Container';
+import CommentPanel from 'components/CommentPanel';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
 import StatusBadge from 'components/StatusBadge';
@@ -598,28 +599,35 @@ export default function SigningProfileDetail() {
                             tabKey: 'details',
                             title: 'Details',
                             content: (
-                                <Container className="md:flex-row">
-                                    <Widget
-                                        title="Signing Profile Details"
-                                        widgetButtons={headerButtons}
-                                        titleSize="large"
-                                        refreshAction={getFreshData}
-                                        lockSize="large"
-                                        className="w-full md:w-1/2"
-                                    >
-                                        <CustomTable headers={detailHeaders} data={generalData} />
-                                    </Widget>
+                                <>
+                                    <Container className="md:flex-row">
+                                        <Widget
+                                            title="Signing Profile Details"
+                                            widgetButtons={headerButtons}
+                                            titleSize="large"
+                                            refreshAction={getFreshData}
+                                            lockSize="large"
+                                            className="w-full md:w-1/2"
+                                        >
+                                            <CustomTable headers={detailHeaders} data={generalData} />
+                                        </Widget>
 
-                                    <Container className="w-full md:w-1/2 flex flex-col">
-                                        {signingProfile && (
-                                            <CustomAttributeWidget
-                                                resource={Resource.SigningProfiles}
-                                                resourceUuid={signingProfile.uuid}
-                                                attributes={signingProfile.customAttributes}
-                                            />
-                                        )}
+                                        <Container className="w-full md:w-1/2 flex flex-col">
+                                            {signingProfile && (
+                                                <CustomAttributeWidget
+                                                    resource={Resource.SigningProfiles}
+                                                    resourceUuid={signingProfile.uuid}
+                                                    attributes={signingProfile.customAttributes}
+                                                />
+                                            )}
+                                        </Container>
                                     </Container>
-                                </Container>
+                                    {signingProfile && (
+                                        <Container marginTop>
+                                            <CommentPanel resource={Resource.SigningProfiles} objectUuid={signingProfile.uuid} />
+                                        </Container>
+                                    )}
+                                </>
                             ),
                         },
                         {

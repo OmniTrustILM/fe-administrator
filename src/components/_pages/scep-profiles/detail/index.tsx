@@ -25,6 +25,7 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumValueDescription } from 'components/EnumDescription';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 import Switch from 'components/Switch';
 
 export default function ScepProfileDetail() {
@@ -433,6 +434,8 @@ export default function ScepProfileDetail() {
                             <AttributeViewer attributes={scepProfile?.certificateAssociations?.customAttributes} />
                         </Widget>
                     </Widget>
+
+                    {scepProfile && <CommentPanel resource={Resource.ScepProfiles} objectUuid={scepProfile.uuid} />}
                 </Container>
             </Widget>
 

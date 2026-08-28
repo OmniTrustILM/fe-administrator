@@ -40,6 +40,7 @@ import EventsTable from 'components/_pages/notifications/events-settings/EventsT
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
+import CommentPanel from 'components/CommentPanel';
 import Switch from 'components/Switch';
 
 interface DeassociateApprovalProfileDialogState {
@@ -947,44 +948,51 @@ export default function RaProfileDetail() {
                                 {
                                     title: 'Details',
                                     content: (
-                                        <Container className="md:flex-row">
-                                            <Widget
-                                                title="RA Profile Details"
-                                                busy={isFetchingProfile}
-                                                widgetButtons={buttons}
-                                                titleSize="large"
-                                                refreshAction={getFreshRaProfileDetail}
-                                                lockSize="large"
-                                                className="w-full md:w-1/2"
-                                            >
-                                                <CustomTable headers={detailHeaders} data={detailData} />
-                                            </Widget>
-                                            <Container className="w-full md:w-1/2 flex flex-col">
+                                        <>
+                                            <Container className="md:flex-row">
                                                 <Widget
-                                                    title="Compliance Profiles"
-                                                    busy={isFetchingAssociatedComplianceProfiles}
-                                                    widgetButtons={complianceProfileButtons}
+                                                    title="RA Profile Details"
+                                                    busy={isFetchingProfile}
+                                                    widgetButtons={buttons}
                                                     titleSize="large"
-                                                    refreshAction={getFreshComplianceRaProfileDetail}
-                                                    widgetLockName={LockWidgetNameEnum.RaProfileComplianceDetails}
+                                                    refreshAction={getFreshRaProfileDetail}
                                                     lockSize="large"
-                                                    dataTestId="compliance-profile-widget"
+                                                    className="w-full md:w-1/2"
                                                 >
-                                                    <CustomTable headers={complianceProfileHeaders} data={complianceProfileData} />
+                                                    <CustomTable headers={detailHeaders} data={detailData} />
                                                 </Widget>
+                                                <Container className="w-full md:w-1/2 flex flex-col">
+                                                    <Widget
+                                                        title="Compliance Profiles"
+                                                        busy={isFetchingAssociatedComplianceProfiles}
+                                                        widgetButtons={complianceProfileButtons}
+                                                        titleSize="large"
+                                                        refreshAction={getFreshComplianceRaProfileDetail}
+                                                        widgetLockName={LockWidgetNameEnum.RaProfileComplianceDetails}
+                                                        lockSize="large"
+                                                        dataTestId="compliance-profile-widget"
+                                                    >
+                                                        <CustomTable headers={complianceProfileHeaders} data={complianceProfileData} />
+                                                    </Widget>
 
-                                                <Widget
-                                                    title="Approval Profiles"
-                                                    widgetButtons={approvalProfilesButtons}
-                                                    titleSize="large"
-                                                    refreshAction={getFreshAssociatedApprovalProfiles}
-                                                    lockSize="large"
-                                                    widgetLockName={LockWidgetNameEnum.ListOfApprovalProfiles}
-                                                >
-                                                    <CustomTable headers={approvalProfilesHeaders} data={approvalProfilesData} />
-                                                </Widget>
+                                                    <Widget
+                                                        title="Approval Profiles"
+                                                        widgetButtons={approvalProfilesButtons}
+                                                        titleSize="large"
+                                                        refreshAction={getFreshAssociatedApprovalProfiles}
+                                                        lockSize="large"
+                                                        widgetLockName={LockWidgetNameEnum.ListOfApprovalProfiles}
+                                                    >
+                                                        <CustomTable headers={approvalProfilesHeaders} data={approvalProfilesData} />
+                                                    </Widget>
+                                                </Container>
                                             </Container>
-                                        </Container>
+                                            {raProfile && (
+                                                <Container marginTop>
+                                                    <CommentPanel resource={Resource.RaProfiles} objectUuid={raProfile.uuid} />
+                                                </Container>
+                                            )}
+                                        </>
                                     ),
                                 },
                                 {
