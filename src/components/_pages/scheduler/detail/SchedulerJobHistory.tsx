@@ -53,12 +53,8 @@ function SchedulerJobHistory({ uuid }: Props) {
                 width: 'auto',
             },
             {
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Status
-                        <EnumColumnDescription platformEnum={PlatformEnum.SchedulerJobExecutionStatus} title="Status" />
-                    </span>
-                ),
+                content: 'Status',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.SchedulerJobExecutionStatus} title="Status" />,
                 sortable: true,
                 id: 'status',
                 width: 'auto',

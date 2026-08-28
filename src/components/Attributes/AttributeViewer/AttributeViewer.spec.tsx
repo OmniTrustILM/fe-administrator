@@ -88,7 +88,7 @@ test.describe('AttributeViewer', () => {
         );
 
         await expect(page.getByText('My Connector')).toBeVisible();
-        await expect(page.getByText('Connectors')).toBeVisible();
+        await expect(page.getByText('Connectors', { exact: true })).toBeVisible();
     });
 
     test('ATTRIBUTE_EDIT viewer handles undefined attributes gracefully', async ({ mount, page }) => {

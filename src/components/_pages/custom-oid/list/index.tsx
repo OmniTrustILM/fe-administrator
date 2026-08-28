@@ -56,12 +56,8 @@ export default function CustomOIDList() {
                 width: '40%',
             },
             {
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Category
-                        <EnumColumnDescription platformEnum={PlatformEnum.OidCategory} title="Category" />
-                    </span>
-                ),
+                content: 'Category',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.OidCategory} title="Category" />,
                 align: 'center',
                 sortable: true,
                 id: 'category',

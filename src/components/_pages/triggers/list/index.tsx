@@ -110,12 +110,8 @@ const TriggerList = () => {
                 sortable: true,
             },
             {
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Event Name
-                        <EnumColumnDescription platformEnum={PlatformEnum.ResourceEvent} title="Event Name" />
-                    </span>
-                ),
+                content: 'Event Name',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.ResourceEvent} title="Event Name" />,
                 align: 'left',
                 id: 'eventName',
                 width: '15%',

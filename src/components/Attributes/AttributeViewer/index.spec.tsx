@@ -293,7 +293,7 @@ test.describe('AttributeViewer', () => {
         await mount(<AttributeViewerMountHarness viewerType={ATTRIBUTE_VIEWER_TYPE.METADATA_FLAT} metadata={metadata} />);
         await expect(page.getByTestId('custom-table')).toBeVisible({ timeout: 10000 });
         await expect(page.getByText('ConnX')).toBeVisible();
-        await expect(page.getByText('Connectors')).toBeVisible();
+        await expect(page.getByText('Connectors', { exact: true })).toBeVisible();
         await expect(page.getByText('Flat 1')).toBeVisible();
         await expect(page.getByText('flatval')).toBeVisible();
     });
