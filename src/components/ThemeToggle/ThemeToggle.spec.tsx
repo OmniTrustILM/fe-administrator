@@ -21,6 +21,26 @@ test.describe('ThemeToggle', () => {
         await expect(trigger.locator('[data-theme-icon="light"].lucide-sun')).toBeVisible();
     });
 
+    test('should show a keyboard focus indicator on the trigger', async ({ mount, page }) => {
+        await mount(
+            <ThemeProvider branding={unbranded}>
+                <ThemeToggle />
+            </ThemeProvider>,
+        );
+        const trigger = page.getByTestId('theme-toggle').locator('button');
+        await trigger.focus();
+
+        await expect
+            .poll(async () =>
+                trigger.evaluate(
+                    (element) =>
+                        globalThis.getComputedStyle(element).outlineStyle !== 'none' ||
+                        globalThis.getComputedStyle(element).boxShadow !== 'none',
+                ),
+            )
+            .toBe(true);
+    });
+
     test('should offer only Light and Dark without branding', async ({ mount, page }) => {
         await mount(
             <ThemeProvider branding={unbranded}>

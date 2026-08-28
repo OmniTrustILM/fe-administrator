@@ -25,6 +25,12 @@ export type State = {
     /** The subset an unauthenticated caller may read, used by the login page before there is any session. */
     publicBranding?: PublicBrandingModel;
 
+    /**
+     * Whether the last anonymous read failed. Set because a failure still settles `publicBranding` on the platform
+     * default, which a consumer cannot otherwise tell apart from an instance that genuinely has no branding.
+     */
+    publicBrandingReadFailed: boolean;
+
     isFetchingBranding: boolean;
     isFetchingPublicBranding: boolean;
     isUpdatingBranding: boolean;
@@ -36,6 +42,7 @@ export type State = {
 };
 
 export const initialState: State = {
+    publicBrandingReadFailed: false,
     isFetchingBranding: false,
     isFetchingPublicBranding: false,
     isUpdatingBranding: false,
@@ -76,6 +83,7 @@ export const slice = createSlice({
 
         getPublicBrandingSuccess: (state, action: PayloadAction<{ branding: PublicBrandingModel }>) => {
             state.publicBranding = action.payload.branding;
+            state.publicBrandingReadFailed = false;
             state.isFetchingPublicBranding = false;
         },
 
@@ -85,6 +93,7 @@ export const slice = createSlice({
          */
         getPublicBrandingFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.publicBranding = platformDefaultBranding;
+            state.publicBrandingReadFailed = true;
             state.isFetchingPublicBranding = false;
             state.error = action.payload.error;
         },
@@ -138,6 +147,7 @@ const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const branding = createSelector(state, (state) => state?.branding);
 const publicBranding = createSelector(state, (state) => state?.publicBranding);
+const publicBrandingReadFailed = createSelector(state, (state) => state?.publicBrandingReadFailed ?? false);
 
 const isFetchingBranding = createSelector(state, (state) => state?.isFetchingBranding);
 const isFetchingPublicBranding = createSelector(state, (state) => state?.isFetchingPublicBranding);
@@ -151,6 +161,7 @@ export const selectors = {
     state,
     branding,
     publicBranding,
+    publicBrandingReadFailed,
 
     isFetchingBranding,
     isFetchingPublicBranding,

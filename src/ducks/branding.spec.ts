@@ -73,6 +73,20 @@ describe('branding slice', () => {
             expect(state.publicBranding?.configured).toBe(false);
             expect(state.error).toBe('offline');
         });
+
+        test('getPublicBrandingFailure records that the default is a fallback and not an answer', () => {
+            const state = reducer({ ...initialState }, actions.getPublicBrandingFailure({ error: 'offline' }));
+
+            expect(state.publicBrandingReadFailed).toBe(true);
+        });
+
+        test('getPublicBrandingSuccess clears the failure recorded by an earlier read', () => {
+            const branding = publicBranding({ configured: true });
+
+            const state = reducer({ ...initialState, publicBrandingReadFailed: true }, actions.getPublicBrandingSuccess({ branding }));
+
+            expect(state.publicBrandingReadFailed).toBe(false);
+        });
     });
 
     describe('updating', () => {
@@ -171,6 +185,7 @@ describe('branding slice', () => {
 
             expect(selectors.branding(store)).toEqual(populated.branding);
             expect(selectors.publicBranding(store)).toEqual(populated.publicBranding);
+            expect(selectors.publicBrandingReadFailed(store)).toBe(populated.publicBrandingReadFailed);
             expect(selectors.error(store)).toBe('stale');
             expect(selectors.isFetchingBranding(store)).toBe(false);
             expect(selectors.isFetchingPublicBranding(store)).toBe(false);
@@ -184,6 +199,7 @@ describe('branding slice', () => {
         test('tolerate the slice being absent from the store', () => {
             expect(selectors.branding({} as never)).toBeUndefined();
             expect(selectors.isFetchingBranding({} as never)).toBeUndefined();
+            expect(selectors.publicBrandingReadFailed({} as never)).toBe(false);
         });
     });
 });

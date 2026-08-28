@@ -156,6 +156,18 @@ test.describe('ThemeProvider', () => {
         await expect.poll(async () => page.evaluate(() => globalThis.localStorage.getItem('theme-operator-default'))).toBeNull();
     });
 
+    test('should keep the cached operator default while no branding has been read', async ({ mount, page }) => {
+        await seed(page, { 'theme-operator-default': 'dark' });
+        await mount(
+            <ThemeProvider>
+                <Probe />
+            </ThemeProvider>,
+        );
+
+        await expect(page.getByTestId('mode')).toBeVisible();
+        await expect.poll(async () => page.evaluate(() => globalThis.localStorage.getItem('theme-operator-default'))).toBe('dark');
+    });
+
     test('should apply the cached operator default before the branding read lands', async ({ mount, page }) => {
         await page.emulateMedia({ colorScheme: 'light' });
         await seed(page, { 'theme-operator-default': 'dark' });

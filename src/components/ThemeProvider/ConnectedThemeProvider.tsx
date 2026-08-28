@@ -15,12 +15,16 @@ type Props = {
 function ConnectedThemeProvider({ children }: Readonly<Props>) {
     const dispatch = useDispatch();
     const branding = useSelector(selectors.publicBranding);
+    const readFailed = useSelector(selectors.publicBrandingReadFailed);
 
     useEffect(() => {
         dispatch(actions.getPublicBranding());
     }, [dispatch]);
 
-    return <ThemeProvider branding={branding}>{children}</ThemeProvider>;
+    // A failed read still settles the store on the platform default so the login page can render. Handing that to
+    // ThemeProvider would look like a live "not branded" answer, clearing the cached operator default and dropping a
+    // branded instance to the platform pair. Withholding it instead leaves the cache — and the branded modes — intact.
+    return <ThemeProvider branding={readFailed ? undefined : branding}>{children}</ThemeProvider>;
 }
 
 export default ConnectedThemeProvider;

@@ -39,7 +39,7 @@ export function useTheme(): ThemeContextValue {
 
 type Props = {
     children: ReactNode;
-    /** The operator's branding, once read. Absent while the read is in flight, and on a Core that predates branding. */
+    /** The operator's branding, once successfully read. Absent while the read is in flight, when it failed, and on a Core that predates branding. */
     branding?: Pick<PublicBrandingModel, 'configured' | 'defaultTheme'>;
 };
 
