@@ -72,8 +72,28 @@ export default function PlatformSettingsDetail() {
      */
     const canUpdateBranding = !!profile?.permissions?.allowedListings?.includes(Resource.Settings);
 
+    // Declared once so the skeleton below cannot advertise a different number of tabs than the layout renders.
+    const tabs = [
+        {
+            title: 'Utils',
+            content: <UtilsSettings platformSettings={platformSettings} />,
+        },
+        {
+            title: 'Certificates',
+            content: <CertificateSettings platformSettings={platformSettings} />,
+        },
+        {
+            title: 'Request Attributes',
+            content: <RequestAttributesSettings />,
+        },
+        {
+            title: 'Appearance',
+            content: <AppearanceSettings canUpdate={canUpdateBranding} />,
+        },
+    ];
+
     if (isFetchingPlatform && !isEditModalOpen) {
-        return <DetailPageSkeleton layout="tabs" tabCount={2} rowCount={2} showBreadcrumb={false} tabWidgetButtonsCount={1} />;
+        return <DetailPageSkeleton layout="tabs" tabCount={tabs.length} rowCount={2} showBreadcrumb={false} tabWidgetButtonsCount={1} />;
     }
 
     return (
@@ -85,29 +105,7 @@ export default function PlatformSettingsDetail() {
                 titleSize="large"
                 refreshAction={getFreshPlatformSettings}
             >
-                <TabLayout
-                    tabUrlParam="tab"
-                    noBorder
-                    isLoading={isFetchingPlatform && !isEditModalOpen}
-                    tabs={[
-                        {
-                            title: 'Utils',
-                            content: <UtilsSettings platformSettings={platformSettings} />,
-                        },
-                        {
-                            title: 'Certificates',
-                            content: <CertificateSettings platformSettings={platformSettings} />,
-                        },
-                        {
-                            title: 'Request Attributes',
-                            content: <RequestAttributesSettings />,
-                        },
-                        {
-                            title: 'Appearance',
-                            content: <AppearanceSettings canUpdate={canUpdateBranding} />,
-                        },
-                    ]}
-                />
+                <TabLayout tabUrlParam="tab" noBorder isLoading={isFetchingPlatform && !isEditModalOpen} tabs={tabs} />
             </Widget>
 
             <Dialog

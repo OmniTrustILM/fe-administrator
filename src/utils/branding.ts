@@ -59,6 +59,29 @@ export const logoRatioError = (width: number, height: number): string | undefine
 /** The media type carried by a data URI, or undefined for anything that is not one. */
 export const dataUriMediaType = (dataUri: string): string | undefined => /^data:([^;,]+)[;,]/.exec(dataUri)?.[1];
 
+/** The media type implied by a file name, for the extension fallback above. */
+export const logoMediaTypeFromName = (name: string): string | undefined => {
+    if (/\.png$/i.test(name)) {
+        return 'image/png';
+    }
+
+    return /\.svg$/i.test(name) ? 'image/svg+xml' : undefined;
+};
+
+/**
+ * Restates the media type of a base64 data URI. `readAsDataURL` takes it from the blob, so a file the browser reported
+ * no type for yields a URI that declares none either - which Core rejects, and which an `Image` cannot decode.
+ */
+export const withDataUriMediaType = (dataUri: string, mediaType: string): string => {
+    const separator = dataUri.indexOf(',');
+
+    if (separator < 0 || !dataUri.slice(0, separator).endsWith(';base64')) {
+        return dataUri;
+    }
+
+    return `data:${mediaType};base64${dataUri.slice(separator)}`;
+};
+
 export const readFileAsDataUri = (file: Blob): Promise<string> =>
     new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -111,6 +134,19 @@ export const readLogoFile = async (file: File): Promise<LogoReadResult> => {
         dataUri = await readFileAsDataUri(file);
     } catch {
         return { error: 'Could not read the selected file.' };
+    }
+
+    // The type check above deliberately accepts a file the browser reported no type for, so the URI it produced may
+    // declare nothing, or a generic type. Core requires one of its two, so it is restated from the extension that was
+    // accepted - before the measurement below, which needs a decodable URI.
+    if (!(LOGO_MEDIA_TYPES as readonly string[]).includes(dataUriMediaType(dataUri) ?? '')) {
+        const inferred = logoMediaTypeFromName(file.name);
+
+        if (!inferred) {
+            return { error: 'Logo must be a PNG or an SVG.' };
+        }
+
+        dataUri = withDataUriMediaType(dataUri, inferred);
     }
 
     const measured = await measureDataUri(dataUri);

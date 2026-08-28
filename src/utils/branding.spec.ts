@@ -4,11 +4,13 @@ import {
     dataUriMediaType,
     isBrandColor,
     LOGO_MAX_DECODED_BYTES,
+    logoMediaTypeFromName,
     logoRatioError,
     logoSizeError,
     logoTypeError,
     readFileAsDataUri,
     readLogoFile,
+    withDataUriMediaType,
 } from './branding';
 
 const file = (overrides: Partial<{ type: string; name: string; size: number }> = {}) => ({
@@ -104,6 +106,37 @@ describe('branding', () => {
         });
     });
 
+    describe('logoMediaTypeFromName', () => {
+        test.each([
+            ['logo.png', 'image/png'],
+            ['LOGO.PNG', 'image/png'],
+            ['logo.svg', 'image/svg+xml'],
+            ['logo.SVG', 'image/svg+xml'],
+        ])('should read %s as %s', (name, expected) => {
+            expect(logoMediaTypeFromName(name)).toBe(expected);
+        });
+
+        test.each(['logo.jpg', 'logo', 'logo.png.txt'])('should report none for %s', (name) => {
+            expect(logoMediaTypeFromName(name)).toBeUndefined();
+        });
+    });
+
+    describe('withDataUriMediaType', () => {
+        test('should restate the media type of a base64 data URI', () => {
+            expect(withDataUriMediaType('data:application/octet-stream;base64,PHN2Zy8+', 'image/svg+xml')).toBe(
+                'data:image/svg+xml;base64,PHN2Zy8+',
+            );
+        });
+
+        test('should supply a media type where the URI declares none', () => {
+            expect(withDataUriMediaType('data:;base64,PHN2Zy8+', 'image/svg+xml')).toBe('data:image/svg+xml;base64,PHN2Zy8+');
+        });
+
+        test.each(['data:image/png,raw', 'not a data uri'])('should leave %s alone rather than corrupt it', (value) => {
+            expect(withDataUriMediaType(value, 'image/png')).toBe(value);
+        });
+    });
+
     describe('readFileAsDataUri', () => {
         test('should read a blob as a data URI', async () => {
             await expect(readFileAsDataUri(new Blob(['<svg/>'], { type: 'image/svg+xml' }))).resolves.toMatch(
@@ -166,6 +199,38 @@ describe('branding', () => {
             expect(result.dataUri).toMatch(/^data:image\/png;base64,/);
 
             vi.unstubAllGlobals();
+        });
+
+        /**
+         * `readAsDataURL` takes the media type from the blob, so a file the browser reported none for produces
+         * `application/octet-stream` - which Core rejects. The extension the type check accepted supplies it instead.
+         */
+        test('should declare the media type for a file the browser reported none for', async () => {
+            vi.stubGlobal(
+                'Image',
+                class {
+                    onload: (() => void) | null = null;
+                    naturalWidth = 300;
+                    naturalHeight = 150;
+                    set src(_value: string) {
+                        queueMicrotask(() => this.onload?.());
+                    }
+                },
+            );
+
+            const untyped = new File(['<svg/>'], 'logo.svg', { type: '' });
+            const result = await readLogoFile(untyped);
+
+            expect(result.error).toBeUndefined();
+            expect(result.dataUri).toMatch(/^data:image\/svg\+xml;base64,/);
+
+            vi.unstubAllGlobals();
+        });
+
+        test('should refuse a file the browser reported no type for and whose name says nothing either', async () => {
+            const untyped = new File(['<svg/>'], 'logo', { type: '' });
+
+            await expect(readLogoFile(untyped)).resolves.toEqual({ error: 'Logo must be a PNG or an SVG.' });
         });
 
         test('should accept an image that declares no intrinsic size', async () => {

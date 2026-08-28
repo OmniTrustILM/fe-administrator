@@ -140,6 +140,40 @@ test.describe('AppearanceSettings', () => {
         await expect(page.getByTestId('logo-filename-lightLogo')).toHaveText('brand.png');
     });
 
+    /**
+     * The reads settle asynchronously, so the slot is claimed by a token. These pin that the token still admits the
+     * result it was issued for: a compare that is off by one would silently drop every selection.
+     */
+    test('should keep the second of two selections on the same slot', async ({ mount, page }) => {
+        const png = Buffer.from(PNG_DATA_URI.split(',')[1], 'base64');
+        await mount(<AppearanceSettingsTestWrapper />);
+        const input = page.getByTestId('logo-input-lightLogo');
+
+        await chooseFile(input, 'first.png', 'image/png', png);
+        await chooseFile(input, 'second.png', 'image/png', png);
+
+        await expect(page.getByTestId('logo-filename-lightLogo')).toHaveText('second.png');
+
+        await page.getByTestId('appearance-save').click();
+        await expect(page.getByTestId('sent-branding')).toContainText('"lightLogo"');
+    });
+
+    test('should leave the slot empty when a selection is deleted again', async ({ mount, page }) => {
+        await mount(<AppearanceSettingsTestWrapper />);
+        await chooseFile(
+            page.getByTestId('logo-input-lightLogo'),
+            'brand.png',
+            'image/png',
+            Buffer.from(PNG_DATA_URI.split(',')[1], 'base64'),
+        );
+        await expect(page.getByTestId('logo-filename-lightLogo')).toHaveText('brand.png');
+
+        await page.getByTestId('logo-delete-lightLogo').click();
+
+        await expect(page.getByTestId('logo-empty-lightLogo')).toBeVisible();
+        await expect(page.getByTestId('logo-filename-lightLogo')).toHaveText('No file selected');
+    });
+
     test('should render a stored logo through an img element', async ({ mount, page }) => {
         await mount(<AppearanceSettingsTestWrapper preloadedState={storedBranding({ lightLogo: PNG_DATA_URI })} />);
 

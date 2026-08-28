@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from 'components/Button';
 import Dialog from 'components/Dialog';
@@ -61,7 +61,13 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
 
     const [colors, setColors] = useState<Colors>(() => toColors(branding));
     const [logos, setLogos] = useState<Logos>(() => toLogos(branding));
+    const [readingLogos, setReadingLogos] = useState<Record<LogoKey, boolean>>({ lightLogo: false, darkLogo: false });
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+
+    // Reads settle asynchronously, so the slot is claimed by a token. Anything that supersedes a read - a second file,
+    // or a delete - bumps the token, and the earlier read's result is then dropped instead of overwriting the newer
+    // choice. A plain `await` would let the slower of two selections win.
+    const logoReadTokens = useRef<Record<LogoKey, number>>({ lightLogo: 0, darkLogo: 0 });
 
     useEffect(() => {
         dispatch(actions.getBranding());
@@ -79,6 +85,9 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
 
     const hasInvalidColor = useMemo(() => Object.values(colors).some((value) => value !== '' && !isBrandColor(value)), [colors]);
 
+    // Saving mid-read would send the branding without the file the user just chose.
+    const isReadingLogo = LOGO_SLOTS.some(({ key }) => readingLogos[key]);
+
     const isDirty = useMemo(() => {
         const stored = toColors(branding);
         const storedLogos = toLogos(branding);
@@ -94,8 +103,18 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
     }, []);
 
     const onLogoSelect = useCallback(async (key: LogoKey, file: File) => {
+        logoReadTokens.current[key] += 1;
+        const token = logoReadTokens.current[key];
+
+        setReadingLogos((current) => ({ ...current, [key]: true }));
+
         const result = await readLogoFile(file);
 
+        if (logoReadTokens.current[key] !== token) {
+            return;
+        }
+
+        setReadingLogos((current) => ({ ...current, [key]: false }));
         setLogos((current) => ({
             ...current,
             [key]: result.error
@@ -105,6 +124,9 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
     }, []);
 
     const onLogoDelete = useCallback((key: LogoKey) => {
+        logoReadTokens.current[key] += 1;
+
+        setReadingLogos((current) => ({ ...current, [key]: false }));
         setLogos((current) => ({ ...current, [key]: { dataUri: undefined, fileName: undefined, error: undefined } }));
     }, []);
 
@@ -185,7 +207,7 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
                     inProgress={isUpdating}
                     type="button"
                     onClick={onSave}
-                    disabled={isReadOnly || hasInvalidColor || !isDirty}
+                    disabled={isReadOnly || isReadingLogo || hasInvalidColor || !isDirty}
                     dataTestId="appearance-save"
                 />
                 <Button
