@@ -136,18 +136,13 @@ export function useAreDefaultValuesSame(defaultValues: Record<string, unknown>) 
 }
 
 /**
- * Tracks whether an element's content is wider than the element itself, i.e. whether the browser is
- * applying the ellipsis. A list cell only reveals its full value when it is actually cut off, and a
- * column set the user rearranges changes cell widths with no window resize, so the check is driven
- * by a ResizeObserver on the element rather than by a window listener.
+ * Whether an element's content is wider than the element, i.e. whether the browser is applying the
+ * ellipsis. Measured by a ResizeObserver on the element, because rearranging a column set changes
+ * cell widths with no window resize.
  *
- * The returned ref is a callback ref on purpose. Acting on truncation usually means wrapping the
- * element — in a tooltip, say — which remounts it; an object ref would then still point at the
- * detached node, whose width is zero, and the truncation would immediately unset itself. Following
- * the node also means a detached one is never measured.
- *
- * `value` is what the element renders; passing it re-measures when the text changes, which a
- * ResizeObserver alone would miss whenever a longer value happens to occupy the same box.
+ * The returned ref is a callback ref: acting on truncation usually means wrapping the element, which
+ * remounts it, and an object ref would keep pointing at the detached node and measure zero width.
+ * `value` is what the element renders, and re-measures on a text change the observer cannot see.
  */
 export function useIsTruncated<T extends HTMLElement>(value: unknown): [(node: T | null) => void, boolean] {
     const [isTruncated, setIsTruncated] = useState(false);

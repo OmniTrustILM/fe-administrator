@@ -1,6 +1,5 @@
-import { Link } from 'react-router';
 import Tooltip from 'components/Tooltip';
-import type { ListCellValue } from 'utils/attributes/listCellValues';
+import { listCellLinkPath, type ListCellValue } from 'utils/attributes/listCellValues';
 import TruncatedCell from './TruncatedCell';
 
 type Props = Readonly<{
@@ -15,15 +14,7 @@ type Props = Readonly<{
  */
 export default function ValueCell({ value, dataTestId }: Props) {
     if (value.link) {
-        return (
-            <Link
-                className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap"
-                to={`/${value.link.resource}/detail/${value.link.uuid}`}
-                data-testid={dataTestId}
-            >
-                {value.label}
-            </Link>
-        );
+        return <TruncatedCell value={value.label} to={listCellLinkPath(value.link)} dataTestId={dataTestId} />;
     }
 
     if (value.detail) {

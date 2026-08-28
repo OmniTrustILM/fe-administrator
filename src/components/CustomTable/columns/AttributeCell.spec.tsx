@@ -125,6 +125,43 @@ test.describe('AttributeCell', () => {
         await expect(page.getByRole('link', { name: 'api.acme.test' })).toHaveAttribute('href', '/certificates/detail/u-1');
     });
 
+    /** Its detail route also takes the parent entity, which a projected value does not carry. */
+    test('leaves a location unlinked rather than pointing at a route that cannot resolve', async ({ mount, page }) => {
+        await mount(
+            withProviders(
+                inCell(
+                    <AttributeCell
+                        contentType={AttributeContentType.Resource}
+                        content={[{ data: { resource: 'locations', uuid: 'u-1', name: 'Rack 4' } }]}
+                    />,
+                ),
+            ),
+        );
+
+        await expect(page.getByText('Rack 4')).toBeVisible();
+        await expect(page.getByRole('link')).toHaveCount(0);
+    });
+
+    test('keeps the overflow values navigable when they were navigable in the cell', async ({ mount, page }) => {
+        await mount(
+            withProviders(
+                inCell(
+                    <AttributeCell
+                        contentType={AttributeContentType.Resource}
+                        content={[
+                            { data: { resource: 'certificates', uuid: 'u-1', name: 'api.acme.test' } },
+                            { data: { resource: 'certificates', uuid: 'u-2', name: 'web.acme.test' } },
+                        ]}
+                    />,
+                ),
+            ),
+        );
+
+        await page.getByTestId('multi-value-overflow').click();
+
+        await expect(page.getByRole('link', { name: 'web.acme.test' })).toHaveAttribute('href', '/certificates/detail/u-2');
+    });
+
     test('shows a file by name only and keeps the mime type off the column', async ({ mount, page }) => {
         await mount(
             withProviders(

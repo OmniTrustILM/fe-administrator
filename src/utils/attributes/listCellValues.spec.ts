@@ -61,6 +61,21 @@ describe('getListCellValues', () => {
             expect(values(AttributeContentType.Time, [{ data: '22:22:02' }])).toEqual(['22:22:02']);
         });
 
+        /**
+         * A date-only value has no time zone. Formatting it would parse `yyyy-MM-dd` as UTC midnight
+         * and read it back with local getters, which lands on the previous day west of UTC.
+         */
+        it('renders a date-only value as the contract carries it, in any time zone', () => {
+            const original = process.env.TZ;
+
+            for (const zone of ['UTC', 'America/Los_Angeles', 'Pacific/Kiritimati']) {
+                process.env.TZ = zone;
+                expect(values(AttributeContentType.Date, [{ data: '2026-03-04' }])).toEqual(['2026-03-04']);
+            }
+
+            process.env.TZ = original;
+        });
+
         it('leaves an unparseable date alone rather than rendering Invalid Date', () => {
             expect(values(AttributeContentType.Date, [{ data: 'not a date' }])).toEqual(['not a date']);
         });
@@ -94,6 +109,20 @@ describe('getListCellValues', () => {
         it('carries no link when the resource or the uuid is missing', () => {
             expect(getListCellValues(AttributeContentType.Resource, [{ data: { name: 'orphan' } }])[0].link).toBeUndefined();
             expect(getListCellValues(AttributeContentType.Resource, [{ data: { uuid: 'u-1' } }])[0].link).toBeUndefined();
+        });
+
+        /** Its detail route also takes the parent entity, which a projected value does not carry. */
+        it('carries no link for a location, whose route needs more than the uuid', () => {
+            const location = [{ data: { resource: 'locations', uuid: 'u-1', name: 'Rack 4' } }];
+
+            expect(values(AttributeContentType.Resource, location)).toEqual(['Rack 4']);
+            expect(getListCellValues(AttributeContentType.Resource, location)[0].link).toBeUndefined();
+        });
+
+        it('carries no link for a resource the contract adds later', () => {
+            const unknown = [{ data: { resource: 'somethingNew', uuid: 'u-1', name: 'New' } }];
+
+            expect(getListCellValues(AttributeContentType.Resource, unknown)[0].link).toBeUndefined();
         });
     });
 

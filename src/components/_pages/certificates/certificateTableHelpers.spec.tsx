@@ -56,7 +56,7 @@ test.describe('certificateTableHelpers', () => {
             getEnumLabel: mockGetEnumLabel,
         };
 
-        test('returns array of 17 columns for minimal certificate', () => {
+        test('returns one column per entry in CERTIFICATE_COLUMNS for a minimal certificate', () => {
             const cert = buildListCertificate({
                 uuid: 'uuid-1',
                 commonName: 'cn.example.com',
@@ -73,7 +73,7 @@ test.describe('certificateTableHelpers', () => {
 
             const result = buildCertificateRowColumns(cert, baseOpts);
             expect(Array.isArray(result)).toBe(true);
-            expect(result).toHaveLength(16);
+            expect(result).toHaveLength(CERTIFICATE_COLUMNS.length);
         });
 
         test('with isLinkDisabled true commonName is plain text', () => {
@@ -89,9 +89,7 @@ test.describe('certificateTableHelpers', () => {
             const cert = buildListCertificate();
             const columns = buildCertificateRowColumns(cert, baseOpts);
 
-            // Groups is the 8th column: state, validation, compliance, key, common name, valid from,
-            // expires at, groups. An unset value is the em dash every column uses, not the
-            // per-column 'Unassigned' copy this cell used to invent.
+            // Groups is the eighth entry in CERTIFICATE_COLUMNS.
             await mount(<div>{columns[7]}</div>);
 
             await expect(page.getByTestId('empty-cell')).toBeVisible();
@@ -111,7 +109,7 @@ test.describe('certificateTableHelpers', () => {
 
             await expect(page.getByText('Production')).toBeVisible();
             await expect(page.getByText('+2')).toBeVisible();
-            // Joining every group into the cell is what made this column grow without bound.
+            // Joining every group would let the cell grow without bound.
             await expect(page.getByText('Production, PCI, EU')).toHaveCount(0);
         });
 
