@@ -53,7 +53,7 @@ function selectedLines(state: EditState) {
 /** Maps each selected line through `transform` and selects the result. */
 function perLine(state: EditState, transform: (line: string, index: number) => string): EditState {
     const { lineStart, lineEnd, lines } = selectedLines(state);
-    const replaced = lines.map(transform).join('\n');
+    const replaced = lines.map((line, index) => transform(line, index)).join('\n');
     return {
         value: state.value.slice(0, lineStart) + replaced + state.value.slice(lineEnd),
         selectionStart: lineStart,

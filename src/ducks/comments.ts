@@ -7,9 +7,7 @@ import type { WidgetLockErrorModel } from 'types/user-interface';
  * One panel per (resource, object). Everything is keyed so that two panels on one page, or the same panel across a
  * route change, never share a list, a lock or an in-flight flag.
  */
-export type PanelKey = string;
-
-export const panelKey = (resource: Resource, objectUuid: string): PanelKey => `${resource}/${objectUuid}`;
+export const panelKey = (resource: Resource, objectUuid: string): string => `${resource}/${objectUuid}`;
 
 export const THREADS_PAGE_SIZE = 10;
 export const REPLIES_PAGE_SIZE = 20;
@@ -38,7 +36,7 @@ export type RepliesState = PagedComments & {
 };
 
 export type State = {
-    threads: Record<PanelKey, ThreadsState>;
+    threads: Record<string, ThreadsState>;
     replies: Record<string, RepliesState>;
     /** Comment UUIDs with a resolve, unresolve or delete in flight. */
     busy: Record<string, boolean>;
@@ -58,7 +56,7 @@ const emptyPage = (itemsPerPage: number): PagedComments => ({
     itemsPerPage,
 });
 
-const threadsOf = (state: State, key: PanelKey): ThreadsState => {
+const threadsOf = (state: State, key: string): ThreadsState => {
     state.threads[key] ??= { ...emptyPage(THREADS_PAGE_SIZE), isFetching: false, isPosting: false };
     return state.threads[key];
 };
@@ -105,13 +103,13 @@ export const slice = createSlice({
             threads.lock = undefined;
         },
 
-        listThreadsSuccess: (state, action: PayloadAction<{ key: PanelKey; page: CommentResponseDto }>) => {
+        listThreadsSuccess: (state, action: PayloadAction<{ key: string; page: CommentResponseDto }>) => {
             const threads = threadsOf(state, action.payload.key);
             applyPage(threads, action.payload.page);
             threads.isFetching = false;
         },
 
-        listThreadsFailure: (state, action: PayloadAction<{ key: PanelKey; lock?: WidgetLockErrorModel }>) => {
+        listThreadsFailure: (state, action: PayloadAction<{ key: string; lock?: WidgetLockErrorModel }>) => {
             const threads = threadsOf(state, action.payload.key);
             threads.isFetching = false;
             threads.lock = action.payload.lock;
@@ -143,7 +141,7 @@ export const slice = createSlice({
             target.postingDenied = undefined;
         },
 
-        createCommentSuccess: (state, action: PayloadAction<{ key: PanelKey; comment: CommentDto; parentUuid?: string }>) => {
+        createCommentSuccess: (state, action: PayloadAction<{ key: string; comment: CommentDto; parentUuid?: string }>) => {
             const { key, parentUuid } = action.payload;
             if (parentUuid) {
                 repliesOf(state, parentUuid).isPosting = false;
@@ -154,7 +152,7 @@ export const slice = createSlice({
             }
         },
 
-        createCommentFailure: (state, action: PayloadAction<{ key: PanelKey; parentUuid?: string; denied?: string }>) => {
+        createCommentFailure: (state, action: PayloadAction<{ key: string; parentUuid?: string; denied?: string }>) => {
             const { key, parentUuid, denied } = action.payload;
             const target = parentUuid ? repliesOf(state, parentUuid) : threadsOf(state, key);
             target.isPosting = false;
@@ -202,7 +200,7 @@ export const slice = createSlice({
 
 const state = (reduxStore: AppState): State => reduxStore?.[slice.name] ?? initialState;
 
-const threads = (key: PanelKey) => createSelector(state, (s) => s.threads[key]);
+const threads = (key: string) => createSelector(state, (s) => s.threads[key]);
 const replies = (rootUuid: string) => createSelector(state, (s) => s.replies[rootUuid]);
 const busy = createSelector(state, (s) => s.busy);
 
