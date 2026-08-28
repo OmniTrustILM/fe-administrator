@@ -34,12 +34,8 @@ export interface ColumnDefinition {
 
 /**
  * A field the column catalogue offers, i.e. `GET /v1/{resource}/search` extended with the two flags
- * the list contract added.
- *
- * They are declared here rather than read off the generated DTO because regenerating
- * `src/types/openapi` currently pulls an unrelated platform bump that does not compile. Both are
- * optional and typed exactly as the contract declares them, so this becomes redundant — not wrong —
- * once the generated types catch up.
+ * the list contract added. Both mirror the contract exactly, and stand in until the generated DTO in
+ * `src/types/openapi` carries them.
  */
 export interface ColumnCatalogueField extends SearchFieldDataDto {
     /** Whether the field may be requested as a column of the listing. */

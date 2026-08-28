@@ -86,18 +86,54 @@ export function isColumnSelected(selected: ColumnDefinition[], field: SourcedCat
  * Stored columns resolved against the live catalogue.
  *
  * A resolved column is refreshed from the catalogue, so a field relabelled since the view was saved
- * carries its new label through, while the view's own label override survives. A column whose field
- * the catalogue no longer publishes is kept in place and marked unavailable rather than skipped:
- * silently dropping it makes a heading vanish with no explanation, and the user's next move is to
- * hunt for a field that no longer exists.
+ * carries its new label through, while the view's own label override and anything the catalogue does
+ * not carry — alignment — survive.
+ *
+ * A column the catalogue does not publish is only unavailable if the platform does not define it
+ * either. A platform default column can be absent from the filter-field catalogue and still be
+ * renderable, and marking those unavailable would drop them from the view on the next save. Anything
+ * else is kept in place and marked unavailable rather than skipped: silently dropping it makes a
+ * heading vanish with no explanation, and the user's next move is to hunt for a field that is gone.
  */
-export function resolveColumns(stored: ColumnDefinition[], fields: SourcedCatalogueField[]): PickerColumn[] {
+export function resolveColumns(
+    stored: ColumnDefinition[],
+    fields: SourcedCatalogueField[],
+    standardColumns: readonly ColumnDefinition[] = [],
+): PickerColumn[] {
     const byKey = new Map(fields.map((field) => [getColumnKey(field), field]));
+    const standardByKey = new Map(standardColumns.map((column) => [getColumnKey(column), column]));
 
     return stored.map((column) => {
-        const field = byKey.get(getColumnKey(column));
-        if (!field) return { ...column, available: false };
-        return { ...toColumnDefinition(field), ...(column.label ? { label: column.label } : {}), available: true };
+        const key = getColumnKey(column);
+        const field = byKey.get(key);
+
+        if (!field) {
+            const standard = standardByKey.get(key);
+            if (!standard) return { ...column, available: false };
+            return { ...standard, ...(column.label ? { label: column.label } : {}), available: true };
+        }
+
+        return {
+            ...toColumnDefinition(field),
+            ...(column.align ? { align: column.align } : {}),
+            ...(column.label ? { label: column.label } : {}),
+            available: true,
+        };
+    });
+}
+
+/**
+ * Whether two resolutions are the same column list. Lets a re-resolution be dropped rather than
+ * replacing state with an equal value, which is what keeps an unstable catalogue reference from
+ * re-rendering forever.
+ */
+export function isSameResolution(a: readonly PickerColumn[], b: readonly PickerColumn[]): boolean {
+    if (a.length !== b.length) return false;
+
+    return a.every((column, index) => {
+        const other = b[index];
+        const keys = new Set([...Object.keys(column), ...Object.keys(other)]) as Set<keyof PickerColumn>;
+        return [...keys].every((key) => column[key] === other[key]);
     });
 }
 

@@ -61,10 +61,20 @@ export default function SelectedColumnRow({
 
     // A column whose field the catalogue no longer publishes cannot be renamed or reordered into
     // meaning — it can only be taken out. It keeps its position and shows the stored identifier, so
-    // an administrator can tell what it was.
+    // an administrator can tell what it was. It is not draggable, but it does accept a drop, or no
+    // column could be placed immediately above it.
     if (!column.available) {
         return (
             <li
+                onDragOver={(event) => {
+                    event.preventDefault();
+                    onDragOver(index);
+                }}
+                onDrop={(event) => {
+                    event.preventDefault();
+                    onDrop();
+                }}
+                onDragEnd={onDragEnd}
                 className={cn('flex items-center gap-2 rounded-md border border-dashed border-outline px-2 py-1.5', {
                     'border-t-2 border-t-brand': isDropTarget,
                 })}

@@ -3,6 +3,7 @@ import { withProviders } from 'utils/test-helpers';
 import { AttributeContentType, FilterFieldSource, FilterFieldType, type SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import ColumnPicker from './index';
+import ColumnPickerTestWrapper from './ColumnPickerTestWrapper';
 
 const field = (identifier: string, label: string, overrides: Record<string, unknown> = {}) => ({
     fieldIdentifier: identifier,
@@ -42,6 +43,12 @@ const serialNumber: ColumnDefinition = {
     fieldSource: FilterFieldSource.Property,
     fieldIdentifier: 'SERIAL_NUMBER',
     catalogueLabel: 'Serial Number',
+};
+
+const issuerDn: ColumnDefinition = {
+    fieldSource: FilterFieldSource.Property,
+    fieldIdentifier: 'ISSUER_DN',
+    catalogueLabel: 'Issuer DN',
 };
 
 type MountOptions = {
@@ -157,6 +164,27 @@ test.describe('ColumnPicker', () => {
         await expect(page.getByTestId('header-preview')).toHaveText('Serial NumberCommon Name');
     });
 
+    /**
+     * The drop indicator is a top border on the target row, i.e. "land above this row". Moving down
+     * removes the source first, which shifts the target up one, so the insertion index has to
+     * compensate or the row lands below the row the user was shown.
+     */
+    test('drops a column above the row the indicator marks when moving down', async ({ mount, page }) => {
+        await mount(picker({ columns: [commonName, serialNumber, issuerDn] }));
+
+        await page.getByTestId('selected-column-property:COMMON_NAME').dragTo(page.getByTestId('selected-column-property:ISSUER_DN'));
+
+        await expect(page.getByTestId('header-preview')).toHaveText('Serial NumberCommon NameIssuer DN');
+    });
+
+    test('drops a column above the row the indicator marks when moving up', async ({ mount, page }) => {
+        await mount(picker({ columns: [commonName, serialNumber, issuerDn] }));
+
+        await page.getByTestId('selected-column-property:ISSUER_DN').dragTo(page.getByTestId('selected-column-property:SERIAL_NUMBER'));
+
+        await expect(page.getByTestId('header-preview')).toHaveText('Common NameIssuer DNSerial Number');
+    });
+
     test('shows where a dragged column would land', async ({ mount, page }) => {
         await mount(picker({ columns: [commonName, serialNumber] }));
 
@@ -225,12 +253,74 @@ test.describe('ColumnPicker', () => {
         await expect(page.getByTestId('header-preview')).toHaveText(/Common Name.*Environment/);
     });
 
+    /**
+     * A platform default column can be absent from the filter-field catalogue and still renderable —
+     * the keys inventory ships three such columns. Resetting used to mark them unavailable, and the
+     * next Save then silently removed them from the view.
+     */
+    test('reset keeps a platform column the catalogue does not publish, and saves it', async ({ mount, page }) => {
+        const uncatalogued: ColumnDefinition = {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'CKI_ENABLED',
+            catalogueLabel: 'Status',
+        };
+        const saved: ColumnDefinition[][] = [];
+        await mount(picker({ columns: [], standardColumns: [commonName, uncatalogued], onSave: (columns) => saved.push(columns) }));
+
+        await page.getByTestId('reset-to-standard').click();
+
+        await expect(page.getByTestId('selected-column-property:CKI_ENABLED')).not.toContainText('Unavailable');
+
+        await page.getByRole('button', { name: 'Save' }).click();
+
+        await expect.poll(() => saved.length).toBe(1);
+        expect(saved[0].map((column) => column.fieldIdentifier)).toEqual(['COMMON_NAME', 'CKI_ENABLED']);
+    });
+
     test('refills the selected columns from the platform set', async ({ mount, page }) => {
         await mount(picker({ columns: [], standardColumns: [commonName, serialNumber] }));
 
         await page.getByTestId('reset-to-standard').click();
 
         await expect(page.getByTestId('selected-columns-list').getByRole('listitem')).toHaveCount(2);
+    });
+
+    /**
+     * The dialog holds a working copy, so a re-render with new prop references must not restart the
+     * edit. The catalogue can also land after the dialog opened, which is reconciled onto the working
+     * copy rather than re-seeded from the view.
+     */
+    test('keeps an edited draft when the caller re-renders with new prop references', async ({ mount, page }) => {
+        await mount(
+            withProviders(
+                <ColumnPickerTestWrapper columns={[commonName, serialNumber]} standardColumns={[commonName]} catalogue={catalogue} />,
+            ),
+        );
+
+        await page.getByTestId('selected-column-property:SERIAL_NUMBER-remove').click();
+        await page.getByTestId('available-fields-search').fill('cost');
+        await expect(page.getByTestId('selected-columns-list').getByRole('listitem')).toHaveCount(1);
+
+        // The dialog is modal, so its overlay intercepts a real click on a control outside it.
+        await page.getByTestId('wrapper-rerender').dispatchEvent('click');
+
+        await expect(page.getByTestId('wrapper-rerender')).toHaveText('rerender 1');
+        await expect(page.getByTestId('selected-columns-list').getByRole('listitem')).toHaveCount(1);
+        await expect(page.getByTestId('available-fields-search')).toHaveValue('cost');
+    });
+
+    test('resolves a catalogue that only lands after the dialog is open', async ({ mount, page }) => {
+        await mount(
+            withProviders(<ColumnPickerTestWrapper columns={[issuerDn]} standardColumns={[]} catalogue={catalogue} withheldCatalogue />),
+        );
+
+        await expect(page.getByTestId('selected-column-property:ISSUER_DN')).toContainText('Unavailable');
+        await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+        await page.getByTestId('wrapper-release-catalogue').dispatchEvent('click');
+
+        await expect(page.getByTestId('selected-column-property:ISSUER_DN')).not.toContainText('Unavailable');
+        await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
     });
 
     test('blocks saving with no columns, because the API rejects an empty set', async ({ mount, page }) => {

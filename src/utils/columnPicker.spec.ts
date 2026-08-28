@@ -7,6 +7,7 @@ import {
     getCounterState,
     groupCatalogueFields,
     isColumnSelected,
+    isSameResolution,
     moveColumn,
     resolveColumns,
     toCatalogueFields,
@@ -206,6 +207,60 @@ describe('resolveColumns', () => {
 
     it('marks everything unavailable when the catalogue is empty', () => {
         expect(resolveColumns(stored, []).every((column) => !column.available)).toBe(true);
+    });
+
+    /**
+     * A platform default column can be absent from the filter-field catalogue and still renderable —
+     * the keys inventory ships three such columns. Marking those unavailable would drop them from the
+     * view on the next save.
+     */
+    it('keeps a platform column the catalogue does not publish available', () => {
+        const platform: ColumnDefinition[] = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CKI_ENABLED', catalogueLabel: 'Status', align: 'center' },
+        ];
+
+        expect(resolveColumns(platform, fields, platform)[0]).toMatchObject({
+            catalogueLabel: 'Status',
+            align: 'center',
+            available: true,
+        });
+    });
+
+    it('still marks an unknown column unavailable when a standard set is given', () => {
+        const platform: ColumnDefinition[] = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CKI_ENABLED', catalogueLabel: 'Status' },
+        ];
+
+        expect(resolveColumns(stored, fields, platform).map((column) => column.available)).toEqual([true, false, true]);
+    });
+
+    it('keeps alignment the catalogue does not carry while refreshing what it does', () => {
+        const aligned = [{ ...stored[0], align: 'center' as const }];
+
+        expect(resolveColumns(aligned, fields)[0]).toMatchObject({ align: 'center', catalogueLabel: 'Common Name' });
+    });
+});
+
+describe('isSameResolution', () => {
+    const resolved = () =>
+        resolveColumns([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'x' }], [field()]);
+
+    it('reports two separately built but equal resolutions as the same', () => {
+        expect(isSameResolution(resolved(), resolved())).toBe(true);
+    });
+
+    it('reports a different length as different', () => {
+        expect(isSameResolution(resolved(), [])).toBe(false);
+    });
+
+    it('reports a changed property as different', () => {
+        const changed = resolved().map((column) => ({ ...column, catalogueLabel: 'Renamed' }));
+        expect(isSameResolution(resolved(), changed)).toBe(false);
+    });
+
+    it('reports an added property as different', () => {
+        const changed = resolved().map((column) => ({ ...column, label: 'Override' }));
+        expect(isSameResolution(resolved(), changed)).toBe(false);
     });
 });
 

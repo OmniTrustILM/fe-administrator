@@ -1,12 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Dialog from 'components/Dialog';
 import type { FilterFieldSource, SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition, PickerColumn, SourcedCatalogueField } from 'types/tableColumns';
-import { MAX_COLUMNS, isColumnSelected, moveColumn, resolveColumns, toCatalogueFields, toColumnDefinition } from 'utils/columnPicker';
+import {
+    MAX_COLUMNS,
+    isColumnSelected,
+    isSameResolution,
+    moveColumn,
+    resolveColumns,
+    toCatalogueFields,
+    toColumnDefinition,
+} from 'utils/columnPicker';
 import AvailableFields from './AvailableFields';
 import HeaderPreview from './HeaderPreview';
 import SelectedColumns from './SelectedColumns';
 import { DEFAULT_SOURCE_LABELS } from './SourceBadge';
+
+const NO_STANDARD_COLUMNS: ColumnDefinition[] = [];
 
 export type ColumnPickerProps = Readonly<{
     isOpen: boolean;
@@ -29,12 +39,9 @@ export type ColumnPickerProps = Readonly<{
 
 /**
  * The dialog where a user arranges the columns of a view: what could be shown on the left, what is
- * shown on the right.
- *
- * A single combined list makes "what have I already got?" hard to answer once an organisation has
- * thirty custom attributes, so the two panes are split — search belongs to the left, and ordering,
- * renaming and removal to the right, where position means something. Nothing reaches the API until
- * Save: a half-arranged view must not hit the network on every drag.
+ * shown on the right. Two panes rather than one combined list, because an organisation with thirty
+ * custom attributes makes "what have I already got?" unanswerable. Nothing reaches the API until
+ * Save, so a half-arranged view never hits the network.
  */
 export default function ColumnPicker({
     isOpen,
@@ -42,7 +49,7 @@ export default function ColumnPicker({
     onSave,
     catalogue,
     columns,
-    standardColumns = [],
+    standardColumns = NO_STANDARD_COLUMNS,
     resourceLabel,
     getSourceLabel,
     dataTestId = 'column-picker',
@@ -51,13 +58,30 @@ export default function ColumnPicker({
     const [draft, setDraft] = useState<PickerColumn[]>([]);
     const [search, setSearch] = useState('');
 
-    // Seeded on open rather than on every change to `columns`, so the dialog holds a working copy
-    // and Cancel is simply never reading it back.
+    const hasSeeded = useRef(false);
+
+    // Seeded once per open, so the dialog holds a working copy and Cancel is simply never reading it
+    // back. A later change to `columns` or to the catalogue must not restart the user's edit, but the
+    // catalogue can also land after the dialog opened — so that case is reconciled onto the working
+    // copy, refreshing labels and availability without discarding anything the user has done.
     useEffect(() => {
-        if (!isOpen) return;
-        setDraft(resolveColumns(columns, fields));
+        if (!isOpen) {
+            hasSeeded.current = false;
+            return;
+        }
+
+        if (hasSeeded.current) {
+            setDraft((current) => {
+                const reconciled = resolveColumns(current, fields, standardColumns);
+                return isSameResolution(current, reconciled) ? current : reconciled;
+            });
+            return;
+        }
+
+        hasSeeded.current = true;
+        setDraft(resolveColumns(columns, fields, standardColumns));
         setSearch('');
-    }, [isOpen, columns, fields]);
+    }, [isOpen, columns, fields, standardColumns]);
 
     const resolveSourceLabel = useCallback(
         (source: FilterFieldSource) => getSourceLabel?.(source) ?? DEFAULT_SOURCE_LABELS[source],
@@ -105,14 +129,21 @@ export default function ColumnPicker({
     }, []);
 
     const handleResetToStandard = useCallback(() => {
-        setDraft(resolveColumns(standardColumns, fields));
+        setDraft(resolveColumns(standardColumns, fields, standardColumns));
     }, [standardColumns, fields]);
 
+    // What Save would actually send: an unresolved column is dropped, having stayed visible until
+    // then so the user could see what had gone rather than watch a heading disappear.
+    const savableColumns = useMemo(
+        () => draft.filter((column) => column.available).map(({ available: _available, ...column }) => column),
+        [draft],
+    );
+
     const handleSave = useCallback(() => {
-        // An unresolved column is dropped on save; until then it stayed visible so the user could
-        // see what had gone rather than watch a heading disappear.
-        onSave(draft.filter((column) => column.available).map(({ available: _available, ...column }) => column));
-    }, [draft, onSave]);
+        // Guarded as well as disabled: the API rejects an empty column set.
+        if (savableColumns.length === 0) return;
+        onSave(savableColumns);
+    }, [savableColumns, onSave]);
 
     const isAtCap = draft.length >= MAX_COLUMNS;
 
@@ -158,8 +189,9 @@ export default function ColumnPicker({
             buttons={[
                 { key: 'cancel', color: 'secondary', variant: 'outline', body: 'Cancel', onClick: onClose },
                 // The API rejects an empty column set, so this is the one place the dialog blocks
-                // outright rather than warning.
-                { key: 'save', color: 'primary', body: 'Save', onClick: handleSave, disabled: draft.length === 0 },
+                // outright rather than warning. Counted over what would be sent, not over the draft:
+                // a draft of nothing but unavailable rows resolves to an empty request.
+                { key: 'save', color: 'primary', body: 'Save', onClick: handleSave, disabled: savableColumns.length === 0 },
             ]}
         />
     );

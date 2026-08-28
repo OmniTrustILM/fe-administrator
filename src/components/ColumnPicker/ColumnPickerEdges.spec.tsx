@@ -130,6 +130,28 @@ test.describe('ColumnPicker · a column whose field is gone', () => {
         expect(saved[0].map((column) => column.fieldIdentifier)).toEqual(['FIELD_0', 'FIELD_1']);
     });
 
+    /**
+     * Save sends only the available columns, so a draft of nothing but unavailable rows resolves to
+     * the empty set the API rejects — even though the draft itself is not empty.
+     */
+    test('blocks saving a draft of nothing but unavailable columns', async ({ mount, page }) => {
+        await mount(picker([gone]));
+
+        await expect(page.getByTestId('selected-columns-list').getByRole('listitem')).toHaveCount(1);
+        await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+    });
+
+    /** It is not draggable, but it holds a position, so a column has to be placeable above it. */
+    test('accepts a drop, so a column can be placed immediately above it', async ({ mount, page }) => {
+        await mount(picker(withGone));
+        const rows = page.getByTestId('selected-columns-list').getByRole('listitem');
+
+        await page.getByTestId('selected-column-property:FIELD_1').dragTo(page.getByTestId('selected-column-custom:cost_centre'));
+
+        await expect(rows.nth(1)).toContainText('Field 1');
+        await expect(rows.nth(2)).toContainText('Unavailable');
+    });
+
     test('still lets the rest of the view be arranged around it', async ({ mount, page }) => {
         await mount(picker(withGone));
         const rows = page.getByTestId('selected-columns-list').getByRole('listitem');

@@ -22,7 +22,11 @@ const COUNTER_CLASSES = {
     full: 'text-danger',
 } as const;
 
-/** What you do show, in the order you show it. */
+/**
+ * The selected columns, in display order, with the count against the cap and the reset control.
+ * Reordering is available by drag and by the per-row move buttons, because a drag handle alone is
+ * not reachable from the keyboard.
+ */
 export default function SelectedColumns({ columns, getSourceLabel, onRename, onRevert, onRemove, onMove, onResetToStandard }: Props) {
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const [dropIndex, setDropIndex] = useState<number | null>(null);
@@ -35,7 +39,12 @@ export default function SelectedColumns({ columns, getSourceLabel, onRename, onR
     };
 
     const handleDrop = () => {
-        if (draggingIndex !== null && dropIndex !== null) onMove(draggingIndex, dropIndex);
+        if (draggingIndex !== null && dropIndex !== null) {
+            // The indicator is a top border on the target row, i.e. "land above this row". The move
+            // takes the source out before inserting, which shifts a target below it up by one, so a
+            // downward move has to compensate or the row lands below the highlighted one.
+            onMove(draggingIndex, draggingIndex < dropIndex ? dropIndex - 1 : dropIndex);
+        }
         finishDrag();
     };
 
