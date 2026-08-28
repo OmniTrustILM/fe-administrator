@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { CommentDto, Resource } from 'types/openapi';
 import CommentComposer from './CommentComposer';
-import CommentPagination from './CommentPagination';
 import CommentItem from './CommentItem';
 
 type Props = {
@@ -43,15 +42,12 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
         wasPosting.current = isPosting;
     }, [isPosting, postingDenied]);
 
-    const onPageChange = useCallback(
-        (pageNumber: number) => dispatch(actions.listReplies({ rootUuid: uuid, pageNumber, itemsPerPage: replies?.itemsPerPage })),
-        [dispatch, uuid, replies?.itemsPerPage],
-    );
+    const remaining = replies ? Math.max(0, replies.totalItems - replies.comments.length) : 0;
 
-    const onPageSizeChange = useCallback(
-        (itemsPerPage: number) => dispatch(actions.listReplies({ rootUuid: uuid, pageNumber: 1, itemsPerPage })),
-        [dispatch, uuid],
-    );
+    const onLoadMore = useCallback(() => {
+        if (!replies) return;
+        dispatch(actions.listReplies({ rootUuid: uuid, pageNumber: replies.pageNumber + 1, itemsPerPage: replies.itemsPerPage }));
+    }, [dispatch, uuid, replies]);
 
     const onReplySubmit = useCallback(
         (body: string) => {
@@ -102,14 +98,17 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
                                     onDelete={() => onDelete(reply, uuid)}
                                 />
                             ))}
-                            {replies && replies.totalPages > 1 && (
-                                <CommentPagination
-                                    page={replies}
-                                    disabled={replies.isFetching}
-                                    onPageChange={onPageChange}
-                                    onPageSizeChange={onPageSizeChange}
-                                    dataTestId={`thread-${uuid}-replies-pagination`}
-                                />
+                            {remaining > 0 && (
+                                <Button
+                                    variant="outline"
+                                    color="primary"
+                                    className="self-start !py-1.5 !px-3 text-xs"
+                                    onClick={onLoadMore}
+                                    disabled={replies?.isFetching}
+                                    data-testid={`thread-${uuid}-load-more`}
+                                >
+                                    Load more ({remaining} remaining)
+                                </Button>
                             )}
                             <Spinner active={!!replies?.isFetching} />
                         </div>

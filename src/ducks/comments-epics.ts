@@ -34,11 +34,14 @@ const refreshThreads = (state: AppState, resource: Resource, objectUuid: string,
     return slice.actions.listThreads({ resource, objectUuid, pageNumber: steppedBack, itemsPerPage: threads?.itemsPerPage });
 };
 
-const refreshReplies = (state: AppState, rootUuid: string, removed = false): UnknownAction => {
+/**
+ * Replies are loaded incrementally, so a refresh re-reads everything shown so far as one first page. `extra` widens the
+ * window by the replies just added, so a reply the user posted onto a full window is not left on an unloaded page.
+ */
+const refreshReplies = (state: AppState, rootUuid: string, extra = 0): UnknownAction => {
     const replies = state.comments?.replies[rootUuid];
-    const pageNumber = replies?.pageNumber ?? 1;
-    const steppedBack = removed && replies?.comments.length === 1 && pageNumber > 1 ? pageNumber - 1 : pageNumber;
-    return slice.actions.listReplies({ rootUuid, pageNumber: steppedBack, itemsPerPage: replies?.itemsPerPage });
+    const loaded = replies ? replies.pageNumber * replies.itemsPerPage : 0;
+    return slice.actions.listReplies({ rootUuid, pageNumber: 1, itemsPerPage: Math.max(REPLIES_PAGE_SIZE, loaded + extra) });
 };
 
 /** Everything that changed: the thread of a reply (if any) and always the root list, whose replyCount moved too. */
@@ -49,7 +52,7 @@ const refreshAfterChange = (
     parentUuid?: string,
     removed = false,
 ): UnknownAction[] => [
-    ...(parentUuid ? [refreshReplies(state, parentUuid, removed)] : []),
+    ...(parentUuid ? [refreshReplies(state, parentUuid)] : []),
     refreshThreads(state, resource, objectUuid, removed && !parentUuid),
 ];
 
@@ -97,7 +100,7 @@ const createComment: AppEpic = (action$, state$, deps) => {
                 mergeMap((comment) =>
                     of(
                         slice.actions.createCommentSuccess({ key, comment, parentUuid }),
-                        parentUuid ? refreshReplies(state$.value, parentUuid) : refreshThreads(state$.value, resource, objectUuid),
+                        parentUuid ? refreshReplies(state$.value, parentUuid, 1) : refreshThreads(state$.value, resource, objectUuid),
                     ),
                 ),
                 catchError((err) =>

@@ -166,13 +166,24 @@ describe('createComment epic', () => {
         ]);
     });
 
-    test('a reply re-reads the thread it was posted to', async () => {
+    test('a reply re-reads everything loaded in its thread plus the new one, as a single first page', async () => {
         const { deps, calls } = createDeps();
+        const state = stateWith({
+            replies: { r1: { ...page([comment('c1')], { pageNumber: 2, itemsPerPage: 20 }), isFetching: false, isPosting: true } },
+        });
+
+        const emitted = await run(CREATE, slice.actions.createComment({ resource, objectUuid, body: 'hi', parentUuid: 'r1' }), deps, state);
+
+        expect(calls[0].args).toMatchObject({ commentCreateRequestDto: { body: 'hi', parentUuid: 'r1' } });
+        expect(emitted[1]).toEqual(slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: 41 }));
+    });
+
+    test('a reply to a thread that was never expanded reads the first page', async () => {
+        const { deps } = createDeps();
 
         const emitted = await run(CREATE, slice.actions.createComment({ resource, objectUuid, body: 'hi', parentUuid: 'r1' }), deps);
 
-        expect(calls[0].args).toMatchObject({ commentCreateRequestDto: { body: 'hi', parentUuid: 'r1' } });
-        expect(emitted[1]).toEqual(slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: undefined }));
+        expect(emitted[1]).toEqual(slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: REPLIES_PAGE_SIZE }));
     });
 
     test('403 disables the compose box with the API message and raises no alert', async () => {
@@ -270,7 +281,7 @@ describe('deleteComment epic', () => {
 
         expect(emitted).toEqual([
             slice.actions.deleteCommentSuccess({ uuid: 'c1', parentUuid: 'r1' }),
-            slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: 20 }),
+            slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: 40 }),
             slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: undefined }),
         ]);
     });

@@ -329,6 +329,44 @@ test.describe('CommentPanel', () => {
         expect((await dispatched(page)).at(-1)).toEqual({ type: 'comments/listReplies', payload: { rootUuid: 'r1', pageNumber: 1 } });
     });
 
+    test('replies load incrementally with a Load more button', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                comments={{
+                    threads: { [KEY]: threadsPage([comment('r1', 'root', { replyCount: 45 })]) },
+                    replies: {
+                        r1: threadsPage([comment('c1', 'first')], { itemsPerPage: 20, totalItems: 45, totalPages: 3, pageNumber: 2 }),
+                    },
+                }}
+            />,
+        );
+
+        await page.getByTestId('thread-r1-toggle-replies').click();
+        const loadMore = page.getByTestId('thread-r1-load-more');
+        await expect(loadMore).toHaveText('Load more (44 remaining)');
+        await loadMore.click();
+
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/listReplies',
+            payload: { rootUuid: 'r1', pageNumber: 3, itemsPerPage: 20 },
+        });
+    });
+
+    test('a fully loaded thread has no Load more button', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                comments={{
+                    threads: { [KEY]: threadsPage([comment('r1', 'root', { replyCount: 1 })]) },
+                    replies: { r1: threadsPage([comment('c1', 'only')], { itemsPerPage: 20 }) },
+                }}
+            />,
+        );
+
+        await page.getByTestId('thread-r1-toggle-replies').click();
+        await expect(page.getByTestId('comment-c1-body')).toBeVisible();
+        await expect(page.getByTestId('thread-r1-load-more')).toHaveCount(0);
+    });
+
     test('resolve, reopen and delete dispatch against the comment uuid', async ({ mount, page }) => {
         await mount(
             <CommentPanelWithStore

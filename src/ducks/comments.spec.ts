@@ -94,6 +94,25 @@ describe('comments slice: replies', () => {
         expect(state.replies.r1).toMatchObject({ isFetching: false, comments: [expect.objectContaining({ uuid: 'c1' })] });
     });
 
+    test('a later page of replies is appended after the ones already shown, without duplicates', () => {
+        let state = reducer(
+            initialState,
+            actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c1'), comment('c2')], { totalItems: 3, totalPages: 2 }) }),
+        );
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({
+                rootUuid: 'r1',
+                page: page([comment('c2'), comment('c3')], { pageNumber: 2, totalItems: 3, totalPages: 2 }),
+            }),
+        );
+        expect(state.replies.r1.comments.map((c) => c.uuid)).toEqual(['c1', 'c2', 'c3']);
+        expect(state.replies.r1.pageNumber).toBe(2);
+
+        state = reducer(state, actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c9')]) }));
+        expect(state.replies.r1.comments.map((c) => c.uuid)).toEqual(['c9']);
+    });
+
     test('listRepliesFailure stops fetching', () => {
         const state = reducer(
             reducer(initialState, actions.listReplies({ rootUuid: 'r1', pageNumber: 1 })),

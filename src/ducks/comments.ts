@@ -121,9 +121,14 @@ export const slice = createSlice({
             repliesOf(state, action.payload.rootUuid).isFetching = true;
         },
 
+        /** Replies accumulate: page one replaces what is shown, any later page is appended below it. */
         listRepliesSuccess: (state, action: PayloadAction<{ rootUuid: string; page: CommentResponseDto }>) => {
             const replies = repliesOf(state, action.payload.rootUuid);
-            applyPage(replies, action.payload.page);
+            const { page } = action.payload;
+            const loaded = page.pageNumber > 1 ? replies.comments : [];
+            const seen = new Set(loaded.map((comment) => comment.uuid));
+            applyPage(replies, page);
+            replies.comments = [...loaded, ...page.comments.filter((comment) => !seen.has(comment.uuid))];
             replies.isFetching = false;
         },
 
