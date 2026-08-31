@@ -1190,19 +1190,12 @@ export default function CertificateDetail() {
                         {
                             title: 'Details',
                             content: (
-                                <>
-                                    <CertificateDetailsContent
-                                        certificate={certificate}
-                                        validationResult={validationResult}
-                                        isBusy={isBusy}
-                                        getFreshCertificateDetail={getFreshCertificateDetail}
-                                    />
-                                    {certificate && (
-                                        <Container marginTop>
-                                            <CommentPanel resource={Resource.Certificates} objectUuid={certificate.uuid} />
-                                        </Container>
-                                    )}
-                                </>
+                                <CertificateDetailsContent
+                                    certificate={certificate}
+                                    validationResult={validationResult}
+                                    isBusy={isBusy}
+                                    getFreshCertificateDetail={getFreshCertificateDetail}
+                                />
                             ),
                         },
                         {
@@ -1385,6 +1378,14 @@ export default function CertificateDetail() {
                                     />
                                 </Widget>
                             ),
+                        },
+                        {
+                            title: 'Comments',
+                            content: certificate ? (
+                                <Container>
+                                    <CommentPanel resource={Resource.Certificates} objectUuid={certificate.uuid} />
+                                </Container>
+                            ) : null,
                         },
                     ]}
                 />

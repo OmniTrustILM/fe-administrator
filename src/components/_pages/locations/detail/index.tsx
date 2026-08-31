@@ -731,8 +731,6 @@ export default function LocationDetail() {
                                                 hasDetails
                                             />
                                         </Widget>
-
-                                        {location && <CommentPanel resource={Resource.Locations} objectUuid={location.uuid} />}
                                     </Container>
                                 ),
                             },
@@ -758,6 +756,14 @@ export default function LocationDetail() {
                                         </Widget>
                                     </Container>
                                 ),
+                            },
+                            {
+                                title: 'Comments',
+                                content: location ? (
+                                    <Container>
+                                        <CommentPanel resource={Resource.Locations} objectUuid={location.uuid} />
+                                    </Container>
+                                ) : null,
                             },
                         ]}
                     />

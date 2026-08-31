@@ -625,8 +625,6 @@ function SecretDetail() {
                                                 </Widget>
                                             </Container>
                                         )}
-
-                                        {secret && <CommentPanel resource={Resource.Secrets} objectUuid={secret.uuid} />}
                                     </div>
                                 ),
                             },
@@ -684,6 +682,10 @@ function SecretDetail() {
                                         )}
                                     </>
                                 ),
+                            },
+                            {
+                                title: 'Comments',
+                                content: secret ? <CommentPanel resource={Resource.Secrets} objectUuid={secret.uuid} /> : null,
                             },
                         ]}
                     />

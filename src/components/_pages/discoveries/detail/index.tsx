@@ -303,12 +303,6 @@ export default function DiscoveryDetail() {
                                             <DiscoveryCertificates id={discovery.uuid} triggerHistorySummary={triggerHistorySummary} />
                                         )}
                                     </Container>
-
-                                    {discovery && (
-                                        <Container marginTop>
-                                            <CommentPanel resource={Resource.Discoveries} objectUuid={discovery.uuid} />
-                                        </Container>
-                                    )}
                                 </div>
                             ),
                         },
@@ -337,6 +331,14 @@ export default function DiscoveryDetail() {
                             content: discovery ? (
                                 <Container>
                                     <ObjectEventHistoryWidget resource={Resource.Discoveries} uuid={discovery.uuid} />
+                                </Container>
+                            ) : null,
+                        },
+                        {
+                            title: 'Comments',
+                            content: discovery ? (
+                                <Container>
+                                    <CommentPanel resource={Resource.Discoveries} objectUuid={discovery.uuid} />
                                 </Container>
                             ) : null,
                         },

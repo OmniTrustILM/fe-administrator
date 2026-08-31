@@ -599,35 +599,28 @@ export default function SigningProfileDetail() {
                             tabKey: 'details',
                             title: 'Details',
                             content: (
-                                <>
-                                    <Container className="md:flex-row">
-                                        <Widget
-                                            title="Signing Profile Details"
-                                            widgetButtons={headerButtons}
-                                            titleSize="large"
-                                            refreshAction={getFreshData}
-                                            lockSize="large"
-                                            className="w-full md:w-1/2"
-                                        >
-                                            <CustomTable headers={detailHeaders} data={generalData} />
-                                        </Widget>
+                                <Container className="md:flex-row">
+                                    <Widget
+                                        title="Signing Profile Details"
+                                        widgetButtons={headerButtons}
+                                        titleSize="large"
+                                        refreshAction={getFreshData}
+                                        lockSize="large"
+                                        className="w-full md:w-1/2"
+                                    >
+                                        <CustomTable headers={detailHeaders} data={generalData} />
+                                    </Widget>
 
-                                        <Container className="w-full md:w-1/2 flex flex-col">
-                                            {signingProfile && (
-                                                <CustomAttributeWidget
-                                                    resource={Resource.SigningProfiles}
-                                                    resourceUuid={signingProfile.uuid}
-                                                    attributes={signingProfile.customAttributes}
-                                                />
-                                            )}
-                                        </Container>
+                                    <Container className="w-full md:w-1/2 flex flex-col">
+                                        {signingProfile && (
+                                            <CustomAttributeWidget
+                                                resource={Resource.SigningProfiles}
+                                                resourceUuid={signingProfile.uuid}
+                                                attributes={signingProfile.customAttributes}
+                                            />
+                                        )}
                                     </Container>
-                                    {signingProfile && (
-                                        <Container marginTop>
-                                            <CommentPanel resource={Resource.SigningProfiles} objectUuid={signingProfile.uuid} />
-                                        </Container>
-                                    )}
-                                </>
+                                </Container>
                             ),
                         },
                         {
@@ -696,6 +689,13 @@ export default function SigningProfileDetail() {
                                     <CustomTable hasDetails={true} headers={availableProtocolsHeaders} data={availableProtocolsData} />
                                 </Widget>
                             ),
+                        },
+                        {
+                            tabKey: 'comments',
+                            title: 'Comments',
+                            content: signingProfile ? (
+                                <CommentPanel resource={Resource.SigningProfiles} objectUuid={signingProfile.uuid} />
+                            ) : null,
                         },
                     ]}
                 />

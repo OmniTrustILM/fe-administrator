@@ -336,9 +336,6 @@ export default function ApprovalDetails() {
                                     <Widget title="Approval Steps" busy={isBusy}>
                                         <CustomTable headers={stepsHeaders} data={stepsRows} hasDetails={true} />
                                     </Widget>
-                                    {approvalDetails && (
-                                        <CommentPanel resource={Resource.Approvals} objectUuid={approvalDetails.approvalUuid} />
-                                    )}
                                 </>
                             ),
                         },
@@ -346,6 +343,12 @@ export default function ApprovalDetails() {
                             title: 'Event History',
                             content: approvalDetails ? (
                                 <ObjectEventHistoryWidget resource={Resource.Approvals} uuid={approvalDetails.approvalUuid} />
+                            ) : null,
+                        },
+                        {
+                            title: 'Comments',
+                            content: approvalDetails ? (
+                                <CommentPanel resource={Resource.Approvals} objectUuid={approvalDetails.approvalUuid} />
                             ) : null,
                         },
                     ]}

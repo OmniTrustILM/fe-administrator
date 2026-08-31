@@ -432,11 +432,6 @@ export default function CryptographicKeyDetail() {
                                             <CustomTable headers={associationHeaders} data={associationBody} />
                                         </Widget>
                                     </Container>
-                                    {cryptographicKey && (
-                                        <Container marginTop>
-                                            <CommentPanel resource={Resource.Keys} objectUuid={cryptographicKey.uuid} />
-                                        </Container>
-                                    )}
                                 </>
                             ),
                         },
@@ -445,6 +440,14 @@ export default function CryptographicKeyDetail() {
                             content: cryptographicKey ? (
                                 <Container>
                                     <ObjectEventHistoryWidget resource={Resource.Keys} uuid={cryptographicKey.uuid} />
+                                </Container>
+                            ) : null,
+                        },
+                        {
+                            title: 'Comments',
+                            content: cryptographicKey ? (
+                                <Container>
+                                    <CommentPanel resource={Resource.Keys} objectUuid={cryptographicKey.uuid} />
                                 </Container>
                             ) : null,
                         },
