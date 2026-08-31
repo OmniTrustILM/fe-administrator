@@ -103,9 +103,14 @@ export const slice = createSlice({
             threads.lock = undefined;
         },
 
+        /** Thread roots accumulate: page one replaces what is shown, any later page is appended below it. */
         listThreadsSuccess: (state, action: PayloadAction<{ key: string; page: CommentResponseDto }>) => {
             const threads = threadsOf(state, action.payload.key);
-            applyPage(threads, action.payload.page);
+            const { page } = action.payload;
+            const loaded = page.pageNumber > 1 ? threads.comments : [];
+            const seen = new Set(loaded.map((comment) => comment.uuid));
+            applyPage(threads, page);
+            threads.comments = [...loaded, ...page.comments.filter((comment) => !seen.has(comment.uuid))];
             threads.isFetching = false;
         },
 

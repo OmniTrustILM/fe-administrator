@@ -59,6 +59,22 @@ describe('comments slice: threads', () => {
         });
     });
 
+    test('a later page of roots is appended after the ones already shown, without duplicates', () => {
+        let state = withThreads([comment('r1'), comment('r2')]);
+        state = reducer(
+            state,
+            actions.listThreadsSuccess({
+                key,
+                page: page([comment('r2'), comment('r3')], { pageNumber: 2, totalItems: 3, totalPages: 2 }),
+            }),
+        );
+        expect(state.threads[key].comments.map((c) => c.uuid)).toEqual(['r1', 'r2', 'r3']);
+        expect(state.threads[key].pageNumber).toBe(2);
+
+        state = reducer(state, actions.listThreadsSuccess({ key, page: page([comment('r9')]) }));
+        expect(state.threads[key].comments.map((c) => c.uuid)).toEqual(['r9']);
+    });
+
     test('listThreadsFailure with a lock locks the panel; without one it only stops fetching', () => {
         const fetching = reducer(initialState, actions.listThreads({ resource, objectUuid, pageNumber: 1 }));
         expect(reducer(fetching, actions.listThreadsFailure({ key, lock })).threads[key]).toMatchObject({ isFetching: false, lock });

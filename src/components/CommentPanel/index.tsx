@@ -1,12 +1,12 @@
+import Button from 'components/Button';
 import Dialog from 'components/Dialog';
 import Widget from 'components/Widget';
-import { actions, panelKey, selectors } from 'ducks/comments';
+import { actions, panelKey, selectors, THREADS_PAGE_SIZE } from 'ducks/comments';
 import { MessagesSquare } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { CommentDto, Resource } from 'types/openapi';
 import CommentComposer from './CommentComposer';
-import CommentPagination from './CommentPagination';
 import CommentThread from './CommentThread';
 
 type Props = {
@@ -36,23 +36,18 @@ export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) 
         };
     }, [dispatch, resource, objectUuid]);
 
-    const reload = useCallback(
-        () =>
-            dispatch(
-                actions.listThreads({ resource, objectUuid, pageNumber: threads?.pageNumber ?? 1, itemsPerPage: threads?.itemsPerPage }),
-            ),
-        [dispatch, resource, objectUuid, threads?.pageNumber, threads?.itemsPerPage],
-    );
+    // Re-reads everything loaded so far as one first page, so a refresh never collapses the list back to one page.
+    const reload = useCallback(() => {
+        const loaded = threads ? threads.pageNumber * threads.itemsPerPage : 0;
+        dispatch(actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: Math.max(loaded, THREADS_PAGE_SIZE) }));
+    }, [dispatch, resource, objectUuid, threads]);
 
-    const onPageChange = useCallback(
-        (pageNumber: number) => dispatch(actions.listThreads({ resource, objectUuid, pageNumber, itemsPerPage: threads?.itemsPerPage })),
-        [dispatch, resource, objectUuid, threads?.itemsPerPage],
-    );
+    const remaining = threads ? Math.max(0, threads.totalItems - threads.comments.length) : 0;
 
-    const onPageSizeChange = useCallback(
-        (itemsPerPage: number) => dispatch(actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage })),
-        [dispatch, resource, objectUuid],
-    );
+    const onLoadMore = useCallback(() => {
+        if (!threads) return;
+        dispatch(actions.listThreads({ resource, objectUuid, pageNumber: threads.pageNumber + 1, itemsPerPage: threads.itemsPerPage }));
+    }, [dispatch, resource, objectUuid, threads]);
 
     const onPost = useCallback(
         (body: string) => dispatch(actions.createComment({ resource, objectUuid, body })),
@@ -116,14 +111,17 @@ export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) 
                     </div>
                 )}
 
-                {threads && (
-                    <CommentPagination
-                        page={threads}
-                        disabled={threads.isFetching}
-                        onPageChange={onPageChange}
-                        onPageSizeChange={onPageSizeChange}
-                        dataTestId={`comment-panel-${objectUuid}-pagination`}
-                    />
+                {remaining > 0 && (
+                    <Button
+                        variant="outline"
+                        color="primary"
+                        className="self-start !py-1.5 !px-3 text-xs"
+                        onClick={onLoadMore}
+                        disabled={threads?.isFetching}
+                        data-testid={`comment-panel-${objectUuid}-load-more`}
+                    >
+                        Load more ({remaining} remaining)
+                    </Button>
                 )}
             </div>
 

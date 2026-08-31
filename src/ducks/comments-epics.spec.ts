@@ -151,7 +151,7 @@ describe('listReplies epic', () => {
 });
 
 describe('createComment epic', () => {
-    test('a root post re-reads the page the panel is on', async () => {
+    test('a root post re-reads everything loaded plus the new root, as a single first page', async () => {
         const { deps, calls } = createDeps();
         const state = stateWith({
             threads: { [key]: { ...page([comment('r1')], { pageNumber: 3, itemsPerPage: 5 }), isFetching: false, isPosting: true } },
@@ -162,7 +162,7 @@ describe('createComment epic', () => {
         expect(calls[0].args).toEqual({ resource, objectUuid, commentCreateRequestDto: { body: 'hello', parentUuid: undefined } });
         expect(emitted).toEqual([
             slice.actions.createCommentSuccess({ key, comment: comment('new'), parentUuid: undefined }),
-            slice.actions.listThreads({ resource, objectUuid, pageNumber: 3, itemsPerPage: 5 }),
+            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: 16 }),
         ]);
     });
 
@@ -224,7 +224,7 @@ describe('resolve and unresolve epics', () => {
         expect(calls[0]).toEqual({ name: stubName, args: { uuid: 'r1' } });
         expect(emitted).toEqual([
             success({ uuid: 'r1' }),
-            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: undefined }),
+            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: THREADS_PAGE_SIZE }),
         ]);
     });
 
@@ -256,11 +256,11 @@ describe('deleteComment epic', () => {
         expect(calls[0]).toEqual({ name: 'deleteComment', args: { uuid: 'r1' } });
         expect(emitted).toEqual([
             slice.actions.deleteCommentSuccess({ uuid: 'r1', parentUuid: undefined }),
-            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: undefined }),
+            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: THREADS_PAGE_SIZE }),
         ]);
     });
 
-    test('deleting the only root on a later page steps back a page', async () => {
+    test('deleting a root re-reads the whole loaded window from the first page', async () => {
         const { deps } = createDeps();
         const state = stateWith({
             threads: { [key]: { ...page([comment('r1')], { pageNumber: 2 }), isFetching: false, isPosting: false } },
@@ -268,7 +268,7 @@ describe('deleteComment epic', () => {
 
         const emitted = await run(DELETE, slice.actions.deleteComment({ uuid: 'r1', resource, objectUuid }), deps, state);
 
-        expect(emitted[1]).toMatchObject({ payload: { pageNumber: 1 } });
+        expect(emitted[1]).toMatchObject({ payload: { pageNumber: 1, itemsPerPage: 20 } });
     });
 
     test('deleting a reply re-reads its thread and the root list', async () => {
@@ -282,7 +282,7 @@ describe('deleteComment epic', () => {
         expect(emitted).toEqual([
             slice.actions.deleteCommentSuccess({ uuid: 'c1', parentUuid: 'r1' }),
             slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: 40 }),
-            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: undefined }),
+            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: THREADS_PAGE_SIZE }),
         ]);
     });
 
@@ -295,7 +295,7 @@ describe('deleteComment epic', () => {
         expect(emitted).toEqual([
             slice.actions.deleteCommentFailure({ uuid: 'r1' }),
             alertActions.error(`Failed to delete comment (422): ${message}`),
-            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: undefined }),
+            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: THREADS_PAGE_SIZE }),
         ]);
     });
 

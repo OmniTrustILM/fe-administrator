@@ -26,12 +26,14 @@ const toLock = (err: unknown): WidgetLockErrorModel => (err instanceof AjaxError
 const deniedMessage = (err: unknown, fallback: string) =>
     err instanceof AjaxError && typeof err.response?.message === 'string' ? err.response.message : fallback;
 
-/** Re-reads the page the panel is on, stepping back a page when the last item on it was just removed. */
-const refreshThreads = (state: AppState, resource: Resource, objectUuid: string, removed = false): UnknownAction => {
+/**
+ * Thread roots are loaded incrementally, so a refresh re-reads everything shown so far as one first page. `extra`
+ * widens the window by the roots just added, so a comment the user posted onto a full window is not left unloaded.
+ */
+const refreshThreads = (state: AppState, resource: Resource, objectUuid: string, extra = 0): UnknownAction => {
     const threads = state.comments?.threads[panelKey(resource, objectUuid)];
-    const pageNumber = threads?.pageNumber ?? 1;
-    const steppedBack = removed && threads?.comments.length === 1 && pageNumber > 1 ? pageNumber - 1 : pageNumber;
-    return slice.actions.listThreads({ resource, objectUuid, pageNumber: steppedBack, itemsPerPage: threads?.itemsPerPage });
+    const loaded = threads ? threads.pageNumber * threads.itemsPerPage : 0;
+    return slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: Math.max(THREADS_PAGE_SIZE, loaded + extra) });
 };
 
 /**
@@ -45,15 +47,9 @@ const refreshReplies = (state: AppState, rootUuid: string, extra = 0): UnknownAc
 };
 
 /** Everything that changed: the thread of a reply (if any) and always the root list, whose replyCount moved too. */
-const refreshAfterChange = (
-    state: AppState,
-    resource: Resource,
-    objectUuid: string,
-    parentUuid?: string,
-    removed = false,
-): UnknownAction[] => [
+const refreshAfterChange = (state: AppState, resource: Resource, objectUuid: string, parentUuid?: string): UnknownAction[] => [
     ...(parentUuid ? [refreshReplies(state, parentUuid)] : []),
-    refreshThreads(state, resource, objectUuid, removed && !parentUuid),
+    refreshThreads(state, resource, objectUuid),
 ];
 
 const listThreads: AppEpic = (action$, state$, deps) => {
@@ -100,7 +96,7 @@ const createComment: AppEpic = (action$, state$, deps) => {
                 mergeMap((comment) =>
                     of(
                         slice.actions.createCommentSuccess({ key, comment, parentUuid }),
-                        parentUuid ? refreshReplies(state$.value, parentUuid, 1) : refreshThreads(state$.value, resource, objectUuid),
+                        parentUuid ? refreshReplies(state$.value, parentUuid, 1) : refreshThreads(state$.value, resource, objectUuid, 1),
                     ),
                 ),
                 catchError((err) =>
@@ -170,7 +166,7 @@ const deleteComment: AppEpic = (action$, state$, deps) => {
                 mergeMap(() =>
                     of(
                         slice.actions.deleteCommentSuccess({ uuid, parentUuid }),
-                        ...refreshAfterChange(state$.value, resource, objectUuid, parentUuid, true),
+                        ...refreshAfterChange(state$.value, resource, objectUuid, parentUuid),
                     ),
                 ),
                 catchError((err) =>
