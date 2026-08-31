@@ -10,6 +10,8 @@ type Props = {
     onSubmit: (body: string) => void;
     onCancel?: () => void;
     isPosting: boolean;
+    /** Set by the store when the last post committed; the draft is kept until then, so a failure loses nothing. */
+    postSucceeded: boolean;
     /** Message from the API's 403: shown in place of the box, because the API, not the FE, decides who may post. */
     denied?: string;
     placeholder: string;
@@ -55,6 +57,7 @@ export default function CommentComposer({
     onSubmit,
     onCancel,
     isPosting,
+    postSucceeded,
     denied,
     placeholder,
     submitLabel,
@@ -80,6 +83,17 @@ export default function CommentComposer({
         textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
         textarea.scrollTop = scrollTop;
     }, [body, preview]);
+
+    // The draft is cleared only once the store reports the post committed: a 422 or a network failure keeps the
+    // text in the box so the user can correct or retry it.
+    const wasSucceeded = useRef(postSucceeded);
+    useEffect(() => {
+        if (!wasSucceeded.current && postSucceeded) {
+            setBody('');
+            setPreview(false);
+        }
+        wasSucceeded.current = postSucceeded;
+    }, [postSucceeded]);
 
     // The whole box is scrolled, not just the textarea, so the toolbar and the submit button end up on screen too.
     useEffect(() => {
@@ -129,8 +143,6 @@ export default function CommentComposer({
     const submit = () => {
         if (!canSubmit) return;
         onSubmit(body);
-        setBody('');
-        setPreview(false);
     };
 
     return (

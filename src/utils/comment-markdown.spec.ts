@@ -155,6 +155,15 @@ describe('renderCommentMarkdown: hostile payloads', () => {
         expect(dom.innerHTML).not.toMatch(/javascript:/i);
     });
 
+    test.each(['[x](&#999999999999999999;)', '[x](&#x110000;abc)', '[x](&#xFFFFFFFFFF;)'])(
+        'malformed numeric entities in %s render inert text instead of throwing',
+        (source) => {
+            const dom = toDom(source);
+            expect(dom.querySelector('a[href^="javascript" i]')).toBeNull();
+            expect(dom.textContent).toContain('x');
+        },
+    );
+
     test('hostile reference-style links are neutralized', () => {
         const dom = toDom('[click][ref]\n\n[ref]: javascript:alert(1)');
         expect(dom.querySelector('a[href^="javascript" i]')).toBeNull();

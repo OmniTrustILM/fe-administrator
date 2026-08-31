@@ -2,7 +2,7 @@ import type { AppEpic, AppState, EpicDependencies } from 'ducks';
 import type { UnknownAction } from 'redux';
 import { type Observable, of } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
-import { catchError, filter, map, mergeMap } from 'rxjs/operators';
+import { catchError, filter, groupBy, map, mergeMap, switchMap } from 'rxjs/operators';
 import type { Resource } from 'types/openapi';
 import { LockTypeEnum, type WidgetLockErrorModel } from 'types/user-interface';
 import { extractError, getLockWidgetObject } from 'utils/net';
@@ -55,34 +55,52 @@ const refreshAfterChange = (state: AppState, resource: Resource, objectUuid: str
 const listThreads: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.listThreads.match),
-        // mergeMap rather than switchMap: two panels may list concurrently and neither may cancel the other.
-        mergeMap((action) => {
-            const { resource, objectUuid, pageNumber, itemsPerPage = THREADS_PAGE_SIZE } = action.payload;
-            const key = panelKey(resource, objectUuid);
-            return deps.apiClients.comments.listComments({ resource, objectUuid, pageNumber, itemsPerPage }).pipe(
-                map((page) => slice.actions.listThreadsSuccess({ key, page })),
-                catchError((err) =>
-                    isValidationError(err)
-                        ? of(slice.actions.listThreadsFailure({ key }), alertActions.error(extractError(err, 'Failed to list comments')))
-                        : of(slice.actions.listThreadsFailure({ key, lock: toLock(err) })),
-                ),
-            );
-        }),
+        // Panels stay concurrent with each other, but within one panel a newer request cancels the one in flight,
+        // so a slow older page can never land on top of (or behind) a fresher list.
+        groupBy((action) => panelKey(action.payload.resource, action.payload.objectUuid)),
+        mergeMap((panel$) =>
+            panel$.pipe(
+                switchMap((action) => {
+                    const { resource, objectUuid, pageNumber, itemsPerPage = THREADS_PAGE_SIZE } = action.payload;
+                    const key = panelKey(resource, objectUuid);
+                    return deps.apiClients.comments.listComments({ resource, objectUuid, pageNumber, itemsPerPage }).pipe(
+                        map((page) => slice.actions.listThreadsSuccess({ key, page })),
+                        catchError((err) =>
+                            isValidationError(err)
+                                ? of(
+                                      slice.actions.listThreadsFailure({ key }),
+                                      alertActions.error(extractError(err, 'Failed to list comments')),
+                                  )
+                                : of(slice.actions.listThreadsFailure({ key, lock: toLock(err) })),
+                        ),
+                    );
+                }),
+            ),
+        ),
     );
 };
 
 const listReplies: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.listReplies.match),
-        mergeMap((action) => {
-            const { rootUuid, pageNumber, itemsPerPage = REPLIES_PAGE_SIZE } = action.payload;
-            return deps.apiClients.comments.listReplies({ uuid: rootUuid, pageNumber, itemsPerPage }).pipe(
-                map((page) => slice.actions.listRepliesSuccess({ rootUuid, page })),
-                catchError((err) =>
-                    of(slice.actions.listRepliesFailure({ rootUuid }), alertActions.error(extractError(err, 'Failed to list replies'))),
-                ),
-            );
-        }),
+        // Same shape as listThreads: threads stay concurrent, requests within one thread never race each other.
+        groupBy((action) => action.payload.rootUuid),
+        mergeMap((thread$) =>
+            thread$.pipe(
+                switchMap((action) => {
+                    const { rootUuid, pageNumber, itemsPerPage = REPLIES_PAGE_SIZE } = action.payload;
+                    return deps.apiClients.comments.listReplies({ uuid: rootUuid, pageNumber, itemsPerPage }).pipe(
+                        map((page) => slice.actions.listRepliesSuccess({ rootUuid, page })),
+                        catchError((err) =>
+                            of(
+                                slice.actions.listRepliesFailure({ rootUuid }),
+                                alertActions.error(extractError(err, 'Failed to list replies')),
+                            ),
+                        ),
+                    );
+                }),
+            ),
+        ),
     );
 };
 

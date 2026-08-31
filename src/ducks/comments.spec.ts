@@ -143,9 +143,9 @@ describe('comments slice: posting', () => {
         let state = reducer(initialState, actions.createCommentFailure({ key, denied: 'nope' }));
         expect(state.threads[key].postingDenied).toBe('nope');
         state = reducer(state, actions.createComment({ resource, objectUuid, body: 'hi' }));
-        expect(state.threads[key]).toMatchObject({ isPosting: true, postingDenied: undefined });
+        expect(state.threads[key]).toMatchObject({ isPosting: true, postingDenied: undefined, postSucceeded: false });
         state = reducer(state, actions.createCommentSuccess({ key, comment: comment('r9') }));
-        expect(state.threads[key].isPosting).toBe(false);
+        expect(state.threads[key]).toMatchObject({ isPosting: false, postSucceeded: true });
     });
 
     test('a reply post toggles the thread posting flag and bumps the root replyCount', () => {
@@ -154,7 +154,7 @@ describe('comments slice: posting', () => {
         expect(state.replies.r1.isPosting).toBe(true);
         expect(state.threads[key].isPosting).toBe(false);
         state = reducer(state, actions.createCommentSuccess({ key, comment: comment('c1'), parentUuid: 'r1' }));
-        expect(state.replies.r1.isPosting).toBe(false);
+        expect(state.replies.r1).toMatchObject({ isPosting: false, postSucceeded: true });
         expect(state.threads[key].comments[0].replyCount).toBe(2);
     });
 

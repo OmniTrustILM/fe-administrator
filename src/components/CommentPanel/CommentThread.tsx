@@ -29,18 +29,24 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
     const replyCount = root.replyCount ?? 0;
     const uuid = root.uuid;
 
-    useEffect(() => {
-        if (expanded && !replies) dispatch(actions.listReplies({ rootUuid: uuid, pageNumber: 1 }));
-    }, [dispatch, expanded, replies, uuid]);
+    // Loading is tied to the expansion gesture, not an effect on the cache: after a failed load the cache entry
+    // exists but is empty, and re-expanding must be able to try again.
+    const expand = useCallback(() => {
+        setExpanded(true);
+        if (!replies || (!replies.isFetching && replies.comments.length === 0)) {
+            dispatch(actions.listReplies({ rootUuid: uuid, pageNumber: 1 }));
+        }
+    }, [dispatch, replies, uuid]);
 
-    // The reply box stays open until the post has settled, so a 403 has somewhere to land.
-    const wasPosting = useRef(false);
+    // The reply box stays open until the post has committed, so a rejection keeps the draft on screen.
     const isPosting = !!replies?.isPosting;
     const postingDenied = replies?.postingDenied;
+    const postSucceeded = !!replies?.postSucceeded;
+    const wasSucceeded = useRef(postSucceeded);
     useEffect(() => {
-        if (wasPosting.current && !isPosting && !postingDenied) setReplying(false);
-        wasPosting.current = isPosting;
-    }, [isPosting, postingDenied]);
+        if (!wasSucceeded.current && postSucceeded) setReplying(false);
+        wasSucceeded.current = postSucceeded;
+    }, [postSucceeded]);
 
     const remaining = replies ? Math.max(0, replies.totalItems - replies.comments.length) : 0;
 
@@ -65,7 +71,7 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
                 busy={!!busy[uuid]}
                 onReply={() => {
                     setReplying(true);
-                    setExpanded(true);
+                    expand();
                 }}
                 onResolve={() => dispatch(actions.resolveComment({ uuid, resource, objectUuid }))}
                 onUnresolve={() => dispatch(actions.unresolveComment({ uuid, resource, objectUuid }))}
@@ -79,7 +85,7 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
                             variant="transparent"
                             color="secondary"
                             className="self-start !px-1 !py-0.5 text-xs"
-                            onClick={() => setExpanded((value) => !value)}
+                            onClick={() => (expanded ? setExpanded(false) : expand())}
                             data-testid={`thread-${uuid}-toggle-replies`}
                         >
                             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -119,6 +125,7 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
                             onSubmit={onReplySubmit}
                             onCancel={() => setReplying(false)}
                             isPosting={isPosting}
+                            postSucceeded={postSucceeded}
                             denied={postingDenied}
                             placeholder="Write a reply…"
                             submitLabel="Reply"

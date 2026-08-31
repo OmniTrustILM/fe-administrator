@@ -27,12 +27,15 @@ export type ThreadsState = PagedComments & {
     isPosting: boolean;
     /** Message from a 403 on posting: the compose box yields to it instead of the FE guessing at permissions. */
     postingDenied?: string;
+    /** Set when the last post committed; the compose box keeps the draft until it sees this. */
+    postSucceeded: boolean;
 };
 
 export type RepliesState = PagedComments & {
     isFetching: boolean;
     isPosting: boolean;
     postingDenied?: string;
+    postSucceeded: boolean;
 };
 
 export type State = {
@@ -57,12 +60,12 @@ const emptyPage = (itemsPerPage: number): PagedComments => ({
 });
 
 const threadsOf = (state: State, key: string): ThreadsState => {
-    state.threads[key] ??= { ...emptyPage(THREADS_PAGE_SIZE), isFetching: false, isPosting: false };
+    state.threads[key] ??= { ...emptyPage(THREADS_PAGE_SIZE), isFetching: false, isPosting: false, postSucceeded: false };
     return state.threads[key];
 };
 
 const repliesOf = (state: State, rootUuid: string): RepliesState => {
-    state.replies[rootUuid] ??= { ...emptyPage(REPLIES_PAGE_SIZE), isFetching: false, isPosting: false };
+    state.replies[rootUuid] ??= { ...emptyPage(REPLIES_PAGE_SIZE), isFetching: false, isPosting: false, postSucceeded: false };
     return state.replies[rootUuid];
 };
 
@@ -144,16 +147,21 @@ export const slice = createSlice({
             const target = parentUuid ? repliesOf(state, parentUuid) : threadsOf(state, panelKey(resource, objectUuid));
             target.isPosting = true;
             target.postingDenied = undefined;
+            target.postSucceeded = false;
         },
 
         createCommentSuccess: (state, action: PayloadAction<{ key: string; comment: CommentDto; parentUuid?: string }>) => {
             const { key, parentUuid } = action.payload;
             if (parentUuid) {
-                repliesOf(state, parentUuid).isPosting = false;
+                const replies = repliesOf(state, parentUuid);
+                replies.isPosting = false;
+                replies.postSucceeded = true;
                 const root = threadsOf(state, key).comments.find((comment) => comment.uuid === parentUuid);
                 if (root) root.replyCount = (root.replyCount ?? 0) + 1;
             } else {
-                threadsOf(state, key).isPosting = false;
+                const threads = threadsOf(state, key);
+                threads.isPosting = false;
+                threads.postSucceeded = true;
             }
         },
 

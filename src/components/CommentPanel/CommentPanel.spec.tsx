@@ -144,7 +144,8 @@ test.describe('CommentPanel', () => {
             type: 'comments/createComment',
             payload: { resource: 'certificates', objectUuid: 'obj-1', body: '# Hello *there*' },
         });
-        await expect(page.getByPlaceholder('Write a comment…')).toHaveValue('');
+        // The draft survives until the store reports success, so a failed post loses nothing.
+        await expect(page.getByPlaceholder('Write a comment…')).toHaveValue('# Hello *there*');
     });
 
     test('the formatting bar inserts Markdown at the selection and keeps the source plain', async ({ mount, page }) => {
@@ -365,6 +366,25 @@ test.describe('CommentPanel', () => {
         await page.getByTestId('thread-r1-toggle-replies').click();
         await expect(page.getByTestId('comment-c1-body')).toBeVisible();
         await expect(page.getByTestId('thread-r1-load-more')).toHaveCount(0);
+    });
+
+    test('re-expanding a thread whose replies failed to load requests them again', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                comments={{
+                    threads: { [KEY]: threadsPage([comment('r1', 'root', { replyCount: 2 })]) },
+                    // What a failed first load leaves behind: an entry that exists but holds nothing.
+                    replies: { r1: threadsPage([], { itemsPerPage: 20 }) },
+                }}
+            />,
+        );
+
+        await page.getByTestId('thread-r1-toggle-replies').click();
+        expect((await dispatched(page)).filter((action) => action.type === 'comments/listReplies')).toHaveLength(1);
+
+        await page.getByTestId('thread-r1-toggle-replies').click();
+        await page.getByTestId('thread-r1-toggle-replies').click();
+        expect((await dispatched(page)).filter((action) => action.type === 'comments/listReplies')).toHaveLength(2);
     });
 
     test('resolve, reopen and delete dispatch against the comment uuid', async ({ mount, page }) => {

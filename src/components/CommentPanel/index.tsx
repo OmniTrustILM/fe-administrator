@@ -78,6 +78,7 @@ export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) 
                 <CommentComposer
                     onSubmit={onPost}
                     isPosting={!!threads?.isPosting}
+                    postSucceeded={!!threads?.postSucceeded}
                     denied={threads?.postingDenied}
                     placeholder="Write a comment…"
                     submitLabel="Post"
