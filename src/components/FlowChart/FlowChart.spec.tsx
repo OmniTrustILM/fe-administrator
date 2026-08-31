@@ -2,6 +2,7 @@ import { test, expect } from '../../../playwright/ct-test';
 import type { Edge } from 'reactflow';
 import type { CustomNode, FlowChartProps } from './index';
 import FlowChartMountWrapper from './FlowChartMountWrapper';
+import { testInitialState } from 'ducks/test-reducers';
 
 function buildNode(id: string, overrides: Partial<CustomNode> = {}): CustomNode {
     return {
@@ -139,6 +140,37 @@ test.describe('FlowChart', () => {
         await expect(page.getByText('Main')).toBeVisible();
         await expect(page.getByText('N1')).toBeVisible();
         await expect(page.getByText('N2')).toBeVisible();
+    });
+
+    test('keeps the positions of a flowchart that is already laid out', async ({ mount, page }) => {
+        const edges = [buildEdge('e1', 'a', 'b')];
+
+        await mount(
+            <FlowChartMountWrapper
+                flowChartProps={{
+                    flowChartNodes: [buildNode('a'), buildNode('b')],
+                    flowChartEdges: edges,
+                    flowDirection: 'TB',
+                }}
+                initialStoreState={{
+                    ...testInitialState,
+                    userInterface: {
+                        ...testInitialState.userInterface,
+                        reactFlowUI: {
+                            flowChartNodes: [
+                                { id: 'a', type: 'customFlowNode', position: { x: 1200, y: 640 }, data: {} },
+                                { id: 'b', type: 'customFlowNode', position: { x: 1200, y: 1040 }, data: {} },
+                            ],
+                            flowChartEdges: edges,
+                            flowDirection: 'TB',
+                        },
+                    },
+                }}
+            />,
+        );
+
+        await expect(page.getByTestId('rf__node-a')).toHaveAttribute('style', /translate\(1200px,\s*640px\)/);
+        await expect(page.getByTestId('rf__node-b')).toHaveAttribute('style', /translate\(1200px,\s*1040px\)/);
     });
 
     test('renders without optional props', async ({ mount, page }) => {

@@ -6,6 +6,7 @@ import { actions as filterActions, EntityType } from 'ducks/filters';
 import {
     CertificateProtocol,
     type CertificateProtocolDto,
+    CertificateState,
     CertificateType,
     type CertificateValidationResultDto,
     CertificateValidationStatus,
@@ -19,6 +20,7 @@ import type { TableDataRow } from 'components/CustomTable';
 import { EnumValueDescription } from 'components/EnumDescription';
 import Tooltip from 'components/Tooltip';
 import CertificateStatus from './CertificateStatus';
+import { validationPanelMessages } from './validationPanel';
 import PendingActionButtons from './PendingActionButtons';
 import type { PendingAction } from './PendingActionButtons/types';
 
@@ -312,11 +314,12 @@ export function buildCertificateDetailBaseRows(
             id: 'validationStatus',
             columns: [
                 'Validation Status',
-                validationResult?.resultStatus ? (
-                    <CertificateStatus key="validation" status={validationResult?.resultStatus} />
-                ) : (
-                    <CertificateStatus key="validation" status={CertificateValidationStatus.NotChecked} />
-                ),
+                <span key="validation" className="inline-flex flex-wrap items-center gap-2">
+                    <CertificateStatus status={validationResult?.resultStatus ?? CertificateValidationStatus.NotChecked} />
+                    {certificate.state === CertificateState.Requested && (
+                        <span className="text-content-muted">{validationPanelMessages['pending-issuance']}</span>
+                    )}
+                </span>,
             ],
         },
         {

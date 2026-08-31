@@ -55,12 +55,8 @@ export function getRulesAndGroupsTableHeaders(type: 'assigned' | 'available') {
         },
         {
             id: 'resource',
-            content: (
-                <span className="inline-flex items-center gap-1">
-                    Resource
-                    <EnumColumnDescription platformEnum={PlatformEnum.Resource} title="Resource" />
-                </span>
-            ),
+            content: 'Resource',
+            info: <EnumColumnDescription platformEnum={PlatformEnum.Resource} title="Resource" />,
             sortable: true,
         },
         {

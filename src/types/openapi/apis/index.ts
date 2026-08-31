@@ -5,6 +5,7 @@ export * from './ApprovalProfileInventoryApi';
 export * from './AuditLogApi';
 export * from './AuthenticationManagementApi';
 export * from './AuthorityManagementApi';
+export * from './BrandingApi';
 export * from './CBOMManagementApi';
 export * from './CMPProfileManagementApi';
 export * from './CallbackApi';

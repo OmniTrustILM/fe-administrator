@@ -574,23 +574,15 @@ export default function LocationDetail() {
             },
             {
                 id: 'cs',
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        State
-                        <EnumColumnDescription platformEnum={PlatformEnum.CertificateState} title="State" />
-                    </span>
-                ),
+                content: 'State',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.CertificateState} title="State" />,
                 sortable: true,
                 width: '15%',
             },
             {
                 id: 'vs',
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Validation Status
-                        <EnumColumnDescription platformEnum={PlatformEnum.CertificateValidationStatus} title="Validation Status" />
-                    </span>
-                ),
+                content: 'Validation Status',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.CertificateValidationStatus} title="Validation Status" />,
                 sortable: true,
                 width: '15%',
             },

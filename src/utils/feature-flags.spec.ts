@@ -86,7 +86,7 @@ describe('feature-flags', () => {
             expect(featureFlags.isTrustedCertificatesEnabled).toBe(true);
         });
 
-        test('flags are independent — one true, one false', async () => {
+        test('flags are independent — one true, the other false', async () => {
             vi.stubGlobal('__ENV__', { ENABLE_PROXIES: true, ENABLE_TRUSTED_CERTIFICATES: false });
             const { featureFlags } = await import('./feature-flags');
             expect(featureFlags.isProxiesEnabled).toBe(true);

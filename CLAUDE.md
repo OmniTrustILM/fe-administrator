@@ -212,9 +212,15 @@ A preview image cannot be built on `pull_request`, because a fork PR has no acce
 credentials. Three workflows relay the context instead:
 
 1. `prepare_preview.yml` — `pull_request`, gated on the `preview` label. Writes `pr-context.json`
-   (`pr_number`, `head_sha`, `head_repo`, `head_branch`, `base_ref`) as an artifact.
-2. `dispatch-preview-docker.yml` — `workflow_run` on the above. Has secrets, reads the artifact, and
-   dispatches the build on `base_ref`.
+   (`pr_number`, `head_sha`, `head_repo`, `head_branch`, `base_ref`) as an artifact. A fork PR runs
+   this file from its own head, so the gate here is an optimisation, not the authorisation.
+2. `dispatch-preview-docker.yml` — `workflow_run` on the above. Has secrets, and carries the
+   authorisation. It accepts only `pr_number` from the artifact, then re-reads the PR through the
+   API: the PR must be open and carry the `preview` label, and its head repository and branch must
+   match the triggering run, so a forged number cannot drive another PR's builds. A head SHA that
+   has moved on skips, because the push that moved it starts its own run. Every dispatch input comes
+   from that API response, and the build is dispatched on the default branch rather than on
+   `base_ref`, so a base branch cannot supply its own copy of the build workflow.
 3. `build_preview_docker.yml` — `workflow_dispatch`. Calls the reusable workflow with
    `ref: <head_sha>`, and reports a `Docker preview build` check against that commit because a
    dispatched run does not attach to the PR on its own.
