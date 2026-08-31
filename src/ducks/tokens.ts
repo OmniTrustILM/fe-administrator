@@ -7,16 +7,38 @@ import type { ConnectorResponseModel } from 'types/connectors';
 import { TokenInstanceStatus } from 'types/openapi';
 import type { TokenDetailResponseModel, TokenRequestModel, TokenResponseModel } from 'types/tokens';
 
+export type TokenAttributesQuery = {
+    connectorUuid: string;
+    kind?: string;
+};
+
+export function normalizeTokenAttributesQuery(query: TokenAttributesQuery): TokenAttributesQuery {
+    const kind = query.kind?.trim() || undefined;
+    return {
+        connectorUuid: query.connectorUuid,
+        ...(kind ? { kind } : {}),
+    };
+}
+
+export function getTokenAttributesQueryKey(query: TokenAttributesQuery): string {
+    const normalized = normalizeTokenAttributesQuery(query);
+    return JSON.stringify([normalized.connectorUuid, normalized.kind ?? null]);
+}
+
 export type State = {
     checkedRows: string[];
 
     deleteErrorMessage: string;
 
     token?: TokenDetailResponseModel;
+    tokenDetailUuid?: string;
+    tokenDetailsByUuid: Record<string, TokenDetailResponseModel>;
     tokens: TokenResponseModel[];
 
     tokenProviders?: ConnectorResponseModel[];
     tokenProviderAttributeDescriptors?: AttributeDescriptorModel[];
+    tokenProviderAttributeDescriptorsByQueryKey: Record<string, AttributeDescriptorModel[]>;
+    tokenProviderAttributesQueryKey?: string;
     tokenProfileAttributeDescriptors?: AttributeDescriptorModel[];
 
     isFetchingTokenProviders: boolean;
@@ -47,6 +69,9 @@ export const initialState: State = {
     deleteErrorMessage: '',
 
     tokens: [],
+    tokenDetailsByUuid: {},
+
+    tokenProviderAttributeDescriptorsByQueryKey: {},
 
     isFetchingTokenProviders: false,
     isFetchingTokenProviderAttributeDescriptors: false,
@@ -90,6 +115,17 @@ export const slice = createSlice({
 
         clearTokenProviderAttributeDescriptors: (state, action: PayloadAction<void>) => {
             state.tokenProviderAttributeDescriptors = [];
+            state.tokenProviderAttributesQueryKey = undefined;
+            state.isFetchingTokenProviderAttributeDescriptors = false;
+        },
+
+        invalidateTokenProviderCaches: (state, action: PayloadAction<void>) => {
+            state.tokenProviders = undefined;
+            state.tokenProviderAttributeDescriptors = [];
+            state.tokenProviderAttributeDescriptorsByQueryKey = {};
+            state.tokenProviderAttributesQueryKey = undefined;
+            state.isFetchingTokenProviders = false;
+            state.isFetchingTokenProviderAttributeDescriptors = false;
         },
 
         clearActivationAttributesDescriptors: (state, action: PayloadAction<void>) => {
@@ -105,6 +141,10 @@ export const slice = createSlice({
             state.isFetchingTokenProviders = true;
         },
 
+        ensureTokenProviders: (state, action: PayloadAction<void>) => {
+            state.isFetchingTokenProviders = state.tokenProviders === undefined;
+        },
+
         listTokenProvidersSuccess: (state, action: PayloadAction<{ connectors: ConnectorResponseModel[] }>) => {
             state.tokenProviders = action.payload.connectors;
             state.isFetchingTokenProviders = false;
@@ -114,20 +154,33 @@ export const slice = createSlice({
             state.isFetchingTokenProviders = false;
         },
 
-        getTokenProviderAttributesDescriptors: (state, action: PayloadAction<{ uuid: string; kind: string }>) => {
+        getTokenProviderAttributesDescriptors: (state, action: PayloadAction<TokenAttributesQuery>) => {
             state.tokenProviderAttributeDescriptors = [];
+            state.tokenProviderAttributesQueryKey = getTokenAttributesQueryKey(action.payload);
             state.isFetchingTokenProviderAttributeDescriptors = true;
+        },
+
+        ensureTokenProviderAttributesDescriptors: (state, action: PayloadAction<TokenAttributesQuery>) => {
+            const queryKey = getTokenAttributesQueryKey(action.payload);
+            const cached = state.tokenProviderAttributeDescriptorsByQueryKey[queryKey];
+            state.tokenProviderAttributesQueryKey = queryKey;
+            state.tokenProviderAttributeDescriptors = cached ?? [];
+            state.isFetchingTokenProviderAttributeDescriptors = cached === undefined;
         },
 
         getTokenProviderAttributesDescriptorsSuccess: (
             state,
-            action: PayloadAction<{ attributeDescriptor: AttributeDescriptorModel[] }>,
+            action: PayloadAction<{ queryKey: string; attributeDescriptor: AttributeDescriptorModel[] }>,
         ) => {
-            state.tokenProviderAttributeDescriptors = action.payload.attributeDescriptor;
-            state.isFetchingTokenProviderAttributeDescriptors = false;
+            state.tokenProviderAttributeDescriptorsByQueryKey[action.payload.queryKey] = action.payload.attributeDescriptor;
+            if (state.tokenProviderAttributesQueryKey === action.payload.queryKey) {
+                state.tokenProviderAttributeDescriptors = action.payload.attributeDescriptor;
+                state.isFetchingTokenProviderAttributeDescriptors = false;
+            }
         },
 
-        getTokenProviderAttributeDescriptorsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+        getTokenProviderAttributeDescriptorsFailure: (state, action: PayloadAction<{ queryKey: string; error: string | undefined }>) => {
+            if (state.tokenProviderAttributesQueryKey !== action.payload.queryKey) return;
             state.isFetchingTokenProviderAttributeDescriptors = false;
         },
 
@@ -162,20 +215,30 @@ export const slice = createSlice({
         },
 
         getTokenDetail: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.tokenDetailUuid = action.payload.uuid;
             if (state.token?.uuid !== action.payload.uuid) {
                 state.token = undefined;
             }
             state.isFetchingDetail = true;
         },
 
-        getTokenDetailSuccess: (state, action: PayloadAction<{ token: TokenDetailResponseModel }>) => {
-            state.isFetchingDetail = false;
-
-            state.token = action.payload.token;
+        ensureTokenDetail: (state, action: PayloadAction<{ uuid: string }>) => {
+            const cached = state.tokenDetailsByUuid[action.payload.uuid];
+            state.tokenDetailUuid = action.payload.uuid;
+            state.token = cached;
+            state.isFetchingDetail = cached === undefined;
         },
 
-        getTokenDetailFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
-            state.isFetchingDetail = false;
+        getTokenDetailSuccess: (state, action: PayloadAction<{ token: TokenDetailResponseModel }>) => {
+            state.tokenDetailsByUuid[action.payload.token.uuid] = action.payload.token;
+            if (state.tokenDetailUuid === action.payload.token.uuid) {
+                state.isFetchingDetail = false;
+                state.token = action.payload.token;
+            }
+        },
+
+        getTokenDetailFailure: (state, action: PayloadAction<{ uuid: string; error: string | undefined }>) => {
+            if (state.tokenDetailUuid === action.payload.uuid) state.isFetchingDetail = false;
         },
 
         createToken: (state, action: PayloadAction<TokenRequestModel>) => {
@@ -203,6 +266,7 @@ export const slice = createSlice({
             state.updateTokenSucceeded = true;
 
             state.token = action.payload.token;
+            delete state.tokenDetailsByUuid[action.payload.token.uuid];
         },
 
         updateTokenFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -238,6 +302,8 @@ export const slice = createSlice({
             if (token) token.status = TokenInstanceStatus.Activated;
 
             if (state.token?.uuid === action.payload.uuid) state.token.status.status = TokenInstanceStatus.Activated;
+            const cachedToken = state.tokenDetailsByUuid[action.payload.uuid];
+            if (cachedToken) cachedToken.status.status = TokenInstanceStatus.Activated;
         },
 
         activateTokenFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -255,6 +321,8 @@ export const slice = createSlice({
             if (token) token.status = TokenInstanceStatus.Deactivated;
 
             if (state.token?.uuid === action.payload.uuid) state.token.status.status = TokenInstanceStatus.Deactivated;
+            const cachedToken = state.tokenDetailsByUuid[action.payload.uuid];
+            if (cachedToken) cachedToken.status.status = TokenInstanceStatus.Deactivated;
         },
 
         deactivateTokenFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -269,6 +337,7 @@ export const slice = createSlice({
             state.isReloading = false;
 
             state.token = action.payload.token;
+            state.tokenDetailsByUuid[action.payload.token.uuid] = action.payload.token;
         },
 
         reloadFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -288,6 +357,7 @@ export const slice = createSlice({
             if (index !== -1) state.tokens.splice(index, 1);
 
             if (state.token?.uuid === action.payload.uuid) state.token = undefined;
+            delete state.tokenDetailsByUuid[action.payload.uuid];
         },
 
         deleteTokenFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -308,11 +378,35 @@ export const slice = createSlice({
             });
 
             if (state.token && action.payload.uuids.includes(state.token.uuid)) state.token = undefined;
+            action.payload.uuids.forEach((uuid) => {
+                delete state.tokenDetailsByUuid[uuid];
+            });
         },
 
         bulkDeleteTokenFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isBulkDeleting = false;
         },
+    },
+    extraReducers: (builder) => {
+        const invalidatingConnectorActions = new Set([
+            'connectors/createConnectorSuccess',
+            'connectors/updateConnectorSuccess',
+            'connectors/deleteConnectorSuccess',
+            'connectors/connectConnectorSuccess',
+            'connectors/reconnectConnectorSuccess',
+            'connectors/bulkReconnectConnectorsSuccess',
+        ]);
+        builder.addMatcher(
+            (action) => invalidatingConnectorActions.has(action.type),
+            (state) => {
+                state.tokenProviders = undefined;
+                state.tokenProviderAttributeDescriptors = [];
+                state.tokenProviderAttributeDescriptorsByQueryKey = {};
+                state.tokenProviderAttributesQueryKey = undefined;
+                state.isFetchingTokenProviders = false;
+                state.isFetchingTokenProviderAttributeDescriptors = false;
+            },
+        );
     },
 });
 
@@ -324,6 +418,13 @@ const deleteErrorMessage = createSelector(state, (state) => state.deleteErrorMes
 
 const tokenProviders = createSelector(state, (state) => state.tokenProviders);
 const tokenProviderAttributeDescriptors = createSelector(state, (state) => state.tokenProviderAttributeDescriptors);
+const tokenProviderAttributesQueryKey = createSelector(state, (state) => state.tokenProviderAttributesQueryKey);
+const hasTokenProviderAttributeDescriptors = createSelector(
+    state,
+    (state) =>
+        !!state.tokenProviderAttributesQueryKey &&
+        Object.hasOwn(state.tokenProviderAttributeDescriptorsByQueryKey ?? {}, state.tokenProviderAttributesQueryKey),
+);
 
 const token = createSelector(state, (state) => state.token);
 const tokens = createSelector(state, (state) => state.tokens);
@@ -356,6 +457,8 @@ export const selectors = {
 
     tokenProviders,
     tokenProviderAttributeDescriptors,
+    tokenProviderAttributesQueryKey,
+    hasTokenProviderAttributeDescriptors,
 
     token,
     tokens,

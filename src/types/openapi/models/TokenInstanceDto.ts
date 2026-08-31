@@ -59,5 +59,5 @@ export interface TokenInstanceDto {
      * @type {string}
      * @memberof TokenInstanceDto
      */
-    kind: string;
+    kind?: string;
 }

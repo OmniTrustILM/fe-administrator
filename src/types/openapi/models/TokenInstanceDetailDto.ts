@@ -47,7 +47,7 @@ export interface TokenInstanceDetailDto {
      * @type {string}
      * @memberof TokenInstanceDetailDto
      */
-    kind: string;
+    kind?: string;
     /**
      * Status Of the Token Instance
      * @type {TokenInstanceStatusDetailDto}

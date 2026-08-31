@@ -1,8 +1,24 @@
 import { describe, expect, test } from 'vitest';
+import { TokenInstanceStatus } from 'types/openapi';
 
-import reducer, { actions, initialState, selectors } from './tokens';
+import reducer, { actions, getTokenAttributesQueryKey, initialState, selectors } from './tokens';
 
 describe('tokens slice', () => {
+    test('getTokenAttributesQueryKey_normalizesKind', () => {
+        // given
+        const connectorUuid = 'c-1';
+
+        // when
+        const trimmedKindKey = getTokenAttributesQueryKey({ connectorUuid, kind: '  TOKEN  ' });
+        const normalizedKindKey = getTokenAttributesQueryKey({ connectorUuid, kind: 'TOKEN' });
+        const blankKindKey = getTokenAttributesQueryKey({ connectorUuid, kind: '   ' });
+        const omittedKindKey = getTokenAttributesQueryKey({ connectorUuid });
+
+        // then
+        expect(trimmedKindKey).toBe(normalizedKindKey);
+        expect(blankKindKey).toBe(omittedKindKey);
+    });
+
     test('returns initial state for unknown action', () => {
         expect(reducer(undefined, { type: 'unknown' })).toEqual(initialState);
     });
@@ -33,11 +49,24 @@ describe('tokens slice', () => {
     });
 
     test('clearTokenProviderAttributeDescriptors', () => {
+        // given
+        const activeQueryKey = getTokenAttributesQueryKey({ connectorUuid: 'c-1', kind: 'TOKEN' });
+
+        // when
         const next = reducer(
-            { ...initialState, tokenProviderAttributeDescriptors: [{ uuid: 'd-1' } as any] },
+            {
+                ...initialState,
+                tokenProviderAttributeDescriptors: [{ uuid: 'd-1' } as any],
+                tokenProviderAttributesQueryKey: activeQueryKey,
+                isFetchingTokenProviderAttributeDescriptors: true,
+            },
             actions.clearTokenProviderAttributeDescriptors(),
         );
+
+        // then
         expect(next.tokenProviderAttributeDescriptors).toEqual([]);
+        expect(next.tokenProviderAttributesQueryKey).toBeUndefined();
+        expect(next.isFetchingTokenProviderAttributeDescriptors).toBe(false);
     });
 
     test('clearActivationAttributesDescriptors', () => {
@@ -69,21 +98,109 @@ describe('tokens slice', () => {
         expect(next.isFetchingTokenProviders).toBe(false);
     });
 
-    test('getTokenProviderAttributesDescriptors / success / failure', () => {
-        let next = reducer(initialState, actions.getTokenProviderAttributesDescriptors({ uuid: 'c-1', kind: 'TOKEN' }));
-        expect(next.isFetchingTokenProviderAttributeDescriptors).toBe(true);
-        expect(next.tokenProviderAttributeDescriptors).toEqual([]);
+    test('ensureTokenProviders_reusesLoadedCatalogue', () => {
+        // given
+        const cachedProviders = [{ uuid: 'cached-provider' }] as any[];
+        const loadedState = { ...initialState, tokenProviders: cachedProviders };
 
+        // when
+        const next = reducer(loadedState, actions.ensureTokenProviders());
+
+        // then
+        expect(next.tokenProviders).toBe(cachedProviders);
+        expect(next.isFetchingTokenProviders).toBe(false);
+    });
+
+    test('getTokenProviderAttributesDescriptors / success / failure', () => {
+        // given
+        const query = { connectorUuid: 'c-1', kind: 'TOKEN' };
+        const queryKey = getTokenAttributesQueryKey(query);
         const descriptors = [{ uuid: 'd-1' }] as any[];
-        next = reducer(next, actions.getTokenProviderAttributesDescriptorsSuccess({ attributeDescriptor: descriptors }));
+
+        // when
+        let next = reducer(initialState, actions.getTokenProviderAttributesDescriptors(query));
+        next = reducer(next, actions.getTokenProviderAttributesDescriptorsSuccess({ queryKey, attributeDescriptor: descriptors }));
+
+        // then
+        expect(next.tokenProviderAttributesQueryKey).toBe(queryKey);
         expect(next.isFetchingTokenProviderAttributeDescriptors).toBe(false);
         expect(next.tokenProviderAttributeDescriptors).toEqual(descriptors);
 
+        // when
         next = reducer(
             { ...next, isFetchingTokenProviderAttributeDescriptors: true },
-            actions.getTokenProviderAttributeDescriptorsFailure({ error: 'err' }),
+            actions.getTokenProviderAttributeDescriptorsFailure({ queryKey, error: 'err' }),
         );
+
+        // then
         expect(next.isFetchingTokenProviderAttributeDescriptors).toBe(false);
+    });
+
+    test('getTokenProviderAttributesDescriptors ignores stale success and failure actions', () => {
+        // given
+        const previousQueryKey = getTokenAttributesQueryKey({ connectorUuid: 'c-1', kind: 'FIRST' });
+        const currentQuery = { connectorUuid: 'c-1', kind: 'SECOND' };
+        const currentQueryKey = getTokenAttributesQueryKey(currentQuery);
+        const staleDescriptors = [{ uuid: 'stale' }] as any[];
+
+        // when
+        let next = reducer(initialState, actions.getTokenProviderAttributesDescriptors(currentQuery));
+        next = reducer(
+            next,
+            actions.getTokenProviderAttributesDescriptorsSuccess({
+                queryKey: previousQueryKey,
+                attributeDescriptor: staleDescriptors,
+            }),
+        );
+        next = reducer(next, actions.getTokenProviderAttributeDescriptorsFailure({ queryKey: previousQueryKey, error: 'stale' }));
+
+        // then
+        expect(next.tokenProviderAttributesQueryKey).toBe(currentQueryKey);
+        expect(next.isFetchingTokenProviderAttributeDescriptors).toBe(true);
+        expect(next.tokenProviderAttributeDescriptors).toEqual([]);
+        expect(next.tokenProviderAttributeDescriptorsByQueryKey[previousQueryKey]).toEqual(staleDescriptors);
+    });
+
+    test('ensureTokenProviderAttributesDescriptors_reusesSchemaByNormalizedQueryKey', () => {
+        // given
+        const cachedQuery = { connectorUuid: 'connector-1', kind: 'PKCS11' };
+        const cachedQueryKey = getTokenAttributesQueryKey(cachedQuery);
+        const cachedDescriptors = [{ uuid: 'cached-descriptor' }] as any[];
+        const loadedState = {
+            ...initialState,
+            tokenProviderAttributeDescriptorsByQueryKey: { [cachedQueryKey]: cachedDescriptors },
+        };
+
+        // when
+        const next = reducer(
+            loadedState,
+            actions.ensureTokenProviderAttributesDescriptors({ connectorUuid: cachedQuery.connectorUuid, kind: '  PKCS11  ' }),
+        );
+
+        // then
+        expect(next.tokenProviderAttributeDescriptors).toEqual(cachedDescriptors);
+        expect(next.isFetchingTokenProviderAttributeDescriptors).toBe(false);
+        expect(selectors.hasTokenProviderAttributeDescriptors({ tokens: next } as any)).toBe(true);
+    });
+
+    test('connectorMutation_invalidatesProviderCatalogueAndSchemas', () => {
+        // given
+        const queryKey = getTokenAttributesQueryKey({ connectorUuid: 'connector-1' });
+        const loadedState = {
+            ...initialState,
+            tokenProviders: [{ uuid: 'connector-1' }] as any[],
+            tokenProviderAttributeDescriptors: [{ uuid: 'descriptor-1' }] as any[],
+            tokenProviderAttributeDescriptorsByQueryKey: { [queryKey]: [{ uuid: 'descriptor-1' }] as any[] },
+            tokenProviderAttributesQueryKey: queryKey,
+        };
+
+        // when
+        const next = reducer(loadedState, { type: 'connectors/reconnectConnectorSuccess', payload: { uuid: 'connector-1' } });
+
+        // then
+        expect(next.tokenProviders).toBeUndefined();
+        expect(next.tokenProviderAttributeDescriptorsByQueryKey).toEqual({});
+        expect(next.tokenProviderAttributeDescriptors).toEqual([]);
     });
 
     test('getTokenProfileAttributesDescriptors / success / failure', () => {
@@ -126,8 +243,24 @@ describe('tokens slice', () => {
         expect(next.isFetchingDetail).toBe(false);
         expect(next.token).toEqual(token);
 
-        next = reducer({ ...next, isFetchingDetail: true }, actions.getTokenDetailFailure({ error: 'err' }));
+        next = reducer({ ...next, isFetchingDetail: true }, actions.getTokenDetailFailure({ uuid: token.uuid, error: 'err' }));
         expect(next.isFetchingDetail).toBe(false);
+    });
+
+    test('ensureTokenDetail_reusesCachedDetail_andIgnoresStaleResponse', () => {
+        // given
+        const cachedToken = { uuid: 'cached-token', name: 'Cached token' } as any;
+        const staleToken = { uuid: 'stale-token', name: 'Stale token' } as any;
+        const loadedState = { ...initialState, tokenDetailsByUuid: { [cachedToken.uuid]: cachedToken } };
+
+        // when
+        let next = reducer(loadedState, actions.ensureTokenDetail({ uuid: cachedToken.uuid }));
+        next = reducer(next, actions.getTokenDetailSuccess({ token: staleToken }));
+
+        // then
+        expect(next.token).toEqual(cachedToken);
+        expect(next.isFetchingDetail).toBe(false);
+        expect(next.tokenDetailsByUuid[staleToken.uuid]).toEqual(staleToken);
     });
 
     test('getTokenDetail keeps token when refetching the same uuid', () => {
@@ -158,7 +291,10 @@ describe('tokens slice', () => {
     });
 
     test('updateToken / success / failure', () => {
-        let next = reducer(initialState, actions.updateToken({ uuid: 't-1', updateToken: {} as any }));
+        let next = reducer(
+            { ...initialState, tokenDetailsByUuid: { 't-1': { uuid: 't-1', name: 'Before update' } as any } },
+            actions.updateToken({ uuid: 't-1', updateToken: {} as any }),
+        );
         expect(next.isUpdating).toBe(true);
         expect(next.updateTokenSucceeded).toBe(false);
 
@@ -167,6 +303,7 @@ describe('tokens slice', () => {
         expect(next.isUpdating).toBe(false);
         expect(next.updateTokenSucceeded).toBe(true);
         expect(next.token).toEqual(token);
+        expect(next.tokenDetailsByUuid['t-1']).toBeUndefined();
 
         next = reducer({ ...next, isUpdating: true }, actions.updateTokenFailure({ error: 'err' }));
         expect(next.isUpdating).toBe(false);
@@ -190,35 +327,49 @@ describe('tokens slice', () => {
     });
 
     test('activateToken / success / failure', () => {
-        let next = reducer(initialState, actions.activateToken({ uuid: 't-1', request: [] }));
+        const tokenUuid = 't-1';
+        const cachedToken = { uuid: tokenUuid, status: { status: TokenInstanceStatus.Deactivated } } as any;
+        let next = reducer(
+            { ...initialState, tokenDetailsByUuid: { [tokenUuid]: cachedToken } },
+            actions.activateToken({ uuid: tokenUuid, request: [] }),
+        );
         expect(next.isActivating).toBe(true);
 
-        next = reducer(next, actions.activateTokenSuccess({ uuid: 't-1' }));
+        next = reducer(next, actions.activateTokenSuccess({ uuid: tokenUuid }));
         expect(next.isActivating).toBe(false);
+        expect(next.tokenDetailsByUuid[tokenUuid].status.status).toBe(TokenInstanceStatus.Activated);
 
         next = reducer({ ...next, isActivating: true }, actions.activateTokenFailure({ error: 'err' }));
         expect(next.isActivating).toBe(false);
     });
 
     test('deactivateToken / success / failure', () => {
-        let next = reducer(initialState, actions.deactivateToken({ uuid: 't-1' }));
+        const tokenUuid = 't-1';
+        const cachedToken = { uuid: tokenUuid, status: { status: TokenInstanceStatus.Activated } } as any;
+        let next = reducer(
+            { ...initialState, tokenDetailsByUuid: { [tokenUuid]: cachedToken } },
+            actions.deactivateToken({ uuid: tokenUuid }),
+        );
         expect(next.isDeactivating).toBe(true);
 
-        next = reducer(next, actions.deactivateTokenSuccess({ uuid: 't-1' }));
+        next = reducer(next, actions.deactivateTokenSuccess({ uuid: tokenUuid }));
         expect(next.isDeactivating).toBe(false);
+        expect(next.tokenDetailsByUuid[tokenUuid].status.status).toBe(TokenInstanceStatus.Deactivated);
 
         next = reducer({ ...next, isDeactivating: true }, actions.deactivateTokenFailure({ error: 'err' }));
         expect(next.isDeactivating).toBe(false);
     });
 
     test('reloadToken / success / failure', () => {
-        let next = reducer(initialState, actions.reloadToken({ uuid: 't-1' }));
+        const tokenUuid = 't-1';
+        let next = reducer(initialState, actions.reloadToken({ uuid: tokenUuid }));
         expect(next.isReloading).toBe(true);
 
-        const token = { uuid: 't-1', name: 'Token 1' } as any;
+        const token = { uuid: tokenUuid, name: 'Token 1' } as any;
         next = reducer(next, actions.reloadSuccess({ token }));
         expect(next.isReloading).toBe(false);
         expect(next.token).toEqual(token);
+        expect(next.tokenDetailsByUuid[tokenUuid]).toEqual(token);
 
         next = reducer({ ...next, isReloading: true }, actions.reloadFailure({ error: 'err' }));
         expect(next.isReloading).toBe(false);

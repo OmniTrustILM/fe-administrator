@@ -176,9 +176,11 @@ function TokenList() {
 
                     <ConnectorLink key="connector" uuid={token.connectorUuid} name={token.connectorName} fallback="Unassigned" />,
 
-                    <Badge key="kind" color="secondary">
-                        {token.kind}
-                    </Badge>,
+                    token.kind ? (
+                        <Badge key="kind" color="secondary">
+                            {token.kind}
+                        </Badge>
+                    ) : null,
 
                     <TokenStatusBadge key="status" status={token.status} />,
 

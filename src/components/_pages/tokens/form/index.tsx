@@ -7,7 +7,7 @@ import TextInput from 'components/TextInput';
 import { actions as alertActions } from 'ducks/alerts';
 import { actions as connectorActions } from 'ducks/connectors';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
-import { actions as tokenActions, selectors as tokenSelectors } from 'ducks/tokens';
+import { actions as tokenActions, getTokenAttributesQueryKey, selectors as tokenSelectors } from 'ducks/tokens';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 
@@ -19,9 +19,7 @@ import Select from 'components/Select';
 import Button from 'components/Button';
 import Container from 'components/Container';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import type { ConnectorResponseModel } from 'types/connectors';
-import { FunctionGroupCode, Resource } from 'types/openapi';
-import type { TokenDetailResponseDto } from 'types/tokens';
+import { ConnectorInterface, ConnectorVersion, FunctionGroupCode, Resource } from 'types/openapi';
 
 import { collectFormAttributes } from 'utils/attributes/attributes';
 
@@ -38,6 +36,8 @@ interface FormValues {
     name: string;
     tokenProvider: string;
     storeKind: string;
+    __attributes__token__?: Record<string, unknown>;
+    deletedAttributes_token?: string[];
 }
 
 export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormProps) {
@@ -51,7 +51,10 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
     const tokenDetail = useSelector(tokenSelectors.token);
     const tokenProviders = useSelector(tokenSelectors.tokenProviders);
     const tokenProviderAttributeDescriptors = useSelector(tokenSelectors.tokenProviderAttributeDescriptors);
+    const tokenProviderAttributesQueryKey = useSelector(tokenSelectors.tokenProviderAttributesQueryKey);
+    const hasTokenProviderAttributeDescriptors = useSelector(tokenSelectors.hasTokenProviderAttributeDescriptors);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
+    const hasResourceCustomAttributes = useSelector(customAttributesSelectors.hasResourceCustomAttributes);
 
     const isFetchingTokenDetail = useSelector(tokenSelectors.isFetchingDetail);
     const isFetchingTokenProviders = useSelector(tokenSelectors.isFetchingTokenProviders);
@@ -63,9 +66,62 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
     const updateTokenSucceeded = useSelector(tokenSelectors.updateTokenSucceeded);
 
     const [groupAttributesCallbackAttributes, setGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
+    const [hydratedFormKey, setHydratedFormKey] = useState<string>();
+    const hydratedFormKeyRef = useRef<string | undefined>(undefined);
 
-    const [token, setToken] = useState<TokenDetailResponseDto>();
-    const [tokenProvider, setTokenProvider] = useState<ConnectorResponseModel>();
+    const token = editMode && tokenDetail?.uuid === id ? tokenDetail : undefined;
+
+    const methods = useForm<FormValues>({
+        defaultValues: {
+            name: '',
+            tokenProvider: '',
+            storeKind: '',
+        },
+        mode: 'onChange',
+    });
+
+    const {
+        handleSubmit,
+        control,
+        formState: { isDirty, isSubmitting, isValid },
+        setValue,
+        reset,
+        unregister,
+    } = methods;
+
+    const watchedTokenProviderUuid = useWatch({
+        control,
+        name: 'tokenProvider',
+    });
+
+    const watchedStoreKind = useWatch({
+        control,
+        name: 'storeKind',
+    });
+
+    const tokenProviderUuid = editMode ? token?.connectorUuid : watchedTokenProviderUuid;
+    const tokenProvider = useMemo(
+        () => tokenProviders?.find((provider) => provider.uuid === tokenProviderUuid),
+        [tokenProviderUuid, tokenProviders],
+    );
+
+    const isV2TokenProvider = tokenProvider?.version === ConnectorVersion.V2;
+    const selectedKind = editMode ? token?.kind : watchedStoreKind;
+    const tokenAttributesQuery = useMemo(() => {
+        if (!tokenProvider || (!isV2TokenProvider && !selectedKind)) return undefined;
+        return {
+            connectorUuid: tokenProvider.uuid,
+            ...(isV2TokenProvider ? {} : { kind: selectedKind }),
+        };
+    }, [isV2TokenProvider, selectedKind, tokenProvider]);
+    const tokenAttributesQueryKey = tokenAttributesQuery ? getTokenAttributesQueryKey(tokenAttributesQuery) : undefined;
+    const tokenAttributeSchemaReady =
+        !!tokenAttributesQueryKey && tokenProviderAttributesQueryKey === tokenAttributesQueryKey && hasTokenProviderAttributeDescriptors;
+    const expectedHydrationKey =
+        editMode && id && tokenAttributesQueryKey && tokenProvider
+            ? `${id}:${tokenProvider.uuid}:${isV2TokenProvider ? '' : (selectedKind ?? '')}`
+            : undefined;
+    const isFormHydrated = !editMode || (!!expectedHydrationKey && hydratedFormKey === expectedHydrationKey);
 
     const isBusy = useMemo(
         () =>
@@ -87,49 +143,62 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
 
     useEffect(() => {
         dispatch(connectorActions.clearCallbackData());
-        dispatch(tokenActions.listTokenProviders());
-        dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Tokens));
+        dispatch(tokenActions.ensureTokenProviders());
+        dispatch(customAttributesActions.ensureResourceCustomAttributes(Resource.Tokens));
+        return () => {
+            dispatch(connectorActions.clearCallbackData());
+        };
     }, [dispatch]);
 
-    const previousIdRef = useRef<string | undefined>(undefined);
+    useEffect(() => {
+        if (editMode && id) dispatch(tokenActions.ensureTokenDetail({ uuid: id }));
+    }, [dispatch, editMode, id]);
 
     useEffect(() => {
-        if (editMode && id) {
-            // Fetch if id changed or if we don't have the correct token loaded
-            if (previousIdRef.current !== id || tokenDetail?.uuid !== id) {
-                dispatch(tokenActions.getTokenDetail({ uuid: id }));
-                previousIdRef.current = id;
-            }
-        } else {
-            previousIdRef.current = undefined;
-        }
-    }, [dispatch, editMode, id, tokenDetail]);
+        if (editMode) return;
+
+        reset({
+            name: '',
+            tokenProvider: '',
+            storeKind: '',
+        });
+        hydratedFormKeyRef.current = undefined;
+        setHydratedFormKey(undefined);
+    }, [editMode, reset]);
 
     useEffect(() => {
-        if (editMode && tokenDetail?.uuid === id) {
-            setToken(tokenDetail);
+        if (!editMode || !token || tokenProviders === undefined) return;
+        if (!token.connectorUuid) {
+            dispatch(alertActions.error('Cryptography provider was probably deleted'));
+            return;
         }
-    }, [tokenDetail, editMode, id]);
+        if (!tokenProvider) dispatch(alertActions.error('Cryptography provider not found'));
+    }, [dispatch, editMode, token, tokenProvider, tokenProviders]);
 
     useEffect(() => {
-        if (!tokenProvider && editMode && tokenDetail?.uuid === id && tokenProviders && tokenProviders.length > 0) {
-            if (!tokenDetail!.connectorUuid) {
-                dispatch(alertActions.error('Cryptography provider was probably deleted'));
-                return;
-            }
-
-            const provider = tokenProviders.find((p) => p.uuid === tokenDetail!.connectorUuid);
-
-            if (provider) {
-                setTokenProvider(provider);
-                dispatch(
-                    tokenActions.getTokenProviderAttributesDescriptors({ uuid: tokenDetail!.connectorUuid, kind: tokenDetail!.kind || '' }),
-                );
-            } else {
-                dispatch(alertActions.error('Cryptography provider not found'));
-            }
+        if (
+            tokenAttributesQuery &&
+            (tokenProviderAttributesQueryKey !== tokenAttributesQueryKey || !hasTokenProviderAttributeDescriptors)
+        ) {
+            dispatch(tokenActions.ensureTokenProviderAttributesDescriptors(tokenAttributesQuery));
         }
-    }, [tokenProvider, dispatch, editMode, tokenDetail, tokenProviders, isFetchingTokenProviders, id]);
+    }, [dispatch, hasTokenProviderAttributeDescriptors, tokenAttributesQuery, tokenAttributesQueryKey, tokenProviderAttributesQueryKey]);
+
+    useEffect(() => {
+        if (!editMode || !token || !tokenProvider || !expectedHydrationKey || !tokenAttributeSchemaReady) return;
+        if (hydratedFormKeyRef.current === expectedHydrationKey) return;
+
+        reset(
+            {
+                name: token.name || '',
+                tokenProvider: token.connectorUuid || '',
+                storeKind: token.kind || '',
+            },
+            { keepDefaultValues: false },
+        );
+        hydratedFormKeyRef.current = expectedHydrationKey;
+        setHydratedFormKey(expectedHydrationKey);
+    }, [editMode, expectedHydrationKey, reset, token, tokenAttributeSchemaReady, tokenProvider]);
 
     const optionsForTokenProviders = useMemo(
         () =>
@@ -140,113 +209,49 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
         [tokenProviders],
     );
 
-    const optionsForKinds = useMemo(
-        () =>
+    const optionsForKinds = useMemo(() => {
+        if (tokenProvider?.version === ConnectorVersion.V2) return [];
+        return (
             tokenProvider?.functionGroups
                 .find((fg) => fg.functionGroupCode === FunctionGroupCode.CryptographyProvider)
                 ?.kinds.map((kind) => ({
                     label: kind,
                     value: kind,
-                })) ?? [],
-        [tokenProvider],
-    );
+                })) ?? []
+        );
+    }, [tokenProvider]);
 
-    const defaultValues: FormValues = useMemo(
-        () => ({
-            name: editMode ? token?.name || '' : '',
-            tokenProvider: editMode ? token?.connectorUuid || '' : '',
-            storeKind: editMode ? tokenDetail?.kind || '' : '',
-        }),
-        [editMode, token, tokenDetail?.kind],
-    );
-
-    const methods = useForm<FormValues>({
-        defaultValues,
-        mode: 'onChange',
-    });
-
-    const {
-        handleSubmit,
-        control,
-        formState: { isDirty, isSubmitting, isValid },
-        setValue,
-        reset,
-    } = methods;
-
-    const watchedTokenProvider = useWatch({
-        control,
-        name: 'tokenProvider',
-    });
-
-    const watchedStoreKind = useWatch({
-        control,
-        name: 'storeKind',
-    });
+    const cryptographyInterfaceUuid = isV2TokenProvider
+        ? tokenProvider.interfaces?.find((connectorInterface) => connectorInterface.code === ConnectorInterface.Cryptography)?.uuid
+        : undefined;
 
     const onTokenProviderChange = useCallback(
-        (value: string) => {
-            if (!value) return;
-
+        (_value: string) => {
             dispatch(tokenActions.clearTokenProviderAttributeDescriptors());
             dispatch(connectorActions.clearCallbackData());
             setGroupAttributesCallbackAttributes([]);
-
-            if (!tokenProviders) return;
-            const provider = tokenProviders.find((p) => p.uuid === value);
-
-            if (!provider) return;
-            setTokenProvider(provider);
+            unregister('__attributes__token__');
+            unregister('deletedAttributes_token');
             setValue('storeKind', '');
         },
-        [dispatch, tokenProviders, setValue],
+        [dispatch, setValue, unregister],
     );
-
-    useEffect(() => {
-        if (watchedTokenProvider) {
-            onTokenProviderChange(watchedTokenProvider);
-        }
-    }, [watchedTokenProvider, onTokenProviderChange]);
 
     const onKindChange = useCallback(
-        (value: string) => {
-            if (!value || !tokenProvider) return;
-
+        (_value: string) => {
+            dispatch(tokenActions.clearTokenProviderAttributeDescriptors());
             dispatch(connectorActions.clearCallbackData());
             setGroupAttributesCallbackAttributes([]);
-            dispatch(tokenActions.getTokenProviderAttributesDescriptors({ uuid: tokenProvider.uuid, kind: value }));
+            unregister('__attributes__token__');
+            unregister('deletedAttributes_token');
         },
-        [dispatch, tokenProvider],
+        [dispatch, unregister],
     );
-
-    useEffect(() => {
-        if (watchedStoreKind && tokenProvider) {
-            onKindChange(watchedStoreKind);
-        }
-    }, [watchedStoreKind, tokenProvider, onKindChange]);
-
-    // Reset form values when token is loaded in edit mode
-    useEffect(() => {
-        if (editMode && id && token?.uuid === id && !isFetchingTokenDetail) {
-            const newDefaultValues: FormValues = {
-                name: token.name || '',
-                tokenProvider: token.connectorUuid || '',
-                storeKind: token.kind || '',
-            };
-            reset(newDefaultValues, { keepDefaultValues: false });
-        } else if (!editMode) {
-            // Reset form when switching to create mode
-            reset({
-                name: '',
-                tokenProvider: '',
-                storeKind: '',
-            });
-        }
-    }, [editMode, token, id, reset, isFetchingTokenDetail]);
 
     const onSubmit = useCallback(
         (values: FormValues) => {
             if (editMode) {
-                if (!tokenDetail?.name || !tokenDetail?.kind || !tokenDetail?.connectorUuid) {
+                if (!tokenDetail?.name || !tokenDetail.connectorUuid || (!isV2TokenProvider && !tokenDetail.kind)) {
                     dispatch(alertActions.error('Token detail is incomplete. Please reload the page and try again.'));
                     return;
                 }
@@ -255,8 +260,8 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
                         uuid: id!,
                         updateToken: {
                             name: tokenDetail.name,
-                            kind: tokenDetail.kind,
                             connectorUuid: tokenDetail.connectorUuid,
+                            ...(isV2TokenProvider ? {} : { kind: tokenDetail.kind }),
                             attributes: collectFormAttributes(
                                 'token',
                                 [...(tokenProviderAttributeDescriptors ?? []), ...groupAttributesCallbackAttributes],
@@ -271,7 +276,7 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
                     tokenActions.createToken({
                         name: values.name,
                         connectorUuid: values.tokenProvider,
-                        kind: values.storeKind,
+                        ...(isV2TokenProvider ? {} : { kind: values.storeKind }),
                         attributes: collectFormAttributes(
                             'token',
                             [...(tokenProviderAttributeDescriptors ?? []), ...groupAttributesCallbackAttributes],
@@ -290,6 +295,7 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
             tokenProviderAttributeDescriptors,
             groupAttributesCallbackAttributes,
             resourceCustomAttributes,
+            isV2TokenProvider,
         ],
     );
 
@@ -298,9 +304,9 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
     const inProgressTitle = useMemo(() => (editMode ? 'Saving...' : 'Creating...'), [editMode]);
 
     const renderCustomAttributeEditor = useMemo(() => {
-        if (isBusy) return <></>;
+        if (isBusy || !hasResourceCustomAttributes || !isFormHydrated) return <></>;
         return <AttributeEditor id="customToken" attributeDescriptors={resourceCustomAttributes} attributes={token?.customAttributes} />;
-    }, [resourceCustomAttributes, token?.customAttributes, isBusy]);
+    }, [hasResourceCustomAttributes, isBusy, isFormHydrated, resourceCustomAttributes, token?.customAttributes]);
 
     useRunOnSuccessfulFinish(isCreating, createTokenSucceeded, onSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateTokenSucceeded, onSuccess);
@@ -353,7 +359,9 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
                                                 label="Cryptography Provider"
                                                 value={field.value || ''}
                                                 onChange={(value) => {
-                                                    field.onChange(value);
+                                                    const connectorUuid = typeof value === 'string' ? value : '';
+                                                    field.onChange(connectorUuid);
+                                                    onTokenProviderChange(connectorUuid);
                                                 }}
                                                 options={optionsForTokenProviders || []}
                                                 placeholder="Select Cryptography Provider"
@@ -385,7 +393,9 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
                                                 label="Kind"
                                                 value={field.value || ''}
                                                 onChange={(value) => {
-                                                    field.onChange(value);
+                                                    const kind = typeof value === 'string' ? value : '';
+                                                    field.onChange(kind);
+                                                    onKindChange(kind);
                                                 }}
                                                 options={optionsForKinds || []}
                                                 placeholder="Select Kind"
@@ -423,7 +433,9 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
                                     title: 'Connector Attributes',
                                     content:
                                         tokenProvider &&
-                                        watchedStoreKind &&
+                                        (isV2TokenProvider || watchedStoreKind) &&
+                                        isFormHydrated &&
+                                        tokenAttributeSchemaReady &&
                                         tokenProviderAttributeDescriptors &&
                                         tokenProviderAttributeDescriptors.length > 0 ? (
                                             <AttributeEditor
@@ -431,8 +443,10 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
                                                 attributeDescriptors={tokenProviderAttributeDescriptors}
                                                 attributes={editMode ? tokenDetail?.attributes : undefined}
                                                 connectorUuid={tokenProvider.uuid}
-                                                functionGroupCode={FunctionGroupCode.CryptographyProvider}
-                                                kind={watchedStoreKind}
+                                                connectorVersion={tokenProvider.version}
+                                                functionGroupCode={isV2TokenProvider ? undefined : FunctionGroupCode.CryptographyProvider}
+                                                kind={isV2TokenProvider ? undefined : watchedStoreKind}
+                                                interfaceUuid={cryptographyInterfaceUuid}
                                                 groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
                                                 setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                                             />

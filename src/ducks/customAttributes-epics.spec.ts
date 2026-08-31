@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { UnknownAction } from '@reduxjs/toolkit';
-import { firstValueFrom, of, throwError } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
 
 import { slice } from './customAttributes';
@@ -12,6 +12,7 @@ import { actions as secretActions } from './secrets';
 import { actions as alertActions } from './alerts';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { AttributeVersion, Resource } from 'types/openapi';
+import { ensureResourceCustomAttributes } from './customAttributes-epics';
 
 vi.mock('../App', async () => ({ store: (await import('./epics-test-mocks')).getEpicMocks().appStore }));
 vi.mock('./alerts', async () => ({ actions: (await import('./epics-test-mocks')).getEpicMocks().alertActions }));
@@ -146,6 +147,7 @@ function createState(overrides: any = {}) {
         customAttributes: {
             resourceCustomAttributesContents: [],
             resourceCustomAttributes: [],
+            resourceCustomAttributesByResource: {},
         },
         vaults: { vault: undefined },
         vaultProfiles: { vaultProfile: undefined },
@@ -387,6 +389,28 @@ describe('customAttributes epics', () => {
         if (scenario.hasWidgetLockOnFailure) {
             expect(failure[2].type).toBe(userInterfaceActions.insertWidgetLock.type);
         }
+    });
+
+    test('ensureResourceCustomAttributes_deduplicatesInFlightRequestByResource', () => {
+        // given
+        const resource = Resource.Tokens;
+        const response = new Subject<never[]>();
+        const getResourceCustomAttributes = vi.fn(() => response);
+        const actions$ = new Subject<ReturnType<typeof slice.actions.ensureResourceCustomAttributes>>();
+        const state$ = new BehaviorSubject(createState());
+        const subscription = ensureResourceCustomAttributes(
+            actions$ as any,
+            state$ as any,
+            createDeps({ customAttributes: { getResourceCustomAttributes } as any }) as any,
+        ).subscribe();
+
+        // when
+        actions$.next(slice.actions.ensureResourceCustomAttributes(resource));
+        actions$.next(slice.actions.ensureResourceCustomAttributes(resource));
+
+        // then
+        expect(getResourceCustomAttributes).toHaveBeenCalledTimes(1);
+        subscription.unsubscribe();
     });
 
     test('loadMultipleResourceCustomAttributes emits mapped resources and empty list on partial error', async () => {

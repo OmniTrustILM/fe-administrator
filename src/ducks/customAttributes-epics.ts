@@ -1,7 +1,7 @@
 import type { AppEpic, AppState, EpicDependencies } from 'ducks';
 import type { UnknownAction } from '@reduxjs/toolkit';
-import { of, forkJoin, type Observable } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
+import { defer, EMPTY, of, forkJoin, type Observable } from 'rxjs';
+import { catchError, exhaustMap, filter, groupBy, map, mergeMap, switchMap } from 'rxjs/operators';
 
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
@@ -485,6 +485,42 @@ const listResourceCustomAttributes: AppEpic = (action$, state$, deps) => {
     );
 };
 
+const ensureResourceCustomAttributes: AppEpic = (action$, state$, deps) =>
+    action$.pipe(
+        filter(slice.actions.ensureResourceCustomAttributes.match),
+        groupBy((action) => action.payload),
+        mergeMap((requestsForResource) =>
+            requestsForResource.pipe(
+                exhaustMap((action) => {
+                    const resource = action.payload;
+                    if (Object.hasOwn(state$.value.customAttributes.resourceCustomAttributesByResource ?? {}, resource)) return EMPTY;
+
+                    return defer(() => deps.apiClients.customAttributes.getResourceCustomAttributes({ resource })).pipe(
+                        switchMap((list) =>
+                            of(
+                                slice.actions.ensureResourceCustomAttributesSuccess({
+                                    resource,
+                                    customAttributes: list.map(transformCustomAttributeDtoToModel),
+                                }),
+                                userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.CustomAttributeWidget),
+                            ),
+                        ),
+                        catchError((err) =>
+                            of(
+                                slice.actions.ensureResourceCustomAttributesFailure({
+                                    resource,
+                                    error: extractError(err, 'Failed to get Resource Custom Attributes list'),
+                                }),
+                                appRedirectActions.fetchError({ error: err, message: 'Failed to get Resource Custom Attributes list' }),
+                                userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.CustomAttributeWidget),
+                            ),
+                        ),
+                    );
+                }),
+            ),
+        ),
+    );
+
 const listSecondaryResourceCustomAttributes: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.listSecondaryResourceCustomAttributes.match),
@@ -759,6 +795,8 @@ const epics = [
     disableCustomAttribute,
     updateCustomAttributeContent,
     removeCustomAttributeContent,
+    ensureResourceCustomAttributes,
 ];
 
+export { ensureResourceCustomAttributes };
 export default epics;
