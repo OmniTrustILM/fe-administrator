@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react';
+import { useRef } from 'react';
 import { Trash2, Upload } from 'lucide-react';
 import Button from 'components/Button';
 import { LOGO_ACCEPT, LOGO_HELP } from 'utils/branding';
@@ -21,9 +21,7 @@ type Props = {
  */
 function LogoSlot({ id, label, value, fileName, error, onSelect, onDelete, disabled = false }: Readonly<Props>) {
     const inputRef = useRef<HTMLInputElement>(null);
-    const generatedId = useId();
     const errorId = `${id}-error`;
-    const inputId = `${id}-file-${generatedId.replaceAll(':', '')}`;
 
     return (
         <div className="flex flex-col gap-2" data-testid={`logo-slot-${id}`}>
@@ -72,11 +70,11 @@ function LogoSlot({ id, label, value, fileName, error, onSelect, onDelete, disab
             {/* Hidden rather than styled: a file input cannot be restyled, and the visible control above drives it. */}
             <input
                 ref={inputRef}
-                id={inputId}
                 type="file"
                 accept={LOGO_ACCEPT}
                 className="sr-only"
                 aria-label={label}
+                aria-describedby={error ? errorId : undefined}
                 disabled={disabled}
                 data-testid={`logo-input-${id}`}
                 onChange={(event) => {

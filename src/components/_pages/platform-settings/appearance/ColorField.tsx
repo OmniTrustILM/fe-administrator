@@ -13,7 +13,10 @@ type Props = {
 /**
  * One brand colour: a hex field and a swatch, kept in sync in both directions. The swatch is a native `input type=color`
  * rather than a picker component, so it is keyboard operable and themed by the platform for free. It cannot express an
- * empty or malformed value, so it falls back to black for display only and never writes that back on its own.
+ * empty or malformed value, so it falls back to black for display only and never writes that back on its own. That
+ * fallback asks a different question from `valid` below: whether the control can render the value at all, not whether
+ * the value is acceptable input. An empty string is acceptable input the control cannot hold, and handing it one
+ * leaves React believing the value is `''` while the browser shows `#000000`, rewritten on every render.
  *
  * An empty field is valid and means the colour is unset - Core clears any field left out - so only a non-empty value
  * that is not a six-digit hex is an error.
@@ -42,7 +45,7 @@ function ColorField({ id, label, hint, value, onChange, disabled = false }: Read
                     type="color"
                     aria-label={`${label} color picker`}
                     className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-outline bg-surface-raised p-1 disabled:cursor-not-allowed disabled:opacity-35"
-                    value={valid ? value : '#000000'}
+                    value={isBrandColor(value) ? value : '#000000'}
                     disabled={disabled}
                     onChange={(event) => onChange(event.target.value.toUpperCase())}
                     data-testid={`color-swatch-${id}`}

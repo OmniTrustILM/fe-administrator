@@ -25,6 +25,13 @@ const LOGO_SLOTS: ReadonlyArray<{ key: LogoKey; label: string }> = [
     { key: 'darkLogo', label: 'Dark Logo' },
 ];
 
+/**
+ * Reset is an empty update, and Core clears every field left out of one, so the operator's default theme goes with the
+ * colours and logos. Named here because nothing in this application can set it again.
+ */
+const RESET_CONFIRMATION =
+    'This removes the configured colors, logos and default theme, and the instance returns to the platform default look. Continue?';
+
 type Colors = Record<ColorKey, string>;
 type LogoState = { dataUri?: string; fileName?: string; error?: string };
 type Logos = Record<LogoKey, LogoState>;
@@ -81,7 +88,14 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
     }, [branding]);
 
     const isBusy = isFetching || isUpdating || isResetting;
-    const isReadOnly = !canUpdate || isBusy;
+
+    // A read that succeeds always leaves a value behind - a Core with nothing stored answers 404, which the epic maps
+    // to an empty success - so an absent one means no read has landed. The form seeded from it is empty and looks
+    // exactly like an unbranded instance, and since Core clears every field left out of a request, saving from it
+    // would wipe the branding that is actually stored, `defaultTheme` included. There is no known-good state to edit
+    // from until a read succeeds, so the tab stays read-only until one does.
+    const hasKnownBranding = branding !== undefined;
+    const isReadOnly = !canUpdate || isBusy || !hasKnownBranding;
 
     const hasInvalidColor = useMemo(() => Object.values(colors).some((value) => value !== '' && !isBrandColor(value)), [colors]);
 
@@ -105,22 +119,35 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
     const onLogoSelect = useCallback(async (key: LogoKey, file: File) => {
         logoReadTokens.current[key] += 1;
         const token = logoReadTokens.current[key];
+        const stillOwnsSlot = () => logoReadTokens.current[key] === token;
 
         setReadingLogos((current) => ({ ...current, [key]: true }));
 
-        const result = await readLogoFile(file);
+        try {
+            const result = await readLogoFile(file);
 
-        if (logoReadTokens.current[key] !== token) {
-            return;
+            if (stillOwnsSlot()) {
+                setLogos((current) => ({
+                    ...current,
+                    [key]: result.error
+                        ? { ...current[key], error: result.error }
+                        : { dataUri: result.dataUri, fileName: file.name, error: undefined },
+                }));
+            }
+        } catch {
+            // readLogoFile reports its own failures as a result rather than throwing, so this is a guard against that
+            // changing: an escaping rejection would otherwise strand the slot mid-read and keep Save disabled for the
+            // rest of the session with nothing on screen to explain it.
+            if (stillOwnsSlot()) {
+                setLogos((current) => ({ ...current, [key]: { ...current[key], error: 'Could not read the selected file.' } }));
+            }
+        } finally {
+            // Only the read that still owns the slot may clear the flag. A superseded one would otherwise turn it off
+            // while the selection that replaced it is still being read.
+            if (stillOwnsSlot()) {
+                setReadingLogos((current) => ({ ...current, [key]: false }));
+            }
         }
-
-        setReadingLogos((current) => ({ ...current, [key]: false }));
-        setLogos((current) => ({
-            ...current,
-            [key]: result.error
-                ? { ...current[key], error: result.error }
-                : { dataUri: result.dataUri, fileName: file.name, error: undefined },
-        }));
     }, []);
 
     const onLogoDelete = useCallback((key: LogoKey) => {
@@ -156,6 +183,12 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
             {!canUpdate && (
                 <p className="rounded-lg bg-info-surface px-3 py-2 text-sm text-info" data-testid="appearance-read-only">
                     You do not have permission to change branding. The current values are shown for reference.
+                </p>
+            )}
+
+            {canUpdate && !hasKnownBranding && !isFetching && (
+                <p className="rounded-lg bg-warning-surface px-3 py-2 text-sm text-warning" data-testid="appearance-unavailable">
+                    The stored branding could not be read, so it cannot be changed here. Reload the page to try again.
                 </p>
             )}
 
@@ -227,7 +260,7 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
                 caption="Reset branding to default"
                 icon="warning"
                 dataTestId="appearance-reset-dialog"
-                body="This removes the configured colors and logos, and the instance returns to the platform default look. Continue?"
+                body={RESET_CONFIRMATION}
                 buttons={[
                     { color: 'danger', body: 'Reset', onClick: onResetConfirmed },
                     { color: 'secondary', variant: 'outline', body: 'Cancel', onClick: () => setIsResetDialogOpen(false) },

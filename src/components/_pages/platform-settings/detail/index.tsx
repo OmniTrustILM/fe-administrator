@@ -65,10 +65,15 @@ export default function PlatformSettingsDetail() {
     );
 
     /**
-     * Core gates the branding write on `ResourceAction.UPDATE_BRANDING`, which the user profile does not expose - it
-     * carries `allowedListings` only, a per-resource listing grant. Settings access is therefore the closest signal
-     * available, and a viewer holding `SETTINGS` + `UPDATE` but not `UPDATE_BRANDING` is refused by Core on save and
-     * shown its message rather than being disabled up front. Tracked in OmniTrustILM/interfaces#920.
+     * Approximates the branding-write grant; Core is the real gate.
+     *
+     * Why not the real grant: Core gates the write on `ResourceAction.UPDATE_BRANDING`, but the user profile carries
+     * `allowedListings` only - a per-resource listing grant - so that action is invisible client-side.
+     *
+     * Consequence: a viewer holding `SETTINGS` + `UPDATE` but not `UPDATE_BRANDING` sees enabled controls and is
+     * refused by Core on save, and shown its message, rather than being disabled up front.
+     *
+     * Tracked in OmniTrustILM/interfaces#920.
      */
     const canUpdateBranding = !!profile?.permissions?.allowedListings?.includes(Resource.Settings);
 
