@@ -134,7 +134,7 @@ test.describe('CommentPanel', () => {
         const preview = page.getByTestId('comment-panel-obj-1-composer-preview');
         await expect(preview.locator('h3')).toHaveText('Hello there');
         await expect(preview.locator('em')).toHaveText('there');
-        await page.getByTestId('comment-panel-obj-1-composer-toggle-preview').click();
+        await page.getByTestId('comment-panel-obj-1-composer-toggle-write').click();
 
         await expect(submit).toBeEnabled();
         await submit.click();

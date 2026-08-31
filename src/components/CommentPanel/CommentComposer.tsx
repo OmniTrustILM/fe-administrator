@@ -1,6 +1,6 @@
 import Button from 'components/Button';
 import cn from 'classnames';
-import { Bold, Code, Eye, Heading, Italic, Link, List, ListOrdered, type LucideIcon, Pencil, Strikethrough, TextQuote } from 'lucide-react';
+import { Bold, Code, Heading, Italic, Link, List, ListOrdered, type LucideIcon, Strikethrough, TextQuote } from 'lucide-react';
 import { type KeyboardEvent, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { COMMENT_BODY_MAX_LENGTH } from 'utils/comment-markdown';
 import { applyMarkdownAction, type EditState, type MarkdownAction, markdownShortcut } from 'utils/markdown-editing';
@@ -39,6 +39,11 @@ const TOOLBAR: ToolbarItem[][] = [
         { action: 'quote', label: 'Quote', icon: TextQuote },
     ],
 ];
+
+const MODES = [
+    { label: 'Write', isPreview: false },
+    { label: 'Preview', isPreview: true },
+] as const;
 
 /** Roughly 16 lines; beyond that the textarea scrolls instead of pushing the page down. */
 const MAX_TEXTAREA_HEIGHT = 400;
@@ -144,6 +149,25 @@ export default function CommentComposer({
                     role="toolbar"
                     aria-label="Formatting"
                 >
+                    <div className="flex items-center" role="tablist" aria-label="Editor mode">
+                        {MODES.map(({ label, isPreview }) => (
+                            <button
+                                key={label}
+                                type="button"
+                                role="tab"
+                                aria-selected={preview === isPreview}
+                                className={cn(
+                                    'px-2.5 py-1 text-xs font-medium rounded-md border border-transparent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand',
+                                    preview === isPreview ? 'text-brand bg-brand-subtle' : 'text-content-muted hover:bg-surface-hover',
+                                )}
+                                onClick={() => setPreview(isPreview)}
+                                data-testid={`${dataTestId}-${isPreview ? 'toggle-preview' : 'toggle-write'}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                    <span className="w-px h-4 bg-divider mx-1.5" aria-hidden="true" />
                     {TOOLBAR.map((group, groupIndex) => (
                         <div key={group[0].action} className="flex items-center gap-0.5">
                             {groupIndex > 0 && <span className="w-px h-4 bg-divider mx-1.5" aria-hidden="true" />}
@@ -167,19 +191,6 @@ export default function CommentComposer({
                             })}
                         </div>
                     ))}
-                    <span className="flex-1" />
-                    <Button
-                        variant="transparent"
-                        color="secondary"
-                        className="!p-1.5"
-                        onClick={() => setPreview((value) => !value)}
-                        title={preview ? 'Edit' : 'Preview'}
-                        aria-label={preview ? 'Edit' : 'Preview'}
-                        aria-pressed={preview}
-                        data-testid={`${dataTestId}-toggle-preview`}
-                    >
-                        {preview ? <Pencil size={15} /> : <Eye size={15} />}
-                    </Button>
                 </div>
 
                 {preview ? (
