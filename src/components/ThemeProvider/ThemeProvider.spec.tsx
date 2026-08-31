@@ -1,11 +1,26 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '../../../playwright/ct-test';
 import type { BrandingTheme } from 'types/branding';
+import { DARK_SCHEME_QUERY } from 'utils/theme';
 import ThemeProvider from './index';
 import Probe from './Probe';
 
 const branded = (defaultTheme: BrandingTheme) => ({ configured: true, defaultTheme });
 const unbranded = { configured: false };
+
+/**
+ * Switches the OS preference and returns once the page has dispatched the change to a listener. An expectation that
+ * the theme did *not* move is satisfied by the state before the switch as well, so it has to be made after the event
+ * the provider would have reacted to rather than racing it.
+ */
+const switchOsPreference = async (page: Page, colorScheme: 'light' | 'dark') => {
+    await page.evaluate((query) => {
+        Object.assign(globalThis, { __osChangeSeen: false });
+        globalThis.matchMedia(query).addEventListener('change', () => Object.assign(globalThis, { __osChangeSeen: true }));
+    }, DARK_SCHEME_QUERY);
+    await page.emulateMedia({ colorScheme });
+    await expect.poll(async () => page.evaluate(() => Reflect.get(globalThis, '__osChangeSeen'))).toBe(true);
+};
 
 const seed = (page: Page, values: Record<string, string>) =>
     page.evaluate((entries) => {
@@ -72,12 +87,15 @@ test.describe('ThemeProvider', () => {
                 <Probe />
             </ThemeProvider>,
         );
-        await page.getByTestId('set-dark').click();
-        await expect(page.getByTestId('resolved')).toHaveText('dark');
+        await page.getByTestId('set-light').click();
+        await expect(page.getByTestId('resolved')).toHaveText('light');
 
-        await page.emulateMedia({ colorScheme: 'light' });
-        await expect(page.getByTestId('resolved')).toHaveText('dark');
-        await expect(page.locator('html')).toHaveClass(/dark/);
+        // The same transition the fallback-path test above follows. Without the choice made first, the theme would
+        // move with it, so what is asserted below holds only because the chosen mode outranks the OS.
+        await switchOsPreference(page, 'dark');
+
+        await expect(page.getByTestId('resolved')).toHaveText('light');
+        await expect(page.locator('html')).not.toHaveClass(/dark/);
     });
 
     test('should persist the chosen mode', async ({ mount, page }) => {

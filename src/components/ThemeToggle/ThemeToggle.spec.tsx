@@ -115,8 +115,9 @@ test.describe('ThemeToggle', () => {
      * Arrow and typeahead navigation *inside* an open Radix menu does not move focus under Playwright CT - bare
      * `DropdownMenu` behaves the same way as this component and as the shared `Dropdown`, so it is an artefact of the
      * environment rather than something to pin here. What is asserted is the part that does work and is the actual
-     * accessibility contract: the trigger opens by keyboard, focus lands on the active option, Enter activates it and
-     * Escape dismisses without changing anything.
+     * accessibility contract: the trigger opens by keyboard, focus enters the menu, the active mode stays identified
+     * by `aria-checked` wherever focus lands, Enter activates the focused option and Escape dismisses without
+     * changing anything.
      */
     test('should open by keyboard with focus in the menu', async ({ mount, page }) => {
         await page.emulateMedia({ colorScheme: 'light' });
@@ -140,13 +141,16 @@ test.describe('ThemeToggle', () => {
     });
 
     test('should activate the focused option with Enter', async ({ mount, page }) => {
-        await page.emulateMedia({ colorScheme: 'light' });
+        // Start dark, so the option Radix focuses on open - the first one, Light - is not the mode already in force
+        // and the assertions below can only hold if Enter actually activated it.
+        await page.emulateMedia({ colorScheme: 'dark' });
         await mount(
             <ThemeProvider branding={unbranded}>
                 <ThemeToggle />
             </ThemeProvider>,
         );
         const trigger = page.getByTestId('theme-toggle').locator('button');
+        await expect(trigger).toHaveAttribute('aria-label', 'Theme: Dark');
 
         await trigger.focus();
         await page.keyboard.press('Enter');
@@ -155,6 +159,7 @@ test.describe('ThemeToggle', () => {
 
         await expect(trigger).toHaveAttribute('aria-expanded', 'false');
         await expect(trigger).toHaveAttribute('aria-label', 'Theme: Light');
+        await expect(page.locator('html')).not.toHaveClass(/dark/);
     });
 
     test('should dismiss with Escape without changing the theme', async ({ mount, page }) => {
