@@ -1,68 +1,39 @@
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Check, Moon, MoonStar, Sun, SunMedium } from 'lucide-react';
-import Dropdown from 'components/Dropdown';
+import Tooltip from 'components/Tooltip';
+import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'components/ThemeProvider';
-import { isThemeMode, type ThemeMode } from 'utils/theme';
+import { nextMode, type ThemeMode } from 'utils/theme';
 
-const ICONS: Record<ThemeMode, typeof Sun> = {
+const ICONS: Record<ThemeMode, typeof Monitor> = {
+    system: Monitor,
     light: Sun,
     dark: Moon,
-    systemLight: SunMedium,
-    systemDark: MoonStar,
 };
 
 const LABELS: Record<ThemeMode, string> = {
+    system: 'System',
     light: 'Light',
     dark: 'Dark',
-    systemLight: 'System Light',
-    systemDark: 'System Dark',
 };
 
 function ThemeToggle() {
-    const { mode, setMode, modes } = useTheme();
+    const { mode, cycleMode } = useTheme();
 
     const Icon = ICONS[mode];
+    const current = LABELS[mode];
+    const upcoming = LABELS[nextMode(mode)];
 
     return (
-        <div data-testid="theme-toggle">
-            <Dropdown
-                title={<Icon size={24} data-theme-icon={mode} aria-hidden="true" />}
-                ariaLabel={`Theme: ${LABELS[mode]}`}
-                btnStyle="transparent"
-                hideArrow
-                className="text-content-on-brand"
-                menuClassName="min-w-48"
-                menu={
-                    <DropdownMenu.RadioGroup
-                        value={mode}
-                        onValueChange={(value) => {
-                            if (isThemeMode(value)) {
-                                setMode(value);
-                            }
-                        }}
-                    >
-                        {modes.map((option) => {
-                            const OptionIcon = ICONS[option];
-
-                            return (
-                                <DropdownMenu.RadioItem
-                                    key={option}
-                                    value={option}
-                                    data-testid={`theme-option-${option}`}
-                                    className="flex items-center gap-x-3 py-2 px-3 w-full text-left rounded-lg text-sm text-content hover:bg-surface-hover focus:outline-hidden focus:bg-surface-hover cursor-pointer"
-                                >
-                                    <OptionIcon size={16} aria-hidden="true" />
-                                    <span className="grow">{LABELS[option]}</span>
-                                    <DropdownMenu.ItemIndicator>
-                                        <Check size={16} className="text-brand" aria-hidden="true" />
-                                    </DropdownMenu.ItemIndicator>
-                                </DropdownMenu.RadioItem>
-                            );
-                        })}
-                    </DropdownMenu.RadioGroup>
-                }
-            />
-        </div>
+        <Tooltip content={`Theme: ${current}`}>
+            <button
+                type="button"
+                onClick={cycleMode}
+                aria-label={`Theme: ${current}. Switch to ${upcoming}.`}
+                data-testid="theme-toggle"
+                className="p-2 inline-flex items-center rounded-lg text-content-on-brand hover:bg-white/10 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white"
+            >
+                <Icon size={24} data-theme-icon={mode} aria-hidden="true" />
+            </button>
+        </Tooltip>
     );
 }
 

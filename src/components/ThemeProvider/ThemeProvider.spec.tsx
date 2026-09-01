@@ -5,8 +5,12 @@ import { DARK_SCHEME_QUERY } from 'utils/theme';
 import ThemeProvider from './index';
 import Probe from './Probe';
 
-const branded = (defaultTheme: BrandingTheme) => ({ configured: true, defaultTheme });
-const unbranded = { configured: false };
+/**
+ * Branding reaches the provider as its default theme and nothing else: it decides which palette light and dark render,
+ * not which modes exist, so `configured` is not something the theme runtime consults.
+ */
+const branded = (defaultTheme: BrandingTheme) => ({ defaultTheme });
+const unbranded = {};
 
 /**
  * Switches the OS preference and returns once the page has dispatched the change to a listener. An expectation that
@@ -38,7 +42,7 @@ test.describe('ThemeProvider', () => {
             </ThemeProvider>,
         );
 
-        await expect(page.getByTestId('mode')).toHaveText('dark');
+        await expect(page.getByTestId('mode')).toHaveText('system');
         await expect(page.getByTestId('resolved')).toHaveText('dark');
         await expect(page.locator('html')).toHaveClass(/dark/);
     });
@@ -64,8 +68,22 @@ test.describe('ThemeProvider', () => {
             </ThemeProvider>,
         );
 
-        await expect(page.getByTestId('mode')).toHaveText('systemDark');
+        await expect(page.getByTestId('mode')).toHaveText('dark');
         await expect(page.getByTestId('resolved')).toHaveText('dark');
+    });
+
+    /** An explicit System choice is a choice, so it has to beat the operator default and follow the OS instead. */
+    test('should let an explicit system choice outrank the operator default', async ({ mount, page }) => {
+        await page.emulateMedia({ colorScheme: 'light' });
+        await seed(page, { 'theme-mode': 'system' });
+        await mount(
+            <ThemeProvider branding={branded('dark' as BrandingTheme)}>
+                <Probe />
+            </ThemeProvider>,
+        );
+
+        await expect(page.getByTestId('mode')).toHaveText('system');
+        await expect(page.getByTestId('resolved')).toHaveText('light');
     });
 
     test('should let a stored choice win over the operator default', async ({ mount, page }) => {
@@ -104,10 +122,10 @@ test.describe('ThemeProvider', () => {
                 <Probe />
             </ThemeProvider>,
         );
-        await page.getByTestId('set-systemDark').click();
-        await expect(page.getByTestId('mode')).toHaveText('systemDark');
+        await page.getByTestId('set-dark').click();
+        await expect(page.getByTestId('mode')).toHaveText('dark');
 
-        await expect.poll(async () => page.evaluate(() => globalThis.localStorage.getItem('theme-mode'))).toBe('systemDark');
+        await expect.poll(async () => page.evaluate(() => globalThis.localStorage.getItem('theme-mode'))).toBe('dark');
     });
 
     test('should not persist a mode the user never chose', async ({ mount, page }) => {
@@ -116,41 +134,42 @@ test.describe('ThemeProvider', () => {
                 <Probe />
             </ThemeProvider>,
         );
-        await expect(page.getByTestId('mode')).toHaveText('systemDark');
+        await expect(page.getByTestId('mode')).toHaveText('dark');
 
         expect(await page.evaluate(() => globalThis.localStorage.getItem('theme-mode'))).toBeNull();
     });
 
-    test('should offer only the platform modes without branding', async ({ mount, page }) => {
-        await mount(
-            <ThemeProvider branding={unbranded}>
-                <Probe />
-            </ThemeProvider>,
-        );
-
-        await expect(page.getByTestId('modes')).toHaveText('light,dark');
-    });
-
-    test('should offer all four modes once branding is configured', async ({ mount, page }) => {
-        await mount(
-            <ThemeProvider branding={branded('light' as BrandingTheme)}>
-                <Probe />
-            </ThemeProvider>,
-        );
-
-        await expect(page.getByTestId('modes')).toHaveText('light,dark,systemLight,systemDark');
-    });
-
-    test('should report a stored branded choice as its platform mode when branding is gone', async ({ mount, page }) => {
+    /**
+     * A browser that saw the four-mode build has one of the retired modes stored. It must read as "no preference" so
+     * the operator default takes over, rather than pinning the user to a mode that no longer exists.
+     */
+    test('should ignore a mode stored by the retired four-mode build', async ({ mount, page }) => {
+        await page.emulateMedia({ colorScheme: 'light' });
         await seed(page, { 'theme-mode': 'systemDark' });
         await mount(
-            <ThemeProvider branding={unbranded}>
+            <ThemeProvider branding={branded('dark' as BrandingTheme)}>
                 <Probe />
             </ThemeProvider>,
         );
 
         await expect(page.getByTestId('mode')).toHaveText('dark');
         await expect(page.getByTestId('resolved')).toHaveText('dark');
+    });
+
+    /** The first click has to advance from what is in force, which on a branded instance is the operator's default. */
+    test('should cycle on from the operator default rather than from system', async ({ mount, page }) => {
+        await mount(
+            <ThemeProvider branding={branded('light' as BrandingTheme)}>
+                <Probe />
+            </ThemeProvider>,
+        );
+        await expect(page.getByTestId('mode')).toHaveText('light');
+
+        await page.getByTestId('cycle').click();
+        await expect(page.getByTestId('mode')).toHaveText('dark');
+
+        await page.getByTestId('cycle').click();
+        await expect(page.getByTestId('mode')).toHaveText('system');
     });
 
     test('should cache the operator default for the next load', async ({ mount, page }) => {
@@ -195,7 +214,7 @@ test.describe('ThemeProvider', () => {
             </ThemeProvider>,
         );
 
-        await expect(page.getByTestId('mode')).toHaveText('systemDark');
-        await expect(page.getByTestId('modes')).toHaveText('light,dark,systemLight,systemDark');
+        await expect(page.getByTestId('mode')).toHaveText('dark');
+        await expect(page.getByTestId('resolved')).toHaveText('dark');
     });
 });

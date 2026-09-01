@@ -172,31 +172,40 @@ secret status and donut palette entry satisfies it — so a new status colour ha
 the band, not at either extreme.
 
 **Runtime.** `src/utils/theme.ts` owns theme resolution, persistence and DOM application, and is
-framework-free. There are four modes: `light` and `dark` are the platform's own themes, `systemLight`
-and `systemDark` are the operator's branded theme in its two compositions, and are offered only once
-branding is configured. Each resolves to one of the two `ResolvedTheme` values that the stylesheet
-actually renders.
+framework-free. There are three modes — `system`, `light`, `dark` — and `system` resolves from the OS
+preference, giving the two `ResolvedTheme` values the stylesheet actually renders.
 
-Resolution follows a strict precedence: the user's own stored choice, then the operator's default
-(`defaultTheme` from public branding), then the OS preference. The OS is therefore consulted only on
-the fallback path — where the `matchMedia` listener does keep the theme moving live — and is ignored
-once either of the first two exists.
+**Branding does not add modes.** It changes which palette `light` and `dark` render: the operator's
+compositions when branding is configured, the platform's own when it is not. That swap lives in the
+stylesheet's token layer, so nothing in the theme runtime needs to know whether the instance is
+branded. The one branding input it does read is `defaultTheme`.
 
-`components/ThemeProvider` exposes `useTheme()` (mode, resolvedTheme, setMode, modes — `modes` being
-the list the control may offer, two without branding and four with it). It is store-free so a
-component test can mount it directly; `components/ThemeProvider/ConnectedThemeProvider` is the
-wrapper that feeds it the branding read from the `branding` duck, and withholds it while the read is
-in flight or has failed, because a failed read settles the slice on the platform default and would
-otherwise be indistinguishable from a live "not branded" answer. `useTheme()` throws when called
-outside the provider, so any component test harness that renders a theme-consuming component needs a
-`ThemeProvider` wrapper.
+Resolution has two steps, and keeping them separate is what makes the model work. `initialMode()`
+picks the mode: the user's own stored choice, then the operator's default, then `system`. Then
+`resolveTheme()` renders it, consulting the OS only for `system` — where the `matchMedia` listener
+keeps the theme moving live. So an operator default of `dark` puts the control on Dark rather than
+leaving it on System showing a light page, and a user who then picks System outranks the operator and
+follows their own OS again.
+
+That last part is why `readStoredMode()` returns `undefined` rather than defaulting to `system`:
+"never chose" has to stay distinguishable from "chose System", or the operator default could never
+apply. For the same reason the chosen mode is persisted in `setMode`/`cycleMode` rather than in an
+effect on `mode` — an effect would also fire for the operator default and pin the user to it.
+
+`components/ThemeProvider` exposes `useTheme()` (mode, resolvedTheme, setMode, cycleMode). It is
+store-free so a component test can mount it directly; `components/ThemeProvider/ConnectedThemeProvider`
+is the wrapper that feeds it the branding read from the `branding` duck, and withholds it while the
+read is in flight or has failed, because a failed read settles the slice on the platform default and
+would otherwise be indistinguishable from a live "not branded" answer. `useTheme()` throws when
+called outside the provider, so any component test harness that renders a theme-consuming component
+needs a `ThemeProvider` wrapper.
 
 The operator default is cached in `localStorage` under `theme-operator-default`, written only from a
 live branding response. An inline script in `index.html` applies the stored mode, or that cache, or
 the OS preference before first paint so nobody sees a white flash; it duplicates the resolution logic
 from `theme.ts` deliberately, because it runs before any module has loaded, and the two must be kept
-in step by hand. The user-facing control is a header dropdown (`components/ThemeToggle`) listing the
-available modes as a Radix radio group, with the active one marked.
+in step by hand. The user-facing control is a single header icon (`components/ThemeToggle`) that
+cycles System → Light → Dark → System.
 
 **Accessibility.** `src/utils/theme-tokens.spec.ts` parses the semantic tokens out of the stylesheet
 and asserts WCAG AA (4.5:1) contrast for every text/background pairing, in both themes, plus AA

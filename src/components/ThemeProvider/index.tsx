@@ -2,11 +2,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { PublicBrandingModel } from 'types/branding';
 import {
     applyTheme,
-    availableModes,
     DARK_SCHEME_QUERY,
     initialMode,
+    nextMode,
     operatorDefaultTheme,
-    platformMode,
     prefersDarkScheme,
     readStoredMode,
     readStoredOperatorDefault,
@@ -21,8 +20,7 @@ export type ThemeContextValue = {
     mode: ThemeMode;
     resolvedTheme: ResolvedTheme;
     setMode: (mode: ThemeMode) => void;
-    /** The modes the user may pick from: the branded pair is offered only once branding is configured. */
-    modes: readonly ThemeMode[];
+    cycleMode: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -39,8 +37,15 @@ export function useTheme(): ThemeContextValue {
 
 type Props = {
     children: ReactNode;
-    /** The operator's branding, once successfully read. Absent while the read is in flight, when it failed, and on a Core that predates branding. */
-    branding?: Pick<PublicBrandingModel, 'configured' | 'defaultTheme'>;
+    /**
+     * The operator's branding, once successfully read. Absent while the read is in flight, when it failed, and on a
+     * Core that predates branding.
+     *
+     * Only `defaultTheme` is used. Branding does not change which modes exist or how they resolve - it changes the
+     * palette that light and dark render, which is the stylesheet's business - so the theme runtime needs nothing else
+     * from it.
+     */
+    branding?: Pick<PublicBrandingModel, 'defaultTheme'>;
 };
 
 function ThemeProvider({ children, branding }: Readonly<Props>) {
@@ -68,15 +73,10 @@ function ThemeProvider({ children, branding }: Readonly<Props>) {
     const liveOperatorDefault = operatorDefaultTheme(branding?.defaultTheme);
     const operatorDefault = branding ? liveOperatorDefault : cachedOperatorDefault;
 
-    // `defaultTheme` is present exactly when branding is configured, so the cache doubles as knowledge that the
-    // instance is branded. Without it a returning user would be offered two modes until the read lands, then four.
-    const brandingConfigured = branding?.configured ?? cachedOperatorDefault !== undefined;
-
-    // Left undefined until the user picks, so an OS change still moves the theme while the fallback path is in force.
-    const rawMode = initialMode(chosenMode, operatorDefault, prefersDark);
-    const mode = brandingConfigured ? rawMode : platformMode(rawMode);
-    const resolvedTheme = resolveTheme(mode);
-    const modes = availableModes(brandingConfigured);
+    // Left undefined until the user picks, so the operator default still applies, and an OS change still moves the
+    // theme while `system` is in force.
+    const mode = initialMode(chosenMode, operatorDefault);
+    const resolvedTheme = resolveTheme(mode, prefersDark);
 
     useEffect(() => {
         applyTheme(resolvedTheme);
@@ -91,14 +91,30 @@ function ThemeProvider({ children, branding }: Readonly<Props>) {
     }, [branding, liveOperatorDefault]);
 
     // Persisted here rather than in an effect on `mode`, so that only an explicit choice is stored. An effect would
-    // also fire for the operator default and the OS fallback, which would make "never chose" indistinguishable from
-    // "chose exactly what the operator set" and pin the user to it.
+    // also fire for the operator default and the system fallback, which would make "never chose" indistinguishable
+    // from "chose exactly what the operator set" and pin the user to it.
     const setMode = useCallback((next: ThemeMode) => {
         setChosenMode(next);
         storeMode(next);
     }, []);
 
-    const value = useMemo<ThemeContextValue>(() => ({ mode, resolvedTheme, setMode, modes }), [mode, resolvedTheme, setMode, modes]);
+    // Cycles from whatever is in force, including a mode the user has not chosen yet: on a branded instance the first
+    // click has to advance from the operator's default, not from `system`. Kept in the functional form so two clicks
+    // in one batch cannot both read the same mode - only the fallback is closed over, and a click cannot change it.
+    const fallbackMode: ThemeMode = operatorDefault ?? 'system';
+    const cycleMode = useCallback(() => {
+        setChosenMode((current) => {
+            const next = nextMode(current ?? fallbackMode);
+
+            storeMode(next);
+            return next;
+        });
+    }, [fallbackMode]);
+
+    const value = useMemo<ThemeContextValue>(
+        () => ({ mode, resolvedTheme, setMode, cycleMode }),
+        [mode, resolvedTheme, setMode, cycleMode],
+    );
 
     return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

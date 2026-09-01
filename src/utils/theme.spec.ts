@@ -2,16 +2,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { BrandingTheme } from 'types/branding';
 import {
     applyTheme,
-    availableModes,
-    brandedMode,
     DARK_SCHEME_QUERY,
     initialMode,
-    isBrandedMode,
     isResolvedTheme,
     isThemeMode,
+    nextMode,
     OPERATOR_DEFAULT_STORAGE_KEY,
     operatorDefaultTheme,
-    platformMode,
     prefersDarkScheme,
     readStoredMode,
     readStoredOperatorDefault,
@@ -42,11 +39,11 @@ describe('theme', () => {
     });
 
     describe('isThemeMode', () => {
-        test.each(['light', 'dark', 'systemLight', 'systemDark'])('should accept %s', (value) => {
+        test.each(['system', 'light', 'dark'])('should accept %s', (value) => {
             expect(isThemeMode(value)).toBe(true);
         });
 
-        test.each([null, undefined, 42, 'DARK', 'system', 'auto', ''])('should reject %s', (value) => {
+        test.each([null, undefined, 42, 'DARK', 'systemLight', 'systemDark', 'auto', ''])('should reject %s', (value) => {
             expect(isThemeMode(value)).toBe(false);
         });
     });
@@ -56,36 +53,8 @@ describe('theme', () => {
             expect(isResolvedTheme(value)).toBe(true);
         });
 
-        test.each([null, undefined, 'systemLight', 'systemDark', ''])('should reject %s', (value) => {
+        test.each([null, undefined, 'system', ''])('should reject %s', (value) => {
             expect(isResolvedTheme(value)).toBe(false);
-        });
-    });
-
-    describe('isBrandedMode', () => {
-        test.each([
-            ['light', false],
-            ['dark', false],
-            ['systemLight', true],
-            ['systemDark', true],
-        ] as const)('should report %s as %s', (mode, expected) => {
-            expect(isBrandedMode(mode)).toBe(expected);
-        });
-    });
-
-    describe('brandedMode and platformMode', () => {
-        test('should map a resolved theme onto its branded composition', () => {
-            expect(brandedMode('light')).toBe('systemLight');
-            expect(brandedMode('dark')).toBe('systemDark');
-        });
-
-        test('should fall a branded mode back to the platform mode rendering the same theme', () => {
-            expect(platformMode('systemLight')).toBe('light');
-            expect(platformMode('systemDark')).toBe('dark');
-        });
-
-        test('should leave a platform mode alone', () => {
-            expect(platformMode('light')).toBe('light');
-            expect(platformMode('dark')).toBe('dark');
         });
     });
 
@@ -95,8 +64,8 @@ describe('theme', () => {
         });
 
         test('should return a valid stored mode', () => {
-            localStorage.setItem(THEME_STORAGE_KEY, 'systemDark');
-            expect(readStoredMode()).toBe('systemDark');
+            localStorage.setItem(THEME_STORAGE_KEY, 'system');
+            expect(readStoredMode()).toBe('system');
         });
 
         test('should report no preference for a corrupt stored value', () => {
@@ -104,8 +73,13 @@ describe('theme', () => {
             expect(readStoredMode()).toBeUndefined();
         });
 
-        test('should report no preference for a mode retired with the three-mode model', () => {
-            localStorage.setItem(THEME_STORAGE_KEY, 'system');
+        /**
+         * A browser that saw the four-mode build has one of these stored. Reading it as "no preference" is what lets
+         * the operator default, and then the OS, take over again rather than pinning the user to a mode that no
+         * longer exists.
+         */
+        test.each(['systemLight', 'systemDark'])('should report no preference for the retired mode %s', (retired) => {
+            localStorage.setItem(THEME_STORAGE_KEY, retired);
             expect(readStoredMode()).toBeUndefined();
         });
 
@@ -125,8 +99,8 @@ describe('theme', () => {
 
     describe('storeMode', () => {
         test('should persist the mode', () => {
-            storeMode('systemLight');
-            expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('systemLight');
+            storeMode('system');
+            expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('system');
         });
 
         test('should not throw when storage is unavailable', () => {
@@ -150,8 +124,8 @@ describe('theme', () => {
             expect(readStoredOperatorDefault()).toBe('dark');
         });
 
-        test('should reject a branded mode, which is not a resolved theme', () => {
-            localStorage.setItem(OPERATOR_DEFAULT_STORAGE_KEY, 'systemDark');
+        test('should reject system, which is a mode rather than a resolved theme', () => {
+            localStorage.setItem(OPERATOR_DEFAULT_STORAGE_KEY, 'system');
             expect(readStoredOperatorDefault()).toBeUndefined();
         });
 
@@ -220,49 +194,59 @@ describe('theme', () => {
         });
     });
 
-    describe('availableModes', () => {
-        test('should offer all four modes once branding is configured', () => {
-            expect(availableModes(true)).toEqual(['light', 'dark', 'systemLight', 'systemDark']);
-        });
-
-        test('should offer only the platform modes without branding', () => {
-            expect(availableModes(false)).toEqual(['light', 'dark']);
+    describe('nextMode', () => {
+        test('should cycle system, light, dark and back', () => {
+            expect(nextMode('system')).toBe('light');
+            expect(nextMode('light')).toBe('dark');
+            expect(nextMode('dark')).toBe('system');
         });
     });
 
     describe('initialMode', () => {
         test.each([
-            // stored choice, operator default, OS prefers dark, expected
-            ['dark' as const, 'light' as const, false, 'dark'],
-            ['systemLight' as const, 'dark' as const, true, 'systemLight'],
-            ['light' as const, undefined, true, 'light'],
-        ])('should let the stored choice %s win over everything else', (stored, operator, prefersDark, expected) => {
-            expect(initialMode(stored, operator, prefersDark)).toBe(expected);
+            // stored choice, operator default, expected
+            ['dark' as const, 'light' as const, 'dark'],
+            ['light' as const, 'dark' as const, 'light'],
+            ['light' as const, undefined, 'light'],
+        ])('should let the stored choice %s win over the operator default', (stored, operator, expected) => {
+            expect(initialMode(stored, operator)).toBe(expected);
+        });
+
+        /**
+         * The whole point of storing "no preference" rather than defaulting to `system`: a user who has actually
+         * chosen System must outrank the operator and follow their own OS again.
+         */
+        test('should let an explicit system choice outrank the operator default', () => {
+            expect(initialMode('system', 'dark')).toBe('system');
         });
 
         test.each([
-            ['light' as const, true, 'systemLight'],
-            ['dark' as const, false, 'systemDark'],
-        ])('should apply the operator default %s over the OS preference', (operator, prefersDark, expected) => {
-            expect(initialMode(undefined, operator, prefersDark)).toBe(expected);
+            ['light' as const, 'light'],
+            ['dark' as const, 'dark'],
+        ])('should apply the operator default %s when the user has not chosen', (operator, expected) => {
+            expect(initialMode(undefined, operator)).toBe(expected);
         });
 
-        test.each([
-            [true, 'dark'],
-            [false, 'light'],
-        ])('should fall back to the OS preference when nothing else is set', (prefersDark, expected) => {
-            expect(initialMode(undefined, undefined, prefersDark)).toBe(expected);
+        test('should fall back to system when neither a choice nor an operator default exists', () => {
+            expect(initialMode(undefined, undefined)).toBe('system');
         });
     });
 
     describe('resolveTheme', () => {
         test.each([
-            ['light' as const, 'light'],
-            ['dark' as const, 'dark'],
-            ['systemLight' as const, 'light'],
-            ['systemDark' as const, 'dark'],
-        ])('should resolve %s to %s', (mode, expected) => {
-            expect(resolveTheme(mode)).toBe(expected);
+            ['light' as const, false, 'light'],
+            ['light' as const, true, 'light'],
+            ['dark' as const, true, 'dark'],
+            ['dark' as const, false, 'dark'],
+        ])('should render the explicit mode %s regardless of the OS preference', (mode, prefersDark, expected) => {
+            expect(resolveTheme(mode, prefersDark)).toBe(expected);
+        });
+
+        test.each([
+            [true, 'dark'],
+            [false, 'light'],
+        ])('should resolve system from the OS preference', (prefersDark, expected) => {
+            expect(resolveTheme('system', prefersDark)).toBe(expected);
         });
     });
 

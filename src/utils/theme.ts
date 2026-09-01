@@ -1,10 +1,13 @@
-/**
- * What the user selected. `light` and `dark` are the platform's own themes; `systemLight` and `systemDark` are the
- * operator's branded theme in its light and dark composition, and are only offered once branding is configured.
- */
-export type ThemeMode = 'light' | 'dark' | 'systemLight' | 'systemDark';
+/** What the user selected. `system` follows the operating system preference. */
+export type ThemeMode = 'system' | 'light' | 'dark';
 
-/** What is actually rendered. Both compositions of a branded theme still resolve to one of these. */
+/**
+ * What is actually rendered once `system` has been resolved.
+ *
+ * Branding does not add to this. When the operator has configured branding, these two are the branded light and dark
+ * compositions; when they have not, they are the platform's own. Which palette the class resolves to is decided in the
+ * stylesheet, so nothing here has to know whether the instance is branded.
+ */
 export type ResolvedTheme = 'light' | 'dark';
 
 export const THEME_STORAGE_KEY = 'theme-mode';
@@ -18,15 +21,13 @@ export const OPERATOR_DEFAULT_STORAGE_KEY = 'theme-operator-default';
 
 export const DARK_SCHEME_QUERY = '(prefers-color-scheme: dark)';
 
-export const PLATFORM_MODES: readonly ThemeMode[] = ['light', 'dark'];
-export const BRANDED_MODES: readonly ThemeMode[] = ['systemLight', 'systemDark'];
-export const THEME_MODES: readonly ThemeMode[] = [...PLATFORM_MODES, ...BRANDED_MODES];
+export const THEME_MODES: readonly ThemeMode[] = ['system', 'light', 'dark'];
 
-const RESOLVED: Record<ThemeMode, ResolvedTheme> = {
-    light: 'light',
-    dark: 'dark',
-    systemLight: 'light',
-    systemDark: 'dark',
+/** Order of the header toggle: system, then light, then dark, then back to system. */
+const NEXT_MODE: Record<ThemeMode, ThemeMode> = {
+    system: 'light',
+    light: 'dark',
+    dark: 'system',
 };
 
 /** Drives the browser UI colour on mobile. Matches --surface-raised in each theme. */
@@ -40,19 +41,10 @@ export const isThemeMode = (value: unknown): value is ThemeMode =>
 
 export const isResolvedTheme = (value: unknown): value is ResolvedTheme => value === 'light' || value === 'dark';
 
-/** Whether the mode asks for the operator's branded theme rather than the platform's own. */
-export const isBrandedMode = (mode: ThemeMode): boolean => (BRANDED_MODES as readonly string[]).includes(mode);
-
-/** The branded composition matching a resolved theme. */
-export const brandedMode = (theme: ResolvedTheme): ThemeMode => (theme === 'dark' ? 'systemDark' : 'systemLight');
-
 /**
- * The platform mode a branded one falls back to. Used when a stored branded choice outlives the branding it referred
- * to: both resolve to the same theme, so this only makes the control report what is actually being rendered.
+ * Reads the persisted mode. Absent, corrupt and unreadable all mean "the user has expressed no preference", which is
+ * deliberately not the same as having chosen `system`: only the former lets the operator's default apply.
  */
-export const platformMode = (mode: ThemeMode): ThemeMode => RESOLVED[mode];
-
-/** Reads the persisted mode. Absent, corrupt and unreadable all mean "the user has expressed no preference". */
 export const readStoredMode = (): ThemeMode | undefined => {
     try {
         const stored = globalThis.localStorage?.getItem(THEME_STORAGE_KEY);
@@ -102,30 +94,25 @@ export const operatorDefaultTheme = (theme: string | undefined): ResolvedTheme |
 
 export const prefersDarkScheme = (): boolean => globalThis.matchMedia?.(DARK_SCHEME_QUERY).matches ?? false;
 
-/** The modes the control may offer. Without branding the two branded ones are indistinguishable from the platform's. */
-export const availableModes = (brandingConfigured: boolean): readonly ThemeMode[] => (brandingConfigured ? THEME_MODES : PLATFORM_MODES);
-
 /**
- * The mode in force, in precedence order: the user's own stored choice, then the operator's default, then the
- * operating system preference. The system preference is therefore consulted only when neither of the first two exists.
+ * The mode in force, in precedence order: the user's own stored choice, then the operator's default, then `system`.
+ *
+ * The operating system preference is deliberately not consulted here - it belongs to resolving `system`, not to
+ * choosing the mode. So an operator default of `dark` puts the control on Dark rather than leaving it on System
+ * showing a light theme, and a user who then picks System outranks the operator and follows their OS again.
  */
-export const initialMode = (
-    storedMode: ThemeMode | undefined,
-    operatorDefault: ResolvedTheme | undefined,
-    prefersDark: boolean,
-): ThemeMode => {
-    if (storedMode !== undefined) {
-        return storedMode;
-    }
+export const initialMode = (storedMode: ThemeMode | undefined, operatorDefault: ResolvedTheme | undefined): ThemeMode =>
+    storedMode ?? operatorDefault ?? 'system';
 
-    if (operatorDefault !== undefined) {
-        return brandedMode(operatorDefault);
+export const resolveTheme = (mode: ThemeMode, prefersDark: boolean): ResolvedTheme => {
+    if (mode !== 'system') {
+        return mode;
     }
 
     return prefersDark ? 'dark' : 'light';
 };
 
-export const resolveTheme = (mode: ThemeMode): ResolvedTheme => RESOLVED[mode];
+export const nextMode = (mode: ThemeMode): ThemeMode => NEXT_MODE[mode];
 
 /**
  * Applies the theme to the document. Setting colorScheme is what makes native scrollbars,
