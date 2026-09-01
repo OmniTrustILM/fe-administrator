@@ -41,7 +41,7 @@ export interface TokenInstanceRequestDto {
      * @type {string}
      * @memberof TokenInstanceRequestDto
      */
-    kind?: string;
+    kind: string;
     /**
      * Custom Attributes
      * @type {Array<RequestAttribute>}

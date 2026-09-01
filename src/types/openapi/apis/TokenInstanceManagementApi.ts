@@ -14,7 +14,7 @@
 import type { Observable } from 'rxjs';
 import type { AjaxResponse } from 'rxjs/ajax';
 import { BaseAPI, throwIfNullOrUndefined, encodeURI } from '../runtime';
-import type { OperationOpts, HttpHeaders, HttpQuery } from '../runtime';
+import type { OperationOpts, HttpHeaders } from '../runtime';
 import type {
     AuthenticationServiceExceptionDto,
     BaseAttributeDto,
@@ -52,11 +52,6 @@ export interface GetTokenInstanceRequest {
 
 export interface ListTokenInstanceActivationAttributesRequest {
     uuid: string;
-}
-
-export interface ListTokenAttributesRequest {
-    connectorUuid: string;
-    kind?: string;
 }
 
 export interface ListTokenProfileAttributesRequest {
@@ -245,36 +240,6 @@ export class TokenInstanceManagementApi extends BaseAPI {
             {
                 url: '/v1/tokens',
                 method: 'GET',
-            },
-            opts?.responseOpts,
-        );
-    }
-
-    /**
-     * List available token attributes for the specified connector
-     */
-    listTokenAttributes({ connectorUuid, kind }: ListTokenAttributesRequest): Observable<Array<BaseAttributeDto>>;
-    listTokenAttributes(
-        { connectorUuid, kind }: ListTokenAttributesRequest,
-        opts?: OperationOpts,
-    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
-    listTokenAttributes(
-        { connectorUuid, kind }: ListTokenAttributesRequest,
-        opts?: OperationOpts,
-    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
-        throwIfNullOrUndefined(connectorUuid, 'connectorUuid', 'listTokenAttributes');
-
-        const queryParams: HttpQuery = {};
-
-        if (kind != null) {
-            queryParams['kind'] = kind;
-        }
-
-        return this.request<Array<BaseAttributeDto>>(
-            {
-                url: '/v1/tokens/{connectorUuid}/attributes'.replace('{connectorUuid}', encodeURI(connectorUuid)),
-                method: 'GET',
-                queryParams,
             },
             opts?.responseOpts,
         );

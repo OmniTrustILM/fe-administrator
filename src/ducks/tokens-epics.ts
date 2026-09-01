@@ -12,6 +12,7 @@ import { transformConnectorDtoV2ToModel, transformConnectorResponseDtoToModel } 
 import { actions as userInterfaceActions } from './user-interface';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { toGeneratedTokenRequestDto } from 'types/tokens';
 import {
     transformTokenDetailResponseDtoToModel,
     transformTokenRequestModelToDto,
@@ -137,7 +138,7 @@ const ensureTokenProviders: AppEpic = (action$, state$, deps) =>
 
 const requestTokenProviderAttributes = (deps: EpicDependencies, query: ReturnType<typeof normalizeTokenAttributesQuery>) => {
     const queryKey = getTokenAttributesQueryKey(query);
-    return defer(() => deps.apiClients.tokenInstances.listTokenAttributes(query)).pipe(
+    return defer(() => deps.apiClients.tokenInstanceAttributes.listTokenAttributes(query)).pipe(
         map((attributeDescriptors) =>
             slice.actions.getTokenProviderAttributesDescriptorsSuccess({
                 queryKey,
@@ -239,7 +240,9 @@ const createToken: AppEpic = (action$, state$, deps) => {
         filter(slice.actions.createToken.match),
         switchMap((action) =>
             deps.apiClients.tokenInstances
-                .createTokenInstance({ tokenInstanceRequestDto: transformTokenRequestModelToDto(action.payload) })
+                .createTokenInstance({
+                    tokenInstanceRequestDto: toGeneratedTokenRequestDto(transformTokenRequestModelToDto(action.payload)),
+                })
                 .pipe(
                     mergeMap((obj) =>
                         of(
@@ -267,7 +270,7 @@ const updateToken: AppEpic = (action$, state$, deps) => {
             deps.apiClients.tokenInstances
                 .updateTokenInstance({
                     uuid: action.payload.uuid,
-                    tokenInstanceRequestDto: transformTokenRequestModelToDto(action.payload.updateToken),
+                    tokenInstanceRequestDto: toGeneratedTokenRequestDto(transformTokenRequestModelToDto(action.payload.updateToken)),
                 })
                 .pipe(
                     mergeMap((tokenDto) =>
