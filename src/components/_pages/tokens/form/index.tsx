@@ -281,28 +281,22 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
         watchedStoreKind,
     ]);
 
-    const onTokenProviderChange = useCallback(
-        (_value: string) => {
-            dispatch(tokenActions.clearTokenProviderAttributeDescriptors());
-            dispatch(connectorActions.clearCallbackData());
-            setGroupAttributesCallbackAttributes([]);
-            unregister(getAttributeEditorAttributesKey('token'));
-            unregister(getAttributeEditorDeletedAttributesKey('token'));
-            setValue('storeKind', '');
-        },
-        [dispatch, setValue, unregister],
-    );
+    const onTokenProviderChange = useCallback(() => {
+        dispatch(tokenActions.clearTokenProviderAttributeDescriptors());
+        dispatch(connectorActions.clearCallbackData());
+        setGroupAttributesCallbackAttributes([]);
+        unregister(getAttributeEditorAttributesKey('token'));
+        unregister(getAttributeEditorDeletedAttributesKey('token'));
+        setValue('storeKind', '');
+    }, [dispatch, setValue, unregister]);
 
-    const onKindChange = useCallback(
-        (_value: string) => {
-            dispatch(tokenActions.clearTokenProviderAttributeDescriptors());
-            dispatch(connectorActions.clearCallbackData());
-            setGroupAttributesCallbackAttributes([]);
-            unregister(getAttributeEditorAttributesKey('token'));
-            unregister(getAttributeEditorDeletedAttributesKey('token'));
-        },
-        [dispatch, unregister],
-    );
+    const onKindChange = useCallback(() => {
+        dispatch(tokenActions.clearTokenProviderAttributeDescriptors());
+        dispatch(connectorActions.clearCallbackData());
+        setGroupAttributesCallbackAttributes([]);
+        unregister(getAttributeEditorAttributesKey('token'));
+        unregister(getAttributeEditorDeletedAttributesKey('token'));
+    }, [dispatch, unregister]);
 
     const onSubmit = useCallback(
         (values: FormValues) => {
@@ -417,7 +411,7 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
                                                 onChange={(value) => {
                                                     const connectorUuid = typeof value === 'string' ? value : '';
                                                     field.onChange(connectorUuid);
-                                                    onTokenProviderChange(connectorUuid);
+                                                    onTokenProviderChange();
                                                 }}
                                                 options={optionsForTokenProviders || []}
                                                 placeholder="Select Cryptography Provider"
@@ -451,7 +445,7 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
                                                 onChange={(value) => {
                                                     const kind = typeof value === 'string' ? value : '';
                                                     field.onChange(kind);
-                                                    onKindChange(kind);
+                                                    onKindChange();
                                                 }}
                                                 options={optionsForKinds || []}
                                                 placeholder="Select Kind"
