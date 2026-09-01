@@ -29,7 +29,12 @@ const REQUEST_OPTS_REPLACEMENT = `export interface RequestOpts extends Omit<Ajax
 
 const CREATE_REQUEST_ARGS_PARAM = /(\{ url: baseUrl, )query(, method, headers, body, responseType \}: RequestOpts)/;
 
-const QUERY_STRING_INTERPOLATION = /\$\{query && Object\.keys\(query\)\.length \? `\?\$\{queryString\(query\)\}` : ''\}/;
+// The whitespace around the colon is matched loosely on purpose: the generator emits no space
+// before it, while biome — which runs after this script — inserts one. Pinning the spaced form
+// matches the checked-in file but not the file this script is actually handed, and the failure is
+// invisible afterwards, because formatting then makes the unpatched source look like it should
+// have matched.
+const QUERY_STRING_INTERPOLATION = /\$\{query && Object\.keys\(query\)\.length \? `\?\$\{queryString\(query\)\}`\s*:\s*''\}/;
 
 // Escaped rather than interpolated: this is the source text the generated runtime keeps.
 const QUERY_STRING_REPLACEMENT = `\${queryParams && Object.keys(queryParams).length ? \`?\${queryString(queryParams)}\` : ''}`;

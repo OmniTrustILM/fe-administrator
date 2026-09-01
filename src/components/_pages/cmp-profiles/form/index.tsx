@@ -23,9 +23,9 @@ import {
     CmpProfileRequestDtoVariantEnum,
     PlatformEnum,
     ProtectionMethod,
+    ProtocolChallengeSource,
     Resource,
 } from 'types/openapi';
-import { ProtocolChallengeSource, ProtocolChallengeSourcePlatformEnum } from 'types/protocol-challenge-source';
 import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
 import { useAreDefaultValuesSame } from 'utils/common-hooks';
 import { validateAlphaNumericWithoutAccents, validateLength, validateRequired } from 'utils/validators';
@@ -79,7 +79,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const protectionMethodEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ProtectionMethod));
     const cmpCmpProfileVariantEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CmpProfileVariant));
-    const challengeSourceEnum = useSelector(enumSelectors.platformEnum(ProtocolChallengeSourcePlatformEnum));
+    const challengeSourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ProtocolChallengeSource));
     const multipleResourceCustomAttributes = useSelector(
         customAttributesSelectors.multipleResourceCustomAttributes([Resource.CmpProfiles, Resource.Certificates]),
     );

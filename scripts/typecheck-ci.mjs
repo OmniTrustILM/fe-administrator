@@ -19,12 +19,27 @@ import { createRequire } from 'node:module';
 // Exact tsc diagnostic paths (everything before the first `(`) that are known,
 // tracked debt. Keep this list minimal and justified; do not use prefixes.
 const KNOWN_DEBT = new Set([
-    // Generated OpenAPI client is stale vs the current spec (imports RequestAttributeDto,
-    // now RequestAttribute). Leaks into the graph via src/api.ts. Fix = regenerate types.
-    'src/types/openapi/apis/TokenInstanceControllerApi.ts',
     // Root Playwright config, tripped only by the deprecated node10 moduleResolution +
     // package "exports" maps resolving '@tailwindcss/vite'. Tooling, not app code.
     'playwright-ct.config.ts',
+    // Seven generated models emit as mutually circular type aliases (TS2456), because the spec
+    // gives these two families a oneOf parent carrying a discriminator whose children compose it
+    // with `allOf: [$ref parent, inline]`. The generator flattens the child onto that parent, which
+    // resolves to the union of its own children, so the parent generates as `A | B` and each child
+    // as `= Parent`. The other seventeen oneOf + discriminator families in the spec keep their
+    // children self-contained and generate correctly, so this is a contract shape to repair rather
+    // than a generator limit. Tracked as OmniTrustILM/interfaces#932; these entries come out with
+    // the next regeneration after it merges. Regenerating does NOT clear them on its own.
+    // Reproduced them here rather than patching the output: `legacyDiscriminatorBehavior=false`
+    // changes nothing, and pre-processing the spec to flatten the children fails OpenAPI
+    // validation, since a discriminator requires its mapped children to compose the parent.
+    'src/types/openapi/models/DiscoveredItemPayload.ts',
+    'src/types/openapi/models/DiscoveredCertificateDto.ts',
+    'src/types/openapi/models/DiscoveredKeyDto.ts',
+    'src/types/openapi/models/TimestampSourceDto.ts',
+    'src/types/openapi/models/InternalTimestampSourceDto.ts',
+    'src/types/openapi/models/TimestampSourceRequestDto.ts',
+    'src/types/openapi/models/InternalTimestampSourceRequestDto.ts',
 ]);
 
 // Resolve the tsc binary from node_modules and run it with the current Node executable

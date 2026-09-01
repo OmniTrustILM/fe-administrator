@@ -8,13 +8,17 @@ import { patchApiSource, patchRuntimeSource, patchSource, patchTree, run } from 
 // @ts-expect-error - plain ESM build script, no type declarations
 import { walkTypeScriptFiles } from './set-openapi-contact.mjs';
 
-const runtimeSource = (todo = true) => `// tslint:disable
+// `spacedColon` picks which side of the pipeline the fixture imitates. The generator emits no
+// space before the colon; biome adds one in the step that runs after the patch, so the checked-in
+// runtime carries the spaced form. A fixture that only ever showed the spaced form would assert
+// against the patch script's own output rather than against what it has to match.
+const runtimeSource = (todo = true, spacedColon = true) => `// tslint:disable
 import type { AjaxConfig, AjaxResponse } from 'rxjs/ajax';
 
 export class BaseAPI {
     private createRequestArgs = ({ url: baseUrl, query, method, headers, body, responseType }: RequestOpts): AjaxConfig => {
         // only add the queryString to the URL if there are query parameters.
-        const url = \`\${this.configuration.basePath}\${baseUrl}\${query && Object.keys(query).length ? \`?\${queryString(query)}\` : ''}\`;
+        const url = \`\${this.configuration.basePath}\${baseUrl}\${query && Object.keys(query).length ? \`?\${queryString(query)}\`${spacedColon ? ' ' : ''}: ''}\`;
 
         return { url, method, headers, body, responseType: responseType ?? 'json' };
     };
@@ -85,6 +89,13 @@ describe('patchRuntimeSource', () => {
 
         expect(patched).toContain('({ url: baseUrl, queryParams, method, headers, body, responseType }: RequestOpts)');
         expect(patched).toContain(`\${queryParams && Object.keys(queryParams).length ? \`?\${queryString(queryParams)}\` : ''}`);
+    });
+
+    it('renames the prop when the generator leaves no space before the colon', () => {
+        const patched = patchRuntimeSource(runtimeSource(true, false));
+
+        expect(patched).toContain(`\${queryParams && Object.keys(queryParams).length ? \`?\${queryString(queryParams)}\` : ''}`);
+        expect(patched).not.toContain('queryString(query)');
     });
 
     it('keeps the props whose types the generator improved', () => {
