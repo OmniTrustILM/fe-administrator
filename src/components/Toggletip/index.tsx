@@ -6,6 +6,12 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 type Props = {
     content: ReactNode;
     ariaLabel?: string;
+    /**
+     * What the trigger button shows. Defaults to the info icon. A caller supplies this when the
+     * affordance is part of the content itself — a `+N` overflow pill, for example — so the
+     * trigger's hover, pinning and focus behaviour is not reimplemented alongside it.
+     */
+    triggerContent?: ReactNode;
     iconSize?: number;
     placement?: 'top' | 'bottom';
     triggerClassName?: string;
@@ -20,6 +26,7 @@ const HOVER_CLOSE_DELAY = 150;
 function Toggletip({
     content,
     ariaLabel = 'More information',
+    triggerContent,
     iconSize = 16,
     placement = 'bottom',
     triggerClassName,
@@ -83,7 +90,7 @@ function Toggletip({
                     onMouseEnter={hoverOpen}
                     onMouseLeave={hoverClose}
                 >
-                    <Info size={iconSize} className="block" aria-hidden />
+                    {triggerContent ?? <Info size={iconSize} className="block" aria-hidden />}
                 </button>
             </Popover.Trigger>
             <Popover.Portal>

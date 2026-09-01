@@ -45,9 +45,13 @@ const workflowTypeLabels: Record<SigningWorkflowType, string> = {
     [SigningWorkflowType.RawSigning]: 'Raw Signing',
 };
 
-const protocolLabels: Partial<Record<SigningProtocol, string>> = {
+// Total rather than Partial: a protocol with no entry here renders as its raw wire code, which is
+// how `internal_tsa` reached the page. The `?? p` at the use site stays as the runtime guard for a
+// value the backend may send ahead of the generated enum.
+const protocolLabels: Record<SigningProtocol, string> = {
     [SigningProtocol.Tsp]: 'TSP (RFC 3161)',
     [SigningProtocol.CscApi]: 'CSC API v2',
+    [SigningProtocol.InternalTsa]: 'Internal TSA',
 };
 
 const signingSchemeLabels: Record<SigningScheme, string> = {

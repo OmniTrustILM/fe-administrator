@@ -26,6 +26,9 @@ export default defineConfig({
                 'src/utils/**/*.{ts,tsx}',
                 'src/ducks/**/*.{ts,tsx}',
                 'src/components/PagedList/PagedList.tsx',
+                // Row building runs in the test body rather than in the browser, so the component
+                // test run never instruments it; its unit tests are what report its coverage.
+                'src/components/CustomTable/columns/buildTableRows.tsx',
                 'src/components/Widget/index.tsx',
                 // Build hooks with their own unit tests; report them so Sonar sees the coverage.
                 'scripts/set-openapi-contact.mjs',

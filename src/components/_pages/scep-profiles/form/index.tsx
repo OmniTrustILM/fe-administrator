@@ -26,8 +26,7 @@ import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 
 
 import { validateAlphaNumericWithoutAccents, validateInteger, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
-import { Resource } from '../../../../types/openapi';
-import { ProtocolChallengeSource, ProtocolChallengeSourcePlatformEnum } from 'types/protocol-challenge-source';
+import { PlatformEnum, ProtocolChallengeSource, Resource } from 'types/openapi';
 import { selectors as enumSelectors, getEnumAsSelectOptions, getEnumLabel } from 'ducks/enums';
 import CertificateField from '../CertificateField';
 import useAttributeEditor, { buildGroups, buildOwner } from 'utils/widget';
@@ -88,7 +87,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
     const multipleResourceCustomAttributes = useSelector(
         customAttributesSelectors.multipleResourceCustomAttributes([Resource.ScepProfiles, Resource.Certificates]),
     );
-    const challengeSourceEnum = useSelector(enumSelectors.platformEnum(ProtocolChallengeSourcePlatformEnum));
+    const challengeSourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ProtocolChallengeSource));
     const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
     const [groupOptions, setGroupOptions] = useState<{ value: string; label: string }[]>([]);
     const [issueGroupAttributesCallbackAttributes, setIssueGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);

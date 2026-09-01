@@ -11,12 +11,18 @@ import {
     type CertificateValidationResultDto,
     CertificateValidationStatus,
     ComplianceStatus,
+    FilterFieldSource,
+    FilterFieldType,
     PlatformEnum,
 } from 'types/openapi';
 import type { CertificateListResponseModel, CertificateDetailResponseModel, SearchFilterModel } from 'types/certificate';
 import type { EnumItemModel } from 'types/enums';
 import type { Dispatch } from 'redux';
 import type { TableDataRow } from 'components/CustomTable';
+import { renderCell, type CellRegistry } from 'components/CustomTable/columns';
+import MultiValueCell from 'components/CustomTable/columns/MultiValueCell';
+import type { ColumnDefinition } from 'types/tableColumns';
+import type { ListCellValue } from 'utils/attributes/listCellValues';
 import { EnumValueDescription } from 'components/EnumDescription';
 import Tooltip from 'components/Tooltip';
 import CertificateStatus from './CertificateStatus';
@@ -99,64 +105,168 @@ function buildCertTypeCell(
     );
 }
 
+/** Prepares a certificate's groups for a single-line cell: the first name, the rest behind a `+N` reveal. */
+function buildGroupsValues(certificate: CertificateListResponseModel, isLinkDisabled: boolean): ListCellValue[] {
+    return (certificate.groups ?? []).map((group) => ({
+        label: group.name,
+        ...(isLinkDisabled ? {} : { link: { resource: 'groups', uuid: group.uuid } }),
+    }));
+}
+
+/**
+ * The platform default column set for the certificates inventory — the "Standard" tab. Field
+ * identifiers are the catalogue's own (`FilterField` enum names), so a saved view referring to the
+ * same field resolves to the same registry entry. The labels are the headings the page ships with,
+ * standing in until the set is resolved from the live catalogue.
+ */
+export const CERTIFICATE_COLUMNS: ColumnDefinition[] = [
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'CERTIFICATE_STATE',
+        catalogueLabel: 'State',
+        type: FilterFieldType.List,
+        align: 'center',
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'CERTIFICATE_VALIDATION_STATUS',
+        catalogueLabel: 'Validation',
+        type: FilterFieldType.List,
+        align: 'center',
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'COMPLIANCE_STATUS',
+        catalogueLabel: 'Compliance',
+        type: FilterFieldType.List,
+        align: 'center',
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'PRIVATE_KEY',
+        catalogueLabel: 'Has private key',
+        type: FilterFieldType.Boolean,
+        align: 'center',
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'COMMON_NAME',
+        catalogueLabel: 'Common Name',
+        type: FilterFieldType.String,
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'NOT_BEFORE',
+        catalogueLabel: 'Valid From',
+        type: FilterFieldType.Datetime,
+    },
+    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', catalogueLabel: 'Expires At', type: FilterFieldType.Datetime },
+    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'GROUP_NAME', catalogueLabel: 'Groups', type: FilterFieldType.List },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'RA_PROFILE_NAME',
+        catalogueLabel: 'RA Profile',
+        type: FilterFieldType.List,
+    },
+    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'OWNER', catalogueLabel: 'Owner', type: FilterFieldType.List },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'SERIAL_NUMBER',
+        catalogueLabel: 'Serial number',
+        type: FilterFieldType.String,
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'SIGNATURE_ALGORITHM',
+        catalogueLabel: 'Signature Algorithm',
+        type: FilterFieldType.List,
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'PUBLIC_KEY_ALGORITHM',
+        catalogueLabel: 'Public Key Algorithm',
+        type: FilterFieldType.List,
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'ISSUER_COMMON_NAME',
+        catalogueLabel: 'Issuer Common Name',
+        type: FilterFieldType.String,
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'CERTIFICATE_TYPE',
+        catalogueLabel: 'Certificate Type',
+        type: FilterFieldType.List,
+    },
+    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'ARCHIVED', catalogueLabel: 'Archived', type: FilterFieldType.Boolean },
+];
+
+/**
+ * Cell renderers for the certificate property columns that are rich today — statuses, links, dates.
+ * Anything not registered here falls through to the attribute renderer, which is how a custom or
+ * metadata column the user picks renders without this file knowing about it.
+ */
+export function buildCertificateCellRegistry(opts: BuildCertificateRowColumnsOpts): CellRegistry<CertificateListResponseModel> {
+    const { isLinkDisabled, dateFormatter, certificateTypeEnum, getEnumLabel, onPendingAction } = opts;
+
+    return {
+        'property:CERTIFICATE_STATE': (certificate) => (
+            <>
+                <CertificateStatus status={certificate.state} asIcon={true} />
+                <PendingActionButtons certificate={certificate} compact onAction={onPendingAction} />
+            </>
+        ),
+        'property:CERTIFICATE_VALIDATION_STATUS': (certificate) => (
+            <CertificateStatus status={certificate.validationStatus} asIcon={true} />
+        ),
+        'property:COMPLIANCE_STATUS': (certificate) =>
+            certificate.complianceStatus ? <CertificateStatus status={certificate.complianceStatus} asIcon={true} /> : null,
+        'property:PRIVATE_KEY': (certificate) =>
+            certificate.privateKeyAvailability ? (
+                <Tooltip content="Private key is available for this certificate">
+                    <span>
+                        <KeyRound aria-hidden size={16} strokeWidth={1.5} />
+                        <span className="sr-only">Private key available</span>
+                    </span>
+                </Tooltip>
+            ) : null,
+        'property:COMMON_NAME': (certificate) => buildCommonNameCell(certificate, opts),
+        'property:NOT_BEFORE': (certificate) =>
+            certificate.notBefore ? <span className="whitespace-nowrap">{dateFormatter(new Date(certificate.notBefore))}</span> : null,
+        'property:NOT_AFTER': (certificate) =>
+            certificate.notAfter ? <span className="whitespace-nowrap">{dateFormatter(new Date(certificate.notAfter))}</span> : null,
+        'property:GROUP_NAME': (certificate) => {
+            const groups = buildGroupsValues(certificate, isLinkDisabled);
+            return groups.length > 0 ? <MultiValueCell values={groups} dataTestId="cell-groups" /> : null;
+        },
+        'property:RA_PROFILE_NAME': (certificate) =>
+            certificate.raProfile ? <span className="whitespace-nowrap">{buildRaProfileCell(certificate, isLinkDisabled)}</span> : null,
+        'property:OWNER': (certificate) => (certificate.owner ? buildOwnerCell(certificate, isLinkDisabled) : null),
+        'property:SERIAL_NUMBER': (certificate) => certificate.serialNumber,
+        'property:SIGNATURE_ALGORITHM': (certificate) => certificate.signatureAlgorithm,
+        'property:PUBLIC_KEY_ALGORITHM': (certificate) => certificate.publicKeyAlgorithm,
+        'property:ISSUER_COMMON_NAME': (certificate) => buildIssuerCell(certificate, isLinkDisabled),
+        'property:CERTIFICATE_TYPE': (certificate) => buildCertTypeCell(certificate, certificateTypeEnum, getEnumLabel),
+        'property:ARCHIVED': (certificate) => (
+            <Badge color={certificate.archived ? 'gray' : 'success'} size="small">
+                {certificate.archived ? 'Yes' : 'No'}
+            </Badge>
+        ),
+    };
+}
+
+/**
+ * The cells of one certificate row, rendered from the column definitions rather than assembled as a
+ * positional array — which is what lets a column set chosen at runtime render at all.
+ */
 export function buildCertificateRowColumns(
     certificate: CertificateListResponseModel,
     opts: BuildCertificateRowColumnsOpts,
-): (string | React.ReactNode)[] {
-    const { isLinkDisabled, dateFormatter, certificateTypeEnum, getEnumLabel, onPendingAction } = opts;
-    const commonNameCell = buildCommonNameCell(certificate, opts);
-    const groupsCell = buildGroupsCell(certificate, isLinkDisabled);
-    const raProfileCell = buildRaProfileCell(certificate, isLinkDisabled);
-    const ownerCell = buildOwnerCell(certificate, isLinkDisabled);
-    const issuerCell = buildIssuerCell(certificate, isLinkDisabled);
-    const certTypeCell = buildCertTypeCell(certificate, certificateTypeEnum, getEnumLabel);
-
-    return [
-        <React.Fragment key="state">
-            <CertificateStatus status={certificate.state} asIcon={true} />
-            <PendingActionButtons certificate={certificate} compact onAction={onPendingAction} />
-        </React.Fragment>,
-        <CertificateStatus key="validationStatus" status={certificate.validationStatus} asIcon={true} />,
-        certificate.complianceStatus ? <CertificateStatus key="compliance" status={certificate.complianceStatus} asIcon={true} /> : '',
-        certificate.privateKeyAvailability ? (
-            <Tooltip key="key" content="Private key is available for this certificate">
-                <span>
-                    <KeyRound aria-hidden size={16} strokeWidth={1.5} />
-                    <span className="sr-only">Private key available</span>
-                </span>
-            </Tooltip>
-        ) : (
-            ''
-        ),
-        commonNameCell,
-        certificate.notBefore ? (
-            <span key="notBefore" style={{ whiteSpace: 'nowrap' }}>
-                {dateFormatter(new Date(certificate.notBefore))}
-            </span>
-        ) : (
-            ''
-        ),
-        certificate.notAfter ? (
-            <span key="notAfter" style={{ whiteSpace: 'nowrap' }}>
-                {dateFormatter(new Date(certificate.notAfter))}
-            </span>
-        ) : (
-            ''
-        ),
-        groupsCell,
-        <span key="raProfile" style={{ whiteSpace: 'nowrap' }}>
-            {raProfileCell}
-        </span>,
-        ownerCell,
-        certificate.serialNumber || '',
-        certificate.signatureAlgorithm || '',
-        certificate.publicKeyAlgorithm || '',
-        issuerCell,
-        certTypeCell,
-        <Badge key="archivationStatus" color={certificate.archived ? 'gray' : 'success'} size="small">
-            {certificate.archived ? 'Yes' : 'No'}
-        </Badge>,
-    ];
+    columns: ColumnDefinition[] = CERTIFICATE_COLUMNS,
+): React.ReactNode[] {
+    const registry = buildCertificateCellRegistry(opts);
+    return columns.map((column) => renderCell(certificate, column, registry));
 }
 
 function buildQcStatementRows(

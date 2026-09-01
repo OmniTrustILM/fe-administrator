@@ -1,6 +1,5 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
 import type { CmpProfileDetailDto, CmpProfileEditRequestDto, CmpProfileRequestDto } from './openapi';
-import type { ProtocolChallengeSource } from './protocol-challenge-source';
 
 export type {
     CmpProfileRequestDto,
@@ -17,7 +16,6 @@ export type CmpProfileRequestModel = Omit<
     issueCertificateAttributes?: Array<AttributeRequestModel>;
     revokeCertificateAttributes?: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
-    challengeSource?: ProtocolChallengeSource;
 };
 
 export type CmpProfileEditRequestModel = Omit<
@@ -27,7 +25,6 @@ export type CmpProfileEditRequestModel = Omit<
     issueCertificateAttributes?: Array<AttributeRequestModel>;
     revokeCertificateAttributes?: Array<AttributeRequestModel>;
     customAttributes?: Array<AttributeRequestModel>;
-    challengeSource?: ProtocolChallengeSource;
 };
 
 export type CmpProfileDetailModel = Omit<
@@ -37,5 +34,4 @@ export type CmpProfileDetailModel = Omit<
     issueCertificateAttributes?: Array<AttributeResponseModel>;
     revokeCertificateAttributes?: Array<AttributeResponseModel>;
     customAttributes?: Array<AttributeResponseModel>;
-    challengeSource?: ProtocolChallengeSource;
 };

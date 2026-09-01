@@ -33,6 +33,7 @@ apis/GlobalMetadataApi.ts
 apis/GroupManagementApi.ts
 apis/InfoApi.ts
 apis/InternalNotificationApi.ts
+apis/ListViewApi.ts
 apis/LocalOperationsApi.ts
 apis/LocationManagementApi.ts
 apis/NotificationProfileInventoryApi.ts
@@ -144,6 +145,7 @@ models/BulkKeyUsageRequestDto.ts
 models/BulkOperationResponse.ts
 models/BulkTokenProfileKeyUsageRequestDto.ts
 models/CancelPendingCertificateRequestDto.ts
+models/CbomAssetSyncState.ts
 models/CbomDetailDto.ts
 models/CbomDto.ts
 models/CbomUploadRequestDto.ts
@@ -212,6 +214,9 @@ models/CommentResponseDto.ts
 models/CodeBlockAttributeContentData.ts
 models/CodeBlockAttributeContentV2.ts
 models/CodeBlockAttributeContentV3.ts
+models/CommentCreateRequestDto.ts
+models/CommentDto.ts
+models/CommentResponseDto.ts
 models/ComplianceCheckResultDto.ts
 models/ComplianceCheckRuleDto.ts
 models/ComplianceConnectorAndGroupsDto.ts
@@ -282,6 +287,8 @@ models/CredentialAttributeContentV2.ts
 models/CredentialDto.ts
 models/CredentialRequestDto.ts
 models/CredentialUpdateRequestDto.ts
+models/CryptographicAssetStatisticsDto.ts
+models/CryptographicAssetSyncCompletenessDto.ts
 models/CryptographicKeyResponseDto.ts
 models/CustomAttribute.ts
 models/CustomAttributeCreateRequestDto.ts
@@ -313,13 +320,22 @@ models/DecryptDataResponseDto.ts
 models/DelegatedSigningDto.ts
 models/DelegatedSigningRequestDto.ts
 models/DigestAlgorithm.ts
+models/DiscoveredCertificateDto.ts
+models/DiscoveredItemPayload.ts
+models/DiscoveredKeyDto.ts
 models/DiscoveryCertificateDto.ts
 models/DiscoveryCertificateResponseDto.ts
+models/DiscoveryDetailDto.ts
 models/DiscoveryDto.ts
-models/DiscoveryHistoryDetailDto.ts
-models/DiscoveryHistoryDto.ts
+models/DiscoveryItemDto.ts
+models/DiscoveryListDto.ts
+models/DiscoveryMessageDto.ts
+models/DiscoveryMessageSeverity.ts
+models/DiscoveryProgressDto.ts
+models/DiscoveryResourceProgressDto.ts
 models/DiscoveryResponseDto.ts
 models/DiscoveryStatus.ts
+models/DiscoverySupportedResourceDto.ts
 models/EditKeyItemDto.ts
 models/EditKeyRequestDto.ts
 models/EditLocationRequestDto.ts
@@ -343,6 +359,7 @@ models/ExecutionItemDto.ts
 models/ExecutionItemRequestDto.ts
 models/ExecutionRequestDto.ts
 models/ExecutionType.ts
+models/ExtendedKeyUsageMappedField.ts
 models/ExtensionMappedField.ts
 models/ExtensionValueEncoding.ts
 models/FeatureFlag.ts
@@ -379,7 +396,10 @@ models/InfoAttributeV2.ts
 models/InfoAttributeV3.ts
 models/IntegerAttributeContentV2.ts
 models/IntegerAttributeContentV3.ts
+models/InternalTimestampSourceDto.ts
+models/InternalTimestampSourceRequestDto.ts
 models/IssueToLocationRequestDto.ts
+models/JsonSchemaAttributeConstraint.ts
 models/JwkDto.ts
 models/JwtTokenSecretContent.ts
 models/KeyAlgorithm.ts
@@ -398,7 +418,12 @@ models/KeyStoreSecretContent.ts
 models/KeyStoreType.ts
 models/KeyType.ts
 models/KeyUsage.ts
+models/KeyUsageMappedField.ts
 models/KeyValueSecretContent.ts
+models/ListViewColumnDto.ts
+models/ListViewDto.ts
+models/ListViewRequestDto.ts
+models/ListViewUpdateRequestDto.ts
 models/LocationDto.ts
 models/LocationsResponseDto.ts
 models/LoggingSettingsDto.ts
@@ -406,7 +431,9 @@ models/LoginProviderDto.ts
 models/ManagedSigningRequestSchemeInterface.ts
 models/ManagedSigningSchemeInterface.ts
 models/ManagedSigningType.ts
+models/ManuallyIssueCertificateRequestDto.ts
 models/MappedField.ts
+models/MetadataAttribute.ts
 models/MetadataAttributeProperties.ts
 models/MetadataAttributeV2.ts
 models/MetadataAttributeV3.ts
@@ -415,6 +442,7 @@ models/Module.ts
 models/MultipleCertificateObjectUpdateDto.ts
 models/NameAndIdDto.ts
 models/NameAndUuidDto.ts
+models/NotificationDataCategory.ts
 models/NotificationDto.ts
 models/NotificationInstanceDto.ts
 models/NotificationInstanceRequestDto.ts
@@ -443,6 +471,8 @@ models/OperationSupport.ts
 models/PaginationRequestDto.ts
 models/PaginationResponseDtoCbomDto.ts
 models/PaginationResponseDtoConnectorDtoV2.ts
+models/PaginationResponseDtoDiscoveryItemDto.ts
+models/PaginationResponseDtoDiscoveryMessageDto.ts
 models/PaginationResponseDtoEventHistoryDto.ts
 models/PaginationResponseDtoObjectEventHistoryDto.ts
 models/PaginationResponseDtoSecretDto.ts
@@ -462,6 +492,7 @@ models/ProtectionLevel.ts
 models/ProtectionMethod.ts
 models/ProtocolCertificateAssociationsDto.ts
 models/ProtocolCertificateAssociationsRequestDto.ts
+models/ProtocolChallengeSource.ts
 models/ProviderComplianceRulesDto.ts
 models/ProviderComplianceRulesRequestDto.ts
 models/ProxyDto.ts
@@ -537,10 +568,12 @@ models/ScheduledJobHistoryDto.ts
 models/ScheduledJobHistoryResponseDto.ts
 models/ScheduledJobsResponseDto.ts
 models/SchedulerJobExecutionStatus.ts
+models/SearchColumnRequestDto.ts
 models/SearchFieldDataByGroupDto.ts
 models/SearchFieldDataDto.ts
 models/SearchFilterRequestDto.ts
 models/SearchRequestDto.ts
+models/SearchSortRequestDto.ts
 models/SecretAttributeContentData.ts
 models/SecretAttributeContentV2.ts
 models/SecretContent.ts
@@ -555,6 +588,8 @@ models/SecretUpdateRequestDto.ts
 models/SecretVersionDto.ts
 models/SignDataRequestDto.ts
 models/SignDataResponseDto.ts
+models/SignatureFamily.ts
+models/SignatureLevel.ts
 models/SignatureRequestData.ts
 models/SignatureResponseData.ts
 models/SigningProfileDto.ts
@@ -575,6 +610,7 @@ models/SigningWorkflowType.ts
 models/SimplifiedComplianceProfileDto.ts
 models/SimplifiedRaProfileDto.ts
 models/SimplifiedSigningProfileDto.ts
+models/SortDirection.ts
 models/SourceParam.ts
 models/SourceRecord.ts
 models/StaticKeyManagedSigningDto.ts
@@ -591,6 +627,9 @@ models/TimeAttributeContentV3.ts
 models/TimeQualityConfigurationDto.ts
 models/TimeQualityConfigurationListDto.ts
 models/TimeQualityConfigurationRequestDto.ts
+models/TimestampSourceDto.ts
+models/TimestampSourceRequestDto.ts
+models/TimestampSourceType.ts
 models/TimestampingWorkflowDto.ts
 models/TimestampingWorkflowRequestDto.ts
 models/TokenInstanceDetailDto.ts
