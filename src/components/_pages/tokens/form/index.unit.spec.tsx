@@ -46,6 +46,7 @@ vi.mock('components/Layout/TabLayout', () => ({
 vi.mock('components/Attributes/AttributeEditor', async () => {
     const { useEffect } = await import('react');
     const { useFormContext } = await import('react-hook-form');
+    const keys = await import('components/Attributes/AttributeEditor/attributeEditorKeys');
     return {
         default: ({ id, connectorUuid }: { id: string; connectorUuid?: string }) => {
             const { setValue } = useFormContext();
@@ -56,6 +57,7 @@ vi.mock('components/Attributes/AttributeEditor', async () => {
             }, [connectorUuid, id, setValue]);
             return <div data-testid={`attribute-editor-${id}`} />;
         },
+        ...keys,
     };
 });
 vi.mock('components/Button', () => ({
