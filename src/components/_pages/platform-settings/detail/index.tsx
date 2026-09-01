@@ -13,7 +13,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { Resource } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
+import { hasResourceAction } from 'utils/permissions';
 import Dialog from 'components/Dialog';
 import PlatformSettingsForm from '../form';
 
@@ -64,18 +65,9 @@ export default function PlatformSettingsDetail() {
         [onEditClick],
     );
 
-    /**
-     * Approximates the branding-write grant; Core is the real gate.
-     *
-     * Why not the real grant: Core gates the write on `ResourceAction.UPDATE_BRANDING`, but the user profile carries
-     * `allowedListings` only - a per-resource listing grant - so that action is invisible client-side.
-     *
-     * Consequence: a viewer holding `SETTINGS` + `UPDATE` but not `UPDATE_BRANDING` sees enabled controls and is
-     * refused by Core on save, and shown its message, rather than being disabled up front.
-     *
-     * Tracked in OmniTrustILM/interfaces#920.
-     */
-    const canUpdateBranding = !!profile?.permissions?.allowedListings?.includes(Resource.Settings);
+    // The grant Core gates the branding write on, read from the profile rather than approximated from listing access.
+    // Core remains the enforcement point; this only decides whether to offer the tab.
+    const canUpdateBranding = hasResourceAction(profile, Resource.Settings, ResourceAction.UpdateBranding);
 
     // Declared once so the skeleton below cannot advertise a different number of tabs than the layout renders.
     const tabs = [
@@ -91,10 +83,9 @@ export default function PlatformSettingsDetail() {
             title: 'Request Attributes',
             content: <RequestAttributesSettings />,
         },
-        {
-            title: 'Appearance',
-            content: <AppearanceSettings canUpdate={canUpdateBranding} />,
-        },
+        // Omitted rather than shown read-only: branding is the operator's identity, and someone who cannot change it
+        // has nothing to do on this tab. The colours and logos themselves are visible to everyone in the applied UI.
+        ...(canUpdateBranding ? [{ title: 'Appearance', content: <AppearanceSettings /> }] : []),
     ];
 
     if (isFetchingPlatform && !isEditModalOpen) {

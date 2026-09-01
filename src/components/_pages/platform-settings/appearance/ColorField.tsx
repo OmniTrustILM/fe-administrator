@@ -8,6 +8,7 @@ type Props = {
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
+    required?: boolean;
 };
 
 /**
@@ -21,7 +22,7 @@ type Props = {
  * An empty field is valid and means the colour is unset - Core clears any field left out - so only a non-empty value
  * that is not a six-digit hex is an error.
  */
-function ColorField({ id, label, hint, value, onChange, disabled = false }: Readonly<Props>) {
+function ColorField({ id, label, hint, value, onChange, disabled = false, required = false }: Readonly<Props>) {
     const valid = value === '' || isBrandColor(value);
     const errorId = `${id}-error`;
 
@@ -35,6 +36,7 @@ function ColorField({ id, label, hint, value, onChange, disabled = false }: Read
                         value={value}
                         onChange={onChange}
                         disabled={disabled}
+                        required={required}
                         placeholder="#0073CF"
                         invalid={!valid}
                         dataTestId={`color-hex-${id}`}

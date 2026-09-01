@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Trash2, Upload } from 'lucide-react';
 import Button from 'components/Button';
+import Label from 'components/Label';
 import { LOGO_ACCEPT, LOGO_HELP } from 'utils/branding';
 
 type Props = {
@@ -13,19 +14,22 @@ type Props = {
     onSelect: (file: File) => void;
     onDelete: () => void;
     disabled?: boolean;
+    required?: boolean;
 };
 
 /**
  * One logo slot. The preview is an `img` pointed at the data URI and never inlined markup: an operator-supplied SVG is
  * rendered to unauthenticated visitors on the login page, so inlining it would make the slot a stored-XSS surface.
  */
-function LogoSlot({ id, label, value, fileName, error, onSelect, onDelete, disabled = false }: Readonly<Props>) {
+function LogoSlot({ id, label, value, fileName, error, onSelect, onDelete, disabled = false, required = false }: Readonly<Props>) {
     const inputRef = useRef<HTMLInputElement>(null);
     const errorId = `${id}-error`;
 
     return (
         <div className="flex flex-col gap-2" data-testid={`logo-slot-${id}`}>
-            <span className="text-sm font-medium text-content">{label}</span>
+            <Label htmlFor={id} required={required} className="mb-0">
+                {label}
+            </Label>
 
             <div className="flex items-center gap-3">
                 <div className="flex h-16 w-28 shrink-0 items-center justify-center rounded-lg border border-divider bg-surface-sunken p-1">
@@ -70,10 +74,10 @@ function LogoSlot({ id, label, value, fileName, error, onSelect, onDelete, disab
             {/* Hidden rather than styled: a file input cannot be restyled, and the visible control above drives it. */}
             <input
                 ref={inputRef}
+                id={id}
                 type="file"
                 accept={LOGO_ACCEPT}
                 className="sr-only"
-                aria-label={label}
                 aria-describedby={error ? errorId : undefined}
                 disabled={disabled}
                 data-testid={`logo-input-${id}`}

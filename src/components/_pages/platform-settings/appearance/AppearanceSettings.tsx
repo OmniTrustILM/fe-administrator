@@ -15,15 +15,25 @@ type LogoKey = 'lightLogo' | 'darkLogo';
 const COLOR_FIELDS: ReadonlyArray<{ key: ColorKey; label: string; hint: string }> = [
     { key: 'primaryColor', label: 'Primary', hint: 'Buttons, links and active states' },
     { key: 'secondaryColor', label: 'Secondary', hint: 'Accents, chips and info badges' },
-    { key: 'tertiaryColor', label: 'Tertiary', hint: 'Accents' },
-    { key: 'backgroundColor', label: 'Background', hint: 'Page background' },
-    { key: 'textColor', label: 'Text', hint: 'Body text and headings' },
+    { key: 'tertiaryColor', label: 'Tertiary', hint: 'Accents. Stored, not yet applied anywhere.' },
+    { key: 'backgroundColor', label: 'Background', hint: 'Page background, light theme only' },
+    { key: 'textColor', label: 'Text', hint: 'Body text and headings, light theme only' },
 ];
+
+/**
+ * Named in the form because it is the first thing an operator gets wrong: the five colours do not all reach both
+ * themes, and none of them is inverted to produce the other. Background and Text are chosen against a light page, so
+ * reusing them on a dark one is exactly what would break its readability.
+ */
+const COLOR_COMPOSITION =
+    'Primary, Secondary and Tertiary apply to both the light and the dark theme. Background and Text apply to the light theme only - the dark theme keeps its own surfaces, and no color is inverted for it automatically.';
 
 const LOGO_SLOTS: ReadonlyArray<{ key: LogoKey; label: string }> = [
     { key: 'lightLogo', label: 'Light Logo' },
     { key: 'darkLogo', label: 'Dark Logo' },
 ];
+
+const LOGO_COMPOSITION = 'Each theme uses its own logo, so both are required. Neither slot falls back to the other.';
 
 /**
  * Reset is an empty update, and Core clears every field left out of one, so the operator's default theme goes with the
@@ -49,15 +59,12 @@ const toLogos = (branding?: BrandingSettingsModel): Logos => ({
     darkLogo: { dataUri: branding?.darkLogo },
 });
 
-type Props = {
-    /**
-     * Whether the viewer may write branding. Core gates the write on `UPDATE_BRANDING`, which the profile does not
-     * expose, so this cannot yet be derived from the actual grant - see the tab that renders this component.
-     */
-    canUpdate?: boolean;
-};
-
-function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
+/**
+ * The Appearance tab. Rendered only for a viewer holding `SETTINGS` + `UPDATE_BRANDING` - the tab that mounts this
+ * component reads that grant from the user profile and omits the tab entirely otherwise - so there is no read-only
+ * mode here. Core still enforces the grant on the write.
+ */
+function AppearanceSettings() {
     const dispatch = useDispatch();
 
     const branding = useSelector(selectors.branding);
@@ -89,13 +96,24 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
 
     const isBusy = isFetching || isUpdating || isResetting;
 
+    // Branding is saved whole or not at all. Core clears any field left out of an update, so a partial save is not a
+    // partial brand but a brand with holes in it - a light logo and no dark one, or a background with no text colour
+    // to sit on. Reset to Default is the way back to the platform look, not an emptied field.
+    const missingFields = useMemo(
+        () => [
+            ...COLOR_FIELDS.filter(({ key }) => colors[key] === '').map(({ label }) => label),
+            ...LOGO_SLOTS.filter(({ key }) => logos[key].dataUri === undefined).map(({ label }) => label),
+        ],
+        [colors, logos],
+    );
+
     // A read that succeeds always leaves a value behind - a Core with nothing stored answers 404, which the epic maps
     // to an empty success - so an absent one means no read has landed. The form seeded from it is empty and looks
     // exactly like an unbranded instance, and since Core clears every field left out of a request, saving from it
     // would wipe the branding that is actually stored, `defaultTheme` included. There is no known-good state to edit
     // from until a read succeeds, so the tab stays read-only until one does.
     const hasKnownBranding = branding !== undefined;
-    const isReadOnly = !canUpdate || isBusy || !hasKnownBranding;
+    const isReadOnly = isBusy || !hasKnownBranding;
 
     const hasInvalidColor = useMemo(() => Object.values(colors).some((value) => value !== '' && !isBrandColor(value)), [colors]);
 
@@ -167,7 +185,7 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
         };
 
         for (const { key } of COLOR_FIELDS) {
-            update[key] = colors[key] === '' ? undefined : colors[key];
+            update[key] = colors[key];
         }
 
         dispatch(actions.updateBranding({ branding: update }));
@@ -180,13 +198,7 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
 
     return (
         <div className="@container space-y-6 py-6" data-testid="appearance-settings">
-            {!canUpdate && (
-                <p className="rounded-lg bg-info-surface px-3 py-2 text-sm text-info" data-testid="appearance-read-only">
-                    You do not have permission to change branding. The current values are shown for reference.
-                </p>
-            )}
-
-            {canUpdate && !hasKnownBranding && !isFetching && (
+            {!hasKnownBranding && !isFetching && (
                 <p className="rounded-lg bg-warning-surface px-3 py-2 text-sm text-warning" data-testid="appearance-unavailable">
                     The stored branding could not be read, so it cannot be changed here. Reload the page to try again.
                 </p>
@@ -194,6 +206,9 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
 
             <div className="space-y-2">
                 <h3 className="text-lg font-bold text-content">Colors</h3>
+                <p className="text-sm text-content-muted" data-testid="appearance-color-composition">
+                    {COLOR_COMPOSITION}
+                </p>
                 <div className="grid gap-4 @md:grid-cols-2">
                     {COLOR_FIELDS.map(({ key, label, hint }) => (
                         <ColorField
@@ -203,6 +218,7 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
                             hint={hint}
                             value={colors[key]}
                             disabled={isReadOnly}
+                            required
                             onChange={(value) => onColorChange(key, value)}
                         />
                     ))}
@@ -211,6 +227,9 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
 
             <div className="space-y-2">
                 <h3 className="text-lg font-bold text-content">Logos</h3>
+                <p className="text-sm text-content-muted" data-testid="appearance-logo-composition">
+                    {LOGO_COMPOSITION}
+                </p>
                 <div className="grid gap-6 @md:grid-cols-2">
                     {LOGO_SLOTS.map(({ key, label }) => (
                         <LogoSlot
@@ -221,12 +240,19 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
                             fileName={logos[key].fileName}
                             error={logos[key].error}
                             disabled={isReadOnly}
+                            required
                             onSelect={(file) => void onLogoSelect(key, file)}
                             onDelete={() => onLogoDelete(key)}
                         />
                     ))}
                 </div>
             </div>
+
+            {hasKnownBranding && missingFields.length > 0 && (
+                <p className="rounded-lg bg-info-surface px-3 py-2 text-sm text-info" data-testid="appearance-incomplete">
+                    Every color and both logos are required before branding can be saved. Still to fill in: {missingFields.join(', ')}.
+                </p>
+            )}
 
             {error && (
                 <p className="rounded-lg bg-danger-surface px-3 py-2 text-sm text-danger" role="alert" data-testid="appearance-error">
@@ -240,7 +266,7 @@ function AppearanceSettings({ canUpdate = true }: Readonly<Props>) {
                     inProgress={isUpdating}
                     type="button"
                     onClick={onSave}
-                    disabled={isReadOnly || isReadingLogo || hasInvalidColor || !isDirty}
+                    disabled={isReadOnly || isReadingLogo || hasInvalidColor || missingFields.length > 0 || !isDirty}
                     dataTestId="appearance-save"
                 />
                 <Button

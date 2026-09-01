@@ -7,7 +7,6 @@ import { type BrandingTestState, testInitialState, testReducers } from 'ducks/te
 import AppearanceSettings from './AppearanceSettings';
 
 export type AppearanceSettingsTestWrapperProps = Readonly<{
-    canUpdate?: boolean;
     preloadedState?: Partial<ReturnType<typeof testReducers>>;
 }>;
 
@@ -16,7 +15,7 @@ export type AppearanceSettingsTestWrapperProps = Readonly<{
  * Node/browser boundary, so the store is built inside the mounted component. See
  * CertificateSettingsFormTestWrapper.tsx for the established precedent.
  */
-export function AppearanceSettingsTestWrapper({ canUpdate, preloadedState }: AppearanceSettingsTestWrapperProps) {
+export function AppearanceSettingsTestWrapper({ preloadedState }: AppearanceSettingsTestWrapperProps) {
     const store = useMemo(
         () =>
             configureStore({
@@ -29,7 +28,7 @@ export function AppearanceSettingsTestWrapper({ canUpdate, preloadedState }: App
 
     return (
         <Provider store={store}>
-            <AppearanceSettings canUpdate={canUpdate} />
+            <AppearanceSettings />
             <SentBranding />
         </Provider>
     );
