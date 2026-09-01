@@ -670,20 +670,6 @@ describe('requestAttributeAuthoring', () => {
             expect(dto.attributeUuid).toBe('uuid-1');
             expect(dto.attributeName).toBeUndefined();
         });
-
-        test('build carries a trimmed collectionRef when provided', () => {
-            const dto = buildValueSourceBindingDto({
-                attributeUuid: 'uuid-1',
-                valueSourceType: ValueSourceType.StaticList,
-                collectionRef: ' datacenters ',
-            });
-            expect(dto.collectionRef).toBe('datacenters');
-        });
-
-        test('build omits collectionRef when blank', () => {
-            const dto = buildValueSourceBindingDto({ attributeUuid: 'uuid-1', valueSourceType: ValueSourceType.None, collectionRef: '  ' });
-            expect('collectionRef' in dto).toBe(false);
-        });
     });
 
     describe('buildRaProfileRequestAttributesUpdateDto', () => {

@@ -80,8 +80,6 @@ export interface AuthoredAttributeFormValues {
     staticValues: AuthoredAttributeValue[];
     /** Free-input default (valueSourceType === NONE) — pre-fills the field. Persisted as a single `content` entry. */
     defaultValue?: AuthoredAttributeValue;
-    /** Reserved for the COLLECTION source (stubbed for now). */
-    collectionRef?: string;
     /** Cascading dependency params, preserved on round-trip (no authoring UI yet). */
     valueSourceParams?: SourceParam[];
     /**
@@ -104,7 +102,6 @@ export interface ValueSourceBindingFormValues {
     attributeUuid?: string;
     attributeName?: string;
     valueSourceType: ValueSourceType;
-    collectionRef?: string;
     /**
      * Cascading dependency params, preserved on round-trip (no authoring UI yet) — but only while
      * MERGE_MODE_AND_BINDINGS_ENABLED is on; when it is off, gateMergeModeAndBindings drops the
@@ -211,7 +208,6 @@ export function emptyAuthoredAttribute(): AuthoredAttributeFormValues {
         valueSourceType: ValueSourceType.None,
         staticValues: [],
         defaultValue: undefined,
-        collectionRef: '',
         regexPattern: '',
         regexDescription: '',
         regexErrorMessage: '',
@@ -223,7 +219,6 @@ export function emptyValueSourceBinding(): ValueSourceBindingFormValues {
         attributeUuid: '',
         attributeName: '',
         valueSourceType: ValueSourceType.None,
-        collectionRef: '',
     };
 }
 
@@ -451,7 +446,6 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
             valueSourceKind === ValueSourceType.None
                 ? (view.content?.[0] as { data?: AuthoredAttributeValue } | undefined)?.data
                 : undefined,
-        collectionRef: '',
         valueSourceParams: view.valueSource?.params,
         regexPattern: typeof regex?.data === 'string' ? regex.data : '',
         regexDescription: regex?.description ?? '',
@@ -693,7 +687,6 @@ export function isValueSourceBindingValid(form: ValueSourceBindingFormValues): b
 export function buildValueSourceBindingDto(form: ValueSourceBindingFormValues): ValueSourceBindingDto {
     const uuid = form.attributeUuid?.trim();
     const name = form.attributeName?.trim();
-    const collectionRef = form.collectionRef?.trim();
     const dto: ValueSourceBindingDto = {
         valueSourceType: form.valueSourceType,
     };
@@ -702,9 +695,6 @@ export function buildValueSourceBindingDto(form: ValueSourceBindingFormValues): 
     }
     if (name) {
         dto.attributeName = name;
-    }
-    if (collectionRef) {
-        dto.collectionRef = collectionRef;
     }
     if (form.params?.length) {
         dto.params = form.params;
@@ -738,7 +728,6 @@ export function parseRaProfileRequestAttributesDto(
             attributeUuid: binding.attributeUuid ?? '',
             attributeName: binding.attributeName ?? '',
             valueSourceType: binding.valueSourceType ?? ValueSourceType.None,
-            collectionRef: binding.collectionRef ?? '',
             params: binding.params,
         })),
         externalCsrValidationStrict: dto.externalCsrValidationStrict,
