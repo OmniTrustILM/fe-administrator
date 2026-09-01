@@ -1,4 +1,7 @@
-import AttributeEditor from 'components/Attributes/AttributeEditor';
+import AttributeEditor, {
+    getAttributeEditorAttributesKey,
+    getAttributeEditorDeletedAttributesKey,
+} from 'components/Attributes/AttributeEditor';
 import TabLayout from 'components/Layout/TabLayout';
 import ProgressButton from 'components/ProgressButton';
 import Widget from 'components/Widget';
@@ -283,8 +286,8 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
             dispatch(tokenActions.clearTokenProviderAttributeDescriptors());
             dispatch(connectorActions.clearCallbackData());
             setGroupAttributesCallbackAttributes([]);
-            unregister('__attributes__token__');
-            unregister('deletedAttributes_token');
+            unregister(getAttributeEditorAttributesKey('token'));
+            unregister(getAttributeEditorDeletedAttributesKey('token'));
             setValue('storeKind', '');
         },
         [dispatch, setValue, unregister],
@@ -295,8 +298,8 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
             dispatch(tokenActions.clearTokenProviderAttributeDescriptors());
             dispatch(connectorActions.clearCallbackData());
             setGroupAttributesCallbackAttributes([]);
-            unregister('__attributes__token__');
-            unregister('deletedAttributes_token');
+            unregister(getAttributeEditorAttributesKey('token'));
+            unregister(getAttributeEditorDeletedAttributesKey('token'));
         },
         [dispatch, unregister],
     );
