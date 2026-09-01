@@ -12,7 +12,15 @@ const resource = Resource.Certificates;
 const objectUuid = 'obj-1';
 const key = panelKey(resource, objectUuid);
 
-const [LIST_THREADS, LIST_REPLIES, CREATE, RESOLVE, UNRESOLVE, DELETE] = [0, 1, 2, 3, 4, 5];
+/** Mirrors the order of the `epics` array in comments-epics.ts, as the sibling epic specs do. */
+enum EpicIndex {
+    ListThreads = 0,
+    ListReplies = 1,
+    CreateComment = 2,
+    ResolveComment = 3,
+    UnresolveComment = 4,
+    DeleteComment = 5,
+}
 
 /** Same shape the sibling epic specs use: an `AjaxError` cannot be constructed without a real XHR. */
 const ajaxError = (status: number, response?: unknown): AjaxError => {
@@ -85,7 +93,7 @@ describe('listThreads epic', () => {
         const result = page([comment('r1')]);
         const { deps, calls } = createDeps({ listComments: () => of(result) });
 
-        const emitted = await run(LIST_THREADS, slice.actions.listThreads({ resource, objectUuid, pageNumber: 2 }), deps);
+        const emitted = await run(EpicIndex.ListThreads, slice.actions.listThreads({ resource, objectUuid, pageNumber: 2 }), deps);
 
         expect(calls[0].args).toEqual({ resource, objectUuid, pageNumber: 2, itemsPerPage: THREADS_PAGE_SIZE });
         expect(emitted).toEqual([slice.actions.listThreadsSuccess({ key, page: result })]);
@@ -94,7 +102,7 @@ describe('listThreads epic', () => {
     test('403 locks the panel with a permission lock', async () => {
         const { deps } = createDeps({ listComments: () => throwError(() => ajaxError(403, { code: 'ACCESS_DENIED', message: 'Denied' })) });
 
-        const emitted = await run(LIST_THREADS, slice.actions.listThreads({ resource, objectUuid, pageNumber: 1 }), deps);
+        const emitted = await run(EpicIndex.ListThreads, slice.actions.listThreads({ resource, objectUuid, pageNumber: 1 }), deps);
 
         expect(emitted).toHaveLength(1);
         expect(emitted[0]).toMatchObject({
@@ -106,7 +114,7 @@ describe('listThreads epic', () => {
     test('404 locks the panel, so an object that is not there reads like the sibling widgets', async () => {
         const { deps } = createDeps({ listComments: () => throwError(() => ajaxError(404)) });
 
-        const emitted = await run(LIST_THREADS, slice.actions.listThreads({ resource, objectUuid, pageNumber: 1 }), deps);
+        const emitted = await run(EpicIndex.ListThreads, slice.actions.listThreads({ resource, objectUuid, pageNumber: 1 }), deps);
 
         expect(emitted[0]).toMatchObject({ payload: { key, lock: { lockTitle: 'Not Found' } } });
     });
@@ -114,7 +122,7 @@ describe('listThreads epic', () => {
     test('422 is a message, not a lock', async () => {
         const { deps } = createDeps({ listComments: () => throwError(() => ajaxError(422, { message: 'page out of range' })) });
 
-        const emitted = await run(LIST_THREADS, slice.actions.listThreads({ resource, objectUuid, pageNumber: 99 }), deps);
+        const emitted = await run(EpicIndex.ListThreads, slice.actions.listThreads({ resource, objectUuid, pageNumber: 99 }), deps);
 
         expect(emitted[0]).toEqual(slice.actions.listThreadsFailure({ key }));
         expect(emitted[1]).toMatchObject({ type: alertActions.error.type, payload: expect.stringContaining('page out of range') });
@@ -123,9 +131,21 @@ describe('listThreads epic', () => {
     test('a network failure locks the panel with a network lock', async () => {
         const { deps } = createDeps({ listComments: () => throwError(() => new Error('offline')) });
 
-        const emitted = await run(LIST_THREADS, slice.actions.listThreads({ resource, objectUuid, pageNumber: 1 }), deps);
+        const emitted = await run(EpicIndex.ListThreads, slice.actions.listThreads({ resource, objectUuid, pageNumber: 1 }), deps);
 
         expect(emitted[0]).toMatchObject({ payload: { key, lock: { lockType: LockTypeEnum.NETWORK } } });
+    });
+
+    test('a failure on a panel that already shows comments keeps them, reporting through an alert', async () => {
+        const { deps } = createDeps({ listComments: () => throwError(() => new Error('offline')) });
+        const state = stateWith({
+            threads: { [key]: { ...page([comment('r1')]), isFetching: true, isPosting: false, postSucceeded: false } },
+        });
+
+        const emitted = await run(EpicIndex.ListThreads, slice.actions.listThreads({ resource, objectUuid, pageNumber: 1 }), deps, state);
+
+        expect(emitted[0]).toEqual(slice.actions.listThreadsFailure({ key }));
+        expect(emitted[1]).toMatchObject({ type: alertActions.error.type });
     });
 });
 
@@ -134,7 +154,7 @@ describe('listReplies epic', () => {
         const result = page([comment('c1')]);
         const { deps, calls } = createDeps({ listReplies: () => of(result) });
 
-        const emitted = await run(LIST_REPLIES, slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }), deps);
+        const emitted = await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }), deps);
 
         expect(calls[0].args).toEqual({ uuid: 'r1', pageNumber: 1, itemsPerPage: REPLIES_PAGE_SIZE });
         expect(emitted).toEqual([slice.actions.listRepliesSuccess({ rootUuid: 'r1', page: result })]);
@@ -143,7 +163,7 @@ describe('listReplies epic', () => {
     test('failure reports through an alert, never a lock', async () => {
         const { deps } = createDeps({ listReplies: () => throwError(() => ajaxError(422, { message: 'not a thread root' })) });
 
-        const emitted = await run(LIST_REPLIES, slice.actions.listReplies({ rootUuid: 'c1', pageNumber: 1 }), deps);
+        const emitted = await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'c1', pageNumber: 1 }), deps);
 
         expect(emitted[0]).toEqual(slice.actions.listRepliesFailure({ rootUuid: 'c1' }));
         expect(emitted[1]).toMatchObject({ type: alertActions.error.type, payload: expect.stringContaining('not a thread root') });
@@ -157,7 +177,12 @@ describe('createComment epic', () => {
             threads: { [key]: { ...page([comment('r1')], { pageNumber: 3, itemsPerPage: 5 }), isFetching: false, isPosting: true } },
         });
 
-        const emitted = await run(CREATE, slice.actions.createComment({ resource, objectUuid, body: 'hello' }), deps, state);
+        const emitted = await run(
+            EpicIndex.CreateComment,
+            slice.actions.createComment({ resource, objectUuid, body: 'hello' }),
+            deps,
+            state,
+        );
 
         expect(calls[0].args).toEqual({ resource, objectUuid, commentCreateRequestDto: { body: 'hello', parentUuid: undefined } });
         expect(emitted).toEqual([
@@ -172,7 +197,12 @@ describe('createComment epic', () => {
             replies: { r1: { ...page([comment('c1')], { pageNumber: 2, itemsPerPage: 20 }), isFetching: false, isPosting: true } },
         });
 
-        const emitted = await run(CREATE, slice.actions.createComment({ resource, objectUuid, body: 'hi', parentUuid: 'r1' }), deps, state);
+        const emitted = await run(
+            EpicIndex.CreateComment,
+            slice.actions.createComment({ resource, objectUuid, body: 'hi', parentUuid: 'r1' }),
+            deps,
+            state,
+        );
 
         expect(calls[0].args).toMatchObject({ commentCreateRequestDto: { body: 'hi', parentUuid: 'r1' } });
         expect(emitted[1]).toEqual(slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: 41 }));
@@ -181,7 +211,11 @@ describe('createComment epic', () => {
     test('a reply to a thread that was never expanded reads the first page', async () => {
         const { deps } = createDeps();
 
-        const emitted = await run(CREATE, slice.actions.createComment({ resource, objectUuid, body: 'hi', parentUuid: 'r1' }), deps);
+        const emitted = await run(
+            EpicIndex.CreateComment,
+            slice.actions.createComment({ resource, objectUuid, body: 'hi', parentUuid: 'r1' }),
+            deps,
+        );
 
         expect(emitted[1]).toEqual(slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: REPLIES_PAGE_SIZE }));
     });
@@ -189,7 +223,7 @@ describe('createComment epic', () => {
     test('403 disables the compose box with the API message and raises no alert', async () => {
         const { deps } = createDeps({ createComment: () => throwError(() => ajaxError(403, { message: 'No comment permission' })) });
 
-        const emitted = await run(CREATE, slice.actions.createComment({ resource, objectUuid, body: 'x' }), deps);
+        const emitted = await run(EpicIndex.CreateComment, slice.actions.createComment({ resource, objectUuid, body: 'x' }), deps);
 
         expect(emitted).toEqual([slice.actions.createCommentFailure({ key, parentUuid: undefined, denied: 'No comment permission' })]);
     });
@@ -197,7 +231,11 @@ describe('createComment epic', () => {
     test('403 without a message falls back to a generic denial', async () => {
         const { deps } = createDeps({ createComment: () => throwError(() => ajaxError(403)) });
 
-        const emitted = await run(CREATE, slice.actions.createComment({ resource, objectUuid, body: 'x', parentUuid: 'r1' }), deps);
+        const emitted = await run(
+            EpicIndex.CreateComment,
+            slice.actions.createComment({ resource, objectUuid, body: 'x', parentUuid: 'r1' }),
+            deps,
+        );
 
         expect(emitted[0]).toMatchObject({ payload: { key, parentUuid: 'r1', denied: expect.stringContaining('not allowed') } });
     });
@@ -205,7 +243,7 @@ describe('createComment epic', () => {
     test('422 keeps the compose box and shows the validation message', async () => {
         const { deps } = createDeps({ createComment: () => throwError(() => ajaxError(422, { message: 'body must not be blank' })) });
 
-        const emitted = await run(CREATE, slice.actions.createComment({ resource, objectUuid, body: ' ' }), deps);
+        const emitted = await run(EpicIndex.CreateComment, slice.actions.createComment({ resource, objectUuid, body: ' ' }), deps);
 
         expect(emitted[0]).toEqual(slice.actions.createCommentFailure({ key, parentUuid: undefined }));
         expect(emitted[1]).toMatchObject({ type: alertActions.error.type, payload: expect.stringContaining('body must not be blank') });
@@ -214,8 +252,14 @@ describe('createComment epic', () => {
 
 describe('resolve and unresolve epics', () => {
     test.each([
-        ['resolve', RESOLVE, 'resolveComment', slice.actions.resolveComment, slice.actions.resolveCommentSuccess],
-        ['unresolve', UNRESOLVE, 'unresolveComment', slice.actions.unresolveComment, slice.actions.unresolveCommentSuccess],
+        ['resolve', EpicIndex.ResolveComment, 'resolveComment', slice.actions.resolveComment, slice.actions.resolveCommentSuccess],
+        [
+            'unresolve',
+            EpicIndex.UnresolveComment,
+            'unresolveComment',
+            slice.actions.unresolveComment,
+            slice.actions.unresolveCommentSuccess,
+        ],
     ] as const)('%s calls the endpoint and re-reads the thread list', async (_, index, stubName, start, success) => {
         const { deps, calls } = createDeps();
 
@@ -231,7 +275,7 @@ describe('resolve and unresolve epics', () => {
     test('a 422 on resolving a reply is reported as a message', async () => {
         const { deps } = createDeps({ resolveComment: () => throwError(() => ajaxError(422, { message: 'not a thread root' })) });
 
-        const emitted = await run(RESOLVE, slice.actions.resolveComment({ uuid: 'c1', resource, objectUuid }), deps);
+        const emitted = await run(EpicIndex.ResolveComment, slice.actions.resolveComment({ uuid: 'c1', resource, objectUuid }), deps);
 
         expect(emitted[0]).toEqual(slice.actions.resolveCommentFailure({ uuid: 'c1' }));
         expect(emitted[1]).toMatchObject({ type: alertActions.error.type, payload: expect.stringContaining('not a thread root') });
@@ -240,7 +284,7 @@ describe('resolve and unresolve epics', () => {
     test('a 403 on reopening is reported as a message', async () => {
         const { deps } = createDeps({ unresolveComment: () => throwError(() => ajaxError(403, { message: 'denied' })) });
 
-        const emitted = await run(UNRESOLVE, slice.actions.unresolveComment({ uuid: 'r1', resource, objectUuid }), deps);
+        const emitted = await run(EpicIndex.UnresolveComment, slice.actions.unresolveComment({ uuid: 'r1', resource, objectUuid }), deps);
 
         expect(emitted[0]).toEqual(slice.actions.unresolveCommentFailure({ uuid: 'r1' }));
         expect(emitted[1]).toMatchObject({ type: alertActions.error.type });
@@ -251,7 +295,7 @@ describe('deleteComment epic', () => {
     test('deleting a root re-reads the thread list', async () => {
         const { deps, calls } = createDeps();
 
-        const emitted = await run(DELETE, slice.actions.deleteComment({ uuid: 'r1', resource, objectUuid }), deps);
+        const emitted = await run(EpicIndex.DeleteComment, slice.actions.deleteComment({ uuid: 'r1', resource, objectUuid }), deps);
 
         expect(calls[0]).toEqual({ name: 'deleteComment', args: { uuid: 'r1' } });
         expect(emitted).toEqual([
@@ -266,7 +310,7 @@ describe('deleteComment epic', () => {
             threads: { [key]: { ...page([comment('r1')], { pageNumber: 2 }), isFetching: false, isPosting: false } },
         });
 
-        const emitted = await run(DELETE, slice.actions.deleteComment({ uuid: 'r1', resource, objectUuid }), deps, state);
+        const emitted = await run(EpicIndex.DeleteComment, slice.actions.deleteComment({ uuid: 'r1', resource, objectUuid }), deps, state);
 
         expect(emitted[1]).toMatchObject({ payload: { pageNumber: 1, itemsPerPage: 20 } });
     });
@@ -277,7 +321,12 @@ describe('deleteComment epic', () => {
             replies: { r1: { ...page([comment('c1')], { pageNumber: 2, itemsPerPage: 20 }), isFetching: false, isPosting: false } },
         });
 
-        const emitted = await run(DELETE, slice.actions.deleteComment({ uuid: 'c1', parentUuid: 'r1', resource, objectUuid }), deps, state);
+        const emitted = await run(
+            EpicIndex.DeleteComment,
+            slice.actions.deleteComment({ uuid: 'c1', parentUuid: 'r1', resource, objectUuid }),
+            deps,
+            state,
+        );
 
         expect(emitted).toEqual([
             slice.actions.deleteCommentSuccess({ uuid: 'c1', parentUuid: 'r1' }),
@@ -290,7 +339,7 @@ describe('deleteComment epic', () => {
         const message = "The thread gained replies; only the host object's owner or an update holder may delete it";
         const { deps } = createDeps({ deleteComment: () => throwError(() => ajaxError(422, { message })) });
 
-        const emitted = await run(DELETE, slice.actions.deleteComment({ uuid: 'r1', resource, objectUuid }), deps);
+        const emitted = await run(EpicIndex.DeleteComment, slice.actions.deleteComment({ uuid: 'r1', resource, objectUuid }), deps);
 
         expect(emitted).toEqual([
             slice.actions.deleteCommentFailure({ uuid: 'r1' }),
@@ -302,7 +351,7 @@ describe('deleteComment epic', () => {
     test('a failed delete is reported as a message', async () => {
         const { deps } = createDeps({ deleteComment: () => throwError(() => ajaxError(403, { message: 'denied' })) });
 
-        const emitted = await run(DELETE, slice.actions.deleteComment({ uuid: 'r1', resource, objectUuid }), deps);
+        const emitted = await run(EpicIndex.DeleteComment, slice.actions.deleteComment({ uuid: 'r1', resource, objectUuid }), deps);
 
         expect(emitted[0]).toEqual(slice.actions.deleteCommentFailure({ uuid: 'r1' }));
         expect(emitted[1]).toMatchObject({ type: alertActions.error.type, payload: expect.stringContaining('denied') });

@@ -250,16 +250,43 @@ test.describe('CommentPanel', () => {
         await expect(page.getByTestId(`${tid}-submit`)).toBeDisabled();
     });
 
-    test('the compose box yields to the API denial', async ({ mount, page }) => {
+    test('the API denial is shown above the box, which keeps the text and re-arms once it is edited', async ({ mount, page }) => {
         await mount(
             <CommentPanelWithStore comments={{ threads: { [KEY]: threadsPage([], { postingDenied: 'No comment permission' }) } }} />,
         );
 
-        await expect(page.getByTestId('comment-panel-obj-1-composer-denied')).toHaveText('No comment permission');
-        await expect(page.getByPlaceholder('Write a comment…')).toHaveCount(0);
+        const tid = 'comment-panel-obj-1-composer';
+        await expect(page.getByTestId(`${tid}-denied`)).toHaveText('No comment permission');
+        // The box stays: a denied post must never take the text away with it.
+        const textarea = page.getByPlaceholder('Write a comment…');
+        await expect(textarea).toBeVisible();
+        await expect(page.getByTestId(`${tid}-submit`)).toBeDisabled();
+
+        await textarea.fill('let me try again');
+        await expect(page.getByTestId(`${tid}-denied`)).toHaveCount(0);
+        await expect(page.getByTestId(`${tid}-submit`)).toBeEnabled();
     });
 
-    test('a panel lock renders through the widget lock', async ({ mount, page }) => {
+    test('the draft clears only once the store reports the post committed, every time', async ({ mount, page }) => {
+        await mount(<CommentPanelWithStore />);
+        const textarea = page.getByPlaceholder('Write a comment…');
+        const submit = page.getByTestId('comment-panel-obj-1-composer-submit');
+
+        await textarea.fill('first');
+        await submit.click();
+        await expect(textarea).toHaveValue('first');
+
+        await page.getByTestId('commit-post').click();
+        await expect(textarea).toHaveValue('');
+
+        await textarea.fill('second');
+        await submit.click();
+        await expect(textarea).toHaveValue('second');
+        await page.getByTestId('commit-post').click();
+        await expect(textarea).toHaveValue('');
+    });
+
+    test('a panel lock renders through the widget lock, and its refresh is the retry', async ({ mount, page }) => {
         await mount(
             <CommentPanelWithStore
                 comments={{
@@ -276,6 +303,15 @@ test.describe('CommentPanel', () => {
         await expect(lock).toBeVisible();
         await expect(lock).toContainText('Access Denied');
         await expect(page.getByPlaceholder('Write a comment…')).toHaveCount(0);
+
+        // The lock is the panel's own state, so the refresh button stays live: it is the only way back.
+        const refresh = page.getByTestId('refresh-icon');
+        await expect(refresh).toBeEnabled();
+        await refresh.click();
+        expect((await dispatched(page)).at(-1)).toMatchObject({
+            type: 'comments/listThreads',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1 },
+        });
     });
 
     test('expanding a thread loads its replies and a reply can be posted', async ({ mount, page }) => {

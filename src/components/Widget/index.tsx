@@ -75,11 +75,10 @@ function Widget({
     enableBusyOverlay = false,
 }: Readonly<Props>) {
     const widgetLocks = useSelector(selectors.selectWidgetLocks) || [];
-    const widgetLock =
-        ownLock ??
-        widgetLocks.find(
-            (lock) => lock.widgetName === widgetLockName || (Array.isArray(widgetLockName) && widgetLockName.includes(lock.widgetName)),
-        );
+    const storeLock = widgetLocks.find(
+        (lock) => lock.widgetName === widgetLockName || (Array.isArray(widgetLockName) && widgetLockName.includes(lock.widgetName)),
+    );
+    const widgetLock = ownLock ?? storeLock;
     const [showWidgetInfo, setShowWidgetInfo] = useState(false);
 
     const dispatch = useDispatch();
@@ -116,6 +115,8 @@ function Widget({
             getTitleText()
         );
 
+    // A store lock is cleared by whatever put it there, so refreshing under one is pointless. A caller-owned lock is
+    // the caller's own state, and its refresh action is the retry that clears it, so the button stays live.
     const renderRefreshButton = () =>
         refreshAction ? (
             <Button
@@ -124,7 +125,7 @@ function Widget({
                 variant="transparent"
                 title="Refresh"
                 aria-label="Refresh"
-                disabled={busy || disableRefresh || !!widgetLock}
+                disabled={busy || disableRefresh || !!storeLock}
             >
                 <RefreshCw size={16} />
             </Button>

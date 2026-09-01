@@ -1079,6 +1079,7 @@ export type CommentsTestPage = {
     isFetching: boolean;
     isPosting: boolean;
     postingDenied?: string;
+    postSucceeded?: boolean;
 };
 
 export type CommentsTestState = {
@@ -1096,10 +1097,39 @@ const commentsTestInitialState: CommentsTestState = {
     dispatched: [],
 };
 
+const emptyCommentsTestPage: CommentsTestPage = {
+    comments: [],
+    totalItems: 0,
+    totalPages: 0,
+    pageNumber: 1,
+    itemsPerPage: 10,
+    isFetching: false,
+    isPosting: false,
+};
+
+type CommentsPostPayload = { key?: string; resource?: string; objectUuid?: string; parentUuid?: string };
+
+/** A reply post lands on its thread, a root post on the panel: the same routing the real slice does. */
+function withPostState(state: CommentsTestState, payload: CommentsPostPayload, change: Partial<CommentsTestPage>): CommentsTestState {
+    if (payload.parentUuid) {
+        const target = state.replies[payload.parentUuid] ?? emptyCommentsTestPage;
+        return { ...state, replies: { ...state.replies, [payload.parentUuid]: { ...target, ...change } } };
+    }
+    const key = payload.key ?? `${payload.resource}/${payload.objectUuid}`;
+    const target = state.threads[key] ?? emptyCommentsTestPage;
+    return { ...state, threads: { ...state.threads, [key]: { ...target, ...change } } };
+}
+
 function commentsTestReducer(state: CommentsTestState | undefined, action: UnknownAction): CommentsTestState {
     const current = state ?? commentsTestInitialState;
     if (!action.type.startsWith('comments/')) return current;
-    return { ...current, dispatched: [...current.dispatched, { type: action.type, payload: action.payload }] };
+    const recorded = { ...current, dispatched: [...current.dispatched, { type: action.type, payload: action.payload }] };
+    // The post lifecycle is applied, not only recorded: the composer clears its draft on the postSucceeded
+    // false -> true transition, so a test has to be able to drive that transition.
+    const payload = (action.payload ?? {}) as CommentsPostPayload;
+    if (action.type === 'comments/createComment') return withPostState(recorded, payload, { isPosting: true, postSucceeded: false });
+    if (action.type === 'comments/createCommentSuccess') return withPostState(recorded, payload, { isPosting: false, postSucceeded: true });
+    return recorded;
 }
 
 export const testReducers = combineReducers({

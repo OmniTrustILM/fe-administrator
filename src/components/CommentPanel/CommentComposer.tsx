@@ -66,6 +66,7 @@ export default function CommentComposer({
 }: Readonly<Props>) {
     const [body, setBody] = useState('');
     const [preview, setPreview] = useState(false);
+    const [deniedDismissed, setDeniedDismissed] = useState(false);
     const [pendingSelection, setPendingSelection] = useState<[number, number] | undefined>(undefined);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -113,14 +114,28 @@ export default function CommentComposer({
         setPendingSelection(undefined);
     }, [pendingSelection]);
 
-    const runAction = useCallback((action: MarkdownAction) => {
-        const textarea = textareaRef.current;
-        if (!textarea) return;
-        const state: EditState = { value: textarea.value, selectionStart: textarea.selectionStart, selectionEnd: textarea.selectionEnd };
-        const next = applyMarkdownAction(state, action);
-        setBody(next.value);
-        setPendingSelection([next.selectionStart, next.selectionEnd]);
+    // A denial belongs to the text that was rejected: editing it takes the message down and re-arms the button, so a
+    // user whose permission has since been granted can retry without remounting the panel.
+    const updateBody = useCallback((value: string) => {
+        setBody(value);
+        setDeniedDismissed(true);
     }, []);
+
+    const runAction = useCallback(
+        (action: MarkdownAction) => {
+            const textarea = textareaRef.current;
+            if (!textarea) return;
+            const state: EditState = {
+                value: textarea.value,
+                selectionStart: textarea.selectionStart,
+                selectionEnd: textarea.selectionEnd,
+            };
+            const next = applyMarkdownAction(state, action);
+            updateBody(next.value);
+            setPendingSelection([next.selectionStart, next.selectionEnd]);
+        },
+        [updateBody],
+    );
 
     const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
         const action = markdownShortcut(event);
@@ -129,24 +144,24 @@ export default function CommentComposer({
         runAction(action);
     };
 
-    if (denied) {
-        return (
-            <p className="text-sm text-content-muted" data-testid={`${dataTestId}-denied`}>
-                {denied}
-            </p>
-        );
-    }
-
+    // The box is never taken away: the text has to stay reachable, or a denied post traps whatever was typed.
+    const showDenied = !!denied && !deniedDismissed;
     const overLimit = body.length > COMMENT_BODY_MAX_LENGTH;
-    const canSubmit = body.trim().length > 0 && !overLimit && !isPosting;
+    const canSubmit = body.trim().length > 0 && !overLimit && !isPosting && !showDenied;
 
     const submit = () => {
         if (!canSubmit) return;
+        setDeniedDismissed(false);
         onSubmit(body);
     };
 
     return (
         <div ref={containerRef} className="flex flex-col gap-2" data-testid={dataTestId}>
+            {showDenied && (
+                <p className="text-sm text-danger" data-testid={`${dataTestId}-denied`}>
+                    {denied}
+                </p>
+            )}
             <div
                 className={cn(
                     'rounded-lg border bg-surface-raised overflow-hidden focus-within:ring-1 focus-within:ring-brand focus-within:border-brand',
@@ -219,7 +234,7 @@ export default function CommentComposer({
                         id={id}
                         className="py-2.5 sm:py-3 px-4 block w-full border-0 text-sm text-content focus:ring-0 focus:outline-hidden disabled:opacity-50 disabled:pointer-events-none bg-surface-raised placeholder-content-subtle min-h-24 resize-none overflow-y-auto"
                         value={body}
-                        onChange={(event) => setBody(event.target.value)}
+                        onChange={(event) => updateBody(event.target.value)}
                         onKeyDown={onKeyDown}
                         placeholder={placeholder}
                         disabled={isPosting}

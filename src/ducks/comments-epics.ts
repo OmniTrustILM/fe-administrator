@@ -65,14 +65,17 @@ const listThreads: AppEpic = (action$, state$, deps) => {
                     const key = panelKey(resource, objectUuid);
                     return deps.apiClients.comments.listComments({ resource, objectUuid, pageNumber, itemsPerPage }).pipe(
                         map((page) => slice.actions.listThreadsSuccess({ key, page })),
-                        catchError((err) =>
-                            isValidationError(err)
+                        catchError((err) => {
+                            // A panel that already shows comments keeps them: a failed refresh reports itself as a
+                            // message, so a transient blip cannot replace the list, and the draft under it, with a lock.
+                            const isLoaded = (state$.value.comments?.threads[key]?.comments.length ?? 0) > 0;
+                            return isValidationError(err) || isLoaded
                                 ? of(
                                       slice.actions.listThreadsFailure({ key }),
                                       alertActions.error(extractError(err, 'Failed to list comments')),
                                   )
-                                : of(slice.actions.listThreadsFailure({ key, lock: toLock(err) })),
-                        ),
+                                : of(slice.actions.listThreadsFailure({ key, lock: toLock(err) }));
+                        }),
                     );
                 }),
             ),

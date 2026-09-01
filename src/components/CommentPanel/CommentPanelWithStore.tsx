@@ -1,4 +1,4 @@
-import { Provider, useSelector } from 'react-redux';
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import type { CommentsTestState } from 'ducks/test-reducers';
 import { createMockStore } from 'utils/test-helpers';
@@ -11,6 +11,8 @@ export type CommentPanelWithStoreProps = Readonly<{
     /** A second panel, to check that two panels on one page keep to their own state. */
     secondObjectUuid?: string;
     comments?: Partial<CommentsTestState>;
+    /** Renders a control that commits a pending reply post on this thread, as the epic would. */
+    commitReplyOn?: string;
 }>;
 
 function DispatchProbe() {
@@ -18,11 +20,26 @@ function DispatchProbe() {
     return <div data-testid="comments-dispatch-probe" data-count={dispatched.length} data-actions={JSON.stringify(dispatched)} />;
 }
 
+/** Stands in for the epic: reports a post as committed, which is what lets the composer clear its draft. */
+function CommitPost({ commentKey, parentUuid }: Readonly<{ commentKey: string; parentUuid?: string }>) {
+    const dispatch = useDispatch();
+    return (
+        <button
+            type="button"
+            data-testid={parentUuid ? `commit-post-${parentUuid}` : 'commit-post'}
+            onClick={() => dispatch({ type: 'comments/createCommentSuccess', payload: { key: commentKey, parentUuid } })}
+        >
+            commit
+        </button>
+    );
+}
+
 export default function CommentPanelWithStore({
     resource = Resource.Certificates,
     objectUuid = 'obj-1',
     secondObjectUuid,
     comments,
+    commitReplyOn,
 }: CommentPanelWithStoreProps) {
     const store = createMockStore({ comments: { threads: {}, replies: {}, busy: {}, dispatched: [], ...comments } });
 
@@ -31,6 +48,8 @@ export default function CommentPanelWithStore({
             <MemoryRouter initialEntries={['/certificates/detail/obj-1']}>
                 <CommentPanel resource={resource} objectUuid={objectUuid} />
                 {secondObjectUuid && <CommentPanel resource={resource} objectUuid={secondObjectUuid} />}
+                <CommitPost commentKey={`${resource}/${objectUuid}`} />
+                {commitReplyOn && <CommitPost commentKey={`${resource}/${objectUuid}`} parentUuid={commitReplyOn} />}
                 <DispatchProbe />
             </MemoryRouter>
         </Provider>
