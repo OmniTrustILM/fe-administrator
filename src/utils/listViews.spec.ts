@@ -180,7 +180,6 @@ describe('resolveView', () => {
             available: true,
             sortable: false,
         });
-        expect(resolved.unavailable).toEqual([]);
         expect(resolved.fellBackToStandard).toBe(false);
     });
 
@@ -195,7 +194,7 @@ describe('resolveView', () => {
         );
 
         expect(resolved.columns).toHaveLength(2);
-        expect(resolved.unavailable.map((column) => column.fieldIdentifier)).toEqual(['cost_centre']);
+        expect(resolved.columns.filter((column) => !column.available).map((column) => column.fieldIdentifier)).toEqual(['cost_centre']);
         expect(resolved.renderable.map((column) => column.fieldIdentifier)).toEqual(['COMMON_NAME']);
         expect(resolved.fellBackToStandard).toBe(false);
     });
@@ -211,17 +210,22 @@ describe('resolveView', () => {
 
         expect(resolved.fellBackToStandard).toBe(true);
         expect(resolved.renderable).toEqual(standardColumns);
-        expect(resolved.unavailable).toHaveLength(1);
     });
 
-    it('does not report a fallback for a view that stores no columns', () => {
-        expect(resolveView([], [], standardColumns).fellBackToStandard).toBe(false);
+    it('falls back for a view that arrives with no columns at all', () => {
+        // What the API returns once every field the view was built on has left the catalogue: it
+        // resolves the stored identifiers on read and omits the ones it cannot offer. Rendering the
+        // empty list literally would leave a table with no columns.
+        const resolved = resolveView([], [commonName], standardColumns);
+
+        expect(resolved.fellBackToStandard).toBe(true);
+        expect(resolved.renderable).toEqual(standardColumns);
     });
 
     it('resolves a platform column the filter-field catalogue does not publish', () => {
         const resolved = resolveView([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'STATUS' }], [], standardColumns);
 
-        expect(resolved.unavailable).toEqual([]);
+        expect(resolved.columns.every((column) => column.available)).toBe(true);
         expect(resolved.renderable[0].catalogueLabel).toBe('Status');
     });
 

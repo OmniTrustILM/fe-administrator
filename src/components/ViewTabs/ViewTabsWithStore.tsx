@@ -18,6 +18,10 @@ type Props = Readonly<{
     standardColumns: ColumnDefinition[];
     /** Preloads a mutation as in flight, which is what holds the strip's own actions. */
     isMutating?: boolean;
+    /** Preloads the list read as still in flight, which is what the strip waits for before rendering. */
+    hasLoaded?: boolean;
+    /** Withholds the catalogue until released, so a test can make it land after the views did. */
+    withheldCatalogue?: boolean;
     /** What the drift buttons below change, i.e. an edit the page made outside the view. */
     driftColumn?: ColumnDefinition;
     driftSort?: ColumnSort;
@@ -45,6 +49,8 @@ export default function ViewTabsWithStore({
     catalogue,
     standardColumns,
     isMutating = false,
+    hasLoaded = true,
+    withheldCatalogue = false,
     driftColumn,
     driftSort,
     driftFilter,
@@ -52,20 +58,21 @@ export default function ViewTabsWithStore({
     const [store] = useState(() =>
         createMockStore({
             listViews: {
-                byResource: { [resource]: { views, isFetching: false, isMutating } },
+                byResource: { [resource]: { views, isFetching: !hasLoaded, hasLoaded, isMutating } },
                 dispatched: [],
             },
         }),
     );
 
     const [slice, setSlice] = useState<ViewSlice>({ columns: standardColumns, filters: [], sort: undefined });
+    const [isCatalogueReleased, setIsCatalogueReleased] = useState(!withheldCatalogue);
 
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/certificates']}>
                 <ViewTabs
                     resource={resource}
-                    catalogue={catalogue}
+                    catalogue={isCatalogueReleased ? catalogue : []}
                     standardColumns={standardColumns}
                     columns={slice.columns}
                     filters={slice.filters}
@@ -77,8 +84,12 @@ export default function ViewTabsWithStore({
                 <div data-testid="applied-slice">{JSON.stringify(slice)}</div>
                 <DispatchedActions />
 
+                <button type="button" data-testid="release-catalogue" onClick={() => setIsCatalogueReleased(true)}>
+                    release the catalogue
+                </button>
+
                 {/* Stands in for the epic (a component test runs none): answers the create in flight
-                    with the uuid the API would have assigned. */}
+                    with the uuid the API would have assigned, or with the failure that rolls it back. */}
                 <button
                     type="button"
                     data-testid="simulate-create-success"
@@ -93,6 +104,19 @@ export default function ViewTabsWithStore({
                     }}
                 >
                     answer the create
+                </button>
+
+                <button
+                    type="button"
+                    data-testid="simulate-create-failure"
+                    onClick={() =>
+                        store.dispatch({
+                            type: 'listViews/createViewFailure',
+                            payload: { resource, error: 'Name already used' },
+                        })
+                    }
+                >
+                    fail the create
                 </button>
 
                 <button

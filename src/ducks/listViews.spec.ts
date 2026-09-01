@@ -30,7 +30,7 @@ const certificates = (state: State) => selectors.resourceViews(Resource.Certific
 
 describe('reading the saved views', () => {
     test('a resource with nothing stored reads as an empty strip rather than undefined', () => {
-        expect(certificates(initialState)).toEqual({ views: [], isFetching: false, isMutating: false });
+        expect(certificates(initialState)).toEqual({ views: [], isFetching: false, hasLoaded: false, isMutating: false });
     });
 
     test('a read reports itself in flight and then settles on the views', () => {
@@ -41,6 +41,35 @@ describe('reading the saved views', () => {
         expect(certificates(settled)).toMatchObject({ isFetching: false, views: [view('a', 'One')] });
     });
 
+    test('an empty read still counts as loaded, so a strip can tell it apart from one in flight', () => {
+        const fetching = reduce(initialState, actions.listViews({ resource: Resource.Certificates }));
+        expect(certificates(fetching).hasLoaded).toBe(false);
+
+        const settled = reduce(fetching, actions.listViewsSuccess({ resource: Resource.Certificates, views: [] }));
+        expect(certificates(settled)).toMatchObject({ hasLoaded: true, views: [] });
+    });
+
+    test('a read that overlapped a mutation is discarded rather than committed over it', () => {
+        // The read was in flight before the create, so its payload predates the optimistic row.
+        // Committing it would drop that row, and would leave the rollback snapshot describing a list
+        // the read has since replaced.
+        const creating = reduceAll(
+            [
+                actions.createView({
+                    resource: Resource.Certificates,
+                    view: { name: 'New', resource: Resource.Certificates, columns, defaultView: false },
+                }),
+            ],
+            listed([view('a', 'One')]),
+        );
+
+        const raced = reduce(creating, actions.listViewsSuccess({ resource: Resource.Certificates, views: [view('a', 'One')] }));
+
+        expect(raced.byResource[Resource.Certificates]?.views.map((v) => v.uuid)).toEqual(['a', PENDING_VIEW_UUID]);
+        expect(certificates(raced).hasLoaded).toBe(true);
+        expect(certificates(raced).isFetching).toBe(false);
+    });
+
     test('a failed read stops being in flight and reports the error', () => {
         const failed = reduceAll([
             actions.listViews({ resource: Resource.Certificates }),
@@ -48,6 +77,9 @@ describe('reading the saved views', () => {
         ]);
 
         expect(certificates(failed).isFetching).toBe(false);
+        // Loaded in the sense the strip needs: the read has settled, so Standard opens rather than the
+        // strip waiting for a list that is not coming.
+        expect(certificates(failed).hasLoaded).toBe(true);
         expect(selectors.error({ [slice.name]: failed } as never)).toBe('nope');
     });
 
@@ -225,11 +257,13 @@ describe('selectors', () => {
 
         expect(selectors.isMutating(Resource.Certificates)(store as never)).toBe(true);
         expect(selectors.isFetching(Resource.Certificates)(store as never)).toBe(false);
+        expect(selectors.hasLoaded(Resource.Certificates)(store as never)).toBe(true);
         expect(selectors.createdUuid(Resource.Certificates)(store as never)).toBeUndefined();
     });
 
     test('survive a store that has not built the slice yet', () => {
         expect(selectors.views(Resource.Certificates)({} as never)).toEqual([]);
+        expect(selectors.hasLoaded(Resource.Certificates)({} as never)).toBe(false);
         expect(selectors.error({} as never)).toBeUndefined();
     });
 });

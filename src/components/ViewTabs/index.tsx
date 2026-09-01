@@ -81,6 +81,7 @@ export default function ViewTabs({
     const dispatch = useDispatch();
 
     const views = useSelector(listViewSelectors.views(resource));
+    const hasLoaded = useSelector(listViewSelectors.hasLoaded(resource));
     const isMutating = useSelector(listViewSelectors.isMutating(resource));
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
 
@@ -89,6 +90,17 @@ export default function ViewTabs({
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
 
     const fields = useMemo(() => toCatalogueFields(catalogue), [catalogue]);
+
+    /**
+     * The strip is held back until the view list has settled and the catalogue has arrived, and shows
+     * nothing at all until then.
+     *
+     * Both halves are load-order bugs waiting to happen otherwise. Without the list, an empty read is
+     * indistinguishable from one still in flight, so the first optimistic create would be mistaken for
+     * the initial result. Without the catalogue, every stored column resolves to nothing, so applying
+     * a view would show the platform columns under that view's name and stay there.
+     */
+    const isReady = hasLoaded && fields.length > 0;
 
     const activeView = useMemo(() => views.find((view) => view.uuid === activeId), [views, activeId]);
     const tabs = useMemo(() => toTabs(views), [views]);
@@ -105,11 +117,22 @@ export default function ViewTabs({
         [activeView, fields, standardColumns],
     );
 
-    // The picker edits what the view *stores*, which is not what the table renders: a column whose
-    // field the catalogue has dropped is skipped on render, and handing the picker the rendered list
-    // would leave the stale column unreachable — invisible in the dialog the notice sends the user
-    // to, and silently discarded by the next save.
-    const pickerColumns = useMemo<ColumnDefinition[]>(() => resolved?.columns ?? storedSlice.columns, [resolved, storedSlice]);
+    /** The stored columns this table cannot render, which the notice names and the picker can remove. */
+    const unavailable = useMemo(() => resolved?.columns.filter((column) => !column.available) ?? [], [resolved]);
+
+    /**
+     * What the column dialog edits.
+     *
+     * The stored list, unavailable columns included — handing over only what the table renders would
+     * leave a column the listing cannot display unreachable in the very dialog the notice about it
+     * sends the user to, and it would then be dropped by the next save without ever being shown.
+     * Except when nothing rendered at all: the table is showing the platform set, so that is what the
+     * dialog opens with, and Save produces a usable view rather than an empty one.
+     */
+    const pickerColumns = useMemo<ColumnDefinition[]>(() => {
+        if (!resolved) return storedSlice.columns;
+        return resolved.fellBackToStandard ? resolved.renderable : resolved.columns;
+    }, [resolved, storedSlice]);
 
     const currentSlice = useMemo<ViewSlice>(() => ({ columns, filters, sort }), [columns, filters, sort]);
     const isDirty = isSliceDirty(storedSlice, currentSlice);
@@ -142,7 +165,7 @@ export default function ViewTabs({
     // after a rename, say — must not throw the user back to the tab they started on.
     const hasOpened = useRef<Resource | undefined>(undefined);
     useEffect(() => {
-        if (hasOpened.current === resource || views.length === 0) return;
+        if (hasOpened.current === resource || !isReady) return;
         hasOpened.current = resource;
 
         const initial = resolveInitialViewId(views);
@@ -152,20 +175,37 @@ export default function ViewTabs({
                 ? toStandardSlice(standardColumns)
                 : toViewSlice(views.find((view) => view.uuid === initial) as ListViewModel, fields, standardColumns),
         );
-    }, [resource, views, fields, standardColumns]);
+    }, [resource, isReady, views, fields, standardColumns]);
+
+    // The tab the strip was on when a create started, so a create that fails has somewhere to go back
+    // to instead of leaving the strip pointing at a row the rollback has taken away.
+    const tabBeforeCreate = useRef(STANDARD_VIEW_ID);
 
     // A created view arrives with the uuid the API gave it, replacing the optimistic row the strip
-    // has been showing. The tab under the cursor has to follow it rather than vanish.
+    // has been showing, and the tab under the cursor has to follow it rather than vanish. A failed
+    // create takes that row away instead, which would leave every tab unselected.
     useEffect(() => {
-        if (activeId === PENDING_VIEW_UUID && createdUuid) setActiveId(createdUuid);
-    }, [activeId, createdUuid]);
+        if (activeId !== PENDING_VIEW_UUID) return;
+
+        if (createdUuid) {
+            setActiveId(createdUuid);
+            return;
+        }
+
+        if (!views.some((view) => view.uuid === PENDING_VIEW_UUID)) {
+            // The slice is deliberately not re-applied: the columns, filters and ordering the create
+            // was trying to keep are still on the table, and a failure is not a reason to drop them.
+            setActiveId(views.some((view) => view.uuid === tabBeforeCreate.current) ? tabBeforeCreate.current : STANDARD_VIEW_ID);
+        }
+    }, [activeId, createdUuid, views]);
 
     const createFromCurrent = useCallback(
         (name: string) => {
+            tabBeforeCreate.current = activeId;
             dispatch(listViewActions.createView({ resource, view: toCreateRequest(name, resource, currentSlice) }));
             setActiveId(PENDING_VIEW_UUID);
         },
-        [dispatch, resource, currentSlice],
+        [dispatch, resource, currentSlice, activeId],
     );
 
     const patchActive = useCallback(
@@ -231,6 +271,17 @@ export default function ViewTabs({
         ];
     }, [activeView, activeTab, takenNames, createFromCurrent, patchActive]);
 
+    // Roving focus: the tab being left becomes `tabIndex={-1}`, so focus has to travel with the
+    // selection. Left behind, it sits on an element the strip no longer treats as reachable, and what
+    // a screen reader reports then disagrees with `aria-selected`.
+    const selectByKeyboard = useCallback(
+        (id: string) => {
+            select(id);
+            document.getElementById(`view-tab-${id}`)?.focus();
+        },
+        [select],
+    );
+
     const onStripKeyDown = useCallback(
         (event: React.KeyboardEvent) => {
             const keys: Record<string, number | undefined> = {
@@ -242,17 +293,19 @@ export default function ViewTabs({
 
             if (step !== undefined && index !== -1) {
                 event.preventDefault();
-                select(visible[(index + step + visible.length) % visible.length].id);
+                selectByKeyboard(visible[(index + step + visible.length) % visible.length].id);
                 return;
             }
 
             if (event.key === 'Home' || event.key === 'End') {
                 event.preventDefault();
-                select(event.key === 'Home' ? visible[0].id : visible[visible.length - 1].id);
+                selectByKeyboard(event.key === 'Home' ? visible[0].id : visible[visible.length - 1].id);
             }
         },
-        [visible, activeId, select],
+        [visible, activeId, selectByKeyboard],
     );
+
+    if (!isReady) return null;
 
     return (
         <div className="flex flex-col gap-y-1" data-testid={dataTestId}>
@@ -314,7 +367,7 @@ export default function ViewTabs({
 
             {resolved && (
                 <UnresolvedColumnsNotice
-                    unavailable={resolved.unavailable}
+                    unavailable={unavailable}
                     storedCount={resolved.columns.length}
                     fellBackToStandard={resolved.fellBackToStandard}
                     onReview={() => setIsPickerOpen(true)}

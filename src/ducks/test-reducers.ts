@@ -1138,7 +1138,10 @@ function commentsTestReducer(state: CommentsTestState | undefined, action: Unkno
 // mutation past its request action: the views are preloaded, and every listViews action the strip
 // dispatches is recorded instead, which is what lets a test assert what was asked for.
 export type ListViewsTestState = {
-    byResource: Record<string, { views: ListViewDto[]; isFetching: boolean; isMutating: boolean; createdUuid?: string }>;
+    byResource: Record<
+        string,
+        { views: ListViewDto[]; isFetching: boolean; hasLoaded: boolean; isMutating: boolean; createdUuid?: string }
+    >;
     error?: string;
     dispatched: Array<{ type: string; payload?: unknown }>;
 };
@@ -1159,23 +1162,24 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
     const recorded: ListViewsTestState = { ...state, dispatched: [...state.dispatched, { type: a.type, payload: a.payload }] };
 
     const resource = a.payload?.resource;
-    const view = a.payload?.view;
-    if (!resource || !view) return recorded;
+    if (!resource) return recorded;
 
-    const entry = recorded.byResource[resource] ?? { views: [], isFetching: false, isMutating: false };
+    const view = a.payload?.view;
+    const entry = recorded.byResource[resource] ?? { views: [], isFetching: false, hasLoaded: false, isMutating: false };
     const withEntry = (next: Partial<ListViewsTestState['byResource'][string]>): ListViewsTestState => ({
         ...recorded,
         byResource: { ...recorded.byResource, [resource]: { ...entry, ...next } },
     });
 
     // Only the create round trip is mirrored, and only as far as the strip can observe it: a tab has
-    // to appear the moment it is asked for and then follow the uuid the API gives it. Everything else
-    // a mutation does to this slice is asserted against the real reducer in its own unit tests.
-    if (a.type === 'listViews/createView') {
+    // to appear the moment it is asked for, then follow the uuid the API gives it, and disappear again
+    // if the create fails. Everything else a mutation does to this slice is asserted against the real
+    // reducer in its own unit tests.
+    if (a.type === 'listViews/createView' && view) {
         return withEntry({ isMutating: true, views: [...entry.views, { ...view, uuid: PENDING_LIST_VIEW_UUID, resource } as ListViewDto] });
     }
 
-    if (a.type === 'listViews/createViewSuccess') {
+    if (a.type === 'listViews/createViewSuccess' && view) {
         const created = view as ListViewDto;
         const hasPending = entry.views.some((each) => each.uuid === PENDING_LIST_VIEW_UUID);
 
@@ -1186,6 +1190,10 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
                 ? entry.views.map((each) => (each.uuid === PENDING_LIST_VIEW_UUID ? created : each))
                 : [...entry.views, created],
         });
+    }
+
+    if (a.type === 'listViews/createViewFailure') {
+        return withEntry({ isMutating: false, views: entry.views.filter((each) => each.uuid !== PENDING_LIST_VIEW_UUID) });
     }
 
     return recorded;

@@ -82,18 +82,30 @@ const audit = (overrides: Partial<ListViewModel> = {}): ListViewModel => ({
 type MountOptions = {
     views?: ListViewModel[];
     isMutating?: boolean;
+    hasLoaded?: boolean;
+    withheldCatalogue?: boolean;
     driftColumn?: ColumnDefinition;
     driftSort?: { fieldSource: FilterFieldSource; fieldIdentifier: string; direction: 'asc' | 'desc' };
     driftFilter?: SearchFilterModel;
 };
 
-const strip = ({ views = [expiryWatch()], isMutating, driftColumn, driftSort, driftFilter }: MountOptions = {}) => (
+const strip = ({
+    views = [expiryWatch()],
+    isMutating,
+    hasLoaded,
+    withheldCatalogue,
+    driftColumn,
+    driftSort,
+    driftFilter,
+}: MountOptions = {}) => (
     <ViewTabsWithStore
         resource={Resource.Certificates}
         views={views}
         catalogue={catalogue}
         standardColumns={standardColumns}
         isMutating={isMutating}
+        hasLoaded={hasLoaded}
+        withheldCatalogue={withheldCatalogue}
         driftColumn={driftColumn}
         driftSort={driftSort}
         driftFilter={driftFilter}
@@ -215,10 +227,14 @@ test.describe('ViewTabs', () => {
         await page.keyboard.press('ArrowRight');
 
         await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        // Roving focus: the tab left behind becomes tabIndex={-1}, so focus has to travel with the
+        // selection or the next arrow key comes from an element the strip no longer tracks.
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toBeFocused();
         expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
 
         await page.keyboard.press('End');
         await expect(page.getByTestId('view-tabs-tab-view-2')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-view-2')).toBeFocused();
 
         await page.keyboard.press('Home');
         await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
@@ -417,14 +433,17 @@ test.describe('ViewTabs', () => {
         expect(slice.sort).toBeUndefined();
     });
 
-    test('says which stored column the catalogue no longer publishes', async ({ mount, page }) => {
+    test('names a stored column this listing cannot display, and keeps it reachable in the picker', async ({ mount, page }) => {
+        // Reachable because the catalogue the API validates a view against carries no notion of
+        // `displayable`: a column the listing cannot render can be stored by any client and comes back
+        // intact, unlike a deleted field, which the API omits on read.
         const stale = expiryWatch({
             defaultView: true,
             columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
         });
         await mount(strip({ views: [stale] }));
 
-        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired is no longer available');
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
         await expect(page.getByTestId('view-tabs-notice')).toContainText('showing 1 of its 2 columns');
 
         // Nothing is dropped server-side, so the notice's offer is to open the picker over the stored
@@ -481,7 +500,7 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-pending-view')).toHaveCount(0);
     });
 
-    test('falls back to the standard columns when none of the stored ones resolve', async ({ mount, page }) => {
+    test('falls back to the standard columns when none of the stored ones can be shown', async ({ mount, page }) => {
         const stale = expiryWatch({
             defaultView: true,
             columns: [stored('retired', FilterFieldSource.Custom), stored('gone', FilterFieldSource.Custom)],
@@ -489,11 +508,29 @@ test.describe('ViewTabs', () => {
         await mount(strip({ views: [stale] }));
 
         await expect(page.getByTestId('view-tabs-notice')).toContainText(
-            'retired and gone are no longer available, so this view is showing the standard columns.',
+            'retired and gone cannot be shown, so it is showing the standard columns.',
         );
 
         const slice = await appliedSlice(page);
         expect(slice.columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
+    });
+
+    test('falls back for a view that arrives carrying no columns at all', async ({ mount, page }) => {
+        // What the API returns once every field the view was built on has been deleted: it resolves the
+        // stored identifiers on read and omits the ones it cannot offer. Rendering that literally would
+        // leave a table with no columns, under a tab that still claims to be a view.
+        await mount(strip({ views: [expiryWatch({ defaultView: true, columns: [] })] }));
+
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('so it is showing the standard columns.');
+
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
+
+        // The dialog opens on what the table is showing, so Save writes a usable view rather than an
+        // empty one.
+        await page.getByTestId('view-tabs-notice-review').click();
+
+        await expect(page.getByTestId('selected-column-property:COMMON_NAME')).toBeVisible();
+        await expect(page.getByTestId('selected-column-property:SERIAL_NUMBER')).toBeVisible();
     });
 
     test('names the ordering even when the column it orders by is not displayed', async ({ mount, page }) => {
@@ -509,6 +546,49 @@ test.describe('ViewTabs', () => {
         // legible rather than reading as unsorted.
         await expect(page.getByTestId('view-tabs-summary-sort')).toContainText('Sorted by SERIAL_NUMBER');
         await expect(page.getByTestId('view-tabs-summary-sort').getByLabel('descending')).toBeVisible();
+    });
+
+    test('renders nothing until the view list has settled', async ({ mount, page }) => {
+        // An empty read is otherwise indistinguishable from one still in flight, and the strip would
+        // then read the first optimistic create as the initial result and throw the user off it.
+        await mount(strip({ hasLoaded: false }));
+
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+    });
+
+    test('waits for the catalogue before offering any tab', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true })], withheldCatalogue: true }));
+
+        // Without the catalogue every stored column resolves to nothing, so a tab applied now would
+        // show the platform columns under that view's name and stay there.
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
+
+        await page.getByTestId('release-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'NOT_AFTER']);
+        await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
+    });
+
+    test('puts the tab back when a create fails, without dropping what it was saving', async ({ mount, page }) => {
+        await mount(strip({ driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' } }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await page.getByTestId('view-tabs-new').click();
+        await page.getByTestId('view-tabs-create-input').click();
+        await page.getByTestId('view-tabs-create-input').fill('Everything');
+        await page.getByTestId('view-tabs-create').getByRole('button', { name: 'Create view' }).click();
+
+        await expect(page.getByTestId('view-tabs-tab-pending-view')).toHaveAttribute('aria-selected', 'true');
+
+        await page.getByTestId('simulate-create-failure').click();
+
+        // The rollback takes the optimistic row away, so the strip has to go back to the tab the create
+        // started from rather than leave every tab unselected.
+        await expect(page.getByTestId('view-tabs-tab-pending-view')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
     });
 
     test('holds its own actions while a mutation is in flight', async ({ mount, page }) => {

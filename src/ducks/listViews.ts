@@ -18,6 +18,12 @@ export const PENDING_VIEW_UUID = 'pending-view';
 export interface ResourceViews {
     views: ListViewModel[];
     isFetching: boolean;
+    /**
+     * Whether the list read has settled, successfully or not. Distinct from `views.length > 0`, which
+     * cannot tell a user with no saved views from a read still in flight — and would then read the
+     * first optimistic create as the initial result.
+     */
+    hasLoaded: boolean;
     /** Whether a create, edit or delete is in flight. The strip's actions are held while it is. */
     isMutating: boolean;
     /**
@@ -41,6 +47,7 @@ export const initialState: State = {
 const EMPTY_RESOURCE_VIEWS: ResourceViews = {
     views: [],
     isFetching: false,
+    hasLoaded: false,
     isMutating: false,
 };
 
@@ -101,13 +108,23 @@ export const slice = createSlice({
 
         listViewsSuccess: (state, action: PayloadAction<{ resource: Resource; views: ListViewModel[] }>) => {
             const entry = forResource(state, action.payload.resource);
-            entry.views = action.payload.views;
             entry.isFetching = false;
+            entry.hasLoaded = true;
+
+            // A read that was in flight while a write started predates that write, so committing it
+            // would drop the optimistic row — and leave `rollback` holding a snapshot the read has
+            // since replaced, so a failure would roll back to the wrong list too.
+            if (entry.isMutating) return;
+
+            entry.views = action.payload.views;
         },
 
         listViewsFailure: (state, action: PayloadAction<{ resource: Resource; error: string | undefined }>) => {
             const entry = forResource(state, action.payload.resource);
             entry.isFetching = false;
+            // Loaded in the sense the strip needs: the read has settled, so Standard opens rather than
+            // the strip waiting forever for a list that is not coming.
+            entry.hasLoaded = true;
             state.error = action.payload.error;
         },
 
@@ -191,6 +208,7 @@ const resourceViews = (resource: Resource) => createSelector(state, (state) => s
 
 const views = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.views);
 const isFetching = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.isFetching);
+const hasLoaded = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.hasLoaded);
 const isMutating = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.isMutating);
 const createdUuid = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.createdUuid);
 const error = createSelector(state, (state) => state?.error);
@@ -200,6 +218,7 @@ export const selectors = {
     resourceViews,
     views,
     isFetching,
+    hasLoaded,
     isMutating,
     createdUuid,
     error,

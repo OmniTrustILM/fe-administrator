@@ -173,13 +173,16 @@ export function resolveView(
 
     const columns = resolveColumns(asDefinitions, [...fields], standardColumns);
     const available = columns.filter((column) => column.available);
-    const unavailable = columns.filter((column) => !column.available);
-    const fellBackToStandard = stored.length > 0 && available.length === 0;
+
+    // Nothing renderable falls back to the platform set rather than to a table with no columns at
+    // all. The reachable case is not a stored column failing to resolve here: the API omits a column
+    // whose field has left the catalogue, so a view built entirely on since-deleted attributes
+    // arrives with `columns: []` — which resolves to nothing without anything looking wrong.
+    const fellBackToStandard = available.length === 0;
 
     return {
         columns,
         renderable: fellBackToStandard ? [...standardColumns] : available.map(toDefinition),
-        unavailable,
         fellBackToStandard,
     };
 }
