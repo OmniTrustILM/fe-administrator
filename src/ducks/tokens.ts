@@ -5,7 +5,7 @@ import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolki
 import type { AttributeDescriptorModel, AttributeRequestModel } from 'types/attributes';
 import type { ConnectorResponseModel } from 'types/connectors';
 import { TokenInstanceStatus } from 'types/openapi';
-import type { TokenDetailResponseModel, TokenRequestModel, TokenResponseModel } from 'types/tokens';
+import type { TokenDetailResponseModel, TokenRequestModel, TokenResponseDto } from 'types/tokens';
 
 export type TokenAttributesQuery = {
     connectorUuid: string;
@@ -33,7 +33,7 @@ export type State = {
     token?: TokenDetailResponseModel;
     tokenDetailUuid?: string;
     tokenDetailsByUuid: Record<string, TokenDetailResponseModel>;
-    tokens: TokenResponseModel[];
+    tokens: TokenResponseDto[];
 
     tokenProviders?: ConnectorResponseModel[];
     tokenProviderAttributeDescriptors?: AttributeDescriptorModel[];
@@ -196,7 +196,7 @@ export const slice = createSlice({
             state.isFetchingList = true;
         },
 
-        listTokensSuccess: (state, action: PayloadAction<{ tokenList: TokenResponseModel[] }>) => {
+        listTokensSuccess: (state, action: PayloadAction<{ tokenList: TokenResponseDto[] }>) => {
             state.tokens = action.payload.tokenList;
             state.isFetchingList = false;
         },

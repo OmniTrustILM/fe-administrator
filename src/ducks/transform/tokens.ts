@@ -8,12 +8,11 @@ import type {
     TokenRequestDto,
     TokenRequestModel,
     TokenResponseDto,
-    TokenResponseModel,
 } from 'types/tokens';
 import { transformAttributeRequestModelToDto, transformAttributeResponseDtoToModel } from './attributes';
 import { transformMetadataDtoToModel } from './locations';
 
-export function transformTokenResponseDtoToModel(tokenResponseDto: TokenResponseDto): TokenResponseModel {
+export function transformTokenResponseDtoToModel(tokenResponseDto: TokenResponseDto): TokenResponseDto {
     return {
         ...tokenResponseDto,
     };

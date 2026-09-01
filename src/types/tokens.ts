@@ -9,7 +9,6 @@ export type {
 
 export type TokenRequestDto = Omit<TokenInstanceRequestDto, 'kind'> & { kind?: string };
 export type TokenResponseDto = Omit<TokenInstanceDto, 'kind'> & { kind?: string };
-export type TokenResponseModel = TokenResponseDto;
 export type TokenDetailResponseDto = Omit<TokenInstanceDetailDto, 'kind'> & { kind?: string };
 
 /**
