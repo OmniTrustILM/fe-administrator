@@ -118,10 +118,13 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
     const tokenAttributeSchemaReady =
         !!tokenAttributesQueryKey && tokenProviderAttributesQueryKey === tokenAttributesQueryKey && hasTokenProviderAttributeDescriptors;
     const expectedHydrationKey =
-        editMode && id && tokenAttributesQueryKey && tokenProvider
-            ? `${id}:${tokenProvider.uuid}:${isV2TokenProvider ? '' : (selectedKind ?? '')}`
-            : undefined;
+        editMode && id && token ? `${id}:${token.connectorUuid ?? ''}:${token.kind ?? ''}:${token.name ?? ''}` : undefined;
     const isFormHydrated = !editMode || (!!expectedHydrationKey && hydratedFormKey === expectedHydrationKey);
+    const tokenAttributeSchemaFailed =
+        !!tokenAttributesQuery &&
+        tokenProviderAttributesQueryKey === tokenAttributesQueryKey &&
+        !isFetchingAttributeDescriptors &&
+        !hasTokenProviderAttributeDescriptors;
 
     const isBusy = useMemo(
         () =>
@@ -185,7 +188,7 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
     }, [dispatch, hasTokenProviderAttributeDescriptors, tokenAttributesQuery, tokenAttributesQueryKey, tokenProviderAttributesQueryKey]);
 
     useEffect(() => {
-        if (!editMode || !token || !tokenProvider || !expectedHydrationKey || !tokenAttributeSchemaReady) return;
+        if (!editMode || !token || !expectedHydrationKey) return;
         if (hydratedFormKeyRef.current === expectedHydrationKey) return;
 
         reset(
@@ -198,7 +201,7 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
         );
         hydratedFormKeyRef.current = expectedHydrationKey;
         setHydratedFormKey(expectedHydrationKey);
-    }, [editMode, expectedHydrationKey, reset, token, tokenAttributeSchemaReady, tokenProvider]);
+    }, [editMode, expectedHydrationKey, reset, token]);
 
     const optionsForTokenProviders = useMemo(
         () =>
@@ -224,6 +227,56 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
     const cryptographyInterfaceUuid = isV2TokenProvider
         ? tokenProvider.interfaces?.find((connectorInterface) => connectorInterface.code === ConnectorInterface.Cryptography)?.uuid
         : undefined;
+
+    const retryTokenAttributeSchema = useCallback(() => {
+        if (tokenAttributesQuery) dispatch(tokenActions.getTokenProviderAttributesDescriptors(tokenAttributesQuery));
+    }, [dispatch, tokenAttributesQuery]);
+
+    const tokenAttributeEditorContent = useMemo(() => {
+        if (!tokenProvider || (!isV2TokenProvider && !watchedStoreKind) || !isFormHydrated || !tokenAttributeSchemaReady) {
+            if (tokenAttributeSchemaFailed) {
+                return (
+                    <Container className="items-center" gap={2}>
+                        <p className="text-sm text-content-muted">Unable to load connector attributes.</p>
+                        <Button type="button" variant="outline" onClick={retryTokenAttributeSchema} data-testid="retry-token-attributes">
+                            Retry
+                        </Button>
+                    </Container>
+                );
+            }
+            return <></>;
+        }
+
+        if (!tokenProviderAttributeDescriptors?.length) return <></>;
+
+        return (
+            <AttributeEditor
+                id="token"
+                attributeDescriptors={tokenProviderAttributeDescriptors}
+                attributes={editMode ? tokenDetail?.attributes : undefined}
+                connectorUuid={tokenProvider.uuid}
+                connectorVersion={tokenProvider.version}
+                functionGroupCode={isV2TokenProvider ? undefined : FunctionGroupCode.CryptographyProvider}
+                kind={isV2TokenProvider ? undefined : watchedStoreKind}
+                interfaceUuid={cryptographyInterfaceUuid}
+                groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
+                setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
+            />
+        );
+    }, [
+        cryptographyInterfaceUuid,
+        editMode,
+        groupAttributesCallbackAttributes,
+        isFormHydrated,
+        isV2TokenProvider,
+        retryTokenAttributeSchema,
+        tokenAttributeSchemaFailed,
+        tokenAttributeSchemaReady,
+        tokenDetail?.attributes,
+        tokenProvider,
+        tokenProviderAttributeDescriptors,
+        watchedStoreKind,
+    ]);
 
     const onTokenProviderChange = useCallback(
         (_value: string) => {
@@ -431,28 +484,7 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
                             tabs={[
                                 {
                                     title: 'Connector Attributes',
-                                    content:
-                                        tokenProvider &&
-                                        (isV2TokenProvider || watchedStoreKind) &&
-                                        isFormHydrated &&
-                                        tokenAttributeSchemaReady &&
-                                        tokenProviderAttributeDescriptors &&
-                                        tokenProviderAttributeDescriptors.length > 0 ? (
-                                            <AttributeEditor
-                                                id="token"
-                                                attributeDescriptors={tokenProviderAttributeDescriptors}
-                                                attributes={editMode ? tokenDetail?.attributes : undefined}
-                                                connectorUuid={tokenProvider.uuid}
-                                                connectorVersion={tokenProvider.version}
-                                                functionGroupCode={isV2TokenProvider ? undefined : FunctionGroupCode.CryptographyProvider}
-                                                kind={isV2TokenProvider ? undefined : watchedStoreKind}
-                                                interfaceUuid={cryptographyInterfaceUuid}
-                                                groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
-                                                setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
-                                            />
-                                        ) : (
-                                            <></>
-                                        ),
+                                    content: tokenAttributeEditorContent,
                                 },
                                 {
                                     title: 'Custom Attributes',
