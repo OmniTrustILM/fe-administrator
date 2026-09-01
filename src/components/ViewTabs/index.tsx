@@ -105,6 +105,12 @@ export default function ViewTabs({
         [activeView, fields, standardColumns],
     );
 
+    // The picker edits what the view *stores*, which is not what the table renders: a column whose
+    // field the catalogue has dropped is skipped on render, and handing the picker the rendered list
+    // would leave the stale column unreachable — invisible in the dialog the notice sends the user
+    // to, and silently discarded by the next save.
+    const pickerColumns = useMemo<ColumnDefinition[]>(() => resolved?.columns ?? storedSlice.columns, [resolved, storedSlice]);
+
     const currentSlice = useMemo<ViewSlice>(() => ({ columns, filters, sort }), [columns, filters, sort]);
     const isDirty = isSliceDirty(storedSlice, currentSlice);
 
@@ -332,7 +338,7 @@ export default function ViewTabs({
                 onClose={() => setIsPickerOpen(false)}
                 onSave={onColumnsSaved}
                 catalogue={catalogue}
-                columns={storedSlice.columns}
+                columns={pickerColumns}
                 standardColumns={standardColumns}
                 resourceLabel={resourceLabel}
                 getSourceLabel={getSourceLabel}

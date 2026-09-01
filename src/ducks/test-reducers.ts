@@ -1,6 +1,6 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import type { ConnectInfoDto } from 'types/openapi';
+import type { ConnectInfoDto, ListViewDto } from 'types/openapi';
 import type { EventTriggerAssociationModel, TriggerModel } from 'types/rules';
 
 // IMPORTANT: This file is used ONLY in component tests (Playwright CT).
@@ -1129,6 +1129,65 @@ function commentsTestReducer(state: CommentsTestState | undefined, action: Unkno
     const payload = (action.payload ?? {}) as CommentsPostPayload;
     if (action.type === 'comments/createComment') return withPostState(recorded, payload, { isPosting: true, postSucceeded: false });
     if (action.type === 'comments/createCommentSuccess') return withPostState(recorded, payload, { isPosting: false, postSucceeded: true });
+
+    return recorded;
+}
+
+// Reducer key must match the real slice.name ('listViews') so the real list-view selectors — the ones
+// components/ViewTabs reads — find this state. Component tests run no epics, so nothing carries a
+// mutation past its request action: the views are preloaded, and every listViews action the strip
+// dispatches is recorded instead, which is what lets a test assert what was asked for.
+export type ListViewsTestState = {
+    byResource: Record<string, { views: ListViewDto[]; isFetching: boolean; isMutating: boolean; createdUuid?: string }>;
+    error?: string;
+    dispatched: Array<{ type: string; payload?: unknown }>;
+};
+
+const listViewsTestInitialState: ListViewsTestState = {
+    byResource: {},
+    dispatched: [],
+};
+
+// The uuid an optimistic create carries, mirroring PENDING_VIEW_UUID in src/ducks/listViews.ts. Spelt
+// out rather than imported, because this file must not pull in the real ducks.
+const PENDING_LIST_VIEW_UUID = 'pending-view';
+
+function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialState, action: UnknownAction): ListViewsTestState {
+    const a = action as { type: string; payload?: { resource?: string; view?: Partial<ListViewDto> } };
+    if (!a.type.startsWith('listViews/')) return state;
+
+    const recorded: ListViewsTestState = { ...state, dispatched: [...state.dispatched, { type: a.type, payload: a.payload }] };
+
+    const resource = a.payload?.resource;
+    const view = a.payload?.view;
+    if (!resource || !view) return recorded;
+
+    const entry = recorded.byResource[resource] ?? { views: [], isFetching: false, isMutating: false };
+    const withEntry = (next: Partial<ListViewsTestState['byResource'][string]>): ListViewsTestState => ({
+        ...recorded,
+        byResource: { ...recorded.byResource, [resource]: { ...entry, ...next } },
+    });
+
+    // Only the create round trip is mirrored, and only as far as the strip can observe it: a tab has
+    // to appear the moment it is asked for and then follow the uuid the API gives it. Everything else
+    // a mutation does to this slice is asserted against the real reducer in its own unit tests.
+    if (a.type === 'listViews/createView') {
+        return withEntry({ isMutating: true, views: [...entry.views, { ...view, uuid: PENDING_LIST_VIEW_UUID, resource } as ListViewDto] });
+    }
+
+    if (a.type === 'listViews/createViewSuccess') {
+        const created = view as ListViewDto;
+        const hasPending = entry.views.some((each) => each.uuid === PENDING_LIST_VIEW_UUID);
+
+        return withEntry({
+            isMutating: false,
+            createdUuid: created.uuid,
+            views: hasPending
+                ? entry.views.map((each) => (each.uuid === PENDING_LIST_VIEW_UUID ? created : each))
+                : [...entry.views, created],
+        });
+    }
+
     return recorded;
 }
 
@@ -1166,6 +1225,7 @@ export const testReducers = combineReducers({
     oids: oidsTestReducer,
     rules: rulesTestReducer,
     comments: commentsTestReducer,
+    listViews: listViewsTestReducer,
 });
 
 export const testInitialState = {
@@ -1202,4 +1262,5 @@ export const testInitialState = {
     oids: oidsTestInitialState,
     rules: rulesTestInitialState,
     comments: commentsTestInitialState,
+    listViews: listViewsTestInitialState,
 };
