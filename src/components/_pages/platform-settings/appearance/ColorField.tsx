@@ -4,7 +4,7 @@ import { BRAND_COLOR_MESSAGE, isBrandColor } from 'utils/branding';
 type Props = {
     id: string;
     label: string;
-    hint: string;
+    description: string;
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
@@ -22,7 +22,7 @@ type Props = {
  * An empty field is valid and means the colour is unset - Core clears any field left out - so only a non-empty value
  * that is not a six-digit hex is an error.
  */
-function ColorField({ id, label, hint, value, onChange, disabled = false, required = false }: Readonly<Props>) {
+function ColorField({ id, label, description, value, onChange, disabled = false, required = false }: Readonly<Props>) {
     const valid = value === '' || isBrandColor(value);
     const errorId = `${id}-error`;
 
@@ -53,7 +53,7 @@ function ColorField({ id, label, hint, value, onChange, disabled = false, requir
                     data-testid={`color-swatch-${id}`}
                 />
             </div>
-            <p className="text-xs text-content-subtle">{hint}</p>
+            <p className="text-xs text-content-subtle">{description}</p>
             {!valid && (
                 <p id={errorId} className="text-xs text-danger" data-testid={`color-error-${id}`}>
                     {BRAND_COLOR_MESSAGE}

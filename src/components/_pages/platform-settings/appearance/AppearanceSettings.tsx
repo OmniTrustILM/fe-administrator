@@ -9,24 +9,38 @@ import { isBrandColor, readLogoFile } from 'utils/branding';
 import ColorField from './ColorField';
 import LogoSlot from './LogoSlot';
 
-type ColorKey = 'primaryColor' | 'secondaryColor' | 'tertiaryColor' | 'backgroundColor' | 'textColor';
+type ColorKey = 'primaryColor' | 'secondaryColor' | 'backgroundColor' | 'textColor';
 type LogoKey = 'lightLogo' | 'darkLogo';
 
-const COLOR_FIELDS: ReadonlyArray<{ key: ColorKey; label: string; hint: string }> = [
-    { key: 'primaryColor', label: 'Primary', hint: 'Buttons, links and active states' },
-    { key: 'secondaryColor', label: 'Secondary', hint: 'Accents, chips and info badges' },
-    { key: 'tertiaryColor', label: 'Tertiary', hint: 'Accents. Stored, not yet applied anywhere.' },
-    { key: 'backgroundColor', label: 'Background', hint: 'Page background, light theme only' },
-    { key: 'textColor', label: 'Text', hint: 'Body text and headings, light theme only' },
+/**
+ * Each colour says what it actually drives and which theme it reaches, because the label alone does not: an operator
+ * choosing "Background" has no way to know it will not touch the dark theme.
+ */
+const COLOR_FIELDS: ReadonlyArray<{ key: ColorKey; label: string; description: string }> = [
+    {
+        key: 'primaryColor',
+        label: 'Primary',
+        description: 'Buttons, links, active states and the page header. Applies to both the light and the dark theme.',
+    },
+    {
+        key: 'secondaryColor',
+        label: 'Secondary',
+        description: 'Accents, chips and informational badges. Applies to both the light and the dark theme.',
+    },
+    {
+        key: 'backgroundColor',
+        label: 'Background',
+        description: 'The page background and raised surfaces such as cards and dialogs. Light theme only.',
+    },
+    { key: 'textColor', label: 'Text', description: 'Body text and headings. Light theme only.' },
 ];
 
 /**
- * Named in the form because it is the first thing an operator gets wrong: the five colours do not all reach both
- * themes, and none of them is inverted to produce the other. Background and Text are chosen against a light page, so
- * reusing them on a dark one is exactly what would break its readability.
+ * The one thing no single row can say. Background and Text are chosen against a light page, so reusing them on a dark
+ * one is exactly what would break its readability - which is why the dark theme keeps its own surfaces instead.
  */
 const COLOR_COMPOSITION =
-    'Primary, Secondary and Tertiary apply to both the light and the dark theme. Background and Text apply to the light theme only - the dark theme keeps its own surfaces, and no color is inverted for it automatically.';
+    'No color is inverted to produce the other theme. Primary and Secondary apply to both; Background and Text apply to the light theme only, and the dark theme keeps its own surfaces.';
 
 const LOGO_SLOTS: ReadonlyArray<{ key: LogoKey; label: string }> = [
     { key: 'lightLogo', label: 'Light Logo' },
@@ -49,7 +63,6 @@ type Logos = Record<LogoKey, LogoState>;
 const toColors = (branding?: BrandingSettingsModel): Colors => ({
     primaryColor: branding?.primaryColor ?? '',
     secondaryColor: branding?.secondaryColor ?? '',
-    tertiaryColor: branding?.tertiaryColor ?? '',
     backgroundColor: branding?.backgroundColor ?? '',
     textColor: branding?.textColor ?? '',
 });
@@ -210,12 +223,12 @@ function AppearanceSettings() {
                     {COLOR_COMPOSITION}
                 </p>
                 <div className="grid gap-4 @md:grid-cols-2">
-                    {COLOR_FIELDS.map(({ key, label, hint }) => (
+                    {COLOR_FIELDS.map(({ key, label, description }) => (
                         <ColorField
                             key={key}
                             id={key}
                             label={label}
-                            hint={hint}
+                            description={description}
                             value={colors[key]}
                             disabled={isReadOnly}
                             required

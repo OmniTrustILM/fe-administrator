@@ -11,7 +11,6 @@ export const platformDefaultBranding: PublicBrandingModel = {
     configured: false,
     primaryColor: null,
     secondaryColor: null,
-    tertiaryColor: null,
     backgroundColor: null,
     textColor: null,
     lightLogo: null,

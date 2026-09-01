@@ -36,7 +36,6 @@ const unbranded = storedBranding({});
 const COMPLETE_BRANDING = {
     primaryColor: '#0073CF',
     secondaryColor: '#00A3E0',
-    tertiaryColor: '#7AC143',
     backgroundColor: '#FFFFFF',
     textColor: '#171717',
     lightLogo: PNG_DATA_URI,
@@ -56,22 +55,28 @@ const setHex = async (page: Page, key: string, value: string) => {
 const chooseFile = (input: Locator, name: string, mimeType: string, buffer: Buffer) => input.setInputFiles({ name, mimeType, buffer });
 
 test.describe('AppearanceSettings', () => {
-    test('should render the five colour rows with their usage hints', async ({ mount, page }) => {
+    test('should render each colour row with what it drives and which theme it reaches', async ({ mount, page }) => {
         await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
 
-        for (const [key, label, hint] of [
-            ['primaryColor', 'Primary', 'Buttons, links and active states'],
-            ['secondaryColor', 'Secondary', 'Accents, chips and info badges'],
-            ['tertiaryColor', 'Tertiary', 'Accents. Stored, not yet applied anywhere.'],
-            ['backgroundColor', 'Background', 'Page background, light theme only'],
-            ['textColor', 'Text', 'Body text and headings, light theme only'],
+        for (const [key, label, description] of [
+            ['primaryColor', 'Primary', 'Buttons, links, active states and the page header. Applies to both the light and the dark theme.'],
+            ['secondaryColor', 'Secondary', 'Accents, chips and informational badges. Applies to both the light and the dark theme.'],
+            ['backgroundColor', 'Background', 'The page background and raised surfaces such as cards and dialogs. Light theme only.'],
+            ['textColor', 'Text', 'Body text and headings. Light theme only.'],
         ]) {
             const row = page.getByTestId(`color-field-${key}`);
 
             await expect(row).toBeVisible();
             await expect(row).toContainText(label);
-            await expect(row).toContainText(hint);
+            await expect(row).toContainText(description);
         }
+    });
+
+    /** Tertiary was accepted and stored but never applied to anything, so the form no longer offers it. */
+    test('should not offer a tertiary colour', async ({ mount, page }) => {
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+
+        await expect(page.getByTestId('color-field-tertiaryColor')).toHaveCount(0);
     });
 
     test('should seed the fields from the stored branding', async ({ mount, page }) => {
@@ -132,7 +137,7 @@ test.describe('AppearanceSettings', () => {
 
         const missing = page.getByTestId('appearance-incomplete');
 
-        for (const label of ['Secondary', 'Tertiary', 'Background', 'Text', 'Light Logo', 'Dark Logo']) {
+        for (const label of ['Secondary', 'Background', 'Text', 'Light Logo', 'Dark Logo']) {
             await expect(missing).toContainText(label);
         }
         // The one field that is filled must not be listed as missing.
@@ -162,7 +167,7 @@ test.describe('AppearanceSettings', () => {
     test('should mark every colour and both logos as required', async ({ mount, page }) => {
         await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
 
-        for (const key of ['primaryColor', 'secondaryColor', 'tertiaryColor', 'backgroundColor', 'textColor']) {
+        for (const key of ['primaryColor', 'secondaryColor', 'backgroundColor', 'textColor']) {
             await expect(page.getByTestId(`label-${key}`)).toContainText('*');
         }
         for (const key of ['lightLogo', 'darkLogo']) {
@@ -175,7 +180,7 @@ test.describe('AppearanceSettings', () => {
         await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
 
         await expect(page.getByTestId('appearance-color-composition')).toContainText('Background and Text apply to the light theme only');
-        await expect(page.getByTestId('appearance-color-composition')).toContainText('no color is inverted for it automatically');
+        await expect(page.getByTestId('appearance-color-composition')).toContainText('No color is inverted to produce the other theme');
         await expect(page.getByTestId('appearance-logo-composition')).toContainText('Neither slot falls back to the other.');
     });
 
