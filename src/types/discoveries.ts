@@ -1,18 +1,18 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
 import type { MetadataModel } from './locations';
-import type { DiscoveryCertificateDto, DiscoveryCertificateResponseDto, DiscoveryDto, DiscoveryHistoryDetailDto } from './openapi';
+import type { DiscoveryCertificateDto, DiscoveryCertificateResponseDto, DiscoveryDto, DiscoveryDetailDto } from './openapi';
 
 export type {
-    DiscoveryHistoryDto as DiscoveryResponseDto,
-    DiscoveryHistoryDto as DiscoveryResponseModel,
-    DiscoveryHistoryDetailDto as DiscoveryResponseDetailDto,
+    DiscoveryListDto as DiscoveryResponseDto,
+    DiscoveryListDto as DiscoveryResponseModel,
+    DiscoveryDetailDto as DiscoveryResponseDetailDto,
     DiscoveryDto as DiscoveryRequestDto,
     DiscoveryCertificateDto,
     DiscoveryCertificateDto as DiscoveryCertificateModel,
     DiscoveryCertificateResponseDto as DiscoveryCertificateListDto,
 } from './openapi';
 
-export type DiscoveryResponseDetailModel = Omit<DiscoveryHistoryDetailDto, 'attributes | metadata | customAttributes'> & {
+export type DiscoveryResponseDetailModel = Omit<DiscoveryDetailDto, 'attributes | metadata | customAttributes'> & {
     attributes: Array<AttributeResponseModel>;
     metadata?: Array<MetadataModel>;
     customAttributes?: Array<AttributeResponseModel>;

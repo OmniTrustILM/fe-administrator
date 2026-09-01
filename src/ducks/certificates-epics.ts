@@ -431,7 +431,7 @@ const manuallyIssueCertificate: AppEpic = (action$, state, deps) => {
                     authorityUuid: action.payload.authorityUuid,
                     raProfileUuid: action.payload.raProfileUuid,
                     certificateUuid: action.payload.uuid,
-                    uploadCertificateRequestDto: action.payload.uploadRequest,
+                    manuallyIssueCertificateRequestDto: action.payload.uploadRequest,
                 })
                 .pipe(
                     mergeMap((certificate) =>

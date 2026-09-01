@@ -134,3 +134,48 @@ export function useRunOnFinish(isLoading: boolean, callback?: () => void) {
 export function useAreDefaultValuesSame(defaultValues: Record<string, unknown>) {
     return useCallback((values: Record<string, unknown>) => isObjectSame(values, defaultValues), [defaultValues]);
 }
+
+/**
+ * Whether an element's content is wider than the element, i.e. whether the browser is applying the
+ * ellipsis. Measured by a ResizeObserver on the element, because rearranging a column set changes
+ * cell widths with no window resize.
+ *
+ * The returned ref is a callback ref: acting on truncation usually means wrapping the element, which
+ * remounts it, and an object ref would keep pointing at the detached node and measure zero width.
+ * `value` is what the element renders, and re-measures on a text change the observer cannot see.
+ */
+export function useIsTruncated<T extends HTMLElement>(value: unknown): [(node: T | null) => void, boolean] {
+    const [isTruncated, setIsTruncated] = useState(false);
+    const nodeRef = useRef<T | null>(null);
+    const observerRef = useRef<ResizeObserver | null>(null);
+
+    const measure = useCallback(() => {
+        const node = nodeRef.current;
+        if (!node?.isConnected) return;
+        setIsTruncated(node.scrollWidth > node.clientWidth);
+    }, []);
+
+    const ref = useCallback(
+        (node: T | null) => {
+            observerRef.current?.disconnect();
+            observerRef.current = null;
+            nodeRef.current = node;
+            if (!node) return;
+
+            measure();
+            if (typeof ResizeObserver === 'undefined') return;
+            const observer = new ResizeObserver(measure);
+            observer.observe(node);
+            observerRef.current = observer;
+        },
+        [measure],
+    );
+
+    useEffect(() => {
+        measure();
+    }, [value, measure]);
+
+    useEffect(() => () => observerRef.current?.disconnect(), []);
+
+    return [ref, isTruncated];
+}

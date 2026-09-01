@@ -13,6 +13,8 @@ export default function DiscoveryStatusBadge({ status }: Props) {
         [DiscoveryStatus.InProgress]: { color: 'secondary', text: 'In Progress' },
         [DiscoveryStatus.Processing]: { color: 'info', text: 'Processing' },
         [DiscoveryStatus.Warning]: { color: 'warning', text: 'Warning' },
+        [DiscoveryStatus.Stopped]: { color: 'gray', text: 'Stopped' },
+        [DiscoveryStatus.Cancelled]: { color: 'gray', text: 'Cancelled' },
     };
 
     const _default = { color: 'secondary' as BadgeColor, text: 'Unknown' };

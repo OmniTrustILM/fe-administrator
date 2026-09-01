@@ -66,15 +66,25 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = {
     [FieldType.Rdn]: 'RDN (subject)',
     [FieldType.San]: 'Subject Alternative Name',
     [FieldType.Extension]: 'Certificate extension',
+    [FieldType.KeyUsage]: 'Key usage',
+    [FieldType.ExtendedKeyUsage]: 'Extended key usage',
 };
 
 const FIELD_TYPE_DESCRIPTIONS: Record<FieldType, string> = {
     [FieldType.Rdn]: 'A component of the certificate subject name (e.g. CN, O). You must give the RDN code below.',
     [FieldType.San]: 'A Subject Alternative Name entry (DNS name, email, IP address, …). Pick the SAN type below.',
     [FieldType.Extension]: 'A certificate extension identified by its OID.',
+    [FieldType.KeyUsage]: 'The key usage extension.',
+    [FieldType.ExtendedKeyUsage]: 'The extended key usage extension.',
 };
 
-const MAPPING_OPTIONS = Object.values(FieldType).map((v) => ({
+// The contract carries five mapping targets; the editor can author three. KeyUsage and
+// ExtendedKeyUsage have no target-specific inputs here and no branch in the mapping switch below,
+// so offering them would produce a mapping the form cannot complete. Listed explicitly rather than
+// derived from the enum so a target reaches the dropdown only once its inputs exist.
+const AUTHORABLE_FIELD_TYPES = [FieldType.Rdn, FieldType.San, FieldType.Extension] as const;
+
+const MAPPING_OPTIONS = AUTHORABLE_FIELD_TYPES.map((v) => ({
     value: v,
     label: FIELD_TYPE_LABELS[v],
     description: FIELD_TYPE_DESCRIPTIONS[v],

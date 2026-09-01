@@ -4,7 +4,6 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import Dialog from 'components/Dialog';
 import StatusBadge from 'components/StatusBadge';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
-import { ProtocolChallengeSourcePlatformEnum } from 'types/protocol-challenge-source';
 
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
@@ -16,7 +15,7 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from '../../../../types/openapi';
+import { PlatformEnum, Resource } from 'types/openapi';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders, getGroupNames, getOwnerName } from 'utils/widget';
 import { actions as groupsActions, selectors as groupsSelectors } from 'ducks/certificateGroups';
@@ -39,7 +38,7 @@ export default function AdministratorDetail() {
     const updateCmpProfileSucceeded = useSelector(selectors.updateCmpProfileSucceeded);
     const cmpCmpProfileVariantEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CmpProfileVariant));
     const protectionMethodEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ProtectionMethod));
-    const challengeSourceEnum = useSelector(enumSelectors.platformEnum(ProtocolChallengeSourcePlatformEnum));
+    const challengeSourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ProtocolChallengeSource));
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const deleteErrorMessage = useSelector(selectors.deleteErrorMessage);
     const users = useSelector(userSelectors.users);
