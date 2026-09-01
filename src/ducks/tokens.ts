@@ -119,15 +119,6 @@ export const slice = createSlice({
             state.isFetchingTokenProviderAttributeDescriptors = false;
         },
 
-        invalidateTokenProviderCaches: (state, action: PayloadAction<void>) => {
-            state.tokenProviders = undefined;
-            state.tokenProviderAttributeDescriptors = [];
-            state.tokenProviderAttributeDescriptorsByQueryKey = {};
-            state.tokenProviderAttributesQueryKey = undefined;
-            state.isFetchingTokenProviders = false;
-            state.isFetchingTokenProviderAttributeDescriptors = false;
-        },
-
         clearActivationAttributesDescriptors: (state, action: PayloadAction<void>) => {
             state.activationAttributeDescriptors = undefined;
         },
