@@ -60,43 +60,67 @@ test.describe('ThemeProvider', () => {
         await expect(page.getByTestId('resolved')).toHaveText('dark');
     });
 
-    test('should apply the operator default over the OS preference', async ({ mount, page }) => {
-        await page.emulateMedia({ colorScheme: 'light' });
-        await mount(
-            <ThemeProvider branding={branded('dark' as BrandingTheme)}>
-                <Probe />
-            </ThemeProvider>,
-        );
+    /**
+     * The precedence order as the table it is. Every row sets the OS to something the expected outcome does *not*
+     * agree with where that is possible, so a row can only pass because the rule under test won rather than because
+     * the OS happened to match.
+     */
+    const PRECEDENCE = [
+        {
+            because: 'the operator default beats the OS preference',
+            stored: undefined,
+            operatorDefault: 'dark',
+            os: 'light',
+            mode: 'dark',
+            resolved: 'dark',
+        },
+        {
+            because: 'a stored choice beats the operator default',
+            stored: 'light',
+            operatorDefault: 'dark',
+            os: 'dark',
+            mode: 'light',
+            resolved: 'light',
+        },
+        {
+            // A stored `system` is a choice like any other, so it outranks the operator and hands control back to
+            // the OS. This is the row that stops "no preference" and "chose System" being conflated.
+            because: 'a stored system choice beats the operator default and returns to the OS',
+            stored: 'system',
+            operatorDefault: 'dark',
+            os: 'light',
+            mode: 'system',
+            resolved: 'light',
+        },
+        {
+            // Left behind by the withdrawn four-mode revision. Not a choice at all, so the operator default applies.
+            because: 'a mode from the withdrawn four-mode revision is not a choice',
+            stored: 'systemDark',
+            operatorDefault: 'dark',
+            os: 'light',
+            mode: 'dark',
+            resolved: 'dark',
+        },
+    ] as const;
 
-        await expect(page.getByTestId('mode')).toHaveText('dark');
-        await expect(page.getByTestId('resolved')).toHaveText('dark');
-    });
+    for (const { because, stored, operatorDefault, os, mode, resolved } of PRECEDENCE) {
+        test(`should resolve to ${mode} because ${because}`, async ({ mount, page }) => {
+            await page.emulateMedia({ colorScheme: os });
 
-    /** An explicit System choice is a choice, so it has to beat the operator default and follow the OS instead. */
-    test('should let an explicit system choice outrank the operator default', async ({ mount, page }) => {
-        await page.emulateMedia({ colorScheme: 'light' });
-        await seed(page, { 'theme-mode': 'system' });
-        await mount(
-            <ThemeProvider branding={branded('dark' as BrandingTheme)}>
-                <Probe />
-            </ThemeProvider>,
-        );
+            if (stored !== undefined) {
+                await seed(page, { 'theme-mode': stored });
+            }
 
-        await expect(page.getByTestId('mode')).toHaveText('system');
-        await expect(page.getByTestId('resolved')).toHaveText('light');
-    });
+            await mount(
+                <ThemeProvider branding={branded(operatorDefault as BrandingTheme)}>
+                    <Probe />
+                </ThemeProvider>,
+            );
 
-    test('should let a stored choice win over the operator default', async ({ mount, page }) => {
-        await seed(page, { 'theme-mode': 'light' });
-        await mount(
-            <ThemeProvider branding={branded('dark' as BrandingTheme)}>
-                <Probe />
-            </ThemeProvider>,
-        );
-
-        await expect(page.getByTestId('mode')).toHaveText('light');
-        await expect(page.getByTestId('resolved')).toHaveText('light');
-    });
+            await expect(page.getByTestId('mode')).toHaveText(mode);
+            await expect(page.getByTestId('resolved')).toHaveText(resolved);
+        });
+    }
 
     test('should ignore the OS preference once a mode is chosen', async ({ mount, page }) => {
         await page.emulateMedia({ colorScheme: 'light' });
@@ -137,23 +161,6 @@ test.describe('ThemeProvider', () => {
         await expect(page.getByTestId('mode')).toHaveText('dark');
 
         expect(await page.evaluate(() => globalThis.localStorage.getItem('theme-mode'))).toBeNull();
-    });
-
-    /**
-     * A browser that saw the four-mode build has one of the retired modes stored. It must read as "no preference" so
-     * the operator default takes over, rather than pinning the user to a mode that no longer exists.
-     */
-    test('should ignore a mode stored by the retired four-mode build', async ({ mount, page }) => {
-        await page.emulateMedia({ colorScheme: 'light' });
-        await seed(page, { 'theme-mode': 'systemDark' });
-        await mount(
-            <ThemeProvider branding={branded('dark' as BrandingTheme)}>
-                <Probe />
-            </ThemeProvider>,
-        );
-
-        await expect(page.getByTestId('mode')).toHaveText('dark');
-        await expect(page.getByTestId('resolved')).toHaveText('dark');
     });
 
     /** The first click has to advance from what is in force, which on a branded instance is the operator's default. */
