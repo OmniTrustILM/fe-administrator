@@ -57,7 +57,6 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
     const tokenProviderAttributesQueryKey = useSelector(tokenSelectors.tokenProviderAttributesQueryKey);
     const hasTokenProviderAttributeDescriptors = useSelector(tokenSelectors.hasTokenProviderAttributeDescriptors);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
-    const hasResourceCustomAttributes = useSelector(customAttributesSelectors.hasResourceCustomAttributes);
 
     const isFetchingTokenDetail = useSelector(tokenSelectors.isFetchingDetail);
     const isFetchingTokenProviders = useSelector(tokenSelectors.isFetchingTokenProviders);
@@ -150,7 +149,7 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
     useEffect(() => {
         dispatch(connectorActions.clearCallbackData());
         dispatch(tokenActions.ensureTokenProviders());
-        dispatch(customAttributesActions.ensureResourceCustomAttributes(Resource.Tokens));
+        dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Tokens));
         return () => {
             dispatch(connectorActions.clearCallbackData());
         };
@@ -354,9 +353,9 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
     const inProgressTitle = useMemo(() => (editMode ? 'Saving...' : 'Creating...'), [editMode]);
 
     const renderCustomAttributeEditor = useMemo(() => {
-        if (isBusy || !hasResourceCustomAttributes || !isFormHydrated) return <></>;
+        if (isBusy || !isFormHydrated) return <></>;
         return <AttributeEditor id="customToken" attributeDescriptors={resourceCustomAttributes} attributes={token?.customAttributes} />;
-    }, [hasResourceCustomAttributes, isBusy, isFormHydrated, resourceCustomAttributes, token?.customAttributes]);
+    }, [isBusy, isFormHydrated, resourceCustomAttributes, token?.customAttributes]);
 
     useRunOnSuccessfulFinish(isCreating, createTokenSucceeded, onSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateTokenSucceeded, onSuccess);

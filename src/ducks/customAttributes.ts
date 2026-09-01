@@ -22,9 +22,6 @@ export type State = {
     customAttribute?: CustomAttributeDetailResponseModel;
     customAttributes: CustomAttributeResponseModel[];
     resourceCustomAttributes: CustomAttributeModel[];
-    resourceCustomAttributesByResource: Partial<Record<Resource, CustomAttributeModel[]>>;
-    resourceCustomAttributesResource?: Resource;
-    resourceCustomAttributeMutationResources?: Resource[];
     secondaryResourceCustomAttributes: CustomAttributeModel[];
     resourceCustomAttributesContents: ResourceCustomAttributesContents[];
     resources: Resource[];
@@ -51,7 +48,6 @@ export const initialState: State = {
     checkedRows: [],
     customAttributes: [],
     resourceCustomAttributes: [],
-    resourceCustomAttributesByResource: {},
     secondaryResourceCustomAttributes: [],
     resourceCustomAttributesContents: [],
     resources: [],
@@ -115,55 +111,16 @@ export const slice = createSlice({
 
         listResourceCustomAttributes: (state, action: PayloadAction<Resource>) => {
             state.resourceCustomAttributes = [];
-            state.resourceCustomAttributesResource = action.payload;
             state.isFetchingResourceCustomAttributes = true;
-        },
-
-        ensureResourceCustomAttributes: (state, action: PayloadAction<Resource>) => {
-            const cached = state.resourceCustomAttributesByResource[action.payload];
-            state.resourceCustomAttributesResource = action.payload;
-            state.resourceCustomAttributes = cached ?? [];
-            state.isFetchingResourceCustomAttributes = cached === undefined;
         },
 
         listResourceCustomAttributesSuccess: (state, action: PayloadAction<CustomAttributeModel[]>) => {
             state.resourceCustomAttributes = action.payload;
-            if (state.resourceCustomAttributesResource) {
-                state.resourceCustomAttributesByResource[state.resourceCustomAttributesResource] = action.payload;
-            }
             state.isFetchingResourceCustomAttributes = false;
-        },
-
-        ensureResourceCustomAttributesSuccess: (
-            state,
-            action: PayloadAction<{ resource: Resource; customAttributes: CustomAttributeModel[] }>,
-        ) => {
-            state.resourceCustomAttributesByResource[action.payload.resource] = action.payload.customAttributes;
-            if (state.resourceCustomAttributesResource === action.payload.resource) {
-                state.resourceCustomAttributes = action.payload.customAttributes;
-                state.isFetchingResourceCustomAttributes = false;
-            }
         },
 
         listResourceCustomAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingResourceCustomAttributes = false;
-        },
-
-        ensureResourceCustomAttributesFailure: (state, action: PayloadAction<{ resource: Resource; error: string | undefined }>) => {
-            if (state.resourceCustomAttributesResource === action.payload.resource) {
-                state.isFetchingResourceCustomAttributes = false;
-            }
-        },
-
-        invalidateResourceCustomAttributes: (state, action: PayloadAction<{ resources?: Resource[] }>) => {
-            const resources = action.payload.resources;
-            if (!resources?.length) {
-                state.resourceCustomAttributesByResource = {};
-                return;
-            }
-            resources.forEach((resource) => {
-                delete state.resourceCustomAttributesByResource[resource];
-            });
         },
 
         listSecondaryResourceCustomAttributes: (state, action: PayloadAction<Resource>) => {
@@ -183,26 +140,16 @@ export const slice = createSlice({
         createCustomAttribute: (state, action: PayloadAction<CustomAttributeCreateRequestModel>) => {
             state.isCreating = true;
             state.createCustomAttributeSucceeded = false;
-            state.resourceCustomAttributeMutationResources = action.payload.resources;
         },
 
         createCustomAttributeSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
             state.isCreating = false;
             state.createCustomAttributeSucceeded = true;
-            if (state.resourceCustomAttributeMutationResources?.length) {
-                state.resourceCustomAttributeMutationResources.forEach((resource) => {
-                    delete state.resourceCustomAttributesByResource[resource];
-                });
-            } else {
-                state.resourceCustomAttributesByResource = {};
-            }
-            state.resourceCustomAttributeMutationResources = undefined;
         },
 
         createCustomAttributeFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isCreating = false;
             state.createCustomAttributeSucceeded = false;
-            state.resourceCustomAttributeMutationResources = undefined;
         },
 
         updateCustomAttribute: (
@@ -211,27 +158,16 @@ export const slice = createSlice({
         ) => {
             state.isUpdating = true;
             state.updateCustomAttributeSucceeded = false;
-            state.resourceCustomAttributeMutationResources = action.payload.customAttributeUpdateRequest.resources;
         },
 
         updateCustomAttributeSuccess: (state, action: PayloadAction<CustomAttributeDetailResponseModel>) => {
             state.isUpdating = false;
             state.updateCustomAttributeSucceeded = true;
-            const resources = new Set([...(state.resourceCustomAttributeMutationResources ?? []), ...(action.payload.resources ?? [])]);
-            if (resources.size) {
-                resources.forEach((resource) => {
-                    delete state.resourceCustomAttributesByResource[resource];
-                });
-            } else {
-                state.resourceCustomAttributesByResource = {};
-            }
-            state.resourceCustomAttributeMutationResources = undefined;
         },
 
         updateCustomAttributeFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isUpdating = false;
             state.updateCustomAttributeSucceeded = false;
-            state.resourceCustomAttributeMutationResources = undefined;
         },
 
         updateCustomAttributeContent: (
@@ -361,28 +297,16 @@ export const slice = createSlice({
 
         deleteCustomAttribute: (state, action: PayloadAction<string>) => {
             state.isDeleting = true;
-            state.resourceCustomAttributeMutationResources = state.customAttributes.find(
-                (attribute) => attribute.uuid === action.payload,
-            )?.resources;
         },
 
         deleteCustomAttributeSuccess: (state, action: PayloadAction<string>) => {
             state.isDeleting = false;
             const index = state.customAttributes.findIndex((attr) => attr.uuid === action.payload);
             if (index !== -1) state.customAttributes.splice(index, 1);
-            if (state.resourceCustomAttributeMutationResources?.length) {
-                state.resourceCustomAttributeMutationResources.forEach((resource) => {
-                    delete state.resourceCustomAttributesByResource[resource];
-                });
-            } else {
-                state.resourceCustomAttributesByResource = {};
-            }
-            state.resourceCustomAttributeMutationResources = undefined;
         },
 
         deleteCustomAttributeFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isDeleting = false;
-            state.resourceCustomAttributeMutationResources = undefined;
         },
 
         bulkDeleteCustomAttributes: (state, action: PayloadAction<string[]>) => {
@@ -401,7 +325,6 @@ export const slice = createSlice({
                 state.customAttribute = undefined;
             }
             state.checkedRows = [];
-            state.resourceCustomAttributesByResource = {};
         },
 
         bulkDeleteCustomAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -423,7 +346,6 @@ export const slice = createSlice({
             if (state.customAttribute && action.payload.includes(state.customAttribute.uuid)) {
                 state.customAttribute.enabled = true;
             }
-            state.resourceCustomAttributesByResource = {};
         },
 
         bulkEnableCustomAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -445,7 +367,6 @@ export const slice = createSlice({
             if (state.customAttribute && action.payload.includes(state.customAttribute.uuid)) {
                 state.customAttribute.enabled = false;
             }
-            state.resourceCustomAttributesByResource = {};
         },
 
         bulkDisableCustomAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -465,7 +386,6 @@ export const slice = createSlice({
             if (state.customAttribute?.uuid === action.payload) {
                 state.customAttribute.enabled = true;
             }
-            state.resourceCustomAttributesByResource = {};
         },
 
         enableCustomAttributeFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -485,7 +405,6 @@ export const slice = createSlice({
             if (state.customAttribute?.uuid === action.payload) {
                 state.customAttribute.enabled = false;
             }
-            state.resourceCustomAttributesByResource = {};
         },
 
         disableCustomAttributeFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -502,12 +421,6 @@ const customAttribute = createSelector(state, (state: State) => state.customAttr
 const customAttributes = createSelector(state, (state: State) => state.customAttributes);
 const resources = createSelector(state, (state: State) => state.resources);
 const resourceCustomAttributes = createSelector(state, (state: State) => state.resourceCustomAttributes);
-const hasResourceCustomAttributes = createSelector(
-    state,
-    (state: State) =>
-        state.resourceCustomAttributesResource !== undefined &&
-        Object.hasOwn(state.resourceCustomAttributesByResource ?? {}, state.resourceCustomAttributesResource),
-);
 const secondaryResourceCustomAttributes = createSelector(state, (state: State) => state.secondaryResourceCustomAttributes);
 const resourceCustomAttributesContents = (resource: Resource, resourceUuid: string) =>
     createSelector(
@@ -558,7 +471,6 @@ export const selectors = {
     customAttributes,
     resources,
     resourceCustomAttributes,
-    hasResourceCustomAttributes,
     secondaryResourceCustomAttributes,
     resourceCustomAttributesContents,
     multipleResourceCustomAttributes,

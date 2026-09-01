@@ -51,45 +51,13 @@ describe('customAttributes slice', () => {
         expect(next.resourceCustomAttributes).toHaveLength(1);
 
         const failing = reducer(
-            { ...initialState, isFetchingResourceCustomAttributes: true },
+            {
+                ...initialState,
+                isFetchingResourceCustomAttributes: true,
+            },
             actions.listResourceCustomAttributesFailure({ error: 'err' }),
         );
         expect(failing.isFetchingResourceCustomAttributes).toBe(false);
-    });
-
-    test('ensureResourceCustomAttributes_reusesCachedResourceSchema', () => {
-        // given
-        const resource = Resource.Tokens;
-        const cachedAttributes = [{ uuid: 'token-custom-attribute' }] as any[];
-        const loadedState = {
-            ...initialState,
-            resourceCustomAttributesByResource: { [resource]: cachedAttributes },
-        };
-
-        // when
-        const next = reducer(loadedState, actions.ensureResourceCustomAttributes(resource));
-
-        // then
-        expect(next.resourceCustomAttributes).toEqual(cachedAttributes);
-        expect(next.isFetchingResourceCustomAttributes).toBe(false);
-        expect(selectors.hasResourceCustomAttributes({ customAttributes: next } as any)).toBe(true);
-    });
-
-    test('customAttributeDefinitionChange_invalidatesAffectedResourceSchema', () => {
-        // given
-        const resource = Resource.Tokens;
-        const cachedState = {
-            ...initialState,
-            resourceCustomAttributesByResource: { [resource]: [{ uuid: 'old-definition' }] as any[] },
-        };
-        const createRequest = { resources: [resource] } as any;
-
-        // when
-        let next = reducer(cachedState, actions.createCustomAttribute(createRequest));
-        next = reducer(next, actions.createCustomAttributeSuccess({ uuid: 'new-definition' }));
-
-        // then
-        expect(next.resourceCustomAttributesByResource[resource]).toBeUndefined();
     });
 
     test('listSecondaryResourceCustomAttributes / Success / Failure', () => {
