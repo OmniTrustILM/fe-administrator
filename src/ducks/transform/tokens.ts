@@ -1,23 +1,24 @@
-import type { TokenInstanceDetailDto, TokenInstanceDto, TokenInstanceStatusDetailDto } from 'types/openapi';
+import type { TokenInstanceStatusDetailDto } from 'types/openapi';
 import type {
     TokenDetailResponseModel,
+    TokenDetailResponseDto,
     TokenInstanceStatusComponentResponseDto,
     TokenInstanceStatusComponentResponseModel,
     TokenInstanceStatusResponseModel,
     TokenRequestDto,
     TokenRequestModel,
-    TokenResponseModel,
+    TokenResponseDto,
 } from 'types/tokens';
 import { transformAttributeRequestModelToDto, transformAttributeResponseDtoToModel } from './attributes';
 import { transformMetadataDtoToModel } from './locations';
 
-export function transformTokenResponseDtoToModel(tokenResponseDto: TokenInstanceDto): TokenResponseModel {
+export function transformTokenResponseDtoToModel(tokenResponseDto: TokenResponseDto): TokenResponseDto {
     return {
         ...tokenResponseDto,
     };
 }
 
-export function transformTokenDetailResponseDtoToModel(tokenResponseDto: TokenInstanceDetailDto): TokenDetailResponseModel {
+export function transformTokenDetailResponseDtoToModel(tokenResponseDto: TokenDetailResponseDto): TokenDetailResponseModel {
     return {
         ...tokenResponseDto,
         attributes: tokenResponseDto.attributes.map(transformAttributeResponseDtoToModel),
