@@ -72,7 +72,6 @@ test.describe('AppearanceSettings', () => {
         }
     });
 
-    /** Tertiary was accepted and stored but never applied to anything, so the form no longer offers it. */
     test('should not offer a tertiary colour', async ({ mount, page }) => {
         await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
 
@@ -140,7 +139,6 @@ test.describe('AppearanceSettings', () => {
         for (const label of ['Secondary', 'Background', 'Text', 'Light Logo', 'Dark Logo']) {
             await expect(missing).toContainText(label);
         }
-        // The one field that is filled must not be listed as missing.
         await expect(missing).not.toContainText('Primary,');
         await expect(page.getByTestId('appearance-save')).toBeDisabled();
     });
@@ -175,7 +173,6 @@ test.describe('AppearanceSettings', () => {
         }
     });
 
-    /** Which colour reaches which theme is the question the form is asked most, so it answers it on the page. */
     test('should say which colours reach which theme, and that neither logo covers for the other', async ({ mount, page }) => {
         await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
 
@@ -338,6 +335,38 @@ test.describe('AppearanceSettings', () => {
         await page.getByTestId('appearance-reset').click();
         await page.getByRole('button', { name: 'Reset', exact: true }).click();
         await expect(page.getByTestId('sent-branding')).toHaveText('{}');
+    });
+
+    test('should not let a logo read still in flight repopulate the form a reset has cleared', async ({ mount, page }) => {
+        await mount(<AppearanceSettingsTestWrapper preloadedState={storedBranding({ ...COMPLETE_BRANDING, lightLogo: undefined })} />);
+
+        await page.getByTestId('appearance-reset').click();
+        await expect(page.getByTestId('appearance-reset-dialog')).toBeVisible();
+
+        // The confirmation is accepted in the same turn the file is handed over, so the reset is dispatched while the
+        // FileReader callback is still pending. Reset stays enabled during a read - only Save is held back for it.
+        await page.evaluate((bytes) => {
+            const input = document.querySelector<HTMLInputElement>('[data-testid="logo-input-lightLogo"]');
+            const confirm = [...document.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Reset');
+
+            if (!input || !confirm) {
+                throw new Error('The logo slot or the confirmation button did not render.');
+            }
+
+            const transfer = new DataTransfer();
+
+            transfer.items.add(new File([new Uint8Array(bytes)], 'brand.png', { type: 'image/png' }));
+            input.files = transfer.files;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            confirm.click();
+        }, PNG_BYTES);
+
+        await expect(page.getByTestId('sent-branding')).toHaveText('{}');
+
+        // The slot the reset emptied stays empty: the read gave up its claim on the way out, so it has nothing left to
+        // write back. Otherwise the tab reports a successful reset over a form that is partly populated again.
+        await expect(page.getByTestId('logo-empty-lightLogo')).toBeVisible();
+        await expect(page.getByTestId('logo-filename-lightLogo')).toHaveText('No file selected');
     });
 
     test('should surface an error reported by the server', async ({ mount, page }) => {

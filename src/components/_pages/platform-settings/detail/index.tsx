@@ -65,7 +65,6 @@ export default function PlatformSettingsDetail() {
         [onEditClick],
     );
 
-    // The grant Core gates the branding write on, read from the profile rather than approximated from listing access.
     // Core remains the enforcement point; this only decides whether to offer the tab.
     const canUpdateBranding = hasResourceAction(profile, Resource.Settings, ResourceAction.UpdateBranding);
 

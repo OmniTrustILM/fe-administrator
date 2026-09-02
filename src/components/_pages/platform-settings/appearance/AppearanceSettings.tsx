@@ -206,6 +206,16 @@ function AppearanceSettings() {
 
     const onResetConfirmed = useCallback(() => {
         setIsResetDialogOpen(false);
+
+        // Every slot gives up ownership before the reset goes out. Reset is offered while a logo is still being read -
+        // only Save is held back for that - and the branding effect clears the form when the reset lands, so a read
+        // that still owned its slot would write its logo back into a form that has just been emptied, leaving the tab
+        // partially populated under a message saying the reset succeeded.
+        for (const { key } of LOGO_SLOTS) {
+            logoReadTokens.current[key] += 1;
+        }
+        setReadingLogos({ lightLogo: false, darkLogo: false });
+
         dispatch(actions.resetBranding());
     }, [dispatch]);
 

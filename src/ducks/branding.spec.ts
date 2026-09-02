@@ -51,6 +51,15 @@ describe('branding slice', () => {
             expect(state.isFetchingBranding).toBe(false);
             expect(state.error).toBe('nope');
         });
+
+        test('getBrandingFailure drops the branding a previous read left behind', () => {
+            // The Appearance tab treats a present `branding` as proof of a known-good state to edit from. A cached one
+            // left behind by a failed re-read would make the form writable over branding this session cannot vouch
+            // for, and a save replaces the whole brand.
+            const cached = { ...initialState, branding: { primaryColor: '#0073CF' }, isFetchingBranding: true };
+
+            expect(reducer(cached, actions.getBrandingFailure({ error: 'nope' })).branding).toBeUndefined();
+        });
     });
 
     describe('reading the anonymous branding', () => {
