@@ -9,7 +9,7 @@ import { selectors } from 'ducks/user-interface';
 import { actions as tablePaginationActions, selectors as tablePaginationSelectors } from 'ducks/table-pagination';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation } from 'react-router';
-import type { LockWidgetNameEnum } from 'types/user-interface';
+import type { LockWidgetNameEnum, WidgetLockErrorModel } from 'types/user-interface';
 import { ListRestart, RefreshCw } from 'lucide-react';
 import Button from 'components/Button';
 
@@ -33,6 +33,8 @@ type Props = {
     busy?: boolean;
     disableRefresh?: boolean;
     widgetLockName?: LockWidgetNameEnum | LockWidgetNameEnum[];
+    /** A lock owned by the caller, for widgets whose lock is per object rather than per global widget name. */
+    widgetLock?: WidgetLockErrorModel;
     refreshAction?: () => void;
     resetViewAction?: () => void;
     widgetButtons?: WidgetButtonProps[];
@@ -60,6 +62,7 @@ function Widget({
     busy = false,
     disableRefresh = false,
     widgetLockName,
+    widgetLock: ownLock,
     refreshAction,
     resetViewAction,
     widgetExtraTopNode,
@@ -72,9 +75,10 @@ function Widget({
     enableBusyOverlay = false,
 }: Readonly<Props>) {
     const widgetLocks = useSelector(selectors.selectWidgetLocks) || [];
-    const widgetLock = widgetLocks.find(
+    const storeLock = widgetLocks.find(
         (lock) => lock.widgetName === widgetLockName || (Array.isArray(widgetLockName) && widgetLockName.includes(lock.widgetName)),
     );
+    const widgetLock = ownLock ?? storeLock;
     const [showWidgetInfo, setShowWidgetInfo] = useState(false);
 
     const dispatch = useDispatch();
@@ -111,6 +115,8 @@ function Widget({
             getTitleText()
         );
 
+    // A store lock is cleared by whatever put it there, so refreshing under one is pointless. A caller-owned lock is
+    // the caller's own state, and its refresh action is the retry that clears it, so the button stays live.
     const renderRefreshButton = () =>
         refreshAction ? (
             <Button
@@ -119,7 +125,7 @@ function Widget({
                 variant="transparent"
                 title="Refresh"
                 aria-label="Refresh"
-                disabled={busy || disableRefresh || !!widgetLock}
+                disabled={busy || disableRefresh || !!storeLock}
             >
                 <RefreshCw size={16} />
             </Button>

@@ -4,6 +4,7 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import Dialog from 'components/Dialog';
 import TabLayout from 'components/Layout/TabLayout';
 import ObjectEventHistoryWidget from 'components/_pages/notifications/events-settings/ObjectEventHistoryWidget';
+import CommentPanel from 'components/CommentPanel';
 
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
@@ -439,6 +440,14 @@ export default function CryptographicKeyDetail() {
                             content: cryptographicKey ? (
                                 <Container>
                                     <ObjectEventHistoryWidget resource={Resource.Keys} uuid={cryptographicKey.uuid} />
+                                </Container>
+                            ) : null,
+                        },
+                        {
+                            title: 'Comments',
+                            content: cryptographicKey ? (
+                                <Container>
+                                    <CommentPanel resource={Resource.Keys} objectUuid={cryptographicKey.uuid} />
                                 </Container>
                             ) : null,
                         },

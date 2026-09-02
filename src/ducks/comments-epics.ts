@@ -1,0 +1,209 @@
+import type { AppEpic, AppState, EpicDependencies } from 'ducks';
+import type { UnknownAction } from 'redux';
+import { type Observable, of } from 'rxjs';
+import { AjaxError } from 'rxjs/ajax';
+import { catchError, filter, groupBy, map, mergeMap, switchMap } from 'rxjs/operators';
+import type { Resource } from 'types/openapi';
+import { LockTypeEnum, type WidgetLockErrorModel } from 'types/user-interface';
+import { extractError, getLockWidgetObject } from 'utils/net';
+import { actions as alertActions } from './alerts';
+import { type CommentRefPayload, panelKey, REPLIES_PAGE_SIZE, slice, THREADS_PAGE_SIZE } from './comments';
+
+const status = (err: unknown) => (err instanceof AjaxError ? err.status : undefined);
+
+/** 422 is a message about the request, not a denied-access state, so it never reaches the widget lock. */
+const isValidationError = (err: unknown) => status(err) === 422;
+const isDenied = (err: unknown) => status(err) === 403;
+
+const networkLock: WidgetLockErrorModel = {
+    lockTitle: 'Comments unavailable',
+    lockText: 'Comments could not be loaded',
+    lockType: LockTypeEnum.NETWORK,
+};
+
+const toLock = (err: unknown): WidgetLockErrorModel => (err instanceof AjaxError ? getLockWidgetObject(err) : networkLock);
+
+const deniedMessage = (err: unknown, fallback: string) =>
+    err instanceof AjaxError && typeof err.response?.message === 'string' ? err.response.message : fallback;
+
+/**
+ * Thread roots are loaded incrementally, so a refresh re-reads everything shown so far as one first page. `extra`
+ * widens the window by the roots just added, so a comment the user posted onto a full window is not left unloaded.
+ */
+const refreshThreads = (state: AppState, resource: Resource, objectUuid: string, extra = 0): UnknownAction => {
+    const threads = state.comments?.threads[panelKey(resource, objectUuid)];
+    const loaded = threads ? threads.pageNumber * threads.itemsPerPage : 0;
+    return slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: Math.max(THREADS_PAGE_SIZE, loaded + extra) });
+};
+
+/**
+ * Replies are loaded incrementally, so a refresh re-reads everything shown so far as one first page. `extra` widens the
+ * window by the replies just added, so a reply the user posted onto a full window is not left on an unloaded page.
+ */
+const refreshReplies = (state: AppState, rootUuid: string, extra = 0): UnknownAction => {
+    const replies = state.comments?.replies[rootUuid];
+    const loaded = replies ? replies.pageNumber * replies.itemsPerPage : 0;
+    return slice.actions.listReplies({ rootUuid, pageNumber: 1, itemsPerPage: Math.max(REPLIES_PAGE_SIZE, loaded + extra) });
+};
+
+/** Everything that changed: the thread of a reply (if any) and always the root list, whose replyCount moved too. */
+const refreshAfterChange = (state: AppState, resource: Resource, objectUuid: string, parentUuid?: string): UnknownAction[] => [
+    ...(parentUuid ? [refreshReplies(state, parentUuid)] : []),
+    refreshThreads(state, resource, objectUuid),
+];
+
+const listThreads: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listThreads.match),
+        // Panels stay concurrent with each other, but within one panel a newer request cancels the one in flight,
+        // so a slow older page can never land on top of (or behind) a fresher list.
+        groupBy((action) => panelKey(action.payload.resource, action.payload.objectUuid)),
+        mergeMap((panel$) =>
+            panel$.pipe(
+                switchMap((action) => {
+                    const { resource, objectUuid, pageNumber, itemsPerPage = THREADS_PAGE_SIZE } = action.payload;
+                    const key = panelKey(resource, objectUuid);
+                    return deps.apiClients.comments.listComments({ resource, objectUuid, pageNumber, itemsPerPage }).pipe(
+                        map((page) => slice.actions.listThreadsSuccess({ key, page })),
+                        catchError((err) => {
+                            // A panel that already shows comments keeps them: a failed refresh reports itself as a
+                            // message, so a transient blip cannot replace the list, and the draft under it, with a lock.
+                            const isLoaded = (state$.value.comments?.threads[key]?.comments.length ?? 0) > 0;
+                            return isValidationError(err) || isLoaded
+                                ? of(
+                                      slice.actions.listThreadsFailure({ key }),
+                                      alertActions.error(extractError(err, 'Failed to list comments')),
+                                  )
+                                : of(slice.actions.listThreadsFailure({ key, lock: toLock(err) }));
+                        }),
+                    );
+                }),
+            ),
+        ),
+    );
+};
+
+const listReplies: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listReplies.match),
+        // Same shape as listThreads: threads stay concurrent, requests within one thread never race each other.
+        groupBy((action) => action.payload.rootUuid),
+        mergeMap((thread$) =>
+            thread$.pipe(
+                switchMap((action) => {
+                    const { rootUuid, pageNumber, itemsPerPage = REPLIES_PAGE_SIZE } = action.payload;
+                    return deps.apiClients.comments.listReplies({ uuid: rootUuid, pageNumber, itemsPerPage }).pipe(
+                        map((page) => slice.actions.listRepliesSuccess({ rootUuid, page })),
+                        catchError((err) =>
+                            of(
+                                slice.actions.listRepliesFailure({ rootUuid }),
+                                alertActions.error(extractError(err, 'Failed to list replies')),
+                            ),
+                        ),
+                    );
+                }),
+            ),
+        ),
+    );
+};
+
+const createComment: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.createComment.match),
+        mergeMap((action) => {
+            const { resource, objectUuid, body, parentUuid } = action.payload;
+            const key = panelKey(resource, objectUuid);
+            return deps.apiClients.comments.createComment({ resource, objectUuid, commentCreateRequestDto: { body, parentUuid } }).pipe(
+                mergeMap((comment) =>
+                    of(
+                        slice.actions.createCommentSuccess({ key, comment, parentUuid }),
+                        parentUuid ? refreshReplies(state$.value, parentUuid, 1) : refreshThreads(state$.value, resource, objectUuid, 1),
+                    ),
+                ),
+                catchError((err) =>
+                    isDenied(err)
+                        ? of(
+                              slice.actions.createCommentFailure({
+                                  key,
+                                  parentUuid,
+                                  denied: deniedMessage(err, 'You are not allowed to comment on this object'),
+                              }),
+                          )
+                        : of(
+                              slice.actions.createCommentFailure({ key, parentUuid }),
+                              alertActions.error(extractError(err, 'Failed to post comment')),
+                          ),
+                ),
+            );
+        }),
+    );
+};
+
+type ResolutionAction = { type: string; payload: CommentRefPayload };
+
+/** Resolve and reopen differ only in the endpoint they call; both re-read the thread list to pick up resolvedBy/At. */
+const resolution =
+    (
+        matcher: (action: UnknownAction) => action is ResolutionAction,
+        request: (deps: EpicDependencies, uuid: string) => Observable<void>,
+        success: (payload: { uuid: string }) => UnknownAction,
+        failure: (payload: { uuid: string }) => UnknownAction,
+        headline: string,
+    ): AppEpic =>
+    (action$, state$, deps) =>
+        action$.pipe(
+            filter(matcher),
+            mergeMap((action) => {
+                const { uuid, resource, objectUuid } = action.payload;
+                return request(deps, uuid).pipe(
+                    mergeMap(() => of(success({ uuid }), refreshThreads(state$.value, resource, objectUuid))),
+                    catchError((err) => of(failure({ uuid }), alertActions.error(extractError(err, headline)))),
+                );
+            }),
+        );
+
+const resolveComment = resolution(
+    slice.actions.resolveComment.match,
+    (deps, uuid) => deps.apiClients.comments.resolveComment({ uuid }),
+    slice.actions.resolveCommentSuccess,
+    slice.actions.resolveCommentFailure,
+    'Failed to resolve thread',
+);
+
+const unresolveComment = resolution(
+    slice.actions.unresolveComment.match,
+    (deps, uuid) => deps.apiClients.comments.unresolveComment({ uuid }),
+    slice.actions.unresolveCommentSuccess,
+    slice.actions.unresolveCommentFailure,
+    'Failed to reopen thread',
+);
+
+const deleteComment: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.deleteComment.match),
+        mergeMap((action) => {
+            const { uuid, parentUuid, resource, objectUuid } = action.payload;
+            return deps.apiClients.comments.deleteComment({ uuid }).pipe(
+                mergeMap(() =>
+                    of(
+                        slice.actions.deleteCommentSuccess({ uuid, parentUuid }),
+                        ...refreshAfterChange(state$.value, resource, objectUuid, parentUuid),
+                    ),
+                ),
+                catchError((err) =>
+                    of(
+                        slice.actions.deleteCommentFailure({ uuid }),
+                        alertActions.error(extractError(err, 'Failed to delete comment')),
+                        // A 422 here means the thread changed under the user (typically it gained a reply while the
+                        // page was open), so the stale view is re-read and the reply that caused it becomes visible.
+                        ...(isValidationError(err) ? refreshAfterChange(state$.value, resource, objectUuid, parentUuid) : []),
+                    ),
+                ),
+            );
+        }),
+    );
+};
+
+const epics = [listThreads, listReplies, createComment, resolveComment, unresolveComment, deleteComment];
+
+export default epics;

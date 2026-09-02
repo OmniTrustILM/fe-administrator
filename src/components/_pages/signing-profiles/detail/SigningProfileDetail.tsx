@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import Breadcrumb from 'components/Breadcrumb';
 import ProgressButton from 'components/ProgressButton';
 import Container from 'components/Container';
+import CommentPanel from 'components/CommentPanel';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
 import StatusBadge from 'components/StatusBadge';
@@ -692,6 +693,13 @@ export default function SigningProfileDetail() {
                                     <CustomTable hasDetails={true} headers={availableProtocolsHeaders} data={availableProtocolsData} />
                                 </Widget>
                             ),
+                        },
+                        {
+                            tabKey: 'comments',
+                            title: 'Comments',
+                            content: signingProfile ? (
+                                <CommentPanel resource={Resource.SigningProfiles} objectUuid={signingProfile.uuid} />
+                            ) : null,
                         },
                     ]}
                 />

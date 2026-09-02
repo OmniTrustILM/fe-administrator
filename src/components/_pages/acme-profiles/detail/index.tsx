@@ -21,6 +21,7 @@ import { actions as userAction, selectors as userSelectors } from 'ducks/users';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 export default function AdministratorDetail() {
@@ -390,6 +391,7 @@ export default function AdministratorDetail() {
                             <AttributeViewer attributes={acmeProfile?.certificateAssociations?.customAttributes} />
                         </Widget>
                     </Widget>
+                    {acmeProfile && <CommentPanel resource={Resource.AcmeProfiles} objectUuid={acmeProfile.uuid} />}
                 </Container>
             </Widget>
 

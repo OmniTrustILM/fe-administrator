@@ -1070,6 +1070,68 @@ function rulesTestReducer(state: RulesTestState | undefined, _action: UnknownAct
     return state ?? rulesTestInitialState;
 }
 
+export type CommentsTestPage = {
+    comments: unknown[];
+    totalItems: number;
+    totalPages: number;
+    pageNumber: number;
+    itemsPerPage: number;
+    isFetching: boolean;
+    isPosting: boolean;
+    postingDenied?: string;
+    postSucceeded?: boolean;
+};
+
+export type CommentsTestState = {
+    threads: Record<string, CommentsTestPage & { lock?: unknown }>;
+    replies: Record<string, CommentsTestPage>;
+    busy: Record<string, boolean>;
+    /** Every `comments/*` action the panel dispatched, so a test can assert the request without an epic. */
+    dispatched: Array<{ type: string; payload?: unknown }>;
+};
+
+const commentsTestInitialState: CommentsTestState = {
+    threads: {},
+    replies: {},
+    busy: {},
+    dispatched: [],
+};
+
+const emptyCommentsTestPage: CommentsTestPage = {
+    comments: [],
+    totalItems: 0,
+    totalPages: 0,
+    pageNumber: 1,
+    itemsPerPage: 10,
+    isFetching: false,
+    isPosting: false,
+};
+
+type CommentsPostPayload = { key?: string; resource?: string; objectUuid?: string; parentUuid?: string };
+
+/** A reply post lands on its thread, a root post on the panel: the same routing the real slice does. */
+function withPostState(state: CommentsTestState, payload: CommentsPostPayload, change: Partial<CommentsTestPage>): CommentsTestState {
+    if (payload.parentUuid) {
+        const target = state.replies[payload.parentUuid] ?? emptyCommentsTestPage;
+        return { ...state, replies: { ...state.replies, [payload.parentUuid]: { ...target, ...change } } };
+    }
+    const key = payload.key ?? `${payload.resource}/${payload.objectUuid}`;
+    const target = state.threads[key] ?? emptyCommentsTestPage;
+    return { ...state, threads: { ...state.threads, [key]: { ...target, ...change } } };
+}
+
+function commentsTestReducer(state: CommentsTestState | undefined, action: UnknownAction): CommentsTestState {
+    const current = state ?? commentsTestInitialState;
+    if (!action.type.startsWith('comments/')) return current;
+    const recorded = { ...current, dispatched: [...current.dispatched, { type: action.type, payload: action.payload }] };
+    // The post lifecycle is applied, not only recorded: the composer clears its draft on the postSucceeded
+    // false -> true transition, so a test has to be able to drive that transition.
+    const payload = (action.payload ?? {}) as CommentsPostPayload;
+    if (action.type === 'comments/createComment') return withPostState(recorded, payload, { isPosting: true, postSucceeded: false });
+    if (action.type === 'comments/createCommentSuccess') return withPostState(recorded, payload, { isPosting: false, postSucceeded: true });
+    return recorded;
+}
+
 export const testReducers = combineReducers({
     raProfileRequestAttributes: raProfileRequestAttributesTestReducer,
     userInterface: userInterfaceTestReducer,
@@ -1103,6 +1165,7 @@ export const testReducers = combineReducers({
     discoveries: discoveriesTestReducer,
     oids: oidsTestReducer,
     rules: rulesTestReducer,
+    comments: commentsTestReducer,
 });
 
 export const testInitialState = {
@@ -1138,4 +1201,5 @@ export const testInitialState = {
     discoveries: discoveriesTestInitialState,
     oids: oidsTestInitialState,
     rules: rulesTestInitialState,
+    comments: commentsTestInitialState,
 };

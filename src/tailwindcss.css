@@ -343,6 +343,86 @@ table .table-badge {
     font-weight: 600;
 }
 
+/* Comment bodies: the rendered subset of Markdown a comment may contain (see utils/comment-markdown.ts). */
+.comment-markdown > :first-child {
+    margin-top: 0;
+}
+.comment-markdown > :last-child {
+    margin-bottom: 0;
+}
+.comment-markdown p {
+    margin-bottom: 0.5rem;
+}
+.comment-markdown h3,
+.comment-markdown h4,
+.comment-markdown h5,
+.comment-markdown h6 {
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+}
+.comment-markdown h3 {
+    font-size: 1.05rem;
+}
+.comment-markdown h4 {
+    font-size: 1rem;
+}
+.comment-markdown ul {
+    list-style-type: disc;
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+.comment-markdown ol {
+    list-style-type: decimal;
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+.comment-markdown blockquote {
+    border-left: 3px solid var(--divider);
+    padding-left: 0.75rem;
+    color: var(--content-muted);
+    margin-bottom: 0.5rem;
+}
+.comment-markdown code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85em;
+    background: var(--surface-sunken);
+    border-radius: 0.25rem;
+    padding: 0.1rem 0.3rem;
+}
+.comment-markdown pre {
+    background: var(--surface-sunken);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    overflow-x: auto;
+}
+.comment-markdown pre code {
+    background: transparent;
+    padding: 0;
+}
+.comment-markdown table {
+    border-collapse: collapse;
+    margin-bottom: 0.5rem;
+    max-width: 100%;
+}
+.comment-markdown th,
+.comment-markdown td {
+    border: 1px solid var(--divider);
+    padding: 0.25rem 0.5rem;
+    text-align: left;
+}
+.comment-markdown th {
+    font-weight: 600;
+    background: var(--surface-sunken);
+}
+.comment-markdown a {
+    color: var(--brand);
+    text-decoration: underline;
+}
+.comment-markdown a:hover {
+    color: var(--brand-hover);
+}
+
 @keyframes toast-in {
     from {
         opacity: 0;
