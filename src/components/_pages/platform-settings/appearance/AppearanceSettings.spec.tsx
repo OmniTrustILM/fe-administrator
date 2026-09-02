@@ -32,12 +32,16 @@ const unbranded = storedBranding({});
 /**
  * A brand with every field filled. Most of these tests need one now: branding saves whole, so a form missing any
  * colour or either logo offers no Save to click.
+ *
+ * The colours are the platform's own, which matters beyond realism: they clear WCAG AA everywhere, so a Save here goes
+ * straight through rather than stopping at the contrast warning. The tests that want that warning choose colours that
+ * fail it - see the contrast group at the bottom.
  */
 const COMPLETE_BRANDING = {
     primaryColor: '#0073CF',
-    secondaryColor: '#00A3E0',
-    backgroundColor: '#FFFFFF',
-    textColor: '#171717',
+    secondaryColor: '#0369A1',
+    backgroundColor: '#F8FAFC',
+    textColor: '#1F2937',
     lightLogo: PNG_DATA_URI,
     darkLogo: PNG_DATA_URI,
 };
@@ -305,21 +309,21 @@ test.describe('AppearanceSettings', () => {
 
     test('should send the edited colours on save', async ({ mount, page }) => {
         await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
-        await setHex(page, 'primaryColor', '#123456');
-        await setHex(page, 'textColor', '#654321');
+        await setHex(page, 'primaryColor', '#1D4ED8');
+        await setHex(page, 'textColor', '#292524');
         await page.getByTestId('appearance-save').click();
 
         const sent = page.getByTestId('sent-branding');
 
-        await expect(sent).toContainText('"primaryColor":"#123456"');
-        await expect(sent).toContainText('"textColor":"#654321"');
+        await expect(sent).toContainText('"primaryColor":"#1D4ED8"');
+        await expect(sent).toContainText('"textColor":"#292524"');
         // The untouched fields go with them: Core clears anything left out of an update.
-        await expect(sent).toContainText('"secondaryColor":"#00A3E0"');
+        await expect(sent).toContainText('"secondaryColor":"#0369A1"');
     });
 
     test('should carry the operator default theme through a save it does not edit', async ({ mount, page }) => {
         await mount(<AppearanceSettingsTestWrapper preloadedState={storedBranding({ ...COMPLETE_BRANDING, defaultTheme: 'dark' })} />);
-        await setHex(page, 'primaryColor', '#00A3E0');
+        await setHex(page, 'primaryColor', '#1D4ED8');
         await page.getByTestId('appearance-save').click();
 
         await expect(page.getByTestId('sent-branding')).toContainText('"defaultTheme":"dark"');
@@ -473,5 +477,86 @@ test.describe('AppearanceSettings', () => {
 
         await expect(page.getByTestId('appearance-unavailable')).toHaveCount(0);
         await expect(page.getByTestId('color-hex-primaryColor')).toBeEnabled();
+    });
+
+    /**
+     * The brand belongs to the operator, so contrast warns and never blocks. What is asserted here is the shape of
+     * that bargain: the failing pairs are named with their ratios, Cancel sends nothing, and Save anyway sends the
+     * colours exactly as chosen. Which pairs fail for which colours is `brand-contrast.spec.ts`.
+     */
+    test.describe('contrast warning', () => {
+        test('should save straight through when the colours clear AA everywhere', async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+            await setHex(page, 'primaryColor', '#1D4ED8');
+
+            await page.getByTestId('appearance-save').click();
+
+            await expect(page.getByTestId('appearance-contrast-dialog')).toHaveCount(0);
+            await expect(page.getByTestId('sent-branding')).toContainText('"primaryColor":"#1D4ED8"');
+        });
+
+        test('should name each failing pair with its ratio and threshold', async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+            await setHex(page, 'primaryColor', '#7FC4FF');
+
+            await page.getByTestId('appearance-save').click();
+
+            const findings = page.getByTestId('appearance-contrast-findings');
+
+            await expect(findings).toBeVisible();
+            await expect(findings.getByRole('listitem')).toHaveCount(3);
+            await expect(findings).toContainText('Light theme: Links and active states on cards and dialogs reaches 1.81:1');
+            await expect(findings).toContainText('below the required 4.5:1');
+            // The header takes Primary in both compositions, so the same choice is reported against each.
+            await expect(findings).toContainText('Light theme: White text on the page header and primary buttons');
+            await expect(findings).toContainText('Dark theme: White text on the page header and primary buttons');
+        });
+
+        test('should report a non-text pairing against the 3:1 threshold', async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+            await setHex(page, 'secondaryColor', '#E8F4FF');
+
+            await page.getByTestId('appearance-save').click();
+
+            await expect(page.getByTestId('appearance-contrast-findings')).toContainText('Informational indicators on cards and dialogs');
+            await expect(page.getByTestId('appearance-contrast-findings')).toContainText('below the required 3:1');
+        });
+
+        test('should send nothing when the warning is cancelled', async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+            await setHex(page, 'primaryColor', '#7FC4FF');
+
+            await page.getByTestId('appearance-save').click();
+            await page.getByRole('button', { name: 'Cancel' }).click();
+
+            await expect(page.getByTestId('sent-branding')).toHaveText('none');
+        });
+
+        test('should save the colours as chosen once the warning is confirmed', async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+            await setHex(page, 'primaryColor', '#7FC4FF');
+
+            await page.getByTestId('appearance-save').click();
+            await page.getByRole('button', { name: 'Save anyway' }).click();
+
+            await expect(page.getByTestId('appearance-contrast-dialog')).toHaveCount(0);
+            await expect(page.getByTestId('sent-branding')).toContainText('"primaryColor":"#7FC4FF"');
+        });
+
+        test('should measure the derived weights, not only the colour that was typed', async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+            // #767676 clears AA as body text on a white page; the two quieter weights derived below it do not, which
+            // is exactly what a check over the four typed colours alone would miss.
+            await setHex(page, 'backgroundColor', '#FFFFFF');
+            await setHex(page, 'textColor', '#767676');
+
+            await page.getByTestId('appearance-save').click();
+
+            const findings = page.getByTestId('appearance-contrast-findings');
+
+            await expect(findings).toContainText('Secondary text on the page background');
+            await expect(findings).toContainText('Hint text on cards and dialogs');
+            await expect(findings).not.toContainText('Body text on the page background reaches');
+        });
     });
 });
