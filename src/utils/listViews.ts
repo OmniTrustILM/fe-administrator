@@ -198,6 +198,47 @@ export function toStorableFilters(
     return filters.filter((filter) => !(secret.has(getColumnKey(filter)) && carriesValue(filter)));
 }
 
+/** Every `(source, identifier)` key the catalogue publishes, `displayable` or not. */
+function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<string> {
+    const keys = new Set<string>();
+
+    for (const group of catalogue) {
+        for (const field of group.searchFieldData ?? []) {
+            keys.add(getColumnKey({ fieldSource: group.filterFieldSource, fieldIdentifier: field.fieldIdentifier }));
+        }
+    }
+
+    return keys;
+}
+
+/**
+ * The columns a view is allowed to store: those naming a field the resource's catalogue publishes.
+ *
+ * A platform default set may show a column the filter-field catalogue does not carry — the keys
+ * inventory renders `CKI_ENABLED`, `CKI_CREATED` and `CK_ASSOCIATIONS`, none of which is a
+ * `FilterField`. Those columns are display-only. Core validates a stored view against that same
+ * catalogue and rejects a create or update naming anything outside it, so keeping them would make
+ * duplicating Standard fail outright rather than produce a view. They keep rendering under Standard,
+ * which stores nothing at all.
+ *
+ * Read from the raw groups rather than through {@link toCatalogueFields}, which keeps only the
+ * displayable ones: a column the *listing* cannot display is still a column the *API* accepts, and
+ * such a column is deliberately kept — see {@link toStoredColumnsKeepingUnavailable}. The two rules
+ * do not overlap.
+ *
+ * An empty catalogue is read as "has not arrived" rather than "publishes nothing", because emptying
+ * every view on a failed catalogue read is far worse than sending a column the API may reject.
+ */
+export function toStorableColumns(
+    columns: readonly ListViewColumnModel[],
+    catalogue: readonly SearchFieldDataByGroupDto[],
+): ListViewColumnModel[] {
+    const keys = catalogueKeys(catalogue);
+    if (keys.size === 0) return [...columns];
+
+    return columns.filter((column) => keys.has(getColumnKey(column)));
+}
+
 /**
  * A stored view's columns resolved against the live catalogue. The authoritative statement of how a
  * stored view is read; everything downstream — {@link ResolvedView}, the notice, the picker — states
@@ -316,13 +357,25 @@ export function toStoredColumnsKeepingUnavailable(
     return stored;
 }
 
-/** A create request for a new view holding the given slice. */
-export function toCreateRequest(name: string, resource: Resource, slice: ViewSlice, defaultView = false): ListViewRequestModel {
+/**
+ * A create request for a new view holding the given slice.
+ *
+ * The catalogue is required for the same reason {@link toUpdateRequest} requires it: both sieves run
+ * on every write, so no path can store a column the API would reject or a filter value the storage
+ * does not protect. See {@link toStorableColumns} and {@link toStorableFilters}.
+ */
+export function toCreateRequest(
+    name: string,
+    resource: Resource,
+    slice: ViewSlice,
+    catalogue: readonly SearchFieldDataByGroupDto[],
+    defaultView = false,
+): ListViewRequestModel {
     return {
         name,
         resource,
-        columns: toStoredColumns(slice.columns),
-        filters: slice.filters,
+        columns: toStorableColumns(toStoredColumns(slice.columns), catalogue),
+        filters: toStorableFilters(slice.filters, catalogue),
         sort: toStoredSort(slice.sort),
         defaultView,
     };
@@ -339,6 +392,9 @@ export function toCreateRequest(name: string, resource: Resource, slice: ViewSli
  * by a client that predates this rule, or by one that does not apply it — would have that plaintext
  * rewritten on every one of them. The whole row is filtered on the way out, the patch included, so
  * there is no update path left that can carry such a value. See {@link toStorableFilters}.
+ *
+ * The columns go through the same treatment for a different reason: a column the catalogue does not
+ * publish cannot be validated, so the API rejects the whole request. See {@link toStorableColumns}.
  */
 export function toUpdateRequest(
     view: ListViewModel,
@@ -354,5 +410,9 @@ export function toUpdateRequest(
         ...patch,
     };
 
-    return { ...row, filters: toStorableFilters(row.filters ?? [], catalogue) };
+    return {
+        ...row,
+        columns: toStorableColumns(row.columns ?? [], catalogue),
+        filters: toStorableFilters(row.filters ?? [], catalogue),
+    };
 }

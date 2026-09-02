@@ -237,10 +237,10 @@ export default function ViewTabs({
     const createFromCurrent = useCallback(
         (name: string) => {
             tabBeforeCreate.current = activeId;
-            dispatch(listViewActions.createView({ resource, view: toCreateRequest(name, resource, currentSlice) }));
+            dispatch(listViewActions.createView({ resource, view: toCreateRequest(name, resource, currentSlice, catalogue) }));
             setActiveId(PENDING_VIEW_UUID);
         },
-        [dispatch, resource, currentSlice, activeId],
+        [dispatch, resource, currentSlice, activeId, catalogue],
     );
 
     const patchActive = useCallback(
