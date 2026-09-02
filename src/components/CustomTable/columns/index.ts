@@ -1,4 +1,5 @@
 export { default as AttributeCell } from './AttributeCell';
+export { default as BooleanCell } from './BooleanCell';
 export { buildTableRows, renderCell, type BuildTableRowsOptions } from './buildTableRows';
 export { default as EmptyCell } from './EmptyCell';
 export { default as MultiValueCell } from './MultiValueCell';
