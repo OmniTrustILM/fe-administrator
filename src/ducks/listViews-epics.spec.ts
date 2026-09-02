@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { type Observable, firstValueFrom, of, throwError } from 'rxjs';
+import { Observable, firstValueFrom, of, throwError } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
 import { take, toArray } from 'rxjs/operators';
 import type { ListViewModel } from 'types/listViews';
@@ -46,7 +46,8 @@ function createDeps(overrides: Partial<ListViewApiStubs> = {}) {
     };
 }
 
-const [LIST, CREATE, UPDATE, DELETE] = [0, 1, 2, 3];
+// Every mutation shares one epic, because they share one rollback snapshot per resource.
+const [LIST, MUTATE] = [0, 1];
 
 type EpicUnderTest = (action$: unknown, state$: unknown, deps: unknown) => Observable<{ type: string; payload?: never }>;
 
@@ -70,15 +71,13 @@ describe('listViews', () => {
         expect(emitted).toMatchObject({ payload: { resource: Resource.Certificates } });
     });
 
-    test('a read is not paired with an alert; the strip simply shows Standard alone', async () => {
+    test('a failed read is surfaced, since an unread list is otherwise indistinguishable from an empty one', async () => {
         const deps = createDeps({ listViews: () => throwError(() => ajaxError(500, 'boom')) });
-        const emitted = await firstValueFrom(
-            (epics[LIST] as unknown as EpicUnderTest)(of(actions.listViews({ resource: Resource.Certificates })), of({}), deps).pipe(
-                toArray(),
-            ),
-        );
+        const [failure, alert] = await run(LIST, actions.listViews({ resource: Resource.Certificates }), deps, 2);
 
-        expect(emitted).toHaveLength(1);
+        expect(failure.type).toBe(actions.listViewsFailure.type);
+        expect(alert.type).toBe(alertActions.error.type);
+        expect(alert.payload).toContain('Failed to get saved views');
     });
 });
 
@@ -94,7 +93,7 @@ describe('createView', () => {
             },
         });
 
-        const [emitted] = await run(CREATE, actions.createView({ resource: Resource.Certificates, view: request }), deps, 1);
+        const [emitted] = await run(MUTATE, actions.createView({ resource: Resource.Certificates, view: request }), deps, 1);
 
         expect(sent).toEqual(request);
         expect(emitted).toEqual(actions.createViewSuccess({ resource: Resource.Certificates, view: stored }));
@@ -102,7 +101,7 @@ describe('createView', () => {
 
     test('a failure both rolls the strip back and surfaces the message', async () => {
         const deps = createDeps({ createView: () => throwError(() => ajaxError(409, 'Name already used')) });
-        const [failure, alert] = await run(CREATE, actions.createView({ resource: Resource.Certificates, view: request }), deps, 2);
+        const [failure, alert] = await run(MUTATE, actions.createView({ resource: Resource.Certificates, view: request }), deps, 2);
 
         expect(failure.type).toBe(actions.createViewFailure.type);
         expect(alert.type).toBe(alertActions.error.type);
@@ -123,7 +122,7 @@ describe('updateView', () => {
             },
         });
 
-        const [emitted] = await run(UPDATE, actions.updateView({ resource: Resource.Certificates, uuid: 'a', view: update }), deps, 1);
+        const [emitted] = await run(MUTATE, actions.updateView({ resource: Resource.Certificates, uuid: 'a', view: update }), deps, 1);
 
         expect(sent).toEqual({ uuid: 'a', listViewUpdateRequestDto: update });
         expect(emitted).toEqual(actions.updateViewSuccess({ resource: Resource.Certificates, view: stored }));
@@ -132,7 +131,7 @@ describe('updateView', () => {
     test('a failure rolls back and surfaces the message', async () => {
         const deps = createDeps({ editView: () => throwError(() => ajaxError(500, 'boom')) });
         const [failure, alert] = await run(
-            UPDATE,
+            MUTATE,
             actions.updateView({ resource: Resource.Certificates, uuid: 'a', view: update }),
             deps,
             2,
@@ -153,7 +152,7 @@ describe('deleteView', () => {
             },
         });
 
-        const [emitted] = await run(DELETE, actions.deleteView({ resource: Resource.Certificates, uuid: 'a' }), deps, 1);
+        const [emitted] = await run(MUTATE, actions.deleteView({ resource: Resource.Certificates, uuid: 'a' }), deps, 1);
 
         expect(sent).toEqual({ uuid: 'a' });
         expect(emitted).toEqual(actions.deleteViewSuccess({ resource: Resource.Certificates, uuid: 'a' }));
@@ -161,9 +160,81 @@ describe('deleteView', () => {
 
     test('a failure rolls back and surfaces the message', async () => {
         const deps = createDeps({ deleteView: () => throwError(() => ajaxError(404, 'Gone')) });
-        const [failure, alert] = await run(DELETE, actions.deleteView({ resource: Resource.Certificates, uuid: 'a' }), deps, 2);
+        const [failure, alert] = await run(MUTATE, actions.deleteView({ resource: Resource.Certificates, uuid: 'a' }), deps, 2);
 
         expect(failure.type).toBe(actions.deleteViewFailure.type);
         expect(alert.payload).toContain('Failed to delete the view');
+    });
+});
+
+describe('serialising the mutations', () => {
+    test('a create and the delete behind it do not run at once, whatever their kinds', async () => {
+        const log: string[] = [];
+
+        const answer = <T>(name: string, value: T): Observable<T> =>
+            new Observable<T>((subscriber) => {
+                log.push(`${name}:start`);
+                setTimeout(() => {
+                    log.push(`${name}:end`);
+                    subscriber.next(value);
+                    subscriber.complete();
+                }, 0);
+            });
+
+        const deps = createDeps({
+            createView: () => answer('create', stored),
+            deleteView: () => answer('delete', undefined),
+        });
+
+        const emitted = await firstValueFrom(
+            (epics[MUTATE] as unknown as EpicUnderTest)(
+                of(
+                    actions.createView({
+                        resource: Resource.Certificates,
+                        view: { name: 'Expiry watch', resource: Resource.Certificates, columns },
+                    }),
+                    actions.deleteView({ resource: Resource.Certificates, uuid: 'a' }),
+                ),
+                of({}),
+                deps,
+            ).pipe(take(2), toArray()),
+        );
+
+        // The reducer holds one rollback snapshot and one `isMutating` flag per resource, so the second
+        // write must not start until the first has settled — even though it is a different operation.
+        expect(log).toEqual(['create:start', 'create:end', 'delete:start', 'delete:end']);
+        expect(emitted.map((action) => action.type)).toEqual([actions.createViewSuccess.type, actions.deleteViewSuccess.type]);
+    });
+
+    test('two resources are not held up by one another', async () => {
+        const inFlight: string[] = [];
+
+        const deps = createDeps({
+            createView: (args) => {
+                const { name } = args.listViewRequestDto as { name: string };
+                return new Observable((subscriber) => {
+                    inFlight.push(name);
+                    // Never settles: a second resource must still be able to start.
+                    return () => subscriber.complete();
+                });
+            },
+        });
+
+        (epics[MUTATE] as unknown as EpicUnderTest)(
+            of(
+                actions.createView({
+                    resource: Resource.Certificates,
+                    view: { name: 'certificates', resource: Resource.Certificates, columns },
+                }),
+                actions.createView({
+                    resource: Resource.Cryptographickeys,
+                    view: { name: 'keys', resource: Resource.Cryptographickeys, columns },
+                }),
+            ),
+            of({}),
+            deps,
+        ).subscribe();
+
+        expect(inFlight).toEqual(['certificates', 'keys']);
     });
 });

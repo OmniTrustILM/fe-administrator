@@ -20,7 +20,9 @@ import {
     splitTabs,
     toCreateRequest,
     toStandardSlice,
+    toStorableFilters,
     toStoredColumns,
+    toStoredColumnsKeepingUnavailable,
     toStoredSort,
     toTabs,
     toUpdateRequest,
@@ -36,6 +38,16 @@ export type ViewTabsProps = Readonly<{
     resource: Resource;
     /** The column catalogue for the resource, i.e. `GET /v1/{resource}/search`. */
     catalogue: SearchFieldDataByGroupDto[];
+    /**
+     * Whether the catalogue read has settled. The strip waits for it, because until then every stored
+     * column resolves to nothing.
+     *
+     * A page that tracks its own fetch state should say so here. The fallback reads a non-empty
+     * catalogue as an arrived one, which cannot tell a read still in flight from a resource that
+     * publishes no filter fields at all — but a catalogue that arrived carrying only fields the
+     * listing cannot display is a settled read either way, and the strip must not hide behind it.
+     */
+    isCatalogueLoaded?: boolean;
     /** The platform default column set for this page, which is what the Standard tab shows. */
     standardColumns: ColumnDefinition[];
     /** The columns the table is showing, which a saved view may since have drifted from. */
@@ -59,8 +71,8 @@ export type ViewTabsProps = Readonly<{
 type PendingDialog = 'rename' | 'create' | 'delete';
 
 /**
- * The saved-view tab strip: one tab per view, above the filter widget because a view now contains
- * its filter rather than sitting inside it.
+ * The saved-view tab strip: one tab per view, above the filter widget because filters are part of
+ * each view.
  *
  * The first tab is Standard — the platform column set the page ships with. It is deliberately not a
  * stored row, which is what makes "always present and never removable" fall out of the model rather
@@ -69,6 +81,7 @@ type PendingDialog = 'rename' | 'create' | 'delete';
 export default function ViewTabs({
     resource,
     catalogue,
+    isCatalogueLoaded,
     standardColumns,
     columns,
     filters,
@@ -99,8 +112,13 @@ export default function ViewTabs({
      * indistinguishable from one still in flight, so the first optimistic create would be mistaken for
      * the initial result. Without the catalogue, every stored column resolves to nothing, so applying
      * a view would show the platform columns under that view's name and stay there.
+     *
+     * The catalogue half is gated on the read having settled and not on it having produced anything:
+     * a resource whose catalogue publishes only fields the listing cannot display resolves to no
+     * displayable fields at all, and gating on those would hide the strip for good — Standard needs
+     * none of them.
      */
-    const isReady = hasLoaded && fields.length > 0;
+    const isReady = hasLoaded && (isCatalogueLoaded ?? catalogue.length > 0);
 
     const activeView = useMemo(() => views.find((view) => view.uuid === activeId), [views, activeId]);
     const tabs = useMemo(() => toTabs(views), [views]);
@@ -134,7 +152,14 @@ export default function ViewTabs({
         return resolved.fellBackToStandard ? resolved.renderable : resolved.columns;
     }, [resolved, storedSlice]);
 
-    const currentSlice = useMemo<ViewSlice>(() => ({ columns, filters, sort }), [columns, filters, sort]);
+    /**
+     * The live filters minus the ones a view must not carry, which is what a view is compared against
+     * and what a save writes back. See {@link toStorableFilters}: a filter value typed against secret
+     * content would otherwise be copied into storage that does not protect it.
+     */
+    const storableFilters = useMemo(() => toStorableFilters(filters, catalogue), [filters, catalogue]);
+
+    const currentSlice = useMemo<ViewSlice>(() => ({ columns, filters: storableFilters, sort }), [columns, storableFilters, sort]);
     const isDirty = isSliceDirty(storedSlice, currentSlice);
 
     // `onApply` is typically an inline callback, so holding it in a ref keeps the load effect below
@@ -216,6 +241,32 @@ export default function ViewTabs({
         [dispatch, resource, activeView],
     );
 
+    // The view a delete took off the strip, and the tab the strip moved to instead. A delete is
+    // optimistic, so a failure puts the row back — and the tab under the cursor has to go back with
+    // it rather than leave the user on another view's rows under a message saying nothing was deleted.
+    const pendingDelete = useRef<{ uuid: string; fallbackId: string } | undefined>(undefined);
+
+    useEffect(() => {
+        const pending = pendingDelete.current;
+        if (!pending) return;
+
+        const restored = views.find((view) => view.uuid === pending.uuid);
+        if (!restored) {
+            // Gone once the mutation settles is a delete that succeeded; while it is in flight the row
+            // is only optimistically absent, and the rollback may still bring it back.
+            if (!isMutating) pendingDelete.current = undefined;
+            return;
+        }
+
+        pendingDelete.current = undefined;
+        // Only if the strip is still where the delete left it: a tab the user has since picked is
+        // their choice, not the fallback's.
+        if (activeId !== pending.fallbackId) return;
+
+        setActiveId(restored.uuid);
+        applyRef.current(toViewSlice(restored, fields, standardColumns));
+    }, [views, activeId, isMutating, fields, standardColumns]);
+
     const onDelete = useCallback(() => {
         if (!activeView) return;
 
@@ -225,6 +276,7 @@ export default function ViewTabs({
         // Never to an empty table: the pinned view if one survives, otherwise Standard.
         const remaining = views.filter((view) => view.uuid !== activeView.uuid);
         const fallback = resolveInitialViewId(remaining);
+        pendingDelete.current = { uuid: activeView.uuid, fallbackId: fallback };
         setActiveId(fallback);
         apply(remaining.find((view) => view.uuid === fallback));
     }, [dispatch, resource, activeView, views, apply]);
@@ -247,8 +299,14 @@ export default function ViewTabs({
             return;
         }
 
-        patchActive({ columns: toStoredColumns(columns), filters, sort: toStoredSort(sort) });
-    }, [activeView, patchActive, columns, filters, sort]);
+        // The stored columns this table cannot render go back in: the user never saw them, so saving a
+        // filter or an ordering is not the moment to drop them. The picker is where they are removed.
+        patchActive({
+            columns: toStoredColumnsKeepingUnavailable(columns, resolved?.columns ?? []),
+            filters: storableFilters,
+            sort: toStoredSort(sort),
+        });
+    }, [activeView, patchActive, columns, resolved, storableFilters, sort]);
 
     const takenNames = useMemo(() => views.map((view) => view.name), [views]);
 

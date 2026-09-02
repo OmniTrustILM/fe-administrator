@@ -1140,7 +1140,14 @@ function commentsTestReducer(state: CommentsTestState | undefined, action: Unkno
 export type ListViewsTestState = {
     byResource: Record<
         string,
-        { views: ListViewDto[]; isFetching: boolean; hasLoaded: boolean; isMutating: boolean; createdUuid?: string }
+        {
+            views: ListViewDto[];
+            isFetching: boolean;
+            hasLoaded: boolean;
+            isMutating: boolean;
+            createdUuid?: string;
+            rollback?: ListViewDto[];
+        }
     >;
     error?: string;
     dispatched: Array<{ type: string; payload?: unknown }>;
@@ -1171,10 +1178,11 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
         byResource: { ...recorded.byResource, [resource]: { ...entry, ...next } },
     });
 
-    // Only the create round trip is mirrored, and only as far as the strip can observe it: a tab has
-    // to appear the moment it is asked for, then follow the uuid the API gives it, and disappear again
-    // if the create fails. Everything else a mutation does to this slice is asserted against the real
-    // reducer in its own unit tests.
+    // Only the create and delete round trips are mirrored, and only as far as the strip can observe
+    // them: a tab has to appear the moment a create is asked for, follow the uuid the API gives it and
+    // disappear again if the create fails, and a deleted tab has to come back if the delete fails.
+    // Everything else a mutation does to this slice is asserted against the real reducer in its own
+    // unit tests.
     if (a.type === 'listViews/createView' && view) {
         return withEntry({ isMutating: true, views: [...entry.views, { ...view, uuid: PENDING_LIST_VIEW_UUID, resource } as ListViewDto] });
     }
@@ -1194,6 +1202,16 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
 
     if (a.type === 'listViews/createViewFailure') {
         return withEntry({ isMutating: false, views: entry.views.filter((each) => each.uuid !== PENDING_LIST_VIEW_UUID) });
+    }
+
+    const uuid = (a.payload as { uuid?: string } | undefined)?.uuid;
+
+    if (a.type === 'listViews/deleteView' && uuid) {
+        return withEntry({ isMutating: true, rollback: entry.views, views: entry.views.filter((each) => each.uuid !== uuid) });
+    }
+
+    if (a.type === 'listViews/deleteViewFailure') {
+        return withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined });
     }
 
     return recorded;

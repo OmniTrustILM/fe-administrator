@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import type { SearchFilterModel } from 'types/certificate';
 import type { ListViewColumnModel, ListViewModel, ViewSlice } from 'types/listViews';
 import {
+    AttributeContentType,
     FilterConditionOperator,
     FilterFieldSource,
     FilterFieldType,
@@ -57,6 +58,30 @@ const stateFilter: SearchFilterModel = {
     value: 'issued',
 };
 
+/** A catalogue that loaded successfully but publishes nothing the listing can show as a column. */
+const undisplayableCatalogue = [
+    {
+        filterFieldSource: FilterFieldSource.Property,
+        searchFieldData: [field('SIGNATURE', 'Signature', { displayable: false })],
+    },
+] as unknown as SearchFieldDataByGroupDto[];
+
+/** A catalogue whose custom source publishes a secret attribute, which the filter widget offers. */
+const secretCatalogue = [
+    ...catalogue,
+    {
+        filterFieldSource: FilterFieldSource.Custom,
+        searchFieldData: [field('vaultToken', 'Vault Token', { displayable: false, attributeContentType: AttributeContentType.Secret })],
+    },
+] as unknown as SearchFieldDataByGroupDto[];
+
+const secretFilter: SearchFilterModel = {
+    fieldSource: FilterFieldSource.Custom,
+    fieldIdentifier: 'vaultToken',
+    condition: FilterConditionOperator.Equals,
+    value: 'hunter2',
+};
+
 /** A view of the two columns the catalogue publishes, under a filter and an ordering of its own. */
 const expiryWatch = (overrides: Partial<ListViewModel> = {}): ListViewModel => ({
     uuid: 'view-1',
@@ -81,9 +106,11 @@ const audit = (overrides: Partial<ListViewModel> = {}): ListViewModel => ({
 
 type MountOptions = {
     views?: ListViewModel[];
+    fields?: SearchFieldDataByGroupDto[];
     isMutating?: boolean;
     hasLoaded?: boolean;
     withheldCatalogue?: boolean;
+    isCatalogueLoaded?: boolean;
     driftColumn?: ColumnDefinition;
     driftSort?: { fieldSource: FilterFieldSource; fieldIdentifier: string; direction: 'asc' | 'desc' };
     driftFilter?: SearchFilterModel;
@@ -91,9 +118,11 @@ type MountOptions = {
 
 const strip = ({
     views = [expiryWatch()],
+    fields = catalogue,
     isMutating,
     hasLoaded,
     withheldCatalogue,
+    isCatalogueLoaded,
     driftColumn,
     driftSort,
     driftFilter,
@@ -101,11 +130,12 @@ const strip = ({
     <ViewTabsWithStore
         resource={Resource.Certificates}
         views={views}
-        catalogue={catalogue}
+        catalogue={fields}
         standardColumns={standardColumns}
         isMutating={isMutating}
         hasLoaded={hasLoaded}
         withheldCatalogue={withheldCatalogue}
+        isCatalogueLoaded={isCatalogueLoaded}
         driftColumn={driftColumn}
         driftSort={driftSort}
         driftFilter={driftFilter}
@@ -489,7 +519,6 @@ test.describe('ViewTabs', () => {
         await page.getByTestId('view-tabs-create-input').fill('Everything');
         await page.getByTestId('view-tabs-create').getByRole('button', { name: 'Create view' }).click();
 
-        // The tab appears the moment it is asked for, under the uuid the optimistic row carries.
         await expect(page.getByTestId('view-tabs-tab-pending-view')).toContainText('Everything');
         await expect(page.getByTestId('view-tabs-tab-pending-view')).toHaveAttribute('aria-selected', 'true');
 
@@ -587,6 +616,83 @@ test.describe('ViewTabs', () => {
         // The rollback takes the optimistic row away, so the strip has to go back to the tab the create
         // started from rather than leave every tab unselected.
         await expect(page.getByTestId('view-tabs-tab-pending-view')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+    });
+
+    test('opens on a catalogue that loaded carrying nothing the listing can show', async ({ mount, page }) => {
+        // A settled read that published only non-displayable fields is not a read still in flight, and
+        // Standard needs no catalogue field of its own — gating on the displayable ones would hide the
+        // strip for good on such a resource.
+        await mount(strip({ fields: undisplayableCatalogue, views: [] }));
+
+        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-new')).toBeEnabled();
+    });
+
+    test('keeps a filter on secret content out of the view it saves', async ({ mount, page }) => {
+        await mount(strip({ fields: secretCatalogue, views: [], driftFilter: secretFilter }));
+
+        await page.getByTestId('drift-filter').click();
+
+        // A view is stored verbatim by Core and read back by every client that opens it, so the value
+        // must not reach the request — and, since the view cannot hold it, it is not drift either.
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
+
+        await page.getByTestId('view-tabs-new').click();
+        await page.getByTestId('view-tabs-create-input').click();
+        await page.getByTestId('view-tabs-create-input').fill('Everything');
+        await page.getByTestId('view-tabs-create').getByRole('button', { name: 'Create view' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+        const action = await lastDispatched(page, 'listViews/createView');
+        expect(action?.payload).toMatchObject({ view: { filters: [] } });
+        expect(JSON.stringify(action)).not.toContain('hunter2');
+    });
+
+    test('keeps a column it cannot show when the ordering alone is saved', async ({ mount, page }) => {
+        const stale = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+        });
+        await mount(
+            strip({
+                views: [stale],
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+            }),
+        );
+
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        // The table never showed the column, so the user was never offered the choice to drop it. Only
+        // the picker removes one, because it is the only place one is shown.
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toMatchObject({
+            view: {
+                columns: [
+                    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+                    { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired' },
+                ],
+            },
+        });
+    });
+
+    test('puts the tab back when a delete fails, and the rows with it', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Delete view' }).click();
+        await page.getByTestId('view-tabs-delete').getByRole('button', { name: 'Delete' }).click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
+
+        await page.getByTestId('simulate-delete-failure').click();
+
+        // The row is back, so the tab has to come back with it: reporting a failed delete while leaving
+        // the user on another view's rows says the deletion happened.
         await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
         expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
     });

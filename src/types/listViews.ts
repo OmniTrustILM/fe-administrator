@@ -27,15 +27,7 @@ export interface ViewSlice {
     sort?: ColumnSort;
 }
 
-/**
- * A stored view resolved against the live column catalogue.
- *
- * A view names `(fieldSource, fieldIdentifier)` pairs, so a deleted custom attribute — or a connector
- * that renames a metadata identifier — leaves a column that resolves to nothing. The API resolves the
- * same pairs on read and omits the ones it cannot offer, so what arrives is a view already shortened;
- * a view built entirely on since-deleted fields arrives with no columns at all, which is the case
- * `fellBackToStandard` exists for.
- */
+/** A stored view resolved against the live column catalogue. See `resolveView` for the rules. */
 export interface ResolvedView {
     /** Every stored column in its stored order, available or not. What the picker edits. */
     columns: PickerColumn[];

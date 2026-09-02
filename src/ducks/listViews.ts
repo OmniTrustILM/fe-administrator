@@ -33,6 +33,16 @@ export interface ResourceViews {
     rollback?: ListViewModel[];
     /** The uuid the last create was given, so the strip can follow the tab it opened. */
     createdUuid?: string;
+    /**
+     * Counts the mutation boundaries this resource has crossed: one step when a write starts, another
+     * when it settles. It is what lets a list response be dated against the writes around it.
+     */
+    mutationEpoch: number;
+    /**
+     * The epoch the read now in flight was issued under, or nothing when no read is in flight. Reads
+     * are superseded rather than queued — the epic runs them under `switchMap` — so one is enough.
+     */
+    readEpoch?: number;
 }
 
 export type State = {
@@ -49,6 +59,7 @@ const EMPTY_RESOURCE_VIEWS: ResourceViews = {
     isFetching: false,
     hasLoaded: false,
     isMutating: false,
+    mutationEpoch: 0,
 };
 
 function forResource(state: State, resource: Resource): ResourceViews {
@@ -73,6 +84,7 @@ function beginMutation(state: State, resource: Resource): ResourceViews {
     entry.rollback = entry.views.map((view) => ({ ...view }));
     entry.isMutating = true;
     entry.createdUuid = undefined;
+    entry.mutationEpoch += 1;
     state.error = undefined;
     return entry;
 }
@@ -80,6 +92,7 @@ function beginMutation(state: State, resource: Resource): ResourceViews {
 function endMutation(entry: ResourceViews): void {
     entry.isMutating = false;
     entry.rollback = undefined;
+    entry.mutationEpoch += 1;
 }
 
 /** Restores the snapshot the failed mutation was applied over. */
@@ -103,6 +116,7 @@ export const slice = createSlice({
         listViews: (state, action: PayloadAction<{ resource: Resource }>) => {
             const entry = forResource(state, action.payload.resource);
             entry.isFetching = true;
+            entry.readEpoch = entry.mutationEpoch;
             state.error = undefined;
         },
 
@@ -111,10 +125,20 @@ export const slice = createSlice({
             entry.isFetching = false;
             entry.hasLoaded = true;
 
-            // A read that was in flight while a write started predates that write, so committing it
-            // would drop the optimistic row — and leave `rollback` holding a snapshot the read has
-            // since replaced, so a failure would roll back to the wrong list too.
-            if (entry.isMutating) return;
+            const issuedUnder = entry.readEpoch;
+            entry.readEpoch = undefined;
+
+            // A read is committed only if no write started or settled while it was in flight. Rejecting
+            // it merely while `isMutating` holds is not enough: a write that started after the read and
+            // settled before it would let the older list land on top of a confirmed change, and the
+            // next full-row edit would then send those stale rows back to Core. A read that overlapped
+            // a write the other way round would drop the optimistic row instead, and leave `rollback`
+            // describing a list the read has since replaced.
+            //
+            // No recorded epoch means the request this answers is not one this slice saw — the state
+            // was reset under it, or the views were seeded directly — and there is nothing to date it
+            // against.
+            if (entry.isMutating || (issuedUnder !== undefined && issuedUnder !== entry.mutationEpoch)) return;
 
             entry.views = action.payload.views;
         },

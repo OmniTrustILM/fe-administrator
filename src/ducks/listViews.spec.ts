@@ -30,7 +30,13 @@ const certificates = (state: State) => selectors.resourceViews(Resource.Certific
 
 describe('reading the saved views', () => {
     test('a resource with nothing stored reads as an empty strip rather than undefined', () => {
-        expect(certificates(initialState)).toEqual({ views: [], isFetching: false, hasLoaded: false, isMutating: false });
+        expect(certificates(initialState)).toEqual({
+            views: [],
+            isFetching: false,
+            hasLoaded: false,
+            isMutating: false,
+            mutationEpoch: 0,
+        });
     });
 
     test('a read reports itself in flight and then settles on the views', () => {
@@ -68,6 +74,50 @@ describe('reading the saved views', () => {
         expect(raced.byResource[Resource.Certificates]?.views.map((v) => v.uuid)).toEqual(['a', PENDING_VIEW_UUID]);
         expect(certificates(raced).hasLoaded).toBe(true);
         expect(certificates(raced).isFetching).toBe(false);
+    });
+
+    test('a read that started before a write is discarded even once that write has settled', () => {
+        // The write settles first, so `isMutating` is already false when the older list lands. Nothing
+        // but the epoch it was issued under can tell that it predates a confirmed change — and
+        // committing it would put the pre-update rows back, ready to be sent to Core by the next
+        // full-row edit.
+        const reading = reduce(listed([view('a', 'One')]), actions.listViews({ resource: Resource.Certificates }));
+
+        const written = reduceAll(
+            [
+                actions.updateView({ resource: Resource.Certificates, uuid: 'a', view: { name: 'Renamed', columns } }),
+                actions.updateViewSuccess({ resource: Resource.Certificates, view: view('a', 'Renamed') }),
+            ],
+            reading,
+        );
+
+        expect(certificates(written).isMutating).toBe(false);
+
+        const raced = reduce(written, actions.listViewsSuccess({ resource: Resource.Certificates, views: [view('a', 'One')] }));
+
+        expect(certificates(raced).views.map((v) => v.name)).toEqual(['Renamed']);
+        expect(certificates(raced).hasLoaded).toBe(true);
+        expect(certificates(raced).isFetching).toBe(false);
+    });
+
+    test('a read issued after the last write settled is committed', () => {
+        const written = reduceAll(
+            [
+                actions.updateView({ resource: Resource.Certificates, uuid: 'a', view: { name: 'Renamed', columns } }),
+                actions.updateViewSuccess({ resource: Resource.Certificates, view: view('a', 'Renamed') }),
+            ],
+            listed([view('a', 'One')]),
+        );
+
+        const reread = reduceAll(
+            [
+                actions.listViews({ resource: Resource.Certificates }),
+                actions.listViewsSuccess({ resource: Resource.Certificates, views: [view('a', 'Renamed'), view('b', 'Two')] }),
+            ],
+            written,
+        );
+
+        expect(certificates(reread).views.map((v) => v.uuid)).toEqual(['a', 'b']);
     });
 
     test('a failed read stops being in flight and reports the error', () => {

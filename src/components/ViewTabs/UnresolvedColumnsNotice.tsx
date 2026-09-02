@@ -27,12 +27,8 @@ const list = (columns: PickerColumn[]): string => {
  * explanation, and the user's next move is to hunt for a field that is not there. Nothing is deleted
  * server-side either — the stored view keeps the column until someone saves over it.
  *
- * Two shapes reach this, and only one of them can be named. `GET /v1/listViews` resolves the stored
- * identifiers against the resource's own catalogue and omits what it cannot offer, so a field that was
- * deleted never arrives and a view built entirely on deleted fields arrives with no columns at all —
- * hence a fallback that has nothing to name. A column the *listing* cannot display (a secret's
- * content, an encrypted value) does arrive: the catalogue the API validates views against carries no
- * notion of `displayable`, so such a column can be stored by any client and comes back intact.
+ * A fallback can reach this with nothing to name, so the two are worded separately. Which cases
+ * arrive, and why, is written down beside `resolveView`.
  */
 export default function UnresolvedColumnsNotice({ unavailable, storedCount, fellBackToStandard, onReview, dataTestId }: Props) {
     if (unavailable.length === 0 && !fellBackToStandard) return null;

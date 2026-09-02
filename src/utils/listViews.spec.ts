@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { ListViewModel } from 'types/listViews';
 import { SortDirection } from 'types/listViews';
-import { FilterConditionOperator, FilterFieldSource, FilterFieldType, Resource } from 'types/openapi';
+import {
+    AttributeContentType,
+    FilterConditionOperator,
+    FilterFieldSource,
+    FilterFieldType,
+    Resource,
+    type SearchFieldDataByGroupDto,
+} from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import {
     MAX_VISIBLE_TABS,
@@ -15,7 +22,9 @@ import {
     toColumnSort,
     toCreateRequest,
     toStandardSlice,
+    toStorableFilters,
     toStoredColumns,
+    toStoredColumnsKeepingUnavailable,
     toStoredSort,
     toTabs,
     toUpdateRequest,
@@ -357,5 +366,116 @@ describe('toUpdateRequest', () => {
 
         expect(renamed.name).toBe('Expiry');
         expect(renamed.columns).toEqual(stored.columns);
+    });
+});
+
+describe('toStorableFilters', () => {
+    const catalogue = [
+        {
+            filterFieldSource: FilterFieldSource.Property,
+            searchFieldData: [{ fieldIdentifier: 'COMMON_NAME', fieldLabel: 'Common Name', type: FilterFieldType.String, conditions: [] }],
+        },
+        {
+            filterFieldSource: FilterFieldSource.Custom,
+            searchFieldData: [
+                {
+                    fieldIdentifier: 'vaultToken',
+                    fieldLabel: 'Vault Token',
+                    type: FilterFieldType.String,
+                    conditions: [],
+                    attributeContentType: AttributeContentType.Secret,
+                },
+                {
+                    fieldIdentifier: 'cost_centre',
+                    fieldLabel: 'Cost centre',
+                    type: FilterFieldType.String,
+                    conditions: [],
+                    attributeContentType: AttributeContentType.String,
+                },
+            ],
+        },
+    ] as unknown as SearchFieldDataByGroupDto[];
+
+    const filter = (source: FilterFieldSource, identifier: string, value?: unknown) => ({
+        fieldSource: source,
+        fieldIdentifier: identifier,
+        condition: FilterConditionOperator.Equals,
+        ...(value === undefined ? {} : { value }),
+    });
+
+    it('drops a filter carrying a value typed against secret content', () => {
+        const kept = toStorableFilters(
+            [filter(FilterFieldSource.Property, 'COMMON_NAME', 'acme'), filter(FilterFieldSource.Custom, 'vaultToken', 'hunter2')],
+            catalogue,
+        );
+
+        expect(kept).toEqual([filter(FilterFieldSource.Property, 'COMMON_NAME', 'acme')]);
+    });
+
+    it('keeps a presence-only condition on the same field, which carries nothing to leak', () => {
+        const kept = toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken')], catalogue);
+
+        expect(kept).toEqual([filter(FilterFieldSource.Custom, 'vaultToken')]);
+    });
+
+    it('treats an empty value as no value', () => {
+        expect(toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken', '')], catalogue)).toHaveLength(1);
+        expect(toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken', [])], catalogue)).toHaveLength(1);
+        expect(toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken', ['hunter2'])], catalogue)).toHaveLength(0);
+    });
+
+    it('keys on the source as well as the identifier, so a property of the same name is untouched', () => {
+        const kept = toStorableFilters([filter(FilterFieldSource.Property, 'vaultToken', 'not a secret here')], catalogue);
+
+        expect(kept).toHaveLength(1);
+    });
+
+    it('leaves a catalogue with no secret field alone', () => {
+        const filters = [filter(FilterFieldSource.Custom, 'cost_centre', '42')];
+
+        expect(toStorableFilters(filters, [catalogue[0]])).toEqual(filters);
+    });
+});
+
+describe('toStoredColumnsKeepingUnavailable', () => {
+    const rendered: ColumnDefinition[] = [
+        { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name' },
+        { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'STATUS', catalogueLabel: 'Status' },
+    ];
+
+    it('puts an unavailable stored column back at the position it was stored at', () => {
+        const resolved = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name', available: true },
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', catalogueLabel: 'retired', available: false },
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'STATUS', catalogueLabel: 'Status', available: true },
+        ];
+
+        expect(toStoredColumnsKeepingUnavailable(rendered, resolved)).toEqual([
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired' },
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'STATUS' },
+        ]);
+    });
+
+    it("carries an unavailable column's heading override with it", () => {
+        const resolved = [
+            {
+                fieldSource: FilterFieldSource.Custom,
+                fieldIdentifier: 'retired',
+                catalogueLabel: 'retired',
+                label: 'Retired at',
+                available: false,
+            },
+        ];
+
+        expect(toStoredColumnsKeepingUnavailable([], resolved)).toEqual([
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', label: 'Retired at' },
+        ]);
+    });
+
+    it('is the plain stored shape when everything resolved', () => {
+        const resolved = rendered.map((column) => ({ ...column, available: true }));
+
+        expect(toStoredColumnsKeepingUnavailable(rendered, resolved)).toEqual(toStoredColumns(rendered));
     });
 });

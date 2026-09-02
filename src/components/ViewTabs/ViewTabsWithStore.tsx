@@ -22,6 +22,8 @@ type Props = Readonly<{
     hasLoaded?: boolean;
     /** Withholds the catalogue until released, so a test can make it land after the views did. */
     withheldCatalogue?: boolean;
+    /** Passed straight through, so a test can say the catalogue read has settled on nothing. */
+    isCatalogueLoaded?: boolean;
     /** What the drift buttons below change, i.e. an edit the page made outside the view. */
     driftColumn?: ColumnDefinition;
     driftSort?: ColumnSort;
@@ -51,6 +53,7 @@ export default function ViewTabsWithStore({
     isMutating = false,
     hasLoaded = true,
     withheldCatalogue = false,
+    isCatalogueLoaded,
     driftColumn,
     driftSort,
     driftFilter,
@@ -73,6 +76,7 @@ export default function ViewTabsWithStore({
                 <ViewTabs
                     resource={resource}
                     catalogue={isCatalogueReleased ? catalogue : []}
+                    isCatalogueLoaded={isCatalogueReleased ? isCatalogueLoaded : false}
                     standardColumns={standardColumns}
                     columns={slice.columns}
                     filters={slice.filters}
@@ -117,6 +121,19 @@ export default function ViewTabsWithStore({
                     }
                 >
                     fail the create
+                </button>
+
+                <button
+                    type="button"
+                    data-testid="simulate-delete-failure"
+                    onClick={() =>
+                        store.dispatch({
+                            type: 'listViews/deleteViewFailure',
+                            payload: { resource, error: 'Could not be deleted' },
+                        })
+                    }
+                >
+                    fail the delete
                 </button>
 
                 <button

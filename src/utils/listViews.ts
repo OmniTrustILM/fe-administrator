@@ -9,7 +9,7 @@ import {
     SortDirection,
     type ViewSlice,
 } from 'types/listViews';
-import type { Resource } from 'types/openapi';
+import { AttributeContentType, type Resource, type SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition, PickerColumn, SourcedCatalogueField } from 'types/tableColumns';
 import { resolveColumns } from './columnPicker';
 import { type ColumnSort, getColumnHeading, getColumnKey, getSortKey } from './tableColumns';
@@ -151,8 +151,66 @@ export function toStoredColumns(columns: readonly ColumnDefinition[]): ListViewC
     }));
 }
 
+/** Whether a filter carries a value at all, as opposed to testing only for presence or emptiness. */
+function carriesValue(filter: SearchFilterModel): boolean {
+    if (filter.value === undefined || filter.value === null || filter.value === '') return false;
+    return !(Array.isArray(filter.value) && filter.value.length === 0);
+}
+
 /**
- * A stored view's columns resolved against the live catalogue.
+ * The `(source, identifier)` keys of the catalogue fields whose content the platform holds as a
+ * secret.
+ *
+ * Read from the raw groups rather than from {@link toCatalogueFields}, which keeps only the
+ * displayable ones: `displayable` is the flag that keeps secret content out of a column, so a secret
+ * field is exactly what that subset no longer contains — while the filter widget still offers it.
+ */
+function secretFieldKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<string> {
+    const keys = new Set<string>();
+
+    for (const group of catalogue) {
+        for (const field of group.searchFieldData ?? []) {
+            if (field.attributeContentType === AttributeContentType.Secret) {
+                keys.add(getColumnKey({ fieldSource: group.filterFieldSource, fieldIdentifier: field.fieldIdentifier }));
+            }
+        }
+    }
+
+    return keys;
+}
+
+/**
+ * The filters a view is allowed to store: every live filter except one carrying a value typed against
+ * a field whose content is a secret.
+ *
+ * A saved view is held verbatim by Core and read back by every client that opens it, so such a value
+ * would become a durable plaintext copy of secret material outside the storage that protects it. The
+ * filter still applies to the table in front of the user; it is only kept out of what is written
+ * back. A presence-only condition on the same field survives, because it carries nothing to leak.
+ */
+export function toStorableFilters(
+    filters: readonly SearchFilterModel[],
+    catalogue: readonly SearchFieldDataByGroupDto[],
+): SearchFilterModel[] {
+    const secret = secretFieldKeys(catalogue);
+    if (secret.size === 0) return [...filters];
+
+    return filters.filter((filter) => !(secret.has(getColumnKey(filter)) && carriesValue(filter)));
+}
+
+/**
+ * A stored view's columns resolved against the live catalogue. The authoritative statement of how a
+ * stored view is read; everything downstream — {@link ResolvedView}, the notice, the picker — states
+ * only what it does with the result.
+ *
+ * A view names `(fieldSource, fieldIdentifier)` pairs, and two different things can go wrong with
+ * one. A field that has been deleted never arrives: `GET /v1/listViews` resolves the stored pairs
+ * against the resource's own catalogue and omits what it cannot offer, so a view built entirely on
+ * deleted fields arrives with no columns at all — which is the case `fellBackToStandard` exists for,
+ * and the only reachable one, since nothing is left to name. A column the *listing* cannot display —
+ * a secret's content, an encrypted value — does arrive intact, because the catalogue the API
+ * validates a view against carries no notion of `displayable`; it is kept in place and marked
+ * unavailable rather than dropped, so it can be named and reviewed instead of vanishing.
  *
  * @param standardColumns the platform default set, which both supplies columns the filter-field
  * catalogue does not publish and is what an entirely unresolved view falls back to.
@@ -174,10 +232,7 @@ export function resolveView(
     const columns = resolveColumns(asDefinitions, [...fields], standardColumns);
     const available = columns.filter((column) => column.available);
 
-    // Nothing renderable falls back to the platform set rather than to a table with no columns at
-    // all. The reachable case is not a stored column failing to resolve here: the API omits a column
-    // whose field has left the catalogue, so a view built entirely on since-deleted attributes
-    // arrives with `columns: []` — which resolves to nothing without anything looking wrong.
+    // Nothing renderable falls back to the platform set rather than to a table with no columns at all.
     const fellBackToStandard = available.length === 0;
 
     return {
@@ -227,9 +282,9 @@ function sortSignature(sort: ColumnSort | undefined): string {
 /**
  * Whether the table has drifted from the view behind the active tab.
  *
- * Sorting and filtering are edits to the view under D7, so both mark the tab and offer Revert / Save
- * to view. Never autosaved: a view is the thing a user comes back to, and a stray click on a header
- * should not quietly redefine "Expiry watch".
+ * Sorting and filtering are edits to the view, so both mark the tab and offer Revert / Save to view.
+ * Never autosaved: a view is the thing a user comes back to, and a stray click on a header should not
+ * quietly redefine "Expiry watch".
  */
 export function isSliceDirty(stored: ViewSlice, current: ViewSlice): boolean {
     return (
@@ -237,6 +292,28 @@ export function isSliceDirty(stored: ViewSlice, current: ViewSlice): boolean {
         filterSignature(stored.filters) !== filterSignature(current.filters) ||
         sortSignature(stored.sort) !== sortSignature(current.sort)
     );
+}
+
+/**
+ * The stored column list a full-row save carries: what the table renders, with the stored columns it
+ * cannot render put back at the positions they were stored at.
+ *
+ * Saving an ordering or a filter must not drop a column the listing cannot display. The table never
+ * showed it, so the user was never offered the choice — the column picker is the one place such a
+ * column is removed, because it is the one place it is shown.
+ */
+export function toStoredColumnsKeepingUnavailable(
+    rendered: readonly ColumnDefinition[],
+    resolved: readonly PickerColumn[],
+): ListViewColumnModel[] {
+    const stored = toStoredColumns(rendered);
+
+    resolved.forEach((column, index) => {
+        if (column.available) return;
+        stored.splice(Math.min(index, stored.length), 0, ...toStoredColumns([column]));
+    });
+
+    return stored;
 }
 
 /** A create request for a new view holding the given slice. */
