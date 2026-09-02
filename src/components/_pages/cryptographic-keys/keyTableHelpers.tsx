@@ -1,7 +1,6 @@
-import type React from 'react';
 import { Link } from 'react-router';
 import Badge from 'components/Badge';
-import { renderCell, type CellRegistry } from 'components/CustomTable/columns';
+import type { CellRegistry } from 'components/CustomTable/columns';
 import MultiValueCell from 'components/CustomTable/columns/MultiValueCell';
 import type { CryptographicKeyResponseModel } from 'types/cryptographic-keys';
 import type { EnumItemModel } from 'types/enums';
@@ -15,6 +14,7 @@ type PlatformEnumMap = { [key: string]: EnumItemModel } | undefined;
 
 export interface BuildKeyRowColumnsOpts {
     keyTypeEnum: PlatformEnumMap;
+    keyUsageEnum: PlatformEnumMap;
     getEnumLabel: (enumMap: PlatformEnumMap, key: string) => string;
     dateFormatter: (date: string | Date) => string;
 }
@@ -114,6 +114,7 @@ function buildGroupValues(item: CryptographicKeyResponseModel): ListCellValue[] 
  */
 export function buildKeyCellRegistry({
     keyTypeEnum,
+    keyUsageEnum,
     getEnumLabel,
     dateFormatter,
 }: BuildKeyRowColumnsOpts): CellRegistry<CryptographicKeyResponseModel> {
@@ -147,18 +148,11 @@ export function buildKeyCellRegistry({
         'property:CK_TOKEN_INSTANCE': (item) =>
             item.tokenInstanceName ? <Link to={`../tokens/detail/${item.tokenInstanceUuid}`}>{item.tokenInstanceName}</Link> : null,
         'property:CK_ASSOCIATIONS': (item) => item.associations?.toString(),
+        // Beyond the default set: catalogued and renderable, so the picker offers it. Multi-valued, so
+        // it reads like the groups column rather than as a joined string.
+        'property:CKI_USAGE': (item) => {
+            const usages = (item.usage ?? []).map((usage) => ({ label: getEnumLabel(keyUsageEnum, usage) }));
+            return usages.length > 0 ? <MultiValueCell values={usages} dataTestId="cell-key-usage" /> : null;
+        },
     };
-}
-
-/**
- * The cells of one key row, rendered from the column definitions rather than assembled as a
- * positional array — which is what lets a column set chosen at runtime render at all.
- */
-export function buildKeyRowColumns(
-    item: CryptographicKeyResponseModel,
-    opts: BuildKeyRowColumnsOpts,
-    columns: ColumnDefinition[] = KEY_COLUMNS,
-): React.ReactNode[] {
-    const registry = buildKeyCellRegistry(opts);
-    return columns.map((column) => renderCell(item, column, registry));
 }

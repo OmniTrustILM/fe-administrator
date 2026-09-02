@@ -1,4 +1,3 @@
-import type { TableDataRow, TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
 
 import type { WidgetButtonProps } from 'components/WidgetButtons';
@@ -13,12 +12,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
 import type { SearchRequestModel } from 'types/certificate';
-import { KeyCompromiseReason, type KeyUsage, PlatformEnum } from 'types/openapi';
+import type { CryptographicKeyResponseModel } from 'types/cryptographic-keys';
+import { KeyCompromiseReason, type KeyUsage, PlatformEnum, Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { dateFormatter } from 'utils/dateUtil';
 import KeyUsageSelect from '../KeyUsageSelect';
 import { buildKeyCellRegistry, KEY_COLUMNS } from '../keyTableHelpers';
-import { buildTableRows } from 'components/CustomTable/columns';
 import { EnumColumnDescription } from 'components/EnumDescription';
 import CryptographicKeyForm from '../form';
 
@@ -130,110 +129,34 @@ function CryptographicKeyList() {
         },
     ];
 
-    const cryptographicKeysTableHeaders: TableHeader[] = useMemo(
-        () => [
-            {
-                id: 'status',
-                content: 'Status',
-                align: 'center',
-                width: '1%',
-            },
-            {
-                id: 'state',
-                content: 'State',
-                align: 'center',
-                width: '1%',
-            },
-            {
-                id: 'keyName',
-                content: 'Name',
-                width: '15%',
-            },
-            {
-                id: 'type',
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Type
-                        <EnumColumnDescription platformEnum={PlatformEnum.KeyType} title="Type" />
-                    </span>
-                ),
-                width: '15%',
-            },
-            {
-                id: 'algorithm',
-                align: 'center',
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Algorithm
-                        <EnumColumnDescription platformEnum={PlatformEnum.KeyAlgorithm} title="Algorithm" />
-                    </span>
-                ),
-                width: '15%',
-            },
-            {
-                id: 'size',
-                align: 'center',
-                content: 'Size',
-                width: '15%',
-            },
-            {
-                id: 'format',
-                align: 'center',
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        Format
-                        <EnumColumnDescription platformEnum={PlatformEnum.KeyFormat} title="Format" />
-                    </span>
-                ),
-                width: '15%',
-            },
-            {
-                id: 'creationTime',
-                align: 'center',
-                content: 'Creation Date',
-                width: '15%',
-            },
-            {
-                id: 'group',
-                align: 'center',
-                content: 'Group',
-                width: '15%',
-            },
-            {
-                id: 'owner',
-                align: 'center',
-                content: 'Owner',
-                width: '15%',
-            },
-            {
-                id: 'tokenProfile',
-                align: 'center',
-                content: 'Token Profile',
-                width: '15%',
-            },
-            {
-                id: 'tokenInstance',
-                align: 'center',
-                content: 'Token Instance',
-                width: '15%',
-            },
-            {
-                id: 'associations',
-                align: 'center',
-                content: 'Associations',
-                width: '15%',
-            },
-        ],
+    const registry = useMemo(
+        () => buildKeyCellRegistry({ keyTypeEnum, keyUsageEnum, getEnumLabel, dateFormatter }),
+        [keyTypeEnum, keyUsageEnum],
+    );
+
+    // The enum legends ride beside their headings rather than inside them: a sortable heading is
+    // itself a button, and a toggletip nested in one would be a control inside a control.
+    const headerInfo = useMemo(
+        () => ({
+            'property:CKI_TYPE': <EnumColumnDescription platformEnum={PlatformEnum.KeyType} title="Type" />,
+            'property:CKI_CRYPTOGRAPHIC_ALGORITHM': <EnumColumnDescription platformEnum={PlatformEnum.KeyAlgorithm} title="Algorithm" />,
+            'property:CKI_FORMAT': <EnumColumnDescription platformEnum={PlatformEnum.KeyFormat} title="Format" />,
+        }),
         [],
     );
 
-    const cryptographicKeysList: TableDataRow[] = useMemo(
-        () =>
-            buildTableRows(cryptographicKeys, KEY_COLUMNS, {
-                getRowId: (cryptographicKey) => cryptographicKey.uuid,
-                registry: buildKeyCellRegistry({ keyTypeEnum, getEnumLabel, dateFormatter }),
-            }),
-        [cryptographicKeys, keyTypeEnum],
+    // Memoised because the host takes the config apart and refetches when its parts change.
+    const configurableColumns = useMemo(
+        () => ({
+            resource: Resource.Keys,
+            standardColumns: KEY_COLUMNS,
+            rows: cryptographicKeys,
+            getRowId: (item: CryptographicKeyResponseModel) => item.uuid,
+            registry,
+            headerInfo,
+            resourceLabel: 'Keys',
+        }),
+        [cryptographicKeys, registry, headerInfo],
     );
 
     const optionForCompromise = useMemo(() => {
@@ -265,8 +188,7 @@ function CryptographicKeyList() {
                     [],
                 )}
                 additionalButtons={buttons}
-                headers={cryptographicKeysTableHeaders}
-                data={cryptographicKeysList}
+                configurableColumns={configurableColumns}
                 isBusy={isBusy}
                 title="List of Keys"
                 pageWidgetLockName={LockWidgetNameEnum.ListOfKeys}
