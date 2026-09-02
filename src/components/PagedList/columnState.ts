@@ -1,7 +1,9 @@
 import type { CellRegistry } from 'components/CustomTable/columns';
 import type { SortDirection } from 'components/CustomTable/types';
+import type { SearchRequestModel } from 'types/certificate';
 import type { ColumnDefinition } from 'types/tableColumns';
-import { type ColumnSort, getColumnKey, getSortKey, parseColumnKey } from 'utils/tableColumns';
+import { toStoredSort } from 'utils/listViews';
+import { type ColumnSort, getColumnKey, getSortKey, parseColumnKey, toRequestColumns } from 'utils/tableColumns';
 
 /**
  * The ordering a header click asks for, or `undefined` when the click cannot become one.
@@ -44,4 +46,23 @@ export function isSameSort(a: ColumnSort | undefined, b: ColumnSort | undefined)
  */
 export function getRenderableProperties<TRow>(registry: CellRegistry<TRow> | undefined): ReadonlySet<string> {
     return new Set(Object.keys(registry ?? {}));
+}
+
+/**
+ * The listing request for a page state.
+ *
+ * Both new fields are spread in only when they carry something, which is the Epic's compatibility
+ * guarantee: with no columns and no ordering the request is byte-identical to one written before the
+ * contract carried either field, so an unmigrated caller and a migrated one with nothing selected
+ * send the same bytes.
+ */
+export function buildListRequest(base: SearchRequestModel, columns?: readonly ColumnDefinition[], sort?: ColumnSort): SearchRequestModel {
+    const requestColumns = columns ? toRequestColumns(columns) : undefined;
+    const requestSort = toStoredSort(sort);
+
+    return {
+        ...base,
+        ...(requestColumns ? { columns: requestColumns } : {}),
+        ...(requestSort ? { sort: requestSort } : {}),
+    };
 }

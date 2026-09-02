@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { FilterFieldSource } from 'types/openapi';
+import { FilterFieldSource, SortDirection } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
-import { getRenderableProperties, isSameSort, toColumnSortFromHeader } from './columnState';
+import { buildListRequest, getRenderableProperties, isSameSort, toColumnSortFromHeader } from './columnState';
 
 const columns: ColumnDefinition[] = [
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name', sortable: true },
@@ -79,5 +79,56 @@ describe('getRenderableProperties', () => {
 
     it('is empty for a page with no registry, which then offers no property column', () => {
         expect(getRenderableProperties(undefined).size).toBe(0);
+    });
+});
+
+describe('buildListRequest', () => {
+    const base = { itemsPerPage: 10, pageNumber: 1, filters: [] };
+
+    // The Epic's compatibility guarantee (AC12): with no columns and no ordering the request must be
+    // byte-identical to one written before the contract carried either field, so both are absent from
+    // the object rather than present and empty.
+    it('omits both new fields for a page that is not on the pipeline', () => {
+        const request = buildListRequest(base);
+
+        expect(request).toEqual(base);
+        expect('columns' in request).toBe(false);
+        expect('sort' in request).toBe(false);
+    });
+
+    it('omits both new fields for an empty column set and no ordering', () => {
+        const request = buildListRequest(base, [], undefined);
+
+        expect(request).toEqual(base);
+        expect('columns' in request).toBe(false);
+        expect('sort' in request).toBe(false);
+    });
+
+    it('names the displayed columns', () => {
+        expect(buildListRequest(base, columns).columns).toEqual([
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS' },
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'department|STRING' },
+        ]);
+    });
+
+    it("names the applied ordering in the contract's own direction enum", () => {
+        const request = buildListRequest(base, columns, {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'COMMON_NAME',
+            direction: 'desc',
+        });
+
+        expect(request.sort).toEqual({
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'COMMON_NAME',
+            direction: SortDirection.Desc,
+        });
+    });
+
+    it('keeps the paging and filters it was given', () => {
+        const filtered = { itemsPerPage: 25, pageNumber: 3, filters: [] };
+
+        expect(buildListRequest(filtered, columns)).toMatchObject(filtered);
     });
 });
