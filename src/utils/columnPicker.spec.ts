@@ -94,6 +94,25 @@ describe('toCatalogueFields', () => {
     it('returns nothing for an empty catalogue', () => {
         expect(toCatalogueFields([])).toEqual([]);
     });
+
+    it('drops a property field the page has no renderer for', () => {
+        expect(toCatalogueFields(catalogue, new Set(['custom:costCentre'])).map((f) => f.fieldIdentifier)).toEqual(['costCentre']);
+    });
+
+    it('keeps a property field the page does have a renderer for', () => {
+        expect(toCatalogueFields(catalogue, new Set(['property:COMMON_NAME'])).map((f) => f.fieldIdentifier)).toEqual([
+            'COMMON_NAME',
+            'costCentre',
+        ]);
+    });
+
+    it('never gates an attribute source, which renders from the projected values', () => {
+        expect(toCatalogueFields(catalogue, new Set<string>()).map((f) => f.fieldIdentifier)).toEqual(['costCentre']);
+    });
+
+    it('gates nothing when no gate is given, which is what a page off the pipeline wants', () => {
+        expect(toCatalogueFields(catalogue, undefined).map((f) => f.fieldIdentifier)).toEqual(['COMMON_NAME', 'costCentre']);
+    });
 });
 
 describe('groupCatalogueFields', () => {
