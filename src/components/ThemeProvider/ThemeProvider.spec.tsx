@@ -93,8 +93,8 @@ test.describe('ThemeProvider', () => {
             resolved: 'light',
         },
         {
-            // Left behind by the withdrawn four-mode revision. Not a choice at all, so the operator default applies.
-            because: 'a mode from the withdrawn four-mode revision is not a choice',
+            // A stored value outside the three supported modes is not a choice at all, so the operator default applies.
+            because: 'an unsupported stored mode is not a choice',
             stored: 'systemDark',
             operatorDefault: 'dark',
             os: 'light',
@@ -163,7 +163,6 @@ test.describe('ThemeProvider', () => {
         expect(await page.evaluate(() => globalThis.localStorage.getItem('theme-mode'))).toBeNull();
     });
 
-    /** The first click has to advance from what is in force, which on a branded instance is the operator's default. */
     test('should cycle on from the operator default rather than from system', async ({ mount, page }) => {
         await mount(
             <ThemeProvider branding={branded('light' as BrandingTheme)}>

@@ -74,9 +74,9 @@ describe('theme', () => {
         });
 
         /**
-         * A browser that saw the four-mode build has one of these stored. Reading it as "no preference" is what lets
-         * the operator default, and then the OS, take over again rather than pinning the user to a mode that no
-         * longer exists.
+         * A retired mode is not one of the three supported preferences. Reading it as "no preference" is what lets the
+         * operator default, and then the OS, take over again rather than pinning the user to a mode that no longer
+         * exists.
          */
         test.each(['systemLight', 'systemDark'])('should report no preference for the retired mode %s', (retired) => {
             localStorage.setItem(THEME_STORAGE_KEY, retired);
