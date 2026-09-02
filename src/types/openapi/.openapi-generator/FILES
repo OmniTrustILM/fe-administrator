@@ -208,6 +208,9 @@ models/CmpProfileDetailDto.ts
 models/CmpProfileDto.ts
 models/CmpProfileEditRequestDto.ts
 models/CmpProfileRequestDto.ts
+models/CommentCreateRequestDto.ts
+models/CommentDto.ts
+models/CommentResponseDto.ts
 models/CodeBlockAttributeContentData.ts
 models/CodeBlockAttributeContentV2.ts
 models/CodeBlockAttributeContentV3.ts

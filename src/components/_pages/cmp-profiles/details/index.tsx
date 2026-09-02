@@ -23,6 +23,7 @@ import { actions as userAction, selectors as userSelectors } from 'ducks/users';
 import Badge from 'components/Badge';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 import { EnumValueDescription } from 'components/EnumDescription';
 
 export default function AdministratorDetail() {
@@ -386,6 +387,8 @@ export default function AdministratorDetail() {
                             <AttributeViewer attributes={cmpProfile?.certificateAssociations?.customAttributes} />
                         </Widget>
                     </Widget>
+
+                    {cmpProfile && <CommentPanel resource={Resource.CmpProfiles} objectUuid={cmpProfile.uuid} />}
                 </Container>
             </Widget>
 

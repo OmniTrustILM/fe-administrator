@@ -66,6 +66,7 @@ import CertificateRequestContent from './CertificateRequestContent';
 import { getValidationPanelState, isValidationTabVisible, validationPanelMessages } from '../validationPanel';
 import Label from 'components/Label';
 import ObjectEventHistoryWidget from 'components/_pages/notifications/events-settings/ObjectEventHistoryWidget';
+import CommentPanel from 'components/CommentPanel';
 
 type LocationPushFormProps = Readonly<{
     onSubmit: (values: FieldValues) => void;
@@ -1377,6 +1378,14 @@ export default function CertificateDetail() {
                                     />
                                 </Widget>
                             ),
+                        },
+                        {
+                            title: 'Comments',
+                            content: certificate ? (
+                                <Container>
+                                    <CommentPanel resource={Resource.Certificates} objectUuid={certificate.uuid} />
+                                </Container>
+                            ) : null,
                         },
                     ]}
                 />

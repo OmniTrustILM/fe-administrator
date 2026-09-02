@@ -11,6 +11,7 @@ import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
 import TabLayout from 'components/Layout/TabLayout';
 import ObjectEventHistoryWidget from 'components/_pages/notifications/events-settings/ObjectEventHistoryWidget';
+import CommentPanel from 'components/CommentPanel';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -342,6 +343,12 @@ export default function ApprovalDetails() {
                             title: 'Event History',
                             content: approvalDetails ? (
                                 <ObjectEventHistoryWidget resource={Resource.Approvals} uuid={approvalDetails.approvalUuid} />
+                            ) : null,
+                        },
+                        {
+                            title: 'Comments',
+                            content: approvalDetails ? (
+                                <CommentPanel resource={Resource.Approvals} objectUuid={approvalDetails.approvalUuid} />
                             ) : null,
                         },
                     ]}
