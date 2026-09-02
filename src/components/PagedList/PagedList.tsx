@@ -17,7 +17,7 @@ import type { ViewSlice } from 'types/listViews';
 import type { Resource } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import { type ColumnSort, buildColumnHeaders } from 'utils/tableColumns';
-import { buildListRequest, getRenderableProperties, isSameSort, toColumnSortFromHeader } from './columnState';
+import { buildListRequest, getRenderableProperties, isSameSort, toColumnSortFromHeader, toDisplayableSort } from './columnState';
 import PagedListSkeleton from './PagedListSkeleton';
 import type { IconName } from 'types/icons';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
@@ -137,14 +137,16 @@ function PagedList<TRow extends object>({
     const catalogue = useSelector(filterSelectors.availableFilters(entity));
     const hasLoadedCatalogue = useSelector(filterSelectors.hasLoadedFilters(entity));
 
-    const [appliedColumns, setAppliedColumns] = useState<ColumnDefinition[]>(() => configurableColumns?.standardColumns ?? NO_COLUMNS);
-    const [appliedSort, setAppliedSort] = useState<ColumnSort | undefined>(undefined);
+    const [columnSelection, setColumnSelection] = useState<ColumnDefinition[]>(NO_COLUMNS);
+    const [sortSelection, setSortSelection] = useState<ColumnSort | undefined>(undefined);
 
     /*
-     * The config is taken apart here rather than depended on whole. A page writes it as an object
-     * literal, so the object's identity changes on every render — and a `getFreshData` that depended
-     * on it would be rebuilt every render, refetch from the effect that watches it, and never settle.
-     * Everything below depends on the individual values instead, and on whether the mode is on at all.
+     * The config is taken apart here rather than depended on whole, so that the fetch callback depends
+     * only on `isColumnDriven` plus the applied slice. A caller is expected to memoise the config, but
+     * the host must not need it to: an inlined literal changes identity every render, and a
+     * `getFreshData` that depended on the object would be rebuilt every render, refetch from the effect
+     * that watches it, and never settle. The two render memos below still depend on individual members,
+     * so an inlined config costs them recomputation — wasted work, not a loop.
      */
     const isColumnDriven = configurableColumns !== undefined;
     const {
@@ -159,6 +161,22 @@ function PagedList<TRow extends object>({
     } = configurableColumns ?? ({} as Partial<ConfigurableColumns<TRow>>);
 
     const renderableProperties = useMemo(() => getRenderableProperties(registry), [registry]);
+
+    /*
+     * The applied set falls back to the platform set rather than being seeded from it once.
+     *
+     * `useState`'s initializer runs on the first render only, so a page that supplies its config
+     * conditionally — the certificates page does, being mounted elsewhere as a picker — would keep an
+     * empty applied set if the config arrived later, and render a table with no columns at all. Holding
+     * only the deviation means that state is not representable.
+     */
+    const appliedColumns = useMemo(
+        () => (columnSelection.length > 0 ? columnSelection : (standardColumns ?? NO_COLUMNS)),
+        [columnSelection, standardColumns],
+    );
+
+    /** Never an ordering the header row cannot paint. See {@link toDisplayableSort}. */
+    const appliedSort = useMemo(() => toDisplayableSort(sortSelection, appliedColumns), [sortSelection, appliedColumns]);
 
     const totalItems = useSelector(selectors.totalItems(entity));
     const checkedRows = useSelector(selectors.checkedRows(entity));
@@ -237,8 +255,8 @@ function PagedList<TRow extends object>({
      */
     const onApplyView = useCallback(
         (slice: ViewSlice) => {
-            setAppliedColumns(slice.columns);
-            setAppliedSort(slice.sort);
+            setColumnSelection(slice.columns);
+            setSortSelection(slice.sort);
             dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
             dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
             onCheckedRowsChanged([]);
@@ -254,7 +272,7 @@ function PagedList<TRow extends object>({
             // echo again.
             if (isSameSort(next, appliedSort)) return;
 
-            setAppliedSort(next);
+            setSortSelection(next);
             // A different ordering makes the current page number meaningless: page 2 of one ordering is
             // not page 2 of another.
             dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
@@ -323,12 +341,19 @@ function PagedList<TRow extends object>({
         return result.sort((a, b) => (a.icon === 'plus' ? -1 : 1));
     }, [checkedRows, additionalButtons, navigate, addHidden, onDeleteCallback]);
 
-    const hasNonDefaultViewState = currentFilters.length > 0 || pageNumber > 1 || pageSize !== 10;
+    // An applied ordering counts: a listing sorted by a column the user chose is not in its default
+    // state, so offering no way back from it would strand them there on page 1 at the default size.
+    const hasNonDefaultViewState = currentFilters.length > 0 || pageNumber > 1 || pageSize !== 10 || appliedSort !== undefined;
 
     const onResetView = useCallback(() => {
         dispatch(filterActions.setCurrentFilters({ entity, currentFilters: [] }));
         dispatch(filterActions.setPreservedFilters({ entity, preservedFilters: [] }));
         dispatch(actions.resetPaging({ entity }));
+        // The ordering goes with the filters, both being state this component owns. The column set does
+        // not: it belongs to the tab the strip is on, and silently moving the user off a saved view from
+        // a button labelled "reset view" would be a bigger surprise than leaving the columns alone. The
+        // strip then reports the drift and offers Revert, which is the control for that.
+        setSortSelection(undefined);
         const rootRoute = location.pathname.split('/')[1] ?? '';
         if (rootRoute) {
             dispatch(tablePaginationActions.clearPaginationByRootRoute({ rootRoute }));

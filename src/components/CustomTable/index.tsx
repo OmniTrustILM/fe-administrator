@@ -649,6 +649,10 @@ function CustomTable({
                             'justify-center': header.align === 'center',
                             'justify-end': header.align === 'right',
                         };
+                        // A hidden heading still has to be in the accessibility tree — the cell is only
+                        // visually blank. Wrapped rather than omitted, so a sortable icon column keeps an
+                        // accessible name on its button.
+                        const headingContent = header.headingHidden ? <span className="sr-only">{header.content}</span> : header.content;
                         // `info` sits outside the button: a sortable heading is itself a control, and a
                         // toggletip trigger inside it would nest one interactive element in another, which
                         // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
@@ -664,7 +668,7 @@ function CustomTable({
                                         alignment,
                                     )}
                                 >
-                                    {header.content}
+                                    {headingContent}
                                     {/* An explicit space keeps the cell's text content separated from the next header's,
                                     so text-based selectors over the header row keep matching as they did. */}{' '}
                                     {getSortIcon(header.sort)}
@@ -677,11 +681,11 @@ function CustomTable({
                         if (header.info) {
                             return (
                                 <span className={cn('flex w-full items-center gap-1', alignment)}>
-                                    {header.content} {header.info}
+                                    {headingContent} {header.info}
                                 </span>
                             );
                         }
-                        return header.content;
+                        return headingContent;
                     })()}
                 </th>
             </Fragment>

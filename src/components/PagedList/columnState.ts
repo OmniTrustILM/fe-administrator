@@ -66,3 +66,20 @@ export function buildListRequest(base: SearchRequestModel, columns?: readonly Co
         ...(requestSort ? { sort: requestSort } : {}),
     };
 }
+
+/**
+ * The ordering the table can actually show, or `undefined`.
+ *
+ * An ordering only survives while the column it names is displayed AND sortable. A saved view stores
+ * its columns and its ordering independently, so removing the sorted column in the picker leaves a
+ * view whose ordering names a column that is no longer there — and an ordering no header can paint is
+ * one the user can neither see nor clear, while it keeps ordering every page they fetch. Pruning it
+ * here means the header row and the request always agree with each other.
+ */
+export function toDisplayableSort(sort: ColumnSort | undefined, columns: readonly ColumnDefinition[]): ColumnSort | undefined {
+    if (!sort) return undefined;
+
+    const key = getSortKey(sort);
+    const column = columns.find((candidate) => getColumnKey(candidate) === key);
+    return column?.sortable === true ? sort : undefined;
+}

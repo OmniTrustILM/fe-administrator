@@ -122,13 +122,34 @@ describe('hasLoadedFilters', () => {
         expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(next))).toBe(true);
     });
 
-    test('stays true while a later read is in flight, so a refetch does not hide a consumer', () => {
-        const settled = reducer(initialState, actions.getAvailableFiltersSuccess({ entity: EntityType.CERTIFICATE, availableFilters: [] }));
+    test('is false for an entity whose first read is still in flight', () => {
+        const next = reducer(
+            initialState,
+            actions.getAvailableFilters({ entity: EntityType.CERTIFICATE, getAvailableFiltersApi: {} as any }),
+        );
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(next))).toBe(false);
+        expect(selectors.isFetchingFilters(EntityType.CERTIFICATE)(stateFor(next))).toBe(true);
+    });
+
+    /**
+     * A settled flag beside an empty catalogue is the one pairing this flag exists to rule out: a
+     * consumer that waits for the catalogue would read it as "this resource publishes nothing" and
+     * resolve every stored column against an empty set. A refetch must therefore leave the fields it
+     * already has in place.
+     */
+    test('keeps the catalogue it already has while a later read is in flight', () => {
+        const fields = [{ field: 'cn' as any, label: 'CN', multiValue: false, type: 'string' as any }];
+        const settled = reducer(
+            initialState,
+            actions.getAvailableFiltersSuccess({ entity: EntityType.CERTIFICATE, availableFilters: fields as any }),
+        );
         const refetching = reducer(
             settled,
             actions.getAvailableFilters({ entity: EntityType.CERTIFICATE, getAvailableFiltersApi: {} as any }),
         );
+
         expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(refetching))).toBe(true);
         expect(selectors.isFetchingFilters(EntityType.CERTIFICATE)(stateFor(refetching))).toBe(true);
+        expect(selectors.availableFilters(EntityType.CERTIFICATE)(stateFor(refetching))).toEqual(fields);
     });
 });

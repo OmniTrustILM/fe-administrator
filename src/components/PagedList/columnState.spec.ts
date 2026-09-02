@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FilterFieldSource, SortDirection } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
-import { buildListRequest, getRenderableProperties, isSameSort, toColumnSortFromHeader } from './columnState';
+import { buildListRequest, getRenderableProperties, isSameSort, toColumnSortFromHeader, toDisplayableSort } from './columnState';
 
 const columns: ColumnDefinition[] = [
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name', sortable: true },
@@ -130,5 +130,37 @@ describe('buildListRequest', () => {
         const filtered = { itemsPerPage: 25, pageNumber: 3, filters: [] };
 
         expect(buildListRequest(filtered, columns)).toMatchObject(filtered);
+    });
+});
+
+describe('toDisplayableSort', () => {
+    const sortable = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'asc' as const };
+
+    it('keeps an ordering whose column is displayed and sortable', () => {
+        expect(toDisplayableSort(sortable, columns)).toBe(sortable);
+    });
+
+    it('drops an ordering whose column a view switch or a column edit took away', () => {
+        expect(toDisplayableSort({ ...sortable, fieldIdentifier: 'NOT_AFTER' }, columns)).toBeUndefined();
+    });
+
+    it('drops an ordering the catalogue says the column cannot carry', () => {
+        expect(
+            toDisplayableSort({ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'department|STRING', direction: 'asc' }, columns),
+        ).toBeUndefined();
+    });
+
+    it('drops an ordering on a column with no sortable answer at all', () => {
+        expect(
+            toDisplayableSort({ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS', direction: 'asc' }, columns),
+        ).toBeUndefined();
+    });
+
+    it('separates one identifier under two sources', () => {
+        expect(toDisplayableSort({ ...sortable, fieldSource: FilterFieldSource.Meta }, columns)).toBeUndefined();
+    });
+
+    it('is undefined for no ordering', () => {
+        expect(toDisplayableSort(undefined, columns)).toBeUndefined();
     });
 });

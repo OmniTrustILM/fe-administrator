@@ -343,10 +343,11 @@ export function isSliceDirty(stored: ViewSlice, current: ViewSlice): boolean {
  * showed it, so the user was never offered the choice — the column picker is the one place such a
  * column is removed, because it is the one place it is shown.
  *
- * Such a column is one the catalogue publishes but marks undisplayable — a secret's content — which
- * is the only kind that can reach a client: Core filters a view's columns against the resource
- * catalogue on read. A column outside the catalogue entirely is a different case and does not
- * survive {@link toStorableColumns}, which runs after this on every write.
+ * Two things make a stored column unrenderable. The catalogue may publish it but mark it
+ * undisplayable — a secret's content — or the page may have no cell renderer for it, which is how a
+ * property field the listing cannot supply resolves (see `toCatalogueFields`). Both are kept here.
+ * A column outside the catalogue entirely is a third case and does not survive
+ * {@link toStorableColumns}, which runs after this on every write.
  */
 export function toStoredColumnsKeepingUnavailable(
     rendered: readonly ColumnDefinition[],

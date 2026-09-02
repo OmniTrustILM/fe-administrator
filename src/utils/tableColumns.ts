@@ -173,6 +173,7 @@ export function buildColumnHeaders(columns: ColumnDefinition[], options: BuildCo
             id: key,
             content: getColumnHeading(column),
             ...(info ? { info } : {}),
+            ...(column.headingHidden ? { headingHidden: true } : {}),
             sortable: column.sortable === true,
             sort: isSorted ? options.sort?.direction : undefined,
             align: getColumnAlign(column),

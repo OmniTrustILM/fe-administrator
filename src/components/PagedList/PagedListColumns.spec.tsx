@@ -227,6 +227,34 @@ test.describe('PagedList · configurable columns', () => {
         await expect(page.getByTestId('add-field-property:SUBJECT_ALTERNATIVE_NAMES')).toHaveCount(0);
     });
 
+    /**
+     * A view stores its columns and its ordering independently, so a column edit can leave the ordering
+     * naming a column that is no longer displayed. An ordering no header can paint is one the user can
+     * neither see nor clear, and it would keep ordering every page they fetch.
+     */
+    test('drops an ordering whose column the applied view does not display', async ({ mount, page }) => {
+        const orphaned: ListViewModel = {
+            ...expiryWatch,
+            columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }],
+            sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', direction: SortDirection.Desc },
+        };
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[orphaned]} />);
+
+        await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME']);
+        await expect.poll(async () => (await lastRequest(page))?.sort).toBeUndefined();
+        await expect(page.locator('th[aria-sort]')).toHaveCount(0);
+    });
+
+    test('never renders a table with no columns when the config arrives with the platform set', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} withheldCatalogue />);
+
+        // The strip is still waiting on the catalogue, so nothing has applied a slice yet — the table
+        // must already be showing the platform set rather than nothing at all.
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+        await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
+        await expect(page.getByText('acme.example')).toBeVisible();
+    });
+
     test('withholds the strip until the catalogue has settled, so no view resolves to nothing', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore

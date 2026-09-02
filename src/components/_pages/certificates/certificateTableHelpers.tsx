@@ -137,6 +137,10 @@ export const CERTIFICATE_COLUMNS: ColumnDefinition[] = [
         catalogueLabel: 'Has private key',
         type: FilterFieldType.Boolean,
         align: 'center',
+        // A one-percent-wide column carrying nothing but a key icon and its tooltip. The page shipped
+        // this heading blank; the label exists so the picker can name the column and the header keeps an
+        // accessible name, but it stays out of the visible header row where it would not fit.
+        headingHidden: true,
     },
     {
         fieldSource: FilterFieldSource.Property,

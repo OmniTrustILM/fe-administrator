@@ -105,7 +105,12 @@ export const slice = createSlice({
             }>,
         ) => {
             updateFilterState(state, action.payload.entity, (filter) => {
-                filter.availableFilters = [];
+                // The catalogue it already holds is kept. Emptying it would leave a settled
+                // `hasLoadedFilters` beside no fields — the one pairing that flag exists to rule out —
+                // and every consumer that waits for the catalogue would then run against nothing for
+                // the length of the round trip, on every revisit to the page. `FilterWidget` reads its
+                // own loading state as `isFetchingFilters && availableFilters.length === 0`, so it
+                // shows the fields it has rather than blanking while a refetch is in flight.
                 filter.isFetchingFilters = true;
             });
         },

@@ -147,7 +147,13 @@ describe('PagedList unit coverage', () => {
                 filters: [
                     {
                         entity: EntityType.CBOM,
-                        filter: { currentFilters: [], availableFilters: [], preservedFilters: [], isFetchingFilters: false },
+                        filter: {
+                            currentFilters: [],
+                            availableFilters: [],
+                            preservedFilters: [],
+                            isFetchingFilters: false,
+                            hasLoadedFilters: true,
+                        },
                     },
                 ],
             },

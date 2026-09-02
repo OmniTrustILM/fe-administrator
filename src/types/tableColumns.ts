@@ -30,6 +30,14 @@ export interface ColumnDefinition {
     sortable?: boolean;
     multiValue?: boolean;
     align?: 'left' | 'center' | 'right';
+    /**
+     * Renders the heading for screen readers only, leaving the header cell visually blank.
+     *
+     * For a narrow icon column whose meaning is carried by the icon and its tooltip, where a visible
+     * label would be wider than the column itself. The heading still has to exist: the column is
+     * pickable and sortable, so it needs a name in the picker and an accessible name on the header.
+     */
+    headingHidden?: boolean;
 }
 
 /**

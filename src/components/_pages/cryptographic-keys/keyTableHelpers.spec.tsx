@@ -49,8 +49,12 @@ const columnAt = (identifier: string) => {
 };
 
 test.describe('keyTableHelpers', () => {
-    test('renders one cell per column of the default set', () => {
-        expect(buildKeyRowColumns(buildKey(), opts)).toHaveLength(KEY_COLUMNS.length);
+    // `toHaveLength(KEY_COLUMNS.length)` would hold by construction, the helper being a map over the
+    // same array. What can fail is whether every default column actually produced something to show.
+    test('renders a cell with content for every column of the default set', () => {
+        const cells = buildKeyRowColumns(buildKey({ usage: ['sign'] as never }), opts);
+
+        expect(cells.every((cell) => cell !== null && cell !== undefined && cell !== '')).toBe(true);
     });
 
     test('renders the key name as a link to its detail page', async ({ mount, page }) => {
