@@ -19,7 +19,7 @@ import type { CertificateListResponseModel, CertificateDetailResponseModel, Sear
 import type { EnumItemModel } from 'types/enums';
 import type { Dispatch } from 'redux';
 import type { TableDataRow } from 'components/CustomTable';
-import { renderCell, type CellRegistry } from 'components/CustomTable/columns';
+import type { CellRegistry } from 'components/CustomTable/columns';
 import BooleanCell from 'components/CustomTable/columns/BooleanCell';
 import MultiValueCell from 'components/CustomTable/columns/MultiValueCell';
 import type { ColumnDefinition } from 'types/tableColumns';
@@ -59,17 +59,6 @@ function buildCommonNameCell(certificate: CertificateListResponseModel, opts: Bu
             {label}
         </Link>
     );
-}
-
-function buildGroupsCell(certificate: CertificateListResponseModel, isLinkDisabled: boolean) {
-    const groups = certificate?.groups ?? [];
-    if (groups.length === 0) return 'Unassigned';
-    return groups.map((group, i) => (
-        <React.Fragment key={group.uuid}>
-            {isLinkDisabled ? group.name : <Link to={`../../groups/detail/${group.uuid}`}>{group.name}</Link>}
-            {i === groups.length - 1 ? '' : ', '}
-        </React.Fragment>
-    ));
 }
 
 function buildRaProfileCell(certificate: CertificateListResponseModel, isLinkDisabled: boolean) {

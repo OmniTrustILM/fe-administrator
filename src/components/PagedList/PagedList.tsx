@@ -57,16 +57,14 @@ export interface ConfigurableColumns<TRow extends object> {
     resourceLabel?: string;
 }
 
-type Props = {
+type Props<TRow extends object> = {
     entity: EntityType;
     /** The columns a page assembles itself. Omitted by a page on the pipeline. */
     headers?: TableHeader[];
     /** The rows a page assembles itself. Omitted by a page on the pipeline. */
     data?: TableDataRow[];
     /** Opts the page into the column pipeline. See {@link ConfigurableColumns}. */
-    // biome-ignore lint/suspicious/noExplicitAny: the row type is the page's own and varies per caller;
-    // the host only ever passes it back to the callbacks that came with it.
-    configurableColumns?: ConfigurableColumns<any>;
+    configurableColumns?: ConfigurableColumns<TRow>;
     isBusy?: boolean;
     multiSelect?: boolean;
     onDeleteCallback?: (uuids: string[], filters: SearchFilterModel[]) => void;
@@ -90,7 +88,12 @@ const EMPTY_HEADERS: TableHeader[] = [];
 const EMPTY_ROWS: TableDataRow[] = [];
 const NO_COLUMNS: ColumnDefinition[] = [];
 
-function PagedList({
+/**
+ * Generic in the row type so a page's own listing model reaches its `getRowId`, its registry and its
+ * `rowOptions` unchanged. A page that passes no column config never names it and it infers as
+ * `object`, which is what keeps the callers off the pipeline untouched.
+ */
+function PagedList<TRow extends object>({
     headers,
     data,
     configurableColumns,
@@ -112,7 +115,7 @@ function PagedList({
     hasDetails = false,
     columnForDetail,
     extraFilterComponent,
-}: Readonly<Props>) {
+}: Readonly<Props<TRow>>) {
     const dispatch = useDispatch();
     const store = useStore<AppState>();
     const navigate = useNavigate();
@@ -153,7 +156,7 @@ function PagedList({
         rowOptions,
         headerInfo,
         resourceLabel,
-    } = configurableColumns ?? ({} as Partial<ConfigurableColumns<object>>);
+    } = configurableColumns ?? ({} as Partial<ConfigurableColumns<TRow>>);
 
     const renderableProperties = useMemo(() => getRenderableProperties(registry), [registry]);
 

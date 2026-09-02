@@ -22,7 +22,7 @@ export function toColumnSortFromHeader(
     if (!parsed) return undefined;
 
     const column = columns.find((candidate) => getColumnKey(candidate) === key);
-    if (!column || column.sortable !== true) return undefined;
+    if (column?.sortable !== true) return undefined;
 
     return { ...parsed, direction };
 }
