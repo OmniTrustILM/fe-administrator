@@ -98,3 +98,37 @@ describe('filters selectors', () => {
         expect(selectors.state(state)).toEqual(initialState);
     });
 });
+
+describe('hasLoadedFilters', () => {
+    const stateFor = (filtersState: unknown) => ({ filters: filtersState }) as any;
+
+    test('is false before any read', () => {
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(initialState))).toBe(false);
+    });
+
+    test('is true once a read succeeds, even with no fields', () => {
+        const next = reducer(
+            reducer(initialState, actions.getAvailableFilters({ entity: EntityType.CERTIFICATE, getAvailableFiltersApi: {} as any })),
+            actions.getAvailableFiltersSuccess({ entity: EntityType.CERTIFICATE, availableFilters: [] }),
+        );
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(next))).toBe(true);
+    });
+
+    test('is true once a read fails, so a failed catalogue does not read as a read in flight', () => {
+        const next = reducer(
+            reducer(initialState, actions.getAvailableFilters({ entity: EntityType.CERTIFICATE, getAvailableFiltersApi: {} as any })),
+            actions.getAvailableFiltersFailure({ entity: EntityType.CERTIFICATE, error: 'err' }),
+        );
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(next))).toBe(true);
+    });
+
+    test('stays true while a later read is in flight, so a refetch does not hide a consumer', () => {
+        const settled = reducer(initialState, actions.getAvailableFiltersSuccess({ entity: EntityType.CERTIFICATE, availableFilters: [] }));
+        const refetching = reducer(
+            settled,
+            actions.getAvailableFilters({ entity: EntityType.CERTIFICATE, getAvailableFiltersApi: {} as any }),
+        );
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(refetching))).toBe(true);
+        expect(selectors.isFetchingFilters(EntityType.CERTIFICATE)(stateFor(refetching))).toBe(true);
+    });
+});
