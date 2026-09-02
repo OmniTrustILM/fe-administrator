@@ -60,6 +60,40 @@ const standardColumns: ColumnDefinition[] = [
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'STATUS', catalogueLabel: 'Status' },
 ];
 
+/** A filter-field catalogue in which one custom attribute holds secret content. */
+const secretCatalogue = [
+    {
+        filterFieldSource: FilterFieldSource.Property,
+        searchFieldData: [{ fieldIdentifier: 'COMMON_NAME', fieldLabel: 'Common Name', type: FilterFieldType.String, conditions: [] }],
+    },
+    {
+        filterFieldSource: FilterFieldSource.Custom,
+        searchFieldData: [
+            {
+                fieldIdentifier: 'vaultToken',
+                fieldLabel: 'Vault Token',
+                type: FilterFieldType.String,
+                conditions: [],
+                attributeContentType: AttributeContentType.Secret,
+            },
+            {
+                fieldIdentifier: 'cost_centre',
+                fieldLabel: 'Cost centre',
+                type: FilterFieldType.String,
+                conditions: [],
+                attributeContentType: AttributeContentType.String,
+            },
+        ],
+    },
+] as unknown as SearchFieldDataByGroupDto[];
+
+const filter = (source: FilterFieldSource, identifier: string, value?: unknown) => ({
+    fieldSource: source,
+    fieldIdentifier: identifier,
+    condition: FilterConditionOperator.Equals,
+    ...(value === undefined ? {} : { value }),
+});
+
 describe('toTabs', () => {
     it('puts Standard first and keeps the API order of the stored views', () => {
         const tabs = toTabs([view('a', 'Expiry watch'), view('b', 'Compliance audit')]);
@@ -351,10 +385,10 @@ describe('toUpdateRequest', () => {
             sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: SortDirection.Asc },
         });
 
-        expect(toUpdateRequest(stored)).toEqual({
+        expect(toUpdateRequest(stored, secretCatalogue)).toEqual({
             name: 'Expiry watch',
             columns: stored.columns,
-            filters: undefined,
+            filters: [],
             sort: stored.sort,
             defaultView: true,
         });
@@ -362,46 +396,42 @@ describe('toUpdateRequest', () => {
 
     it('applies the patch over the stored row, so a rename keeps the columns', () => {
         const stored = view('a', 'Expiry watch');
-        const renamed = toUpdateRequest(stored, { name: 'Expiry' });
+        const renamed = toUpdateRequest(stored, secretCatalogue, { name: 'Expiry' });
 
         expect(renamed.name).toBe('Expiry');
         expect(renamed.columns).toEqual(stored.columns);
     });
+
+    it.each([
+        ['a rename', { name: 'Expiry' }],
+        ['a pin', { defaultView: true }],
+        ['a column edit', { columns: [] }],
+    ])('drops a stored secret-valued filter on %s, which never names the filters', (_, patch) => {
+        const stored = view('a', 'Expiry watch', {
+            filters: [filter(FilterFieldSource.Property, 'COMMON_NAME', 'acme'), filter(FilterFieldSource.Custom, 'vaultToken', 'hunter2')],
+        });
+
+        expect(toUpdateRequest(stored, secretCatalogue, patch).filters).toEqual([
+            filter(FilterFieldSource.Property, 'COMMON_NAME', 'acme'),
+        ]);
+    });
+
+    it('drops a secret-valued filter the patch itself supplies', () => {
+        const stored = view('a', 'Expiry watch');
+        const patched = toUpdateRequest(stored, secretCatalogue, { filters: [filter(FilterFieldSource.Custom, 'vaultToken', 'hunter2')] });
+
+        expect(patched.filters).toEqual([]);
+    });
+
+    it('keeps a presence-only condition on the secret field, which carries nothing to leak', () => {
+        const stored = view('a', 'Expiry watch', { filters: [filter(FilterFieldSource.Custom, 'vaultToken')] });
+
+        expect(toUpdateRequest(stored, secretCatalogue).filters).toEqual([filter(FilterFieldSource.Custom, 'vaultToken')]);
+    });
 });
 
 describe('toStorableFilters', () => {
-    const catalogue = [
-        {
-            filterFieldSource: FilterFieldSource.Property,
-            searchFieldData: [{ fieldIdentifier: 'COMMON_NAME', fieldLabel: 'Common Name', type: FilterFieldType.String, conditions: [] }],
-        },
-        {
-            filterFieldSource: FilterFieldSource.Custom,
-            searchFieldData: [
-                {
-                    fieldIdentifier: 'vaultToken',
-                    fieldLabel: 'Vault Token',
-                    type: FilterFieldType.String,
-                    conditions: [],
-                    attributeContentType: AttributeContentType.Secret,
-                },
-                {
-                    fieldIdentifier: 'cost_centre',
-                    fieldLabel: 'Cost centre',
-                    type: FilterFieldType.String,
-                    conditions: [],
-                    attributeContentType: AttributeContentType.String,
-                },
-            ],
-        },
-    ] as unknown as SearchFieldDataByGroupDto[];
-
-    const filter = (source: FilterFieldSource, identifier: string, value?: unknown) => ({
-        fieldSource: source,
-        fieldIdentifier: identifier,
-        condition: FilterConditionOperator.Equals,
-        ...(value === undefined ? {} : { value }),
-    });
+    const catalogue = secretCatalogue;
 
     it('drops a filter carrying a value typed against secret content', () => {
         const kept = toStorableFilters(

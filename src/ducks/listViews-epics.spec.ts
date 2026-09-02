@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { Observable, firstValueFrom, of, throwError } from 'rxjs';
+import { Observable, firstValueFrom, from, of, throwError } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
-import { take, toArray } from 'rxjs/operators';
+import { delay, take, toArray } from 'rxjs/operators';
 import type { ListViewModel } from 'types/listViews';
 import { FilterFieldSource, Resource } from 'types/openapi';
 import { actions as alertActions } from './alerts';
@@ -56,6 +56,14 @@ async function run(index: number, action: unknown, deps: unknown, expected: numb
     return firstValueFrom(epic(of(action), of({}), deps).pipe(take(expected), toArray()));
 }
 
+/** Both reads dispatched back to back, which is what a page mounting two strips at once does. */
+async function readBoth(actionsToDispatch: unknown[], deps: unknown, expected = 2) {
+    const epic = epics[LIST] as unknown as EpicUnderTest;
+    return firstValueFrom(epic(from(actionsToDispatch), of({}), deps).pipe(take(expected), toArray()));
+}
+
+const resourceOf = (action: { payload?: unknown }) => (action.payload as { resource: Resource }).resource;
+
 describe('listViews', () => {
     test('answers a read with the stored views', async () => {
         const [emitted] = await run(LIST, actions.listViews({ resource: Resource.Certificates }), createDeps(), 1);
@@ -78,6 +86,35 @@ describe('listViews', () => {
         expect(failure.type).toBe(actions.listViewsFailure.type);
         expect(alert.type).toBe(alertActions.error.type);
         expect(alert.payload).toContain('Failed to get saved views');
+    });
+
+    test('a read of one resource does not cancel a read of another still in flight', async () => {
+        // The slower answer is the one asked for first, so an ungrouped switch would drop it: a
+        // cancelled read emits neither success nor failure, and its strip would wait for ever.
+        const deps = createDeps({
+            listViews: ({ resource }) => (resource === Resource.Certificates ? of([stored]).pipe(delay(20)) : of([]).pipe(delay(1))),
+        });
+
+        const emitted = await readBoth(
+            [actions.listViews({ resource: Resource.Certificates }), actions.listViews({ resource: Resource.Secrets })],
+            deps,
+        );
+
+        expect(emitted.map((action) => action.type)).toEqual([actions.listViewsSuccess.type, actions.listViewsSuccess.type]);
+        expect(emitted.map(resourceOf).sort()).toEqual([Resource.Certificates, Resource.Secrets]);
+    });
+
+    test('a second read of the same resource still supersedes the first', async () => {
+        const answers = [of([stored]).pipe(delay(20)), of([]).pipe(delay(1))];
+        const deps = createDeps({ listViews: () => answers.shift() ?? of([]) });
+
+        const [emitted] = await readBoth(
+            [actions.listViews({ resource: Resource.Certificates }), actions.listViews({ resource: Resource.Certificates })],
+            deps,
+            1,
+        );
+
+        expect(emitted).toEqual(actions.listViewsSuccess({ resource: Resource.Certificates, views: [] }));
     });
 });
 

@@ -333,9 +333,19 @@ export function toCreateRequest(name: string, resource: Resource, slice: ViewSli
  *
  * The API replaces the whole row, so every field it does not mean to change has to be sent back as it
  * stands. A rename that omitted the columns would empty the view.
+ *
+ * Which is why the catalogue is required rather than optional: a rename, a pin or a column edit sends
+ * the stored filters back untouched, and a view that arrived carrying a secret-valued filter — written
+ * by a client that predates this rule, or by one that does not apply it — would have that plaintext
+ * rewritten on every one of them. The whole row is filtered on the way out, the patch included, so
+ * there is no update path left that can carry such a value. See {@link toStorableFilters}.
  */
-export function toUpdateRequest(view: ListViewModel, patch: Partial<ListViewUpdateRequestModel> = {}): ListViewUpdateRequestModel {
-    return {
+export function toUpdateRequest(
+    view: ListViewModel,
+    catalogue: readonly SearchFieldDataByGroupDto[],
+    patch: Partial<ListViewUpdateRequestModel> = {},
+): ListViewUpdateRequestModel {
+    const row: ListViewUpdateRequestModel = {
         name: view.name,
         columns: view.columns,
         filters: view.filters,
@@ -343,4 +353,6 @@ export function toUpdateRequest(view: ListViewModel, patch: Partial<ListViewUpda
         defaultView: view.defaultView,
         ...patch,
     };
+
+    return { ...row, filters: toStorableFilters(row.filters ?? [], catalogue) };
 }

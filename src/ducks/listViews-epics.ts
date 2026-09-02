@@ -25,18 +25,31 @@ function requestFailed(action: FailureAction, resource: Resource, err: Error, fa
     return of(action({ resource, error }), alertActions.error(error));
 }
 
+/**
+ * The saved views of one resource, re-read whenever the strip asks.
+ *
+ * `switchMap` within a `groupBy`, for the same reason the mutations are grouped: the fetch flags are
+ * keyed per resource. Superseding a read of the same resource is the point — a stale answer must not
+ * land after the one that replaced it — but cancelling emits neither success nor failure, so
+ * switching across resources would strand the resource left behind on `isFetching`, and a strip
+ * mounted for it would never become ready.
+ */
 const listViews: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.listViews.match),
-        // switchMap: the strip reads one resource at a time, and a superseded read must not land
-        // after the one that replaced it.
-        switchMap((action) =>
-            deps.apiClients.listViews.listViews({ resource: action.payload.resource }).pipe(
-                map((views) => slice.actions.listViewsSuccess({ resource: action.payload.resource, views })),
-                catchError((err) =>
-                    // Without the alert a failed read is indistinguishable from a user who has saved
-                    // nothing: the strip settles on Standard alone and offers to create beside it.
-                    requestFailed(slice.actions.listViewsFailure, action.payload.resource, err, 'Failed to get saved views'),
+        groupBy((action) => action.payload.resource),
+        mergeMap((perResource) =>
+            perResource.pipe(
+                switchMap((action) =>
+                    deps.apiClients.listViews.listViews({ resource: action.payload.resource }).pipe(
+                        map((views) => slice.actions.listViewsSuccess({ resource: action.payload.resource, views })),
+                        catchError((err) =>
+                            // Without the alert a failed read is indistinguishable from a user who has
+                            // saved nothing: the strip settles on Standard alone and offers to create
+                            // beside it.
+                            requestFailed(slice.actions.listViewsFailure, action.payload.resource, err, 'Failed to get saved views'),
+                        ),
+                    ),
                 ),
             ),
         ),

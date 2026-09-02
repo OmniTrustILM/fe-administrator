@@ -130,10 +130,20 @@ export default function ViewTabs({
         [activeView, fields, standardColumns],
     );
 
-    const storedSlice = useMemo(
-        () => (activeView ? toViewSlice(activeView, fields, standardColumns) : toStandardSlice(standardColumns)),
-        [activeView, fields, standardColumns],
-    );
+    /**
+     * The slice behind the active tab, which drift is measured against.
+     *
+     * Its filters are put through the same sieve as the live ones. A stored view can carry a filter
+     * this client would never write — one from a client that predates the rule — and comparing the
+     * sieved live filters against unsieved stored ones would report that view as permanently drifted,
+     * offering a Save that changes nothing.
+     */
+    const storedSlice = useMemo(() => {
+        if (!activeView) return toStandardSlice(standardColumns);
+
+        const slice = toViewSlice(activeView, fields, standardColumns);
+        return { ...slice, filters: toStorableFilters(slice.filters, catalogue) };
+    }, [activeView, fields, standardColumns, catalogue]);
 
     /** The stored columns this table cannot render, which the notice names and the picker can remove. */
     const unavailable = useMemo(() => resolved?.columns.filter((column) => !column.available) ?? [], [resolved]);
@@ -234,11 +244,11 @@ export default function ViewTabs({
     );
 
     const patchActive = useCallback(
-        (patch: Parameters<typeof toUpdateRequest>[1]) => {
+        (patch: Parameters<typeof toUpdateRequest>[2]) => {
             if (!activeView) return;
-            dispatch(listViewActions.updateView({ resource, uuid: activeView.uuid, view: toUpdateRequest(activeView, patch) }));
+            dispatch(listViewActions.updateView({ resource, uuid: activeView.uuid, view: toUpdateRequest(activeView, catalogue, patch) }));
         },
-        [dispatch, resource, activeView],
+        [dispatch, resource, activeView, catalogue],
     );
 
     // The view a delete took off the strip, and the tab the strip moved to instead. A delete is

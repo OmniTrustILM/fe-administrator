@@ -650,6 +650,43 @@ test.describe('ViewTabs', () => {
         expect(JSON.stringify(action)).not.toContain('hunter2');
     });
 
+    test('drops a stored filter on secret content from a rename, and does not read it as drift', async ({ mount, page }) => {
+        // Such a view cannot be written by this client, but it can arrive from one that predates the
+        // rule. A rename sends the whole row back, so the plaintext would be rewritten on every one.
+        const legacy = expiryWatch({ filters: [stateFilter, secretFilter] });
+        await mount(strip({ fields: secretCatalogue, views: [legacy] }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        // Drift is measured against what a save would keep, or the view reads as permanently drifted
+        // and offers a Save that changes nothing.
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Rename…' }).click();
+        await page.getByTestId('view-tabs-rename-input').click();
+        await page.getByTestId('view-tabs-rename-input').fill('Expiring soon');
+        await page.getByTestId('view-tabs-rename').getByRole('button', { name: 'Rename' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toMatchObject({ view: { name: 'Expiring soon', filters: [stateFilter] } });
+        expect(JSON.stringify(action)).not.toContain('hunter2');
+    });
+
+    test('drops a stored filter on secret content from a pin, which names no filters at all', async ({ mount, page }) => {
+        await mount(strip({ fields: secretCatalogue, views: [expiryWatch({ filters: [secretFilter] })] }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Open this view by default' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toMatchObject({ view: { defaultView: true, filters: [] } });
+        expect(JSON.stringify(action)).not.toContain('hunter2');
+    });
+
     test('keeps a column it cannot show when the ordering alone is saved', async ({ mount, page }) => {
         const stale = expiryWatch({
             defaultView: true,
