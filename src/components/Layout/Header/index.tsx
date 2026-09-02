@@ -1,13 +1,16 @@
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router';
 import { Menu } from 'lucide-react';
+import BrandLogo from 'components/BrandLogo';
 import Dropdown from 'components/Dropdown';
 import ThemeToggle from 'components/ThemeToggle';
 import NotificationsOverview from 'components/_pages/notifications/overview';
 
 import { selectors } from 'ducks/auth';
 
-import logo from '../../../resources/images/ot-logo-white.svg';
+// The header surface carries the brand colour in the light theme and a near-black in the dark one, so the reversed
+// mark is the platform default for both - the theme name does not decide, the surface behind the logo does.
+import reversedLogo from '../../../resources/images/ot-logo-white.svg';
 
 type Props = {
     sidebarToggle: () => void;
@@ -23,7 +26,7 @@ function Header({ sidebarToggle }: Readonly<Props>) {
             data-testid="header"
         >
             <Link to="/dashboard" data-testid="header-logo-link">
-                <img src={logo} alt="OT Logo" className="h-9" data-testid="header-logo" />
+                <BrandLogo defaultLight={reversedLogo} defaultDark={reversedLogo} alt="Logo" className="h-9" dataTestId="header-logo" />
             </Link>
             <div className="flex items-center gap-2">
                 {!!profile && (

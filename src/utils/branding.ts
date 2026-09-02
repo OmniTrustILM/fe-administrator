@@ -59,6 +59,14 @@ export const logoRatioError = (width: number, height: number): string | undefine
 /** The media type carried by a data URI, or undefined for anything that is not one. */
 export const dataUriMediaType = (dataUri: string): string | undefined => /^data:([^;,]+)[;,]/.exec(dataUri)?.[1];
 
+/**
+ * Whether a stored logo is safe to point an `img` at. Core stores logos as base64 data URIs of an accepted media type,
+ * so anything else - an absolute URL above all - did not come from an upload, and rendering it would reach out to
+ * whatever host it names on behalf of every viewer, the anonymous ones on the login page included.
+ */
+export const isRenderableLogo = (value: string | null | undefined): value is string =>
+    typeof value === 'string' && (LOGO_MEDIA_TYPES as readonly string[]).includes(dataUriMediaType(value) ?? '');
+
 /** The media type implied by a file name, for the extension fallback above. */
 export const logoMediaTypeFromName = (name: string): string | undefined => {
     if (/\.png$/i.test(name)) {

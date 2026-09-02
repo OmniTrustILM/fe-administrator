@@ -267,6 +267,19 @@ function authTestReducer(state: AuthTestState | undefined, _action: UnknownActio
     return state ?? authTestInitialState;
 }
 
+export type LoginTestState = {
+    loginMethods?: Array<{ name: string; loginUrl: string }>;
+    isFetching: boolean;
+    error?: string;
+};
+
+const loginTestInitialState: LoginTestState = { isFetching: false };
+
+/** The login page's providers come preloaded; the fetch belongs to an epic, which component tests do not run. */
+function loginTestReducer(state: LoginTestState | undefined, _action: UnknownAction): LoginTestState {
+    return state ?? loginTestInitialState;
+}
+
 export type BrandingTestState = {
     branding?: Record<string, string | undefined>;
     /** The anonymous read, as the login page and the brand token layer see it. Nullable, as the response is. */
@@ -284,7 +297,8 @@ export type BrandingTestState = {
     error?: string;
 };
 
-const brandingTestInitialState: BrandingTestState = {
+/** Exported so a wrapper can preload one field without restating every flag. */
+export const brandingTestInitialState: BrandingTestState = {
     isFetchingBranding: false,
     isUpdatingBranding: false,
     isResettingBranding: false,
@@ -1304,6 +1318,7 @@ export const testReducers = combineReducers({
     comments: commentsTestReducer,
     listViews: listViewsTestReducer,
     branding: brandingTestReducer,
+    login: loginTestReducer,
 });
 
 export const testInitialState = {
@@ -1342,4 +1357,5 @@ export const testInitialState = {
     comments: commentsTestInitialState,
     listViews: listViewsTestInitialState,
     branding: brandingTestInitialState,
+    login: loginTestInitialState,
 };
