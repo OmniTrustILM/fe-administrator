@@ -1272,6 +1272,65 @@ test.describe('CustomTable', () => {
                 ]);
         });
 
+        // A saved view owns its own ordering (Epic ilm#133, D7), so on the listing pages persistence is
+        // a second authority over one fact: a stale localStorage sort would outrank the ordering the
+        // view just applied, and the table would paint a column the caller never fetched.
+        test('a caller that owns the sort is not handed one from persistence', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const component = await mount(
+                <CustomTableWithStore
+                    headers={mockHeaders}
+                    data={mockData}
+                    persistedSortColumn="name"
+                    persistedSortDirection="desc"
+                    persistSort={false}
+                    onSortChanged={(id, direction) => calls.push([id, direction])}
+                />,
+            );
+
+            await expect(component.locator('th[aria-sort]')).toHaveCount(0);
+            expect(calls).toEqual([]);
+        });
+
+        test('a caller that owns the sort takes it from the headers instead', async ({ mount }) => {
+            const calls: [string, string][] = [];
+            const declared: TableHeader[] = [
+                { id: 'name', content: 'Name', sortable: true },
+                { id: 'email', content: 'Email', sortable: true, sort: 'asc' },
+                { id: 'status', content: 'Status' },
+            ];
+            const component = await mount(
+                <CustomTableWithStore
+                    headers={declared}
+                    data={mockData}
+                    persistedSortColumn="name"
+                    persistedSortDirection="desc"
+                    persistSort={false}
+                    onSortChanged={(id, direction) => calls.push([id, direction])}
+                />,
+            );
+
+            await expect(component.locator('th[data-id="email"]')).toHaveAttribute('aria-sort', 'ascending');
+            await expect.poll(() => calls).toEqual([['email', 'asc']]);
+        });
+
+        test('a caller that owns the sort has its clicks kept out of persistence', async ({ mount, page }) => {
+            const component = await mount(
+                <CustomTableWithStore headers={mockHeaders} data={mockData} persistSort={false} onSortChanged={() => {}} />,
+            );
+
+            await component.getByRole('button', { name: 'Name' }).click();
+            await expect(component.locator('th[data-id="name"]')).toHaveAttribute('aria-sort', 'ascending');
+            await expect(page.getByTestId('persisted-sort')).toHaveText('none');
+        });
+
+        test('persists a click by default, which is what a locally sorted table wants', async ({ mount, page }) => {
+            const component = await mount(<CustomTableWithStore headers={mockHeaders} data={mockData} onSortChanged={() => {}} />);
+
+            await component.getByRole('button', { name: 'Name' }).click();
+            await expect(page.getByTestId('persisted-sort')).toHaveText('name:asc');
+        });
+
         test('says nothing on mount when there is no persisted sort', async ({ mount }) => {
             const calls: [string, string][] = [];
             const component = await mount(

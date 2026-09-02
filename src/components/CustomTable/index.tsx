@@ -46,6 +46,17 @@ type Props = {
      * absent the table keeps sorting the loaded page locally, so every existing caller is unaffected.
      */
     onSortChanged?: (fieldIdentifier: string, direction: SortDirection) => void;
+    /**
+     * Whether the active sort is remembered across mounts. Default `true`, which is what a table
+     * that sorts its own rows wants: the ordering is the table's own state and nothing else holds it.
+     *
+     * A caller whose sort belongs to something durable of its own passes `false`. On the listing
+     * pages the ordering is part of a saved view (Epic ilm#133, D7), so a copy in `tablePagination`
+     * would be a second authority over one fact — and, being consulted ahead of the sort the headers
+     * declare, would outrank the ordering the view just applied. With `false` nothing is read from
+     * persistence and nothing is written to it, so the headers stay the only statement of the sort.
+     */
+    persistSort?: boolean;
     onPageSizeChanged?: (pageSize: number) => void;
     onPageChanged?: (page: number) => void;
     itemsPerPageOptions?: number[];
@@ -97,6 +108,7 @@ function CustomTable({
     checkedRows,
     onCheckedRowsChanged,
     onSortChanged,
+    persistSort = true,
     onPageSizeChanged,
     onPageChanged,
     itemsPerPageOptions,
@@ -152,13 +164,14 @@ function CustomTable({
     const dispatch = useDispatch();
 
     // A sort restored from persistence outranks the one the headers declare: it is what the user last
-    // chose, and only a header that is actually there and sortable can carry it.
+    // chose, and only a header that is actually there and sortable can carry it. A caller that owns
+    // the sort itself is handed nothing here — see `persistSort`.
     const persistedSort = useMemo<ActiveSort | undefined>(() => {
         const column = persistedInternalPagination.sortColumn;
-        if (!hasPagination || !column) return undefined;
+        if (!persistSort || !hasPagination || !column) return undefined;
         if (!headers.some((header) => header.id === column && header.sortable)) return undefined;
         return { column, direction: persistedInternalPagination.sortDirection ?? 'asc' };
-    }, [hasPagination, headers, persistedInternalPagination.sortColumn, persistedInternalPagination.sortDirection]);
+    }, [persistSort, hasPagination, headers, persistedInternalPagination.sortColumn, persistedInternalPagination.sortDirection]);
 
     const incomingSort = useMemo(() => persistedSort ?? declaredSort(headers), [persistedSort, headers]);
     const incomingSortSignature = sortSignature(incomingSort);
@@ -528,14 +541,14 @@ function CustomTable({
             // another column moves the sort rather than adding to it.
             setActiveSort({ column: sortColumn, direction: sort });
 
-            if (hasPagination) {
+            if (hasPagination && persistSort) {
                 dispatch(tablePaginationActions.setSort({ key: internalPaginationStorageKey, sortColumn, sortDirection: sort }));
             }
 
             announcedServerSort.current = `${sortColumn}:${sort}`;
             onSortChanged?.(sortColumn, sort);
         },
-        [tblHeaders, hasPagination, internalPaginationStorageKey, dispatch, onSortChanged],
+        [tblHeaders, hasPagination, persistSort, internalPaginationStorageKey, dispatch, onSortChanged],
     );
 
     const onPageSizeChange = useCallback(
