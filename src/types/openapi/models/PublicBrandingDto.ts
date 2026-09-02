@@ -37,12 +37,6 @@ export interface PublicBrandingDto {
      */
     secondaryColor: string | null;
     /**
-     * Tertiary brand color, used as an additional accent
-     * @type {string}
-     * @memberof PublicBrandingDto
-     */
-    tertiaryColor: string | null;
-    /**
      * Page background color of the branded theme
      * @type {string}
      * @memberof PublicBrandingDto

@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { Resource } from './';
+import type { Resource, ResourceActionsDto } from './';
 
 /**
  * @export
@@ -24,4 +24,10 @@ export interface UserProfilePermissionsDto {
      * @memberof UserProfilePermissionsDto
      */
     allowedListings: Array<Resource>;
+    /**
+     * Actions the user is permitted to perform on a resource as a whole, per resource
+     * @type {Array<ResourceActionsDto>}
+     * @memberof UserProfilePermissionsDto
+     */
+    allowedActions: Array<ResourceActionsDto>;
 }

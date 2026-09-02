@@ -463,6 +463,8 @@ export * from './RequestAttributeCallback';
 export * from './RequestAttributeV2';
 export * from './RequestAttributeV3';
 export * from './Resource';
+export * from './ResourceAction';
+export * from './ResourceActionsDto';
 export * from './ResourceCertificateContentData';
 export * from './ResourceDto';
 export * from './ResourceEvent';

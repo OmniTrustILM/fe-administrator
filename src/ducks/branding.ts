@@ -11,7 +11,6 @@ export const platformDefaultBranding: PublicBrandingModel = {
     configured: false,
     primaryColor: null,
     secondaryColor: null,
-    tertiaryColor: null,
     backgroundColor: null,
     textColor: null,
     lightLogo: null,
@@ -71,7 +70,14 @@ export const slice = createSlice({
             state.isFetchingBranding = false;
         },
 
+        /**
+         * The previously read branding goes with the failure. `branding` is what the Appearance tab treats as proof of
+         * a known-good state to edit from, so leaving a cached value behind after a failed re-read would make the form
+         * writable over branding this session no longer knows to be current — and, because a save replaces the whole
+         * brand, the next edit would overwrite newer server state with it.
+         */
         getBrandingFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.branding = undefined;
             state.isFetchingBranding = false;
             state.error = action.payload.error;
         },

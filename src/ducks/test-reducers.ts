@@ -267,6 +267,42 @@ function authTestReducer(state: AuthTestState | undefined, _action: UnknownActio
     return state ?? authTestInitialState;
 }
 
+export type BrandingTestState = {
+    branding?: Record<string, string | undefined>;
+    /** What a save or a reset put on the wire. Kept apart from `branding` so a preloaded value is not mistaken for it. */
+    sentBranding?: Record<string, string | undefined>;
+    isFetchingBranding: boolean;
+    isUpdatingBranding: boolean;
+    isResettingBranding: boolean;
+    updateSucceeded: boolean;
+    resetSucceeded: boolean;
+    error?: string;
+};
+
+const brandingTestInitialState: BrandingTestState = {
+    isFetchingBranding: false,
+    isUpdatingBranding: false,
+    isResettingBranding: false,
+    updateSucceeded: false,
+    resetSucceeded: false,
+};
+
+/**
+ * Applies the write locally so a component test can assert what a save or a reset sent, without epics. The real slice
+ * stores the branding Core reads back; here the request itself is good enough to prove the payload.
+ */
+function brandingTestReducer(state: BrandingTestState = brandingTestInitialState, action: UnknownAction): BrandingTestState {
+    const a = action as { type: string; payload?: { branding?: Record<string, string | undefined> } };
+    switch (a.type) {
+        case 'branding/updateBranding':
+            return { ...state, sentBranding: a.payload?.branding, isUpdatingBranding: false, updateSucceeded: true };
+        case 'branding/resetBranding':
+            return { ...state, sentBranding: {}, branding: {}, isResettingBranding: false, resetSucceeded: true };
+        default:
+            return state;
+    }
+}
+
 export type CustomAttributesTestState = {
     resourceCustomAttributes: unknown[];
     resourceCustomAttributesContents: Array<{ resource: string; resourceUuid: string; customAttributes: unknown[] }>;
@@ -1252,6 +1288,7 @@ export const testReducers = combineReducers({
     rules: rulesTestReducer,
     comments: commentsTestReducer,
     listViews: listViewsTestReducer,
+    branding: brandingTestReducer,
 });
 
 export const testInitialState = {
@@ -1289,4 +1326,5 @@ export const testInitialState = {
     rules: rulesTestInitialState,
     comments: commentsTestInitialState,
     listViews: listViewsTestInitialState,
+    branding: brandingTestInitialState,
 };
