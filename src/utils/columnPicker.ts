@@ -38,7 +38,7 @@ export type ColumnCounterState = 'ok' | 'warning' | 'full';
 export function toCatalogueFields(catalogue: SearchFieldDataByGroupDto[]): SourcedCatalogueField[] {
     return catalogue.flatMap((group) =>
         (group.searchFieldData ?? [])
-            .filter((field) => (field as SourcedCatalogueField).displayable === true)
+            .filter((field) => field.displayable === true)
             .map((field) => ({ ...field, fieldSource: group.filterFieldSource }) as SourcedCatalogueField),
     );
 }

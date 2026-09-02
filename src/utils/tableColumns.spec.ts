@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { ColumnDefinition, ProjectedAttributeValues } from 'types/tableColumns';
 import { AttributeContentType, FilterFieldSource, FilterFieldType } from 'types/openapi';
-import { buildColumnHeaders, getColumnHeading, getColumnKey, getColumnSizing, getProjectedContent } from './tableColumns';
+import {
+    buildColumnHeaders,
+    getColumnHeading,
+    getColumnKey,
+    getColumnSizing,
+    getProjectedContent,
+    parseColumnKey,
+    toRequestColumns,
+} from './tableColumns';
 
 const column = (overrides: Partial<ColumnDefinition> = {}): ColumnDefinition => ({
     fieldSource: FilterFieldSource.Custom,
@@ -179,5 +187,73 @@ describe('buildColumnHeaders', () => {
 
     it('returns no headers for no columns', () => {
         expect(buildColumnHeaders([])).toEqual([]);
+    });
+});
+
+describe('parseColumnKey', () => {
+    it('is the inverse of getColumnKey', () => {
+        const identity = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' };
+        expect(parseColumnKey(getColumnKey(identity))).toEqual(identity);
+    });
+
+    it('keeps an attribute identifier whole, pipe and all', () => {
+        const identity = { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'department|STRING' };
+        expect(parseColumnKey(getColumnKey(identity))).toEqual(identity);
+    });
+
+    it('keeps an identifier that carries a separator of its own', () => {
+        const identity = { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'ns:field|STRING' };
+        expect(parseColumnKey(getColumnKey(identity))).toEqual(identity);
+    });
+
+    it('rejects a key that names no source', () => {
+        expect(parseColumnKey('COMMON_NAME')).toBeUndefined();
+    });
+
+    it('rejects a key whose source is not a field source', () => {
+        expect(parseColumnKey('nonsense:COMMON_NAME')).toBeUndefined();
+    });
+
+    it('rejects a key with no identifier behind the separator', () => {
+        expect(parseColumnKey('property:')).toBeUndefined();
+    });
+
+    it("rejects one of the table's own chrome columns", () => {
+        expect(parseColumnKey('__checkbox__')).toBeUndefined();
+    });
+});
+
+describe('toRequestColumns', () => {
+    it('reduces a column to the two fields the request carries', () => {
+        expect(toRequestColumns([column({ label: 'Dept' })])).toEqual([
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'costCentre' },
+        ]);
+    });
+
+    it('keeps the display order, which is the order the response is read in', () => {
+        expect(
+            toRequestColumns([column({ fieldIdentifier: 'b' }), column({ fieldIdentifier: 'a' })]).map(
+                (requested) => requested.fieldIdentifier,
+            ),
+        ).toEqual(['b', 'a']);
+    });
+
+    it('is undefined for no columns, so the field is omitted rather than sent empty', () => {
+        expect(toRequestColumns([])).toBeUndefined();
+    });
+});
+
+describe('buildColumnHeaders auxiliary heading content', () => {
+    it('attaches auxiliary content to the header of the column it is keyed by', () => {
+        const headers = buildColumnHeaders([column({ fieldIdentifier: 'a' }), column({ fieldIdentifier: 'b' })], {
+            info: { 'custom:a': 'legend' },
+        });
+
+        expect(headers[0].info).toBe('legend');
+        expect(headers[1].info).toBeUndefined();
+    });
+
+    it('leaves every header without it when none is given', () => {
+        expect(buildColumnHeaders([column()])[0].info).toBeUndefined();
     });
 });

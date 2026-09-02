@@ -33,19 +33,13 @@ export interface ColumnDefinition {
 }
 
 /**
- * A field the column catalogue offers, i.e. `GET /v1/{resource}/search` extended with the two flags
- * the list contract added. Both mirror the contract exactly, and stand in until the generated DTO in
- * `src/types/openapi` carries them.
+ * A field the column catalogue offers — `GET /v1/{resource}/search` — paired with the source it was
+ * published under. An identifier is unique only within its source, and the catalogue publishes the
+ * source once per group rather than on each field, so it is stamped on here.
+ *
+ * The `displayable` and `sortable` flags the list contract added come from the generated DTO itself.
  */
-export interface ColumnCatalogueField extends SearchFieldDataDto {
-    /** Whether the field may be requested as a column of the listing. */
-    displayable?: boolean;
-    /** Whether the listing may be ordered by the field. */
-    sortable?: boolean;
-}
-
-/** A catalogue field paired with the source it was published under. */
-export interface SourcedCatalogueField extends ColumnCatalogueField {
+export interface SourcedCatalogueField extends SearchFieldDataDto {
     fieldSource: FilterFieldSource;
 }
 
