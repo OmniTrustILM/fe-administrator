@@ -50,6 +50,12 @@ export type ViewTabsProps = Readonly<{
     isCatalogueLoaded?: boolean;
     /** The platform default column set for this page, which is what the Standard tab shows. */
     standardColumns: ColumnDefinition[];
+    /**
+     * The column keys the page has a cell renderer for. A property field outside the set is neither
+     * offered by the picker nor resolvable from a stored view, because it could only ever render the
+     * empty state — see `toCatalogueFields`. Omitted means no gate.
+     */
+    renderableProperties?: ReadonlySet<string>;
     /** The columns the table is showing, which a saved view may since have drifted from. */
     columns: ColumnDefinition[];
     /** The filters the table is listing under. A view carries its filters, so they can drift too. */
@@ -83,6 +89,7 @@ export default function ViewTabs({
     catalogue,
     isCatalogueLoaded,
     standardColumns,
+    renderableProperties,
     columns,
     filters,
     sort,
@@ -102,7 +109,7 @@ export default function ViewTabs({
     const [isPickerOpen, setIsPickerOpen] = useState(false);
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
 
-    const fields = useMemo(() => toCatalogueFields(catalogue), [catalogue]);
+    const fields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
 
     /**
      * The strip is held back until the view list has settled and the catalogue has arrived, and shows
@@ -461,6 +468,7 @@ export default function ViewTabs({
                 catalogue={catalogue}
                 columns={pickerColumns}
                 standardColumns={standardColumns}
+                renderableProperties={renderableProperties}
                 resourceLabel={resourceLabel}
                 getSourceLabel={getSourceLabel}
                 dataTestId={`${dataTestId}-picker`}

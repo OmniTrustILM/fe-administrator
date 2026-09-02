@@ -107,10 +107,12 @@ const audit = (overrides: Partial<ListViewModel> = {}): ListViewModel => ({
 type MountOptions = {
     views?: ListViewModel[];
     fields?: SearchFieldDataByGroupDto[];
+    standardColumns?: ColumnDefinition[];
     isMutating?: boolean;
     hasLoaded?: boolean;
     withheldCatalogue?: boolean;
     isCatalogueLoaded?: boolean;
+    renderableProperties?: string[];
     driftColumn?: ColumnDefinition;
     driftSort?: { fieldSource: FilterFieldSource; fieldIdentifier: string; direction: 'asc' | 'desc' };
     driftFilter?: SearchFilterModel;
@@ -119,10 +121,12 @@ type MountOptions = {
 const strip = ({
     views = [expiryWatch()],
     fields = catalogue,
+    standardColumns: standard = standardColumns,
     isMutating,
     hasLoaded,
     withheldCatalogue,
     isCatalogueLoaded,
+    renderableProperties,
     driftColumn,
     driftSort,
     driftFilter,
@@ -131,11 +135,12 @@ const strip = ({
         resource={Resource.Certificates}
         views={views}
         catalogue={fields}
-        standardColumns={standardColumns}
+        standardColumns={standard}
         isMutating={isMutating}
         hasLoaded={hasLoaded}
         withheldCatalogue={withheldCatalogue}
         isCatalogueLoaded={isCatalogueLoaded}
+        renderableProperties={renderableProperties}
         driftColumn={driftColumn}
         driftSort={driftSort}
         driftFilter={driftFilter}
@@ -687,13 +692,18 @@ test.describe('ViewTabs', () => {
         expect(JSON.stringify(action)).not.toContain('hunter2');
     });
 
+    // The column the table cannot show is one the catalogue publishes but the listing cannot display —
+    // a secret's content. That is the only such column that can reach a client: Core filters a view's
+    // columns against the resource catalogue on read, so a field it does not publish never arrives,
+    // and would be rejected outright on the way back if it did.
     test('keeps a column it cannot show when the ordering alone is saved', async ({ mount, page }) => {
         const stale = expiryWatch({
             defaultView: true,
-            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            columns: [stored('COMMON_NAME'), stored('vaultToken', FilterFieldSource.Custom)],
         });
         await mount(
             strip({
+                fields: secretCatalogue,
                 views: [stale],
                 driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
             }),
@@ -710,10 +720,27 @@ test.describe('ViewTabs', () => {
             view: {
                 columns: [
                     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
-                    { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired' },
+                    { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'vaultToken' },
                 ],
             },
         });
+    });
+
+    // Core rejects a create or update naming a column its catalogue does not publish, so a display-only
+    // column of the platform default set would make every save of the duplicate fail. It is dropped on
+    // the way out instead; it keeps rendering under Standard, which stores nothing.
+    test('drops a display-only column the catalogue does not publish when duplicating', async ({ mount, page }) => {
+        await mount(strip({ views: [], standardColumns: [commonName, column('CK_ASSOCIATIONS', 'Associations')] }));
+
+        await openTabMenu(page, 'Standard');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+        const action = await lastDispatched(page, 'listViews/createView');
+        expect(action?.payload).toMatchObject({
+            view: { columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }] },
+        });
+        expect(JSON.stringify(action)).not.toContain('CK_ASSOCIATIONS');
     });
 
     test('puts the tab back when a delete fails, and the rows with it', async ({ mount, page }) => {
@@ -739,5 +766,45 @@ test.describe('ViewTabs', () => {
 
         await expect(page.getByTestId('view-tabs-new')).toBeDisabled();
         await expect(page.getByRole('button', { name: 'Actions for Standard' })).toBeDisabled();
+    });
+
+    // The gate belongs to the page's cell registry: a property field it cannot render would show the
+    // empty state in every row, so it is offered nowhere the user could pick it.
+    test('keeps a property field the page cannot render out of the column dialog', async ({ mount, page }) => {
+        await mount(
+            strip({
+                views: [expiryWatch({ defaultView: true })],
+                renderableProperties: ['property:COMMON_NAME', 'property:NOT_AFTER'],
+            }),
+        );
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Edit columns…' }).click();
+
+        await expect(page.getByTestId('view-tabs-picker')).toBeVisible();
+        await expect(page.getByTestId('add-field-property:SERIAL_NUMBER')).toHaveCount(0);
+    });
+
+    test('still offers a property field the page can render', async ({ mount, page }) => {
+        await mount(
+            strip({
+                views: [expiryWatch({ defaultView: true })],
+                renderableProperties: ['property:COMMON_NAME', 'property:NOT_AFTER', 'property:SERIAL_NUMBER'],
+            }),
+        );
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Edit columns…' }).click();
+
+        await expect(page.getByTestId('add-field-property:SERIAL_NUMBER')).toBeVisible();
+    });
+
+    test('leaves an attribute field offered whatever the gate says', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true })], renderableProperties: [] }));
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Edit columns…' }).click();
+
+        await expect(page.getByTestId('add-field-custom:environment')).toBeVisible();
     });
 });

@@ -342,6 +342,11 @@ export function isSliceDirty(stored: ViewSlice, current: ViewSlice): boolean {
  * Saving an ordering or a filter must not drop a column the listing cannot display. The table never
  * showed it, so the user was never offered the choice — the column picker is the one place such a
  * column is removed, because it is the one place it is shown.
+ *
+ * Such a column is one the catalogue publishes but marks undisplayable — a secret's content — which
+ * is the only kind that can reach a client: Core filters a view's columns against the resource
+ * catalogue on read. A column outside the catalogue entirely is a different case and does not
+ * survive {@link toStorableColumns}, which runs after this on every write.
  */
 export function toStoredColumnsKeepingUnavailable(
     rendered: readonly ColumnDefinition[],

@@ -30,6 +30,12 @@ export type ColumnPickerProps = Readonly<{
     columns: ColumnDefinition[];
     /** The platform default set, offered inside the dialog as "Reset to Standard columns". */
     standardColumns?: ColumnDefinition[];
+    /**
+     * The column keys the page has a cell renderer for. A property field outside the set is not
+     * offered, because it could only ever render the empty state — see `toCatalogueFields`. Omitted
+     * means no gate.
+     */
+    renderableProperties?: ReadonlySet<string>;
     /** Named in the dialog caption, e.g. "Certificates". */
     resourceLabel?: string;
     /** Resolves a source to its platform label; falls back to the picker's own names. */
@@ -50,11 +56,12 @@ export default function ColumnPicker({
     catalogue,
     columns,
     standardColumns = NO_STANDARD_COLUMNS,
+    renderableProperties,
     resourceLabel,
     getSourceLabel,
     dataTestId = 'column-picker',
 }: ColumnPickerProps) {
-    const fields = useMemo(() => toCatalogueFields(catalogue), [catalogue]);
+    const fields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
     const [draft, setDraft] = useState<PickerColumn[]>([]);
     const [search, setSearch] = useState('');
 

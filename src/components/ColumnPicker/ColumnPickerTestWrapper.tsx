@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import ColumnPicker from './index';
@@ -9,6 +9,8 @@ type Props = Readonly<{
     catalogue: SearchFieldDataByGroupDto[];
     /** Withholds the catalogue until released, so a test can make it land after the dialog opened. */
     withheldCatalogue?: boolean;
+    /** The renderable-property gate, as an array: a `Set` does not survive the props boundary. */
+    renderableProperties?: string[];
     onSave?: (columns: ColumnDefinition[]) => void;
 }>;
 
@@ -21,8 +23,16 @@ const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
  * Every render hands the picker freshly cloned props, which is what a caller re-rendering from a
  * selector does. The dialog is expected to keep the working copy across that.
  */
-export default function ColumnPickerTestWrapper({ columns, standardColumns = [], catalogue, withheldCatalogue = false, onSave }: Props) {
+export default function ColumnPickerTestWrapper({
+    columns,
+    standardColumns = [],
+    catalogue,
+    withheldCatalogue = false,
+    renderableProperties,
+    onSave,
+}: Props) {
     const [isReleased, setIsReleased] = useState(!withheldCatalogue);
+    const gate = useMemo(() => (renderableProperties ? new Set(renderableProperties) : undefined), [renderableProperties]);
     const [nonce, setNonce] = useState(0);
 
     return (
@@ -40,6 +50,7 @@ export default function ColumnPickerTestWrapper({ columns, standardColumns = [],
                 catalogue={isReleased ? clone(catalogue) : []}
                 columns={clone(columns)}
                 standardColumns={clone(standardColumns)}
+                renderableProperties={gate}
                 resourceLabel="Certificates"
             />
         </div>
