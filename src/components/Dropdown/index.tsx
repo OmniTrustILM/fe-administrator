@@ -46,7 +46,7 @@ function Dropdown({
                     aria-label={ariaLabel}
                     className={cn(
                         'group p-2 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg text-inherit',
-                        'focus:outline-hidden disabled:opacity-50 disabled:pointer-events-none',
+                        'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-current disabled:opacity-50 disabled:pointer-events-none',
                         {
                             'border border-outline shadow-2xs bg-surface-raised text-content hover:bg-surface-hover focus:bg-surface-hover':
                                 btnStyle !== 'transparent',

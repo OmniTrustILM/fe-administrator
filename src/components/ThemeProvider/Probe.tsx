@@ -1,4 +1,5 @@
 import { useTheme } from './index';
+import { THEME_MODES } from 'utils/theme';
 
 export default function Probe() {
     const { mode, resolvedTheme, setMode, cycleMode } = useTheme();
@@ -10,9 +11,11 @@ export default function Probe() {
             <button type="button" data-testid="cycle" onClick={cycleMode}>
                 cycle
             </button>
-            <button type="button" data-testid="set-dark" onClick={() => setMode('dark')}>
-                dark
-            </button>
+            {THEME_MODES.map((option) => (
+                <button key={option} type="button" data-testid={`set-${option}`} onClick={() => setMode(option)}>
+                    {option}
+                </button>
+            ))}
         </div>
     );
 }
