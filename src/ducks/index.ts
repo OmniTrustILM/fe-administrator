@@ -33,6 +33,7 @@ import enumsEpics from './enums-epics';
 import filtersEpics from './filters-epics';
 import globalMetadataEpics from './globalMetadata-epics';
 import infoEpics from './info-epics';
+import listViewsEpics from './listViews-epics';
 import locationsEpics from './locations-epics';
 import notificationsEpics from './notifications-epics';
 import notificationProfilesEpics from './notification-profiles-epics';
@@ -105,6 +106,7 @@ export const epics = combineEpics(
     ...credentialsEpics,
     ...entitiesEpics,
     ...filtersEpics,
+    ...listViewsEpics,
     ...locationsEpics,
     ...auditLogsEpics,
     ...customAttributesEpics,

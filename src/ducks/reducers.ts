@@ -55,6 +55,7 @@ import { slice as tokenSlice } from './tokens';
 import { slice as tablePaginationSlice } from './table-pagination';
 import { slice as listFiltersSlice } from './list-filters';
 import { slice as listScopesSlice } from './list-scopes';
+import { slice as listViewsSlice } from './listViews';
 import { slice as trustedCertificatesSlice } from './trusted-certificates';
 import { slice as usersSlice } from './users';
 import { slice as utilsActuatorSlice } from './utilsActuator';
@@ -123,6 +124,7 @@ export const reducers = combineReducers({
     [tablePaginationSlice.name]: tablePaginationSlice.reducer,
     [listFiltersSlice.name]: listFiltersSlice.reducer,
     [listScopesSlice.name]: listScopesSlice.reducer,
+    [listViewsSlice.name]: listViewsSlice.reducer,
     [trustedCertificatesSlice.name]: trustedCertificatesSlice.reducer,
     [cryptographicKeySlice.name]: cryptographicKeySlice.reducer,
     [cryptographicOperationsSlice.name]: cryptographicOperationsSlice.reducer,

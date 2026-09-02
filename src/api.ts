@@ -32,6 +32,7 @@ import {
     GlobalMetadataApi,
     InfoApi,
     InternalNotificationApi,
+    ListViewApi,
     LocationManagementApi,
     NotificationProfileInventoryApi,
     ProxyManagementApi,
@@ -110,6 +111,7 @@ export interface ApiClients {
     settings: SettingsApi;
     branding: BrandingApi;
     comments: CommentsApi;
+    listViews: ListViewApi;
     scheduler: ScheduledJobsManagementApi;
     approvalProfiles: ApprovalProfileInventoryApi;
     approvals: ApprovalInventoryApi;
@@ -178,6 +180,7 @@ const factories: Partial<{ [K in ApiClientKey]: () => ApiClients[K] }> = {
     settings: () => new SettingsApi(configuration),
     branding: () => new BrandingApi(configuration),
     comments: () => new CommentsApi(configuration),
+    listViews: () => new ListViewApi(configuration),
     scheduler: () => new ScheduledJobsManagementApi(configuration),
     approvalProfiles: () => new ApprovalProfileInventoryApi(configuration),
     approvals: () => new ApprovalInventoryApi(configuration),
