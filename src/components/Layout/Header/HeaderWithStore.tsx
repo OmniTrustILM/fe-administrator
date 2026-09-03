@@ -28,7 +28,6 @@ export default function HeaderWithStore({ branding = UNBRANDED, ...props }: Read
     const store = createMockStore({ branding: { ...brandingTestInitialState, publicBranding: branding, publicBrandingReadFailed: false } });
     return (
         <Provider store={store}>
-            {/* The marks the header is expected to choose between, as the browser resolves them. */}
             <span data-testid="platform-marks" data-color={colorLogo} data-reversed={reversedLogo} hidden />
             <MemoryRouter initialEntries={['/']}>
                 <ThemeProvider>

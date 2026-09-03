@@ -47,7 +47,6 @@ export function LoginWithStore({ branding, readFailed = false, loginMethods, err
 
     return (
         <Provider store={store}>
-            {/* The marks the login page is expected to choose between, as the browser resolves them. */}
             <span data-testid="platform-marks" data-color={colorLogo} data-reversed={reversedLogo} hidden />
             <MemoryRouter initialEntries={['/login']}>
                 <ThemeProvider branding={readFailed ? undefined : { defaultTheme: branding?.defaultTheme as BrandingTheme | undefined }}>

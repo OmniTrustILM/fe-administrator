@@ -35,7 +35,6 @@ test.describe('Header', () => {
         await expect(menuButton).toBeVisible();
     });
 
-    /** The coloured mark would be the wrong one in either theme, so it is named and excluded rather than just absent. */
     test('should render the reversed platform mark, not the coloured one, when nothing is branded', async ({ mount, page }) => {
         await mount(<HeaderWithStore sidebarToggle={() => {}} branding={{ configured: false, lightLogo: null, darkLogo: null }} />);
 

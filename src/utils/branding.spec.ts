@@ -119,6 +119,8 @@ describe('branding', () => {
             ['a stored SVG', SVG],
             ['an unpadded payload', 'data:image/png;base64,iVBORw0KGgo'],
             ['a singly padded payload', 'data:image/png;base64,iVBORw0KGg=='],
+            ['a payload padded to the quartet', 'data:image/png;base64,AAA='],
+            ['a two-character unpadded payload', 'data:image/png;base64,AA'],
             // Core lower-cases the declared type before comparing it, and returns a PNG's data URI unchanged, so a
             // stored logo may carry the type in any case.
             ['a media type in another case', 'data:IMAGE/PNG;base64,iVBORw0KGgo='],
@@ -136,6 +138,12 @@ describe('branding', () => {
             ['an empty payload', 'data:image/png;base64,'],
             ['padding in the middle of the payload', 'data:image/png;base64,iVBO=Rw0KGgo='],
             ['more than two padding characters', 'data:image/png;base64,iVBORw0KG==='],
+            // Undecodable lengths. The pattern alone admits these, which is why the payload is measured as well:
+            // Core reaches the same verdict a moment later, when its decoder throws on them.
+            ['padding that does not complete the quartet', 'data:image/png;base64,A='],
+            ['two padding characters after a lone quartet remainder', 'data:image/png;base64,AAA=='],
+            ['a single trailing character, too few bits for a byte', 'data:image/png;base64,A'],
+            ['an unpadded payload with a lone trailing character', 'data:image/png;base64,AAAAA'],
             ['an unsupported media type', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='],
             ['no media type at all', 'data:;base64,PHN2Zy8+'],
             ['an absolute URL', 'https://example.invalid/logo.svg'],

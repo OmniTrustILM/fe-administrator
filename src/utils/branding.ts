@@ -62,9 +62,26 @@ export const dataUriMediaType = (dataUri: string): string | undefined => /^data:
 /**
  * The shape of a stored logo, mirroring `BrandingLogoValidator.DATA_URI` in Core: a media type, then a base64 payload
  * in the standard alphabet with at most two padding characters. The media type is captured rather than fixed here so
- * that it can be compared case-insensitively, as Core compares it.
+ * that it can be compared case-insensitively, as Core compares it, and the payload so its length can be checked.
  */
-const LOGO_DATA_URI_PATTERN = /^data:([^;,]+);base64,[A-Za-z0-9+/]+={0,2}$/;
+const LOGO_DATA_URI_PATTERN = /^data:([^;,]+);base64,([A-Za-z0-9+/]+={0,2})$/;
+
+/**
+ * Whether a base64 payload is one a decoder would actually accept.
+ *
+ * The pattern above cannot express this, and Core does not ask it to: it decodes the payload immediately afterwards
+ * and turns the failure into a rejection, so `A=`, `A`, `AAAAA` and `AAA==` are refused there by the decoder rather
+ * than by the regex. This is that step, and it follows the same decoder Core uses. Padding, when present, has to
+ * complete the four-character group; without padding the only impossible remainder is a single trailing character,
+ * which carries too few bits to be a byte - an otherwise well-formed payload that simply was not padded is accepted,
+ * as `Base64.getDecoder()` accepts it.
+ */
+const isDecodableBase64 = (payload: string): boolean => {
+    const padding = payload.length - payload.replace(/=+$/, '').length;
+    const data = payload.length - padding;
+
+    return padding === 0 ? data % 4 !== 1 : (data + padding) % 4 === 0;
+};
 
 /**
  * Whether a stored logo is safe to point an `img` at.
@@ -82,9 +99,15 @@ export const isRenderableLogo = (value: string | null | undefined): value is str
         return false;
     }
 
-    const mediaType = LOGO_DATA_URI_PATTERN.exec(value)?.[1];
+    const match = LOGO_DATA_URI_PATTERN.exec(value);
 
-    return mediaType !== undefined && (LOGO_MEDIA_TYPES as readonly string[]).includes(mediaType.toLowerCase());
+    if (!match) {
+        return false;
+    }
+
+    const [, mediaType, payload] = match;
+
+    return (LOGO_MEDIA_TYPES as readonly string[]).includes(mediaType.toLowerCase()) && isDecodableBase64(payload);
 };
 
 /** The media type implied by a file name, for the extension fallback above. */
