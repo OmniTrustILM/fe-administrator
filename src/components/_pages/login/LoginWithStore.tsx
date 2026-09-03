@@ -10,6 +10,12 @@ import { createMockStore } from 'utils/test-helpers';
 
 import Login from './index';
 
+// Resolved here rather than in the spec: in the Node half of a component test an asset import is an opaque reference
+// rather than the URL the bundler gives the browser, so a spec that imported these could not compare them to a
+// rendered `src`.
+import colorLogo from '../../../resources/images/ot-logo-color.svg';
+import reversedLogo from '../../../resources/images/ot-logo-white.svg';
+
 export type LoginWithStoreProps = Readonly<{
     /** The anonymous branding response, as JSON a Playwright test can hand across the Node/browser boundary. */
     branding?: Record<string, string | null | boolean>;
@@ -41,6 +47,8 @@ export function LoginWithStore({ branding, readFailed = false, loginMethods, err
 
     return (
         <Provider store={store}>
+            {/* The marks the login page is expected to choose between, as the browser resolves them. */}
+            <span data-testid="platform-marks" data-color={colorLogo} data-reversed={reversedLogo} hidden />
             <MemoryRouter initialEntries={['/login']}>
                 <ThemeProvider branding={readFailed ? undefined : { defaultTheme: branding?.defaultTheme as BrandingTheme | undefined }}>
                     <BrandTokens />

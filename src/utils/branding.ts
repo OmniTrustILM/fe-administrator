@@ -60,12 +60,32 @@ export const logoRatioError = (width: number, height: number): string | undefine
 export const dataUriMediaType = (dataUri: string): string | undefined => /^data:([^;,]+)[;,]/.exec(dataUri)?.[1];
 
 /**
- * Whether a stored logo is safe to point an `img` at. Core stores logos as base64 data URIs of an accepted media type,
- * so anything else - an absolute URL above all - did not come from an upload, and rendering it would reach out to
- * whatever host it names on behalf of every viewer, the anonymous ones on the login page included.
+ * The shape of a stored logo, mirroring `BrandingLogoValidator.DATA_URI` in Core: a media type, then a base64 payload
+ * in the standard alphabet with at most two padding characters. The media type is captured rather than fixed here so
+ * that it can be compared case-insensitively, as Core compares it.
  */
-export const isRenderableLogo = (value: string | null | undefined): value is string =>
-    typeof value === 'string' && (LOGO_MEDIA_TYPES as readonly string[]).includes(dataUriMediaType(value) ?? '');
+const LOGO_DATA_URI_PATTERN = /^data:([^;,]+);base64,[A-Za-z0-9+/]+={0,2}$/;
+
+/**
+ * Whether a stored logo is safe to point an `img` at.
+ *
+ * Core stores a logo only in the form above - it re-encodes an SVG after sanitizing it, and accepts a PNG only once
+ * its bytes have been walked - so anything else did not come from an upload. An absolute URL is the case that matters
+ * most: rendering one would have every viewer, the anonymous ones on the login page included, fetch from whatever host
+ * it names. The whole form is required rather than only the media type, because a data URI can declare an accepted
+ * type and still carry something no browser will decode: `data:image/png,raw` and
+ * `data:image/svg+xml;charset=utf-8,<svg/>` both name a permitted type, and `BrandLogo` has no decode-error fallback,
+ * so either one would show a broken image where the platform mark belongs.
+ */
+export const isRenderableLogo = (value: string | null | undefined): value is string => {
+    if (typeof value !== 'string') {
+        return false;
+    }
+
+    const mediaType = LOGO_DATA_URI_PATTERN.exec(value)?.[1];
+
+    return mediaType !== undefined && (LOGO_MEDIA_TYPES as readonly string[]).includes(mediaType.toLowerCase());
+};
 
 /** The media type implied by a file name, for the extension fallback above. */
 export const logoMediaTypeFromName = (name: string): string | undefined => {

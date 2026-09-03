@@ -37,10 +37,44 @@ test.describe('BrandLogo', () => {
         await expect(page.getByTestId('brand-logo')).toHaveAttribute('src', '/platform-dark.svg');
     });
 
-    test('should render the platform mark while the branding read is still in flight', async ({ mount, page }) => {
+    /**
+     * A branded instance must not paint the platform mark and then correct itself, and an operator's logo cannot be
+     * cached for the first paint the way the colours are - so the logo waits for the answer instead of guessing it.
+     */
+    test('should show no logo while the branding read is still in flight', async ({ mount, page }) => {
         await mount(<BrandLogoWithStore />);
 
+        await expect(page.getByTestId('brand-logo')).not.toBeVisible();
+    });
+
+    test('should reserve the space the logo will occupy while it waits', async ({ mount, page }) => {
+        await mount(<BrandLogoWithStore />);
+
+        const box = await page.getByTestId('brand-logo').boundingBox();
+
+        expect(box?.height).toBeCloseTo(36, 0);
+        expect(box?.width ?? 0).toBeGreaterThan(0);
+    });
+
+    test('should reveal the platform mark once the read settles on no branding', async ({ mount, page }) => {
+        await mount(<BrandLogoWithStore branding={unbranded} />);
+
+        await expect(page.getByTestId('brand-logo')).toBeVisible();
         await expect(page.getByTestId('brand-logo')).toHaveAttribute('src', '/platform-light.svg');
+    });
+
+    test('should reveal the operator logo once the read settles on branding', async ({ mount, page }) => {
+        await mount(<BrandLogoWithStore branding={branded} />);
+
+        await expect(page.getByTestId('brand-logo')).toBeVisible();
+        await expect(page.getByTestId('brand-logo')).toHaveAttribute('src', LIGHT_LOGO);
+    });
+
+    /** A failed read is a settled answer: there is no second one coming, so the logo must not wait for ever. */
+    test('should reveal the platform mark when the read failed', async ({ mount, page }) => {
+        await mount(<BrandLogoWithStore branding={branded} readFailed />);
+
+        await expect(page.getByTestId('brand-logo')).toBeVisible();
     });
 
     test('should render the uploaded logo for the active theme', async ({ mount, page }) => {
@@ -82,13 +116,25 @@ test.describe('BrandLogo', () => {
         await expect(page.getByTestId('brand-logo')).toHaveAttribute('src', '/platform-light.svg');
     });
 
-    test('should refuse a stored logo that is not a data URI of an accepted type', async ({ mount, page }) => {
-        // Core stores logos as base64 data URIs, so anything else did not come from an upload. An absolute URL would
-        // otherwise have every viewer - the anonymous ones included - fetch from whatever host it names.
-        await mount(<BrandLogoWithStore branding={{ ...branded, lightLogo: 'https://example.invalid/logo.svg' }} />);
+    /**
+     * Core stores a logo only as a base64 data URI of an accepted type, so anything else did not come from an upload.
+     * An absolute URL is the case that matters most - it would have every viewer, the anonymous ones included, fetch
+     * from whatever host it names - but a payload that merely declares an accepted type is refused too: it would
+     * decode to nothing and show a broken image, since there is no decode-error fallback behind it. The exhaustive
+     * table for the predicate itself is in `utils/branding.spec.ts`; these are the cases that reach the DOM.
+     */
+    for (const [description, lightLogo] of [
+        ['an absolute URL', 'https://example.invalid/logo.svg'],
+        ['a raw payload behind an accepted media type', 'data:image/png,raw'],
+        ['a URI-encoded SVG rather than a base64 one', 'data:image/svg+xml;charset=utf-8,<svg/>'],
+        ['a payload outside the base64 alphabet', 'data:image/png;base64,%%%'],
+    ] as const) {
+        test(`should refuse a stored logo carrying ${description}`, async ({ mount, page }) => {
+            await mount(<BrandLogoWithStore branding={{ ...branded, lightLogo }} />);
 
-        await expect(page.getByTestId('brand-logo')).toHaveAttribute('src', '/platform-light.svg');
-    });
+            await expect(page.getByTestId('brand-logo')).toHaveAttribute('src', '/platform-light.svg');
+        });
+    }
 
     test('should render through an img element, never as inlined markup', async ({ mount, page }) => {
         const svgLogo = `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3 1"><rect width="3" height="1"/></svg>').toString('base64')}`;

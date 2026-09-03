@@ -1,5 +1,23 @@
-import { test, expect } from '../../../../playwright/ct-test';
+import { test, expect, type Page } from '../../../../playwright/ct-test';
 import HeaderWithStore from './HeaderWithStore';
+
+/**
+ * The two platform marks, read back from the harness that resolved them.
+ *
+ * The header takes the reversed mark in both themes, because its surface carries the brand colour in the light theme
+ * and a near-black in the dark one - so which asset it passes is the contract that distinguishes it from the login
+ * page, which swaps a coloured mark for a reversed one. Matching merely `data:image/svg+xml` would hold for either.
+ */
+const platformMarks = async (page: Page) => {
+    const marks = page.getByTestId('platform-marks');
+    const [color, reversed] = await Promise.all([marks.getAttribute('data-color'), marks.getAttribute('data-reversed')]);
+
+    expect(color, 'the harness did not publish the coloured mark').toBeTruthy();
+    expect(reversed, 'the harness did not publish the reversed mark').toBeTruthy();
+    expect(color, 'the two platform marks must be distinguishable for this assertion to mean anything').not.toBe(reversed);
+
+    return { color: color as string, reversed: reversed as string };
+};
 
 test.describe('Header', () => {
     test.use({ viewport: { width: 375, height: 667 } }); // mobile so sidebar toggle is visible (md:hidden)
@@ -17,11 +35,14 @@ test.describe('Header', () => {
         await expect(menuButton).toBeVisible();
     });
 
-    test('should render the platform mark on an instance with no branding', async ({ mount, page }) => {
+    /** The coloured mark would be the wrong one in either theme, so it is named and excluded rather than just absent. */
+    test('should render the reversed platform mark, not the coloured one, when nothing is branded', async ({ mount, page }) => {
         await mount(<HeaderWithStore sidebarToggle={() => {}} branding={{ configured: false, lightLogo: null, darkLogo: null }} />);
 
-        // The bundler inlines the platform mark as an SVG data URI, so its type is what tells it apart from an upload.
-        await expect(page.getByTestId('header-logo')).toHaveAttribute('src', /^data:image\/svg\+xml/);
+        const { color, reversed } = await platformMarks(page);
+
+        await expect(page.getByTestId('header-logo')).toHaveAttribute('src', reversed);
+        expect(await page.getByTestId('header-logo').getAttribute('src')).not.toBe(color);
     });
 
     test('should render the operator logo in place of the platform mark', async ({ mount, page }) => {
