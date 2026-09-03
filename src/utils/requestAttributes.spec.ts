@@ -2,7 +2,7 @@ import { describe, expect, it, test } from 'vitest';
 import { AttributeContentType, AttributeType, FieldType, ObjectType } from 'types/openapi';
 import type { FieldMapping } from 'types/openapi';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import { fieldMappingSummary, fieldMappingTokens, getFieldMapping } from './requestAttributes';
+import { fieldMappingSummary, fieldMappingTokens, getFieldMapping, getMappedExtensionOid } from './requestAttributes';
 
 // fields carry rdn/generalNameType/extensionOid that the generated TS subtypes omit,
 // so build plain objects and cast to the FieldMapping shape.
@@ -108,5 +108,33 @@ describe('fieldMappingTokens RDN code resolution', () => {
 
     it('falls back to the raw OID when the map has no entry', () => {
         expect(fieldMappingTokens(mapping, {})).toEqual(['Subject 2.5.4.3']);
+    });
+});
+
+describe('structured target tokens', () => {
+    it('renders Key Usage and Extended Key Usage tokens after the generic groups', () => {
+        const fm = mapping([
+            { fieldType: FieldType.ExtendedKeyUsage },
+            { fieldType: FieldType.KeyUsage },
+            { fieldType: FieldType.Rdn, rdn: 'CN' },
+        ]);
+        expect(fieldMappingTokens(fm)).toEqual(['Subject CN', 'Key Usage', 'Extended Key Usage']);
+        expect(fieldMappingSummary(fm)).toBe('Subject CN + Key Usage + Extended Key Usage');
+    });
+});
+
+describe('getMappedExtensionOid', () => {
+    it('returns the OID of a generic extension mapping', () => {
+        expect(getMappedExtensionOid(mapping([{ fieldType: FieldType.Extension, extensionOid: '2.5.29.19' }]))).toBe('2.5.29.19');
+    });
+
+    it('ignores the typed Key Usage / Extended Key Usage targets — they never accept a raw value', () => {
+        expect(getMappedExtensionOid(mapping([{ fieldType: FieldType.KeyUsage }]))).toBeUndefined();
+        expect(getMappedExtensionOid(mapping([{ fieldType: FieldType.ExtendedKeyUsage }]))).toBeUndefined();
+    });
+
+    it('returns undefined for no mapping or a mapping without an extension field', () => {
+        expect(getMappedExtensionOid(undefined)).toBeUndefined();
+        expect(getMappedExtensionOid(mapping([{ fieldType: FieldType.Rdn, rdn: 'CN' }]))).toBeUndefined();
     });
 });

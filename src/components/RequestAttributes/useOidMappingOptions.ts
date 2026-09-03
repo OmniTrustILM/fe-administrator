@@ -7,17 +7,21 @@ import { toMergedOidSelectOptions, type OidSelectOption } from 'utils/oid';
 export type OidMappingOptions = {
     rdnOptions: OidSelectOption[];
     extensionOptions: OidSelectOption[];
+    extendedKeyUsageOptions: OidSelectOption[];
     rdnOptionsError: boolean;
     extensionOptionsError: boolean;
+    extendedKeyUsageOptionsError: boolean;
     rdnOptionsLoaded: boolean;
     extensionOptionsLoaded: boolean;
+    extendedKeyUsageOptionsLoaded: boolean;
 };
 
 /**
- * Fetches and derives the RDN / certificate-extension option lists for the request-attribute
- * authoring editor. Standard entries (RDNs such as CN/O/OU, extensions such as Extended Key Usage)
- * live in the backend's system registry rather than in /v1/oids/list, so both targets merge the
- * cached system list with the per-category custom list.
+ * Fetches and derives the RDN / certificate-extension / extended-key-usage option lists for the
+ * request-attribute authoring editor. Standard entries (RDNs such as CN/O/OU, extensions such as
+ * Extended Key Usage, EKU purposes such as serverAuth) live in the backend's system registry rather
+ * than in /v1/oids/list, so every target merges the cached system list with the per-category custom
+ * list.
  */
 export function useOidMappingOptions(): OidMappingOptions {
     const dispatch = useDispatch();
@@ -32,6 +36,7 @@ export function useOidMappingOptions(): OidMappingOptions {
     useEffect(() => {
         dispatch(oidActions.listOidsByCategory({ category: OidCategory.RdnAttributeType }));
         dispatch(oidActions.listOidsByCategory({ category: OidCategory.CertificateExtension }));
+        dispatch(oidActions.listOidsByCategory({ category: OidCategory.ExtendedKeyUsage }));
         // The epic caches the (category-unfiltered) system list once, so this is cheap on remount.
         dispatch(oidActions.listSystemOids());
     }, [dispatch]);
@@ -50,12 +55,20 @@ export function useOidMappingOptions(): OidMappingOptions {
         [systemOidsByCategory, oidsByCategory],
     );
 
+    const extendedKeyUsageOptions = useMemo(
+        () => toMergedOidSelectOptions(systemOidsByCategory[OidCategory.ExtendedKeyUsage], oidsByCategory[OidCategory.ExtendedKeyUsage]),
+        [systemOidsByCategory, oidsByCategory],
+    );
+
     return {
         rdnOptions,
         extensionOptions,
+        extendedKeyUsageOptions,
         rdnOptionsError: !!oidsByCategoryError[OidCategory.RdnAttributeType] || systemOidsError,
         extensionOptionsError: !!oidsByCategoryError[OidCategory.CertificateExtension] || systemOidsError,
+        extendedKeyUsageOptionsError: !!oidsByCategoryError[OidCategory.ExtendedKeyUsage] || systemOidsError,
         rdnOptionsLoaded: !!oidsByCategoryLoaded[OidCategory.RdnAttributeType] && systemOidsLoaded,
         extensionOptionsLoaded: !!oidsByCategoryLoaded[OidCategory.CertificateExtension] && systemOidsLoaded,
+        extendedKeyUsageOptionsLoaded: !!oidsByCategoryLoaded[OidCategory.ExtendedKeyUsage] && systemOidsLoaded,
     };
 }

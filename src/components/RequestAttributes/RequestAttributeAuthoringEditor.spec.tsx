@@ -68,6 +68,41 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         expect(parsed.attributes[0].label).toBe('Server FQDN');
     });
 
+    test('a rejected save keeps the attribute dialog open with the draft and the error', async ({ mount, page }) => {
+        const component = await mount(
+            withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode simulatePersist={{ failWith: 'rejected by Core' }} />),
+        );
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('serverFqdn');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Server FQDN');
+        await pickSanMapping(page);
+        await page.getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(page.getByTestId('request-attribute-authoring-attribute-save-error')).toContainText('rejected by Core');
+        await expect(page.locator('#ra-attr-name')).toHaveValue('serverFqdn');
+        // The committed list was rolled back, so nothing was silently kept outside the dialog.
+        const parsed = JSON.parse((await component.getByTestId('value-json').textContent()) ?? '{}');
+        expect(parsed.attributes).toHaveLength(0);
+    });
+
+    test('an awaited save closes the attribute dialog only once persistence succeeds', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode simulatePersist={{}} />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('serverFqdn');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Server FQDN');
+        await pickSanMapping(page);
+        await page.getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(page.getByTestId('request-attribute-authoring-attribute-form')).toHaveCount(0);
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
+    });
+
     test('the attribute dialog surfaces per-field guidance via label tooltips', async ({ mount, page }) => {
         const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
 
@@ -152,6 +187,30 @@ test.describe('RequestAttributeAuthoringEditor', () => {
 
         const parsed = JSON.parse((await component.getByTestId('value-json').textContent()) ?? '{}');
         expect(parsed.attributes[0].mappingExtensionOid).toBe('1.3.6.1.4.1.99999.2');
+    });
+
+    test('extension target does not offer Key Usage or Extended Key Usage OIDs', async ({ mount, page }) => {
+        const component = await mount(
+            withProviders(
+                <RequestAttributeAuthoringEditorHarness
+                    showMergeMode
+                    extensionOptions={[
+                        { value: '2.5.29.15', label: 'Key Usage' },
+                        { value: '2.5.29.37', label: 'Extended Key Usage' },
+                        { value: '1.3.6.1.4.1.99999.2', label: 'Subject Alternative Name' },
+                    ]}
+                />,
+            ),
+        );
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Certificate extension' }).click();
+
+        await page.getByTestId('select-ra-attr-extension-oid-trigger').click();
+        await expect(page.getByRole('option', { name: 'Subject Alternative Name' })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Key Usage', exact: true })).toHaveCount(0);
+        await expect(page.getByRole('option', { name: 'Extended Key Usage' })).toHaveCount(0);
     });
 
     test('empty RDN list shows a hint', async ({ mount, page }) => {
@@ -880,5 +939,178 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await page.getByTestId('select-ra-attr-content-type-trigger').click();
         await page.getByRole('option', { name: 'String', exact: true }).click();
         await expect(page.locator('#ra-attr-regex-pattern')).toHaveValue('');
+    });
+});
+
+const KEY_USAGE_OPTIONS = [
+    { value: 'digitalSignature', label: 'Digital Signature' },
+    { value: 'cRLSign', label: 'CRL Sign' },
+];
+
+const EKU_OPTIONS = [
+    { value: '1.3.6.1.5.5.7.3.1', label: 'Server Authentication' },
+    { value: '1.3.6.1.5.5.7.3.2', label: 'Client Authentication' },
+];
+
+test.describe('structured mapping targets', () => {
+    test('Key Usage: permitted-set multi-select submits key-usage codes and forces the list shape', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness keyUsageOptions={KEY_USAGE_OPTIONS} />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('keyUsage');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Key Usage');
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Key Usage', exact: true }).click();
+
+        // The generic value-source selector gives way to the typed permitted-set editor.
+        await expect(page.getByTestId('select-ra-attr-value-source-trigger')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-key-usage-set')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-permitted-set-semantics')).toContainText('permitted set');
+
+        await page.getByTestId('select-ra-attr-permitted-set-trigger').click();
+        await page.getByRole('option', { name: 'Digital Signature' }).click();
+        await page.getByRole('option', { name: 'CRL Sign' }).click();
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        const json = await component.getByTestId('value-json').textContent();
+        const attr = JSON.parse(json ?? '{}').attributes[0];
+        expect(attr.mappingFieldType).toBe('keyUsage');
+        expect(attr.staticValues).toEqual(['digitalSignature', 'cRLSign']);
+        expect(attr.list).toBe(true);
+        expect(attr.extensibleList).toBe(false);
+    });
+
+    test('Extended Key Usage: the multi-select submits purpose OIDs, not labels', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness extendedKeyUsageOptions={EKU_OPTIONS} />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('eku');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Extended Key Usage');
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Extended Key Usage', exact: true }).click();
+
+        await page.getByTestId('select-ra-attr-permitted-set-trigger').click();
+        await page.getByRole('option', { name: 'Server Authentication' }).click();
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        const json = await component.getByTestId('value-json').textContent();
+        const attr = JSON.parse(json ?? '{}').attributes[0];
+        expect(attr.mappingFieldType).toBe('extendedKeyUsage');
+        expect(attr.staticValues).toEqual(['1.3.6.1.5.5.7.3.1']);
+    });
+
+    test('an empty permitted set blocks Save unless "Any value allowed" lifts the restriction', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness keyUsageOptions={KEY_USAGE_OPTIONS} />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('keyUsage');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Key Usage');
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Key Usage', exact: true }).click();
+
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+        await expect(page.getByTestId('request-attribute-authoring-structured-set-error')).toContainText('permitted value');
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
+
+        await page.locator('#ra-attr-extensible-list').click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
+        const json = await component.getByTestId('value-json').textContent();
+        expect(JSON.parse(json ?? '{}').attributes[0].extensibleList).toBe(true);
+    });
+
+    test('an empty EKU vocabulary points at the custom-OID registry', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness extendedKeyUsageOptions={[]} />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Extended Key Usage', exact: true }).click();
+
+        await expect(page.getByTestId('request-attribute-authoring-eku-empty')).toContainText('Custom OIDs');
+    });
+
+    test('leaving a structured target clears the permitted set it authored', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness keyUsageOptions={KEY_USAGE_OPTIONS} />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Key Usage', exact: true }).click();
+        await page.getByTestId('select-ra-attr-permitted-set-trigger').click();
+        await page.getByRole('option', { name: 'Digital Signature' }).click();
+        await page.keyboard.press('Escape');
+
+        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByRole('option', { name: 'Subject Alternative Name' }).click();
+
+        // Key-usage codes are meaningless for a SAN static list, so nothing may leak through.
+        await expect(page.getByTestId('request-attribute-authoring-key-usage-set')).toHaveCount(0);
+        await expect(page.getByTestId('select-ra-attr-value-source-trigger')).toBeVisible();
+    });
+});
+
+test.describe('JSON-schema constraint authoring', () => {
+    test('an invalid schema document blocks Save with the reason', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('policy');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Policy');
+        await pickSanMapping(page);
+
+        await expect(page.getByTestId('request-attribute-authoring-attribute-json-schema-block')).toBeVisible();
+        await page.locator('#ra-attr-json-schema').fill('{"type":"object","type":"string"}');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(page.getByTestId('request-attribute-authoring-attribute-json-schema-error')).toContainText('Duplicate key');
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
+    });
+
+    test('a valid schema saves alongside its error message and description', async ({ mount, page }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness />));
+
+        await component.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.locator('#ra-attr-name').click();
+        await page.locator('#ra-attr-name').fill('policy');
+        await page.locator('#ra-attr-label').click();
+        await page.locator('#ra-attr-label').fill('Policy');
+        await pickSanMapping(page);
+
+        await page.locator('#ra-attr-json-schema').fill('{"type":"object","required":["name"]}');
+        await page.locator('#ra-attr-json-schema-error-message').click();
+        await page.locator('#ra-attr-json-schema-error-message').fill('Must be an object with a name');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
+        const json = await component.getByTestId('value-json').textContent();
+        const attr = JSON.parse(json ?? '{}').attributes[0];
+        expect(attr.jsonSchemaData).toBe('{"type":"object","required":["name"]}');
+        expect(attr.jsonSchemaErrorMessage).toBe('Must be an object with a name');
+    });
+
+    test('the schema block is offered for Text but the regex block is not', async ({ mount, page }) => {
+        await mount(withProviders(<RequestAttributeAuthoringEditorHarness />));
+
+        await page.getByTestId('request-attribute-authoring-attribute-add').click();
+        await page.getByTestId('select-ra-attr-content-type-trigger').click();
+        await page.getByRole('option', { name: 'Text', exact: true }).click();
+
+        await expect(page.getByTestId('request-attribute-authoring-attribute-json-schema-block')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-regex-block')).toHaveCount(0);
+
+        // A content type outside String/Text drops the schema fields entirely.
+        await page.getByTestId('select-ra-attr-content-type-trigger').click();
+        await page.getByRole('option', { name: 'Integer', exact: true }).click();
+        await expect(page.getByTestId('request-attribute-authoring-attribute-json-schema-block')).toHaveCount(0);
     });
 });

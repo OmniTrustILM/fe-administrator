@@ -20,7 +20,7 @@ const GENERAL_NAME_LABELS: Record<GeneralNameType, string> = {
 
 // Group order for tokens; `order` on MappedField is scoped per field type, so we group by
 // type first and only sort by `order` within a group (never across types).
-const FIELD_TYPE_ORDER: FieldType[] = [FieldType.Rdn, FieldType.San, FieldType.Extension];
+const FIELD_TYPE_ORDER: FieldType[] = [FieldType.Rdn, FieldType.San, FieldType.Extension, FieldType.KeyUsage, FieldType.ExtendedKeyUsage];
 
 /** Extracts fieldMapping defensively; only DataAttribute (V3) carries it. */
 export function getFieldMapping(descriptor: AnyDescriptor): FieldMapping | undefined {
@@ -47,6 +47,10 @@ function fieldToken(field: MappedField, rdnCodeByOid: Record<string, string> = {
             const extensionOid = (field as { extensionOid?: string }).extensionOid;
             return extensionOid ? `Extension ${extensionOid}` : 'Extension';
         }
+        case FieldType.KeyUsage:
+            return 'Key Usage';
+        case FieldType.ExtendedKeyUsage:
+            return 'Extended Key Usage';
         default:
             return field?.fieldType ? String(field.fieldType) : '';
     }
@@ -79,4 +83,14 @@ export function fieldMappingTokens(fieldMapping: FieldMapping | undefined, rdnCo
 /** Human summary of where the value lands, e.g. "Subject CN + SAN dNSName". */
 export function fieldMappingSummary(fieldMapping: FieldMapping | undefined, rdnCodeByOid: Record<string, string> = {}): string {
     return fieldMappingTokens(fieldMapping, rdnCodeByOid).join(' + ');
+}
+
+/**
+ * The OID of the generic extension this mapping targets, if any. Key Usage / Extended Key Usage are
+ * deliberately not reported: they go through their typed targets and never accept a raw extension
+ * value, JSON tree included.
+ */
+export function getMappedExtensionOid(fieldMapping: FieldMapping | undefined): string | undefined {
+    const field = fieldMapping?.fields?.find((f) => f?.fieldType === FieldType.Extension);
+    return field ? ((field as { extensionOid?: string }).extensionOid ?? undefined) : undefined;
 }

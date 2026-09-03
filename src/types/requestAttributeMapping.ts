@@ -39,7 +39,25 @@ export interface ExtensionMappedFieldModel extends MappedFieldCommon {
     criticalOverridable?: boolean;
 }
 
-export type MappedFieldModel = RdnMappedFieldModel | SanMappedFieldModel | ExtensionMappedFieldModel;
+/** Maps an attribute to the Key Usage extension; the permitted bits are the attribute's content. */
+export interface KeyUsageMappedFieldModel extends MappedFieldCommon {
+    fieldType: FieldType.KeyUsage;
+}
+
+/**
+ * Maps an attribute to the Extended Key Usage extension; the permitted purposes are the attribute's
+ * content, resolved against the EXTENDED_KEY_USAGE OID registry.
+ */
+export interface ExtendedKeyUsageMappedFieldModel extends MappedFieldCommon {
+    fieldType: FieldType.ExtendedKeyUsage;
+}
+
+export type MappedFieldModel =
+    | RdnMappedFieldModel
+    | SanMappedFieldModel
+    | ExtensionMappedFieldModel
+    | KeyUsageMappedFieldModel
+    | ExtendedKeyUsageMappedFieldModel;
 
 export interface FieldMappingModel {
     objectType: ObjectType;

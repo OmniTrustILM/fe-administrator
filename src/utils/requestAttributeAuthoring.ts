@@ -23,6 +23,7 @@ import {
     type ValueSourceBindingDto,
 } from 'types/openapi';
 import type { FieldMappingModel, MappedFieldModel } from 'types/requestAttributeMapping';
+import { getJsonSchemaDocumentError } from 'utils/strictJson';
 
 /**
  * Authoring form models and the mapping to/from the request-attribute DTOs. All non-trivial
@@ -57,6 +58,12 @@ export interface AuthoredAttributeFormValues {
     readOnly: boolean;
     list: boolean;
     multiSelect: boolean;
+    /**
+     * Lifts the predefined-set restriction on a list attribute: the values authored here stay
+     * offered, but a submitted value outside them is accepted too. For a structured mapping target
+     * (Key Usage / Extended Key Usage) this is what makes an empty permitted set saveable.
+     */
+    extensibleList: boolean;
     /** Mapping target — FieldType category (RDN / SAN / EXTENSION); undefined = unmapped. */
     mappingFieldType?: FieldType;
     mappingObjectType?: ObjectType;
@@ -90,6 +97,14 @@ export interface AuthoredAttributeFormValues {
     regexPattern?: string;
     regexDescription?: string;
     regexErrorMessage?: string;
+    /**
+     * Inline JSON Schema document (draft 2020-12) a String/Text value must conform to, plus the
+     * wording shown when it does not. Core validates it through `JsonSchemaAttributeConstraint`
+     * and refuses remote `$ref`s and any other dialect at save.
+     */
+    jsonSchemaData?: string;
+    jsonSchemaDescription?: string;
+    jsonSchemaErrorMessage?: string;
     /**
      * Constraints of a kind this editor cannot author (range, dateTime) exactly as loaded. Core
      * replaces the whole array on save, so dropping them here would silently delete a constraint
@@ -162,6 +177,41 @@ export function isRegexConstraintSupportedForContentType(contentType: AttributeC
 }
 
 /**
+ * Content types a JSON-schema constraint can be authored for — Core rejects every other content
+ * type with "JSON Schema can be validated only for STRING and TEXT".
+ */
+export const JSON_SCHEMA_CONSTRAINT_CONTENT_TYPES: readonly AttributeContentType[] = [
+    AttributeContentType.String,
+    AttributeContentType.Text,
+];
+
+export function isJsonSchemaConstraintSupportedForContentType(contentType: AttributeContentType): boolean {
+    return JSON_SCHEMA_CONSTRAINT_CONTENT_TYPES.includes(contentType);
+}
+
+/**
+ * The set-valued mapping targets (Key Usage / Extended Key Usage). Their vocabulary is a closed
+ * set, so the attribute's content is a permitted set picked from that vocabulary rather than free
+ * values, and Core requires the target to be a list declaring items unless `extensibleList` lifts
+ * the restriction (`AttributeEngine.validateStructuredMappedField`).
+ */
+export const STRUCTURED_MAPPING_FIELD_TYPES: readonly FieldType[] = [FieldType.KeyUsage, FieldType.ExtendedKeyUsage];
+
+export function isStructuredMappingTarget(fieldType?: FieldType): boolean {
+    return !!fieldType && STRUCTURED_MAPPING_FIELD_TYPES.includes(fieldType);
+}
+
+/**
+ * Extension OIDs Core refuses on the generic Extension target ("has a structured mapping target;
+ * use the ... mapping target instead"), keyed to the typed target that must be used instead. The
+ * editor drops them from the extension picker to keep that rejection unreachable.
+ */
+export const STRUCTURED_EXTENSION_OIDS: Readonly<Record<string, FieldType>> = {
+    '2.5.29.15': FieldType.KeyUsage,
+    '2.5.29.37': FieldType.ExtendedKeyUsage,
+};
+
+/**
  * Undefined when `pattern` compiles, otherwise the engine's own complaint — the author needs to know
  * which part it rejected, and the message differs per pattern.
  */
@@ -197,6 +247,7 @@ export function emptyAuthoredAttribute(): AuthoredAttributeFormValues {
         readOnly: false,
         list: false,
         multiSelect: false,
+        extensibleList: false,
         mappingFieldType: undefined,
         mappingObjectType: ObjectType.X509Certificate,
         mappingRdnCode: '',
@@ -211,6 +262,9 @@ export function emptyAuthoredAttribute(): AuthoredAttributeFormValues {
         regexPattern: '',
         regexDescription: '',
         regexErrorMessage: '',
+        jsonSchemaData: '',
+        jsonSchemaDescription: '',
+        jsonSchemaErrorMessage: '',
     };
 }
 
@@ -273,6 +327,12 @@ function buildMappedField(form: AuthoredAttributeFormValues): MappedFieldModel |
                 extensionOid: (form.mappingExtensionOid ?? '').trim(),
                 criticalOverridable: form.mappingCriticalOverridable || undefined,
             };
+        // The structured targets carry no properties of their own — the permitted set is the
+        // attribute's content, not part of the mapping.
+        case FieldType.KeyUsage:
+            return { fieldType: FieldType.KeyUsage };
+        case FieldType.ExtendedKeyUsage:
+            return { fieldType: FieldType.ExtendedKeyUsage };
         default:
             return undefined;
     }
@@ -334,33 +394,43 @@ function hasFreeInputDefault(form: AuthoredAttributeFormValues): boolean {
  * Empty means the attribute carries no constraints and `constraints` is left off the DTO entirely.
  */
 function buildConstraints(form: AuthoredAttributeFormValues): BaseAttributeConstraint[] {
+    const authored: BaseAttributeConstraint[] = [];
     const pattern = form.regexPattern?.trim();
-    const authored: BaseAttributeConstraint[] =
-        pattern && isRegexConstraintSupportedForContentType(form.contentType)
-            ? [
-                  {
-                      type: AttributeConstraintType.RegExp,
-                      data: pattern,
-                      description: form.regexDescription?.trim() || undefined,
-                      errorMessage: form.regexErrorMessage?.trim() || undefined,
-                  } as BaseAttributeConstraint,
-              ]
-            : [];
+    if (pattern && isRegexConstraintSupportedForContentType(form.contentType)) {
+        authored.push({
+            type: AttributeConstraintType.RegExp,
+            data: pattern,
+            description: form.regexDescription?.trim() || undefined,
+            errorMessage: form.regexErrorMessage?.trim() || undefined,
+        } as BaseAttributeConstraint);
+    }
+    const schemaDocument = form.jsonSchemaData?.trim();
+    if (schemaDocument && isJsonSchemaConstraintSupportedForContentType(form.contentType)) {
+        authored.push({
+            type: AttributeConstraintType.JsonSchema,
+            data: schemaDocument,
+            description: form.jsonSchemaDescription?.trim() || undefined,
+            errorMessage: form.jsonSchemaErrorMessage?.trim() || undefined,
+        } as BaseAttributeConstraint);
+    }
     return [...authored, ...(form.otherConstraints ?? [])];
 }
 
 export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): DataAttributeV3 {
     // A static list presents a predefined set of options, so it is a list attribute by definition —
     // force `list` on regardless of the toggle so the DTO does not contradict the content array.
+    // A structured mapping target must be a list too (its content is a permitted set), so the same
+    // forcing makes Core's "target is not a list" rejection unreachable from this form.
     const isStaticList = form.valueSourceType === ValueSourceType.StaticList;
+    const isStructured = isStructuredMappingTarget(form.mappingFieldType);
     const properties: DataAttributeProperties = {
         label: form.label,
         visible: true,
         required: form.required,
         readOnly: form.readOnly,
-        list: isStaticList ? true : form.list,
+        list: isStaticList || isStructured || form.list,
         multiSelect: form.multiSelect,
-        extensibleList: false,
+        extensibleList: form.extensibleList,
     };
 
     const dto: DataAttributeV3 = {
@@ -388,12 +458,12 @@ export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): Da
     if (valueSource) {
         dto.valueSource = valueSource;
     }
-    if (isStaticList && form.staticValues.length > 0) {
+    if ((isStaticList || isStructured) && form.staticValues.length > 0) {
         dto.content = form.staticValues.map((value) => ({
             data: normalizeStaticContentValue(value, form.contentType),
             contentType: form.contentType,
         })) as DataAttributeV3['content'];
-    } else if (form.valueSourceType === ValueSourceType.None && hasFreeInputDefault(form)) {
+    } else if (form.valueSourceType === ValueSourceType.None && !isStructured && hasFreeInputDefault(form)) {
         dto.content = [
             {
                 data: normalizeStaticContentValue(form.defaultValue as AuthoredAttributeValue, form.contentType),
@@ -417,6 +487,10 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
     const valueSourceKind = view.valueSource?.kind ?? ValueSourceType.None;
     const constraints = view.constraints ?? [];
     const regex = constraints.find((c) => c.type === AttributeConstraintType.RegExp);
+    const jsonSchema = constraints.find((c) => c.type === AttributeConstraintType.JsonSchema);
+    // For a structured target the content array is the permitted set regardless of value source, so
+    // it belongs in the set editor, not the free-input default.
+    const isStructured = isStructuredMappingTarget(firstField?.fieldType);
     return {
         uuid: view.uuid,
         name: view.name ?? '',
@@ -427,6 +501,7 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
         readOnly: view.properties?.readOnly ?? false,
         list: view.properties?.list ?? false,
         multiSelect: view.properties?.multiSelect ?? false,
+        extensibleList: view.properties?.extensibleList ?? false,
         mappingFieldType: firstField?.fieldType,
         mappingObjectType: mapping?.objectType ?? ObjectType.X509Certificate,
         mappingRdnCode: rdn?.rdn ?? '',
@@ -439,18 +514,23 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
         // A free-input default is stored in `content` too, so only lift `content` into `staticValues`
         // for an actual static list — otherwise a free-input default leaks into the static-list editor.
         staticValues:
-            valueSourceKind === ValueSourceType.StaticList
+            valueSourceKind === ValueSourceType.StaticList || isStructured
                 ? (view.content ?? []).map((item) => (item as { data: AuthoredAttributeValue }).data)
                 : [],
         defaultValue:
-            valueSourceKind === ValueSourceType.None
+            valueSourceKind === ValueSourceType.None && !isStructured
                 ? (view.content?.[0] as { data?: AuthoredAttributeValue } | undefined)?.data
                 : undefined,
         valueSourceParams: view.valueSource?.params,
         regexPattern: typeof regex?.data === 'string' ? regex.data : '',
         regexDescription: regex?.description ?? '',
         regexErrorMessage: regex?.errorMessage ?? '',
-        otherConstraints: constraints.filter((c) => c.type !== AttributeConstraintType.RegExp),
+        jsonSchemaData: typeof jsonSchema?.data === 'string' ? jsonSchema.data : '',
+        jsonSchemaDescription: jsonSchema?.description ?? '',
+        jsonSchemaErrorMessage: jsonSchema?.errorMessage ?? '',
+        otherConstraints: constraints.filter(
+            (c) => c.type !== AttributeConstraintType.RegExp && c.type !== AttributeConstraintType.JsonSchema,
+        ),
     };
 }
 
@@ -549,6 +629,7 @@ export interface AuthoredAttributeErrors {
     defaultValue?: string;
     staticValues?: string;
     regexPattern?: string;
+    jsonSchemaData?: string;
 }
 
 function validateSanMapping(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
@@ -585,18 +666,25 @@ function validateMapping(form: AuthoredAttributeFormValues): AuthoredAttributeEr
         case FieldType.San:
             Object.assign(errors, validateSanMapping(form));
             break;
-        case FieldType.Extension:
-            if (!form.mappingExtensionOid?.trim()) {
+        case FieldType.Extension: {
+            const oid = form.mappingExtensionOid?.trim();
+            if (!oid) {
                 errors.mappingExtensionOid = 'Select the certificate extension this attribute maps to.';
+            } else if (oid in STRUCTURED_EXTENSION_OIDS) {
+                // The picker no longer offers these, but a legacy attribute may still store one; Core
+                // rejects the whole set until it is re-targeted.
+                const target = STRUCTURED_EXTENSION_OIDS[oid] === FieldType.KeyUsage ? 'Key Usage' : 'Extended Key Usage';
+                errors.mappingExtensionOid = `This extension has a structured mapping target — switch the mapping target to ${target}.`;
             }
             break;
+        }
     }
     return errors;
 }
 
 function validateProperties(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
     const errors: AuthoredAttributeErrors = {};
-    const isList = form.list || form.valueSourceType === ValueSourceType.StaticList;
+    const isList = form.list || form.valueSourceType === ValueSourceType.StaticList || isStructuredMappingTarget(form.mappingFieldType);
     if (form.readOnly) {
         if (isList) {
             errors.readOnly = 'Read Only cannot be combined with a list.';
@@ -627,6 +715,20 @@ function validateRegexConstraint(form: AuthoredAttributeFormValues): AuthoredAtt
     return error ? { regexPattern: `The pattern is not a valid regular expression: ${error}` } : {};
 }
 
+/**
+ * An invalid schema document is rejected by Core at save (not at request time), so it is blocked
+ * here with the reason instead of round-tripping the raw server error. A document left on a content
+ * type that cannot carry one is not an error — it is simply not emitted.
+ */
+function validateJsonSchemaConstraint(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
+    const document = form.jsonSchemaData?.trim();
+    if (!document || !isJsonSchemaConstraintSupportedForContentType(form.contentType)) {
+        return {};
+    }
+    const error = getJsonSchemaDocumentError(document);
+    return error ? { jsonSchemaData: error } : {};
+}
+
 function validateDefaultValue(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
     const { defaultValue } = form;
     if (form.valueSourceType !== ValueSourceType.None || defaultValue === undefined || !hasFreeInputDefault(form)) {
@@ -639,11 +741,19 @@ function validateDefaultValue(form: AuthoredAttributeFormValues): AuthoredAttrib
 }
 
 function validateStaticList(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
-    if (form.valueSourceType !== ValueSourceType.StaticList) {
+    const isStructured = isStructuredMappingTarget(form.mappingFieldType);
+    if (form.valueSourceType !== ValueSourceType.StaticList && !isStructured) {
         return {};
     }
     const { staticValues, contentType } = form;
     if (staticValues.length === 0) {
+        // Core rejects a structured target declaring no permitted items unless `extensibleList`
+        // lifts the restriction — mirror that rule here so the save cannot reach the rejection.
+        if (isStructured) {
+            return form.extensibleList
+                ? {}
+                : { staticValues: 'Select at least one permitted value, or enable "Any value allowed" to lift the restriction.' };
+        }
         return { staticValues: 'Add at least one value for the static list.' };
     }
     if (staticValues.some((v) => typeof v === 'string' && v.trim() === '')) {
@@ -677,6 +787,7 @@ export function validateAuthoredAttribute(form: AuthoredAttributeFormValues): Au
         ...validateDefaultValue(form),
         ...validateStaticList(form),
         ...validateRegexConstraint(form),
+        ...validateJsonSchemaConstraint(form),
     };
 }
 
