@@ -61,8 +61,16 @@ const runUpdate = (deps: EpicDependencies, branding: BrandingSettingsUpdateModel
         // instead of echoing the request, which would leave the store holding markup Core deliberately removed.
         mergeMap(() =>
             deps.apiClients.settings.getBrandingSettings().pipe(
+                // The anonymous read is refreshed alongside the authenticated one, because it is the anonymous
+                // response that the token layer and the theme resolve from. Without it a committed save would not
+                // reach the page it was made on: the palette and the operator default would stay as they were until
+                // the next full reload.
                 mergeMap((stored) =>
-                    of(slice.actions.updateBrandingSuccess({ branding: stored }), alertActions.success('Branding updated successfully.')),
+                    of(
+                        slice.actions.updateBrandingSuccess({ branding: stored }),
+                        slice.actions.getPublicBranding(),
+                        alertActions.success('Branding updated successfully.'),
+                    ),
                 ),
                 // Reporting this as a failed save would invite a retry that changes nothing, because the write landed.
                 // The slice is what is wrong — it still holds the pre-write branding — so a fresh read repairs it.
@@ -87,7 +95,10 @@ const runReset = (deps: EpicDependencies): Observable<UnknownAction> =>
     // An empty update clears every field, which is what makes reset one request rather than one per field. Nothing is
     // left stored afterwards, so there is no read-back: the reducer settles on an empty branding.
     deps.apiClients.settings.updateBrandingSettings({ brandingSettingsUpdateDto: {} }).pipe(
-        mergeMap(() => of(slice.actions.resetBrandingSuccess(), alertActions.success('Branding reset to default.'))),
+        // Refreshed for the same reason as a save: unbranding has to take effect on the page it was requested from.
+        mergeMap(() =>
+            of(slice.actions.resetBrandingSuccess(), slice.actions.getPublicBranding(), alertActions.success('Branding reset to default.')),
+        ),
         catchError((err) =>
             of(
                 slice.actions.resetBrandingFailure({ error: extractError(err, 'Failed to reset branding') }),

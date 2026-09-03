@@ -40,6 +40,27 @@
                 }
                 document.documentElement.classList.toggle('dark', resolved === 'dark');
                 document.documentElement.style.colorScheme = resolved;
+
+                // Apply the operator's brand colours in the same breath, for the same reason: the colours are
+                // server-held, so what is applied here is the override stylesheet cached by the last branding
+                // response. Without it the first paint of every load would show the platform palette and then swap.
+                // Unlike the theme above, the stylesheet is generated rather than resolved - utils/brand-tokens.ts
+                // owns the colour-to-token mapping and caches its output, so none of that mapping is duplicated here.
+                // On a first-ever visit there is no cache and the platform palette stands until the response lands.
+                try {
+                    var brandCss = localStorage.getItem('theme-brand-css');
+                    // The cache is written from colours already validated as #rrggbb, so this only guards against a
+                    // value that did not come from this application: no @, <, quote, slash or backslash means no
+                    // at-rule, comment, string or url() can be smuggled into the document through it.
+                    if (brandCss && brandCss.length <= 4096 && /^[a-z0-9\s#(),.%:;{}_-]+$/i.test(brandCss)) {
+                        var brandStyle = document.createElement('style');
+                        brandStyle.id = 'brand-tokens';
+                        brandStyle.textContent = brandCss;
+                        document.head.appendChild(brandStyle);
+                    }
+                } catch {
+                    // Storage unavailable; the platform palette stands until the branding response lands.
+                }
             })();
         </script>
         <script type="text/javascript" src="./config.js"></script>
