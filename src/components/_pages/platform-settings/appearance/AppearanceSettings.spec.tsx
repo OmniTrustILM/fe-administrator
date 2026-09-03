@@ -480,9 +480,10 @@ test.describe('AppearanceSettings', () => {
     });
 
     /**
-     * The brand belongs to the operator, so contrast warns and never blocks. What is asserted here is the shape of
-     * that bargain: the failing pairs are named with their ratios, Cancel sends nothing, and Save anyway sends the
-     * colours exactly as chosen. Which pairs fail for which colours is `brand-contrast.spec.ts`.
+     * The brand belongs to the operator, so contrast warns and never blocks.
+     *
+     * Which pairs fail for which colours is `brand-contrast.spec.ts`; these cases take a colour it establishes as
+     * failing and assert what the warning then does with it.
      */
     test.describe('contrast warning', () => {
         test('should save straight through when the colours clear AA everywhere', async ({ mount, page }) => {
