@@ -1,6 +1,5 @@
 import { expect, test } from '../../../playwright/ct-test';
-import { BRAND_CSS_STORAGE_KEY, BRAND_TOKENS_STYLE_ID } from 'utils/brand-tokens';
-import { mixOklab } from 'utils/oklab';
+import { BRAND_CSS_STORAGE_KEY, BRAND_TOKENS_STYLE_ID, brandColors, brandTokenCss, brandTokenValues } from 'utils/brand-tokens';
 import BrandTokensWithStore, { type PublicBrandingFixture } from './BrandTokensWithStore';
 
 const BRANDED: PublicBrandingFixture = {
@@ -41,13 +40,36 @@ const PLATFORM = {
 const overrideStyle = 'style#brand-tokens';
 
 /**
- * `getComputedStyle` reports a `color-mix(in oklab, ...)` result in the Oklab space it was mixed in, so a token that
- * carries one cannot be compared against a hex string directly. Wrapping the expected hex in a no-op mix of the same
- * kind puts both sides in the same space, which is what makes the comparison meaningful.
+ * A saturated palette alongside an ordinary one, because the two exercise different arithmetic. The sRGB gamut is not
+ * convex in Oklab, so mixing a saturated input leaves the gamut: `#ff0033` at 60% towards white reaches a linear red
+ * of 1.10. Those are the cases where the JS mixer's per-channel clip could disagree with what the browser paints, so
+ * the parity test below must cover them and not only well-behaved inputs.
  */
-const asOklab = (hex: string) => `color-mix(in oklab, ${hex} 100%, ${hex})`;
+const OUT_OF_GAMUT: PublicBrandingFixture = {
+    configured: true,
+    primaryColor: '#ff0033',
+    secondaryColor: '#00ff00',
+    backgroundColor: '#ffff00',
+    textColor: '#8000ff',
+    lightLogo: null,
+    darkLogo: null,
+};
 
-const parseOklab = (value: string): number[] => /oklab\(([^)]*)\)/.exec(value)?.[1].split(/\s+/).map(Number) ?? [];
+/** The token/value pairs of one composition, read back out of the stylesheet the token layer actually emits. */
+const cssDeclarations = (css: string, selector: string): Record<string, string> => {
+    const block = new RegExp(`${selector.replace(/[.:()]/g, '\\$&')}\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+    const values: Record<string, string> = {};
+
+    for (const declaration of block.split(';')) {
+        const separator = declaration.indexOf(':');
+
+        if (separator > 0) {
+            values[declaration.slice(2, separator)] = declaration.slice(separator + 1);
+        }
+    }
+
+    return values;
+};
 
 test.describe('BrandTokens', () => {
     test('should leave the platform palette alone until a response lands', async ({ mount, page }) => {
@@ -146,52 +168,69 @@ test.describe('BrandTokens', () => {
         await expect(page.getByTestId('probe-brand')).toHaveCSS('background-color', 'rgb(163, 25, 91)');
     });
 
-    // The contrast warning evaluates the derived steps in JS, before the browser has painted anything. That is only a
-    // statement about what the operator will see if the JS mixer agrees with the CSS function it stands in for.
-    test('should derive the same colours in JS as color-mix does in the browser', async ({ mount, page }) => {
-        await mount(<BrandTokensWithStore probeTokens={PROBES} />);
+    /**
+     * The contrast warning evaluates the derived steps in JS, before the browser has painted anything. That is only a
+     * statement about what the operator will see if the JS mixer agrees with the CSS function it stands in for.
+     *
+     * Both sides are resolved to the sRGB the browser paints, not to Oklab coordinates. An out-of-gamut mix computes
+     * to unclipped Oklab, so comparing coordinates would report a divergence for a colour that renders identically;
+     * the painted byte is the thing the warning is actually a claim about. A canvas resolves a colour through the same
+     * parser and gamut handling as a painted background, which `oklab.ts` documents and this test relies on.
+     *
+     * The cases are generated from the stylesheet the token layer emits, so every rule in `BRAND_TOKEN_RULES` is
+     * covered in both compositions and a rule added without a matching JS derivation fails here.
+     */
+    for (const [palette, fixture] of [
+        ['an ordinary palette', BRANDED],
+        ['a palette whose mixes leave the sRGB gamut', OUT_OF_GAMUT],
+    ] as const) {
+        test(`should derive the same colours in JS as color-mix does in the browser, for ${palette}`, async ({ mount, page }) => {
+            await mount(<BrandTokensWithStore probeTokens={PROBES} />);
 
-        // Each row is one mix the token layer actually emits, paired with the JS result for the same mix.
-        const cases: ReadonlyArray<[string, string, number]> = [
-            ['#ffffff', '#000000', 0.5],
-            ['#a3195b', '#000000', 0.8],
-            ['#a3195b', '#ffffff', 0.1],
-            ['#faf5ff', '#000000', 0.87],
-            ['#2c1338', '#ffffff', 0.62],
-        ];
+            const colors = brandColors(fixture);
+            const css = brandTokenCss(colors) ?? '';
+            const compositions = [
+                { theme: 'light', declarations: cssDeclarations(css, 'html:not(.dark)') },
+                { theme: 'dark', declarations: cssDeclarations(css, 'html.dark') },
+            ] as const;
 
-        for (const [first, second, weight] of cases) {
-            const keyword = second === '#000000' ? 'black' : 'white';
-            const cssValue = `color-mix(in oklab, ${first} ${weight * 100}%, ${keyword})`;
+            for (const { theme, declarations } of compositions) {
+                const expected = brandTokenValues(colors, theme);
 
-            const [fromCss, fromJs] = await page.evaluate(
-                ([css, expected]) => {
-                    const probe = document.createElement('div');
+                // Every token the stylesheet declares must have a JS derivation, and no more.
+                expect(Object.keys(declarations).sort(), `${theme} tokens`).toStrictEqual(Object.keys(expected).sort());
+                expect(Object.keys(declarations).length).toBeGreaterThan(0);
 
-                    document.body.appendChild(probe);
-                    probe.style.backgroundColor = css;
-                    const browserMixed = getComputedStyle(probe).backgroundColor;
+                const cases = Object.entries(declarations).map(([token, value]) => [token, value, expected[token]] as const);
+                const mismatched = await page.evaluate((cases) => {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d', { willReadFrequently: true });
 
-                    probe.style.backgroundColor = expected;
-                    const jsMixed = getComputedStyle(probe).backgroundColor;
+                    if (!context) {
+                        return [{ token: 'canvas', cssPainted: 'unavailable', jsPainted: 'unavailable' }];
+                    }
 
-                    probe.remove();
-                    return [browserMixed, jsMixed];
-                },
-                [cssValue, asOklab(mixOklab(first, second, weight))],
-            );
+                    // Reset to a known colour first, so a value the parser rejects outright shows up as black rather
+                    // than silently inheriting whatever the previous case painted.
+                    const painted = (value: string) => {
+                        context.fillStyle = '#000000';
+                        context.fillStyle = value;
+                        context.fillRect(0, 0, 1, 1);
 
-            const browser = parseOklab(fromCss);
-            const js = parseOklab(fromJs);
+                        const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
 
-            expect(browser, `${cssValue} did not resolve in the Oklab space`).toHaveLength(3);
-            expect(js).toHaveLength(3);
-            for (const [index, coordinate] of browser.entries()) {
-                // 8-bit quantisation of the JS result is the only difference that may remain.
-                expect(Math.abs(coordinate - js[index]), `${cssValue} coordinate ${index}`).toBeLessThan(0.005);
+                        return `#${[red, green, blue].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+                    };
+
+                    return cases
+                        .map(([token, cssValue, jsValue]) => ({ token, cssPainted: painted(cssValue), jsPainted: painted(jsValue) }))
+                        .filter((result) => result.cssPainted !== result.jsPainted);
+                }, cases);
+
+                expect(mismatched, `${theme} composition of ${palette}`).toStrictEqual([]);
             }
-        }
-    });
+        });
+    }
 
     test('should expose the style element under a stable id', async ({ mount, page }) => {
         await mount(<BrandTokensWithStore probeTokens={PROBES} preloadedBranding={BRANDED} />);

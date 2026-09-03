@@ -3,8 +3,9 @@ import { mixOklab, rgbToHex } from './oklab';
 
 /**
  * The authoritative check on this module is in the browser: `BrandTokens.spec.tsx` mixes the same colours with the
- * real `color-mix(in oklab, ...)` and compares the coordinates. What is asserted here is the algebra that has to hold
- * whatever the transform coefficients are, plus one value derived from first principles rather than from the code.
+ * real `color-mix(in oklab, ...)` and compares the sRGB each side paints. What is asserted here is the algebra that
+ * has to hold whatever the transform coefficients are, plus one value derived from first principles rather than from
+ * the code.
  */
 describe('oklab', () => {
     describe('mixOklab', () => {
@@ -48,8 +49,16 @@ describe('oklab', () => {
             expect(steps.at(-1)).toBe('#ffffff');
         });
 
-        test('should stay inside the sRGB gamut for a mix of in-gamut colours', () => {
+        // The sRGB gamut is not convex in Oklab, so this mix genuinely leaves it: the linear red channel comes out at
+        // 1.10. Clipping is what the browser paints for the same mix, which `BrandTokens.spec.tsx` pins against a
+        // real pixel; asserted here so the value cannot drift silently.
+        test('should clip a mix that leaves the sRGB gamut to the colour a browser paints', () => {
+            expect(mixOklab('#ff0033', '#ffffff', 0.6)).toBe('#ff8c87');
+        });
+
+        test('should always return a representable sRGB hex', () => {
             expect(mixOklab('#00ff00', '#0000ff', 0.5)).toMatch(/^#[0-9a-f]{6}$/);
+            expect(mixOklab('#ff0033', '#ffffff', 0.7)).toMatch(/^#[0-9a-f]{6}$/);
         });
 
         test('should reject a colour that is not hex', () => {

@@ -3,8 +3,9 @@
  *
  * Four inputs cannot drive thirty tokens one-to-one, so each input drives a *family* and the intermediate steps are
  * derived rather than configured. The derivations live in one table, {@link BRAND_TOKEN_RULES}, which is rendered two
- * ways: to CSS here, and to concrete hex values by `brand-contrast.ts`. Both readings therefore describe the same
- * colours, which is what lets the contrast warning speak about what the page will actually show.
+ * ways: to CSS by {@link brandTokenCss}, for the browser to mix, and to concrete hex by {@link brandTokenValues}, for
+ * anything that has to know a derived colour before it is painted. Both readings describe the same colours, which is
+ * what lets a caller measure what the page will actually show.
  *
  * The overrides are emitted as a separate stylesheet rather than by editing `tailwindcss.css`, for two reasons. An
  * unbranded instance then produces no override at all, so its rendering is unchanged by construction rather than by
@@ -42,7 +43,7 @@ type Step = { source: BrandColorKey; towards?: 'white' | 'black'; weight?: numbe
 type Rule = { token: string; light?: Step; dark?: Step };
 
 /**
- * The colour-to-token mapping, as ratified by the Epic.
+ * The colour-to-token mapping.
  *
  * Primary and Secondary apply to both compositions; Background and Text apply to the light one only, and no colour is
  * inverted to derive the other theme - the dark composition keeps its own surfaces and content, which is what keeps it
@@ -59,8 +60,9 @@ type Rule = { token: string; light?: Step; dark?: Step };
  * where the platform's own hand-picked value sits at 6.1:1.
  *
  * A fixed lift cannot rescue every input. A near-black Primary stays under AA as a dark-theme link however it is
- * mixed, and lifting it far enough to pass would no longer be the colour the operator chose - so it is warned about
- * rather than silently corrected. That warning is `brand-contrast.ts`, and warning is the ratified behaviour.
+ * mixed, and lifting it far enough to pass would no longer be the colour the operator chose - so the mapping does not
+ * silently correct it. Measuring a derived colour against its background is {@link brandTokenValues}' purpose, and
+ * what a caller does about a pairing that falls short is the caller's decision, not this table's.
  */
 export const BRAND_TOKEN_RULES: readonly Rule[] = [
     // Primary: foreground, fill and header. `brand` lightens in dark mode for contrast; `brand-solid` stays put in

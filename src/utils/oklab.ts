@@ -4,7 +4,8 @@
  * The branding token layer derives its intermediate steps in CSS, so the browser does the mixing that the operator
  * actually sees. The contrast warning has to evaluate those same steps before they are rendered, which means a second
  * implementation of the mix - in JS - or a warning that describes colours the page will not use. This module is that
- * second implementation, and `oklab.spec.ts` pins it against values produced by the CSS function.
+ * second implementation. `oklab.spec.ts` pins the algebra, and `BrandTokens.spec.tsx` pins the result against what a
+ * browser paints for the same `color-mix`.
  *
  * Only opaque colours are mixed. `color-mix` premultiplies alpha; with both sides opaque that reduces to a straight
  * linear interpolation of the three Oklab coordinates, which is what this does.
@@ -52,8 +53,17 @@ const oklabToRgb = ({ l, a, b }: Oklab): Rgb => {
     const green = -1.2684380046 * long + 2.6097574011 * medium - 0.3413193965 * short;
     const blue = -0.0041960863 * long - 0.7034186147 * medium + 1.707614701 * short;
 
-    // Clamped rather than gamut-mapped: a mix of two in-gamut sRGB colours only leaves the gamut through rounding, so
-    // there is nothing to map back. Browsers clip the same way for `in oklab`.
+    // Clipped per channel rather than gamut-mapped, which is what the browser does with the same mix.
+    //
+    // The sRGB gamut is not convex in Oklab, so interpolating between two in-gamut colours genuinely does leave it -
+    // not merely through rounding. A saturated Primary makes that routine: `#ff0033` mixed 60% towards white lands at
+    // a linear red of 1.10, and more than a third of the weights in `BRAND_TOKEN_RULES` are out of gamut for such an
+    // input. So the choice of what to do about it is a real one, not a formality.
+    //
+    // Clipping is the choice because it reproduces the rendered result. `getComputedStyle` reports a `color-mix(in
+    // oklab, ...)` as unclipped Oklab coordinates, so an out-of-gamut mix compared in that space looks like a
+    // divergence; the sRGB the browser actually paints is the per-channel clip, to the byte. `BrandTokens.spec.tsx`
+    // pins this against painted pixels, out-of-gamut cases included, rather than against those coordinates.
     return {
         r: clamp01(toGamma(red)) * SRGB_MAX,
         g: clamp01(toGamma(green)) * SRGB_MAX,

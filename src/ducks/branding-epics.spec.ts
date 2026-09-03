@@ -137,11 +137,24 @@ describe('branding epics', () => {
             getBrandingSettings: () => of(stored),
         });
 
-        const emitted = await run(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding }), deps, 2);
+        const emitted = await run(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding }), deps, 3);
 
         expect(sent).toEqual([branding]);
         expect(emitted[0]).toEqual(slice.actions.updateBrandingSuccess({ branding: stored }));
-        expect(emitted[1].type).toBe(alertActions.success.type);
+        expect(emitted[1]).toEqual(slice.actions.getPublicBranding());
+        expect(emitted[2].type).toBe(alertActions.success.type);
+    });
+
+    /**
+     * The token layer and the theme both resolve from the anonymous response, so a committed save that does not
+     * refresh it leaves the page it was made on rendering the previous palette until the next full reload.
+     */
+    test('updateBranding refreshes the anonymous read so the committed palette is applied', async () => {
+        const deps = createDeps();
+
+        const emitted = await run(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps, 3);
+
+        expect(emitted.map((action: { type: string }) => action.type)).toContain(slice.actions.getPublicBranding.type);
     });
 
     test('updateBranding failure reports the error and redirects', async () => {
@@ -196,11 +209,21 @@ describe('branding epics', () => {
             },
         });
 
-        const emitted = await run(epics[WRITE_BRANDING], slice.actions.resetBranding(), deps, 2);
+        const emitted = await run(epics[WRITE_BRANDING], slice.actions.resetBranding(), deps, 3);
 
         expect(sent).toEqual([{}]);
         expect(emitted[0]).toEqual(slice.actions.resetBrandingSuccess());
-        expect(emitted[1].type).toBe(alertActions.success.type);
+        expect(emitted[1]).toEqual(slice.actions.getPublicBranding());
+        expect(emitted[2].type).toBe(alertActions.success.type);
+    });
+
+    /** Unbranding has to take effect on the page it was requested from, for the same reason a save does. */
+    test('resetBranding refreshes the anonymous read so the platform palette is restored', async () => {
+        const deps = createDeps();
+
+        const emitted = await run(epics[WRITE_BRANDING], slice.actions.resetBranding(), deps, 3);
+
+        expect(emitted.map((action: { type: string }) => action.type)).toContain(slice.actions.getPublicBranding.type);
     });
 
     test('resetBranding failure reports the error and redirects', async () => {
@@ -227,12 +250,14 @@ describe('branding epics', () => {
             of({}),
             deps,
         );
-        const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
+        const emitted = await firstValueFrom(output$.pipe(take(6), toArray()));
 
         expect(emitted.map((action: { type: string }) => action.type)).toEqual([
             slice.actions.updateBrandingSuccess.type,
+            slice.actions.getPublicBranding.type,
             alertActions.success.type,
             slice.actions.resetBrandingSuccess.type,
+            slice.actions.getPublicBranding.type,
             alertActions.success.type,
         ]);
     });

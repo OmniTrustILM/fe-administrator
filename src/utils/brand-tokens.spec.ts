@@ -20,7 +20,7 @@ const ALL_COLORS = {
     textColor: '#1f2937',
 };
 
-/** The families the Epic settled on, so a token quietly joining or leaving one is a test failure. */
+/** The families each brand colour drives, so a token quietly joining or leaving one is a test failure. */
 const EXPECTED_FAMILIES = {
     primary: ['brand', 'brand-solid', 'brand-solid-hover', 'brand-hover', 'brand-subtle', 'surface-header'],
     secondary: ['info', 'info-surface', 'info-solid'],
@@ -153,7 +153,7 @@ describe('brand-tokens', () => {
             expect(css).not.toContain('--info:');
         });
 
-        test('should emit no light block when only a light-only family is unset', () => {
+        test('should emit no dark block when only a light-only family is set', () => {
             const css = brandTokenCss(brandColors({ backgroundColor: '#f8fafc' })) ?? '';
 
             expect(css).toContain('html:not(.dark){');
@@ -199,18 +199,26 @@ describe('brand-tokens', () => {
             expect(brandTokenValues(colors, 'dark').brand).not.toBe(brandTokenValues(colors, 'light').brand);
         });
 
-        test('should resolve to the same steps the stylesheet describes', () => {
+        /**
+         * The two readings of the rule table have to cover the same tokens, or a contrast warning would be silent
+         * about a token the page nevertheless paints. Whether each *value* agrees cannot be settled here: the CSS
+         * carries a `color-mix` for every derived step, and only a browser can resolve one. That comparison is
+         * `BrandTokens.spec.tsx`, which resolves both sides to the sRGB it paints.
+         */
+        test.each(['light', 'dark'] as const)('should cover exactly the tokens the %s stylesheet declares', (theme) => {
             const colors = brandColors(ALL_COLORS);
-            const css = brandTokenCss(colors) ?? '';
+            const selector = theme === 'light' ? 'html:not(.dark){' : 'html.dark{';
+            const block = (brandTokenCss(colors) ?? '').split(selector)[1]?.split('}')[0] ?? '';
+            const declared = [...block.matchAll(/--([a-z-]+):/g)].map(([, token]) => token);
 
-            // Every value the CSS carries as a literal must equal what the JS derivation produces for the same token,
-            // which is what makes a contrast warning computed in JS a statement about what the browser will paint.
-            for (const [token, value] of Object.entries(brandTokenValues(colors, 'light'))) {
-                if (!value.startsWith('color-mix')) {
-                    expect(css).toContain(`--${token}:`);
-                }
-            }
-            expect(css).toContain(`--brand:${brandTokenValues(colors, 'light').brand};`);
+            expect(declared.toSorted()).toStrictEqual(Object.keys(brandTokenValues(colors, theme)).toSorted());
+        });
+
+        /** An underived step is the one value both readings carry literally, so it can be compared here. */
+        test('should carry an underived step through to the stylesheet unchanged', () => {
+            const colors = brandColors(ALL_COLORS);
+
+            expect(brandTokenCss(colors)).toContain(`--brand:${brandTokenValues(colors, 'light').brand};`);
         });
     });
 
