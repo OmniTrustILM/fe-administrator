@@ -107,10 +107,26 @@ export default function CustomOIDDetail() {
             return [createTableDataRow('Code', props.code), createTableDataRow('Alternative Codes', props.altCodes?.join(', '))];
         }
         if (isCertificateExtensionProperties(props)) {
-            return [
+            const rows = [
                 createTableDataRow('Default Critical', props.defaultCritical ? 'Enabled' : 'Disabled'),
                 createTableDataRow('Value Encoding', props.valueEncoding),
             ];
+            // Read-only by nature: a system OID's schema ships with Core and a system entry cannot
+            // be recreated as a custom one; a custom entry's schema is edited through the form.
+            if (props.valueSchema) {
+                rows.push(
+                    createTableDataRow(
+                        'Value Schema',
+                        <pre
+                            className="max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono text-xs"
+                            data-testid="oid-value-schema"
+                        >
+                            {props.valueSchema}
+                        </pre>,
+                    ),
+                );
+            }
+            return rows;
         }
         return [];
     }, [oid]);
