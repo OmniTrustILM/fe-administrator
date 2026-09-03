@@ -20,6 +20,7 @@ import Button from 'components/Button';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 
 import { type AttributeDescriptorModel, isDataAttributeModel } from 'types/attributes';
+import { splitAttributeValidationErrors } from 'utils/raProfileValidation';
 import type { CertificateDetailResponseModel } from '../../../../types/certificate';
 import { CertificateRequestFormat, Resource } from '../../../../types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
@@ -225,7 +226,30 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         },
     });
 
-    const { control, handleSubmit, setValue, clearErrors, formState } = methods;
+    const { control, handleSubmit, setValue, setError, clearErrors, formState } = methods;
+
+    // Attribute-level backend errors (`Extension value of attribute <label>: ...`) are attributed by
+    // label to the request-attribute field they belong to; only what cannot be matched stays in the
+    // generic panel below the tabs.
+    const attributeErrorTargets = useMemo(
+        () =>
+            (csrAttributeDescriptors ?? [])
+                .filter(isDataAttributeModel)
+                .map((d) => ({ name: d.name, label: d.properties?.label ?? d.name })),
+        [csrAttributeDescriptors],
+    );
+    const splitValidationErrors = useMemo(
+        () => (issueValidationErrors?.length ? splitAttributeValidationErrors(issueValidationErrors, attributeErrorTargets) : undefined),
+        [issueValidationErrors, attributeErrorTargets],
+    );
+    const unattributedValidationErrors = splitValidationErrors ? splitValidationErrors.unattributed : issueValidationErrors;
+    useEffect(() => {
+        if (!splitValidationErrors) return;
+        for (const [attributeName, messages] of splitValidationErrors.byAttributeName) {
+            const path = `__attributes__csrAttributes__.${attributeName}` as Parameters<typeof setError>[0];
+            setError(path, { type: 'server', message: messages.join('; ') });
+        }
+    }, [splitValidationErrors, setError]);
 
     const combinedAttributeValues = useMemo(
         () =>
@@ -902,10 +926,11 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                 ]}
                             />
 
-                            {/* Compliance/validation errors apply to any issuance mode, not just external CSR. */}
-                            {selectedRaProfile && issueValidationErrors?.length ? (
+                            {/* Compliance/validation errors apply to any issuance mode, not just external CSR.
+                                Attribute-level messages are shown at their field instead; only the rest land here. */}
+                            {selectedRaProfile && unattributedValidationErrors?.length ? (
                                 <div className="mt-4">
-                                    <ComplianceErrorsPanel errors={issueValidationErrors} />
+                                    <ComplianceErrorsPanel errors={unattributedValidationErrors} />
                                 </div>
                             ) : null}
                         </Widget>

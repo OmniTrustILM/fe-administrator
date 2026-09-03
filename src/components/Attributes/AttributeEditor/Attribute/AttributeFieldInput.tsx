@@ -9,7 +9,9 @@ import cn from 'classnames';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import { AttributeContentType } from 'types/openapi';
 import RequestAttributeMappingBadge from 'components/RequestAttributes/RequestAttributeMappingBadge';
-import { getFieldMapping } from 'utils/requestAttributes';
+import { useDerExtensionOids } from 'components/RequestAttributes/useDerExtensionOids';
+import { getFieldMapping, getMappedExtensionOid } from 'utils/requestAttributes';
+import { getExtensionJsonTreeError } from 'utils/strictJson';
 import { getCodeBlockLanguage } from '../../../../utils/attributes/attributes';
 import { getHighLightedCode } from '../../CodeBlock';
 import {
@@ -17,6 +19,7 @@ import {
     getFormTypeFromAttributeContentType,
     buildAttributeValidators,
     getRegexpConstraint,
+    type FieldValidator,
 } from './attributeHelpers';
 
 interface FieldStateError {
@@ -145,6 +148,13 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
     const { submitCount } = useFormState({ control });
     const formValues = watch();
 
+    // An attribute mapped onto a DER-encoded extension (per the OID registry) accepts its value as
+    // a structural ASN.1 JSON tree: a value starting with `{` is read as a tree, anything else as
+    // base64 DER.
+    const mappedExtensionOid = getMappedExtensionOid(getFieldMapping(descriptor));
+    const derExtensionOids = useDerExtensionOids(!!mappedExtensionOid);
+    const acceptsJsonTree = !!mappedExtensionOid && derExtensionOids.has(mappedExtensionOid);
+
     // Attribute should not be rendered in form but its value should be sent to BE
     if (descriptor.properties.visible === false) {
         return null;
@@ -192,6 +202,14 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
     const showLabel = descriptor.properties.visible && descriptor.contentType !== AttributeContentType.Boolean;
     const showDescriptionAndError = descriptor.properties.visible;
     const regexpConstraint = getRegexpConstraint(descriptor);
+
+    const baseValidator = buildAttributeValidators(descriptor);
+    const jsonTreeErrorFor = (value: unknown): string | undefined => {
+        if (!acceptsJsonTree || typeof value !== 'string' || !value.trim().startsWith('{')) return undefined;
+        return getExtensionJsonTreeError(value);
+    };
+    const validate: FieldValidator = (value, allValues, fieldState) =>
+        baseValidator(value, allValues, fieldState) ?? jsonTreeErrorFor(value);
     // Request attributes carry a description equal to their label; showing it just repeats the label
     // under the field, so only render the description when it adds information.
     const showDescription = !!descriptor.description && descriptor.description.trim() !== (descriptor.properties.label ?? '').trim();
@@ -200,43 +218,59 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
         <Controller
             name={name}
             control={control}
-            rules={{ validate: buildAttributeValidators(descriptor) }}
-            render={({ field, fieldState }) => (
-                <>
-                    {showLabel && (
-                        <div className="flex items-center gap-2 mb-2">
-                            <Label htmlFor={name} required={descriptor.properties.required} className="!mb-0">
-                                {descriptor.properties.label}
-                            </Label>
-                            <RequestAttributeMappingBadge fieldMapping={getFieldMapping(descriptor)} />
+            rules={{ validate }}
+            render={({ field, fieldState }) => {
+                const fieldErrorVisible = fieldState.invalid && (fieldState.isTouched || submitCount > 0);
+                // Well-formedness feedback while typing: the touched/submit-gated area below only
+                // reports after the field is left, and a malformed tree (duplicate keys, trailing
+                // content) would otherwise stay invisible until the backend rejects it.
+                const liveJsonTreeError = fieldErrorVisible ? undefined : jsonTreeErrorFor(field.value);
+                return (
+                    <>
+                        {showLabel && (
+                            <div className="flex items-center gap-2 mb-2">
+                                <Label htmlFor={name} required={descriptor.properties.required} className="!mb-0">
+                                    {descriptor.properties.label}
+                                </Label>
+                                <RequestAttributeMappingBadge fieldMapping={getFieldMapping(descriptor)} />
+                            </div>
+                        )}
+                        <div className="flex items-center">
+                            <StandardInputControl
+                                name={name}
+                                descriptor={descriptor}
+                                busy={busy}
+                                deleteButton={deleteButton}
+                                field={field}
+                                fieldState={fieldState}
+                                submitCount={submitCount}
+                            />
                         </div>
-                    )}
-                    <div className="flex items-center">
-                        <StandardInputControl
-                            name={name}
-                            descriptor={descriptor}
-                            busy={busy}
-                            deleteButton={deleteButton}
-                            field={field}
-                            fieldState={fieldState}
-                            submitCount={submitCount}
-                        />
-                    </div>
-                    {showDescriptionAndError && (
-                        <>
-                            {showDescription && (
-                                <p
-                                    className={cn('text-xs text-content-muted', {
-                                        'block -mt-2': descriptor.contentType === AttributeContentType.Boolean,
-                                        'mt-1': descriptor.contentType !== AttributeContentType.Boolean,
-                                    })}
-                                >
-                                    {descriptor.description}
-                                </p>
-                            )}
-                            {descriptor.contentType !== AttributeContentType.Boolean &&
-                                fieldState.invalid &&
-                                (fieldState.isTouched || submitCount > 0) && (
+                        {showDescriptionAndError && (
+                            <>
+                                {showDescription && (
+                                    <p
+                                        className={cn('text-xs text-content-muted', {
+                                            'block -mt-2': descriptor.contentType === AttributeContentType.Boolean,
+                                            'mt-1': descriptor.contentType !== AttributeContentType.Boolean,
+                                        })}
+                                    >
+                                        {descriptor.description}
+                                    </p>
+                                )}
+                                {acceptsJsonTree && (
+                                    <p className="mt-1 text-xs text-content-muted" data-testid={`${name}-json-tree-hint`}>
+                                        {
+                                            'A value starting with { is read as a structural ASN.1 JSON tree; anything else as base64-encoded DER.'
+                                        }
+                                    </p>
+                                )}
+                                {liveJsonTreeError !== undefined && (
+                                    <div className="mt-1 text-sm text-danger" data-testid={`${name}-json-tree-error`}>
+                                        {liveJsonTreeError}
+                                    </div>
+                                )}
+                                {descriptor.contentType !== AttributeContentType.Boolean && fieldErrorVisible && (
                                     <div className="mt-1 text-sm text-danger">
                                         {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message}
                                         {(regexpConstraint?.description || regexpConstraint?.data) && (
@@ -254,10 +288,11 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                                         )}
                                     </div>
                                 )}
-                        </>
-                    )}
-                </>
-            )}
+                            </>
+                        )}
+                    </>
+                );
+            }}
         />
     );
 }
