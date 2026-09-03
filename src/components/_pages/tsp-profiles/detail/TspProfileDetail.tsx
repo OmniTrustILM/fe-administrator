@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 import Container from 'components/Container';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
@@ -364,6 +365,8 @@ export const TspProfileDetail = () => {
                             )}
                         </Widget>
                     )}
+
+                    {tspProfile && <CommentPanel resource={Resource.TspProfiles} objectUuid={tspProfile.uuid} />}
                 </Container>
             </Widget>
 

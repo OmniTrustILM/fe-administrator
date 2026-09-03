@@ -7,6 +7,7 @@ import {
     AuthenticationManagementApi,
     AuthorityManagementApi,
     BrandingApi,
+    CommentsApi,
     CBOMManagementApi,
     CMPProfileManagementApi,
     CallbackApi,
@@ -31,6 +32,7 @@ import {
     GlobalMetadataApi,
     InfoApi,
     InternalNotificationApi,
+    ListViewApi,
     LocationManagementApi,
     NotificationProfileInventoryApi,
     ProxyManagementApi,
@@ -66,6 +68,7 @@ import {
     Configuration as ConfigurationUtils,
     OIDUtilsAPIApi,
 } from 'types/openapi/utils';
+import { TokenInstanceAttributesApi } from './types/token-instance-api';
 
 const apiUrl = (globalThis as typeof globalThis & { __ENV__?: Env }).__ENV__?.API_URL || '/api';
 const configuration = new Configuration({ basePath: apiUrl });
@@ -108,6 +111,8 @@ export interface ApiClients {
     globalMetadata: GlobalMetadataApi;
     settings: SettingsApi;
     branding: BrandingApi;
+    comments: CommentsApi;
+    listViews: ListViewApi;
     scheduler: ScheduledJobsManagementApi;
     approvalProfiles: ApprovalProfileInventoryApi;
     approvals: ApprovalInventoryApi;
@@ -116,6 +121,7 @@ export interface ApiClients {
     enums: EnumsApi;
     info: InfoApi;
     tokenInstances: TokenInstanceManagementApi;
+    tokenInstanceAttributes: TokenInstanceAttributesApi;
     tokenProfiles: TokenProfileManagementApi;
     cryptographicKeys: CryptographicKeyManagementApi;
     cryptographicOperations: CryptographicOperationsControllerApi;
@@ -175,6 +181,8 @@ const factories: Partial<{ [K in ApiClientKey]: () => ApiClients[K] }> = {
     globalMetadata: () => new GlobalMetadataApi(configuration),
     settings: () => new SettingsApi(configuration),
     branding: () => new BrandingApi(configuration),
+    comments: () => new CommentsApi(configuration),
+    listViews: () => new ListViewApi(configuration),
     scheduler: () => new ScheduledJobsManagementApi(configuration),
     approvalProfiles: () => new ApprovalProfileInventoryApi(configuration),
     approvals: () => new ApprovalInventoryApi(configuration),
@@ -183,6 +191,7 @@ const factories: Partial<{ [K in ApiClientKey]: () => ApiClients[K] }> = {
     enums: () => new EnumsApi(configuration),
     info: () => new InfoApi(configuration),
     tokenInstances: () => new TokenInstanceManagementApi(configuration),
+    tokenInstanceAttributes: () => new TokenInstanceAttributesApi(configuration),
     tokenProfiles: () => new TokenProfileManagementApi(configuration),
     cryptographicKeys: () => new CryptographicKeyManagementApi(configuration),
     cryptographicOperations: () => new CryptographicOperationsControllerApi(configuration),

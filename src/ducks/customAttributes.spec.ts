@@ -51,7 +51,10 @@ describe('customAttributes slice', () => {
         expect(next.resourceCustomAttributes).toHaveLength(1);
 
         const failing = reducer(
-            { ...initialState, isFetchingResourceCustomAttributes: true },
+            {
+                ...initialState,
+                isFetchingResourceCustomAttributes: true,
+            },
             actions.listResourceCustomAttributesFailure({ error: 'err' }),
         );
         expect(failing.isFetchingResourceCustomAttributes).toBe(false);

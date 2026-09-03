@@ -31,12 +31,6 @@ export interface BrandingSettingsUpdateDto {
      */
     secondaryColor?: string;
     /**
-     * Tertiary brand color, used as an additional accent
-     * @type {string}
-     * @memberof BrandingSettingsUpdateDto
-     */
-    tertiaryColor?: string;
-    /**
      * Page background color of the branded theme
      * @type {string}
      * @memberof BrandingSettingsUpdateDto

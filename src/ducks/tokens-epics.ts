@@ -1,21 +1,25 @@
-import type { AppEpic } from 'ducks';
-import { of } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
-import { FunctionGroupCode } from 'types/openapi';
+import type { AppEpic, EpicDependencies } from 'ducks';
+import { defer, EMPTY, forkJoin, of, throwError } from 'rxjs';
+import { AjaxError } from 'rxjs/ajax';
+import { catchError, exhaustMap, filter, groupBy, map, mergeMap, switchMap } from 'rxjs/operators';
+import { ConnectorInterface, FilterConditionOperator, FilterFieldSource, FunctionGroupCode } from 'types/openapi';
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
-import { slice } from './tokens';
+import { getTokenAttributesQueryKey, normalizeTokenAttributesQuery, slice } from './tokens';
 import { transformAttributeDescriptorDtoToModel } from './transform/attributes';
-import { transformConnectorResponseDtoToModel } from './transform/connectors';
+import { transformConnectorDtoV2ToModel, transformConnectorResponseDtoToModel } from './transform/connectors';
 import { actions as userInterfaceActions } from './user-interface';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { toGeneratedTokenRequestDto } from 'types/tokens';
 import {
     transformTokenDetailResponseDtoToModel,
     transformTokenRequestModelToDto,
     transformTokenResponseDtoToModel,
 } from './transform/tokens';
+
+const NG_CONNECTORS_PAGE_SIZE = 1000;
 
 const listTokens: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
@@ -42,47 +46,116 @@ const listTokens: AppEpic = (action$, state$, deps) => {
     );
 };
 
+const requestTokenDetail = (deps: EpicDependencies, uuid: string) =>
+    deps.apiClients.tokenInstances.getTokenInstance({ uuid }).pipe(
+        switchMap((tokenDto) =>
+            of(
+                slice.actions.getTokenDetailSuccess({ token: transformTokenDetailResponseDtoToModel(tokenDto) }),
+                userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.TokenDetails),
+            ),
+        ),
+
+        catchError((err) =>
+            of(
+                slice.actions.getTokenDetailFailure({ uuid, error: extractError(err, 'Failed to get Token detail') }),
+                userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.TokenDetails),
+            ),
+        ),
+    );
+
 const getTokenDetail: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getTokenDetail.match),
+        switchMap((action) => requestTokenDetail(deps, action.payload.uuid)),
+    );
+};
 
-        switchMap((action) =>
-            deps.apiClients.tokenInstances.getTokenInstance({ uuid: action.payload.uuid }).pipe(
-                switchMap((tokenDto) =>
-                    of(
-                        slice.actions.getTokenDetailSuccess({ token: transformTokenDetailResponseDtoToModel(tokenDto) }),
-                        userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.TokenDetails),
-                    ),
-                ),
-
-                catchError((err) =>
-                    of(
-                        slice.actions.getTokenDetailFailure({ error: extractError(err, 'Failed to get Token detail') }),
-                        userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.TokenDetails),
-                    ),
+const ensureTokenDetail: AppEpic = (action$, state$, deps) =>
+    action$.pipe(
+        filter(slice.actions.ensureTokenDetail.match),
+        groupBy((action) => action.payload.uuid),
+        mergeMap((requestsForUuid) =>
+            requestsForUuid.pipe(
+                exhaustMap((action) =>
+                    state$.value.tokens.tokenDetailsByUuid?.[action.payload.uuid] ? EMPTY : requestTokenDetail(deps, action.payload.uuid),
                 ),
             ),
         ),
     );
-};
+
+const requestTokenProviders = (deps: EpicDependencies) =>
+    forkJoin({
+        legacy: deps.apiClients.connectors.listConnectors({ functionGroup: FunctionGroupCode.CryptographyProvider }),
+        v2: deps.apiClients.connectorsV2
+            .listConnectorsV2({
+                searchRequestDto: {
+                    itemsPerPage: NG_CONNECTORS_PAGE_SIZE,
+                    pageNumber: 1,
+                    filters: [
+                        {
+                            fieldSource: FilterFieldSource.Property,
+                            fieldIdentifier: 'CONNECTOR_INTERFACE',
+                            condition: FilterConditionOperator.Equals,
+                            value: ConnectorInterface.Cryptography,
+                        },
+                    ],
+                },
+            })
+            .pipe(
+                catchError((err) =>
+                    err instanceof AjaxError && err.status === 404 ? of({ items: [], totalItems: 0 }) : throwError(() => err),
+                ),
+            ),
+    }).pipe(
+        map(({ legacy, v2 }) => {
+            const byUuid = new Map(legacy.map((connector) => [connector.uuid, transformConnectorResponseDtoToModel(connector)]));
+            v2.items.forEach((connector) => {
+                byUuid.set(connector.uuid, transformConnectorDtoV2ToModel(connector));
+            });
+            return slice.actions.listTokenProvidersSuccess({ connectors: Array.from(byUuid.values()) });
+        }),
+
+        catchError((err) =>
+            of(
+                slice.actions.listTokenProvidersFailure({ error: extractError(err, 'Failed to get Cryptography Provider list') }),
+                appRedirectActions.fetchError({ error: err, message: 'Failed to get Cryptography Provider list' }),
+            ),
+        ),
+    );
 
 const listTokenProviders: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.listTokenProviders.match),
-        switchMap(() =>
-            deps.apiClients.connectors.listConnectors({ functionGroup: FunctionGroupCode.CryptographyProvider }).pipe(
-                map((providers) =>
-                    slice.actions.listTokenProvidersSuccess({
-                        connectors: providers.map(transformConnectorResponseDtoToModel),
-                    }),
-                ),
+        switchMap(() => requestTokenProviders(deps)),
+    );
+};
 
-                catchError((err) =>
-                    of(
-                        slice.actions.listTokenProvidersFailure({ error: extractError(err, 'Failed to get Cryptography Provider list') }),
-                        appRedirectActions.fetchError({ error: err, message: 'Failed to get Cryptography Provider list' }),
-                    ),
-                ),
+const ensureTokenProviders: AppEpic = (action$, state$, deps) =>
+    action$.pipe(
+        filter(slice.actions.ensureTokenProviders.match),
+        exhaustMap(() => (state$.value.tokens.tokenProviders === undefined ? requestTokenProviders(deps) : EMPTY)),
+    );
+
+const requestTokenProviderAttributes = (deps: EpicDependencies, query: ReturnType<typeof normalizeTokenAttributesQuery>) => {
+    const queryKey = getTokenAttributesQueryKey(query);
+    return defer(() => deps.apiClients.tokenInstanceAttributes.listTokenAttributes(query)).pipe(
+        map((attributeDescriptors) =>
+            slice.actions.getTokenProviderAttributesDescriptorsSuccess({
+                queryKey,
+                attributeDescriptor: attributeDescriptors.map(transformAttributeDescriptorDtoToModel),
+            }),
+        ),
+
+        catchError((err) =>
+            of(
+                slice.actions.getTokenProviderAttributeDescriptorsFailure({
+                    queryKey,
+                    error: extractError(err, 'Failed to get Cryptography Provider Attribute Descriptor list'),
+                }),
+                appRedirectActions.fetchError({
+                    error: err,
+                    message: 'Failed to get Cryptography Provider Attribute Descriptor list',
+                }),
             ),
         ),
     );
@@ -91,35 +164,26 @@ const listTokenProviders: AppEpic = (action$, state, deps) => {
 const getTokenProviderAttributesDescriptors: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getTokenProviderAttributesDescriptors.match),
-        switchMap((action) =>
-            deps.apiClients.connectors
-                .getAttributes({
-                    uuid: action.payload.uuid,
-                    functionGroup: FunctionGroupCode.CryptographyProvider,
-                    kind: action.payload.kind,
-                })
-                .pipe(
-                    map((attributeDescriptors) =>
-                        slice.actions.getTokenProviderAttributesDescriptorsSuccess({
-                            attributeDescriptor: attributeDescriptors.map(transformAttributeDescriptorDtoToModel),
-                        }),
-                    ),
-
-                    catchError((err) =>
-                        of(
-                            slice.actions.getTokenProviderAttributeDescriptorsFailure({
-                                error: extractError(err, 'Failed to get Cryptography Provider Attribute Descriptor list'),
-                            }),
-                            appRedirectActions.fetchError({
-                                error: err,
-                                message: 'Failed to get Cryptography Provider Attribute Descriptor list',
-                            }),
-                        ),
-                    ),
-                ),
-        ),
+        switchMap((action) => requestTokenProviderAttributes(deps, normalizeTokenAttributesQuery(action.payload))),
     );
 };
+
+const ensureTokenProviderAttributesDescriptors: AppEpic = (action$, state$, deps) =>
+    action$.pipe(
+        filter(slice.actions.ensureTokenProviderAttributesDescriptors.match),
+        groupBy((action) => getTokenAttributesQueryKey(action.payload)),
+        mergeMap((requestsForQuery) =>
+            requestsForQuery.pipe(
+                exhaustMap((action) => {
+                    const query = normalizeTokenAttributesQuery(action.payload);
+                    const queryKey = getTokenAttributesQueryKey(query);
+                    return Object.hasOwn(state$.value.tokens.tokenProviderAttributeDescriptorsByQueryKey ?? {}, queryKey)
+                        ? EMPTY
+                        : requestTokenProviderAttributes(deps, query);
+                }),
+            ),
+        ),
+    );
 
 const getTokenProfileAttributesDescriptors: AppEpic = (action$, state, deps) => {
     return action$.pipe(
@@ -176,7 +240,9 @@ const createToken: AppEpic = (action$, state$, deps) => {
         filter(slice.actions.createToken.match),
         switchMap((action) =>
             deps.apiClients.tokenInstances
-                .createTokenInstance({ tokenInstanceRequestDto: transformTokenRequestModelToDto(action.payload) })
+                .createTokenInstance({
+                    tokenInstanceRequestDto: toGeneratedTokenRequestDto(transformTokenRequestModelToDto(action.payload)),
+                })
                 .pipe(
                     mergeMap((obj) =>
                         of(
@@ -204,7 +270,7 @@ const updateToken: AppEpic = (action$, state$, deps) => {
             deps.apiClients.tokenInstances
                 .updateTokenInstance({
                     uuid: action.payload.uuid,
-                    tokenInstanceRequestDto: transformTokenRequestModelToDto(action.payload.updateToken),
+                    tokenInstanceRequestDto: toGeneratedTokenRequestDto(transformTokenRequestModelToDto(action.payload.updateToken)),
                 })
                 .pipe(
                     mergeMap((tokenDto) =>
@@ -331,8 +397,11 @@ const bulkDeleteToken: AppEpic = (action$, state$, deps) => {
 const epics = [
     listTokens,
     getTokenDetail,
+    ensureTokenDetail,
     listTokenProviders,
+    ensureTokenProviders,
     getTokenProviderAttributesDescriptors,
+    ensureTokenProviderAttributesDescriptors,
     getTokenProfileAttributesDescriptors,
     getTokenActivationAttributesDescriptors,
     createToken,
@@ -344,4 +413,13 @@ const epics = [
     reloadToken,
 ];
 
+export {
+    getTokenActivationAttributesDescriptors,
+    getTokenProfileAttributesDescriptors,
+    getTokenProviderAttributesDescriptors,
+    ensureTokenProviderAttributesDescriptors,
+    ensureTokenProviders,
+    ensureTokenDetail,
+    listTokenProviders,
+};
 export default epics;

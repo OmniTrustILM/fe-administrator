@@ -11,7 +11,6 @@ export const platformDefaultBranding: PublicBrandingModel = {
     configured: false,
     primaryColor: null,
     secondaryColor: null,
-    tertiaryColor: null,
     backgroundColor: null,
     textColor: null,
     lightLogo: null,
@@ -25,6 +24,12 @@ export type State = {
     /** The subset an unauthenticated caller may read, used by the login page before there is any session. */
     publicBranding?: PublicBrandingModel;
 
+    /**
+     * Whether the last anonymous read failed. Set because a failure still settles `publicBranding` on the platform
+     * default, which a consumer cannot otherwise tell apart from an instance that genuinely has no branding.
+     */
+    publicBrandingReadFailed: boolean;
+
     isFetchingBranding: boolean;
     isFetchingPublicBranding: boolean;
     isUpdatingBranding: boolean;
@@ -36,6 +41,7 @@ export type State = {
 };
 
 export const initialState: State = {
+    publicBrandingReadFailed: false,
     isFetchingBranding: false,
     isFetchingPublicBranding: false,
     isUpdatingBranding: false,
@@ -64,7 +70,14 @@ export const slice = createSlice({
             state.isFetchingBranding = false;
         },
 
+        /**
+         * The previously read branding goes with the failure. `branding` is what the Appearance tab treats as proof of
+         * a known-good state to edit from, so leaving a cached value behind after a failed re-read would make the form
+         * writable over branding this session no longer knows to be current — and, because a save replaces the whole
+         * brand, the next edit would overwrite newer server state with it.
+         */
         getBrandingFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.branding = undefined;
             state.isFetchingBranding = false;
             state.error = action.payload.error;
         },
@@ -76,6 +89,7 @@ export const slice = createSlice({
 
         getPublicBrandingSuccess: (state, action: PayloadAction<{ branding: PublicBrandingModel }>) => {
             state.publicBranding = action.payload.branding;
+            state.publicBrandingReadFailed = false;
             state.isFetchingPublicBranding = false;
         },
 
@@ -85,6 +99,7 @@ export const slice = createSlice({
          */
         getPublicBrandingFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.publicBranding = platformDefaultBranding;
+            state.publicBrandingReadFailed = true;
             state.isFetchingPublicBranding = false;
             state.error = action.payload.error;
         },
@@ -138,6 +153,7 @@ const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const branding = createSelector(state, (state) => state?.branding);
 const publicBranding = createSelector(state, (state) => state?.publicBranding);
+const publicBrandingReadFailed = createSelector(state, (state) => state?.publicBrandingReadFailed ?? false);
 
 const isFetchingBranding = createSelector(state, (state) => state?.isFetchingBranding);
 const isFetchingPublicBranding = createSelector(state, (state) => state?.isFetchingPublicBranding);
@@ -151,6 +167,7 @@ export const selectors = {
     state,
     branding,
     publicBranding,
+    publicBrandingReadFailed,
 
     isFetchingBranding,
     isFetchingPublicBranding,

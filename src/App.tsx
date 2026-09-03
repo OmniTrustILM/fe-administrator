@@ -1,6 +1,6 @@
 import { Provider } from 'react-redux';
 import AppRouter from './components/AppRouter';
-import ThemeProvider from './components/ThemeProvider';
+import ConnectedThemeProvider from './components/ThemeProvider/ConnectedThemeProvider';
 import configureStore from './store';
 
 export const store = configureStore();
@@ -8,9 +8,9 @@ export const store = configureStore();
 const App = () => {
     return (
         <Provider store={store}>
-            <ThemeProvider>
+            <ConnectedThemeProvider>
                 <AppRouter />
-            </ThemeProvider>
+            </ConnectedThemeProvider>
         </Provider>
     );
 };

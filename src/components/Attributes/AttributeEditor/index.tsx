@@ -37,6 +37,16 @@ import { deepEqual } from 'utils/deep-equal';
 import { contentItemLabel } from 'utils/displayValue';
 import Button from 'components/Button';
 import { Trash } from 'lucide-react';
+import {
+    getAttributeEditorAttributeKey,
+    getAttributeEditorAttributesKey,
+    getAttributeEditorDeletedAttributesKey,
+} from './attributeEditorKeys';
+export {
+    getAttributeEditorAttributeKey,
+    getAttributeEditorAttributesKey,
+    getAttributeEditorDeletedAttributesKey,
+} from './attributeEditorKeys';
 
 /* c8 ignore start */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -146,18 +156,18 @@ function AttributeEditorInner({
     const handleDeleteAttribute = useCallback(
         (attributeName: string) => {
             // Create a unique key for this AttributeEditor instance
-            const deletedAttributesKey = `deletedAttributes_${id}`;
+            const deletedAttributesKey = getAttributeEditorDeletedAttributesKey(id);
 
             // Add to deletedAttributes in form state using the unique key
             const currentDeleted = formValues[deletedAttributesKey] || [];
             setValue(deletedAttributesKey, [...currentDeleted, attributeName], { shouldDirty: true });
 
             // Remove from form values
-            setValue(`__attributes__${id}__.${attributeName}`, undefined, { shouldDirty: true });
+            setValue(getAttributeEditorAttributeKey(id, attributeName), undefined, { shouldDirty: true });
 
             // Remove from options
             const newOptions = { ...options };
-            delete newOptions[`__attributes__${id}__.${attributeName}`];
+            delete newOptions[getAttributeEditorAttributeKey(id, attributeName)];
             setOptions(newOptions);
 
             // Remove from shown custom attributes if it's a custom attribute
@@ -236,7 +246,7 @@ function AttributeEditorInner({
     const getCurrentFromMappingValue = useCallback(
         (mapping: AttributeCallbackMappingModel): unknown => {
             const attributeFromValue = getAttributeValue(attributes, mapping.from);
-            const formAttributes = formValues[`__attributes__${id}__`] ?? undefined;
+            const formAttributes = formValues[getAttributeEditorAttributesKey(id)] ?? undefined;
             const formMappingName = mapping.from?.includes('.') ? mapping.from.split('.')[0] : (mapping.from ?? '');
             const formAttribute = formAttributes
                 ? Object.keys(formAttributes).find((key) => key.startsWith(`${formMappingName}`))
@@ -484,9 +494,9 @@ function AttributeEditorInner({
      * Clean form attributes, callback data and previous form state whenever passed attribute descriptors or attributes changed
      */
     useEffect(() => {
-        // Clear all attributes that start with __attributes__${id}__
+        // Clear all attributes that belong to this editor.
         const currentValues = watch();
-        const keysToClear = Object.keys(currentValues).filter((k) => k.startsWith(`__attributes__${id}__`));
+        const keysToClear = Object.keys(currentValues).filter((k) => k.startsWith(getAttributeEditorAttributesKey(id)));
         keysToClear.forEach((key) => {
             setValue(key, undefined, { shouldDirty: false, shouldValidate: false });
         });
@@ -499,7 +509,7 @@ function AttributeEditorInner({
     useEffect(() => {
         // After clearAttributes, ensure deletedAttributes are preserved in form state
         if (deletedAttributes.length > 0) {
-            setValue(`deletedAttributes_${id}`, deletedAttributes);
+            setValue(getAttributeEditorDeletedAttributesKey(id), deletedAttributes);
         }
     }, [deletedAttributes, setValue, id]);
 
@@ -507,7 +517,7 @@ function AttributeEditorInner({
      * Synchronize local deletedAttributes state with form state to maintain consistency
      */
     useEffect(() => {
-        const formDeletedAttributes = formValues[`deletedAttributes_${id}`] || [];
+        const formDeletedAttributes = formValues[getAttributeEditorDeletedAttributesKey(id)] || [];
         if (
             formDeletedAttributes.length !== deletedAttributes.length ||
             !formDeletedAttributes.every((attr: string) => deletedAttributes.includes(attr))
@@ -771,7 +781,7 @@ function AttributeEditorInner({
 
         descriptorsToLoad.forEach((descriptor) => {
             if (isDataAttributeModel(descriptor) || isGroupAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) {
-                const formAttributeName = `__attributes__${id}__.${descriptor.name}`;
+                const formAttributeName = getAttributeEditorAttributeKey(id, descriptor.name);
 
                 // Skip if this attribute was deleted
                 if (deletedAttributes.includes(descriptor.name)) {
@@ -839,7 +849,7 @@ function AttributeEditorInner({
 
         shownCustomAttributes.forEach((descriptor) => {
             if (isCustomAttributeModel(descriptor)) {
-                const formAttributeName = `__attributes__${id}__.${descriptor.name}`;
+                const formAttributeName = getAttributeEditorAttributeKey(id, descriptor.name);
                 const attribute = attributes.find((a) => a.name === descriptor.name);
 
                 // Set up options for select fields (always needed for re-added attributes)
@@ -920,7 +930,7 @@ function AttributeEditorInner({
      */
     /* istanbul ignore next */
     const doCallbacks = useCallback(() => {
-        const attributesKey = `__attributes__${id}__`;
+        const attributesKey = getAttributeEditorAttributesKey(id);
         const currentAttributes = (formValues?.[attributesKey] ?? {}) as Record<string, unknown>;
         const previousAttributes = previousAttributesRef.current;
 
@@ -940,7 +950,7 @@ function AttributeEditorInner({
         // callback runs, keeping the edit-mode storm suppression.
         [...attributeDescriptors, ...groupAttributesCallbackAttributes].forEach((descriptor) => {
             if (!isDataAttributeModel(descriptor) && !isGroupAttributeModel(descriptor)) return;
-            const formAttributeName = `__attributes__${id}__.${descriptor.name}`;
+            const formAttributeName = getAttributeEditorAttributeKey(id, descriptor.name);
 
             const dependsOn = getNgDependsOn(descriptor);
             if (dependsOn) {
@@ -989,7 +999,7 @@ function AttributeEditorInner({
         setPrevAttributes(attributes);
         descriptorsToLoad.forEach((descriptor) => {
             if (isDataAttributeModel(descriptor) || isGroupAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) {
-                const formAttributeName = `__attributes__${id}__.${descriptor.name}`;
+                const formAttributeName = getAttributeEditorAttributeKey(id, descriptor.name);
 
                 // Clear the callback cache for credential-type attributes so the callback is
                 // re-executed and the options list is refreshed after a new credential is created.
@@ -1049,11 +1059,11 @@ function AttributeEditorInner({
             const groupCallbackAttributes: AttributeDescriptorModel[] = callbackData[callbackId].filter(isAttributeDescriptorModel);
 
             const descriptors = [...attributeDescriptors, ...groupAttributesCallbackAttributes];
-            const callbackDescriptor = descriptors.find((d) => `__attributes__${id}__.${d.name}` === callbackId);
+            const callbackDescriptor = descriptors.find((d) => getAttributeEditorAttributeKey(id, d.name) === callbackId);
 
             const groupCallbackAttributesContentOpts = groupCallbackAttributes.reduce((acc, attr) => {
                 if (isDataAttributeModel(attr) || isInfoAttributeModel(attr)) {
-                    const formAttributeName = `__attributes__${id}__.${attr.name}`;
+                    const formAttributeName = getAttributeEditorAttributeKey(id, attr.name);
                     const optionsFromGroupCallback = attr.content?.map((value) => ({
                         label: contentItemLabel(value),
                         value,
@@ -1142,7 +1152,7 @@ function AttributeEditorInner({
                     }
 
                     // Also remove from form state
-                    const deletedAttributesKey = `deletedAttributes_${id}`;
+                    const deletedAttributesKey = getAttributeEditorDeletedAttributesKey(id);
                     const currentDeleted = formValues[deletedAttributesKey] || [];
                     setValue(
                         deletedAttributesKey,
@@ -1171,9 +1181,9 @@ function AttributeEditorInner({
                         <div key={descriptor.name} className="mb-4">
                             <Attribute
                                 busy={isRunningCb}
-                                name={`__attributes__${id}__.${descriptor.name}`}
+                                name={getAttributeEditorAttributeKey(id, descriptor.name)}
                                 descriptor={descriptor}
-                                options={options[`__attributes__${id}__.${descriptor.name}`]}
+                                options={options[getAttributeEditorAttributeKey(id, descriptor.name)]}
                                 userInteractedRef={userInteractedRef}
                                 deleteButton={
                                     withRemoveAction && isCustomAttributeModel(descriptor) && !descriptor.properties.required

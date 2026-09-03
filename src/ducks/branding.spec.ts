@@ -51,6 +51,15 @@ describe('branding slice', () => {
             expect(state.isFetchingBranding).toBe(false);
             expect(state.error).toBe('nope');
         });
+
+        test('getBrandingFailure drops the branding a previous read left behind', () => {
+            // The Appearance tab treats a present `branding` as proof of a known-good state to edit from. A cached one
+            // left behind by a failed re-read would make the form writable over branding this session cannot vouch
+            // for, and a save replaces the whole brand.
+            const cached = { ...initialState, branding: { primaryColor: '#0073CF' }, isFetchingBranding: true };
+
+            expect(reducer(cached, actions.getBrandingFailure({ error: 'nope' })).branding).toBeUndefined();
+        });
     });
 
     describe('reading the anonymous branding', () => {
@@ -72,6 +81,20 @@ describe('branding slice', () => {
             expect(state.publicBranding).toEqual(platformDefaultBranding);
             expect(state.publicBranding?.configured).toBe(false);
             expect(state.error).toBe('offline');
+        });
+
+        test('getPublicBrandingFailure records that the default is a fallback and not an answer', () => {
+            const state = reducer({ ...initialState }, actions.getPublicBrandingFailure({ error: 'offline' }));
+
+            expect(state.publicBrandingReadFailed).toBe(true);
+        });
+
+        test('getPublicBrandingSuccess clears the failure recorded by an earlier read', () => {
+            const branding = publicBranding({ configured: true });
+
+            const state = reducer({ ...initialState, publicBrandingReadFailed: true }, actions.getPublicBrandingSuccess({ branding }));
+
+            expect(state.publicBrandingReadFailed).toBe(false);
         });
     });
 
@@ -171,6 +194,7 @@ describe('branding slice', () => {
 
             expect(selectors.branding(store)).toEqual(populated.branding);
             expect(selectors.publicBranding(store)).toEqual(populated.publicBranding);
+            expect(selectors.publicBrandingReadFailed(store)).toBe(populated.publicBrandingReadFailed);
             expect(selectors.error(store)).toBe('stale');
             expect(selectors.isFetchingBranding(store)).toBe(false);
             expect(selectors.isFetchingPublicBranding(store)).toBe(false);
@@ -184,6 +208,7 @@ describe('branding slice', () => {
         test('tolerate the slice being absent from the store', () => {
             expect(selectors.branding({} as never)).toBeUndefined();
             expect(selectors.isFetchingBranding({} as never)).toBeUndefined();
+            expect(selectors.publicBrandingReadFailed({} as never)).toBe(false);
         });
     });
 });

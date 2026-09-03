@@ -1,6 +1,6 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import type { ConnectInfoDto } from 'types/openapi';
+import type { ConnectInfoDto, ListViewDto } from 'types/openapi';
 import type { EventTriggerAssociationModel, TriggerModel } from 'types/rules';
 
 // IMPORTANT: This file is used ONLY in component tests (Playwright CT).
@@ -265,6 +265,42 @@ const authTestInitialState: AuthTestState = {
 
 function authTestReducer(state: AuthTestState | undefined, _action: UnknownAction): AuthTestState {
     return state ?? authTestInitialState;
+}
+
+export type BrandingTestState = {
+    branding?: Record<string, string | undefined>;
+    /** What a save or a reset put on the wire. Kept apart from `branding` so a preloaded value is not mistaken for it. */
+    sentBranding?: Record<string, string | undefined>;
+    isFetchingBranding: boolean;
+    isUpdatingBranding: boolean;
+    isResettingBranding: boolean;
+    updateSucceeded: boolean;
+    resetSucceeded: boolean;
+    error?: string;
+};
+
+const brandingTestInitialState: BrandingTestState = {
+    isFetchingBranding: false,
+    isUpdatingBranding: false,
+    isResettingBranding: false,
+    updateSucceeded: false,
+    resetSucceeded: false,
+};
+
+/**
+ * Applies the write locally so a component test can assert what a save or a reset sent, without epics. The real slice
+ * stores the branding Core reads back; here the request itself is good enough to prove the payload.
+ */
+function brandingTestReducer(state: BrandingTestState = brandingTestInitialState, action: UnknownAction): BrandingTestState {
+    const a = action as { type: string; payload?: { branding?: Record<string, string | undefined> } };
+    switch (a.type) {
+        case 'branding/updateBranding':
+            return { ...state, sentBranding: a.payload?.branding, isUpdatingBranding: false, updateSucceeded: true };
+        case 'branding/resetBranding':
+            return { ...state, sentBranding: {}, branding: {}, isResettingBranding: false, resetSucceeded: true };
+        default:
+            return state;
+    }
 }
 
 export type CustomAttributesTestState = {
@@ -1070,6 +1106,153 @@ function rulesTestReducer(state: RulesTestState | undefined, _action: UnknownAct
     return state ?? rulesTestInitialState;
 }
 
+export type CommentsTestPage = {
+    comments: unknown[];
+    totalItems: number;
+    totalPages: number;
+    pageNumber: number;
+    itemsPerPage: number;
+    isFetching: boolean;
+    isPosting: boolean;
+    postingDenied?: string;
+    postSucceeded?: boolean;
+};
+
+export type CommentsTestState = {
+    threads: Record<string, CommentsTestPage & { lock?: unknown }>;
+    replies: Record<string, CommentsTestPage>;
+    busy: Record<string, boolean>;
+    /** Every `comments/*` action the panel dispatched, so a test can assert the request without an epic. */
+    dispatched: Array<{ type: string; payload?: unknown }>;
+};
+
+const commentsTestInitialState: CommentsTestState = {
+    threads: {},
+    replies: {},
+    busy: {},
+    dispatched: [],
+};
+
+const emptyCommentsTestPage: CommentsTestPage = {
+    comments: [],
+    totalItems: 0,
+    totalPages: 0,
+    pageNumber: 1,
+    itemsPerPage: 10,
+    isFetching: false,
+    isPosting: false,
+};
+
+type CommentsPostPayload = { key?: string; resource?: string; objectUuid?: string; parentUuid?: string };
+
+/** A reply post lands on its thread, a root post on the panel: the same routing the real slice does. */
+function withPostState(state: CommentsTestState, payload: CommentsPostPayload, change: Partial<CommentsTestPage>): CommentsTestState {
+    if (payload.parentUuid) {
+        const target = state.replies[payload.parentUuid] ?? emptyCommentsTestPage;
+        return { ...state, replies: { ...state.replies, [payload.parentUuid]: { ...target, ...change } } };
+    }
+    const key = payload.key ?? `${payload.resource}/${payload.objectUuid}`;
+    const target = state.threads[key] ?? emptyCommentsTestPage;
+    return { ...state, threads: { ...state.threads, [key]: { ...target, ...change } } };
+}
+
+function commentsTestReducer(state: CommentsTestState | undefined, action: UnknownAction): CommentsTestState {
+    const current = state ?? commentsTestInitialState;
+    if (!action.type.startsWith('comments/')) return current;
+    const recorded = { ...current, dispatched: [...current.dispatched, { type: action.type, payload: action.payload }] };
+    // The post lifecycle is applied, not only recorded: the composer clears its draft on the postSucceeded
+    // false -> true transition, so a test has to be able to drive that transition.
+    const payload = (action.payload ?? {}) as CommentsPostPayload;
+    if (action.type === 'comments/createComment') return withPostState(recorded, payload, { isPosting: true, postSucceeded: false });
+    if (action.type === 'comments/createCommentSuccess') return withPostState(recorded, payload, { isPosting: false, postSucceeded: true });
+
+    return recorded;
+}
+
+// Reducer key must match the real slice.name ('listViews') so the real list-view selectors — the ones
+// components/ViewTabs reads — find this state. Component tests run no epics, so nothing carries a
+// mutation past its request action: the views are preloaded, and every listViews action the strip
+// dispatches is recorded instead, which is what lets a test assert what was asked for.
+export type ListViewsTestState = {
+    byResource: Record<
+        string,
+        {
+            views: ListViewDto[];
+            isFetching: boolean;
+            hasLoaded: boolean;
+            isMutating: boolean;
+            createdUuid?: string;
+            rollback?: ListViewDto[];
+        }
+    >;
+    error?: string;
+    dispatched: Array<{ type: string; payload?: unknown }>;
+};
+
+const listViewsTestInitialState: ListViewsTestState = {
+    byResource: {},
+    dispatched: [],
+};
+
+// The uuid an optimistic create carries, mirroring PENDING_VIEW_UUID in src/ducks/listViews.ts. Spelt
+// out rather than imported, because this file must not pull in the real ducks.
+const PENDING_LIST_VIEW_UUID = 'pending-view';
+
+function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialState, action: UnknownAction): ListViewsTestState {
+    const a = action as { type: string; payload?: { resource?: string; view?: Partial<ListViewDto> } };
+    if (!a.type.startsWith('listViews/')) return state;
+
+    const recorded: ListViewsTestState = { ...state, dispatched: [...state.dispatched, { type: a.type, payload: a.payload }] };
+
+    const resource = a.payload?.resource;
+    if (!resource) return recorded;
+
+    const view = a.payload?.view;
+    const entry = recorded.byResource[resource] ?? { views: [], isFetching: false, hasLoaded: false, isMutating: false };
+    const withEntry = (next: Partial<ListViewsTestState['byResource'][string]>): ListViewsTestState => ({
+        ...recorded,
+        byResource: { ...recorded.byResource, [resource]: { ...entry, ...next } },
+    });
+
+    // Only the create and delete round trips are mirrored, and only as far as the strip can observe
+    // them: a tab has to appear the moment a create is asked for, follow the uuid the API gives it and
+    // disappear again if the create fails, and a deleted tab has to come back if the delete fails.
+    // Everything else a mutation does to this slice is asserted against the real reducer in its own
+    // unit tests.
+    if (a.type === 'listViews/createView' && view) {
+        return withEntry({ isMutating: true, views: [...entry.views, { ...view, uuid: PENDING_LIST_VIEW_UUID, resource } as ListViewDto] });
+    }
+
+    if (a.type === 'listViews/createViewSuccess' && view) {
+        const created = view as ListViewDto;
+        const hasPending = entry.views.some((each) => each.uuid === PENDING_LIST_VIEW_UUID);
+
+        return withEntry({
+            isMutating: false,
+            createdUuid: created.uuid,
+            views: hasPending
+                ? entry.views.map((each) => (each.uuid === PENDING_LIST_VIEW_UUID ? created : each))
+                : [...entry.views, created],
+        });
+    }
+
+    if (a.type === 'listViews/createViewFailure') {
+        return withEntry({ isMutating: false, views: entry.views.filter((each) => each.uuid !== PENDING_LIST_VIEW_UUID) });
+    }
+
+    const uuid = (a.payload as { uuid?: string } | undefined)?.uuid;
+
+    if (a.type === 'listViews/deleteView' && uuid) {
+        return withEntry({ isMutating: true, rollback: entry.views, views: entry.views.filter((each) => each.uuid !== uuid) });
+    }
+
+    if (a.type === 'listViews/deleteViewFailure') {
+        return withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined });
+    }
+
+    return recorded;
+}
+
 export const testReducers = combineReducers({
     raProfileRequestAttributes: raProfileRequestAttributesTestReducer,
     userInterface: userInterfaceTestReducer,
@@ -1103,6 +1286,9 @@ export const testReducers = combineReducers({
     discoveries: discoveriesTestReducer,
     oids: oidsTestReducer,
     rules: rulesTestReducer,
+    comments: commentsTestReducer,
+    listViews: listViewsTestReducer,
+    branding: brandingTestReducer,
 });
 
 export const testInitialState = {
@@ -1138,4 +1324,7 @@ export const testInitialState = {
     discoveries: discoveriesTestInitialState,
     oids: oidsTestInitialState,
     rules: rulesTestInitialState,
+    comments: commentsTestInitialState,
+    listViews: listViewsTestInitialState,
+    branding: brandingTestInitialState,
 };

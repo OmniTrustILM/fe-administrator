@@ -12,18 +12,28 @@
             }
         </script>
         <script>
-            // Apply the stored theme before first paint so dark-mode users never see a white flash.
+            // Apply the theme before first paint so dark-mode users never see a white flash.
             // Mirrors utils/theme.ts; it cannot import from it because no module has loaded yet.
             (function () {
-                // Start from the operating system preference, then let an explicit stored choice
-                // override it. Reading storage can throw outright when storage is blocked, so the
+                // Same precedence as initialMode() then resolveTheme(): the user's own choice, then the operator's
+                // default, then the operating system preference - and an explicit 'system' choice returns to the OS
+                // preference rather than keeping the operator default. The operator default is server-held, so what is
+                // read here is the copy cached by the last branding response; on a first-ever visit there is none and
+                // the system preference stands. Reading storage can throw outright when storage is blocked, so the
                 // system preference is resolved first and remains the fallback in that case.
                 var prefersDark = globalThis.matchMedia && globalThis.matchMedia('(prefers-color-scheme: dark)').matches;
                 var resolved = prefersDark ? 'dark' : 'light';
                 try {
+                    var operatorDefault = localStorage.getItem('theme-operator-default');
+                    if (operatorDefault === 'light' || operatorDefault === 'dark') {
+                        resolved = operatorDefault;
+                    }
                     var stored = localStorage.getItem('theme-mode');
                     if (stored === 'light' || stored === 'dark') {
                         resolved = stored;
+                    } else if (stored === 'system') {
+                        // An explicit System choice outranks the operator default, back to the OS preference.
+                        resolved = prefersDark ? 'dark' : 'light';
                     }
                 } catch {
                     // Storage unavailable; the system preference resolved above stands.

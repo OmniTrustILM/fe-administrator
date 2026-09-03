@@ -31,6 +31,7 @@ import Badge from 'components/Badge';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
 import Button from 'components/Button';
+import CommentPanel from 'components/CommentPanel';
 import { EnumValueDescription } from 'components/EnumDescription';
 
 export default function ComplianceProfileDetail() {
@@ -468,6 +469,11 @@ export default function ComplianceProfileDetail() {
                         onReset={(resetFn) => setAvailableRulesResetFunction(() => resetFn)}
                     />
                 </Container>
+                {profile && (
+                    <Container marginTop>
+                        <CommentPanel resource={Resource.ComplianceProfiles} objectUuid={profile.uuid} />
+                    </Container>
+                )}
             </Widget>
 
             <Dialog

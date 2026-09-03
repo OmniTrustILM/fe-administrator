@@ -21,6 +21,7 @@ import { getEditAndDeleteWidgetButtons, createWidgetDetailHeaders } from 'utils/
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 export default function EntityDetail() {
@@ -142,6 +143,8 @@ export default function EntityDetail() {
                             attributes={entity.customAttributes}
                         />
                     )}
+
+                    {entity && <CommentPanel resource={Resource.Entities} objectUuid={entity.uuid} />}
                 </Container>
             </Widget>
 

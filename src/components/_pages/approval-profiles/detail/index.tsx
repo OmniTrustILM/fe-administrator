@@ -14,6 +14,7 @@ import { PlatformEnum, Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 import Container from 'components/Container';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
@@ -215,6 +216,11 @@ const ApprovalProfileDetails = () => {
                         <CustomTable headers={stepsHeaders} data={stepsRows} />
                     </Widget>
                 </Container>
+                {profileApprovalDetail && (
+                    <Container marginTop>
+                        <CommentPanel resource={Resource.ApprovalProfiles} objectUuid={profileApprovalDetail.uuid} />
+                    </Container>
+                )}
             </Widget>
             <Dialog
                 isOpen={confirmDelete}

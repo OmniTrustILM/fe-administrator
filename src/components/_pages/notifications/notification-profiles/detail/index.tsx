@@ -15,11 +15,12 @@ import NotificationProfileForm from '../form';
 
 import Badge from 'components/Badge';
 import { EnumValueDescription } from 'components/EnumDescription';
-import { PlatformEnum, RecipientType } from 'types/openapi';
+import { PlatformEnum, RecipientType, Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { getInputStringFromIso8601String } from 'utils/duration';
 import Dialog from 'components/Dialog';
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 import Container from 'components/Container';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
@@ -306,6 +307,7 @@ export default function NotificationProfileDetail() {
                             <CustomTable headers={recipientHeaders} data={recipientsData} />
                         </Widget>
                     )}
+                    {notificationProfile && <CommentPanel resource={Resource.NotificationProfiles} objectUuid={notificationProfile.uuid} />}
                 </Container>
             </Widget>
 

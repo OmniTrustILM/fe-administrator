@@ -7,6 +7,7 @@ import AttributeViewer from 'components/Attributes/AttributeViewer';
 import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import Badge from 'components/Badge';
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 import Container from 'components/Container';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
@@ -441,6 +442,12 @@ function VaultProfileDetail() {
                                 resourceUuid={profile.uuid}
                                 attributes={profile.customAttributes}
                             />
+                        </Container>
+                    )}
+
+                    {profile && (
+                        <Container>
+                            <CommentPanel resource={Resource.VaultProfiles} objectUuid={profile.uuid} />
                         </Container>
                     )}
                 </div>

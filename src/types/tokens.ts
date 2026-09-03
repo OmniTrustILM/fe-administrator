@@ -1,17 +1,24 @@
 import type { AttributeRequestModel, AttributeResponseModel } from './attributes';
 import type { MetadataModel } from './locations';
-import type { TokenInstanceDetailDto, TokenInstanceRequestDto, TokenInstanceStatusComponent } from './openapi';
+import type { TokenInstanceDetailDto, TokenInstanceDto, TokenInstanceRequestDto, TokenInstanceStatusComponent } from './openapi';
 
 export type {
-    TokenInstanceRequestDto as TokenRequestDto,
-    TokenInstanceDto as TokenResponseDto,
-    TokenInstanceDto as TokenResponseModel,
     TokenInstanceStatusDetailDto as TokenInstanceStatusResponseDto,
     TokenInstanceStatusDetailDto as TokenInstanceStatusResponseModel,
-    TokenInstanceDetailDto as TokenDetailResponseDto,
 } from './openapi';
 
-export type TokenRequestModel = Omit<TokenInstanceRequestDto, 'attributes | customAttributes'> & {
+export type TokenRequestDto = Omit<TokenInstanceRequestDto, 'kind'> & { kind?: string };
+export type TokenResponseDto = Omit<TokenInstanceDto, 'kind'> & { kind?: string };
+export type TokenDetailResponseDto = Omit<TokenInstanceDetailDto, 'kind'> & { kind?: string };
+
+/**
+ * The generated client still requires kind until the upstream contract is updated, while V2 requests intentionally omit it.
+ */
+export function toGeneratedTokenRequestDto(token: TokenRequestDto): TokenInstanceRequestDto {
+    return token as unknown as TokenInstanceRequestDto;
+}
+
+export type TokenRequestModel = Omit<TokenRequestDto, 'attributes' | 'customAttributes'> & {
     attributes: Array<AttributeRequestModel>;
     customAttributes: Array<AttributeRequestModel>;
 };
@@ -19,7 +26,7 @@ export type TokenRequestModel = Omit<TokenInstanceRequestDto, 'attributes | cust
 export type TokenInstanceStatusComponentResponseDto = { [key: string]: TokenInstanceStatusComponent };
 export type TokenInstanceStatusComponentResponseModel = { [key: string]: TokenInstanceStatusComponent };
 
-export type TokenDetailResponseModel = Omit<TokenInstanceDetailDto, 'attributes | customAttributes | metadata'> & {
+export type TokenDetailResponseModel = Omit<TokenDetailResponseDto, 'attributes' | 'customAttributes' | 'metadata'> & {
     attributes: Array<AttributeResponseModel>;
     customAttributes?: Array<AttributeResponseModel>;
     metadata?: Array<MetadataModel>;

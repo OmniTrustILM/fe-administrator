@@ -40,6 +40,7 @@ import EventsTable from 'components/_pages/notifications/events-settings/EventsT
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
+import CommentPanel from 'components/CommentPanel';
 import Switch from 'components/Switch';
 
 interface DeassociateApprovalProfileDialogState {
@@ -1091,6 +1092,10 @@ export default function RaProfileDetail() {
                                             widgetLocks={[LockWidgetNameEnum.EventSettings]}
                                         />
                                     ),
+                                },
+                                {
+                                    title: 'Comments',
+                                    content: raProfile && <CommentPanel resource={Resource.RaProfiles} objectUuid={raProfile.uuid} />,
                                 },
                             ]}
                         />

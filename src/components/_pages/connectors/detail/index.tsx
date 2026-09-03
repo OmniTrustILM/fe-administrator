@@ -5,6 +5,7 @@ import { CircleCheck, CircleAlert, CircleHelp } from 'lucide-react';
 
 import Badge from 'components/Badge';
 import Breadcrumb from 'components/Breadcrumb';
+import CommentPanel from 'components/CommentPanel';
 import Container from 'components/Container';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
@@ -463,6 +464,8 @@ export default function ConnectorDetail() {
                     {connector?.version === ConnectorVersion.V2 && (
                         <SupportedInterfacesV2 interfaces={connector?.interfaces} isBusy={isFetchingDetail || isReconnecting} />
                     )}
+
+                    {connector && <CommentPanel resource={Resource.Connectors} objectUuid={connector.uuid} />}
                 </div>
             </Widget>
 
