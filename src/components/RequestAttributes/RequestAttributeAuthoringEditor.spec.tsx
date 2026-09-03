@@ -1028,6 +1028,40 @@ test.describe('structured mapping targets', () => {
         expect(JSON.parse(json ?? '{}').attributes[0].extensibleList).toBe(true);
     });
 
+    test('a stored value missing from the vocabulary blocks Save until it is removed', async ({ mount, page }) => {
+        const initialValue = {
+            ...emptyAuthoringForm(),
+            attributes: [
+                {
+                    ...emptyAuthoredAttribute(),
+                    name: 'keyUsage',
+                    label: 'Key Usage',
+                    mappingFieldType: FieldType.KeyUsage,
+                    mappingObjectType: ObjectType.X509Certificate,
+                    list: true,
+                    multiSelect: true,
+                    staticValues: ['digitalSignature', 'notARealUsage'],
+                },
+            ],
+        };
+        const component = await mount(
+            withProviders(<RequestAttributeAuthoringEditorHarness keyUsageOptions={KEY_USAGE_OPTIONS} initialValue={initialValue} />),
+        );
+
+        await component.getByTestId('request-attribute-authoring-attribute-edit').click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+        await expect(page.getByTestId('request-attribute-authoring-structured-set-error')).toContainText('unregistered');
+
+        // Deselect the off-list value; the set becomes clean and Save goes through.
+        await page.getByTestId('select-ra-attr-permitted-set-trigger').click();
+        await page.getByRole('option', { name: 'notARealUsage (not registered)' }).click();
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+
+        const json = await component.getByTestId('value-json').textContent();
+        expect(JSON.parse(json ?? '{}').attributes[0].staticValues).toEqual(['digitalSignature']);
+    });
+
     test('an empty EKU vocabulary points at the custom-OID registry', async ({ mount, page }) => {
         const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness extendedKeyUsageOptions={[]} />));
 

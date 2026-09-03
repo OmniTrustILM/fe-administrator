@@ -58,6 +58,7 @@ export default function RaProfileRequestAttributesWidget({
 
     const resolvedSet = useSelector(certificatesSelectors.csrAttributeDescriptors);
     const isFetchingResolvedSet = useSelector(certificatesSelectors.isFetchingCsrAttributes);
+    const resolvedSetError = useSelector(certificatesSelectors.csrAttributesError);
 
     const [form, setForm] = useState<RequestAttributeAuthoringFormValues>(() =>
         gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes)),
@@ -147,7 +148,11 @@ export default function RaProfileRequestAttributesWidget({
                         </Link>{' '}
                         will be used instead, resolving to:
                     </p>
-                    <ResolvedRequestAttributesPreview descriptors={resolvedSet} isFetching={isFetchingResolvedSet} />
+                    <ResolvedRequestAttributesPreview
+                        descriptors={resolvedSet}
+                        isFetching={isFetchingResolvedSet}
+                        fetchFailed={!!resolvedSetError}
+                    />
                 </div>
             )}
             <RequestAttributeAuthoringEditor

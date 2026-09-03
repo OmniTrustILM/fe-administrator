@@ -38,6 +38,12 @@ test.describe('ResolvedRequestAttributesPreview', () => {
         await expect(page.getByTestId('resolved-set-empty')).toBeVisible();
     });
 
+    test('a failed fetch is reported as an error, not as an empty set', async ({ mount, page }) => {
+        await mount(withProviders(<ResolvedRequestAttributesPreview descriptors={[]} isFetching={false} fetchFailed />));
+        await expect(page.getByTestId('resolved-set-error')).toBeVisible();
+        await expect(page.getByTestId('resolved-set-empty')).toHaveCount(0);
+    });
+
     test('renders one row per resolved attribute with label, required marker and mapping badge', async ({ mount }) => {
         const descriptors = [
             dataAttribute({ uuid: 'u1', name: 'cn', label: 'Common Name', required: true, fields: [{ fieldType: 'rdn', rdn: 'CN' }] }),

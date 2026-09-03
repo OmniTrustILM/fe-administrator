@@ -72,7 +72,10 @@ class Parser {
 
     private parseObject(): Record<string, unknown> {
         this.expect('{');
-        const result: Record<string, unknown> = {};
+        // Null prototype: on a plain object a "__proto__" key would go through the prototype setter
+        // instead of becoming an own property — bypassing the duplicate-key check and hiding its
+        // value from Object.entries (e.g. a remote $ref nested under it).
+        const result: Record<string, unknown> = Object.create(null);
         this.skipWhitespace();
         if (this.peek() === '}') {
             this.pos++;

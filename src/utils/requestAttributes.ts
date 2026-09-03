@@ -86,11 +86,13 @@ export function fieldMappingSummary(fieldMapping: FieldMapping | undefined, rdnC
 }
 
 /**
- * The OID of the generic extension this mapping targets, if any. Key Usage / Extended Key Usage are
+ * The OIDs of every generic extension this mapping targets. Key Usage / Extended Key Usage are
  * deliberately not reported: they go through their typed targets and never accept a raw extension
  * value, JSON tree included.
  */
-export function getMappedExtensionOid(fieldMapping: FieldMapping | undefined): string | undefined {
-    const field = fieldMapping?.fields?.find((f) => f?.fieldType === FieldType.Extension);
-    return field ? ((field as { extensionOid?: string }).extensionOid ?? undefined) : undefined;
+export function getMappedExtensionOids(fieldMapping: FieldMapping | undefined): string[] {
+    return (fieldMapping?.fields ?? [])
+        .filter((f) => f?.fieldType === FieldType.Extension)
+        .map((f) => (f as { extensionOid?: string }).extensionOid)
+        .filter((oid): oid is string => !!oid);
 }

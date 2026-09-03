@@ -214,6 +214,19 @@ describe('splitAttributeValidationErrors', () => {
         expect(byAttributeName.get('policyNote')).toEqual(['broken']);
     });
 
+    test('a label shared by several attributes stays unattributed — the payload cannot disambiguate', () => {
+        const duplicated = [
+            { name: 'first', label: 'Extension Value' },
+            { name: 'second', label: 'Extension Value' },
+        ];
+        const { byAttributeName, unattributed } = splitAttributeValidationErrors(
+            ['Extension value of attribute Extension Value: broken'],
+            duplicated,
+        );
+        expect(byAttributeName.size).toBe(0);
+        expect(unattributed).toHaveLength(1);
+    });
+
     test('messages without a known label stay unattributed', () => {
         const { byAttributeName, unattributed } = splitAttributeValidationErrors(
             ['Extension value of attribute Unknown Attr: x', 'CSR contains an unmapped extension 2.5.29.15'],

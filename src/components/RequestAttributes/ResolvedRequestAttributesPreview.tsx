@@ -6,6 +6,8 @@ import { getFieldMapping } from 'utils/requestAttributes';
 type Props = Readonly<{
     descriptors: AttributeDescriptorModel[];
     isFetching: boolean;
+    /** True when the resolved-set fetch failed — an empty list then means "unknown", not "empty". */
+    fetchFailed?: boolean;
 }>;
 
 /**
@@ -13,11 +15,18 @@ type Props = Readonly<{
  * shown where an operator decides whether to author their own set instead of inheriting the
  * platform default. One row per attribute: label, required marker and the mapping badge.
  */
-export default function ResolvedRequestAttributesPreview({ descriptors, isFetching }: Props) {
+export default function ResolvedRequestAttributesPreview({ descriptors, isFetching, fetchFailed = false }: Props) {
     if (isFetching) {
         return (
             <p className="text-sm text-content-subtle" data-testid="resolved-set-loading">
                 Loading the resolved request-attribute set&hellip;
+            </p>
+        );
+    }
+    if (fetchFailed) {
+        return (
+            <p className="text-sm text-danger" data-testid="resolved-set-error">
+                Failed to load the resolved request-attribute set.
             </p>
         );
     }

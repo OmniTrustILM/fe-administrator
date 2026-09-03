@@ -2,7 +2,7 @@ import { describe, expect, it, test } from 'vitest';
 import { AttributeContentType, AttributeType, FieldType, ObjectType } from 'types/openapi';
 import type { FieldMapping } from 'types/openapi';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import { fieldMappingSummary, fieldMappingTokens, getFieldMapping, getMappedExtensionOid } from './requestAttributes';
+import { fieldMappingSummary, fieldMappingTokens, getFieldMapping, getMappedExtensionOids } from './requestAttributes';
 
 // fields carry rdn/generalNameType/extensionOid that the generated TS subtypes omit,
 // so build plain objects and cast to the FieldMapping shape.
@@ -123,18 +123,27 @@ describe('structured target tokens', () => {
     });
 });
 
-describe('getMappedExtensionOid', () => {
-    it('returns the OID of a generic extension mapping', () => {
-        expect(getMappedExtensionOid(mapping([{ fieldType: FieldType.Extension, extensionOid: '2.5.29.19' }]))).toBe('2.5.29.19');
+describe('getMappedExtensionOids', () => {
+    it('returns every generic extension OID in the mapping', () => {
+        expect(getMappedExtensionOids(mapping([{ fieldType: FieldType.Extension, extensionOid: '2.5.29.19' }]))).toEqual(['2.5.29.19']);
+        expect(
+            getMappedExtensionOids(
+                mapping([
+                    { fieldType: FieldType.Extension, extensionOid: '2.5.29.9' },
+                    { fieldType: FieldType.Rdn, rdn: 'CN' },
+                    { fieldType: FieldType.Extension, extensionOid: '2.5.29.19' },
+                ]),
+            ),
+        ).toEqual(['2.5.29.9', '2.5.29.19']);
     });
 
     it('ignores the typed Key Usage / Extended Key Usage targets — they never accept a raw value', () => {
-        expect(getMappedExtensionOid(mapping([{ fieldType: FieldType.KeyUsage }]))).toBeUndefined();
-        expect(getMappedExtensionOid(mapping([{ fieldType: FieldType.ExtendedKeyUsage }]))).toBeUndefined();
+        expect(getMappedExtensionOids(mapping([{ fieldType: FieldType.KeyUsage }]))).toEqual([]);
+        expect(getMappedExtensionOids(mapping([{ fieldType: FieldType.ExtendedKeyUsage }]))).toEqual([]);
     });
 
-    it('returns undefined for no mapping or a mapping without an extension field', () => {
-        expect(getMappedExtensionOid(undefined)).toBeUndefined();
-        expect(getMappedExtensionOid(mapping([{ fieldType: FieldType.Rdn, rdn: 'CN' }]))).toBeUndefined();
+    it('returns an empty list for no mapping or a mapping without an extension field', () => {
+        expect(getMappedExtensionOids(undefined)).toEqual([]);
+        expect(getMappedExtensionOids(mapping([{ fieldType: FieldType.Rdn, rdn: 'CN' }]))).toEqual([]);
     });
 });

@@ -235,6 +235,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         () =>
             (csrAttributeDescriptors ?? [])
                 .filter(isDataAttributeModel)
+                .filter((d) => d.properties?.visible !== false)
                 .map((d) => ({ name: d.name, label: d.properties?.label ?? d.name })),
         [csrAttributeDescriptors],
     );

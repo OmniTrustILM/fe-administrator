@@ -5,12 +5,12 @@ import { AttributeEditorTestWrapper } from '../AttributeEditorTestWrapper';
 const EDITOR_ID = 'extjson';
 const FIELD = `__attributes__${EDITOR_ID}__.extValue`;
 
-const extensionDescriptor = (extensionOid: string): AttributeDescriptorModel =>
+const extensionDescriptor = (extensionOid: string, contentType = 'text'): AttributeDescriptorModel =>
     ({
         uuid: 'a1',
         name: 'extValue',
         type: 'data',
-        contentType: 'text',
+        contentType,
         content: [],
         properties: { label: 'Extension value', visible: true, required: false, readOnly: false, list: false, multiSelect: false },
         fieldMapping: { objectType: 'x509Certificate', fields: [{ fieldType: 'extension', extensionOid }] },
@@ -67,6 +67,19 @@ test.describe('extension value JSON input', () => {
 
         await input.fill('{"sequence":[{"boolean":true},{"integer":0}]}');
         await expect(page.getByTestId(`${FIELD}-json-tree-error`)).toHaveCount(0);
+    });
+
+    test('a DER-mapped String attribute still gets a textarea — a structural JSON value needs room', async ({ mount, page }) => {
+        await mount(
+            <AttributeEditorTestWrapper
+                id={EDITOR_ID}
+                attributeDescriptors={[extensionDescriptor('2.5.29.19', 'string')]}
+                preloadedState={oidsState}
+            />,
+        );
+
+        await expect(page.locator(`textarea[id="${FIELD}"]`)).toBeVisible();
+        await expect(page.getByTestId(`${FIELD}-json-tree-hint`)).toBeVisible();
     });
 
     test('a value not starting with { is read as base64 DER and never JSON-validated', async ({ mount, page }) => {

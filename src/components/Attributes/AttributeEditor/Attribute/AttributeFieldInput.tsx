@@ -10,7 +10,7 @@ import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes'
 import { AttributeContentType } from 'types/openapi';
 import RequestAttributeMappingBadge from 'components/RequestAttributes/RequestAttributeMappingBadge';
 import { useDerExtensionOids } from 'components/RequestAttributes/useDerExtensionOids';
-import { getFieldMapping, getMappedExtensionOid } from 'utils/requestAttributes';
+import { getFieldMapping, getMappedExtensionOids } from 'utils/requestAttributes';
 import { getExtensionJsonTreeError } from 'utils/strictJson';
 import { getCodeBlockLanguage } from '../../../../utils/attributes/attributes';
 import { getHighLightedCode } from '../../CodeBlock';
@@ -43,6 +43,8 @@ type StandardInputControlProps = {
     field: ControllerRenderProps;
     fieldState: FieldStateError;
     submitCount: number;
+    /** Render a textarea even for a single-line content type (a structural JSON value needs room). */
+    multiline?: boolean;
 };
 
 function StandardInputControl({
@@ -53,6 +55,7 @@ function StandardInputControl({
     field,
     fieldState,
     submitCount,
+    multiline = false,
 }: Readonly<StandardInputControlProps>): React.ReactNode {
     const transformed = transformInputValueForDescriptor(field.value, descriptor);
     const textValue = transformed ? String(transformed) : '';
@@ -77,7 +80,7 @@ function StandardInputControl({
         );
     }
 
-    if (descriptor.contentType === AttributeContentType.Text) {
+    if (descriptor.contentType === AttributeContentType.Text || (multiline && descriptor.contentType === AttributeContentType.String)) {
         return (
             <>
                 <textarea
@@ -151,9 +154,9 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
     // An attribute mapped onto a DER-encoded extension (per the OID registry) accepts its value as
     // a structural ASN.1 JSON tree: a value starting with `{` is read as a tree, anything else as
     // base64 DER.
-    const mappedExtensionOid = getMappedExtensionOid(getFieldMapping(descriptor));
-    const derExtensionOids = useDerExtensionOids(!!mappedExtensionOid);
-    const acceptsJsonTree = !!mappedExtensionOid && derExtensionOids.has(mappedExtensionOid);
+    const mappedExtensionOids = getMappedExtensionOids(getFieldMapping(descriptor));
+    const derExtensionOids = useDerExtensionOids(mappedExtensionOids.length > 0);
+    const acceptsJsonTree = mappedExtensionOids.some((oid) => derExtensionOids.has(oid));
 
     // Attribute should not be rendered in form but its value should be sent to BE
     if (descriptor.properties.visible === false) {
@@ -244,6 +247,7 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                                 field={field}
                                 fieldState={fieldState}
                                 submitCount={submitCount}
+                                multiline={acceptsJsonTree}
                             />
                         </div>
                         {showDescriptionAndError && (

@@ -20,6 +20,12 @@ describe('parseStrictJson', () => {
         expect(parseStrictJson('{"a":{"b":1,"b":2}}').error).toContain('Duplicate key "b"');
     });
 
+    it('treats __proto__ as an ordinary own key (no prototype-setter bypass)', () => {
+        expect(parseStrictJson('{"__proto__":1,"__proto__":2}').error).toContain('Duplicate key "__proto__"');
+        const { value } = parseStrictJson('{"__proto__":{"x":1}}');
+        expect(Object.entries(value as object)).toEqual([['__proto__', { x: 1 }]]);
+    });
+
     it('rejects trailing content after the value', () => {
         expect(parseStrictJson('{"boolean":true} garbage').error).toContain('trailing content');
         expect(parseStrictJson('{} {}').error).toContain('trailing content');
@@ -81,6 +87,7 @@ describe('getJsonSchemaDocumentError', () => {
     it('rejects a remote $ref anywhere in the document', () => {
         expect(getJsonSchemaDocumentError('{"properties":{"a":{"$ref":"https://example.com/s.json"}}}')).toContain('Remote $ref');
         expect(getJsonSchemaDocumentError('{"allOf":[{"$ref":"other.json#/x"}]}')).toContain('Remote $ref');
+        expect(getJsonSchemaDocumentError('{"__proto__":{"$ref":"https://example.com/s.json"}}')).toContain('Remote $ref');
     });
 
     it('rejects malformed JSON', () => {

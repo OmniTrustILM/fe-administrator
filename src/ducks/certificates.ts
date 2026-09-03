@@ -144,6 +144,7 @@ export type State = {
     isCheckingCompliance: boolean;
 
     isFetchingCsrAttributes: boolean;
+    csrAttributesError?: string;
 
     csrAttributeDescriptors: AttributeDescriptorModel[];
 
@@ -209,6 +210,7 @@ export const initialState: State = {
     isCheckingCompliance: false,
 
     isFetchingCsrAttributes: false,
+    csrAttributesError: undefined,
 
     csrAttributeDescriptors: [],
 
@@ -954,6 +956,7 @@ export const slice = createSlice({
 
         getCsrAttributes: (state, action: PayloadAction<{ raProfileUuid: string }>) => {
             state.isFetchingCsrAttributes = true;
+            state.csrAttributesError = undefined;
             state.csrAttributeDescriptors = [];
         },
 
@@ -964,6 +967,7 @@ export const slice = createSlice({
 
         getCsrAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingCsrAttributes = false;
+            state.csrAttributesError = action.payload.error ?? 'Failed to load the resolved request-attribute set.';
         },
 
         clearCsrAttributes: (state) => {
@@ -1163,6 +1167,7 @@ const isFetchingValidationResult = createSelector(state, (state) => state.isFetc
 const validationResult = createSelector(state, (state) => state.validationResult);
 
 const isFetchingCsrAttributes = createSelector(state, (state) => state.isFetchingCsrAttributes);
+const csrAttributesError = createSelector(state, (state) => state.csrAttributesError);
 const csrAttributeDescriptors = createSelector(state, (state) => state.csrAttributeDescriptors);
 
 const isFetchingContents = createSelector(state, (state) => state.isFetchingContents);
@@ -1228,6 +1233,7 @@ export const selectors = {
     isFetchingValidationResult,
     validationResult,
     isFetchingCsrAttributes,
+    csrAttributesError,
     csrAttributeDescriptors,
     isFetchingContents,
     isFetchingApprovals,

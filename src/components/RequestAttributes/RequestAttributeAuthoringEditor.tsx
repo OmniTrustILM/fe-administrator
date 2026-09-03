@@ -337,7 +337,24 @@ export default function RequestAttributeAuthoringEditor({
         !!attrDraft &&
         !!attrDraft.data.name.trim() &&
         value.attributes.some((a, i) => i !== attrDraft.index && a.name.trim() === attrDraft.data.name.trim());
+    // A stored permitted-set value outside the current vocabulary (e.g. a deregistered EKU purpose)
+    // stays visible and deselectable, but Core rejects a set containing it — block Save until it is
+    // removed. Skipped while the EKU vocabulary is loading or failed, so a broken fetch cannot lock
+    // an unrelated edit.
+    const structuredSetOffListError = (d: AuthoredAttributeFormValues): string | undefined => {
+        if (!isStructuredMappingTarget(d.mappingFieldType)) return undefined;
+        const isKeyUsage = d.mappingFieldType === FieldType.KeyUsage;
+        if (!isKeyUsage && (extendedKeyUsageOptionsError || !extendedKeyUsageOptionsLoaded)) return undefined;
+        const vocabulary = new Set((isKeyUsage ? keyUsageOptions : extendedKeyUsageOptions).map((o) => o.value));
+        const offList = d.staticValues.map(String).filter((v) => !vocabulary.has(v));
+        if (offList.length === 0) return undefined;
+        return `Remove the unregistered value(s) ${offList.join(', ')} — the permitted set may only contain registered ones.`;
+    };
     const allAttrErrors: AuthoredAttributeErrors = attrDraft ? validateAuthoredAttribute(attrDraft.data) : {};
+    if (attrDraft && !allAttrErrors.staticValues) {
+        const offListError = structuredSetOffListError(attrDraft.data);
+        if (offListError) allAttrErrors.staticValues = offListError;
+    }
     const attrValid = !!attrDraft && Object.keys(allAttrErrors).length === 0 && !attrNameDuplicate;
     const attrErrors: AuthoredAttributeErrors = attrDraft?.submitted ? allAttrErrors : {};
     const nameDuplicateVisible = attrNameDuplicate && !!attrDraft?.submitted;
