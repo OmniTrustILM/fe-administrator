@@ -5,6 +5,8 @@ import Dialog from 'components/Dialog';
 import ProgressButton from 'components/ProgressButton';
 import { actions, selectors } from 'ducks/branding';
 import type { BrandingSettingsModel, BrandingSettingsUpdateModel } from 'types/branding';
+import { brandContrastFindings, describeFinding } from 'utils/brand-contrast';
+import { brandColors } from 'utils/brand-tokens';
 import { isBrandColor, readLogoFile } from 'utils/branding';
 import ColorField from './ColorField';
 import LogoSlot from './LogoSlot';
@@ -50,6 +52,13 @@ const LOGO_SLOTS: ReadonlyArray<{ key: LogoKey; label: string }> = [
 const LOGO_COMPOSITION = 'Each theme uses its own logo, so both are required. Neither slot falls back to the other.';
 
 /**
+ * Contrast warns, it never blocks: the brand belongs to the operator, and the platform's job is to say what a choice
+ * costs rather than to overrule it. The named pairings and their ratios come from `utils/brand-contrast.ts`.
+ */
+const CONTRAST_WARNING =
+    'These combinations fall below the WCAG 2.1 AA contrast the platform holds itself to, so the text and controls named below will be hard to read. You can save them anyway.';
+
+/**
  * Reset is an empty update, and Core clears every field left out of one, so the operator's default theme goes with the
  * colours and logos. Named here because nothing in this application can set it again.
  */
@@ -90,6 +99,7 @@ function AppearanceSettings() {
     const [logos, setLogos] = useState<Logos>(() => toLogos(branding));
     const [readingLogos, setReadingLogos] = useState<Record<LogoKey, boolean>>({ lightLogo: false, darkLogo: false });
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+    const [isContrastDialogOpen, setIsContrastDialogOpen] = useState(false);
 
     // Reads settle asynchronously, so the slot is claimed by a token. Anything that supersedes a read - a second file,
     // or a delete - bumps the token, and the earlier read's result is then dropped instead of overwriting the newer
@@ -129,6 +139,11 @@ function AppearanceSettings() {
     const isReadOnly = isBusy || !hasKnownBranding;
 
     const hasInvalidColor = useMemo(() => Object.values(colors).some((value) => value !== '' && !isBrandColor(value)), [colors]);
+
+    // Measured over the token families the colours derive, in both compositions, so the warning is about what the
+    // page will paint rather than about the four inputs on their own. An unset or half-typed colour drives nothing and
+    // is simply left out of the evaluation.
+    const contrastFindings = useMemo(() => brandContrastFindings(brandColors(colors)), [colors]);
 
     // Saving mid-read would send the branding without the file the user just chose.
     const isReadingLogo = LOGO_SLOTS.some(({ key }) => readingLogos[key]);
@@ -188,7 +203,7 @@ function AppearanceSettings() {
         setLogos((current) => ({ ...current, [key]: { dataUri: undefined, fileName: undefined, error: undefined } }));
     }, []);
 
-    const onSave = useCallback(() => {
+    const sendSave = useCallback(() => {
         const update: BrandingSettingsUpdateModel = {
             // Carried through untouched. The tab does not edit it, and Core clears any field left out of the request,
             // so omitting it would wipe the operator's default theme on every save.
@@ -203,6 +218,20 @@ function AppearanceSettings() {
 
         dispatch(actions.updateBranding({ branding: update }));
     }, [branding?.defaultTheme, colors, dispatch, logos]);
+
+    const onSave = useCallback(() => {
+        if (contrastFindings.length > 0) {
+            setIsContrastDialogOpen(true);
+            return;
+        }
+
+        sendSave();
+    }, [contrastFindings, sendSave]);
+
+    const onContrastConfirmed = useCallback(() => {
+        setIsContrastDialogOpen(false);
+        sendSave();
+    }, [sendSave]);
 
     const onResetConfirmed = useCallback(() => {
         setIsResetDialogOpen(false);
@@ -302,6 +331,29 @@ function AppearanceSettings() {
                     Reset to Default
                 </Button>
             </div>
+
+            <Dialog
+                isOpen={isContrastDialogOpen}
+                toggle={() => setIsContrastDialogOpen(false)}
+                caption="These colors may be hard to read"
+                icon="warning"
+                size="lg"
+                dataTestId="appearance-contrast-dialog"
+                body={
+                    <div className="space-y-3">
+                        <p>{CONTRAST_WARNING}</p>
+                        <ul className="list-disc space-y-1 pl-5" data-testid="appearance-contrast-findings">
+                            {contrastFindings.map((finding) => (
+                                <li key={`${finding.theme}-${finding.label}`}>{describeFinding(finding)}</li>
+                            ))}
+                        </ul>
+                    </div>
+                }
+                buttons={[
+                    { color: 'warning', body: 'Save anyway', onClick: onContrastConfirmed },
+                    { color: 'secondary', variant: 'outline', body: 'Cancel', onClick: () => setIsContrastDialogOpen(false) },
+                ]}
+            />
 
             <Dialog
                 isOpen={isResetDialogOpen}
