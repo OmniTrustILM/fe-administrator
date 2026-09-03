@@ -202,7 +202,6 @@ test.describe('BrandTokens', () => {
             for (const { theme, declarations } of compositions) {
                 const expected = brandTokenValues(colors, theme);
 
-                // Every token the stylesheet declares must have a JS derivation, and no more.
                 expect(Object.keys(declarations).sort(), `${theme} tokens`).toStrictEqual(Object.keys(expected).sort());
                 expect(Object.keys(declarations).length).toBeGreaterThan(0);
 

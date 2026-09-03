@@ -28,7 +28,6 @@ const prePaintScript = (): string => {
 
 const SCRIPT = prePaintScript();
 
-/** The shipped source is executed, rather than a copy of it, so the test cannot drift away from what is served. */
 const runPrePaint = () => {
     new Function(SCRIPT)();
 };
@@ -144,8 +143,7 @@ describe('index.html pre-paint script', () => {
             expect(document.documentElement.style.colorScheme).toBe('light');
         });
 
-        /** An explicit System choice outranks the operator default and returns to the OS preference. */
-        test('should return to the system preference for an explicit System choice', () => {
+        test('should return to the system preference for an explicit System choice, outranking the operator default', () => {
             stubPrefersDark(true);
             globalThis.localStorage.setItem(OPERATOR_DEFAULT_STORAGE_KEY, 'light');
             globalThis.localStorage.setItem(THEME_STORAGE_KEY, 'system');
