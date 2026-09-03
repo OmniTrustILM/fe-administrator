@@ -3,6 +3,7 @@ import {
     BRAND_COLOR_PATTERN,
     dataUriMediaType,
     isBrandColor,
+    isRenderableLogo,
     LOGO_MAX_DECODED_BYTES,
     logoMediaTypeFromName,
     logoRatioError,
@@ -103,6 +104,70 @@ describe('branding', () => {
 
         test.each(['', 'https://example.com/logo.png', 'not a data uri'])('should report none for %s', (value) => {
             expect(dataUriMediaType(value)).toBeUndefined();
+        });
+    });
+
+    describe('isRenderableLogo', () => {
+        // A real 1x1 PNG and a minimal SVG, in the exact form Core stores: `BrandingLogoValidator` re-encodes a
+        // sanitized SVG and returns a PNG unchanged only after walking its chunks, so this is the only shape a stored
+        // logo takes.
+        const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=';
+        const SVG = 'data:image/svg+xml;base64,PHN2Zy8+';
+
+        test.each([
+            ['a stored PNG', PNG],
+            ['a stored SVG', SVG],
+            ['an unpadded payload', 'data:image/png;base64,iVBORw0KGgo'],
+            ['a singly padded payload', 'data:image/png;base64,iVBORw0KGg=='],
+            ['a payload padded to the quartet', 'data:image/png;base64,AAA='],
+            ['a two-character unpadded payload', 'data:image/png;base64,AA'],
+            // Core lower-cases the declared type before comparing it, and returns a PNG's data URI unchanged, so a
+            // stored logo may carry the type in any case.
+            ['a media type in another case', 'data:IMAGE/PNG;base64,iVBORw0KGgo='],
+        ])('should accept %s', (_case, value) => {
+            expect(isRenderableLogo(value)).toBe(true);
+        });
+
+        test.each([
+            // The cases the media-type check alone let through: both name a permitted type and carry a payload no
+            // browser will decode, and `BrandLogo` has no decode-error fallback to catch them.
+            ['a raw payload with an accepted type', 'data:image/png,raw'],
+            ['a URI-encoded SVG', 'data:image/svg+xml;charset=utf-8,<svg/>'],
+            ['a base64 payload behind a parameter', 'data:image/svg+xml;charset=utf-8;base64,PHN2Zy8+'],
+            ['a payload outside the base64 alphabet', 'data:image/png;base64,%%%'],
+            ['an empty payload', 'data:image/png;base64,'],
+            ['padding in the middle of the payload', 'data:image/png;base64,iVBO=Rw0KGgo='],
+            ['more than two padding characters', 'data:image/png;base64,iVBORw0KG==='],
+            // Undecodable lengths. The pattern alone admits these, which is why the payload is measured as well:
+            // Core reaches the same verdict a moment later, when its decoder throws on them.
+            ['padding that does not complete the quartet', 'data:image/png;base64,A='],
+            ['two padding characters after a lone quartet remainder', 'data:image/png;base64,AAA=='],
+            ['a single trailing character, too few bits for a byte', 'data:image/png;base64,A'],
+            ['an unpadded payload with a lone trailing character', 'data:image/png;base64,AAAAA'],
+            ['an unsupported media type', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='],
+            ['no media type at all', 'data:;base64,PHN2Zy8+'],
+            ['an absolute URL', 'https://example.invalid/logo.svg'],
+            ['a protocol-relative URL', '//example.invalid/logo.svg'],
+            ['a relative path', '/logo.svg'],
+            ['a javascript URL', 'javascript:alert(1)'],
+            ['an empty string', ''],
+        ])('should refuse %s', (_case, value) => {
+            expect(isRenderableLogo(value)).toBe(false);
+        });
+
+        test.each([
+            ['null', null],
+            ['undefined', undefined],
+        ])('should refuse %s, which is how an unset slot arrives', (_case, value) => {
+            expect(isRenderableLogo(value)).toBe(false);
+        });
+
+        /** The upload path and the render path have to agree, or a logo the operator just saved would not show. */
+        test('should accept what readLogoFile produces', async () => {
+            const svg = new File(['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>'], 'logo.svg', { type: 'image/svg+xml' });
+            const { dataUri } = await readLogoFile(svg);
+
+            expect(isRenderableLogo(dataUri)).toBe(true);
         });
     });
 

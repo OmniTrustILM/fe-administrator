@@ -59,6 +59,57 @@ export const logoRatioError = (width: number, height: number): string | undefine
 /** The media type carried by a data URI, or undefined for anything that is not one. */
 export const dataUriMediaType = (dataUri: string): string | undefined => /^data:([^;,]+)[;,]/.exec(dataUri)?.[1];
 
+/**
+ * The shape of a stored logo, mirroring `BrandingLogoValidator.DATA_URI` in Core: a media type, then a base64 payload
+ * in the standard alphabet with at most two padding characters. The media type is captured rather than fixed here so
+ * that it can be compared case-insensitively, as Core compares it, and the payload so its length can be checked.
+ */
+const LOGO_DATA_URI_PATTERN = /^data:([^;,]+);base64,([A-Za-z0-9+/]+={0,2})$/;
+
+/**
+ * Whether a base64 payload is one a decoder would actually accept.
+ *
+ * The pattern above cannot express this, and Core does not ask it to: it decodes the payload immediately afterwards
+ * and turns the failure into a rejection, so `A=`, `A`, `AAAAA` and `AAA==` are refused there by the decoder rather
+ * than by the regex. This is that step, and it follows the same decoder Core uses. Padding, when present, has to
+ * complete the four-character group; without padding the only impossible remainder is a single trailing character,
+ * which carries too few bits to be a byte - an otherwise well-formed payload that simply was not padded is accepted,
+ * as `Base64.getDecoder()` accepts it.
+ */
+const isDecodableBase64 = (payload: string): boolean => {
+    const padding = payload.length - payload.replace(/=+$/, '').length;
+    const data = payload.length - padding;
+
+    return padding === 0 ? data % 4 !== 1 : (data + padding) % 4 === 0;
+};
+
+/**
+ * Whether a stored logo is safe to point an `img` at.
+ *
+ * Core stores a logo only in the form above - it re-encodes an SVG after sanitizing it, and accepts a PNG only once
+ * its bytes have been walked - so anything else did not come from an upload. An absolute URL is the case that matters
+ * most: rendering one would have every viewer, the anonymous ones on the login page included, fetch from whatever host
+ * it names. The whole form is required rather than only the media type, because a data URI can declare an accepted
+ * type and still carry something no browser will decode: `data:image/png,raw` and
+ * `data:image/svg+xml;charset=utf-8,<svg/>` both name a permitted type, and `BrandLogo` has no decode-error fallback,
+ * so either one would show a broken image where the platform mark belongs.
+ */
+export const isRenderableLogo = (value: string | null | undefined): value is string => {
+    if (typeof value !== 'string') {
+        return false;
+    }
+
+    const match = LOGO_DATA_URI_PATTERN.exec(value);
+
+    if (!match) {
+        return false;
+    }
+
+    const [, mediaType, payload] = match;
+
+    return (LOGO_MEDIA_TYPES as readonly string[]).includes(mediaType.toLowerCase()) && isDecodableBase64(payload);
+};
+
 /** The media type implied by a file name, for the extension fallback above. */
 export const logoMediaTypeFromName = (name: string): string | undefined => {
     if (/\.png$/i.test(name)) {

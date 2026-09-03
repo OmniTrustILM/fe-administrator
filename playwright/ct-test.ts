@@ -28,3 +28,7 @@ export const test = base.extend<{ autoCoverage: void }>({
 });
 
 export { expect };
+
+// Re-exported so a spec can type a helper that takes the page fixture without reaching past this module. Specs are
+// outside the typecheck project, so an import of a type this module does not export fails silently rather than loudly.
+export type { Locator, Page } from '@playwright/test';

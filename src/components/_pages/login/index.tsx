@@ -2,8 +2,14 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { actions, selectors } from 'ducks/login';
+import BrandLogo from 'components/BrandLogo';
 import Button from 'components/Button';
 import { loginRedirect } from 'utils/login-redirect';
+
+// The login page sits on `surface`, which is light in the light theme and near-black in the dark one, so the two
+// platform marks differ here - unlike in the header, which is coloured in both.
+import colorLogo from '../../../resources/images/ot-logo-color.svg';
+import reversedLogo from '../../../resources/images/ot-logo-white.svg';
 
 export default function Login() {
     const dispatch = useDispatch();
@@ -23,10 +29,10 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-surface px-4 py-12">
+        <div className="min-h-screen flex items-center justify-center bg-surface px-4 py-12" data-testid="login-page">
             <main className="max-w-md w-full">
                 <div className="flex justify-center mb-8">
-                    <img src="./logo.svg" alt="ILM Logo" className="h-13" />
+                    <BrandLogo defaultLight={colorLogo} defaultDark={reversedLogo} alt="Logo" className="h-13" dataTestId="login-logo" />
                 </div>
 
                 <h1 className="text-xl font-bold mt-8 mb-9 text-center text-content">Login with</h1>
