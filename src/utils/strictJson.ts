@@ -169,7 +169,7 @@ class Parser {
                     case 'u': {
                         const hex = this.text.slice(this.pos + 1, this.pos + 5);
                         if (!/^[0-9a-fA-F]{4}$/.test(hex)) this.fail('Invalid unicode escape');
-                        result += String.fromCharCode(Number.parseInt(hex, 16));
+                        result += String.fromCodePoint(Number.parseInt(hex, 16));
                         this.pos += 4;
                         break;
                     }
@@ -180,7 +180,7 @@ class Parser {
                 continue;
             }
             // JSON forbids raw control characters inside strings.
-            if (c.charCodeAt(0) < 0x20) this.fail('Unescaped control character in string');
+            if ((c.codePointAt(0) ?? 0) < 0x20) this.fail('Unescaped control character in string');
             result += c;
             this.pos++;
         }

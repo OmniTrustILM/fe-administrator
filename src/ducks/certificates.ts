@@ -973,6 +973,7 @@ export const slice = createSlice({
         clearCsrAttributes: (state) => {
             state.csrAttributeDescriptors = [];
             state.isFetchingCsrAttributes = false;
+            state.csrAttributesError = undefined;
         },
 
         getCertificateContents: (state, action: PayloadAction<{ uuids: string[]; format: string }>) => {

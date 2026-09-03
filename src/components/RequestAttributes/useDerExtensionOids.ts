@@ -5,15 +5,12 @@ import { ExtensionValueEncoding, OidCategory } from 'types/openapi';
 import { isCertificateExtensionProperties } from 'utils/oid';
 
 /**
- * The dotted OIDs of every registered certificate extension (system + custom) whose value encoding
- * is DER. Whether an extension-mapped attribute accepts a structural ASN.1 JSON tree comes from the
- * OID registry, and only DER-encoded extensions do — for the string encodings a value starting with
- * `{` is literal text, so offering JSON validation there would reject valid values.
+ * Fetches the certificate-extension OID registry (system + custom). Call once per form — e.g. from
+ * the attribute editor — not per field: every rendered field dispatching its own fetch would fire a
+ * burst of parallel requests the epics then have to cancel.
  */
-export function useDerExtensionOids(enabled: boolean): Set<string> {
+export function useFetchExtensionOidRegistry(enabled: boolean): void {
     const dispatch = useDispatch();
-    const systemOidsByCategory = useSelector(oidSelectors.systemOidsByCategory);
-    const oidsByCategory = useSelector(oidSelectors.oidsByCategory);
 
     useEffect(() => {
         if (!enabled) return;
@@ -22,6 +19,19 @@ export function useDerExtensionOids(enabled: boolean): Set<string> {
         dispatch(oidActions.listSystemOids());
         dispatch(oidActions.listOidsByCategory({ category: OidCategory.CertificateExtension }));
     }, [dispatch, enabled]);
+}
+
+/**
+ * The dotted OIDs of every registered certificate extension (system + custom) whose value encoding
+ * is DER. Whether an extension-mapped attribute accepts a structural ASN.1 JSON tree comes from the
+ * OID registry, and only DER-encoded extensions do — for the string encodings a value starting with
+ * `{` is literal text, so offering JSON validation there would reject valid values.
+ *
+ * Selection only; the registry fetch is `useFetchExtensionOidRegistry`.
+ */
+export function useDerExtensionOids(): Set<string> {
+    const systemOidsByCategory = useSelector(oidSelectors.systemOidsByCategory);
+    const oidsByCategory = useSelector(oidSelectors.oidsByCategory);
 
     return useMemo(() => {
         const derOids = new Set<string>();

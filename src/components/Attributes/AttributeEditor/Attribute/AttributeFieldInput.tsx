@@ -153,9 +153,9 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
 
     // An attribute mapped onto a DER-encoded extension (per the OID registry) accepts its value as
     // a structural ASN.1 JSON tree: a value starting with `{` is read as a tree, anything else as
-    // base64 DER.
+    // base64 DER. The registry fetch is the editor's job (once per form).
     const mappedExtensionOids = getMappedExtensionOids(getFieldMapping(descriptor));
-    const derExtensionOids = useDerExtensionOids(mappedExtensionOids.length > 0);
+    const derExtensionOids = useDerExtensionOids();
     const acceptsJsonTree = mappedExtensionOids.some((oid) => derExtensionOids.has(oid));
 
     // Attribute should not be rendered in form but its value should be sent to BE

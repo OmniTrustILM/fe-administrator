@@ -244,13 +244,22 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         [issueValidationErrors, attributeErrorTargets],
     );
     const unattributedValidationErrors = splitValidationErrors ? splitValidationErrors.unattributed : issueValidationErrors;
+    // Applied paths are remembered so a new validation result (or none at all, e.g. after an RA
+    // profile switch or a retry) first clears the previous request's field errors — otherwise a
+    // stale message could stick to a same-named attribute of the next profile.
+    const appliedAttributeErrorPathsRef = useRef<Parameters<typeof setError>[0][]>([]);
     useEffect(() => {
+        for (const path of appliedAttributeErrorPathsRef.current) {
+            clearErrors(path);
+        }
+        appliedAttributeErrorPathsRef.current = [];
         if (!splitValidationErrors) return;
         for (const [attributeName, messages] of splitValidationErrors.byAttributeName) {
             const path = `__attributes__csrAttributes__.${attributeName}` as Parameters<typeof setError>[0];
             setError(path, { type: 'server', message: messages.join('; ') });
+            appliedAttributeErrorPathsRef.current.push(path);
         }
-    }, [splitValidationErrors, setError]);
+    }, [splitValidationErrors, setError, clearErrors]);
 
     const combinedAttributeValues = useMemo(
         () =>

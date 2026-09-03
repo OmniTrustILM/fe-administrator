@@ -1136,12 +1136,24 @@ export default function RequestAttributeAuthoringEditor({
 
             <Dialog
                 isOpen={!!attrDraft}
-                toggle={() => setAttrDraft(null)}
+                // While a save awaits its result, every dismissal path (Cancel, close, Escape,
+                // overlay click) is a no-op — closing would discard the very draft a rejection is
+                // supposed to hand back.
+                toggle={() => {
+                    if (!persist?.pending) setAttrDraft(null);
+                }}
                 size="lg"
                 caption={attrDraft?.index === null ? 'Add request attribute' : 'Edit request attribute'}
                 body={renderAttributeDialog()}
                 buttons={[
-                    { key: 'cancel', color: 'primary', variant: 'outline', body: 'Cancel', onClick: () => setAttrDraft(null) },
+                    {
+                        key: 'cancel',
+                        color: 'primary',
+                        variant: 'outline',
+                        body: 'Cancel',
+                        disabled: !!persist?.pending,
+                        onClick: () => setAttrDraft(null),
+                    },
                     {
                         key: 'save',
                         color: 'primary',
