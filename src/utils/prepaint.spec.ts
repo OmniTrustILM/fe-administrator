@@ -14,7 +14,9 @@ import { OPERATOR_DEFAULT_STORAGE_KEY, THEME_STORAGE_KEY } from './theme';
  */
 const prePaintScript = (): string => {
     const html = readFileSync(path.resolve(__dirname, '../../index.html'), 'utf8');
-    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(([, body]) => body);
+    // Case-insensitive, and only an attribute-less opening tag: the scripts that carry a `src` are not
+    // the inline one being looked for.
+    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)].map(([, body]) => body);
     const script = scripts.find((body) => body.includes(BRAND_CSS_STORAGE_KEY));
 
     if (!script) {

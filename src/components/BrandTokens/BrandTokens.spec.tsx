@@ -55,9 +55,14 @@ const OUT_OF_GAMUT: PublicBrandingFixture = {
     darkLogo: null,
 };
 
-/** The token/value pairs of one composition, read back out of the stylesheet the token layer actually emits. */
-const cssDeclarations = (css: string, selector: string): Record<string, string> => {
-    const block = new RegExp(`${selector.replace(/[.:()]/g, '\\$&')}\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+/**
+ * The token/value pairs of one composition, read back out of the stylesheet the token layer actually
+ * emits. Split on the literal opening of the block rather than matched with a regex built from it: a
+ * selector carries `.`, `:` and parentheses, so a regex would need escaping that has no reason to be
+ * written here.
+ */
+const cssDeclarations = (css: string, blockOpening: string): Record<string, string> => {
+    const block = css.split(blockOpening)[1]?.split('}')[0] ?? '';
     const values: Record<string, string> = {};
 
     for (const declaration of block.split(';')) {
@@ -190,8 +195,8 @@ test.describe('BrandTokens', () => {
             const colors = brandColors(fixture);
             const css = brandTokenCss(colors) ?? '';
             const compositions = [
-                { theme: 'light', declarations: cssDeclarations(css, 'html:not(.dark)') },
-                { theme: 'dark', declarations: cssDeclarations(css, 'html.dark') },
+                { theme: 'light', declarations: cssDeclarations(css, 'html:not(.dark){') },
+                { theme: 'dark', declarations: cssDeclarations(css, 'html.dark{') },
             ] as const;
 
             for (const { theme, declarations } of compositions) {
