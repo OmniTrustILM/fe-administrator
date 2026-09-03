@@ -19,6 +19,7 @@ import PagedList from 'components/PagedList/PagedList';
 import { actions as userAction, selectors as userSelectors } from 'ducks/users';
 import type { CertificateListResponseModel, SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { preservedFilterRestore } from 'utils/preservedFilters';
 import { dateFormatter } from 'utils/dateUtil';
 import type { AttributeRequestModel } from '../../../../types/attributes';
 import { type CertificateState, PlatformEnum, Resource } from '../../../../types/openapi';
@@ -304,19 +305,28 @@ export default function CertificateList({
     );
 
     /*
-     * Preserved filters are a deep-link restore, so they apply on arrival and never again.
-     *
-     * After that an empty filter set is a choice: switching to the Standard view clears the filters,
-     * and this effect would put back the very conditions the tab switch removed — and then fight every
-     * later switch, because the view's slice keeps setting them empty.
+     * Preserved filters are a deep-link restore, so they apply on arrival and never again. The rule for
+     * "never again" is `preservedFilterRestore`, which is where the case this used to get wrong is
+     * written down and tested: a restore that found the filters already in place reported itself as
+     * still pending, and so fired later against a tab switch that had deliberately cleared them.
      */
     const hasRestoredPreservedFilters = useRef(false);
     useEffect(() => {
         if (hasRestoredPreservedFilters.current) return;
-        if (!withPreservedFilters || preservedFilters.length === 0 || currentFilters.length > 0) return;
+
+        const decision = preservedFilterRestore({
+            withPreservedFilters,
+            preservedCount: preservedFilters.length,
+            currentCount: currentFilters.length,
+        });
+
+        if (decision === 'inapplicable') return;
 
         hasRestoredPreservedFilters.current = true;
-        dispatch(filterActions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: preservedFilters }));
+
+        if (decision === 'restore') {
+            dispatch(filterActions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: preservedFilters }));
+        }
     }, [preservedFilters, currentFilters.length, dispatch, withPreservedFilters]);
 
     return (

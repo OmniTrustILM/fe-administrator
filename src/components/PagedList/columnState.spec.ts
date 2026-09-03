@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import type { SearchFieldListModel } from 'types/certificate';
 import { FilterFieldSource, SortDirection } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
-import { buildListRequest, getRenderableProperties, isSameSort, toColumnSortFromHeader, toDisplayableSort } from './columnState';
+import {
+    buildListRequest,
+    getRenderableProperties,
+    isSameSort,
+    toColumnSortFromHeader,
+    toDisplayableSort,
+    withCatalogueSortability,
+} from './columnState';
 
 const columns: ColumnDefinition[] = [
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name', sortable: true },
@@ -162,5 +170,97 @@ describe('toDisplayableSort', () => {
 
     it('is undefined for no ordering', () => {
         expect(toDisplayableSort(undefined, columns)).toBeUndefined();
+    });
+});
+
+describe('withCatalogueSortability', () => {
+    /** As a page ships it: no `sortable`, because a static literal cannot know what the API supports. */
+    const standard: ColumnDefinition[] = [
+        { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name' },
+        { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS', catalogueLabel: 'Associations' },
+    ];
+
+    const catalogue = [
+        {
+            filterFieldSource: FilterFieldSource.Property,
+            searchFieldData: [
+                { fieldIdentifier: 'COMMON_NAME', fieldLabel: 'Subject Common Name', sortable: true, displayable: true },
+                { fieldIdentifier: 'CK_ASSOCIATIONS', fieldLabel: 'Associations', sortable: false, displayable: true },
+            ],
+        },
+    ] as unknown as SearchFieldListModel[];
+
+    it('marks a column the catalogue can order on as sortable', () => {
+        expect(withCatalogueSortability(standard, catalogue)[0].sortable).toBe(true);
+    });
+
+    /**
+     * Asserted as "not sortable" rather than as `false`: absent and `false` are the same answer to
+     * every reader of the flag, both being `sortable === true` failures, so the merge leaves an
+     * already-unsortable column alone rather than writing `false` over its absence.
+     */
+    it('leaves a column the catalogue cannot order on unsortable', () => {
+        expect(withCatalogueSortability(standard, catalogue)[1].sortable).not.toBe(true);
+    });
+
+    /** Absent is not the same as false, and the safe reading of an unpublished field is unsortable. */
+    it('treats a column the catalogue does not publish as unsortable', () => {
+        const unpublished = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'PRIVATE_KEY', catalogueLabel: 'Has private key' },
+        ];
+
+        expect(withCatalogueSortability(unpublished, catalogue)[0].sortable).not.toBe(true);
+    });
+
+    it('withdraws a stale sortable flag the catalogue no longer supports', () => {
+        const stale = [{ ...standard[1], sortable: true }];
+
+        expect(withCatalogueSortability(stale, catalogue)[0].sortable).toBe(false);
+    });
+
+    /**
+     * The page's display choices are not the catalogue's business. Taking the catalogue's label here
+     * would rename the headings of a tab nobody edited - `COMMON_NAME` is published as "Subject Common
+     * Name" above, while the page ships "Common Name".
+     */
+    it('keeps every display property the page shipped', () => {
+        const shipped: ColumnDefinition[] = [
+            {
+                fieldSource: FilterFieldSource.Property,
+                fieldIdentifier: 'COMMON_NAME',
+                catalogueLabel: 'Common Name',
+                align: 'center',
+                headingHidden: true,
+            },
+        ];
+
+        expect(withCatalogueSortability(shipped, catalogue)[0]).toEqual({ ...shipped[0], sortable: true });
+    });
+
+    /** Whether the API can order by a field is a separate question from whether the picker offers it. */
+    it('takes sortability from a field the catalogue does not offer as a column', () => {
+        const hidden = [
+            {
+                filterFieldSource: FilterFieldSource.Property,
+                searchFieldData: [{ fieldIdentifier: 'COMMON_NAME', fieldLabel: 'Common Name', sortable: true, displayable: false }],
+            },
+        ] as unknown as SearchFieldListModel[];
+
+        expect(withCatalogueSortability(standard, hidden)[0].sortable).toBe(true);
+    });
+
+    it('returns the column unchanged when the flag already agrees, so a memo can rest on its identity', () => {
+        const agreed: ColumnDefinition[] = [{ ...standard[0], sortable: true }];
+        const merged = withCatalogueSortability(agreed, catalogue);
+
+        expect(merged[0]).toBe(agreed[0]);
+    });
+
+    /** Nothing published means nothing to merge, so the columns come back as they went in. */
+    it('leaves the set alone when the catalogue has not published anything', () => {
+        const merged = withCatalogueSortability(standard, []);
+
+        expect(merged[0]).toBe(standard[0]);
+        expect(merged[1]).toBe(standard[1]);
     });
 });

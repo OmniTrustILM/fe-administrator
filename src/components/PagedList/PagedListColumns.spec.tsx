@@ -42,6 +42,17 @@ const column = (identifier: string, catalogueLabel: string, overrides: Partial<C
 
 const standardColumns = [column('COMMON_NAME', 'Common Name'), column('NOT_AFTER', 'Expires At')];
 
+/**
+ * The platform set as a real page actually ships it: a static literal with no `sortable`, because
+ * only the catalogue knows what the API can order by. `column()` above defaults it to `true`, which
+ * is convenient for the other cases but is not what `CERTIFICATE_COLUMNS` or `KEY_COLUMNS` look
+ * like - so the sortability of the Standard tab has to be asserted against this instead.
+ */
+const shippedColumns: ColumnDefinition[] = [
+    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name' },
+    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', catalogueLabel: 'Expires At' },
+];
+
 const rows: StubRow[] = [
     {
         uuid: 'cert-1',
@@ -156,9 +167,19 @@ test.describe('PagedList · configurable columns', () => {
         await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(1);
     });
 
+    /**
+     * Withheld in the catalogue, not on the column: the catalogue is the authority on what the API can
+     * order by, and the platform set is merged against it in both directions, so a `sortable: false`
+     * written on a shipped column would be corrected rather than obeyed.
+     */
     test('renders no sort button on a column the catalogue cannot order on', async ({ mount, page }) => {
-        const unsortable = [column('COMMON_NAME', 'Common Name'), column('NOT_AFTER', 'Expires At', { sortable: false })];
-        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={unsortable} catalogue={catalogue} />);
+        const withoutExpiry = [
+            {
+                filterFieldSource: FilterFieldSource.Property,
+                searchFieldData: [field('COMMON_NAME', 'Common Name'), field('NOT_AFTER', 'Expires At', { sortable: false })],
+            },
+        ] as unknown as SearchFieldListModel[];
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={withoutExpiry} />);
 
         await expect(page.getByRole('button', { name: 'Common Name' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Expires At' })).toHaveCount(0);
@@ -270,5 +291,142 @@ test.describe('PagedList · configurable columns', () => {
         await expect(page.getByTestId('view-tabs')).toHaveCount(0);
         // The table still shows the platform set: a page is never blank while its catalogue is loading.
         await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
+    });
+
+    /**
+     * A page ships its default columns as a static literal, so none of them can declare `sortable`.
+     * Without the catalogue merged in, the tab every page opens on offered no ordering at all while a
+     * saved view - whose columns are resolved from the catalogue - offered it.
+     */
+    test('makes the Standard tab sortable from the catalogue, though the shipped set cannot declare it', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={shippedColumns} catalogue={catalogue} />);
+
+        await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
+        await expect(page.getByRole('button', { name: 'Common Name' })).toBeVisible();
+
+        await page.getByRole('button', { name: 'Expires At' }).click();
+
+        await expect
+            .poll(async () => (await lastRequest(page))?.sort)
+            .toEqual({ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', direction: SortDirection.Asc });
+    });
+
+    test('leaves a shipped column the catalogue cannot order on unsortable', async ({ mount, page }) => {
+        const withUnorderable: ColumnDefinition[] = [
+            ...shippedColumns,
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'department|STRING', catalogueLabel: 'Department' },
+        ];
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={withUnorderable} catalogue={catalogue} />);
+
+        await expect.poll(() => headings(page)).toContain('custom:department|STRING');
+        // Published as `sortable: false`, so the heading is a label rather than a button.
+        await expect(page.getByRole('button', { name: 'Department' })).toHaveCount(0);
+    });
+
+    test('keeps a heading the page shipped rather than taking the catalogue label with the sort flag', async ({ mount, page }) => {
+        const relabelled = [
+            {
+                filterFieldSource: FilterFieldSource.Property,
+                searchFieldData: [field('COMMON_NAME', 'Subject Common Name'), field('NOT_AFTER', 'Not After')],
+            },
+        ] as unknown as SearchFieldListModel[];
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={shippedColumns} catalogue={relabelled} />);
+
+        await expect(page.getByRole('button', { name: 'Common Name' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Subject Common Name' })).toHaveCount(0);
+    });
+
+    /**
+     * The strip opens its pinned view once the catalogue settles, which is after the page has mounted.
+     * A dashboard link or a deep link from a certificate's detail page has put its filters in the duck
+     * by then, and replacing them with the view's would discard the rows the user actually asked for -
+     * a moment after they asked. The view's columns and ordering still apply.
+     */
+    test('keeps filters that arrived with the page when the pinned view opens', async ({ mount, page }) => {
+        const incoming = [
+            {
+                fieldSource: FilterFieldSource.Property,
+                fieldIdentifier: 'COMMON_NAME',
+                condition: FilterConditionOperator.Contains,
+                value: 'from-a-deep-link',
+            },
+        ];
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                views={[expiryWatch]}
+                initialFilters={incoming}
+            />,
+        );
+
+        await expect.poll(() => headings(page)).toEqual(['property:NOT_AFTER', 'custom:department|STRING']);
+
+        await expect(page.getByTestId('current-filters')).toContainText('from-a-deep-link');
+        await expect(page.getByTestId('current-filters')).not.toContainText('acme');
+        await expect.poll(async () => (await lastRequest(page))?.filters).toEqual(incoming);
+    });
+
+    /** Only the first application defers: a tab switch afterwards is the user's own act. */
+    test('replaces those filters on the next tab switch', async ({ mount, page }) => {
+        const incoming = [
+            {
+                fieldSource: FilterFieldSource.Property,
+                fieldIdentifier: 'COMMON_NAME',
+                condition: FilterConditionOperator.Contains,
+                value: 'from-a-deep-link',
+            },
+        ];
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                views={[expiryWatch]}
+                initialFilters={incoming}
+            />,
+        );
+        await expect(page.getByTestId('current-filters')).toContainText('from-a-deep-link');
+
+        await page.getByRole('tab', { name: 'Standard' }).click();
+
+        await expect(page.getByTestId('current-filters')).not.toContainText('from-a-deep-link');
+    });
+
+    /**
+     * A page refreshing after a mutation of its own must not assemble the request: the host owns the
+     * applied columns and the applied ordering, and a request built by the page would omit both -
+     * blanking every projected attribute column and abandoning the ordering the header still shows.
+     */
+    test('refetches its own request, columns and ordering included, when the page asks for a refresh', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                views={[expiryWatch]}
+                withRefreshControl
+            />,
+        );
+        await expect.poll(() => headings(page)).toEqual(['property:NOT_AFTER', 'custom:department|STRING']);
+        const before = (await listRequests(page)).length;
+
+        await page.getByTestId('page-refresh').click();
+
+        await expect.poll(async () => (await listRequests(page)).length).toBeGreaterThan(before);
+
+        const request = await lastRequest(page);
+
+        expect(request?.columns).toEqual([
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER' },
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'department|STRING' },
+        ]);
+        expect(request?.sort).toEqual({
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'NOT_AFTER',
+            direction: SortDirection.Desc,
+        });
+        expect(request?.filters).toEqual([stateFilter]);
     });
 });

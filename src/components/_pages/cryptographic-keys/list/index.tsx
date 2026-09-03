@@ -6,8 +6,8 @@ import type { ApiClients } from '../../../../api';
 import PagedList from 'components/PagedList/PagedList';
 import { actions, selectors } from 'ducks/cryptographic-keys';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
-import { EntityType } from 'ducks/filters';
-import { selectors as pagingSelectors } from 'ducks/paging';
+import { EntityType, actions as filterActions } from 'ducks/filters';
+import { actions as pagingActions, selectors as pagingSelectors } from 'ducks/paging';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
@@ -172,10 +172,26 @@ function CryptographicKeyList() {
 
     const onListCallback = useCallback((filters: SearchRequestModel) => dispatch(actions.listCryptographicKeys(filters)), [dispatch]);
 
+    /*
+     * Back to an unfiltered first page, so the key that was just created is on it - but through the
+     * store rather than by calling the list callback with a request built here. The host owns the
+     * applied columns and the applied ordering and names both in its request; one assembled here would
+     * omit them, so the reply would carry no projected attribute values and blank every
+     * custom-attribute column, while the header row went on showing an ordering the rows no longer
+     * had.
+     *
+     * The token is what guarantees the refetch. The host refetches when its request changes, and after
+     * a create from an unfiltered first page - the common case - the resets below change nothing, so
+     * without it the new key would not appear at all.
+     */
+    const [refreshToken, setRefreshToken] = useState(0);
+
     const handleFormSuccess = useCallback(() => {
         setIsAddOpen(false);
-        onListCallback({ itemsPerPage: 10, pageNumber: 1, filters: [] });
-    }, [onListCallback]);
+        dispatch(filterActions.setCurrentFilters({ entity: EntityType.KEY, currentFilters: [] }));
+        dispatch(pagingActions.resetPaging({ entity: EntityType.KEY }));
+        setRefreshToken((token) => token + 1);
+    }, [dispatch]);
 
     return (
         <>
@@ -196,6 +212,7 @@ function CryptographicKeyList() {
                 entityNamePlural="Keys"
                 filterTitle="Key Inventory Filter"
                 addHidden
+                refreshToken={refreshToken}
             />
             <Dialog
                 isOpen={isAddOpen}

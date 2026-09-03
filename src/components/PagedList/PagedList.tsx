@@ -17,7 +17,14 @@ import type { ViewSlice } from 'types/listViews';
 import type { Resource } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import { type ColumnSort, buildColumnHeaders } from 'utils/tableColumns';
-import { buildListRequest, getRenderableProperties, isSameSort, toColumnSortFromHeader, toDisplayableSort } from './columnState';
+import {
+    buildListRequest,
+    getRenderableProperties,
+    isSameSort,
+    toColumnSortFromHeader,
+    toDisplayableSort,
+    withCatalogueSortability,
+} from './columnState';
 import PagedListSkeleton from './PagedListSkeleton';
 import type { IconName } from 'types/icons';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
@@ -82,6 +89,16 @@ type Props<TRow extends object> = {
     hasDetails?: boolean;
     columnForDetail?: string;
     extraFilterComponent?: React.ReactNode;
+    /**
+     * Bumped by the page to refetch the listing.
+     *
+     * A page that has to refresh after a mutation of its own - a create dialog closing, say - must not
+     * build a request to do it. The host owns the applied columns and the applied ordering, so a
+     * request assembled by the page would omit both: the reply would carry no projected attribute
+     * values, blanking every custom-attribute column, and would not honour the ordering the header row
+     * is still showing. Changing this makes the host re-run its own request instead.
+     */
+    refreshToken?: number;
 };
 
 const EMPTY_HEADERS: TableHeader[] = [];
@@ -115,6 +132,7 @@ function PagedList<TRow extends object>({
     hasDetails = false,
     columnForDetail,
     extraFilterComponent,
+    refreshToken,
 }: Readonly<Props<TRow>>) {
     const dispatch = useDispatch();
     const store = useStore<AppState>();
@@ -170,9 +188,20 @@ function PagedList<TRow extends object>({
      * empty applied set if the config arrived later, and render a table with no columns at all. Holding
      * only the deviation means that state is not representable.
      */
+    /*
+     * The catalogue's sort capability is merged into the platform set as soon as it lands, because a
+     * static column literal cannot state it. This is the only place it can be done once: the set is
+     * both the fallback below and what the tab strip resolves Standard and a view's gaps against, so
+     * merging in only one of those would leave the other unsortable.
+     */
+    const sortableStandardColumns = useMemo(
+        () => (hasLoadedCatalogue ? withCatalogueSortability(standardColumns ?? NO_COLUMNS, catalogue) : (standardColumns ?? NO_COLUMNS)),
+        [hasLoadedCatalogue, standardColumns, catalogue],
+    );
+
     const appliedColumns = useMemo(
-        () => (columnSelection.length > 0 ? columnSelection : (standardColumns ?? NO_COLUMNS)),
-        [columnSelection, standardColumns],
+        () => (columnSelection.length > 0 ? columnSelection : sortableStandardColumns),
+        [columnSelection, sortableStandardColumns],
     );
 
     /** Never an ordering the header row cannot paint. See {@link toDisplayableSort}. */
@@ -209,7 +238,19 @@ function PagedList<TRow extends object>({
             ),
         );
         onCheckedRowsChanged([]);
-    }, [currentFilters, pageSize, effectivePageNumber, onListCallback, onCheckedRowsChanged, isColumnDriven, appliedColumns, appliedSort]);
+        // `refreshToken` is read for its identity alone: a change to it means the page asked for a
+        // refetch of this very request, which the effect below performs when this callback changes.
+    }, [
+        currentFilters,
+        pageSize,
+        effectivePageNumber,
+        onListCallback,
+        onCheckedRowsChanged,
+        isColumnDriven,
+        appliedColumns,
+        appliedSort,
+        refreshToken,
+    ]);
 
     const onPageSizeChanged = useCallback(
         (pageSize: number) => {
@@ -252,16 +293,33 @@ function PagedList<TRow extends object>({
      * reads them from there — a view that only changed the table would leave the widget showing
      * conditions the rows no longer honour. Back to page 1 and no selection, because the filters
      * change which rows exist and a carried-over selection would span rows the user cannot see.
+     *
+     * The first application is the exception, and it is a race rather than a choice. The strip opens
+     * its pinned view once the catalogue settles, which is after the page has mounted — so anything
+     * that arrived with filters already in the duck, a dashboard link or a deep link from a
+     * certificate's detail page, would have them replaced by the view's a moment after they were
+     * asked for. Filters already present therefore survive that one application: they are a request
+     * for particular rows, made after the view was pinned. The view's columns and ordering still
+     * apply, and every later tab switch replaces the filters as usual, because by then a switch is the
+     * user's own act.
      */
+    const hasAppliedView = useRef(false);
     const onApplyView = useCallback(
         (slice: ViewSlice) => {
+            const isInitialApplication = !hasAppliedView.current;
+
+            hasAppliedView.current = true;
             setColumnSelection(slice.columns);
             setSortSelection(slice.sort);
-            dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
+
+            if (!isInitialApplication || currentFilters.length === 0) {
+                dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
+            }
+
             dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
             onCheckedRowsChanged([]);
         },
-        [dispatch, entity, pageSize, onCheckedRowsChanged],
+        [dispatch, entity, pageSize, onCheckedRowsChanged, currentFilters.length],
     );
 
     const onSortChanged = useCallback(
@@ -396,7 +454,7 @@ function PagedList<TRow extends object>({
                     resource={columnsResource}
                     catalogue={catalogue}
                     isCatalogueLoaded={hasLoadedCatalogue}
-                    standardColumns={standardColumns}
+                    standardColumns={sortableStandardColumns}
                     renderableProperties={renderableProperties}
                     columns={appliedColumns}
                     filters={currentFilters}

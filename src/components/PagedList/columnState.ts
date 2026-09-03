@@ -1,6 +1,6 @@
 import type { CellRegistry } from 'components/CustomTable/columns';
 import type { SortDirection } from 'components/CustomTable/types';
-import type { SearchRequestModel } from 'types/certificate';
+import type { SearchFieldListModel, SearchRequestModel } from 'types/certificate';
 import type { ColumnDefinition } from 'types/tableColumns';
 import { toStoredSort } from 'utils/listViews';
 import { type ColumnSort, getColumnKey, getSortKey, parseColumnKey, toRequestColumns } from 'utils/tableColumns';
@@ -46,6 +46,45 @@ export function isSameSort(a: ColumnSort | undefined, b: ColumnSort | undefined)
  */
 export function getRenderableProperties<TRow>(registry: CellRegistry<TRow> | undefined): ReadonlySet<string> {
     return new Set(Object.keys(registry ?? {}));
+}
+
+/**
+ * A platform column set with the catalogue's sort capability merged in.
+ *
+ * A page's default column set is a static literal, so it cannot state whether the API can order by
+ * each field - only the catalogue knows that, and it arrives at runtime. Left unmerged, every column
+ * of the Standard tab renders unsortable (`buildColumnHeaders` requires `sortable === true`) and
+ * `toColumnSortFromHeader` refuses the click as well, so the tab a page opens on offers no ordering
+ * at all while a saved view, whose columns are resolved from the catalogue, offers it.
+ *
+ * Only `sortable` is taken. Everything else a page shipped is a deliberate display choice the
+ * catalogue has no opinion on - the heading it has always used, an alignment, a heading hidden
+ * because the column is an icon - and taking the catalogue's label here would silently rename the
+ * headings of a tab nobody edited.
+ *
+ * Every published field is considered, `displayable` or not: whether the API can order by a field is
+ * a separate question from whether the column picker offers it, and the page has already decided
+ * this column exists.
+ */
+export function withCatalogueSortability(
+    columns: readonly ColumnDefinition[],
+    catalogue: readonly SearchFieldListModel[],
+): ColumnDefinition[] {
+    const sortableKeys = new Set(
+        catalogue.flatMap((group) =>
+            (group.searchFieldData ?? [])
+                .filter((field) => field.sortable === true)
+                .map((field) => getColumnKey({ fieldSource: group.filterFieldSource, fieldIdentifier: field.fieldIdentifier })),
+        ),
+    );
+
+    return columns.map((column) => {
+        const sortable = sortableKeys.has(getColumnKey(column));
+
+        // Returned unchanged when the flag already agrees, so an unsortable set keeps its identity and
+        // the memo above this does not hand the table a new array on every catalogue reference.
+        return sortable === (column.sortable === true) ? column : { ...column, sortable };
+    });
 }
 
 /**

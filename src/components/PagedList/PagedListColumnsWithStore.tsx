@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Provider, useSelector } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import { of } from 'rxjs';
-import type { SearchFieldListModel, SearchRequestModel } from 'types/certificate';
+import type { SearchFieldListModel, SearchFilterModel, SearchRequestModel } from 'types/certificate';
 import type { ListViewModel } from 'types/listViews';
 import { FilterFieldSource, Resource } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
@@ -28,6 +28,13 @@ type Props = Readonly<{
     views?: ListViewModel[];
     /** Withholds the catalogue, which is what the strip waits for before rendering at all. */
     withheldCatalogue?: boolean;
+    /**
+     * Filters already in the duck when the host mounts, as a dashboard link or a deep link from a
+     * detail page leaves them - i.e. before the strip has opened its pinned view.
+     */
+    initialFilters?: SearchFilterModel[];
+    /** Renders a control that bumps `refreshToken`, standing in for a page's own post-create refresh. */
+    withRefreshControl?: boolean;
 }>;
 
 const registry: CellRegistry<StubRow> = {
@@ -65,7 +72,15 @@ function DispatchedActions() {
  * The requests the host makes are collected rather than answered — the pipeline's own behaviour is
  * what each column, filter and ordering ends up in the request, not what comes back.
  */
-export default function PagedListColumnsWithStore({ rows, standardColumns, catalogue, views = [], withheldCatalogue = false }: Props) {
+export default function PagedListColumnsWithStore({
+    rows,
+    standardColumns,
+    catalogue,
+    views = [],
+    withheldCatalogue = false,
+    initialFilters = [],
+    withRefreshControl = false,
+}: Props) {
     const [store] = useState(() =>
         createMockStore({
             listViews: {
@@ -78,7 +93,7 @@ export default function PagedListColumnsWithStore({ rows, standardColumns, catal
                         entity: EntityType.CERTIFICATE,
                         filter: {
                             availableFilters: withheldCatalogue ? [] : catalogue,
-                            currentFilters: [],
+                            currentFilters: initialFilters,
                             preservedFilters: [],
                             isFetchingFilters: withheldCatalogue,
                             hasLoadedFilters: !withheldCatalogue,
@@ -98,6 +113,7 @@ export default function PagedListColumnsWithStore({ rows, standardColumns, catal
     );
 
     const [requests, setRequests] = useState<SearchRequestModel[]>([]);
+    const [refreshToken, setRefreshToken] = useState(0);
 
     // Both callbacks are stabilised, as a real page's are: an inline arrow changes identity on every
     // render, and the host refetches when its list callback changes.
@@ -128,7 +144,14 @@ export default function PagedListColumnsWithStore({ rows, standardColumns, catal
                     onListCallback={onListCallback}
                     addHidden
                     configurableColumns={config}
+                    refreshToken={refreshToken}
                 />
+
+                {withRefreshControl && (
+                    <button type="button" data-testid="page-refresh" onClick={() => setRefreshToken((token) => token + 1)}>
+                        Refresh
+                    </button>
+                )}
 
                 <ListRequests requests={requests} />
                 <CurrentFilters />
