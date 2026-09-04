@@ -1440,8 +1440,8 @@ const bulkArchiveCertificates: AppEpic = (action$, state$, deps) => {
                         slice.actions.bulkArchiveCertificateSuccess(action.payload),
                         alertActions.success('Archive operation for selected certificates completed.'),
                         slice.actions.listCertificates({
-                            includeArchived: currentState.certificates.isIncludeArchived,
                             ...action.payload.filters,
+                            includeArchived: currentState.certificates.isIncludeArchived,
                         }),
                     );
                 }),
@@ -1467,8 +1467,8 @@ const bulkUnarchiveCertificates: AppEpic = (action$, state$, deps) => {
                         slice.actions.bulkUnarchiveCertificateSuccess(action.payload),
                         alertActions.success('Unarchive operation for selected certificates completed.'),
                         slice.actions.listCertificates({
-                            includeArchived: currentState.certificates.isIncludeArchived,
                             ...action.payload.filters,
+                            includeArchived: currentState.certificates.isIncludeArchived,
                         }),
                     );
                 }),

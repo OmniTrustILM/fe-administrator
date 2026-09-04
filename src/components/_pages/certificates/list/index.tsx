@@ -301,8 +301,11 @@ export default function CertificateList({
 
     const onListCallback = useCallback(
         (filters: SearchRequestModel) => {
-            setAppliedFilters(filters);
-            return dispatch(actions.listCertificates({ ...filters, includeArchived: isIncludeArchived }));
+            // The stored request is what a mutation replays to refresh the page, so it has to be the request that
+            // was listed - archived rows included - and not the filters before the flag was added.
+            const request = { ...filters, includeArchived: isIncludeArchived };
+            setAppliedFilters(request);
+            return dispatch(actions.listCertificates(request));
         },
         [dispatch, isIncludeArchived],
     );

@@ -38,6 +38,7 @@ import { actions as certificatesActions } from './certificates';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import certificatesEpics from './certificates-epics';
+import type { SearchRequestModel } from 'types/certificate';
 
 // Resolve epics by function name rather than by position — inserting an epic anywhere in the array
 // would otherwise silently shift every index below it and break unrelated tests.
@@ -663,6 +664,7 @@ describe('certificates epics', () => {
             requestedRaProfileUuid: string;
             refetchedCertificates: Array<{ uuid: string; raProfile?: { uuid: string } }>;
             patchResponse?: () => any;
+            listRequest?: SearchRequestModel;
         };
 
         async function runBulkUpdateRaProfileEpic({
@@ -670,6 +672,7 @@ describe('certificates epics', () => {
             requestedRaProfileUuid,
             refetchedCertificates,
             patchResponse = () => of(undefined),
+            listRequest,
         }: BulkUpdateRunOptions): Promise<UnknownAction[]> {
             const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
             const action$ = new Subject<UnknownAction>();
@@ -685,6 +688,7 @@ describe('certificates epics', () => {
                 certificatesActions.bulkUpdateRaProfile({
                     authorityUuid: 'auth-1',
                     raProfileRequest: { certificateUuids, raProfileUuid: requestedRaProfileUuid, filters: [] } as any,
+                    listRequest,
                 }),
             );
             // Allow the epic's PATCH to resolve and emit Success + listCertificates before we feed listCertificatesSuccess.
@@ -707,6 +711,20 @@ describe('certificates epics', () => {
             expect(emitted[1].type).toBe(certificatesActions.listCertificates.type);
             expect(emitted[2].type).toBe(alertActions.success.type);
             expect((emitted[2] as any).payload).toContain('completed');
+        });
+
+        test('replays the request the page listed, so archived rows survive the refetch', async () => {
+            const listRequest: SearchRequestModel = { filters: [], includeArchived: true, itemsPerPage: 25, pageNumber: 1 };
+
+            const emitted = await runBulkUpdateRaProfileEpic({
+                certificateUuids: ['c1'],
+                requestedRaProfileUuid: 'ra-new',
+                refetchedCertificates: [{ uuid: 'c1', raProfile: { uuid: 'ra-new' } }],
+                listRequest,
+            });
+
+            expect(emitted[1].type).toBe(certificatesActions.listCertificates.type);
+            expect((emitted[1] as any).payload).toEqual(listRequest);
         });
 
         test('emits error alert when none of the certificates received the requested RA profile', async () => {
