@@ -635,16 +635,15 @@ describe('certificates epics', () => {
         expect(emitted[2].type).toBe(appRedirectActions.fetchError.type);
     });
 
-    test('uploadCertificate success emits Success, alert, and listCertificates', async () => {
+    test('uploadCertificate success emits Success and an alert, and leaves the refetch to the page', async () => {
         const emitted = await runUploadEpic(
             certificatesActions.uploadCertificate({ certificate: 'BASE64', customAttributes: [] } as any),
             {},
-            3,
+            2,
         );
         expect(emitted[0].type).toBe(certificatesActions.uploadCertificateSuccess.type);
         expect(emitted[1].type).toBe(alertActions.success.type);
-        expect(emitted[2].type).toBe(certificatesActions.listCertificates.type);
-        expect((emitted[2] as any).payload.includeArchived).toBe(false);
+        expect(emitted.map((emittedAction) => emittedAction.type)).not.toContain(certificatesActions.listCertificates.type);
     });
 
     test('uploadCertificate failure emits Failure with extracted error and fetchError', async () => {

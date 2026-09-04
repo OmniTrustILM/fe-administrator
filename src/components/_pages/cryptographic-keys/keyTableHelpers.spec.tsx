@@ -121,7 +121,7 @@ test.describe('buildKeyCellRegistry', () => {
     /**
      * The registry decides whether the picker offers a property column: a field it has no renderer for
      * could only ever show the empty state. Every field the keys catalogue publishes is renderable
-     * from the list DTO, so all eleven are registered.
+     * from the list DTO, so every one of them is registered.
      */
     test('registers every property field the keys catalogue publishes', () => {
         const registry = buildKeyCellRegistry(opts);
@@ -151,8 +151,8 @@ test.describe('buildKeyCellRegistry', () => {
         }
     });
 
-    // Key Usage is offered by the picker but is not in the default set, because the default set has to
-    // match what the page shipped before the pipeline.
+    // Key Usage is offered by the picker but stays out of the platform default set, which is the
+    // established set of columns the page opens on.
     test('leaves Key Usage out of the platform default set', () => {
         expect(KEY_COLUMNS.some((column) => column.fieldIdentifier === 'CKI_USAGE')).toBe(false);
     });

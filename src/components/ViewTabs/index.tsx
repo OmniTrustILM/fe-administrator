@@ -51,9 +51,8 @@ export type ViewTabsProps = Readonly<{
     /** The platform default column set for this page, which is what the Standard tab shows. */
     standardColumns: ColumnDefinition[];
     /**
-     * The column keys the page has a cell renderer for. A property field outside the set is neither
-     * offered by the picker nor resolvable from a stored view, because it could only ever render the
-     * empty state — see `toCatalogueFields`. Omitted means no gate.
+     * The column keys the page has a cell renderer for; the gate `toCatalogueFields` applies, here to a
+     * stored view's columns as well as to the picker. Omitted means no gate.
      */
     renderableProperties?: ReadonlySet<string>;
     /** The columns the table is showing, which a saved view may since have drifted from. */

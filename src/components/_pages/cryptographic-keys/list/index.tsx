@@ -173,16 +173,11 @@ function CryptographicKeyList() {
     const onListCallback = useCallback((filters: SearchRequestModel) => dispatch(actions.listCryptographicKeys(filters)), [dispatch]);
 
     /*
-     * Back to an unfiltered first page, so the key that was just created is on it - but through the
-     * store rather than by calling the list callback with a request built here. The host owns the
-     * applied columns and the applied ordering and names both in its request; one assembled here would
-     * omit them, so the reply would carry no projected attribute values and blank every
-     * custom-attribute column, while the header row went on showing an ordering the rows no longer
-     * had.
+     * Back to an unfiltered first page, so the key that was just created is on it - refetched through
+     * the host rather than from a request built here; see `refreshToken` on `PagedList`.
      *
-     * The token is what guarantees the refetch. The host refetches when its request changes, and after
-     * a create from an unfiltered first page - the common case - the resets below change nothing, so
-     * without it the new key would not appear at all.
+     * The token is what guarantees the refetch: after a create from an unfiltered first page - the
+     * common case - the resets below change nothing, so without it the new key would not appear.
      */
     const [refreshToken, setRefreshToken] = useState(0);
 

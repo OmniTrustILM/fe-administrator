@@ -1272,7 +1272,7 @@ test.describe('CustomTable', () => {
                 ]);
         });
 
-        // A saved view owns its own ordering (Epic ilm#133, D7), so on the listing pages persistence is
+        // A saved view owns its own ordering, so on the listing pages persistence is
         // a second authority over one fact: a stale localStorage sort would outrank the ordering the
         // view just applied, and the table would paint a column the caller never fetched.
         test('a caller that owns the sort is not handed one from persistence', async ({ mount }) => {

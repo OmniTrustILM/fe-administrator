@@ -131,6 +131,16 @@ export type State = {
     isUpdatingOwner: boolean;
     isUpdatingTrustedStatus: boolean;
 
+    /**
+     * Bumped whenever a mutation of this inventory needs the listing re-read.
+     *
+     * The refetch cannot be dispatched from the epic that knows the mutation succeeded: a request
+     * assembled there names no columns and no ordering, so the reply would carry no projected attribute
+     * values and would arrive in the backend's default order while the table still shows its own. The
+     * page forwards this to `PagedList`, which re-runs the request it built itself.
+     */
+    listRefreshToken: number;
+
     isBulkUpdatingGroup: boolean;
     isBulkUpdatingRaProfile: boolean;
     isBulkUpdatingOwner: boolean;
@@ -195,6 +205,8 @@ export const initialState: State = {
     isUpdatingRaProfile: false,
     isUpdatingOwner: false,
     isUpdatingTrustedStatus: false,
+
+    listRefreshToken: 0,
 
     isBulkUpdatingGroup: false,
     isBulkUpdatingRaProfile: false,
@@ -756,6 +768,7 @@ export const slice = createSlice({
 
         bulkUpdateGroupSuccess: (state, action: PayloadAction<{ uuids: string[] }>) => {
             state.isBulkUpdatingGroup = false;
+            state.listRefreshToken += 1;
         },
 
         bulkDeleteGroup: (state, action: PayloadAction<{ certificateUuids: string[] }>) => {
@@ -764,13 +777,26 @@ export const slice = createSlice({
 
         bulkDeleteGroupSuccess: (state, action: PayloadAction<{ uuids: string[] }>) => {
             state.isBulkUpdatingGroup = false;
+            state.listRefreshToken += 1;
         },
 
         bulkUpdateGroupFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isBulkUpdatingGroup = false;
         },
 
-        bulkUpdateRaProfile: (state, action: PayloadAction<{ authorityUuid: string; raProfileRequest: CertificateBulkObjectModel }>) => {
+        bulkUpdateRaProfile: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileRequest: CertificateBulkObjectModel;
+                /**
+                 * The listing request to re-read with. Unlike the other bulk mutations this one cannot leave the
+                 * refetch to the page: its epic subscribes to the reply to report how many certificates actually
+                 * took the profile, so the request has to be dispatched where that subscription is.
+                 */
+                listRequest?: SearchRequestModel;
+            }>,
+        ) => {
             state.isBulkUpdatingRaProfile = true;
         },
 
@@ -874,6 +900,7 @@ export const slice = createSlice({
 
         uploadCertificateSuccess: (state) => {
             state.isUploading = false;
+            state.listRefreshToken += 1;
         },
 
         uploadCertificateFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -1115,6 +1142,7 @@ const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 const deleteErrorMessage = createSelector(state, (state) => state.deleteErrorMessage);
 
 const certificates = createSelector(state, (state) => state.certificates);
+const listRefreshToken = createSelector(state, (state) => state.listRefreshToken);
 const certificateChain = createSelector(state, (state) => state.certificateChain);
 
 const certificateDetail = createSelector(state, (state) => state.certificateDetail);
@@ -1186,6 +1214,7 @@ export const selectors = {
     state,
     deleteErrorMessage,
     certificates,
+    listRefreshToken,
     certificateDetail,
     certificateRelations,
     isFetchingRelations,

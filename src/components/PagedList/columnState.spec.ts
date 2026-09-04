@@ -93,9 +93,8 @@ describe('getRenderableProperties', () => {
 describe('buildListRequest', () => {
     const base = { itemsPerPage: 10, pageNumber: 1, filters: [] };
 
-    // The Epic's compatibility guarantee (AC12): with no columns and no ordering the request must be
-    // byte-identical to one written before the contract carried either field, so both are absent from
-    // the object rather than present and empty.
+    // With no columns and no ordering the request must be byte-identical to one written before the
+    // contract carried either field, so both are absent from the object rather than present and empty.
     it('omits both new fields for a page that is not on the pipeline', () => {
         const request = buildListRequest(base);
 
@@ -174,7 +173,7 @@ describe('toDisplayableSort', () => {
 });
 
 describe('withCatalogueSortability', () => {
-    /** As a page ships it: no `sortable`, because a static literal cannot know what the API supports. */
+    /** As a page ships it: no `sortable`; see `withCatalogueSortability`. */
     const standard: ColumnDefinition[] = [
         { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name' },
         { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS', catalogueLabel: 'Associations' },

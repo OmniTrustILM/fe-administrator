@@ -47,14 +47,12 @@ type Props = {
      */
     onSortChanged?: (fieldIdentifier: string, direction: SortDirection) => void;
     /**
-     * Whether the active sort is remembered across mounts. Default `true`, which is what a table
-     * that sorts its own rows wants: the ordering is the table's own state and nothing else holds it.
+     * Whether the active sort is remembered across mounts. Default `true`, for a table whose ordering is
+     * its own state.
      *
-     * A caller whose sort belongs to something durable of its own passes `false`. On the listing
-     * pages the ordering is part of a saved view (Epic ilm#133, D7), so a copy in `tablePagination`
-     * would be a second authority over one fact — and, being consulted ahead of the sort the headers
-     * declare, would outrank the ordering the view just applied. With `false` nothing is read from
-     * persistence and nothing is written to it, so the headers stay the only statement of the sort.
+     * Pass `false` when the sort belongs to something durable of its own — a stored copy is consulted
+     * ahead of the headers, so it would outrank the ordering that thing just applied. With `false`
+     * nothing is read from or written to persistence.
      */
     persistSort?: boolean;
     onPageSizeChanged?: (pageSize: number) => void;

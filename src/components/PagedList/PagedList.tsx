@@ -41,7 +41,7 @@ import type { LockWidgetNameEnum } from 'types/user-interface';
  * A page that supplies this stops passing `headers` and `data`. The host then owns the applied column
  * set and the applied ordering, renders the saved-view tab strip above the filter widget, and names
  * both in the listing request. A page that supplies nothing keeps passing `headers` and `data` and is
- * untouched — which is what keeps the thirty-odd other list pages out of this.
+ * untouched — which is what keeps every other list page out of this.
  */
 export interface ConfigurableColumns<TRow extends object> {
     /** The resource the saved views belong to, e.g. `Resource.Certificates`. */
@@ -53,8 +53,7 @@ export interface ConfigurableColumns<TRow extends object> {
     getRowId: (row: TRow) => string | number;
     /**
      * Cell renderers for the property columns whose value is on the listing entry. Doubles as the
-     * statement of which property columns the page can render at all: a property field outside it is
-     * not offered by the picker, because it could only ever render the empty state.
+     * statement of which property columns the page can render at all; see `toCatalogueFields`.
      */
     registry?: CellRegistry<TRow>;
     rowOptions?: (row: TRow) => TableDataRow['options'];
@@ -188,12 +187,9 @@ function PagedList<TRow extends object>({
      * empty applied set if the config arrived later, and render a table with no columns at all. Holding
      * only the deviation means that state is not representable.
      */
-    /*
-     * The catalogue's sort capability is merged into the platform set as soon as it lands, because a
-     * static column literal cannot state it. This is the only place it can be done once: the set is
-     * both the fallback below and what the tab strip resolves Standard and a view's gaps against, so
-     * merging in only one of those would leave the other unsortable.
-     */
+    // Merged once, here, because this set is both the fallback below and what the strip resolves
+    // Standard and a view's gaps against; see `withCatalogueSortability`.
+
     const sortableStandardColumns = useMemo(
         () => (hasLoadedCatalogue ? withCatalogueSortability(standardColumns ?? NO_COLUMNS, catalogue) : (standardColumns ?? NO_COLUMNS)),
         [hasLoadedCatalogue, standardColumns, catalogue],
@@ -287,21 +283,18 @@ function PagedList<TRow extends object>({
     }, [checkedRows, onDeleteCallback, currentFilters, onCheckedRowsChanged, getFreshData]);
 
     /**
-     * Applies a view: its columns, its filters and its ordering together (D7).
+     * Applies a view: its columns, its filters and its ordering together.
      *
-     * The filters go through the filters duck rather than into local state, because the filter widget
-     * reads them from there — a view that only changed the table would leave the widget showing
-     * conditions the rows no longer honour. Back to page 1 and no selection, because the filters
-     * change which rows exist and a carried-over selection would span rows the user cannot see.
+     * <p><b>State.</b> The filters go through the filters duck, not local state, because the filter
+     * widget reads them from there. Back to page 1 with no selection: the filters change which rows
+     * exist, so a carried-over selection would span rows the user cannot see.
      *
-     * The first application is the exception, and it is a race rather than a choice. The strip opens
-     * its pinned view once the catalogue settles, which is after the page has mounted — so anything
-     * that arrived with filters already in the duck, a dashboard link or a deep link from a
-     * certificate's detail page, would have them replaced by the view's a moment after they were
-     * asked for. Filters already present therefore survive that one application: they are a request
-     * for particular rows, made after the view was pinned. The view's columns and ordering still
-     * apply, and every later tab switch replaces the filters as usual, because by then a switch is the
-     * user's own act.
+     * <p><b>First application.</b> Filters already in the duck survive it. The strip opens its pinned
+     * view after the page has mounted, so filters that arrived with the page — a dashboard link, a
+     * deep link from a detail page — would otherwise be replaced a moment after they were asked for.
+     * The view's columns and ordering still apply.
+     *
+     * <p><b>Later switches.</b> Replace the filters as usual: by then the switch is the user's own act.
      */
     const hasAppliedView = useRef(false);
     const onApplyView = useCallback(
@@ -446,7 +439,7 @@ function PagedList<TRow extends object>({
     return (
         <div className="flex flex-col gap-4 md:gap-8">
             {/*
-             * Above the filter widget rather than inside it: under D7 a view carries its own filters,
+             * Above the filter widget rather than inside it: a view carries its own filters,
              * so a tab has to read as containing the filter rather than sitting within it.
              */}
             {columnsResource && standardColumns && (

@@ -131,12 +131,7 @@ describe('hasLoadedFilters', () => {
         expect(selectors.isFetchingFilters(EntityType.CERTIFICATE)(stateFor(next))).toBe(true);
     });
 
-    /**
-     * A settled flag beside an empty catalogue is the one pairing this flag exists to rule out: a
-     * consumer that waits for the catalogue would read it as "this resource publishes nothing" and
-     * resolve every stored column against an empty set. A refetch must therefore leave the fields it
-     * already has in place.
-     */
+    /** See `hasLoadedFilters` for the pairing this rules out. */
     test('keeps the catalogue it already has while a later read is in flight', () => {
         const fields = [{ field: 'cn' as any, label: 'CN', multiValue: false, type: 'string' as any }];
         const settled = reducer(

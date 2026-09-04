@@ -58,6 +58,13 @@ export default function CertificateList({
     const navigate = useNavigate();
 
     const certificates = useSelector(selectors.certificates);
+    /*
+     * A mutation of this inventory refetches through the host rather than from the epic that performed
+     * it: a request assembled there names no columns and no ordering, so the reply would blank every
+     * projected attribute column and arrive in the backend's default order under a header still showing
+     * the sort. The duck bumps this on each such success and the host re-runs the request it built.
+     */
+    const listRefreshToken = useSelector(selectors.listRefreshToken);
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.CERTIFICATE));
     const users = useSelector(userSelectors.users);
 
@@ -306,9 +313,8 @@ export default function CertificateList({
 
     /*
      * Preserved filters are a deep-link restore, so they apply on arrival and never again. The rule for
-     * "never again" is `preservedFilterRestore`, which is where the case this used to get wrong is
-     * written down and tested: a restore that found the filters already in place reported itself as
-     * still pending, and so fired later against a tab switch that had deliberately cleared them.
+     * "never again" is `preservedFilterRestore`: a restore that finds the filters already in place is
+     * finished rather than pending, or it fires later against a tab switch that deliberately cleared them.
      */
     const hasRestoredPreservedFilters = useRef(false);
     useEffect(() => {
@@ -335,6 +341,7 @@ export default function CertificateList({
                 hideWidgetButtons={hideWidgetButtons}
                 entity={EntityType.CERTIFICATE}
                 onListCallback={onListCallback}
+                refreshToken={listRefreshToken}
                 onDeleteCallback={(uuids, filters) => dispatch(actions.bulkDelete({ uuids, filters }))}
                 getAvailableFiltersApi={useCallback(
                     (apiClients: ApiClients) => apiClients.certificates.getCertificateSearchableFields(),
@@ -411,6 +418,7 @@ export default function CertificateList({
                 body={
                     <CertificateRAProfileDialog
                         uuids={checkedRows}
+                        listRequest={appliedFilters}
                         onCancel={() => setUpdateRaProfile(false)}
                         onUpdate={() => setUpdateRaProfile(false)}
                     />

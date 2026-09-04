@@ -213,13 +213,9 @@ function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<str
 
 /**
  * The columns a view is allowed to store: those naming a field the resource's catalogue publishes.
- *
- * A platform default set may show a column the filter-field catalogue does not carry — the keys
- * inventory renders `CKI_ENABLED`, `CKI_CREATED` and `CK_ASSOCIATIONS`, none of which is a
- * `FilterField`. Those columns are display-only. Core validates a stored view against that same
- * catalogue and rejects a create or update naming anything outside it, so keeping them would make
- * duplicating Standard fail outright rather than produce a view. They keep rendering under Standard,
- * which stores nothing at all.
+ * Core validates a stored view against that same catalogue and rejects anything outside it, so a
+ * display-only column — one a page renders without the catalogue carrying it — would make duplicating
+ * Standard fail outright. Such columns keep rendering under Standard, which stores nothing at all.
  *
  * Read from the raw groups rather than through {@link toCatalogueFields}, which keeps only the
  * displayable ones: a column the *listing* cannot display is still a column the *API* accepts, and

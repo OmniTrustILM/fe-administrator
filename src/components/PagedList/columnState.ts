@@ -39,11 +39,7 @@ export function isSameSort(a: ColumnSort | undefined, b: ColumnSort | undefined)
     return getSortKey(a) === getSortKey(b) && a.direction === b.direction;
 }
 
-/**
- * The column keys a page can render from the listing entry itself, which is exactly the keys of its
- * cell registry. This is what keeps a permanently blank property column out of the picker — see
- * `toCatalogueFields`, which takes it as its gate.
- */
+/** The column keys a page can render from the listing entry: the keys of its cell registry. */
 export function getRenderableProperties<TRow>(registry: CellRegistry<TRow> | undefined): ReadonlySet<string> {
     return new Set(Object.keys(registry ?? {}));
 }
@@ -90,10 +86,9 @@ export function withCatalogueSortability(
 /**
  * The listing request for a page state.
  *
- * Both new fields are spread in only when they carry something, which is the Epic's compatibility
- * guarantee: with no columns and no ordering the request is byte-identical to one written before the
- * contract carried either field, so an unmigrated caller and a migrated one with nothing selected
- * send the same bytes.
+ * Both new fields are spread in only when they carry something: with no columns and no ordering the
+ * request is byte-identical to one written before the contract carried either field, so an unmigrated
+ * caller and a migrated one with nothing selected send the same bytes.
  */
 export function buildListRequest(base: SearchRequestModel, columns?: readonly ColumnDefinition[], sort?: ColumnSort): SearchRequestModel {
     const requestColumns = columns ? toRequestColumns(columns) : undefined;

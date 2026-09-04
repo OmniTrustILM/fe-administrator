@@ -878,7 +878,6 @@ const bulkUpdateGroup: AppEpic = (action$, state, deps) => {
                                 uuids: action.payload.certificateUuids!,
                             }),
                             alertActions.success('Update operation for selected certificates groups completed.'),
-                            slice.actions.listCertificates({}),
                         ),
                     ),
 
@@ -911,7 +910,6 @@ const bulkDeleteGroup: AppEpic = (action$, state, deps) => {
                                 uuids: action.payload.certificateUuids,
                             }),
                             alertActions.success('Delete operation for selected certificates groups completed.'),
-                            slice.actions.listCertificates({}),
                         ),
                     ),
 
@@ -983,7 +981,10 @@ const bulkUpdateRaProfile: AppEpic = (action$, state, deps) => {
                 .pipe(
                     mergeMap(() =>
                         merge(
-                            of(slice.actions.bulkUpdateRaProfileSuccess({ uuids: requestedUuids }), slice.actions.listCertificates({})),
+                            of(
+                                slice.actions.bulkUpdateRaProfileSuccess({ uuids: requestedUuids }),
+                                slice.actions.listCertificates({ ...action.payload.listRequest }),
+                            ),
                             verifyAfterRefetch$,
                         ),
                     ),
@@ -1129,9 +1130,6 @@ const uploadCertificate: AppEpic = (action$, state$, deps) => {
                         of(
                             slice.actions.uploadCertificateSuccess(),
                             alertActions.success('Certificate upload triggered. It will appear in the list shortly.'),
-                            slice.actions.listCertificates({
-                                includeArchived: state$.value.certificates.isIncludeArchived,
-                            }),
                         ),
                     ),
                     catchError((err) =>

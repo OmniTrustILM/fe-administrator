@@ -10,10 +10,9 @@ describe('preservedFilterRestore', () => {
     });
 
     /**
-     * The case the guard used to get wrong. A link that populates the current filters as well as
-     * snapshotting them leaves nothing to apply - but it is finished, not pending, and reporting it as
-     * pending left the restore armed until a tab switch cleared the filters, at which point it undid
-     * the switch.
+     * A link that populates the current filters as well as snapshotting them leaves nothing to apply -
+     * but it is finished, not pending. Reported as pending, the restore stays armed until a tab switch
+     * clears the filters, and then undoes the switch.
      */
     test('reports a deep link whose filters are already in place as settled, not pending', () => {
         expect(decide({ currentCount: 2 })).toBe('settled');

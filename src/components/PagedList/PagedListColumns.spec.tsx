@@ -43,10 +43,8 @@ const column = (identifier: string, catalogueLabel: string, overrides: Partial<C
 const standardColumns = [column('COMMON_NAME', 'Common Name'), column('NOT_AFTER', 'Expires At')];
 
 /**
- * The platform set as a real page actually ships it: a static literal with no `sortable`, because
- * only the catalogue knows what the API can order by. `column()` above defaults it to `true`, which
- * is convenient for the other cases but is not what `CERTIFICATE_COLUMNS` or `KEY_COLUMNS` look
- * like - so the sortability of the Standard tab has to be asserted against this instead.
+ * The platform set as a real page ships it: no `sortable`, unlike `column()` above, which defaults it
+ * to `true`. See `withCatalogueSortability`.
  */
 const shippedColumns: ColumnDefinition[] = [
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name' },
@@ -156,15 +154,21 @@ test.describe('PagedList · configurable columns', () => {
         await expect.poll(async () => (await lastRequest(page))?.sort?.direction).toBe(SortDirection.Desc);
     });
 
-    test('returns to page 1 when the ordering changes, because page 2 of one ordering is not page 2 of another', async ({
+    test('returns to page 1 and clears the selection when the ordering changes, because page 2 of one ordering is not page 2 of another', async ({
         mount,
         page,
     }) => {
-        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} withPagingControl />);
+
+        // Moved off page 1 with a row checked only after the opening view has applied: on page 1 with
+        // nothing checked the assertions below hold whether or not the resets under test run at all.
+        await page.getByTestId('go-to-page-two').click();
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(2);
 
         await page.getByRole('button', { name: 'Expires At' }).click();
 
         await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(1);
+        await expect(page.locator('input[type="checkbox"]:checked')).toHaveCount(0);
     });
 
     /**
@@ -269,9 +273,19 @@ test.describe('PagedList · configurable columns', () => {
     test('never renders a table with no columns when the config arrives with the platform set', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} withheldCatalogue />);
 
-        // The strip is still waiting on the catalogue, so nothing has applied a slice yet — the table
-        // must already be showing the platform set rather than nothing at all.
         await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+        await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
+        await expect(page.getByText('acme.example')).toBeVisible();
+    });
+
+    /**
+     * The configuration a page passes depends on a catalogue it is still fetching, so the host's first
+     * render has none at all. An applied set initialised from that absent config and never revisited
+     * would leave the table empty for good.
+     */
+    test('applies the platform set when the config arrives after the first render', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} withDeferredConfig />);
+
         await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
         await expect(page.getByText('acme.example')).toBeVisible();
     });
@@ -289,15 +303,10 @@ test.describe('PagedList · configurable columns', () => {
 
         await expect(page.getByTestId('list-requests')).toBeVisible();
         await expect(page.getByTestId('view-tabs')).toHaveCount(0);
-        // The table still shows the platform set: a page is never blank while its catalogue is loading.
         await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
     });
 
-    /**
-     * A page ships its default columns as a static literal, so none of them can declare `sortable`.
-     * Without the catalogue merged in, the tab every page opens on offered no ordering at all while a
-     * saved view - whose columns are resolved from the catalogue - offered it.
-     */
+    /** See `withCatalogueSortability` for why a shipped set cannot declare this itself. */
     test('makes the Standard tab sortable from the catalogue, though the shipped set cannot declare it', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={shippedColumns} catalogue={catalogue} />);
 
@@ -394,11 +403,7 @@ test.describe('PagedList · configurable columns', () => {
         await expect(page.getByTestId('current-filters')).not.toContainText('from-a-deep-link');
     });
 
-    /**
-     * A page refreshing after a mutation of its own must not assemble the request: the host owns the
-     * applied columns and the applied ordering, and a request built by the page would omit both -
-     * blanking every projected attribute column and abandoning the ordering the header still shows.
-     */
+    /** Why a page must not assemble its own refresh request is on `refreshToken`. */
     test('refetches its own request, columns and ordering included, when the page asks for a refresh', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore
