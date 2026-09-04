@@ -366,8 +366,10 @@ export default function ViewTabs({
             }
 
             if (event.key === 'Home' || event.key === 'End') {
+                const target = event.key === 'Home' ? visible.at(0) : visible.at(-1);
+                if (!target) return;
                 event.preventDefault();
-                selectByKeyboard(event.key === 'Home' ? visible[0].id : visible[visible.length - 1].id);
+                selectByKeyboard(target.id);
             }
         },
         [visible, activeId, selectByKeyboard],
@@ -383,6 +385,10 @@ export default function ViewTabs({
                     aria-label="Saved views"
                     className="flex items-center gap-x-1"
                     onKeyDown={onStripKeyDown}
+                    // Keyboard reachability does not depend on this: focus sits on the tabs and the keydown bubbles
+                    // up. It is here because an element carrying an interactive role and a key handler has to be
+                    // focusable, and -1 satisfies that while leaving the tabs as the only tab stops.
+                    tabIndex={-1}
                     data-testid={`${dataTestId}-strip`}
                 >
                     {visible.map((tab) => (

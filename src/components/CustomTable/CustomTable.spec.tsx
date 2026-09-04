@@ -1167,6 +1167,11 @@ test.describe('CustomTable', () => {
                     ['name', 'desc'],
                     ['name', 'asc'],
                 ]);
+            expect(calls).toEqual([
+                ['name', 'asc'],
+                ['name', 'desc'],
+                ['name', 'asc'],
+            ]);
         });
 
         test('a click on another sortable column moves the sort rather than adding to it', async ({ mount }) => {
@@ -1241,6 +1246,10 @@ test.describe('CustomTable', () => {
                     ['name', 'desc'],
                     ['name', 'asc'],
                 ]);
+            expect(calls).toEqual([
+                ['name', 'desc'],
+                ['name', 'asc'],
+            ]);
         });
 
         // Reporting a sort makes the caller refetch, and a caller re-derives its headers when the fetch
@@ -1316,6 +1325,7 @@ test.describe('CustomTable', () => {
             await nameButton.press('Enter');
 
             await expect.poll(() => calls).toEqual([['name', 'asc']]);
+            expect(calls).toEqual([['name', 'asc']]);
         });
 
         test('carries aria-sort on the sorted header only', async ({ mount }) => {

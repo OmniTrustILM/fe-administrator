@@ -75,6 +75,7 @@ test.describe('CountBadge', () => {
         await component.locator('[data-testid="widget-lock-refresh"]').click();
 
         await expect.poll(() => refreshCount).toBe(1);
+        expect(refreshCount).toBe(1);
     });
 
     // A null count can mean a denied permission, a down data source or a failed request. The badge

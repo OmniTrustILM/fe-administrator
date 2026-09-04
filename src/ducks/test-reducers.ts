@@ -322,7 +322,7 @@ function brandingTestReducer(state: BrandingTestState = brandingTestInitialState
         case 'branding/getPublicBrandingSuccess':
             return {
                 ...state,
-                publicBranding: (action as { payload?: { branding?: BrandingTestState['publicBranding'] } }).payload?.branding,
+                publicBranding: (action as { payload?: { branding: BrandingTestState['publicBranding'] } }).payload?.branding,
                 publicBrandingReadFailed: false,
             };
         case 'branding/getPublicBrandingFailure':

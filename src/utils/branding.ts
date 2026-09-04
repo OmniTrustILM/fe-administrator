@@ -76,12 +76,7 @@ const LOGO_DATA_URI_PATTERN = /^data:([^;,]+);base64,([A-Za-z0-9+/]+={0,2})$/;
  * which carries too few bits to be a byte - an otherwise well-formed payload that simply was not padded is accepted,
  * as `Base64.getDecoder()` accepts it.
  */
-const isDecodableBase64 = (payload: string): boolean => {
-    const padding = payload.length - payload.replace(/=+$/, '').length;
-    const data = payload.length - padding;
-
-    return padding === 0 ? data % 4 !== 1 : (data + padding) % 4 === 0;
-};
+const isDecodableBase64 = (payload: string): boolean => (payload.endsWith('=') ? payload.length % 4 === 0 : payload.length % 4 !== 1);
 
 /**
  * Whether a stored logo is safe to point an `img` at.

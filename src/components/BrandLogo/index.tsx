@@ -43,7 +43,8 @@ function BrandLogo({ defaultLight, defaultDark, alt, className, dataTestId }: Re
     // from a live "not branded" answer. Either way the platform mark is what shows, and no error is put in front of a
     // visitor who cannot act on it. It counts as settled: there is no second answer coming.
     const settled = branding !== undefined;
-    const uploaded = readFailed ? undefined : resolvedTheme === 'dark' ? branding?.darkLogo : branding?.lightLogo;
+    const themed = resolvedTheme === 'dark' ? branding?.darkLogo : branding?.lightLogo;
+    const uploaded = readFailed ? undefined : themed;
     const platform = resolvedTheme === 'dark' ? defaultDark : defaultLight;
 
     return (
