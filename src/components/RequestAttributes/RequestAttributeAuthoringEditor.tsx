@@ -339,13 +339,14 @@ export default function RequestAttributeAuthoringEditor({
         value.attributes.some((a, i) => i !== attrDraft.index && a.name.trim() === attrDraft.data.name.trim());
     // A stored permitted-set value outside the current vocabulary (e.g. a deregistered EKU purpose)
     // stays visible and deselectable, but Core rejects a set containing it — block Save until it is
-    // removed. Skipped while the EKU vocabulary is loading or failed, so a broken fetch cannot lock
-    // an unrelated edit.
+    // removed. Skipped while the vocabulary is empty, loading or failed, so an unavailable
+    // vocabulary cannot lock an unrelated edit by flagging every stored value.
     const structuredSetOffListError = (d: AuthoredAttributeFormValues): string | undefined => {
         if (!isStructuredMappingTarget(d.mappingFieldType)) return undefined;
         const isKeyUsage = d.mappingFieldType === FieldType.KeyUsage;
         if (!isKeyUsage && (extendedKeyUsageOptionsError || !extendedKeyUsageOptionsLoaded)) return undefined;
         const vocabulary = new Set((isKeyUsage ? keyUsageOptions : extendedKeyUsageOptions).map((o) => o.value));
+        if (vocabulary.size === 0) return undefined;
         const offList = d.staticValues.map(String).filter((v) => !vocabulary.has(v));
         if (offList.length === 0) return undefined;
         return `Remove the unregistered value(s) ${offList.join(', ')} — the permitted set may only contain registered ones.`;
@@ -856,6 +857,7 @@ export default function RequestAttributeAuthoringEditor({
         const optionsError = isKeyUsage ? false : extendedKeyUsageOptionsError;
         const optionsLoaded = isKeyUsage ? true : extendedKeyUsageOptionsLoaded;
         const testIdPrefix = `${dataTestId}-${isKeyUsage ? 'key-usage' : 'eku'}`;
+        const vocabularyNoun = isKeyUsage ? 'Key Usage bits' : 'Extended Key Usage purposes';
         const labelByValue = new Map(vocabulary.map((o) => [o.value, o.label]));
         const selected = d.staticValues.map(String);
         // A stored value missing from the vocabulary (e.g. a purpose whose registry entry was
@@ -867,14 +869,15 @@ export default function RequestAttributeAuthoringEditor({
             <div className="space-y-2" data-testid={`${testIdPrefix}-set`}>
                 {optionsError && (
                     <p className="text-sm text-danger" data-testid={`${testIdPrefix}-error`}>
-                        Failed to load Extended Key Usage purposes.
+                        {`Failed to load ${vocabularyNoun}.`}
                     </p>
                 )}
                 {options.length === 0 ? (
                     !optionsError &&
                     optionsLoaded && (
                         <p className="text-sm text-content-subtle" data-testid={`${testIdPrefix}-empty`}>
-                            No Extended Key Usage purposes are available. Register one under Settings → Custom OIDs.
+                            {`No ${vocabularyNoun} are available.`}
+                            {isKeyUsage ? '' : ' Register one under Settings → Custom OIDs.'}
                         </p>
                     )
                 ) : (

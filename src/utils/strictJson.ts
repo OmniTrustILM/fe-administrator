@@ -12,10 +12,18 @@
 
 const WHITESPACE = new Set([' ', '\t', '\n', '\r']);
 
+/**
+ * Recursion cap for parsing and for walking the parsed document. Far beyond any real ASN.1 tree or
+ * inline schema, yet low enough that a pathological value fails with a message instead of blowing
+ * the call stack out of a render (RangeError would escape the StrictJsonError handling).
+ */
+const MAX_DEPTH = 512;
+
 class StrictJsonError extends Error {}
 
 class Parser {
     private pos = 0;
+    private depth = 0;
 
     constructor(private readonly text: string) {}
 
@@ -49,6 +57,18 @@ class Parser {
     }
 
     private parseValue(): unknown {
+        if (this.depth >= MAX_DEPTH) {
+            this.fail('The value is nested too deeply');
+        }
+        this.depth++;
+        try {
+            return this.parseValueInner();
+        } finally {
+            this.depth--;
+        }
+    }
+
+    private parseValueInner(): unknown {
         const c = this.peek();
         switch (c) {
             case undefined:
@@ -228,10 +248,13 @@ export function getExtensionJsonTreeError(text: string): string | undefined {
 }
 
 /** A `$ref` pointing outside the document — Core refuses remote references in an inline schema. */
-function findRemoteRef(value: unknown): string | undefined {
+function findRemoteRef(value: unknown, depth = 0): string | undefined {
+    // The parser already failed anything deeper than MAX_DEPTH, so this is belt-and-braces for
+    // callers handing in a document parsed elsewhere.
+    if (depth >= MAX_DEPTH) return undefined;
     if (Array.isArray(value)) {
         for (const item of value) {
-            const found = findRemoteRef(item);
+            const found = findRemoteRef(item, depth + 1);
             if (found) return found;
         }
         return undefined;
@@ -241,7 +264,7 @@ function findRemoteRef(value: unknown): string | undefined {
             if (key === '$ref' && typeof entry === 'string' && !entry.startsWith('#')) {
                 return entry;
             }
-            const found = findRemoteRef(entry);
+            const found = findRemoteRef(entry, depth + 1);
             if (found) return found;
         }
     }

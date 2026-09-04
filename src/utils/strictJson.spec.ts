@@ -26,6 +26,13 @@ describe('parseStrictJson', () => {
         expect(Object.entries(value as object)).toEqual([['__proto__', { x: 1 }]]);
     });
 
+    it('fails a pathologically deep value with a message instead of blowing the stack', () => {
+        const deepArrays = '['.repeat(20000) + ']'.repeat(20000);
+        expect(parseStrictJson(deepArrays).error).toContain('nested too deeply');
+        const deepObjects = '{"a":'.repeat(20000) + '1' + '}'.repeat(20000);
+        expect(parseStrictJson(deepObjects).error).toContain('nested too deeply');
+    });
+
     it('rejects trailing content after the value', () => {
         expect(parseStrictJson('{"boolean":true} garbage').error).toContain('trailing content');
         expect(parseStrictJson('{} {}').error).toContain('trailing content');

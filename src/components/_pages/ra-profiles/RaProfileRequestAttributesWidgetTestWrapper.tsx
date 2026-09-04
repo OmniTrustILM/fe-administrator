@@ -37,6 +37,18 @@ export function RaProfileRequestAttributesWidgetTestWrapper({ certificateRequest
                     raProfileUuid="ra-1"
                     certificateRequestAttributes={certificateRequestAttributes}
                 />
+                <button
+                    type="button"
+                    data-testid="simulate-rejection"
+                    onClick={() =>
+                        store.dispatch({
+                            type: 'raProfileRequestAttributes/updateRaProfileRequestAttributesFailure',
+                            payload: { error: 'Attribute definition is invalid' },
+                        })
+                    }
+                >
+                    simulate rejection
+                </button>
             </MemoryRouter>
         </Provider>
     );
