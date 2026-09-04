@@ -132,12 +132,8 @@ export type State = {
     isUpdatingTrustedStatus: boolean;
 
     /**
-     * Bumped whenever a mutation of this inventory needs the listing re-read.
-     *
-     * The refetch cannot be dispatched from the epic that knows the mutation succeeded: a request
-     * assembled there names no columns and no ordering, so the reply would carry no projected attribute
-     * values and would arrive in the backend's default order while the table still shows its own. The
-     * page forwards this to `PagedList`, which re-runs the request it built itself.
+     * Bumped whenever a mutation of this inventory needs the listing re-read. The page forwards it to
+     * `PagedList` as `refreshToken`, whose doc says why the epic cannot dispatch the refetch itself.
      */
     listRefreshToken: number;
 

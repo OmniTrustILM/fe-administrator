@@ -58,12 +58,8 @@ export default function CertificateList({
     const navigate = useNavigate();
 
     const certificates = useSelector(selectors.certificates);
-    /*
-     * A mutation of this inventory refetches through the host rather than from the epic that performed
-     * it: a request assembled there names no columns and no ordering, so the reply would blank every
-     * projected attribute column and arrive in the backend's default order under a header still showing
-     * the sort. The duck bumps this on each such success and the host re-runs the request it built.
-     */
+    // Bumped by the duck on each mutation that needs the listing re-read; see `refreshToken`.
+
     const listRefreshToken = useSelector(selectors.listRefreshToken);
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.CERTIFICATE));
     const users = useSelector(userSelectors.users);
