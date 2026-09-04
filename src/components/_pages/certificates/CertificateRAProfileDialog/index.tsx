@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { actions } from 'ducks/certificates';
-import type { SearchRequestModel } from 'types/certificate';
 import { actions as raProfileActions, selectors as raProfileSelectors } from 'ducks/ra-profiles';
 
 import Select from 'components/Select';
@@ -13,17 +12,11 @@ import Container from 'components/Container';
 
 type Props = {
     uuids: string[];
-    /**
-     * The listing request the table is currently showing. Forwarded into the update, whose epic re-reads
-     * the listing to report how many certificates took the profile - a request without the applied
-     * columns and ordering would verify against rows that carry neither.
-     */
-    listRequest?: SearchRequestModel;
     onCancel: () => void;
     onUpdate: () => void;
 };
 
-export default function CertificateGroupDialog({ uuids, listRequest, onCancel, onUpdate }: Readonly<Props>) {
+export default function CertificateGroupDialog({ uuids, onCancel, onUpdate }: Readonly<Props>) {
     const dispatch = useDispatch();
 
     const raProfiles = useSelector(raProfileSelectors.raProfiles);
@@ -47,11 +40,10 @@ export default function CertificateGroupDialog({ uuids, listRequest, onCancel, o
             actions.bulkUpdateRaProfile({
                 raProfileRequest: { certificateUuids: uuids, raProfileUuid: selectedRaProfile.split(':#')[0], filters: [] },
                 authorityUuid: selectedRaProfile.split(':#')[1],
-                listRequest,
             }),
         );
         onUpdate();
-    }, [dispatch, listRequest, onUpdate, selectedRaProfile, uuids]);
+    }, [dispatch, onUpdate, selectedRaProfile, uuids]);
 
     return (
         <>

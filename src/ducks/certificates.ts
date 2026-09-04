@@ -785,12 +785,6 @@ export const slice = createSlice({
             action: PayloadAction<{
                 authorityUuid: string;
                 raProfileRequest: CertificateBulkObjectModel;
-                /**
-                 * The listing request to re-read with. Unlike the other bulk mutations this one cannot leave the
-                 * refetch to the page: its epic subscribes to the reply to report how many certificates actually
-                 * took the profile, so the request has to be dispatched where that subscription is.
-                 */
-                listRequest?: SearchRequestModel;
             }>,
         ) => {
             state.isBulkUpdatingRaProfile = true;
@@ -798,6 +792,7 @@ export const slice = createSlice({
 
         bulkUpdateRaProfileSuccess: (state, action: PayloadAction<{ uuids: string[] }>) => {
             state.isBulkUpdatingRaProfile = false;
+            state.listRefreshToken += 1;
         },
 
         bulkDeleteRaProfile: (state, action: PayloadAction<{ certificateUuids: string[] }>) => {

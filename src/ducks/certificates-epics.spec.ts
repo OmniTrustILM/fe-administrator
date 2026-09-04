@@ -38,7 +38,6 @@ import { actions as certificatesActions } from './certificates';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import certificatesEpics from './certificates-epics';
-import type { SearchRequestModel } from 'types/certificate';
 
 // Resolve epics by function name rather than by position — inserting an epic anywhere in the array
 // would otherwise silently shift every index below it and break unrelated tests.
@@ -664,7 +663,6 @@ describe('certificates epics', () => {
             requestedRaProfileUuid: string;
             refetchedCertificates: Array<{ uuid: string; raProfile?: { uuid: string } }>;
             patchResponse?: () => any;
-            listRequest?: SearchRequestModel;
         };
 
         async function runBulkUpdateRaProfileEpic({
@@ -672,7 +670,6 @@ describe('certificates epics', () => {
             requestedRaProfileUuid,
             refetchedCertificates,
             patchResponse = () => of(undefined),
-            listRequest,
         }: BulkUpdateRunOptions): Promise<UnknownAction[]> {
             const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
             const action$ = new Subject<UnknownAction>();
@@ -682,16 +679,15 @@ describe('certificates epics', () => {
                 },
             };
             const output$ = epics[BULK_UPDATE_RA_PROFILE_EPIC_INDEX](action$, of({}) as any, deps as any);
-            const collected = firstValueFrom(output$.pipe(take(3), toArray()));
+            const collected = firstValueFrom(output$.pipe(take(2), toArray()));
 
             action$.next(
                 certificatesActions.bulkUpdateRaProfile({
                     authorityUuid: 'auth-1',
                     raProfileRequest: { certificateUuids, raProfileUuid: requestedRaProfileUuid, filters: [] } as any,
-                    listRequest,
                 }),
             );
-            // Allow the epic's PATCH to resolve and emit Success + listCertificates before we feed listCertificatesSuccess.
+            // Allow the epic's PATCH to resolve and emit Success before we feed the page's refetch response.
             await new Promise((resolve) => setTimeout(resolve, 0));
             action$.next(certificatesActions.listCertificatesSuccess(refetchedCertificates as any));
             return collected;
@@ -708,23 +704,18 @@ describe('certificates epics', () => {
             });
 
             expect(emitted[0].type).toBe(certificatesActions.bulkUpdateRaProfileSuccess.type);
-            expect(emitted[1].type).toBe(certificatesActions.listCertificates.type);
-            expect(emitted[2].type).toBe(alertActions.success.type);
-            expect((emitted[2] as any).payload).toContain('completed');
+            expect(emitted[1].type).toBe(alertActions.success.type);
+            expect((emitted[1] as any).payload).toContain('completed');
         });
 
-        test('replays the request the page listed, so archived rows survive the refetch', async () => {
-            const listRequest: SearchRequestModel = { filters: [], includeArchived: true, itemsPerPage: 25, pageNumber: 1 };
-
+        test('leaves the refetch to the page rather than replaying a captured request', async () => {
             const emitted = await runBulkUpdateRaProfileEpic({
                 certificateUuids: ['c1'],
                 requestedRaProfileUuid: 'ra-new',
                 refetchedCertificates: [{ uuid: 'c1', raProfile: { uuid: 'ra-new' } }],
-                listRequest,
             });
 
-            expect(emitted[1].type).toBe(certificatesActions.listCertificates.type);
-            expect((emitted[1] as any).payload).toEqual(listRequest);
+            expect(emitted.map((action) => action.type)).not.toContain(certificatesActions.listCertificates.type);
         });
 
         test('emits error alert when none of the certificates received the requested RA profile', async () => {
@@ -737,8 +728,8 @@ describe('certificates epics', () => {
                 ],
             });
 
-            expect(emitted[2].type).toBe(alertActions.error.type);
-            expect((emitted[2] as any).payload).toContain('No certificates were updated');
+            expect(emitted[1].type).toBe(alertActions.error.type);
+            expect((emitted[1] as any).payload).toContain('No certificates were updated');
         });
 
         test('emits info alert when only some certificates received the requested RA profile', async () => {
@@ -752,8 +743,8 @@ describe('certificates epics', () => {
                 ],
             });
 
-            expect(emitted[2].type).toBe(alertActions.info.type);
-            expect((emitted[2] as any).payload).toContain('2 of 3');
+            expect(emitted[1].type).toBe(alertActions.info.type);
+            expect((emitted[1] as any).payload).toContain('2 of 3');
         });
 
         test('emits info alert when some selected certificates are not on the current page', async () => {
@@ -763,9 +754,9 @@ describe('certificates epics', () => {
                 refetchedCertificates: [{ uuid: 'c1', raProfile: { uuid: 'ra-new' } }],
             });
 
-            expect(emitted[2].type).toBe(alertActions.info.type);
-            expect((emitted[2] as any).payload).toContain('1 of 1');
-            expect((emitted[2] as any).payload).toContain('2 not on the current page');
+            expect(emitted[1].type).toBe(alertActions.info.type);
+            expect((emitted[1] as any).payload).toContain('1 of 1');
+            expect((emitted[1] as any).payload).toContain('2 not on the current page');
         });
 
         test('emits info alert when none of the selected certificates are on the current page', async () => {
@@ -775,8 +766,8 @@ describe('certificates epics', () => {
                 refetchedCertificates: [{ uuid: 'c-other', raProfile: { uuid: 'ra-new' } }],
             });
 
-            expect(emitted[2].type).toBe(alertActions.info.type);
-            expect((emitted[2] as any).payload).toContain('could not be verified');
+            expect(emitted[1].type).toBe(alertActions.info.type);
+            expect((emitted[1] as any).payload).toContain('could not be verified');
         });
 
         test('emits failure action when PATCH itself fails', async () => {

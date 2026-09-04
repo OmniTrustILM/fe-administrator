@@ -417,7 +417,6 @@ export default function CertificateList({
                 body={
                     <CertificateRAProfileDialog
                         uuids={checkedRows}
-                        listRequest={appliedFilters}
                         onCancel={() => setUpdateRaProfile(false)}
                         onUpdate={() => setUpdateRaProfile(false)}
                     />
