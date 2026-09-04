@@ -4,6 +4,12 @@ import Toggletip from 'components/Toggletip';
 import { listCellLinkPath, type ListCellValue } from 'utils/attributes/listCellValues';
 import ValueCell from './ValueCell';
 
+const revealed = (value: ListCellValue) => {
+    if (value.link) return <Link to={listCellLinkPath(value.link)}>{value.label}</Link>;
+    if (value.detail) return `${value.label} (${value.detail})`;
+    return value.label;
+};
+
 type Props = Readonly<{
     /** Every value the attribute holds, in `item_order`. */
     values: ListCellValue[];
@@ -39,15 +45,7 @@ export default function MultiValueCell({ values, dataTestId }: Props) {
                         {values.map((value, index) => (
                             // Values are free text and may repeat, so a value's position in
                             // item_order is the only stable identity it has here.
-                            <li key={`${value.label}-${index}`}>
-                                {value.link ? (
-                                    <Link to={listCellLinkPath(value.link)}>{value.label}</Link>
-                                ) : value.detail ? (
-                                    `${value.label} (${value.detail})`
-                                ) : (
-                                    value.label
-                                )}
-                            </li>
+                            <li key={`${value.label}-${index}`}>{revealed(value)}</li>
                         ))}
                     </ul>
                 }

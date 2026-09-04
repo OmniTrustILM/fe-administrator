@@ -37,8 +37,11 @@ export default function NameViewDialog({
     }, [isOpen, initialName]);
 
     const trimmed = name.trim();
-    const isTaken = trimmed !== initialName.trim() && takenNames.some((taken) => taken === trimmed);
-    const error = trimmed === '' ? 'A view needs a name.' : isTaken ? 'A view of this name already exists.' : undefined;
+    const isTaken = trimmed !== initialName.trim() && takenNames.includes(trimmed);
+
+    let error: string | undefined;
+    if (trimmed === '') error = 'A view needs a name.';
+    else if (isTaken) error = 'A view of this name already exists.';
 
     return (
         <Dialog

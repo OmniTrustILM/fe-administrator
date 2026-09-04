@@ -88,15 +88,15 @@ test.describe('ThemeToggle', () => {
         const toggle = page.getByTestId('theme-toggle');
         await toggle.focus();
 
-        await expect
-            .poll(async () =>
-                toggle.evaluate(
-                    (element) =>
-                        globalThis.getComputedStyle(element).outlineStyle !== 'none' ||
-                        globalThis.getComputedStyle(element).boxShadow !== 'none',
-                ),
-            )
-            .toBe(true);
+        const hasFocusIndicator = () =>
+            toggle.evaluate(
+                (element) =>
+                    globalThis.getComputedStyle(element).outlineStyle !== 'none' ||
+                    globalThis.getComputedStyle(element).boxShadow !== 'none',
+            );
+
+        await expect.poll(hasFocusIndicator).toBe(true);
+        expect(await hasFocusIndicator()).toBe(true);
     });
 
     /**

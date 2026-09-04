@@ -103,6 +103,7 @@ test.describe('WidgetLock', () => {
         await component.locator('[data-testid="widget-lock-refresh"]').click();
 
         await expect.poll(() => refreshCount).toBe(1);
+        expect(refreshCount).toBe(1);
     });
 
     test('should render a custom refresh label when refreshLabel is provided', async ({ mount }) => {

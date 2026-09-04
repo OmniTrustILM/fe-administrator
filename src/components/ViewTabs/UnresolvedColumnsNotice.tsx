@@ -17,7 +17,7 @@ type Props = Readonly<{
 const list = (columns: PickerColumn[]): string => {
     const names = columns.map(getColumnHeading);
     if (names.length === 1) return names[0];
-    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+    return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
 };
 
 /**
@@ -36,14 +36,14 @@ export default function UnresolvedColumnsNotice({ unavailable, storedCount, fell
     const named = unavailable.length > 0 ? list(unavailable) : undefined;
     const shown = storedCount - unavailable.length;
 
+    const subject = named ? `${named} cannot be shown` : "None of this view's columns can be shown";
     const message = fellBackToStandard
-        ? `${named ? `${named} cannot be shown` : "None of this view's columns can be shown"}, so it is showing the standard columns.`
-        : `${named} cannot be shown, so this view is showing ${shown} of its ${storedCount} columns.`;
+        ? `${subject}, so it is showing the standard columns.`
+        : `${subject}, so this view is showing ${shown} of its ${storedCount} columns.`;
 
     return (
-        <div
+        <output
             className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-warning-surface px-3 py-2 text-sm text-content"
-            role="status"
             data-testid={dataTestId}
         >
             <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden="true" />
@@ -53,6 +53,6 @@ export default function UnresolvedColumnsNotice({ unavailable, storedCount, fell
                     Review columns
                 </Button>
             )}
-        </div>
+        </output>
     );
 }

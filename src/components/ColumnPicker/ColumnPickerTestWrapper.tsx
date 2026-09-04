@@ -12,8 +12,6 @@ type Props = Readonly<{
     onSave?: (columns: ColumnDefinition[]) => void;
 }>;
 
-const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
 /**
  * Drives {@link ColumnPicker} through prop changes that a component test cannot produce with
  * `component.update()`, because the dialog renders into a portal and updating unmounts it.
@@ -37,9 +35,9 @@ export default function ColumnPickerTestWrapper({ columns, standardColumns = [],
                 isOpen
                 onClose={() => {}}
                 onSave={onSave ?? (() => {})}
-                catalogue={isReleased ? clone(catalogue) : []}
-                columns={clone(columns)}
-                standardColumns={clone(standardColumns)}
+                catalogue={isReleased ? structuredClone(catalogue) : []}
+                columns={structuredClone(columns)}
+                standardColumns={structuredClone(standardColumns)}
                 resourceLabel="Certificates"
             />
         </div>

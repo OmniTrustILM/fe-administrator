@@ -186,6 +186,7 @@ test.describe('ThemeProvider', () => {
         );
 
         await expect.poll(async () => page.evaluate(() => globalThis.localStorage.getItem('theme-operator-default'))).toBe('dark');
+        expect(await page.evaluate(() => globalThis.localStorage.getItem('theme-operator-default'))).toBe('dark');
     });
 
     test('should clear the cached operator default once branding is removed', async ({ mount, page }) => {
@@ -197,6 +198,7 @@ test.describe('ThemeProvider', () => {
         );
 
         await expect.poll(async () => page.evaluate(() => globalThis.localStorage.getItem('theme-operator-default'))).toBeNull();
+        expect(await page.evaluate(() => globalThis.localStorage.getItem('theme-operator-default'))).toBeNull();
     });
 
     test('should keep the cached operator default while no branding has been read', async ({ mount, page }) => {
