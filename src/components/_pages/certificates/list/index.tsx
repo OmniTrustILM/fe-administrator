@@ -1,12 +1,10 @@
-import type { TableDataRow, TableHeader } from 'components/CustomTable';
-
 import Dialog from 'components/Dialog';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 
 import { actions, selectors } from 'ducks/certificates';
 import { EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
 import { selectors as pagingSelectors } from 'ducks/paging';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router';
 
@@ -16,21 +14,24 @@ import Dropdown from 'components/Dropdown';
 import { EnumColumnDescription } from 'components/EnumDescription';
 
 import type { ApiClients } from '../../../../api';
+import { buildTableRows } from 'components/CustomTable/columns';
 import PagedList from 'components/PagedList/PagedList';
 import { actions as userAction, selectors as userSelectors } from 'ducks/users';
-import type { SearchRequestModel } from 'types/certificate';
+import type { CertificateListResponseModel, SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { preservedFilterRestore } from 'utils/preservedFilters';
 import { dateFormatter } from 'utils/dateUtil';
 import type { AttributeRequestModel } from '../../../../types/attributes';
 import { type CertificateState, PlatformEnum, Resource } from '../../../../types/openapi';
 import { getCertificateStatusColor } from 'utils/certificate';
+import { buildColumnHeaders } from 'utils/tableColumns';
 import CertificateGroupDialog from '../CertificateGroupDialog';
 import CertificateOwnerDialog from '../CertificateOwnerDialog';
 import CertificateRAProfileDialog from '../CertificateRAProfileDialog';
 import CertificateUploadDialog from '../CertificateUploadDialog';
 import { ArrowDownToLine } from 'lucide-react';
 import Switch from 'components/Switch';
-import { buildCertificateRowColumns } from '../certificateTableHelpers';
+import { CERTIFICATE_COLUMNS, buildCertificateCellRegistry } from '../certificateTableHelpers';
 import PendingActionDialogs from '../PendingActionButtons/PendingActionDialogs';
 import type { PendingAction } from '../PendingActionButtons/types';
 
@@ -57,6 +58,9 @@ export default function CertificateList({
     const navigate = useNavigate();
 
     const certificates = useSelector(selectors.certificates);
+    // Bumped by the duck on each mutation that needs the listing re-read; see `refreshToken`.
+
+    const listRefreshToken = useSelector(selectors.listRefreshToken);
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.CERTIFICATE));
     const users = useSelector(userSelectors.users);
 
@@ -229,133 +233,103 @@ export default function CertificateList({
         [checkedRows.length, downloadDropDown, selectCertsOnly, getUserList, onArchiveClick, onUnarchiveClick, navigate],
     );
 
-    const certificatesRowHeaders: TableHeader[] = useMemo(
-        () => [
-            {
-                content: (
-                    <span className="inline-flex items-center gap-1">
-                        State
-                        <EnumColumnDescription
-                            platformEnum={PlatformEnum.CertificateState}
-                            title="State"
-                            colorResolver={(code) => getCertificateStatusColor(code as CertificateState)}
-                        />
-                    </span>
-                ),
-                align: 'center',
-                id: 'state',
-                width: '5%',
-            },
-            {
-                content: 'Validation',
-                align: 'center',
-                id: 'validation',
-                width: '5%',
-            },
-            {
-                content: 'Compliance',
-                align: 'center',
-                id: 'compliance',
-                width: '5%',
-            },
-            {
-                content: '',
-                align: 'center',
-                id: 'keyAvailability',
-                width: '1%',
-            },
-            {
-                content: 'Common Name',
-                id: 'commonName',
-                width: '10%',
-            },
-            {
-                content: 'Valid From',
-                id: 'validFrom',
-                width: '15%',
-            },
-            {
-                content: 'Expires At',
-                id: 'expiresAt',
-                width: '15%',
-            },
-            {
-                content: 'Groups',
-                id: 'group',
-                width: '15%',
-            },
-            {
-                content: 'RA Profile',
-                id: 'raProfile',
-                width: '15%',
-            },
-            {
-                content: 'Owner',
-                id: 'owner',
-                width: '15%',
-            },
-            {
-                content: 'Serial number',
-                id: 'serialNumber',
-                width: '15%',
-            },
-            {
-                content: 'Signature Algorithm',
-                id: 'signatureAlgorithm',
-                width: '15%',
-            },
-            {
-                content: 'Public Key Algorithm',
-                id: 'publicKeyAlgorithm',
-                width: '15%',
-            },
-            {
-                content: 'Issuer Common Name',
-                id: 'issuerCommonName',
-                width: '15%',
-            },
-            {
-                content: 'Certificate Type',
-                id: 'certificateType',
-                width: '15%',
-            },
-            {
-                content: 'Archived',
-                id: 'archived',
-                width: '15%',
-            },
-        ],
+    const registry = useMemo(
+        () =>
+            buildCertificateCellRegistry({
+                isLinkDisabled,
+                selectCertsOnly,
+                currentFilters,
+                dispatch,
+                dateFormatter,
+                certificateTypeEnum,
+                getEnumLabel,
+                onPendingAction: setPendingAction,
+            }),
+        [isLinkDisabled, selectCertsOnly, currentFilters, dispatch, certificateTypeEnum],
+    );
+
+    // The State legend rides beside the heading rather than inside it: a sortable heading is itself a
+    // button, and a toggletip nested in one would be a control inside a control.
+    const headerInfo = useMemo(
+        () => ({
+            'property:CERTIFICATE_STATE': (
+                <EnumColumnDescription
+                    platformEnum={PlatformEnum.CertificateState}
+                    title="State"
+                    colorResolver={(code) => getCertificateStatusColor(code as CertificateState)}
+                />
+            ),
+        }),
         [],
     );
 
-    const certificateList: TableDataRow[] = useMemo(
+    /*
+     * Off in the certificate-picker mode the locations page mounts: a dialog that selects certificates
+     * is not the inventory, and the user's own saved inventory views have no business shaping a picker.
+     * Memoised because the host takes the config apart and refetches when its parts change.
+     */
+    const configurableColumns = useMemo(
         () =>
-            certificates.map((certificate) => ({
-                id: certificate.uuid,
-                columns: buildCertificateRowColumns(certificate, {
-                    isLinkDisabled,
-                    selectCertsOnly,
-                    currentFilters,
-                    dispatch,
-                    dateFormatter,
-                    certificateTypeEnum,
-                    getEnumLabel,
-                    onPendingAction: setPendingAction,
-                }),
-            })),
-        [certificates, selectCertsOnly, isLinkDisabled, certificateTypeEnum, dispatch, currentFilters],
+            selectCertsOnly
+                ? undefined
+                : {
+                      resource: Resource.Certificates,
+                      standardColumns: CERTIFICATE_COLUMNS,
+                      rows: certificates,
+                      getRowId: (certificate: CertificateListResponseModel) => certificate.uuid,
+                      registry,
+                      headerInfo,
+                      resourceLabel: 'Certificates',
+                  },
+        [selectCertsOnly, certificates, registry, headerInfo],
+    );
+
+    // The picker mode renders the same platform column set, fixed: one source of truth for both paths,
+    // so the dialog cannot drift from the inventory it is picking out of.
+    const pickerHeaders = useMemo(
+        () => (selectCertsOnly ? buildColumnHeaders(CERTIFICATE_COLUMNS, { info: headerInfo }) : undefined),
+        [selectCertsOnly, headerInfo],
+    );
+
+    const pickerRows = useMemo(
+        () =>
+            selectCertsOnly
+                ? buildTableRows(certificates, CERTIFICATE_COLUMNS, { getRowId: (certificate) => certificate.uuid, registry })
+                : undefined,
+        [selectCertsOnly, certificates, registry],
     );
 
     const onListCallback = useCallback(
         (filters: SearchRequestModel) => {
-            setAppliedFilters(filters);
-            return dispatch(actions.listCertificates({ ...filters, includeArchived: isIncludeArchived }));
+            // The stored request is what a mutation replays to refresh the page, so it has to be the request that
+            // was listed - archived rows included - and not the filters before the flag was added.
+            const request = { ...filters, includeArchived: isIncludeArchived };
+            setAppliedFilters(request);
+            return dispatch(actions.listCertificates(request));
         },
         [dispatch, isIncludeArchived],
     );
 
+    /*
+     * Preserved filters are a deep-link restore, so they apply on arrival and never again. The rule for
+     * "never again" is `preservedFilterRestore`: a restore that finds the filters already in place is
+     * finished rather than pending, or it fires later against a tab switch that deliberately cleared them.
+     */
+    const hasRestoredPreservedFilters = useRef(false);
     useEffect(() => {
-        if (withPreservedFilters && preservedFilters.length > 0 && currentFilters.length === 0) {
+        if (hasRestoredPreservedFilters.current) return;
+
+        const decision = preservedFilterRestore({
+            withPreservedFilters,
+            preservedCount: preservedFilters.length,
+            currentCount: currentFilters.length,
+        });
+
+        if (decision === 'inapplicable') return;
+
+        hasRestoredPreservedFilters.current = true;
+
+        if (decision === 'restore') {
             dispatch(filterActions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: preservedFilters }));
         }
     }, [preservedFilters, currentFilters.length, dispatch, withPreservedFilters]);
@@ -366,14 +340,16 @@ export default function CertificateList({
                 hideWidgetButtons={hideWidgetButtons}
                 entity={EntityType.CERTIFICATE}
                 onListCallback={onListCallback}
+                refreshToken={listRefreshToken}
                 onDeleteCallback={(uuids, filters) => dispatch(actions.bulkDelete({ uuids, filters }))}
                 getAvailableFiltersApi={useCallback(
                     (apiClients: ApiClients) => apiClients.certificates.getCertificateSearchableFields(),
                     [],
                 )}
                 additionalButtons={hideAdditionalButtons ? [] : buttons}
-                headers={certificatesRowHeaders}
-                data={certificateList}
+                configurableColumns={configurableColumns}
+                headers={pickerHeaders}
+                data={pickerRows}
                 isBusy={isBusy}
                 title="List of Certificates"
                 entityNameSingular="Certificate"

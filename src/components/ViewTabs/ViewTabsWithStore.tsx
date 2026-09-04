@@ -1,5 +1,5 @@
 import type { ListViewsTestState } from 'ducks/test-reducers';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Provider, useSelector } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import type { SearchFilterModel } from 'types/certificate';
@@ -24,6 +24,8 @@ type Props = Readonly<{
     withheldCatalogue?: boolean;
     /** Passed straight through, so a test can say the catalogue read has settled on nothing. */
     isCatalogueLoaded?: boolean;
+    /** The renderable-property gate, as an array: a `Set` does not survive the props boundary. */
+    renderableProperties?: string[];
     /** What the drift buttons below change, i.e. an edit the page made outside the view. */
     driftColumn?: ColumnDefinition;
     driftSort?: ColumnSort;
@@ -54,6 +56,7 @@ export default function ViewTabsWithStore({
     hasLoaded = true,
     withheldCatalogue = false,
     isCatalogueLoaded,
+    renderableProperties,
     driftColumn,
     driftSort,
     driftFilter,
@@ -69,6 +72,7 @@ export default function ViewTabsWithStore({
 
     const [slice, setSlice] = useState<ViewSlice>({ columns: standardColumns, filters: [], sort: undefined });
     const [isCatalogueReleased, setIsCatalogueReleased] = useState(!withheldCatalogue);
+    const gate = useMemo(() => (renderableProperties ? new Set(renderableProperties) : undefined), [renderableProperties]);
 
     return (
         <Provider store={store}>
@@ -78,6 +82,7 @@ export default function ViewTabsWithStore({
                     catalogue={isCatalogueReleased ? catalogue : []}
                     isCatalogueLoaded={isCatalogueReleased ? isCatalogueLoaded : false}
                     standardColumns={standardColumns}
+                    renderableProperties={gate}
                     columns={slice.columns}
                     filters={slice.filters}
                     sort={slice.sort}

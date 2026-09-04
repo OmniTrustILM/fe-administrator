@@ -46,6 +46,15 @@ type Props = {
      * absent the table keeps sorting the loaded page locally, so every existing caller is unaffected.
      */
     onSortChanged?: (fieldIdentifier: string, direction: SortDirection) => void;
+    /**
+     * Whether the active sort is remembered across mounts. Default `true`, for a table whose ordering is
+     * its own state.
+     *
+     * Pass `false` when the sort belongs to something durable of its own — a stored copy is consulted
+     * ahead of the headers, so it would outrank the ordering that thing just applied. With `false`
+     * nothing is read from or written to persistence.
+     */
+    persistSort?: boolean;
     onPageSizeChanged?: (pageSize: number) => void;
     onPageChanged?: (page: number) => void;
     itemsPerPageOptions?: number[];
@@ -97,6 +106,7 @@ function CustomTable({
     checkedRows,
     onCheckedRowsChanged,
     onSortChanged,
+    persistSort = true,
     onPageSizeChanged,
     onPageChanged,
     itemsPerPageOptions,
@@ -152,13 +162,14 @@ function CustomTable({
     const dispatch = useDispatch();
 
     // A sort restored from persistence outranks the one the headers declare: it is what the user last
-    // chose, and only a header that is actually there and sortable can carry it.
+    // chose, and only a header that is actually there and sortable can carry it. A caller that owns
+    // the sort itself is handed nothing here — see `persistSort`.
     const persistedSort = useMemo<ActiveSort | undefined>(() => {
         const column = persistedInternalPagination.sortColumn;
-        if (!hasPagination || !column) return undefined;
+        if (!persistSort || !hasPagination || !column) return undefined;
         if (!headers.some((header) => header.id === column && header.sortable)) return undefined;
         return { column, direction: persistedInternalPagination.sortDirection ?? 'asc' };
-    }, [hasPagination, headers, persistedInternalPagination.sortColumn, persistedInternalPagination.sortDirection]);
+    }, [persistSort, hasPagination, headers, persistedInternalPagination.sortColumn, persistedInternalPagination.sortDirection]);
 
     const incomingSort = useMemo(() => persistedSort ?? declaredSort(headers), [persistedSort, headers]);
     const incomingSortSignature = sortSignature(incomingSort);
@@ -528,14 +539,14 @@ function CustomTable({
             // another column moves the sort rather than adding to it.
             setActiveSort({ column: sortColumn, direction: sort });
 
-            if (hasPagination) {
+            if (hasPagination && persistSort) {
                 dispatch(tablePaginationActions.setSort({ key: internalPaginationStorageKey, sortColumn, sortDirection: sort }));
             }
 
             announcedServerSort.current = `${sortColumn}:${sort}`;
             onSortChanged?.(sortColumn, sort);
         },
-        [tblHeaders, hasPagination, internalPaginationStorageKey, dispatch, onSortChanged],
+        [tblHeaders, hasPagination, persistSort, internalPaginationStorageKey, dispatch, onSortChanged],
     );
 
     const onPageSizeChange = useCallback(
@@ -636,6 +647,10 @@ function CustomTable({
                             'justify-center': header.align === 'center',
                             'justify-end': header.align === 'right',
                         };
+                        // A hidden heading still has to be in the accessibility tree — the cell is only
+                        // visually blank. Wrapped rather than omitted, so a sortable icon column keeps an
+                        // accessible name on its button.
+                        const headingContent = header.headingHidden ? <span className="sr-only">{header.content}</span> : header.content;
                         // `info` sits outside the button: a sortable heading is itself a control, and a
                         // toggletip trigger inside it would nest one interactive element in another, which
                         // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
@@ -651,7 +666,7 @@ function CustomTable({
                                         alignment,
                                     )}
                                 >
-                                    {header.content}
+                                    {headingContent}
                                     {/* An explicit space keeps the cell's text content separated from the next header's,
                                     so text-based selectors over the header row keep matching as they did. */}{' '}
                                     {getSortIcon(header.sort)}
@@ -664,11 +679,11 @@ function CustomTable({
                         if (header.info) {
                             return (
                                 <span className={cn('flex w-full items-center gap-1', alignment)}>
-                                    {header.content} {header.info}
+                                    {headingContent} {header.info}
                                 </span>
                             );
                         }
-                        return header.content;
+                        return headingContent;
                     })()}
                 </th>
             </Fragment>

@@ -42,6 +42,15 @@ type FilterObject = {
     currentFilters: SearchFilterModel[];
     preservedFilters: SearchFilterModel[];
     isFetchingFilters: boolean;
+    /**
+     * Whether a catalogue read has settled at least once, success or failure.
+     *
+     * `isFetchingFilters` cannot answer this: it is `false` both before the first read and after it,
+     * so a consumer that waits for the catalogue cannot tell a read still to come from a resource
+     * that publishes no filter fields at all. Failure sets it too, because a failed read settles on
+     * an empty catalogue and would otherwise leave such a consumer waiting for good.
+     */
+    hasLoadedFilters: boolean;
 };
 
 export type State = {
@@ -53,6 +62,7 @@ const EMPTY_FILTER: FilterObject = {
     currentFilters: [],
     preservedFilters: [],
     isFetchingFilters: false,
+    hasLoadedFilters: false,
 };
 
 export const initialState: State = {
@@ -95,7 +105,11 @@ export const slice = createSlice({
             }>,
         ) => {
             updateFilterState(state, action.payload.entity, (filter) => {
-                filter.availableFilters = [];
+                // The catalogue it already holds is kept: emptying it would leave a settled
+                // `hasLoadedFilters` beside no fields, which is what that flag exists to rule out.
+                // `FilterWidget` reads its own loading state as
+                // `isFetchingFilters && availableFilters.length === 0`, so it shows the fields it has
+                // rather than blanking while a refetch is in flight.
                 filter.isFetchingFilters = true;
             });
         },
@@ -104,12 +118,14 @@ export const slice = createSlice({
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.availableFilters = action.payload.availableFilters;
                 filter.isFetchingFilters = false;
+                filter.hasLoadedFilters = true;
             });
         },
 
         getAvailableFiltersFailure: (state, action: PayloadAction<{ entity: EntityType; error: string | undefined }>) => {
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.isFetchingFilters = false;
+                filter.hasLoadedFilters = true;
             });
         },
     },
@@ -125,6 +141,8 @@ const preservedFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).preservedFilters);
 const isFetchingFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).isFetchingFilters);
+const hasLoadedFilters = (entity: EntityType) =>
+    createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).hasLoadedFilters);
 
 export const selectors = {
     state,
@@ -133,6 +151,7 @@ export const selectors = {
     currentFilters,
     preservedFilters,
     isFetchingFilters,
+    hasLoadedFilters,
 };
 
 export const actions = slice.actions;

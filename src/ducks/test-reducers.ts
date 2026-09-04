@@ -125,6 +125,8 @@ export type FiltersTestState = {
             currentFilters: unknown[];
             preservedFilters: unknown[];
             isFetchingFilters: boolean;
+            /** Mirrors the real slice: set by a settled read, success or failure alike. */
+            hasLoadedFilters: boolean;
         };
     }>;
 };
@@ -147,10 +149,16 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         const filter =
             idx >= 0
                 ? state.filters[idx].filter
-                : { availableFilters: [], currentFilters: [], preservedFilters: [], isFetchingFilters: false };
+                : {
+                      availableFilters: [],
+                      currentFilters: [],
+                      preservedFilters: [],
+                      isFetchingFilters: false,
+                      hasLoadedFilters: false,
+                  };
         const next = {
             entity: payload.entity,
-            filter: { ...filter, availableFilters: payload.availableFilters ?? [], isFetchingFilters: false },
+            filter: { ...filter, availableFilters: payload.availableFilters ?? [], isFetchingFilters: false, hasLoadedFilters: true },
         };
         if (idx >= 0) {
             return {
@@ -167,7 +175,10 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         return {
             filters: state.filters
                 .slice(0, idx)
-                .concat([{ ...f, filter: { ...f.filter, isFetchingFilters: false } }], state.filters.slice(idx + 1)),
+                .concat(
+                    [{ ...f, filter: { ...f.filter, isFetchingFilters: false, hasLoadedFilters: true } }],
+                    state.filters.slice(idx + 1),
+                ),
         };
     }
     if (a.type === 'filters/setCurrentFilters' && a.payload) {
@@ -176,7 +187,13 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         const filter =
             idx >= 0
                 ? state.filters[idx].filter
-                : { availableFilters: [], currentFilters: [], preservedFilters: [], isFetchingFilters: false };
+                : {
+                      availableFilters: [],
+                      currentFilters: [],
+                      preservedFilters: [],
+                      isFetchingFilters: false,
+                      hasLoadedFilters: false,
+                  };
         const next = { entity: payload.entity, filter: { ...filter, currentFilters: payload.currentFilters ?? [] } };
         if (idx >= 0) {
             return {
@@ -191,7 +208,13 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         const filter =
             idx >= 0
                 ? state.filters[idx].filter
-                : { availableFilters: [], currentFilters: [], preservedFilters: [], isFetchingFilters: false };
+                : {
+                      availableFilters: [],
+                      currentFilters: [],
+                      preservedFilters: [],
+                      isFetchingFilters: false,
+                      hasLoadedFilters: false,
+                  };
         const next = { entity: payload.entity, filter: { ...filter, preservedFilters: payload.preservedFilters ?? [] } };
         if (idx >= 0) {
             return {

@@ -22,6 +22,7 @@ import {
     toColumnSort,
     toCreateRequest,
     toStandardSlice,
+    toStorableColumns,
     toStorableFilters,
     toStoredColumns,
     toStoredColumnsKeepingUnavailable,
@@ -58,6 +59,17 @@ const costCentre = field(FilterFieldSource.Custom, 'cost_centre', 'Cost centre',
 const standardColumns: ColumnDefinition[] = [
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name' },
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'STATUS', catalogueLabel: 'Status' },
+];
+
+/** A catalogue publishing exactly the fields the standard column set above names. */
+const standardCatalogue: SearchFieldDataByGroupDto[] = [
+    {
+        filterFieldSource: FilterFieldSource.Property,
+        searchFieldData: [
+            { fieldIdentifier: 'COMMON_NAME', fieldLabel: 'Common Name', type: FilterFieldType.String, conditions: [] },
+            { fieldIdentifier: 'STATUS', fieldLabel: 'Status', type: FilterFieldType.List, conditions: [] },
+        ],
+    },
 ];
 
 /** A filter-field catalogue in which one custom attribute holds secret content. */
@@ -361,7 +373,7 @@ describe('isSliceDirty', () => {
 
 describe('toCreateRequest', () => {
     it('creates an unpinned view holding the slice', () => {
-        const request = toCreateRequest('Expiry watch', Resource.Certificates, toStandardSlice(standardColumns));
+        const request = toCreateRequest('Expiry watch', Resource.Certificates, toStandardSlice(standardColumns), standardCatalogue);
 
         expect(request).toEqual({
             name: 'Expiry watch',
@@ -374,7 +386,24 @@ describe('toCreateRequest', () => {
     });
 
     it('can pin the view it creates', () => {
-        expect(toCreateRequest('Expiry watch', Resource.Certificates, toStandardSlice(standardColumns), true).defaultView).toBe(true);
+        expect(
+            toCreateRequest('Expiry watch', Resource.Certificates, toStandardSlice(standardColumns), standardCatalogue, true).defaultView,
+        ).toBe(true);
+    });
+
+    it('drops a display-only column the catalogue cannot validate, so duplicating Standard succeeds', () => {
+        const request = toCreateRequest('Standard (copy)', Resource.Certificates, toStandardSlice(standardColumns), secretCatalogue);
+
+        expect(request.columns).toEqual([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }]);
+    });
+
+    it('drops a secret-valued filter, which storage would not protect', () => {
+        const slice = {
+            columns: standardColumns,
+            filters: [filter(FilterFieldSource.Custom, 'vaultToken', 'hunter2')],
+        };
+
+        expect(toCreateRequest('Expiry watch', Resource.Certificates, slice, secretCatalogue).filters).toEqual([]);
     });
 });
 
@@ -427,6 +456,57 @@ describe('toUpdateRequest', () => {
         const stored = view('a', 'Expiry watch', { filters: [filter(FilterFieldSource.Custom, 'vaultToken')] });
 
         expect(toUpdateRequest(stored, secretCatalogue).filters).toEqual([filter(FilterFieldSource.Custom, 'vaultToken')]);
+    });
+
+    it('drops a column the catalogue cannot validate from a patch', () => {
+        const stored = view('a', 'Expiry watch');
+        const patched = toUpdateRequest(stored, secretCatalogue, { columns: toStoredColumns(standardColumns) });
+
+        expect(patched.columns).toEqual([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }]);
+    });
+});
+
+describe('toStorableColumns', () => {
+    it('keeps a column the catalogue carries', () => {
+        expect(toStorableColumns([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }], secretCatalogue)).toEqual([
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+        ]);
+    });
+
+    it('keeps a column the catalogue carries but the listing cannot display', () => {
+        expect(toStorableColumns([{ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'vaultToken' }], secretCatalogue)).toEqual([
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'vaultToken' },
+        ]);
+    });
+
+    it('drops a display-only column the catalogue does not carry, which the API would reject', () => {
+        expect(
+            toStorableColumns(
+                [
+                    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+                    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS' },
+                ],
+                secretCatalogue,
+            ),
+        ).toEqual([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }]);
+    });
+
+    it('separates two sources publishing one identifier', () => {
+        expect(toStorableColumns([{ fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'COMMON_NAME' }], secretCatalogue)).toEqual([]);
+    });
+
+    it('keeps the heading override on a column it keeps', () => {
+        expect(
+            toStorableColumns(
+                [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', label: 'Name' }],
+                secretCatalogue,
+            ),
+        ).toEqual([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', label: 'Name' }]);
+    });
+
+    it('leaves everything alone when the catalogue has not arrived, rather than emptying the view', () => {
+        const columns = [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }];
+        expect(toStorableColumns(columns, [])).toEqual(columns);
     });
 });
 

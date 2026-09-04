@@ -83,3 +83,87 @@ describe('buildCertificateDetailBaseRows - validation status', () => {
         expect(container.querySelector('[data-testid="certificate-status"]')?.textContent).toBe(CertificateValidationStatus.Valid);
     });
 });
+
+describe('buildCertificateCellRegistry', () => {
+    const opts = {
+        isLinkDisabled: true,
+        selectCertsOnly: false,
+        currentFilters: [],
+        dispatch: (() => undefined) as never,
+        dateFormatter: (d: Date) => d.toISOString(),
+        certificateTypeEnum: {},
+        getEnumLabel: (_enumMap: unknown, key: string) => key,
+        onPendingAction: () => undefined,
+    };
+
+    /**
+     * The registry decides whether the picker offers a property column: a field whose value the list
+     * DTO does not carry could only ever render the empty state, so it is registered nowhere. This
+     * pins both halves — a field that gains a renderer becomes pickable, and one that loses its value
+     * on the DTO must lose its renderer with it.
+     */
+    it('registers every catalogued certificate property field whose value the list DTO carries', async () => {
+        const { buildCertificateCellRegistry } = await import('./certificateTableHelpers');
+
+        expect(Object.keys(buildCertificateCellRegistry(opts)).sort()).toEqual(
+            [
+                'property:ALT_KEY_SIZE',
+                'property:ALT_PUBLIC_KEY_ALGORITHM',
+                'property:ALT_SIGNATURE_ALGORITHM',
+                'property:ARCHIVED',
+                'property:CERTIFICATE_STATE',
+                'property:CERTIFICATE_TYPE',
+                'property:CERTIFICATE_VALIDATION_STATUS',
+                'property:COMMON_NAME',
+                'property:COMPLIANCE_STATUS',
+                'property:FINGERPRINT',
+                'property:GROUP_NAME',
+                'property:HYBRID_CERTIFICATE',
+                'property:ISSUERDN',
+                'property:ISSUER_COMMON_NAME',
+                'property:ISSUER_SERIAL_NUMBER',
+                'property:KEY_SIZE',
+                'property:NOT_AFTER',
+                'property:NOT_BEFORE',
+                'property:OWNER',
+                'property:PRIVATE_KEY',
+                'property:PUBLIC_KEY_ALGORITHM',
+                'property:RA_PROFILE_NAME',
+                'property:SERIAL_NUMBER',
+                'property:SIGNATURE_ALGORITHM',
+                'property:SUBJECTDN',
+                'property:TRUSTED_CA',
+            ].sort(),
+        );
+    });
+
+    it.each([
+        'CERT_LOCATION_NAME',
+        'KEY_USAGE',
+        'SUBJECT_TYPE',
+        'SUBJECT_ALTERNATIVE_NAMES',
+        'OCSP_VALIDATION',
+        'CRL_VALIDATION',
+        'SIGNATURE_VALIDATION',
+        'CERTIFICATE_PROTOCOL',
+        'SUCCEEDING_CERTIFICATES',
+        'PRECEDING_CERTIFICATES',
+        'ACME_PROFILE',
+        'SCEP_PROFILE',
+        'CMP_PROFILE',
+        'ACME_ACCOUNT',
+    ])('registers no renderer for %s, whose value the list DTO does not carry', async (identifier) => {
+        const { buildCertificateCellRegistry } = await import('./certificateTableHelpers');
+
+        expect(buildCertificateCellRegistry(opts)[`property:${identifier}`]).toBeUndefined();
+    });
+
+    it('covers every column of the platform default set', async () => {
+        const { buildCertificateCellRegistry, CERTIFICATE_COLUMNS } = await import('./certificateTableHelpers');
+        const registry = buildCertificateCellRegistry(opts);
+
+        for (const column of CERTIFICATE_COLUMNS) {
+            expect(registry[`${column.fieldSource}:${column.fieldIdentifier}`], column.fieldIdentifier).toBeDefined();
+        }
+    });
+});

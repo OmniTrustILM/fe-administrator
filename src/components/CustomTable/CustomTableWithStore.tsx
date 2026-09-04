@@ -1,5 +1,7 @@
-import { Provider } from 'react-redux';
+import { useState } from 'react';
+import { Provider, useSelector } from 'react-redux';
 import { MemoryRouter } from 'react-router';
+import { selectors as tablePaginationSelectors } from 'ducks/table-pagination';
 import { createMockStore } from 'utils/test-helpers';
 import CustomTable from './index';
 import type { SortDirection, TableDataRow, TableHeader } from './types';
@@ -16,7 +18,15 @@ export type CustomTableWithStoreProps = {
     persistedSortColumn?: string;
     persistedSortDirection?: SortDirection;
     onSortChanged?: (fieldIdentifier: string, direction: SortDirection) => void;
+    /** Passed straight through, so a test can exercise the caller-owned-sort path. */
+    persistSort?: boolean;
 };
+
+/** Renders what persistence currently holds, which is how a test asserts a write it cannot see. */
+function PersistedSortProbe({ storageKey }: Readonly<{ storageKey: string }>) {
+    const persisted = useSelector(tablePaginationSelectors.pagination(storageKey));
+    return <div data-testid="persisted-sort">{persisted.sortColumn ? `${persisted.sortColumn}:${persisted.sortDirection}` : 'none'}</div>;
+}
 
 function CustomTableWithStore({
     headers,
@@ -26,21 +36,24 @@ function CustomTableWithStore({
     persistedSortColumn,
     persistedSortDirection,
     onSortChanged,
+    persistSort,
 }: Readonly<CustomTableWithStoreProps>) {
     const storageKey = `custom-table-persistent:${paginationPersistKey}`;
-    const store = createMockStore({
-        tablePagination: {
-            byKey: {
-                [storageKey]: {
-                    page: 1,
-                    pageSize: 10,
-                    ...(persistedSortColumn ? { sortColumn: persistedSortColumn } : {}),
-                    ...(persistedSortDirection ? { sortDirection: persistedSortDirection } : {}),
+    const [store] = useState(() =>
+        createMockStore({
+            tablePagination: {
+                byKey: {
+                    [storageKey]: {
+                        page: 1,
+                        pageSize: 10,
+                        ...(persistedSortColumn ? { sortColumn: persistedSortColumn } : {}),
+                        ...(persistedSortDirection ? { sortDirection: persistedSortDirection } : {}),
+                    },
                 },
+                activeRootRoute: initialRoute.split('/')[1],
             },
-            activeRootRoute: initialRoute.split('/')[1],
-        },
-    });
+        }),
+    );
 
     return (
         <Provider store={store}>
@@ -51,7 +64,9 @@ function CustomTableWithStore({
                     hasPagination={true}
                     paginationPersistKey={paginationPersistKey}
                     onSortChanged={onSortChanged}
+                    persistSort={persistSort}
                 />
+                <PersistedSortProbe storageKey={storageKey} />
             </MemoryRouter>
         </Provider>
     );

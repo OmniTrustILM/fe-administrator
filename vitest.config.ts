@@ -26,6 +26,10 @@ export default defineConfig({
                 'src/utils/**/*.{ts,tsx}',
                 'src/ducks/**/*.{ts,tsx}',
                 'src/components/PagedList/PagedList.tsx',
+                // The host's applied-slice helpers. Kept out of the component so they carry unit
+                // tests: anything the component test reaches only through the browser is instrumented
+                // by that run, but these are pure and are covered here instead.
+                'src/components/PagedList/columnState.ts',
                 // Row building runs in the test body rather than in the browser, so the component
                 // test run never instruments it; its unit tests are what report its coverage.
                 'src/components/CustomTable/columns/buildTableRows.tsx',

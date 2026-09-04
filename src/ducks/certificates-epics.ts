@@ -878,7 +878,6 @@ const bulkUpdateGroup: AppEpic = (action$, state, deps) => {
                                 uuids: action.payload.certificateUuids!,
                             }),
                             alertActions.success('Update operation for selected certificates groups completed.'),
-                            slice.actions.listCertificates({}),
                         ),
                     ),
 
@@ -911,7 +910,6 @@ const bulkDeleteGroup: AppEpic = (action$, state, deps) => {
                                 uuids: action.payload.certificateUuids,
                             }),
                             alertActions.success('Delete operation for selected certificates groups completed.'),
-                            slice.actions.listCertificates({}),
                         ),
                     ),
 
@@ -983,7 +981,11 @@ const bulkUpdateRaProfile: AppEpic = (action$, state, deps) => {
                 .pipe(
                     mergeMap(() =>
                         merge(
-                            of(slice.actions.bulkUpdateRaProfileSuccess({ uuids: requestedUuids }), slice.actions.listCertificates({})),
+                            // The success bumps the page's refresh token, so `PagedList` rebuilds the request from
+                            // the filters, columns and ordering in force when the reply lands. Verification then
+                            // reads that response - the epic dispatching a captured request would replay a stale
+                            // one and, under `switchMap`, cancel a newer listing the user had started meanwhile.
+                            of(slice.actions.bulkUpdateRaProfileSuccess({ uuids: requestedUuids })),
                             verifyAfterRefetch$,
                         ),
                     ),
@@ -1129,9 +1131,6 @@ const uploadCertificate: AppEpic = (action$, state$, deps) => {
                         of(
                             slice.actions.uploadCertificateSuccess(),
                             alertActions.success('Certificate upload triggered. It will appear in the list shortly.'),
-                            slice.actions.listCertificates({
-                                includeArchived: state$.value.certificates.isIncludeArchived,
-                            }),
                         ),
                     ),
                     catchError((err) =>
@@ -1442,8 +1441,8 @@ const bulkArchiveCertificates: AppEpic = (action$, state$, deps) => {
                         slice.actions.bulkArchiveCertificateSuccess(action.payload),
                         alertActions.success('Archive operation for selected certificates completed.'),
                         slice.actions.listCertificates({
-                            includeArchived: currentState.certificates.isIncludeArchived,
                             ...action.payload.filters,
+                            includeArchived: currentState.certificates.isIncludeArchived,
                         }),
                     );
                 }),
@@ -1469,8 +1468,8 @@ const bulkUnarchiveCertificates: AppEpic = (action$, state$, deps) => {
                         slice.actions.bulkUnarchiveCertificateSuccess(action.payload),
                         alertActions.success('Unarchive operation for selected certificates completed.'),
                         slice.actions.listCertificates({
-                            includeArchived: currentState.certificates.isIncludeArchived,
                             ...action.payload.filters,
+                            includeArchived: currentState.certificates.isIncludeArchived,
                         }),
                     );
                 }),

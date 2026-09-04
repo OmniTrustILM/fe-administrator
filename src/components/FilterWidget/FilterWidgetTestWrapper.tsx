@@ -141,6 +141,7 @@ export default function FilterWidgetTestWrapper({
                             currentFilters: initialCurrentFilters,
                             preservedFilters: [],
                             isFetchingFilters: false,
+                            hasLoadedFilters: true,
                         },
                     },
                 ],

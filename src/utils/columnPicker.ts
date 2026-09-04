@@ -34,12 +34,29 @@ export type ColumnCounterState = 'ok' | 'warning' | 'full';
  * Only fields the catalogue marks `displayable` are offered. An absent flag is not treated as a
  * yes: secret and encrypted content, and code blocks, are excluded server-side by that flag alone,
  * so guessing in its absence is what would put them in front of a user.
+ *
+ * @param renderableProperties the column keys the page has a cell renderer for. A property field
+ * outside that set is dropped, because its value lives on the listing entry rather than in the
+ * projected attribute map — with no renderer the column can only ever show the empty state, and a
+ * column a user can pick must never be permanently blank. The registry is the gate rather than a
+ * second hand-kept list precisely so that registering a renderer is the one act that makes a column
+ * pickable. Attribute sources are never gated: they render from the projected values, which is
+ * source-agnostic. Omitted means no gate at all, which is what a page not yet on the pipeline wants.
  */
-export function toCatalogueFields(catalogue: SearchFieldDataByGroupDto[]): SourcedCatalogueField[] {
+export function toCatalogueFields(
+    catalogue: SearchFieldDataByGroupDto[],
+    renderableProperties?: ReadonlySet<string>,
+): SourcedCatalogueField[] {
+    const isOffered = (field: SourcedCatalogueField) =>
+        renderableProperties === undefined ||
+        field.fieldSource !== FilterFieldSource.Property ||
+        renderableProperties.has(getColumnKey(field));
+
     return catalogue.flatMap((group) =>
         (group.searchFieldData ?? [])
-            .filter((field) => (field as SourcedCatalogueField).displayable === true)
-            .map((field) => ({ ...field, fieldSource: group.filterFieldSource }) as SourcedCatalogueField),
+            .filter((field) => field.displayable === true)
+            .map((field) => ({ ...field, fieldSource: group.filterFieldSource }) as SourcedCatalogueField)
+            .filter(isOffered),
     );
 }
 

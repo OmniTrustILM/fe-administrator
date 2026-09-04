@@ -21,6 +21,23 @@ describe('certificates slice', () => {
         expect(next).toEqual(initialState);
     });
 
+    test.each([
+        ['bulkUpdateGroupSuccess', () => actions.bulkUpdateGroupSuccess({ uuids: ['c1'] })],
+        ['bulkDeleteGroupSuccess', () => actions.bulkDeleteGroupSuccess({ uuids: ['c1'] })],
+        ['uploadCertificateSuccess', () => actions.uploadCertificateSuccess()],
+        ['bulkUpdateRaProfileSuccess', () => actions.bulkUpdateRaProfileSuccess({ uuids: ['c1'] })],
+    ])('%s bumps listRefreshToken so the page refetches through the host', (_name, action) => {
+        const next = reducer(initialState, action());
+
+        expect(next.listRefreshToken).toBe(initialState.listRefreshToken + 1);
+    });
+
+    test('a mutation that reports no success leaves listRefreshToken alone', () => {
+        const next = reducer(initialState, actions.bulkUpdateGroupFailure({ error: 'nope' }));
+
+        expect(next.listRefreshToken).toBe(initialState.listRefreshToken);
+    });
+
     test('clearDeleteErrorMessages clears deleteErrorMessage', () => {
         const state = { ...initialState, deleteErrorMessage: 'some error' };
         const next = reducer(state, actions.clearDeleteErrorMessages());

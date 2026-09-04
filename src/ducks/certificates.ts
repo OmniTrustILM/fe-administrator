@@ -131,6 +131,12 @@ export type State = {
     isUpdatingOwner: boolean;
     isUpdatingTrustedStatus: boolean;
 
+    /**
+     * Bumped whenever a mutation of this inventory needs the listing re-read. The page forwards it to
+     * `PagedList` as `refreshToken`, whose doc says why the epic cannot dispatch the refetch itself.
+     */
+    listRefreshToken: number;
+
     isBulkUpdatingGroup: boolean;
     isBulkUpdatingRaProfile: boolean;
     isBulkUpdatingOwner: boolean;
@@ -195,6 +201,8 @@ export const initialState: State = {
     isUpdatingRaProfile: false,
     isUpdatingOwner: false,
     isUpdatingTrustedStatus: false,
+
+    listRefreshToken: 0,
 
     isBulkUpdatingGroup: false,
     isBulkUpdatingRaProfile: false,
@@ -756,6 +764,7 @@ export const slice = createSlice({
 
         bulkUpdateGroupSuccess: (state, action: PayloadAction<{ uuids: string[] }>) => {
             state.isBulkUpdatingGroup = false;
+            state.listRefreshToken += 1;
         },
 
         bulkDeleteGroup: (state, action: PayloadAction<{ certificateUuids: string[] }>) => {
@@ -764,18 +773,26 @@ export const slice = createSlice({
 
         bulkDeleteGroupSuccess: (state, action: PayloadAction<{ uuids: string[] }>) => {
             state.isBulkUpdatingGroup = false;
+            state.listRefreshToken += 1;
         },
 
         bulkUpdateGroupFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isBulkUpdatingGroup = false;
         },
 
-        bulkUpdateRaProfile: (state, action: PayloadAction<{ authorityUuid: string; raProfileRequest: CertificateBulkObjectModel }>) => {
+        bulkUpdateRaProfile: (
+            state,
+            action: PayloadAction<{
+                authorityUuid: string;
+                raProfileRequest: CertificateBulkObjectModel;
+            }>,
+        ) => {
             state.isBulkUpdatingRaProfile = true;
         },
 
         bulkUpdateRaProfileSuccess: (state, action: PayloadAction<{ uuids: string[] }>) => {
             state.isBulkUpdatingRaProfile = false;
+            state.listRefreshToken += 1;
         },
 
         bulkDeleteRaProfile: (state, action: PayloadAction<{ certificateUuids: string[] }>) => {
@@ -874,6 +891,7 @@ export const slice = createSlice({
 
         uploadCertificateSuccess: (state) => {
             state.isUploading = false;
+            state.listRefreshToken += 1;
         },
 
         uploadCertificateFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -1115,6 +1133,7 @@ const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 const deleteErrorMessage = createSelector(state, (state) => state.deleteErrorMessage);
 
 const certificates = createSelector(state, (state) => state.certificates);
+const listRefreshToken = createSelector(state, (state) => state.listRefreshToken);
 const certificateChain = createSelector(state, (state) => state.certificateChain);
 
 const certificateDetail = createSelector(state, (state) => state.certificateDetail);
@@ -1186,6 +1205,7 @@ export const selectors = {
     state,
     deleteErrorMessage,
     certificates,
+    listRefreshToken,
     certificateDetail,
     certificateRelations,
     isFetchingRelations,

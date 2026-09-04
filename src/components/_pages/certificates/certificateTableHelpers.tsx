@@ -19,7 +19,8 @@ import type { CertificateListResponseModel, CertificateDetailResponseModel, Sear
 import type { EnumItemModel } from 'types/enums';
 import type { Dispatch } from 'redux';
 import type { TableDataRow } from 'components/CustomTable';
-import { renderCell, type CellRegistry } from 'components/CustomTable/columns';
+import type { CellRegistry } from 'components/CustomTable/columns';
+import BooleanCell from 'components/CustomTable/columns/BooleanCell';
 import MultiValueCell from 'components/CustomTable/columns/MultiValueCell';
 import type { ColumnDefinition } from 'types/tableColumns';
 import type { ListCellValue } from 'utils/attributes/listCellValues';
@@ -58,17 +59,6 @@ function buildCommonNameCell(certificate: CertificateListResponseModel, opts: Bu
             {label}
         </Link>
     );
-}
-
-function buildGroupsCell(certificate: CertificateListResponseModel, isLinkDisabled: boolean) {
-    const groups = certificate?.groups ?? [];
-    if (groups.length === 0) return 'Unassigned';
-    return groups.map((group, i) => (
-        <React.Fragment key={group.uuid}>
-            {isLinkDisabled ? group.name : <Link to={`../../groups/detail/${group.uuid}`}>{group.name}</Link>}
-            {i === groups.length - 1 ? '' : ', '}
-        </React.Fragment>
-    ));
 }
 
 function buildRaProfileCell(certificate: CertificateListResponseModel, isLinkDisabled: boolean) {
@@ -147,6 +137,10 @@ export const CERTIFICATE_COLUMNS: ColumnDefinition[] = [
         catalogueLabel: 'Has private key',
         type: FilterFieldType.Boolean,
         align: 'center',
+        // A one-percent-wide column carrying nothing but a key icon and its tooltip. The label exists so
+        // the picker can name the column and the header keeps an accessible name, but it stays out of
+        // the visible header row, where it would not fit.
+        headingHidden: true,
     },
     {
         fieldSource: FilterFieldSource.Property,
@@ -253,20 +247,23 @@ export function buildCertificateCellRegistry(opts: BuildCertificateRowColumnsOpt
                 {certificate.archived ? 'Yes' : 'No'}
             </Badge>
         ),
+        // Beyond the default set: catalogued fields whose value the listing DTO carries, so each is a
+        // column a user may pick. A catalogued field absent from here is one the listing cannot supply
+        // — key usage, the subject alternative names, the protocol association — and it is deliberately
+        // left out, because the registry is what decides whether the picker offers a property column at
+        // all. Core still advertises those as displayable; OmniTrustILM/core#2180 is where that is
+        // meant to stop.
+        'property:SUBJECTDN': (certificate) => certificate.subjectDn,
+        'property:ISSUERDN': (certificate) => certificate.issuerDn,
+        'property:ISSUER_SERIAL_NUMBER': (certificate) => certificate.issuerSerialNumber,
+        'property:FINGERPRINT': (certificate) => certificate.fingerprint,
+        'property:KEY_SIZE': (certificate) => certificate.keySize?.toString(),
+        'property:ALT_KEY_SIZE': (certificate) => certificate.altKeySize?.toString(),
+        'property:ALT_SIGNATURE_ALGORITHM': (certificate) => certificate.altSignatureAlgorithm,
+        'property:ALT_PUBLIC_KEY_ALGORITHM': (certificate) => certificate.altPublicKeyAlgorithm,
+        'property:HYBRID_CERTIFICATE': (certificate) => <BooleanCell value={certificate.hybridCertificate} />,
+        'property:TRUSTED_CA': (certificate) => <BooleanCell value={certificate.trustedCa} />,
     };
-}
-
-/**
- * The cells of one certificate row, rendered from the column definitions rather than assembled as a
- * positional array — which is what lets a column set chosen at runtime render at all.
- */
-export function buildCertificateRowColumns(
-    certificate: CertificateListResponseModel,
-    opts: BuildCertificateRowColumnsOpts,
-    columns: ColumnDefinition[] = CERTIFICATE_COLUMNS,
-): React.ReactNode[] {
-    const registry = buildCertificateCellRegistry(opts);
-    return columns.map((column) => renderCell(certificate, column, registry));
 }
 
 function buildQcStatementRows(

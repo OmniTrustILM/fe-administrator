@@ -98,3 +98,53 @@ describe('filters selectors', () => {
         expect(selectors.state(state)).toEqual(initialState);
     });
 });
+
+describe('hasLoadedFilters', () => {
+    const stateFor = (filtersState: unknown) => ({ filters: filtersState }) as any;
+
+    test('is false before any read', () => {
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(initialState))).toBe(false);
+    });
+
+    test('is true once a read succeeds, even with no fields', () => {
+        const next = reducer(
+            reducer(initialState, actions.getAvailableFilters({ entity: EntityType.CERTIFICATE, getAvailableFiltersApi: {} as any })),
+            actions.getAvailableFiltersSuccess({ entity: EntityType.CERTIFICATE, availableFilters: [] }),
+        );
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(next))).toBe(true);
+    });
+
+    test('is true once a read fails, so a failed catalogue does not read as a read in flight', () => {
+        const next = reducer(
+            reducer(initialState, actions.getAvailableFilters({ entity: EntityType.CERTIFICATE, getAvailableFiltersApi: {} as any })),
+            actions.getAvailableFiltersFailure({ entity: EntityType.CERTIFICATE, error: 'err' }),
+        );
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(next))).toBe(true);
+    });
+
+    test('is false for an entity whose first read is still in flight', () => {
+        const next = reducer(
+            initialState,
+            actions.getAvailableFilters({ entity: EntityType.CERTIFICATE, getAvailableFiltersApi: {} as any }),
+        );
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(next))).toBe(false);
+        expect(selectors.isFetchingFilters(EntityType.CERTIFICATE)(stateFor(next))).toBe(true);
+    });
+
+    /** See `hasLoadedFilters` for the pairing this rules out. */
+    test('keeps the catalogue it already has while a later read is in flight', () => {
+        const fields = [{ field: 'cn' as any, label: 'CN', multiValue: false, type: 'string' as any }];
+        const settled = reducer(
+            initialState,
+            actions.getAvailableFiltersSuccess({ entity: EntityType.CERTIFICATE, availableFilters: fields as any }),
+        );
+        const refetching = reducer(
+            settled,
+            actions.getAvailableFilters({ entity: EntityType.CERTIFICATE, getAvailableFiltersApi: {} as any }),
+        );
+
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(refetching))).toBe(true);
+        expect(selectors.isFetchingFilters(EntityType.CERTIFICATE)(stateFor(refetching))).toBe(true);
+        expect(selectors.availableFilters(EntityType.CERTIFICATE)(stateFor(refetching))).toEqual(fields);
+    });
+});

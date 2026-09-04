@@ -3,13 +3,29 @@ import { withProviders } from 'utils/test-helpers';
 import { AttributeContentType, FilterFieldSource } from 'types/openapi';
 import type { CryptographicKeyResponseModel } from 'types/cryptographic-keys';
 import type { ColumnDefinition } from 'types/tableColumns';
-import { buildKeyRowColumns, KEY_COLUMNS } from './keyTableHelpers';
+import { renderCell } from 'components/CustomTable/columns';
+import { buildKeyCellRegistry, KEY_COLUMNS } from './keyTableHelpers';
 
 const opts = {
     keyTypeEnum: {},
+    keyUsageEnum: {},
     getEnumLabel: (_enumMap: unknown, key: string) => key,
     dateFormatter: (date: string | Date) => new Date(date).toISOString().slice(0, 10),
 };
+
+/**
+ * The cells of one key row. The page renders through `buildTableRows`, which is the same `renderCell`
+ * over the same registry; assembling them here keeps these assertions pinned to the registry itself
+ * rather than to the host that drives it.
+ */
+function buildKeyRowColumns(
+    item: CryptographicKeyResponseModel,
+    options: Parameters<typeof buildKeyCellRegistry>[0],
+    columns: ColumnDefinition[] = KEY_COLUMNS,
+) {
+    const registry = buildKeyCellRegistry(options);
+    return columns.map((column) => renderCell(item, column, registry));
+}
 
 function buildKey(overrides: Partial<CryptographicKeyResponseModel> = {}): CryptographicKeyResponseModel {
     return {
@@ -33,8 +49,12 @@ const columnAt = (identifier: string) => {
 };
 
 test.describe('keyTableHelpers', () => {
-    test('renders one cell per column of the default set', () => {
-        expect(buildKeyRowColumns(buildKey(), opts)).toHaveLength(KEY_COLUMNS.length);
+    // `toHaveLength(KEY_COLUMNS.length)` would hold by construction, the helper being a map over the
+    // same array. What can fail is whether every default column actually produced something to show.
+    test('renders a cell with content for every column of the default set', () => {
+        const cells = buildKeyRowColumns(buildKey({ usage: ['sign'] as never }), opts);
+
+        expect(cells.every((cell) => cell !== null && cell !== undefined && cell !== '')).toBe(true);
     });
 
     test('renders the key name as a link to its detail page', async ({ mount, page }) => {
@@ -94,5 +114,72 @@ test.describe('keyTableHelpers', () => {
         await mount(withProviders(<div>{buildKeyRowColumns(key, opts, [column])[0]}</div>));
 
         await expect(page.getByText('2026-09-01')).toBeVisible();
+    });
+});
+
+test.describe('buildKeyCellRegistry', () => {
+    /**
+     * The registry decides whether the picker offers a property column: a field it has no renderer for
+     * could only ever show the empty state. Every field the keys catalogue publishes is renderable
+     * from the list DTO, so every one of them is registered.
+     */
+    test('registers every property field the keys catalogue publishes', () => {
+        const registry = buildKeyCellRegistry(opts);
+
+        for (const identifier of [
+            'CKI_NAME',
+            'CKI_TYPE',
+            'CKI_FORMAT',
+            'CKI_STATE',
+            'CKI_CRYPTOGRAPHIC_ALGORITHM',
+            'CKI_USAGE',
+            'CKI_LENGTH',
+            'CK_TOKEN_PROFILE',
+            'CK_TOKEN_INSTANCE',
+            'CK_GROUP',
+            'CK_OWNER',
+        ]) {
+            expect(registry[`property:${identifier}`], identifier).toBeDefined();
+        }
+    });
+
+    test('covers every column of the platform default set, catalogued or display-only', () => {
+        const registry = buildKeyCellRegistry(opts);
+
+        for (const column of KEY_COLUMNS) {
+            expect(registry[`${column.fieldSource}:${column.fieldIdentifier}`], column.fieldIdentifier).toBeDefined();
+        }
+    });
+
+    // Key Usage is offered by the picker but stays out of the platform default set, which is the
+    // established set of columns the page opens on.
+    test('leaves Key Usage out of the platform default set', () => {
+        expect(KEY_COLUMNS.some((column) => column.fieldIdentifier === 'CKI_USAGE')).toBe(false);
+    });
+
+    test('renders the key usages as a multi-value cell', async ({ mount, page }) => {
+        const usageColumn: ColumnDefinition = {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'CKI_USAGE',
+            catalogueLabel: 'Key Usage',
+        };
+        const registry = buildKeyCellRegistry(opts);
+        const key = buildKey({ usage: ['sign', 'verify'] as never });
+
+        await mount(withProviders(<div>{renderCell(key, usageColumn, registry)}</div>));
+
+        await expect(page.getByTestId('cell-key-usage')).toBeVisible();
+        await expect(page.getByText('sign')).toBeVisible();
+    });
+
+    test('renders the empty state for a key with no usages', () => {
+        const usageColumn: ColumnDefinition = {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'CKI_USAGE',
+            catalogueLabel: 'Key Usage',
+        };
+        const registry = buildKeyCellRegistry(opts);
+
+        expect(registry['property:CKI_USAGE'](buildKey({ usage: undefined }), usageColumn)).toBeNull();
     });
 });

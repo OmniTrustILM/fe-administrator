@@ -12,6 +12,14 @@ export interface TableHeader {
      */
     info?: React.ReactNode;
     align?: 'left' | 'center' | 'right';
+    /**
+     * Renders the heading for screen readers only, leaving the header cell visually blank.
+     *
+     * For a narrow icon column whose meaning is carried by the icon itself, where a visible label
+     * would be wider than the column. The heading is still required rather than empty, because the
+     * header may be a sort button and needs an accessible name.
+     */
+    headingHidden?: boolean;
     sortable?: boolean;
     sort?: SortDirection;
     sortType?: 'string' | 'numeric' | 'date';

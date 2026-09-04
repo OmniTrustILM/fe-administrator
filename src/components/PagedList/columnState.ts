@@ -1,0 +1,119 @@
+import type { CellRegistry } from 'components/CustomTable/columns';
+import type { SortDirection } from 'components/CustomTable/types';
+import type { SearchFieldListModel, SearchRequestModel } from 'types/certificate';
+import type { ColumnDefinition } from 'types/tableColumns';
+import { toStoredSort } from 'utils/listViews';
+import { type ColumnSort, getColumnKey, getSortKey, parseColumnKey, toRequestColumns } from 'utils/tableColumns';
+
+/**
+ * The ordering a header click asks for, or `undefined` when the click cannot become one.
+ *
+ * `CustomTable` reports an opaque header id, so it is resolved against the displayed columns rather
+ * than trusted: the id may name one of the table's own chrome columns, or a column a view switch has
+ * since taken away. A column the catalogue does not mark `sortable` is refused here as well as being
+ * rendered unsortable, so a stale header cannot ask the API for an ordering it would reject.
+ */
+export function toColumnSortFromHeader(
+    key: string,
+    direction: SortDirection,
+    columns: readonly ColumnDefinition[],
+): ColumnSort | undefined {
+    const parsed = parseColumnKey(key);
+    if (!parsed) return undefined;
+
+    const column = columns.find((candidate) => getColumnKey(candidate) === key);
+    if (column?.sortable !== true) return undefined;
+
+    return { ...parsed, direction };
+}
+
+/**
+ * Whether two orderings are the same one.
+ *
+ * `CustomTable` announces the sort its headers declare once on mount, and that sort is the one the
+ * caller just handed it. Without this the echo would read as a change and start another fetch, which
+ * would rebuild the headers and echo again.
+ */
+export function isSameSort(a: ColumnSort | undefined, b: ColumnSort | undefined): boolean {
+    if (!a || !b) return a === b;
+    return getSortKey(a) === getSortKey(b) && a.direction === b.direction;
+}
+
+/** The column keys a page can render from the listing entry: the keys of its cell registry. */
+export function getRenderableProperties<TRow>(registry: CellRegistry<TRow> | undefined): ReadonlySet<string> {
+    return new Set(Object.keys(registry ?? {}));
+}
+
+/**
+ * A platform column set with the catalogue's sort capability merged in.
+ *
+ * A page's default column set is a static literal, so it cannot state whether the API can order by
+ * each field - only the catalogue knows that, and it arrives at runtime. Left unmerged, every column
+ * of the Standard tab renders unsortable (`buildColumnHeaders` requires `sortable === true`) and
+ * `toColumnSortFromHeader` refuses the click as well, so the tab a page opens on offers no ordering
+ * at all while a saved view, whose columns are resolved from the catalogue, offers it.
+ *
+ * Only `sortable` is taken. Everything else a page shipped is a deliberate display choice the
+ * catalogue has no opinion on - the heading it has always used, an alignment, a heading hidden
+ * because the column is an icon - and taking the catalogue's label here would silently rename the
+ * headings of a tab nobody edited.
+ *
+ * Every published field is considered, `displayable` or not: whether the API can order by a field is
+ * a separate question from whether the column picker offers it, and the page has already decided
+ * this column exists.
+ */
+export function withCatalogueSortability(
+    columns: readonly ColumnDefinition[],
+    catalogue: readonly SearchFieldListModel[],
+): ColumnDefinition[] {
+    const sortableKeys = new Set(
+        catalogue.flatMap((group) =>
+            (group.searchFieldData ?? [])
+                .filter((field) => field.sortable === true)
+                .map((field) => getColumnKey({ fieldSource: group.filterFieldSource, fieldIdentifier: field.fieldIdentifier })),
+        ),
+    );
+
+    return columns.map((column) => {
+        const sortable = sortableKeys.has(getColumnKey(column));
+
+        // Returned unchanged when the flag already agrees, so an unsortable set keeps its identity and
+        // the memo above this does not hand the table a new array on every catalogue reference.
+        return sortable === (column.sortable === true) ? column : { ...column, sortable };
+    });
+}
+
+/**
+ * The listing request for a page state.
+ *
+ * Both new fields are spread in only when they carry something: with no columns and no ordering the
+ * request is byte-identical to one written before the contract carried either field, so an unmigrated
+ * caller and a migrated one with nothing selected send the same bytes.
+ */
+export function buildListRequest(base: SearchRequestModel, columns?: readonly ColumnDefinition[], sort?: ColumnSort): SearchRequestModel {
+    const requestColumns = columns ? toRequestColumns(columns) : undefined;
+    const requestSort = toStoredSort(sort);
+
+    return {
+        ...base,
+        ...(requestColumns ? { columns: requestColumns } : {}),
+        ...(requestSort ? { sort: requestSort } : {}),
+    };
+}
+
+/**
+ * The ordering the table can actually show, or `undefined`.
+ *
+ * An ordering only survives while the column it names is displayed AND sortable. A saved view stores
+ * its columns and its ordering independently, so removing the sorted column in the picker leaves a
+ * view whose ordering names a column that is no longer there — and an ordering no header can paint is
+ * one the user can neither see nor clear, while it keeps ordering every page they fetch. Pruning it
+ * here means the header row and the request always agree with each other.
+ */
+export function toDisplayableSort(sort: ColumnSort | undefined, columns: readonly ColumnDefinition[]): ColumnSort | undefined {
+    if (!sort) return undefined;
+
+    const key = getSortKey(sort);
+    const column = columns.find((candidate) => getColumnKey(candidate) === key);
+    return column?.sortable === true ? sort : undefined;
+}
