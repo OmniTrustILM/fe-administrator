@@ -194,6 +194,86 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
         expect((submit as HTMLButtonElement).disabled).toBe(false);
     });
 
+    it('offers the Value Schema field only for the DER encoding', async () => {
+        selectValueById = { categorySelect: OidCategory.CertificateExtension, valueEncodingSelect: ExtensionValueEncoding.OctetString };
+        await render();
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="select-categorySelect"]')?.click();
+        });
+
+        expect(container.querySelector('[data-testid="textarea-valueSchema"]')).toBeNull();
+
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="select-valueEncodingSelect"]')?.click();
+        });
+        expect(container.querySelector('[data-testid="textarea-valueSchema"]')).toBeNull();
+
+        selectValueById.valueEncodingSelect = ExtensionValueEncoding.Der;
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="select-valueEncodingSelect"]')?.click();
+        });
+        expect(container.querySelector('[data-testid="textarea-valueSchema"]')).not.toBeNull();
+    });
+
+    it('dispatches createOID carrying the valueSchema for a DER extension', async () => {
+        selectValueById = { categorySelect: OidCategory.CertificateExtension, valueEncodingSelect: ExtensionValueEncoding.Der };
+        await render();
+
+        await act(async () => setInput('oid', '1.2.3.4'));
+        await act(async () => setInput('displayName', 'My Extension'));
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="select-categorySelect"]')?.click();
+        });
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="select-valueEncodingSelect"]')?.click();
+        });
+        await act(async () => {
+            const area = container.querySelector<HTMLTextAreaElement>('[data-testid="textarea-valueSchema"]');
+            if (!area) throw new Error('valueSchema textarea not rendered');
+            const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+            setter?.call(area, '{"type":"object"}');
+            area.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        await act(async () => {
+            container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        });
+
+        expect(dispatchFn).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: expect.stringContaining('createOID'),
+                payload: {
+                    oid: expect.objectContaining({
+                        additionalProperties: expect.objectContaining({ valueSchema: '{"type":"object"}' }),
+                    }),
+                },
+            }),
+        );
+    });
+
+    it('pre-populates the Value Schema in edit mode', async () => {
+        const state = buildState();
+        state.oids.oid = {
+            oid: '1.2.3.4',
+            displayName: 'My Extension',
+            description: '',
+            category: OidCategory.CertificateExtension,
+            additionalProperties: {
+                defaultCritical: false,
+                valueEncoding: ExtensionValueEncoding.Der,
+                valueSchema: '{"type":"object"}',
+            },
+        } as any;
+        useSelectorMock.mockImplementation((selector: any) => selector(state));
+
+        await act(async () => {
+            root.render(<CustomOIDForm oidId="1.2.3.4" onCancel={() => {}} />);
+        });
+
+        const area = container.querySelector<HTMLTextAreaElement>('[data-testid="textarea-valueSchema"]');
+        expect(area).not.toBeNull();
+        expect(area?.value).toBe('{"type":"object"}');
+    });
+
     it('pre-populates Default Critical and Value Encoding in edit mode', async () => {
         const state = buildState();
         state.oids.oid = {

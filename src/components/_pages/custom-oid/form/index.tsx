@@ -2,7 +2,7 @@ import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/oids';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { type CustomOidEntryRequestDto, type OidCategory, PlatformEnum } from 'types/openapi';
+import { type CustomOidEntryRequestDto, ExtensionValueEncoding, type OidCategory, PlatformEnum } from 'types/openapi';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { validateLength, validateRequired, validateOid, validateOidCode } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
@@ -24,6 +24,7 @@ import {
     getExtensionValueEncodingOptions,
     buildOidAdditionalProperties,
 } from 'utils/oid';
+import { getJsonSchemaDocumentError } from 'utils/strictJson';
 
 type CustomOIDFormProps = Readonly<{
     oidId?: string;
@@ -40,6 +41,7 @@ interface FormValues {
     alternativeCode?: string[];
     defaultCritical?: boolean;
     valueEncoding?: string;
+    valueSchema?: string;
 }
 
 export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDFormProps) {
@@ -102,6 +104,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
             alternativeCode: editMode ? rdnProps?.altCodes : undefined,
             defaultCritical: editMode ? (extProps?.defaultCritical ?? false) : false,
             valueEncoding: editMode ? extProps?.valueEncoding : undefined,
+            valueSchema: editMode ? extProps?.valueSchema : undefined,
         };
     }, [oid, editMode]);
 
@@ -129,6 +132,11 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
     const watchedCategory = useWatch({
         control,
         name: 'category',
+    });
+
+    const watchedValueEncoding = useWatch({
+        control,
+        name: 'valueEncoding',
     });
 
     const onSubmit = useCallback(
@@ -345,6 +353,35 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                                         </>
                                     )}
                                 />
+                                {/* valueSchema is only applicable when valueEncoding is DER (contract
+                                    @AssertTrue) — hidden for the other encodings so the operator can
+                                    never hit that rejection; shouldUnregister drops a stale value. */}
+                                {watchedValueEncoding === ExtensionValueEncoding.Der && (
+                                    <Controller
+                                        name="valueSchema"
+                                        control={control}
+                                        rules={{ validate: (value) => getJsonSchemaDocumentError(value ?? '') ?? true }}
+                                        render={({ field, fieldState }) => (
+                                            <>
+                                                <TextArea
+                                                    {...field}
+                                                    id="valueSchema"
+                                                    label="Value Schema (JSON Schema)"
+                                                    rows={5}
+                                                    placeholder="Enter an inline JSON Schema (draft 2020-12) describing the extension's JSON value"
+                                                    invalid={!!fieldState.error}
+                                                    error={getFieldErrorMessage(fieldState)}
+                                                />
+                                                {!fieldState.error && (
+                                                    <p className="mt-1 text-xs text-content-subtle">
+                                                        Optional. Describes the shape of the extension's structural ASN.1 JSON value. Remote
+                                                        $ref is not supported.
+                                                    </p>
+                                                )}
+                                            </>
+                                        )}
+                                    />
+                                )}
                             </>
                         )}
 

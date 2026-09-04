@@ -23,6 +23,7 @@ export interface OidFormValues {
     alternativeCode?: string[];
     defaultCritical?: boolean;
     valueEncoding?: string;
+    valueSchema?: string;
 }
 
 export const buildOidAdditionalProperties = (
@@ -39,9 +40,11 @@ export const buildOidAdditionalProperties = (
         if (!isExtensionValueEncoding(values.valueEncoding)) {
             return undefined;
         }
+        const valueSchema = values.valueEncoding === ExtensionValueEncoding.Der ? values.valueSchema?.trim() || undefined : undefined;
         return {
             defaultCritical: values.defaultCritical ?? false,
             valueEncoding: values.valueEncoding,
+            valueSchema,
         };
     }
     return undefined;

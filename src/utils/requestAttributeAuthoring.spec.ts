@@ -27,7 +27,9 @@ import {
     hasAuthoredRequestAttributes,
     getRegexPatternError,
     isContentTypeAllowedForMapping,
+    isJsonSchemaConstraintSupportedForContentType,
     isRegexConstraintSupportedForContentType,
+    isStructuredMappingTarget,
     isReadOnlyDefaultValid,
     isStaticListSupportedForContentType,
     isValueSourceBindingValid,
@@ -465,6 +467,14 @@ describe('requestAttributeAuthoring', () => {
             const ext = { ...mappedAttr(), mappingFieldType: FieldType.Extension, mappingRdnCode: '' };
             expect(validateAuthoredAttribute(ext).mappingExtensionOid).toBeTruthy();
             expect(validateAuthoredAttribute({ ...ext, mappingExtensionOid: '2.5.29.17' })).toEqual({});
+        });
+
+        test('EXTENSION rejects OIDs with a structured mapping target, steering to the typed target', () => {
+            const ext = { ...mappedAttr(), mappingFieldType: FieldType.Extension, mappingRdnCode: '' };
+            expect(validateAuthoredAttribute({ ...ext, mappingExtensionOid: '2.5.29.15' }).mappingExtensionOid).toContain('Key Usage');
+            expect(validateAuthoredAttribute({ ...ext, mappingExtensionOid: '2.5.29.37' }).mappingExtensionOid).toContain(
+                'Extended Key Usage',
+            );
         });
 
         test('a mapped attribute is restricted to String or Text', () => {
@@ -961,5 +971,174 @@ describe('regular-expression constraint', () => {
         expect(
             validateAuthoredAttribute(stringAttr({ contentType: AttributeContentType.Text, regexPattern: '^CC-[0-9$' })).regexPattern,
         ).toBeUndefined();
+    });
+});
+
+describe('structured mapping targets (Key Usage / Extended Key Usage)', () => {
+    const structuredAttr = (fieldType: FieldType, over: Partial<AuthoredAttributeFormValues> = {}): AuthoredAttributeFormValues => ({
+        ...baseAttr(),
+        mappingFieldType: fieldType,
+        list: true,
+        multiSelect: true,
+        staticValues: fieldType === FieldType.KeyUsage ? ['digitalSignature', 'cRLSign'] : ['1.3.6.1.5.5.7.3.1'],
+        ...over,
+    });
+
+    test('isStructuredMappingTarget covers exactly the two set-valued targets', () => {
+        expect(isStructuredMappingTarget(FieldType.KeyUsage)).toBe(true);
+        expect(isStructuredMappingTarget(FieldType.ExtendedKeyUsage)).toBe(true);
+        expect(isStructuredMappingTarget(FieldType.Rdn)).toBe(false);
+        expect(isStructuredMappingTarget(FieldType.San)).toBe(false);
+        expect(isStructuredMappingTarget(FieldType.Extension)).toBe(false);
+        expect(isStructuredMappingTarget(undefined)).toBe(false);
+    });
+
+    test('builds a bare mapped field carrying no properties of its own', () => {
+        for (const fieldType of [FieldType.KeyUsage, FieldType.ExtendedKeyUsage]) {
+            const dto = buildAuthoredAttributeDto(structuredAttr(fieldType));
+            expect(mappingOf(dto)).toEqual({ objectType: ObjectType.X509Certificate, fields: [{ fieldType }] });
+        }
+    });
+
+    test('the permitted set lands in content and the DTO is forced to a list', () => {
+        const dto = buildAuthoredAttributeDto(structuredAttr(FieldType.KeyUsage, { list: false, valueSourceType: ValueSourceType.None }));
+        expect(dto.properties.list).toBe(true);
+        expect(dto.content).toEqual([
+            { data: 'digitalSignature', contentType: AttributeContentType.String },
+            { data: 'cRLSign', contentType: AttributeContentType.String },
+        ]);
+    });
+
+    test('extensibleList round-trips through properties', () => {
+        const dto = buildAuthoredAttributeDto(structuredAttr(FieldType.ExtendedKeyUsage, { extensibleList: true }));
+        expect(dto.properties.extensibleList).toBe(true);
+        const parsed = parseAuthoredAttributeDto(dto as BaseAttributeDto);
+        expect(parsed.extensibleList).toBe(true);
+        expect(parsed.mappingFieldType).toBe(FieldType.ExtendedKeyUsage);
+        expect(parsed.staticValues).toEqual(['1.3.6.1.5.5.7.3.1']);
+    });
+
+    test('a stored permitted set parses into the set editor even without a value source', () => {
+        const dto = buildAuthoredAttributeDto(structuredAttr(FieldType.KeyUsage, { valueSourceType: ValueSourceType.None }));
+        expect(dto.valueSource).toBeUndefined();
+        const parsed = parseAuthoredAttributeDto(dto as BaseAttributeDto);
+        expect(parsed.staticValues).toEqual(['digitalSignature', 'cRLSign']);
+        expect(parsed.defaultValue).toBeUndefined();
+    });
+
+    test('an empty permitted set without extensibleList cannot be saved', () => {
+        const errors = validateAuthoredAttribute(structuredAttr(FieldType.KeyUsage, { staticValues: [] }));
+        expect(errors.staticValues).toContain('permitted value');
+    });
+
+    test('an empty permitted set with extensibleList is valid — the restriction is lifted', () => {
+        expect(validateAuthoredAttribute(structuredAttr(FieldType.KeyUsage, { staticValues: [], extensibleList: true }))).toEqual({});
+    });
+
+    test('blank and duplicate permitted values are rejected', () => {
+        expect(
+            validateAuthoredAttribute(structuredAttr(FieldType.ExtendedKeyUsage, { staticValues: ['1.3.6.1.5.5.7.3.1', ' '] }))
+                .staticValues,
+        ).toContain('blank');
+        expect(
+            validateAuthoredAttribute(
+                structuredAttr(FieldType.ExtendedKeyUsage, { staticValues: ['1.3.6.1.5.5.7.3.1', '1.3.6.1.5.5.7.3.1'] }),
+            ).staticValues,
+        ).toContain('unique');
+    });
+
+    test('read only cannot combine with a structured target (a set-valued target is a list)', () => {
+        const errors = validateAuthoredAttribute(
+            structuredAttr(FieldType.KeyUsage, { readOnly: true, valueSourceType: ValueSourceType.None }),
+        );
+        expect(errors.readOnly).toContain('list');
+    });
+
+    test('a structured target keeps the String/Text mapped content-type rule', () => {
+        const errors = validateAuthoredAttribute(structuredAttr(FieldType.KeyUsage, { contentType: AttributeContentType.Integer }));
+        expect(errors.contentType).toBeTruthy();
+    });
+});
+
+describe('JSON-schema constraint', () => {
+    const stringAttr = (over: Partial<AuthoredAttributeFormValues> = {}): AuthoredAttributeFormValues => ({
+        ...baseAttr(),
+        mappingFieldType: FieldType.Rdn,
+        mappingRdnCode: '2.5.4.3',
+        ...over,
+    });
+
+    test('is offered for String and Text only', () => {
+        expect(isJsonSchemaConstraintSupportedForContentType(AttributeContentType.String)).toBe(true);
+        expect(isJsonSchemaConstraintSupportedForContentType(AttributeContentType.Text)).toBe(true);
+        expect(isJsonSchemaConstraintSupportedForContentType(AttributeContentType.Integer)).toBe(false);
+        expect(isJsonSchemaConstraintSupportedForContentType(AttributeContentType.Boolean)).toBe(false);
+    });
+
+    test('emits a jsonSchema constraint alongside a regex one', () => {
+        const dto = buildAuthoredAttributeDto(
+            stringAttr({
+                regexPattern: '^A+$',
+                jsonSchemaData: ' {"type":"object"} ',
+                jsonSchemaErrorMessage: 'Bad shape',
+                jsonSchemaDescription: 'An object',
+            }),
+        );
+        expect(dto.constraints).toEqual([
+            { type: AttributeConstraintType.RegExp, data: '^A+$', description: undefined, errorMessage: undefined },
+            { type: AttributeConstraintType.JsonSchema, data: '{"type":"object"}', description: 'An object', errorMessage: 'Bad shape' },
+        ]);
+    });
+
+    test('is not emitted for a content type that cannot carry it', () => {
+        const dto = buildAuthoredAttributeDto(
+            stringAttr({ contentType: AttributeContentType.Text, regexPattern: '^A+$', jsonSchemaData: '{"type":"object"}' }),
+        );
+        // Text drops the regex (String-only) but keeps the schema constraint.
+        expect(dto.constraints).toEqual([
+            { type: AttributeConstraintType.JsonSchema, data: '{"type":"object"}', description: undefined, errorMessage: undefined },
+        ]);
+    });
+
+    test('round-trips through the DTO and stays out of otherConstraints', () => {
+        const authored = stringAttr({ jsonSchemaData: '{"type":"object"}', jsonSchemaErrorMessage: 'Bad shape' });
+        const parsed = parseAuthoredAttributeDto(buildAuthoredAttributeDto(authored) as BaseAttributeDto);
+        expect(parsed.jsonSchemaData).toBe('{"type":"object"}');
+        expect(parsed.jsonSchemaErrorMessage).toBe('Bad shape');
+        expect(parsed.otherConstraints).toEqual([]);
+    });
+
+    test('an invalid schema document is rejected at save with the reason', () => {
+        expect(validateAuthoredAttribute(stringAttr({ jsonSchemaData: '{"type":' })).jsonSchemaData).toBeDefined();
+        expect(validateAuthoredAttribute(stringAttr({ jsonSchemaData: '{"a":1,"a":2}' })).jsonSchemaData).toContain('Duplicate key');
+        expect(
+            validateAuthoredAttribute(stringAttr({ jsonSchemaData: '{"$schema":"http://json-schema.org/draft-07/schema#"}' }))
+                .jsonSchemaData,
+        ).toContain('draft 2020-12');
+        expect(validateAuthoredAttribute(stringAttr({ jsonSchemaData: '{"type":"object"}' }))).toEqual({});
+    });
+
+    test('a schema left on a content type that cannot carry one is not an error', () => {
+        expect(
+            validateAuthoredAttribute(stringAttr({ contentType: AttributeContentType.Integer, jsonSchemaData: '{"broken' })).jsonSchemaData,
+        ).toBeUndefined();
+    });
+
+    test('existing regex, range and dateTime constraints are unchanged by the new kind', () => {
+        const range = { type: AttributeConstraintType.Range, data: { from: 1, to: 9 } } as never;
+        const parsed = parseAuthoredAttributeDto({
+            ...(buildAuthoredAttributeDto(stringAttr({ regexPattern: '^A+$' })) as never),
+            constraints: [
+                { type: AttributeConstraintType.RegExp, data: '^A+$' },
+                { type: AttributeConstraintType.JsonSchema, data: '{"type":"object"}' },
+                range,
+            ],
+        } as never);
+        expect(parsed.otherConstraints).toEqual([range]);
+        expect(buildAuthoredAttributeDto(parsed).constraints).toEqual([
+            { type: AttributeConstraintType.RegExp, data: '^A+$', description: undefined, errorMessage: undefined },
+            { type: AttributeConstraintType.JsonSchema, data: '{"type":"object"}', description: undefined, errorMessage: undefined },
+            range,
+        ]);
     });
 });

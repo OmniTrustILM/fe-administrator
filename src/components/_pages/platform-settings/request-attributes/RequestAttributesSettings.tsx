@@ -1,6 +1,7 @@
 import ExternalCsrValidationRadio from 'components/RequestAttributes/ExternalCsrValidationRadio';
 import Label from 'components/Label';
 import RequestAttributeAuthoringEditor from 'components/RequestAttributes/RequestAttributeAuthoringEditor';
+import { useKeyUsageOptions } from 'components/RequestAttributes/useKeyUsageOptions';
 import { useOidMappingOptions } from 'components/RequestAttributes/useOidMappingOptions';
 import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/raProfileRequestAttributes';
@@ -27,8 +28,18 @@ export default function RequestAttributesSettings() {
     const isUpdating = useSelector(selectors.isUpdatingDefaultSet);
     const updateSucceeded = useSelector(selectors.updateDefaultSetSucceeded);
     const updateError = useSelector(selectors.updateDefaultSetError);
-    const { rdnOptions, extensionOptions, rdnOptionsError, extensionOptionsError, rdnOptionsLoaded, extensionOptionsLoaded } =
-        useOidMappingOptions();
+    const {
+        rdnOptions,
+        extensionOptions,
+        extendedKeyUsageOptions,
+        rdnOptionsError,
+        extensionOptionsError,
+        extendedKeyUsageOptionsError,
+        rdnOptionsLoaded,
+        extensionOptionsLoaded,
+        extendedKeyUsageOptionsLoaded,
+    } = useOidMappingOptions();
+    const keyUsageOptions = useKeyUsageOptions();
 
     const [form, setForm] = useState<RequestAttributeAuthoringFormValues>(emptyAuthoringForm());
     const [loaded, setLoaded] = useState(false);
@@ -87,25 +98,35 @@ export default function RequestAttributesSettings() {
                 onChange={onChange}
                 showBindings={false}
                 disabled={isUpdating || !loaded}
+                persist={{ pending: isUpdating, error: updateError }}
                 rdnOptions={rdnOptions}
                 extensionOptions={extensionOptions}
+                extendedKeyUsageOptions={extendedKeyUsageOptions}
+                keyUsageOptions={keyUsageOptions}
                 rdnOptionsError={rdnOptionsError}
                 extensionOptionsError={extensionOptionsError}
+                extendedKeyUsageOptionsError={extendedKeyUsageOptionsError}
                 rdnOptionsLoaded={rdnOptionsLoaded}
                 extensionOptionsLoaded={extensionOptionsLoaded}
+                extendedKeyUsageOptionsLoaded={extendedKeyUsageOptionsLoaded}
             />
         ),
         [
             form,
             onChange,
             isUpdating,
+            updateError,
             loaded,
             rdnOptions,
             extensionOptions,
+            extendedKeyUsageOptions,
+            keyUsageOptions,
             rdnOptionsError,
             extensionOptionsError,
+            extendedKeyUsageOptionsError,
             rdnOptionsLoaded,
             extensionOptionsLoaded,
+            extendedKeyUsageOptionsLoaded,
         ],
     );
 

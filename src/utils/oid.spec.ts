@@ -86,6 +86,29 @@ describe('oid utils', () => {
         test('Certificate Extension with a non-enum valueEncoding → undefined', () => {
             expect(buildOidAdditionalProperties(OidCategory.CertificateExtension, { valueEncoding: 'not-an-encoding' })).toBeUndefined();
         });
+        test('Certificate Extension carries a trimmed valueSchema when the encoding is DER', () => {
+            expect(
+                buildOidAdditionalProperties(OidCategory.CertificateExtension, {
+                    valueEncoding: ExtensionValueEncoding.Der,
+                    valueSchema: ' {"type":"object"} ',
+                }),
+            ).toEqual({ defaultCritical: false, valueEncoding: ExtensionValueEncoding.Der, valueSchema: '{"type":"object"}' });
+        });
+        test('Certificate Extension drops the valueSchema for a non-DER encoding (contract @AssertTrue)', () => {
+            const props = buildOidAdditionalProperties(OidCategory.CertificateExtension, {
+                valueEncoding: ExtensionValueEncoding.OctetString,
+                valueSchema: '{"type":"object"}',
+            });
+            expect(props).toEqual({ defaultCritical: false, valueEncoding: ExtensionValueEncoding.OctetString });
+            expect((props as { valueSchema?: string }).valueSchema).toBeUndefined();
+        });
+        test('Certificate Extension omits a blank valueSchema', () => {
+            const props = buildOidAdditionalProperties(OidCategory.CertificateExtension, {
+                valueEncoding: ExtensionValueEncoding.Der,
+                valueSchema: '   ',
+            });
+            expect((props as { valueSchema?: string }).valueSchema).toBeUndefined();
+        });
         test('unknown category → undefined', () => {
             expect(buildOidAdditionalProperties('somethingElse', { code: 'CN' })).toBeUndefined();
             expect(buildOidAdditionalProperties('', {})).toBeUndefined();

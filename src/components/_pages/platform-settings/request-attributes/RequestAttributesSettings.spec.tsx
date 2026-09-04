@@ -42,7 +42,7 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await expect(page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
     });
 
-    test('a rejected save rolls the list back to the persisted set instead of leaving the attribute behind', async ({ mount, page }) => {
+    test('a rejected save rolls the list back and keeps the draft open in the dialog', async ({ mount, page }) => {
         const component = await mount(<RequestAttributesSettingsWithStore />);
 
         await component.getByTestId('request-attribute-authoring-attribute-add').click();
@@ -56,13 +56,19 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await page.getByRole('option', { name: 'dNSName' }).click();
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
 
-        // Optimistically listed while the save is in flight...
+        // Optimistically listed while the save is in flight; the dialog stays open awaiting the result.
         await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(1);
 
-        await page.getByTestId('simulate-rejection').click();
+        // The modal overlay blocks pointer events, so drive the store stand-in directly.
+        await page.getByTestId('simulate-rejection').dispatchEvent('click');
 
-        // ...and gone again once the backend rejects it: nothing was persisted, so nothing may be listed.
+        // Nothing was persisted, so the list rolls back — but the draft stays in the dialog with the
+        // error, ready to be corrected and re-saved.
+        await expect(page.getByTestId('request-attribute-authoring-attribute-save-error')).toContainText('Attribute definition is invalid');
+        await expect(page.locator('#ra-attr-name')).toHaveValue('environment');
         await expect(component.getByTestId('request-attribute-authoring-attribute-row')).toHaveCount(0);
+
+        await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
         await expect(component.getByTestId('request-attribute-authoring-attributes-empty')).toBeVisible();
         await expect(page.getByTestId('request-attributes-update-error')).toContainText('Attribute definition is invalid');
     });
@@ -84,12 +90,17 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
     });
 
     test('offers a system certificate extension when no custom OIDs are registered', async ({ mount, page }) => {
-        // The fresh-install case: the certificateExtension category has no custom entries at all, and the
-        // only Extended Key Usage OID available comes from the backend's built-in system registry.
+        // The fresh-install case: the certificateExtension category has no custom entries at all, and
+        // the only extensions available come from the backend's built-in system registry. Key Usage /
+        // Extended Key Usage go through their typed mapping targets, so of the two system entries only
+        // Basic Constraints may be offered on the generic Extension target.
         const component = await mount(
             <RequestAttributesSettingsWithStore
                 oids={{
-                    systemOids: [{ oid: '2.5.29.37', displayName: 'Extended Key Usage', category: 'certificateExtension' }],
+                    systemOids: [
+                        { oid: '2.5.29.19', displayName: 'Basic Constraints', category: 'certificateExtension' },
+                        { oid: '2.5.29.37', displayName: 'Extended Key Usage', category: 'certificateExtension' },
+                    ],
                     systemOidsLoaded: true,
                     oidsByCategory: { certificateExtension: [] },
                     oidsByCategoryLoaded: { certificateExtension: true },
@@ -103,7 +114,8 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
 
         await expect(page.getByTestId('request-attribute-authoring-extension-empty')).toHaveCount(0);
         await page.getByTestId('select-ra-attr-extension-oid-trigger').click();
-        await expect(page.getByRole('option', { name: 'Extended Key Usage' })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Basic Constraints' })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Extended Key Usage' })).toHaveCount(0);
     });
 
     test('a failed system-OID fetch surfaces its error without disabling an already-loaded custom extension list', async ({

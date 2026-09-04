@@ -9,6 +9,7 @@ import {
     requestValidationDefaultFormValues,
     requestValidationFormValuesToUpdateDto,
     resolveExternalCsrStrict,
+    splitAttributeValidationErrors,
 } from './raProfileValidation';
 
 describe('resolveExternalCsrStrict', () => {
@@ -182,5 +183,56 @@ describe('extractComplianceErrors', () => {
         expect(extractComplianceErrors({ status: 422, response: {} })).toBeUndefined();
         expect(extractComplianceErrors({ status: 422, response: 'raw string body' })).toBeUndefined();
         expect(extractComplianceErrors({ status: 422 })).toBeUndefined();
+    });
+});
+
+describe('splitAttributeValidationErrors', () => {
+    const targets = [
+        { name: 'basicConstraints', label: 'Basic Constraints' },
+        { name: 'policyNote', label: 'Policy: Note' },
+    ];
+
+    test('attributes a prefixed message to its attribute and strips the prefix', () => {
+        const { byAttributeName, unattributed } = splitAttributeValidationErrors(
+            ['Extension value of attribute Basic Constraints: does not conform to the schema'],
+            targets,
+        );
+        expect(byAttributeName.get('basicConstraints')).toEqual(['does not conform to the schema']);
+        expect(unattributed).toEqual([]);
+    });
+
+    test('collects multiple messages for the same attribute in order', () => {
+        const { byAttributeName } = splitAttributeValidationErrors(
+            ['Extension value of attribute Basic Constraints: first', 'Extension value of attribute Basic Constraints: second'],
+            targets,
+        );
+        expect(byAttributeName.get('basicConstraints')).toEqual(['first', 'second']);
+    });
+
+    test('a label containing ": " still matches (longest label wins)', () => {
+        const { byAttributeName } = splitAttributeValidationErrors(['Extension value of attribute Policy: Note: broken'], targets);
+        expect(byAttributeName.get('policyNote')).toEqual(['broken']);
+    });
+
+    test('a label shared by several attributes stays unattributed — the payload cannot disambiguate', () => {
+        const duplicated = [
+            { name: 'first', label: 'Extension Value' },
+            { name: 'second', label: 'Extension Value' },
+        ];
+        const { byAttributeName, unattributed } = splitAttributeValidationErrors(
+            ['Extension value of attribute Extension Value: broken'],
+            duplicated,
+        );
+        expect(byAttributeName.size).toBe(0);
+        expect(unattributed).toHaveLength(1);
+    });
+
+    test('messages without a known label stay unattributed', () => {
+        const { byAttributeName, unattributed } = splitAttributeValidationErrors(
+            ['Extension value of attribute Unknown Attr: x', 'CSR contains an unmapped extension 2.5.29.15'],
+            targets,
+        );
+        expect(byAttributeName.size).toBe(0);
+        expect(unattributed).toHaveLength(2);
     });
 });

@@ -25,6 +25,8 @@ import {
 import type { CallbackAttributeModel } from 'types/connectors';
 import { AttributeContentType, AttributeValueTarget, type ConnectorVersion, type FunctionGroupCode, type Resource } from 'types/openapi';
 import { base64ToUtf8 } from 'utils/common-utils';
+import { useFetchExtensionOidRegistry } from 'components/RequestAttributes/useDerExtensionOids';
+import { getFieldMapping, getMappedExtensionOids } from 'utils/requestAttributes';
 import { Attribute } from './Attribute';
 import CustomAttributeAddSelect from 'components/Attributes/AttributeEditor/CustomAttributeAddSelect';
 import {
@@ -111,6 +113,14 @@ function AttributeEditorInner({
 
     const { setValue, watch } = useFormContext();
     const formValues = watch();
+
+    // Fetched once per editor, not per field: every extension-mapped AttributeFieldInput reads the
+    // DER OID set from this registry to decide whether it accepts a structural ASN.1 JSON tree.
+    const hasExtensionMappedAttribute = useMemo(
+        () => attributeDescriptors.some((d) => getMappedExtensionOids(getFieldMapping(d)).length > 0),
+        [attributeDescriptors],
+    );
+    useFetchExtensionOidRegistry(hasExtensionMappedAttribute);
 
     const isRunningCallback = useSelector(connectorSelectors.isRunningCallback);
     const initiateAttributeCallback = useSelector(userInterfaceSelectors.selectInitiateAttributeCallback);

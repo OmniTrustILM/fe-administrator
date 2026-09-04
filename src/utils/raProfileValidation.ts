@@ -98,3 +98,45 @@ export function extractComplianceErrors(err: unknown): string[] | undefined {
 
     return undefined;
 }
+
+/** A rendered attribute a backend validation message can be attributed to. */
+export type AttributeErrorTarget = { name: string; label: string };
+
+const ATTRIBUTE_ERROR_PREFIX = 'Extension value of attribute ';
+
+/**
+ * Split backend validation messages into per-attribute errors and the rest. The 422 body is a flat
+ * list of strings, each `Extension value of attribute <label>: ...`, where `<label>` is the
+ * definition's `properties.label` falling back to `name` — there is no field identifier in the
+ * payload, so placing an error on its field means matching that prefix against the rendered
+ * descriptors' labels. Longer labels are tried first, because a label may itself contain `: ` and
+ * would otherwise be shadowed by a shorter prefix-sharing one. A label shared by several targets
+ * cannot be disambiguated, so its messages stay unattributed rather than land on the wrong field.
+ */
+export function splitAttributeValidationErrors(
+    errors: string[],
+    targets: AttributeErrorTarget[],
+): { byAttributeName: Map<string, string[]>; unattributed: string[] } {
+    const byAttributeName = new Map<string, string[]>();
+    const unattributed: string[] = [];
+    const targetCountByLabel = new Map<string, number>();
+    for (const t of targets) {
+        targetCountByLabel.set(t.label, (targetCountByLabel.get(t.label) ?? 0) + 1);
+    }
+    const byLabelLengthDesc = [...targets].sort((a, b) => b.label.length - a.label.length);
+    for (const error of errors) {
+        const target = byLabelLengthDesc.find((t) => error.startsWith(`${ATTRIBUTE_ERROR_PREFIX}${t.label}: `));
+        if (!target || (targetCountByLabel.get(target.label) ?? 0) > 1) {
+            unattributed.push(error);
+            continue;
+        }
+        const message = error.slice(ATTRIBUTE_ERROR_PREFIX.length + target.label.length + 2);
+        const existing = byAttributeName.get(target.name);
+        if (existing) {
+            existing.push(message);
+        } else {
+            byAttributeName.set(target.name, [message]);
+        }
+    }
+    return { byAttributeName, unattributed };
+}

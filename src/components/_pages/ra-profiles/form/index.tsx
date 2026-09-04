@@ -1,6 +1,7 @@
 import AttributeEditor from 'components/Attributes/AttributeEditor';
 import ProgressButton from 'components/ProgressButton';
 import RequestAttributeAuthoringEditor from 'components/RequestAttributes/RequestAttributeAuthoringEditor';
+import { useKeyUsageOptions } from 'components/RequestAttributes/useKeyUsageOptions';
 import { useOidMappingOptions } from 'components/RequestAttributes/useOidMappingOptions';
 
 import Widget from 'components/Widget';
@@ -65,8 +66,18 @@ export default function RaProfileForm({
 }: RaProfileFormProps) {
     const dispatch = useDispatch();
 
-    const { rdnOptions, extensionOptions, rdnOptionsError, extensionOptionsError, rdnOptionsLoaded, extensionOptionsLoaded } =
-        useOidMappingOptions();
+    const {
+        rdnOptions,
+        extensionOptions,
+        extendedKeyUsageOptions,
+        rdnOptionsError,
+        extensionOptionsError,
+        extendedKeyUsageOptionsError,
+        rdnOptionsLoaded,
+        extensionOptionsLoaded,
+        extendedKeyUsageOptionsLoaded,
+    } = useOidMappingOptions();
+    const keyUsageOptions = useKeyUsageOptions();
 
     const { id: routeId, authorityId: routeAuthorityId } = useParams();
     const id = raProfileId || routeId;
@@ -504,10 +515,14 @@ export default function RaProfileForm({
                                                 connectorAttributeOptions={connectorAttributeOptions}
                                                 rdnOptions={rdnOptions}
                                                 extensionOptions={extensionOptions}
+                                                extendedKeyUsageOptions={extendedKeyUsageOptions}
+                                                keyUsageOptions={keyUsageOptions}
                                                 rdnOptionsError={rdnOptionsError}
                                                 extensionOptionsError={extensionOptionsError}
+                                                extendedKeyUsageOptionsError={extendedKeyUsageOptionsError}
                                                 rdnOptionsLoaded={rdnOptionsLoaded}
                                                 extensionOptionsLoaded={extensionOptionsLoaded}
+                                                extendedKeyUsageOptionsLoaded={extendedKeyUsageOptionsLoaded}
                                                 disabled={isUpdatingRequestAttributes || !requestAttributesSeeded}
                                             />
                                         </div>
@@ -524,6 +539,16 @@ export default function RaProfileForm({
                                                 showMergeMode={MERGE_MODE_AND_BINDINGS_ENABLED}
                                                 showBindings={MERGE_MODE_AND_BINDINGS_ENABLED}
                                                 connectorAttributeOptions={connectorAttributeOptions}
+                                                rdnOptions={rdnOptions}
+                                                extensionOptions={extensionOptions}
+                                                extendedKeyUsageOptions={extendedKeyUsageOptions}
+                                                keyUsageOptions={keyUsageOptions}
+                                                rdnOptionsError={rdnOptionsError}
+                                                extensionOptionsError={extensionOptionsError}
+                                                extendedKeyUsageOptionsError={extendedKeyUsageOptionsError}
+                                                rdnOptionsLoaded={rdnOptionsLoaded}
+                                                extensionOptionsLoaded={extensionOptionsLoaded}
+                                                extendedKeyUsageOptionsLoaded={extendedKeyUsageOptionsLoaded}
                                                 disabled={!watchedAuthority || isCreating || isUpdatingRequestAttributes}
                                             />
                                         </div>

@@ -7,9 +7,10 @@ import { ContentFieldConfiguration } from 'components/Input/DynamicContent';
 import Label from 'components/Label';
 import RadioRow from 'components/RadioRow';
 import Select from 'components/Select';
+import TextArea from 'components/TextArea';
 import TextInput from 'components/TextInput';
 import { Plus } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getStepValue } from 'utils/common-utils';
 import {
     AttributeContentType,
@@ -25,10 +26,13 @@ import {
     emptyAuthoredAttribute,
     emptyValueSourceBinding,
     isContentTypeAllowedForMapping,
+    isJsonSchemaConstraintSupportedForContentType,
     isRegexConstraintSupportedForContentType,
     isStaticListSupportedForContentType,
+    isStructuredMappingTarget,
     isValueSourceBindingValid,
     MAPPED_CONTENT_TYPES,
+    STRUCTURED_EXTENSION_OIDS,
     validateAuthoredAttribute,
     withBooleanReadOnlyDefault,
     type AuthoredAttributeErrors,
@@ -36,6 +40,7 @@ import {
     type RequestAttributeAuthoringFormValues,
     type ValueSourceBindingFormValues,
 } from 'utils/requestAttributeAuthoring';
+import type { KeyUsageOption } from './useKeyUsageOptions';
 
 const MERGE_MODE_OPTIONS: { value: AttributeSetMergeMode; label: string; description: string }[] = [
     {
@@ -66,23 +71,22 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = {
     [FieldType.Rdn]: 'RDN (subject)',
     [FieldType.San]: 'Subject Alternative Name',
     [FieldType.Extension]: 'Certificate extension',
-    [FieldType.KeyUsage]: 'Key usage',
-    [FieldType.ExtendedKeyUsage]: 'Extended key usage',
+    [FieldType.KeyUsage]: 'Key Usage',
+    [FieldType.ExtendedKeyUsage]: 'Extended Key Usage',
 };
 
 const FIELD_TYPE_DESCRIPTIONS: Record<FieldType, string> = {
     [FieldType.Rdn]: 'A component of the certificate subject name (e.g. CN, O). You must give the RDN code below.',
     [FieldType.San]: 'A Subject Alternative Name entry (DNS name, email, IP address, …). Pick the SAN type below.',
     [FieldType.Extension]: 'A certificate extension identified by its OID.',
-    [FieldType.KeyUsage]: 'The key usage extension.',
-    [FieldType.ExtendedKeyUsage]: 'The extended key usage extension.',
+    [FieldType.KeyUsage]: 'The Key Usage extension. The key-usage bits you select below form the permitted set.',
+    [FieldType.ExtendedKeyUsage]: 'The Extended Key Usage extension. The purposes you select below form the permitted set.',
 };
 
-// The contract carries five mapping targets; the editor can author three. KeyUsage and
-// ExtendedKeyUsage have no target-specific inputs here and no branch in the mapping switch below,
-// so offering them would produce a mapping the form cannot complete. Listed explicitly rather than
-// derived from the enum so a target reaches the dropdown only once its inputs exist.
-const AUTHORABLE_FIELD_TYPES = [FieldType.Rdn, FieldType.San, FieldType.Extension] as const;
+// Listed explicitly rather than derived from the enum so a target reaches the dropdown only once
+// its inputs exist. All five contract targets are authorable: RDN/SAN/extension have their
+// per-type inputs below, and the structured targets author their permitted set.
+const AUTHORABLE_FIELD_TYPES = [FieldType.Rdn, FieldType.San, FieldType.Extension, FieldType.KeyUsage, FieldType.ExtendedKeyUsage] as const;
 
 const MAPPING_OPTIONS = AUTHORABLE_FIELD_TYPES.map((v) => ({
     value: v,
@@ -234,14 +238,28 @@ type Props = Readonly<{
     rdnOptions?: OidSelectOption[];
     /** Custom-OID entries (category certificateExtension) offered for the extension mapping target. */
     extensionOptions?: OidSelectOption[];
+    /** EKU purpose vocabulary (system + custom, merged) offered for the Extended Key Usage permitted set. */
+    extendedKeyUsageOptions?: OidSelectOption[];
+    /** Key Usage bits (CertificateKeyUsage codes, labelled via the platform enum) offered for the Key Usage permitted set. */
+    keyUsageOptions?: KeyUsageOption[];
     /** True when the last rdnOptions fetch failed — distinguishes a broken load from a legitimately empty list. */
     rdnOptionsError?: boolean;
     /** True when the last extensionOptions fetch failed — distinguishes a broken load from a legitimately empty list. */
     extensionOptionsError?: boolean;
+    /** True when the last extendedKeyUsageOptions fetch failed — distinguishes a broken load from a legitimately empty list. */
+    extendedKeyUsageOptionsError?: boolean;
     /** True once the rdnOptions fetch has resolved — gates the empty hint so it can't flash while loading. */
     rdnOptionsLoaded?: boolean;
     /** True once the extensionOptions fetch has resolved — gates the empty hint so it can't flash while loading. */
     extensionOptionsLoaded?: boolean;
+    /** True once the extendedKeyUsageOptions fetch has resolved — gates the empty hint so it can't flash while loading. */
+    extendedKeyUsageOptionsLoaded?: boolean;
+    /**
+     * Persistence state of the auto-saving parents. When set, the attribute dialog's Save waits for
+     * the save to resolve: it closes only on success, and a rejected save keeps the draft open with
+     * the error shown instead of discarding the input.
+     */
+    persist?: { pending: boolean; error?: string };
     dataTestId?: string;
 }>;
 
@@ -254,19 +272,36 @@ export default function RequestAttributeAuthoringEditor({
     connectorAttributeOptions,
     rdnOptions = [],
     extensionOptions = [],
+    extendedKeyUsageOptions = [],
+    keyUsageOptions = [],
     rdnOptionsError = false,
     extensionOptionsError = false,
+    extendedKeyUsageOptionsError = false,
     rdnOptionsLoaded = true,
     extensionOptionsLoaded = true,
+    extendedKeyUsageOptionsLoaded = true,
+    persist,
     dataTestId = 'request-attribute-authoring',
 }: Props) {
     // `submitted` gates the error messages: the dialog stays clean until Save is pressed.
-    const [attrDraft, setAttrDraft] = useState<{ index: number | null; data: AuthoredAttributeFormValues; submitted: boolean } | null>(
-        null,
-    );
+    // `committing` marks a draft whose Save is awaiting the parent's persistence result.
+    const [attrDraft, setAttrDraft] = useState<{
+        index: number | null;
+        data: AuthoredAttributeFormValues;
+        submitted: boolean;
+        committing?: boolean;
+        commitFailed?: boolean;
+    } | null>(null);
     const [bindingDraft, setBindingDraft] = useState<{ index: number | null; data: ValueSourceBindingFormValues } | null>(null);
 
     const patch = useCallback((next: Partial<RequestAttributeAuthoringFormValues>) => onChange({ ...value, ...next }), [onChange, value]);
+
+    // Key Usage / Extended Key Usage OIDs are refused on the generic Extension target, so the
+    // picker must not offer them; their typed targets cover those extensions.
+    const genericExtensionOptions = useMemo(
+        () => extensionOptions.filter((o) => !(o.value in STRUCTURED_EXTENSION_OIDS)),
+        [extensionOptions],
+    );
 
     // -- Merge mode ------------------------------------------------------------
     const renderMergeMode = () =>
@@ -302,7 +337,25 @@ export default function RequestAttributeAuthoringEditor({
         !!attrDraft &&
         !!attrDraft.data.name.trim() &&
         value.attributes.some((a, i) => i !== attrDraft.index && a.name.trim() === attrDraft.data.name.trim());
+    // A stored permitted-set value outside the current vocabulary (e.g. a deregistered EKU purpose)
+    // stays visible and deselectable, but Core rejects a set containing it — block Save until it is
+    // removed. Skipped while the vocabulary is empty, loading or failed, so an unavailable
+    // vocabulary cannot lock an unrelated edit by flagging every stored value.
+    const structuredSetOffListError = (d: AuthoredAttributeFormValues): string | undefined => {
+        if (!isStructuredMappingTarget(d.mappingFieldType)) return undefined;
+        const isKeyUsage = d.mappingFieldType === FieldType.KeyUsage;
+        if (!isKeyUsage && (extendedKeyUsageOptionsError || !extendedKeyUsageOptionsLoaded)) return undefined;
+        const vocabulary = new Set((isKeyUsage ? keyUsageOptions : extendedKeyUsageOptions).map((o) => o.value));
+        if (vocabulary.size === 0) return undefined;
+        const offList = d.staticValues.map(String).filter((v) => !vocabulary.has(v));
+        if (offList.length === 0) return undefined;
+        return `Remove the unregistered value(s) ${offList.join(', ')} — the permitted set may only contain registered ones.`;
+    };
     const allAttrErrors: AuthoredAttributeErrors = attrDraft ? validateAuthoredAttribute(attrDraft.data) : {};
+    if (attrDraft && !allAttrErrors.staticValues) {
+        const offListError = structuredSetOffListError(attrDraft.data);
+        if (offListError) allAttrErrors.staticValues = offListError;
+    }
     const attrValid = !!attrDraft && Object.keys(allAttrErrors).length === 0 && !attrNameDuplicate;
     const attrErrors: AuthoredAttributeErrors = attrDraft?.submitted ? allAttrErrors : {};
     const nameDuplicateVisible = attrNameDuplicate && !!attrDraft?.submitted;
@@ -325,8 +378,23 @@ export default function RequestAttributeAuthoringEditor({
             next[attrDraft.index] = attrDraft.data;
         }
         patch({ attributes: next });
-        setAttrDraft(null);
+        if (persist) {
+            setAttrDraft({ ...attrDraft, submitted: true, committing: true, commitFailed: false });
+        } else {
+            setAttrDraft(null);
+        }
     };
+
+    // Resolution of an awaited save: close on success, keep the draft with the error on rejection.
+    // The parent reverts its committed list on failure, so a repeated Save re-commits this draft.
+    useEffect(() => {
+        if (!persist || persist.pending || !attrDraft?.committing) return;
+        if (persist.error) {
+            setAttrDraft({ ...attrDraft, committing: false, commitFailed: true });
+        } else {
+            setAttrDraft(null);
+        }
+    }, [persist, attrDraft]);
 
     const rdnCodeDisplay = (stored?: string) => {
         const v = stored?.trim();
@@ -342,6 +410,10 @@ export default function RequestAttributeAuthoringEditor({
                 return `→ SAN ${attr.mappingGeneralNameType ? GENERAL_NAME_TYPE_LABELS[attr.mappingGeneralNameType] : '?'}`;
             case FieldType.Extension:
                 return `→ ext ${attr.mappingExtensionOid || '?'}`;
+            case FieldType.KeyUsage:
+                return '→ Key Usage';
+            case FieldType.ExtendedKeyUsage:
+                return '→ Extended Key Usage';
             default:
                 return 'unmapped';
         }
@@ -425,6 +497,9 @@ export default function RequestAttributeAuthoringEditor({
     const renderAttributeDialog = () => {
         if (!attrDraft) return null;
         const d = attrDraft.data;
+        // A structured target's permitted-set multi-select replaces the value-source selector, the
+        // generic static-list editor and the free-input default.
+        const structured = isStructuredMappingTarget(d.mappingFieldType);
         const set = (p: Partial<AuthoredAttributeFormValues>) =>
             setAttrDraft({ ...attrDraft, data: withBooleanReadOnlyDefault({ ...d, ...p }) });
         // Drop the static list and the default so a value typed under the old type can never serialise
@@ -438,6 +513,9 @@ export default function RequestAttributeAuthoringEditor({
                 ...(isRegexConstraintSupportedForContentType(contentType)
                     ? {}
                     : { regexPattern: '', regexDescription: '', regexErrorMessage: '' }),
+                ...(isJsonSchemaConstraintSupportedForContentType(contentType)
+                    ? {}
+                    : { jsonSchemaData: '', jsonSchemaDescription: '', jsonSchemaErrorMessage: '' }),
             });
         return (
             <div className="space-y-3 text-left" data-testid={`${dataTestId}-attribute-form`}>
@@ -514,26 +592,85 @@ export default function RequestAttributeAuthoringEditor({
                         />
                     </div>
                 )}
+                {isJsonSchemaConstraintSupportedForContentType(d.contentType) && (
+                    <div className="space-y-3" data-testid={`${dataTestId}-attribute-json-schema-block`}>
+                        <Label labelTooltip="Inline JSON Schema (draft 2020-12) the value must conform to. Remote $ref is not supported. Leave empty to skip schema validation.">
+                            JSON Schema
+                        </Label>
+                        <TextArea
+                            id="ra-attr-json-schema"
+                            placeholder="Enter JSON Schema document"
+                            rows={5}
+                            value={d.jsonSchemaData ?? ''}
+                            onChange={(v) => set({ jsonSchemaData: v })}
+                            invalid={Boolean(attrErrors.jsonSchemaData)}
+                        />
+                        <FieldError testId={`${dataTestId}-attribute-json-schema-error`} message={attrErrors.jsonSchemaData} />
+                        {(d.jsonSchemaData ?? '').trim() !== '' && (
+                            <>
+                                <TextInput
+                                    id="ra-attr-json-schema-error-message"
+                                    label="Schema error message"
+                                    labelTooltip="Shown on the request form when the value does not conform to the schema. Falls back to the schema's own message when empty."
+                                    placeholder="Enter error message"
+                                    value={d.jsonSchemaErrorMessage ?? ''}
+                                    onChange={(v) => set({ jsonSchemaErrorMessage: v })}
+                                />
+                                <TextInput
+                                    id="ra-attr-json-schema-description"
+                                    label="Schema description"
+                                    labelTooltip="Explains the expected structure to the requester alongside the field."
+                                    placeholder="Enter description"
+                                    value={d.jsonSchemaDescription ?? ''}
+                                    onChange={(v) => set({ jsonSchemaDescription: v })}
+                                />
+                            </>
+                        )}
+                    </div>
+                )}
                 <Select
                     id="ra-attr-mapping"
                     label="Mapping target"
                     required
-                    labelTooltip="Where this attribute's value is placed in the issued certificate: an RDN (subject) component, a Subject Alternative Name, or a certificate extension."
+                    labelTooltip="Where this attribute's value is placed in the issued certificate: an RDN (subject) component, a Subject Alternative Name, a certificate extension, or the Key Usage / Extended Key Usage extension."
                     value={d.mappingFieldType ?? ''}
                     onChange={(v) => {
                         const mappingFieldType = (v as FieldType) || undefined;
+                        const changes: Partial<AuthoredAttributeFormValues> = {
+                            mappingFieldType,
+                            mappingObjectType: ObjectType.X509Certificate,
+                        };
                         // Otherwise the dialog would show a content type its own dropdown no longer offers.
                         if (mappingFieldType && !isContentTypeAllowedForMapping(d.contentType)) {
-                            set({
-                                mappingFieldType,
-                                mappingObjectType: ObjectType.X509Certificate,
-                                contentType: AttributeContentType.String,
+                            changes.contentType = AttributeContentType.String;
+                            changes.staticValues = [];
+                            changes.defaultValue = undefined;
+                        }
+                        if (isStructuredMappingTarget(mappingFieldType)) {
+                            // A structured target's content is a permitted set picked from a closed
+                            // vocabulary: force the list shape, seed multi-select (a certificate
+                            // typically carries several bits/purposes) and clear everything the
+                            // generic value-source editors could have left behind.
+                            Object.assign(changes, {
+                                valueSourceType: ValueSourceType.None,
+                                list: true,
+                                multiSelect: true,
+                                readOnly: false,
+                                extensibleList: false,
                                 staticValues: [],
                                 defaultValue: undefined,
                             });
-                            return;
+                        } else if (isStructuredMappingTarget(d.mappingFieldType)) {
+                            // Leaving a structured target: its permitted-set values (key-usage codes,
+                            // purpose OIDs) are meaningless for the new target, so drop them.
+                            Object.assign(changes, {
+                                list: false,
+                                multiSelect: false,
+                                extensibleList: false,
+                                staticValues: [],
+                            });
                         }
-                        set({ mappingFieldType, mappingObjectType: ObjectType.X509Certificate });
+                        set(changes);
                     }}
                     options={MAPPING_OPTIONS}
                     placeholder="Select mapping target"
@@ -609,7 +746,7 @@ export default function RequestAttributeAuthoringEditor({
                             testIdPrefix={`${dataTestId}-extension`}
                             emptyHint="No certificate extensions are available. Register one under Settings → Custom OIDs."
                             errorHint="Failed to load certificate extensions."
-                            options={extensionOptions}
+                            options={genericExtensionOptions}
                             optionsError={extensionOptionsError}
                             optionsLoaded={extensionOptionsLoaded}
                             value={d.mappingExtensionOid}
@@ -626,25 +763,28 @@ export default function RequestAttributeAuthoringEditor({
                         />
                     </>
                 )}
-                <Select
-                    id="ra-attr-value-source"
-                    label="Value source"
-                    labelTooltip="How the requester provides the value: free input (they type any value) or a static list (they pick from a fixed set of values you define)."
-                    value={d.valueSourceType}
-                    onChange={(v) => {
-                        const valueSourceType = v as ValueSourceType;
-                        // Selecting a static list forces `list` on (see DTO builder) so the toggle and
-                        // the authored options never disagree; List and Read Only are mutually exclusive, so clear it.
-                        // Free input is a single typed value, so it clears the list/multi-select toggles.
-                        set({
-                            valueSourceType,
-                            ...(valueSourceType === ValueSourceType.StaticList
-                                ? { list: true, readOnly: false }
-                                : { list: false, multiSelect: false }),
-                        });
-                    }}
-                    options={isStaticListSupportedForContentType(d.contentType) ? VALUE_SOURCE_OPTIONS : FREE_INPUT_ONLY_OPTIONS}
-                />
+                {structured && renderStructuredSet(d, set)}
+                {!structured && (
+                    <Select
+                        id="ra-attr-value-source"
+                        label="Value source"
+                        labelTooltip="How the requester provides the value: free input (they type any value) or a static list (they pick from a fixed set of values you define)."
+                        value={d.valueSourceType}
+                        onChange={(v) => {
+                            const valueSourceType = v as ValueSourceType;
+                            // Selecting a static list forces `list` on (see DTO builder) so the toggle and
+                            // the authored options never disagree; List and Read Only are mutually exclusive, so clear it.
+                            // Free input is a single typed value, so it clears the list/multi-select toggles.
+                            set({
+                                valueSourceType,
+                                ...(valueSourceType === ValueSourceType.StaticList
+                                    ? { list: true, readOnly: false }
+                                    : { list: false, multiSelect: false }),
+                            });
+                        }}
+                        options={isStaticListSupportedForContentType(d.contentType) ? VALUE_SOURCE_OPTIONS : FREE_INPUT_ONLY_OPTIONS}
+                    />
+                )}
                 <div className="space-y-2">
                     <Label>Properties</Label>
                     <Container className="flex-row items-center" gap={4}>
@@ -655,28 +795,29 @@ export default function RequestAttributeAuthoringEditor({
                             label="Required"
                             disabled={disabled}
                         />
-                        {/* List/Multi select apply to a static list only; free input is a single typed value. */}
-                        {d.valueSourceType === ValueSourceType.StaticList && (
+                        {/* List/Multi select apply to a static list or a structured permitted set; free input is a single typed value. */}
+                        {(d.valueSourceType === ValueSourceType.StaticList || structured) && (
                             <>
                                 <Checkbox
                                     id="ra-attr-list"
-                                    checked={d.list || d.valueSourceType === ValueSourceType.StaticList}
+                                    checked={d.list || d.valueSourceType === ValueSourceType.StaticList || structured}
                                     onChange={(c) => set({ list: c, multiSelect: c ? d.multiSelect : false })}
                                     label="List"
-                                    // A static list is inherently a list attribute — locked on while it's selected.
-                                    disabled={disabled || d.valueSourceType === ValueSourceType.StaticList}
+                                    // A static list is inherently a list attribute, and a structured
+                                    // permitted set must be one — locked on in both cases.
+                                    disabled={disabled || d.valueSourceType === ValueSourceType.StaticList || structured}
                                 />
                                 <Checkbox
                                     id="ra-attr-multi"
                                     checked={d.multiSelect}
                                     onChange={(c) => set({ multiSelect: c })}
                                     label="Multi select"
-                                    disabled={disabled || !d.list}
+                                    disabled={disabled || !(d.list || structured)}
                                 />
                             </>
                         )}
                         {/* Read Only applies to free input only (lock the single value to its default). */}
-                        {d.valueSourceType === ValueSourceType.None && (
+                        {d.valueSourceType === ValueSourceType.None && !structured && (
                             <Checkbox
                                 id="ra-attr-readonly"
                                 checked={d.readOnly}
@@ -689,8 +830,82 @@ export default function RequestAttributeAuthoringEditor({
                     <FieldError testId={`${dataTestId}-attribute-readonly-error`} message={attrErrors.readOnly} />
                     <FieldError testId={`${dataTestId}-attribute-multiselect-error`} message={attrErrors.multiSelect} />
                 </div>
-                {d.valueSourceType === ValueSourceType.StaticList && renderStaticValues(d, set)}
-                {d.valueSourceType === ValueSourceType.None && renderFreeInputDefault(d, set)}
+                {d.valueSourceType === ValueSourceType.StaticList && !structured && renderStaticValues(d, set)}
+                {d.valueSourceType === ValueSourceType.None && !structured && renderFreeInputDefault(d, set)}
+                {attrDraft.commitFailed && persist?.error && (
+                    <div
+                        className="rounded-lg border border-danger bg-danger-surface p-3 text-sm text-danger"
+                        data-testid={`${dataTestId}-attribute-save-error`}
+                        role="alert"
+                    >
+                        {`The change was rejected and has not been saved: ${persist.error}`}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // The permitted set of a structured mapping target (Key Usage bits / EKU purposes), authored as
+    // a multi-select over the closed vocabulary and stored in the attribute `content` array exactly
+    // like a static list. What a selection submits is the CertificateKeyUsage code, respectively the
+    // dotted-decimal purpose OID — never a display label.
+    const renderStructuredSet = (d: AuthoredAttributeFormValues, set: (p: Partial<AuthoredAttributeFormValues>) => void) => {
+        const isKeyUsage = d.mappingFieldType === FieldType.KeyUsage;
+        const vocabulary: { value: string; label: string; description?: string }[] = isKeyUsage
+            ? keyUsageOptions
+            : extendedKeyUsageOptions.map((o) => ({ value: o.value, label: o.label, description: o.description }));
+        const optionsError = isKeyUsage ? false : extendedKeyUsageOptionsError;
+        const optionsLoaded = isKeyUsage ? true : extendedKeyUsageOptionsLoaded;
+        const testIdPrefix = `${dataTestId}-${isKeyUsage ? 'key-usage' : 'eku'}`;
+        const vocabularyNoun = isKeyUsage ? 'Key Usage bits' : 'Extended Key Usage purposes';
+        const labelByValue = new Map(vocabulary.map((o) => [o.value, o.label]));
+        const selected = d.staticValues.map(String);
+        // A stored value missing from the vocabulary (e.g. a purpose whose registry entry was
+        // removed) stays visible and deselectable instead of being silently dropped.
+        const offList = selected.filter((v) => !labelByValue.has(v)).map((v) => ({ value: v, label: `${v} (not registered)` }));
+        const options = [...vocabulary, ...offList];
+        const selectedOptions = selected.map((v) => ({ value: v, label: labelByValue.get(v) ?? `${v} (not registered)` }));
+        return (
+            <div className="space-y-2" data-testid={`${testIdPrefix}-set`}>
+                {optionsError && (
+                    <p className="text-sm text-danger" data-testid={`${testIdPrefix}-error`}>
+                        {`Failed to load ${vocabularyNoun}.`}
+                    </p>
+                )}
+                {options.length === 0 ? (
+                    !optionsError &&
+                    optionsLoaded && (
+                        <p className="text-sm text-content-subtle" data-testid={`${testIdPrefix}-empty`}>
+                            {`No ${vocabularyNoun} are available.`}
+                            {isKeyUsage ? '' : ' Register one under Settings → Custom OIDs.'}
+                        </p>
+                    )
+                ) : (
+                    <Select
+                        isMulti
+                        id="ra-attr-permitted-set"
+                        label={isKeyUsage ? 'Permitted key usages' : 'Permitted purposes'}
+                        value={selectedOptions}
+                        onChange={(next) => set({ staticValues: (next ?? []).map((o) => String(o.value)) })}
+                        options={options}
+                        placeholder={isKeyUsage ? 'Select key usages' : 'Select purposes'}
+                        isDisabled={disabled}
+                        showOptionDescriptionInDropdown
+                    />
+                )}
+                <FieldError testId={`${dataTestId}-structured-set-error`} message={attrErrors.staticValues} />
+                <Checkbox
+                    id="ra-attr-extensible-list"
+                    checked={d.extensibleList}
+                    onChange={(c) => set({ extensibleList: c })}
+                    label="Any value allowed (extensible list)"
+                    disabled={disabled}
+                />
+                <p className="text-xs text-content-subtle" data-testid={`${dataTestId}-permitted-set-semantics`}>
+                    The selection is a permitted set: every value in a submitted request, including an uploaded CSR under strict validation,
+                    must be one of its members. "Required" additionally demands a non-empty value. "Any value allowed" keeps the selection
+                    offered but lifts the restriction.
+                </p>
             </div>
         );
     };
@@ -924,13 +1139,31 @@ export default function RequestAttributeAuthoringEditor({
 
             <Dialog
                 isOpen={!!attrDraft}
-                toggle={() => setAttrDraft(null)}
+                // While a save awaits its result, every dismissal path (Cancel, close, Escape,
+                // overlay click) is a no-op — closing would discard the very draft a rejection is
+                // supposed to hand back.
+                toggle={() => {
+                    if (!persist?.pending) setAttrDraft(null);
+                }}
                 size="lg"
                 caption={attrDraft?.index === null ? 'Add request attribute' : 'Edit request attribute'}
                 body={renderAttributeDialog()}
                 buttons={[
-                    { key: 'cancel', color: 'primary', variant: 'outline', body: 'Cancel', onClick: () => setAttrDraft(null) },
-                    { key: 'save', color: 'primary', body: 'Save', onClick: saveAttribute },
+                    {
+                        key: 'cancel',
+                        color: 'primary',
+                        variant: 'outline',
+                        body: 'Cancel',
+                        disabled: !!persist?.pending,
+                        onClick: () => setAttrDraft(null),
+                    },
+                    {
+                        key: 'save',
+                        color: 'primary',
+                        body: persist?.pending && attrDraft?.committing ? 'Saving...' : 'Save',
+                        disabled: !!persist?.pending,
+                        onClick: saveAttribute,
+                    },
                 ]}
             />
 
