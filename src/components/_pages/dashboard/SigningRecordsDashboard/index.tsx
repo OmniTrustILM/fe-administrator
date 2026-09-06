@@ -144,7 +144,7 @@ function SigningRecordsDashboard() {
                         link={LINK}
                         entity={EntityType.SIGNING_RECORD}
                         onSetFilter={() => buildSigningTimeWindowFilter(availableFilters, SIGNING_WINDOW_HOURS.last24h)}
-                        extraComponent={caption('by signing time')}
+                        extraComponent={caption('includes deleted records')}
                     />
                 </div>
                 <div className="flex-1 min-w-[180px]">
@@ -154,7 +154,7 @@ function SigningRecordsDashboard() {
                         link={LINK}
                         entity={EntityType.SIGNING_RECORD}
                         onSetFilter={() => buildSigningTimeWindowFilter(availableFilters, SIGNING_WINDOW_HOURS.last7d)}
-                        extraComponent={caption('by signing time')}
+                        extraComponent={caption('includes deleted records')}
                     />
                 </div>
                 <div className="flex-1 min-w-[180px]">

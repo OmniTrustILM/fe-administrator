@@ -53,14 +53,18 @@ export function buildSigningTimeWindowFilter(
     const field = resolveSigningRecordFilterField(availableFilters, 'signingTime');
     if (!field) return [];
 
-    // Closed on both ends, like the time-series drill-down: the tile counts a window, so a
-    // future-dated signing time must not slip into the list the tile opens.
+    // Opened on the hour the tile's own window opens on: the tile counts deleted signings out of hourly history,
+    // so an exact cutoff here would hide rows it counted. Closed on both ends, like the time-series drill-down,
+    // so a future-dated signing time cannot slip into the list the tile opens.
+    const windowStart = new Date(now.getTime() - hours * 60 * 60 * 1000);
+    windowStart.setUTCMinutes(0, 0, 0);
+
     return [
         {
             fieldSource: FilterFieldSource.Property,
             condition: FilterConditionOperator.GreaterOrEqual,
             fieldIdentifier: field.fieldIdentifier,
-            value: new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString(),
+            value: windowStart.toISOString(),
         },
         {
             fieldSource: FilterFieldSource.Property,

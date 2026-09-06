@@ -78,6 +78,15 @@ describe('buildSigningTimeWindowFilter', () => {
         expect(filters[1].value).toBe('2026-07-29T12:00:00.000Z');
     });
 
+    test('opens the window on the hour the tile counts from', () => {
+        const midHour = new Date('2026-07-29T12:37:41.123Z');
+
+        const filters = buildSigningTimeWindowFilter(grouped, SIGNING_WINDOW_HOURS.last24h, midHour);
+
+        expect(filters[0].value).toBe('2026-07-28T12:00:00.000Z');
+        expect(filters[1].value).toBe('2026-07-29T12:37:41.123Z');
+    });
+
     test('returns no filter when the signing time field is not searchable', () => {
         expect(buildSigningTimeWindowFilter([], SIGNING_WINDOW_HOURS.last24h, now)).toEqual([]);
     });
