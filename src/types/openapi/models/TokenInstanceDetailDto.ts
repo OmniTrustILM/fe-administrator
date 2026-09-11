@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { MetadataResponseDto, ResponseAttribute, TokenInstanceStatusDetailDto } from './';
+import type { KeyTransferAvailabilityDto, MetadataResponseDto, ResponseAttribute, TokenInstanceStatusDetailDto } from './';
 
 /**
  * @export
@@ -78,4 +78,10 @@ export interface TokenInstanceDetailDto {
      * @memberof TokenInstanceDetailDto
      */
     customAttributes?: Array<ResponseAttribute>;
+    /**
+     * Whether key material can be imported into or exported from this token, meaning it is available on at least one of its token profiles. The key types each profile accepts are reported on that profile.
+     * @type {KeyTransferAvailabilityDto}
+     * @memberof TokenInstanceDetailDto
+     */
+    keyTransfer?: KeyTransferAvailabilityDto;
 }

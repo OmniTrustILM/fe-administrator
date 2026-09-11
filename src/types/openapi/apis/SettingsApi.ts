@@ -218,7 +218,7 @@ export class SettingsApi extends BaseAPI {
     }
 
     /**
-     * The only way to write branding. It is deliberately absent from the `PUT /v1/settings/platform` body: authorization is applied per endpoint, so branding carried in that body would be writable by anyone holding plain `UPDATE` over settings, and the narrower `UPDATE_BRANDING` action that gates this endpoint would grant nothing extra. The request carries the full desired state — a field left out clears that part of the branding.
+     * The only way to write branding.  **Authorization:** gated by `UPDATE_BRANDING`, a narrower action than the `UPDATE` that gates the rest of settings. Authorization is applied per endpoint. Branding is therefore deliberately absent from the `PUT /v1/settings/platform` body. Carried there, it would be writable by anyone holding plain `UPDATE`, leaving `UPDATE_BRANDING` nothing extra to grant.  **Request semantics:** the request carries the full desired state. A field left out clears that part of the branding.
      * Update platform branding
      */
     updateBrandingSettings({ brandingSettingsUpdateDto }: UpdateBrandingSettingsRequest): Observable<void>;

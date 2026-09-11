@@ -25,7 +25,7 @@ export interface SearchFilterRequestDto {
      */
     fieldSource: FilterFieldSource;
     /**
-     * Field identifier of search filter. List of available fields with their identifiers can be retrieved from corresponding endpoint `GET /v1/{resource}/search`, e.g.: [**GET /v1/certificates/search**](../core-certificate/#tag/Certificate-Inventory/operation/getSearchableFieldInformation)
+     * Field identifier of search filter. List of available fields with their identifiers can be retrieved from the resource\'s searchable-fields operation, e.g.: [**GET /v1/certificates/search**](../core-certificate/#tag/Certificate-Inventory/operation/getSearchableFieldInformation)
      * @type {string}
      * @memberof SearchFilterRequestDto
      */

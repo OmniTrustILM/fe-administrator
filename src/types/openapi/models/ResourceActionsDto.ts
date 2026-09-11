@@ -14,6 +14,7 @@
 import type { Resource, ResourceAction } from './';
 
 /**
+ * Reported so a client can gate a control on the action that actually guards the endpoint, rather than inferring it from listing access. The authorization service remains the only gate; this is a hint that keeps a control the caller cannot use off the screen.
  * @export
  * @interface ResourceActionsDto
  */

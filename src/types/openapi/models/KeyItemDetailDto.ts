@@ -102,4 +102,10 @@ export interface KeyItemDetailDto {
      * @memberof KeyItemDetailDto
      */
     complianceStatus: ComplianceStatus;
+    /**
+     * Whether this key may be exported. Set when the key is created or imported and never raised afterwards; it can only be lowered to false.
+     * @type {boolean}
+     * @memberof KeyItemDetailDto
+     */
+    exportable: boolean;
 }

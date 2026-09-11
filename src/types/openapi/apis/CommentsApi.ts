@@ -22,6 +22,7 @@ import type {
     CommentResponseDto,
     ErrorMessageDto,
     Resource,
+    SortDirection,
 } from '../models';
 
 export interface CreateCommentRequest {
@@ -37,12 +38,16 @@ export interface DeleteCommentRequest {
 export interface ListCommentsRequest {
     resource: Resource;
     objectUuid: string;
+    anchorUuid?: string;
+    sortDirection?: SortDirection;
     itemsPerPage?: number;
     pageNumber?: number;
 }
 
 export interface ListRepliesRequest {
     uuid: string;
+    anchorUuid?: string;
+    sortDirection?: SortDirection;
     itemsPerPage?: number;
     pageNumber?: number;
 }
@@ -112,16 +117,23 @@ export class CommentsApi extends BaseAPI {
     }
 
     /**
-     * Pages over thread roots; each root carries its reply count. Replies are paged separately.
+     * Pages over thread roots in creation order, oldest first unless the direction says otherwise; each root carries its reply count. Replies are paged separately. Pass anchorUuid, a thread root, to open the page holding that thread in the requested direction, in place of the requested page; an anchor that no longer exists or is not a root of this object leaves the requested page unchanged. A reply is anchored on the replies listing.
      * List comment threads for an object
      */
-    listComments({ resource, objectUuid, itemsPerPage, pageNumber }: ListCommentsRequest): Observable<CommentResponseDto>;
+    listComments({
+        resource,
+        objectUuid,
+        anchorUuid,
+        sortDirection,
+        itemsPerPage,
+        pageNumber,
+    }: ListCommentsRequest): Observable<CommentResponseDto>;
     listComments(
-        { resource, objectUuid, itemsPerPage, pageNumber }: ListCommentsRequest,
+        { resource, objectUuid, anchorUuid, sortDirection, itemsPerPage, pageNumber }: ListCommentsRequest,
         opts?: OperationOpts,
     ): Observable<AjaxResponse<CommentResponseDto>>;
     listComments(
-        { resource, objectUuid, itemsPerPage, pageNumber }: ListCommentsRequest,
+        { resource, objectUuid, anchorUuid, sortDirection, itemsPerPage, pageNumber }: ListCommentsRequest,
         opts?: OperationOpts,
     ): Observable<CommentResponseDto | AjaxResponse<CommentResponseDto>> {
         throwIfNullOrUndefined(resource, 'resource', 'listComments');
@@ -129,6 +141,12 @@ export class CommentsApi extends BaseAPI {
 
         const queryParams: HttpQuery = {};
 
+        if (anchorUuid != null) {
+            queryParams['anchorUuid'] = anchorUuid;
+        }
+        if (sortDirection != null) {
+            queryParams['sortDirection'] = sortDirection;
+        }
         if (itemsPerPage != null) {
             queryParams['itemsPerPage'] = itemsPerPage;
         }
@@ -149,19 +167,28 @@ export class CommentsApi extends BaseAPI {
     }
 
     /**
-     * Pages over the thread root\'s replies in creation order.
+     * Pages over the thread root\'s replies in creation order, oldest first unless the direction says otherwise. Pass anchorUuid to open the page holding a particular reply in the requested direction, in place of the requested page; an anchor that no longer exists or is not a reply of this thread leaves the requested page unchanged.
      * List replies of a comment thread
      */
-    listReplies({ uuid, itemsPerPage, pageNumber }: ListRepliesRequest): Observable<CommentResponseDto>;
-    listReplies({ uuid, itemsPerPage, pageNumber }: ListRepliesRequest, opts?: OperationOpts): Observable<AjaxResponse<CommentResponseDto>>;
+    listReplies({ uuid, anchorUuid, sortDirection, itemsPerPage, pageNumber }: ListRepliesRequest): Observable<CommentResponseDto>;
     listReplies(
-        { uuid, itemsPerPage, pageNumber }: ListRepliesRequest,
+        { uuid, anchorUuid, sortDirection, itemsPerPage, pageNumber }: ListRepliesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<CommentResponseDto>>;
+    listReplies(
+        { uuid, anchorUuid, sortDirection, itemsPerPage, pageNumber }: ListRepliesRequest,
         opts?: OperationOpts,
     ): Observable<CommentResponseDto | AjaxResponse<CommentResponseDto>> {
         throwIfNullOrUndefined(uuid, 'uuid', 'listReplies');
 
         const queryParams: HttpQuery = {};
 
+        if (anchorUuid != null) {
+            queryParams['anchorUuid'] = anchorUuid;
+        }
+        if (sortDirection != null) {
+            queryParams['sortDirection'] = sortDirection;
+        }
         if (itemsPerPage != null) {
             queryParams['itemsPerPage'] = itemsPerPage;
         }

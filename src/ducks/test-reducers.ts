@@ -1158,11 +1158,13 @@ function rulesTestReducer(state: RulesTestState | undefined, _action: UnknownAct
 }
 
 export type CommentsTestPage = {
-    comments: unknown[];
+    comments: Array<{ uuid: string }>;
     totalItems: number;
     totalPages: number;
     pageNumber: number;
     itemsPerPage: number;
+    firstPage: number;
+    missingAnchor?: string;
     isFetching: boolean;
     isPosting: boolean;
     postingDenied?: string;
@@ -1170,7 +1172,7 @@ export type CommentsTestPage = {
 };
 
 export type CommentsTestState = {
-    threads: Record<string, CommentsTestPage & { lock?: unknown }>;
+    threads: Record<string, CommentsTestPage & { sortDirection?: string; lock?: unknown }>;
     replies: Record<string, CommentsTestPage>;
     busy: Record<string, boolean>;
     /** Every `comments/*` action the panel dispatched, so a test can assert the request without an epic. */
@@ -1190,11 +1192,48 @@ const emptyCommentsTestPage: CommentsTestPage = {
     totalPages: 0,
     pageNumber: 1,
     itemsPerPage: 10,
+    firstPage: 1,
     isFetching: false,
     isPosting: false,
 };
 
 type CommentsPostPayload = { key?: string; resource?: string; objectUuid?: string; parentUuid?: string };
+
+type CommentsPagePayload = {
+    key?: string;
+    rootUuid?: string;
+    page: Omit<CommentsTestPage, 'firstPage' | 'isFetching' | 'isPosting'>;
+    sortDirection?: string;
+    anchorUuid?: string;
+};
+
+/**
+ * The page rule the real slice applies, so a test can deliver a page and see the list the panel would show: a later
+ * page read in the same direction joins the list, anything else (a first page, an anchored page, the other direction)
+ * replaces it.
+ */
+function withPage(state: CommentsTestState, payload: CommentsPagePayload): CommentsTestState {
+    const { page, anchorUuid } = payload;
+    const isThreads = payload.rootUuid === undefined;
+    const id = payload.rootUuid ?? payload.key ?? '';
+    const target: CommentsTestPage & { sortDirection?: string } =
+        (isThreads ? state.threads[id] : state.replies[id]) ?? emptyCommentsTestPage;
+    const sameOrder = !isThreads || payload.sortDirection === (target.sortDirection ?? 'asc');
+    const append = page.pageNumber > 1 && anchorUuid === undefined && sameOrder;
+    const loaded = append ? target.comments : [];
+    const seen = new Set(loaded.map((comment) => comment.uuid));
+    const anchorShown = anchorUuid === undefined || page.comments.some((comment) => comment.uuid === anchorUuid);
+    const next = {
+        ...target,
+        ...page,
+        comments: [...loaded, ...page.comments.filter((comment) => !seen.has(comment.uuid))],
+        firstPage: append ? target.firstPage : page.pageNumber,
+        missingAnchor: anchorShown ? undefined : anchorUuid,
+        isFetching: false,
+        ...(isThreads ? { sortDirection: payload.sortDirection } : {}),
+    };
+    return isThreads ? { ...state, threads: { ...state.threads, [id]: next } } : { ...state, replies: { ...state.replies, [id]: next } };
+}
 
 /** A reply post lands on its thread, a root post on the panel: the same routing the real slice does. */
 function withPostState(state: CommentsTestState, payload: CommentsPostPayload, change: Partial<CommentsTestPage>): CommentsTestState {
@@ -1216,6 +1255,14 @@ function commentsTestReducer(state: CommentsTestState | undefined, action: Unkno
     const payload = (action.payload ?? {}) as CommentsPostPayload;
     if (action.type === 'comments/createComment') return withPostState(recorded, payload, { isPosting: true, postSucceeded: false });
     if (action.type === 'comments/createCommentSuccess') return withPostState(recorded, payload, { isPosting: false, postSucceeded: true });
+    if (action.type === 'comments/listThreadsSuccess' || action.type === 'comments/listRepliesSuccess') {
+        return withPage(recorded, action.payload as CommentsPagePayload);
+    }
+    if (action.type === 'comments/listRepliesFailure') {
+        const { rootUuid, missingAnchor } = action.payload as { rootUuid: string; missingAnchor?: string };
+        const target = recorded.replies[rootUuid] ?? emptyCommentsTestPage;
+        return { ...recorded, replies: { ...recorded.replies, [rootUuid]: { ...target, isFetching: false, missingAnchor } } };
+    }
 
     return recorded;
 }

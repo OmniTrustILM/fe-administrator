@@ -12,6 +12,7 @@ vi.mock('react-redux', async () => await import('../../test-utils/reactReduxMock
 vi.mock('react-router', () => ({
     Link: ({ to, children }: { to: string; children?: React.ReactNode }) => <a href={to}>{children}</a>,
     useParams: () => ({ id: 'profile-1', tokenId: 'token-1' }),
+    useSearchParams: () => [new URLSearchParams(), () => undefined],
 }));
 vi.mock('utils/common-hooks', () => ({ useRunOnSuccessfulFinish: () => undefined }));
 vi.mock('components/DetailPageSkeleton', () => ({ default: () => null }));

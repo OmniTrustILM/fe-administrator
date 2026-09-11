@@ -15,14 +15,26 @@ const comment = (uuid: string, body: string, overrides: Record<string, unknown> 
     ...overrides,
 });
 
-const threadsPage = (comments: unknown[], overrides: Record<string, unknown> = {}) => ({
+const threadsPage = (comments: Array<{ uuid: string }>, overrides: Record<string, unknown> = {}) => ({
     comments,
     totalItems: comments.length,
     totalPages: 1,
     pageNumber: 1,
     itemsPerPage: 10,
+    firstPage: 1,
+    sortDirection: 'asc',
     isFetching: false,
     isPosting: false,
+    ...overrides,
+});
+
+/** A page as the API would answer it, for delivering to the store through the wrapper's controls. */
+const apiPage = (comments: Array<{ uuid: string }>, overrides: Record<string, unknown> = {}) => ({
+    comments,
+    totalItems: comments.length,
+    totalPages: 1,
+    pageNumber: 1,
+    itemsPerPage: 10,
     ...overrides,
 });
 
@@ -308,9 +320,9 @@ test.describe('CommentPanel', () => {
         const refresh = page.getByTestId('refresh-icon');
         await expect(refresh).toBeEnabled();
         await refresh.click();
-        expect((await dispatched(page)).at(-1)).toMatchObject({
-            type: 'comments/listThreads',
-            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1 },
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/refreshPanel',
+            payload: { resource: 'certificates', objectUuid: 'obj-1' },
         });
     });
 
@@ -476,8 +488,269 @@ test.describe('CommentPanel', () => {
 
         expect((await dispatched(page)).at(-1)).toEqual({
             type: 'comments/listThreads',
-            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 2, itemsPerPage: 10 },
+            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 2, itemsPerPage: 10, sortDirection: 'asc' },
         });
+    });
+
+    test('loading a later page keeps the direction the list was loaded in', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                comments={{
+                    threads: { [KEY]: threadsPage([comment('r25', 'newest')], { totalPages: 3, totalItems: 25, sortDirection: 'desc' }) },
+                }}
+            />,
+        );
+
+        await expect(page.getByTestId('comment-panel-obj-1-sort')).toHaveText('Newest first');
+        await page.getByTestId('comment-panel-obj-1-load-more').click();
+
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/listThreads',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 2, itemsPerPage: 10, sortDirection: 'desc' },
+        });
+    });
+
+    test('switching direction re-reads the first page the other way round and replaces what was loaded', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                comments={{
+                    threads: {
+                        [KEY]: threadsPage([comment('r1', 'one'), comment('r2', 'two'), comment('r3', 'three')], {
+                            pageNumber: 2,
+                            itemsPerPage: 2,
+                            totalItems: 3,
+                            totalPages: 2,
+                        }),
+                    },
+                }}
+                deliver={[
+                    {
+                        testId: 'deliver-desc',
+                        type: 'comments/listThreadsSuccess',
+                        payload: {
+                            key: KEY,
+                            page: apiPage([comment('r3', 'three'), comment('r2', 'two')], {
+                                itemsPerPage: 2,
+                                totalItems: 3,
+                                totalPages: 2,
+                            }),
+                            sortDirection: 'desc',
+                        },
+                    },
+                ]}
+            />,
+        );
+
+        const sort = page.getByTestId('comment-panel-obj-1-sort');
+        await expect(sort).toHaveText('Oldest first');
+        await sort.click();
+
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/listThreads',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1, sortDirection: 'desc' },
+        });
+
+        // The reversed page lands on a list that already holds r2 and r3: they must not appear twice.
+        await page.getByTestId('deliver-desc').click();
+        await expect(sort).toHaveText('Newest first');
+        const bodies = page.getByTestId('comment-panel-obj-1-threads').locator('[data-testid^="comment-"][data-testid$="-body"]');
+        await expect(bodies).toHaveText(['three', 'two']);
+        await expect(page.getByTestId('comment-panel-obj-1-load-more')).toHaveText('Load more (1 remaining)');
+
+        await sort.click();
+        expect((await dispatched(page)).at(-1)).toMatchObject({
+            type: 'comments/listThreads',
+            payload: { pageNumber: 1, sortDirection: 'asc' },
+        });
+    });
+
+    test('a comment notification anchors the roots listing on its thread and adopts the page that comes back', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                search="?tab=comments&comment=r21"
+                deliver={[
+                    {
+                        testId: 'deliver-anchored',
+                        type: 'comments/listThreadsSuccess',
+                        payload: {
+                            key: KEY,
+                            page: apiPage([comment('r21', 'the one'), comment('r22', 'after it')], {
+                                pageNumber: 3,
+                                totalItems: 22,
+                                totalPages: 3,
+                            }),
+                            sortDirection: 'asc',
+                            anchorUuid: 'r21',
+                        },
+                    },
+                ]}
+            />,
+        );
+
+        expect((await dispatched(page))[0]).toEqual({
+            type: 'comments/listThreads',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1, anchorUuid: 'r21' },
+        });
+
+        await page.getByTestId('deliver-anchored').click();
+        await expect(page.getByTestId('comment-r21')).toHaveAttribute('data-highlighted', 'true');
+        await expect(page.getByTestId('comment-r21')).toBeInViewport();
+        await expect(page.getByTestId('comment-r22')).not.toHaveAttribute('data-highlighted', 'true');
+        await expect(page.getByTestId('comment-panel-obj-1-missing-anchor')).toHaveCount(0);
+        await expect(page.getByTestId('comment-panel-obj-1-load-more')).toHaveCount(0);
+
+        // Twenty roots sit on the two pages before the adopted one; showing them re-reads the window from the first page.
+        const earlier = page.getByTestId('comment-panel-obj-1-load-earlier');
+        await expect(earlier).toHaveText('Show earlier comments (20)');
+        await earlier.click();
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/listThreads',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1, itemsPerPage: 30, sortDirection: 'asc' },
+        });
+    });
+
+    test('a reply notification anchors the thread and its replies in parallel, expands the thread and highlights the reply', async ({
+        mount,
+        page,
+    }) => {
+        await mount(
+            <CommentPanelWithStore
+                search="?tab=comments&comment=c41&thread=r1"
+                comments={{
+                    threads: { [KEY]: threadsPage([comment('r1', 'root', { replyCount: 41 })]) },
+                    replies: {
+                        r1: threadsPage([comment('c41', 'the reply')], {
+                            pageNumber: 3,
+                            itemsPerPage: 20,
+                            totalItems: 41,
+                            totalPages: 3,
+                            firstPage: 3,
+                        }),
+                    },
+                }}
+            />,
+        );
+
+        const first = (await dispatched(page)).slice(0, 2);
+        expect(first).toContainEqual({
+            type: 'comments/listThreads',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1, anchorUuid: 'r1' },
+        });
+        expect(first).toContainEqual({ type: 'comments/listReplies', payload: { rootUuid: 'r1', pageNumber: 1, anchorUuid: 'c41' } });
+
+        await expect(page.getByTestId('thread-r1-replies')).toBeVisible();
+        await expect(page.getByTestId('comment-c41')).toHaveAttribute('data-highlighted', 'true');
+        await expect(page.getByTestId('comment-c41')).toBeInViewport();
+        await expect(page.getByTestId('comment-r1')).not.toHaveAttribute('data-highlighted', 'true');
+        await expect(page.getByTestId('thread-r1-load-more')).toHaveCount(0);
+
+        const earlier = page.getByTestId('thread-r1-load-earlier');
+        await expect(earlier).toHaveText('Show earlier replies (40)');
+        await earlier.click();
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/listReplies',
+            payload: { rootUuid: 'r1', pageNumber: 1, itemsPerPage: 60 },
+        });
+    });
+
+    test('following a notification about another comment on the object already open re-anchors the panel', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                search="?tab=comments"
+                comments={{
+                    threads: { [KEY]: threadsPage([comment('r1', 'one', { replyCount: 1 }), comment('r2', 'two')]) },
+                    replies: { r1: threadsPage([comment('c1', 'the reply')], { itemsPerPage: 20 }) },
+                }}
+                navigateTo={[
+                    { testId: 'go-root', search: '?tab=comments&comment=r2' },
+                    { testId: 'go-reply', search: '?tab=comments&comment=c1&thread=r1' },
+                    { testId: 'go-tab-only', search: '?tab=comments&comment=c1&thread=r1&other=x' },
+                ]}
+            />,
+        );
+        expect((await dispatched(page)).filter((action) => action.type === 'comments/listThreads')).toHaveLength(1);
+
+        await page.getByTestId('go-root').click();
+        await expect(page.getByTestId('comment-r2')).toHaveAttribute('data-highlighted', 'true');
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/listThreads',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1, anchorUuid: 'r2' },
+        });
+
+        await page.getByTestId('go-reply').click();
+        await expect(page.getByTestId('comment-c1')).toHaveAttribute('data-highlighted', 'true');
+        await expect(page.getByTestId('comment-r2')).not.toHaveAttribute('data-highlighted', 'true');
+        const latest = (await dispatched(page)).slice(-2);
+        expect(latest).toContainEqual({
+            type: 'comments/listThreads',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1, anchorUuid: 'r1' },
+        });
+        expect(latest).toContainEqual({ type: 'comments/listReplies', payload: { rootUuid: 'r1', pageNumber: 1, anchorUuid: 'c1' } });
+
+        // A query change that leaves the anchor alone does not list again.
+        const before = (await dispatched(page)).length;
+        await page.getByTestId('go-tab-only').click();
+        await expect(page.getByTestId('comment-c1')).toHaveAttribute('data-highlighted', 'true');
+        expect(await dispatched(page)).toHaveLength(before);
+    });
+
+    test('re-anchoring on the object already open keeps the panel state, so the chosen direction survives', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                search="?tab=comments"
+                comments={{ threads: { [KEY]: threadsPage([comment('r2', 'two'), comment('r1', 'one')], { sortDirection: 'desc' }) } }}
+                navigateTo={[{ testId: 'go-root', search: '?tab=comments&comment=r1' }]}
+            />,
+        );
+        await expect(page.getByTestId('comment-panel-obj-1-sort')).toHaveText('Newest first');
+
+        await page.getByTestId('go-root').click();
+        await expect(page.getByTestId('comment-r1')).toHaveAttribute('data-highlighted', 'true');
+        await expect(page.getByTestId('comment-panel-obj-1-sort')).toHaveText('Newest first');
+        expect((await dispatched(page)).map((action) => action.type)).not.toContain('comments/clearPanel');
+    });
+
+    test('a notification whose comment is gone shows an error and leaves the panel on the first page', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                search="?tab=comments&comment=gone"
+                deliver={[
+                    {
+                        testId: 'deliver-first-page',
+                        type: 'comments/listThreadsSuccess',
+                        payload: { key: KEY, page: apiPage([comment('r1', 'still here')]), sortDirection: 'asc', anchorUuid: 'gone' },
+                    },
+                ]}
+            />,
+        );
+
+        await page.getByTestId('deliver-first-page').click();
+
+        await expect(page.getByTestId('comment-panel-obj-1-missing-anchor')).toHaveText('The comment you followed no longer exists.');
+        await expect(page.getByTestId('comment-r1-body')).toHaveText('still here');
+        await expect(page.getByTestId('comment-panel-obj-1-load-earlier')).toHaveCount(0);
+        await expect(page.locator('[data-highlighted]')).toHaveCount(0);
+    });
+
+    test('a reply notification whose thread is gone shows the same error', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                search="?tab=comments&comment=c1&thread=gone"
+                comments={{ threads: { [KEY]: threadsPage([comment('r1', 'other thread')]) } }}
+                deliver={[
+                    {
+                        testId: 'deliver-404',
+                        type: 'comments/listRepliesFailure',
+                        payload: { rootUuid: 'gone', missingAnchor: 'c1' },
+                    },
+                ]}
+            />,
+        );
+
+        await expect(page.getByTestId('comment-panel-obj-1-missing-anchor')).toHaveCount(0);
+        await page.getByTestId('deliver-404').click();
+        await expect(page.getByTestId('comment-panel-obj-1-missing-anchor')).toBeVisible();
+        await expect(page.getByTestId('comment-r1-body')).toHaveText('other thread');
     });
 
     test('a fully loaded root list has no Load more button', async ({ mount, page }) => {

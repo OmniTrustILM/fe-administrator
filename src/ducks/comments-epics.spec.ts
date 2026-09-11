@@ -2,10 +2,10 @@ import { describe, expect, test } from 'vitest';
 import { lastValueFrom, type Observable, of, throwError } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
 import { toArray } from 'rxjs/operators';
-import { type CommentDto, type CommentResponseDto, Resource } from 'types/openapi';
+import { type CommentDto, type CommentResponseDto, Resource, SortDirection } from 'types/openapi';
 import { LockTypeEnum } from 'types/user-interface';
 import { actions as alertActions } from './alerts';
-import { initialState, panelKey, REPLIES_PAGE_SIZE, slice, type State, THREADS_PAGE_SIZE } from './comments';
+import { initialState, panelKey, refreshPanel, REPLIES_PAGE_SIZE, slice, type State, THREADS_PAGE_SIZE } from './comments';
 import epics from './comments-epics';
 
 const resource = Resource.Certificates;
@@ -20,6 +20,7 @@ enum EpicIndex {
     ResolveComment = 3,
     UnresolveComment = 4,
     DeleteComment = 5,
+    RefreshPanel = 6,
 }
 
 /** Same shape the sibling epic specs use: an `AjaxError` cannot be constructed without a real XHR. */
@@ -89,14 +90,71 @@ const run = (index: number, action: unknown, deps: unknown, state: unknown = sta
     lastValueFrom((epics[index] as unknown as Epic)(of(action), state, deps).pipe(toArray()));
 
 describe('listThreads epic', () => {
-    test('lists the page and applies the default page size', async () => {
+    test('lists the page oldest-first by default and applies the default page size', async () => {
         const result = page([comment('r1')]);
         const { deps, calls } = createDeps({ listComments: () => of(result) });
 
         const emitted = await run(EpicIndex.ListThreads, slice.actions.listThreads({ resource, objectUuid, pageNumber: 2 }), deps);
 
-        expect(calls[0].args).toEqual({ resource, objectUuid, pageNumber: 2, itemsPerPage: THREADS_PAGE_SIZE });
-        expect(emitted).toEqual([slice.actions.listThreadsSuccess({ key, page: result })]);
+        expect(calls[0].args).toEqual({
+            resource,
+            objectUuid,
+            pageNumber: 2,
+            itemsPerPage: THREADS_PAGE_SIZE,
+            sortDirection: SortDirection.Asc,
+            anchorUuid: undefined,
+        });
+        expect(emitted).toEqual([slice.actions.listThreadsSuccess({ key, page: result, sortDirection: SortDirection.Asc })]);
+    });
+
+    test('the requested direction reaches the API and is reported back with the page', async () => {
+        const result = page([comment('r2'), comment('r1')]);
+        const { deps, calls } = createDeps({ listComments: () => of(result) });
+
+        const emitted = await run(
+            EpicIndex.ListThreads,
+            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, sortDirection: SortDirection.Desc }),
+            deps,
+        );
+
+        expect(calls[0].args).toMatchObject({ sortDirection: SortDirection.Desc });
+        expect(emitted).toEqual([slice.actions.listThreadsSuccess({ key, page: result, sortDirection: SortDirection.Desc })]);
+    });
+
+    test('a request that names no direction keeps the one the list holds, so a refresh never flips the order', async () => {
+        const { deps, calls } = createDeps();
+        const state = stateWith({
+            threads: {
+                [key]: {
+                    ...page([comment('r1')]),
+                    firstPage: 1,
+                    sortDirection: SortDirection.Desc,
+                    isFetching: true,
+                    isPosting: false,
+                    postSucceeded: false,
+                },
+            },
+        });
+
+        await run(EpicIndex.ListThreads, slice.actions.listThreads({ resource, objectUuid, pageNumber: 2 }), deps, state);
+
+        expect(calls[0].args).toMatchObject({ pageNumber: 2, sortDirection: SortDirection.Desc });
+    });
+
+    test('an anchor travels with the direction and comes back with the page', async () => {
+        const result = page([comment('r21')], { pageNumber: 3, totalItems: 21, totalPages: 3 });
+        const { deps, calls } = createDeps({ listComments: () => of(result) });
+
+        const emitted = await run(
+            EpicIndex.ListThreads,
+            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, anchorUuid: 'r21', sortDirection: SortDirection.Desc }),
+            deps,
+        );
+
+        expect(calls[0].args).toMatchObject({ pageNumber: 1, anchorUuid: 'r21', sortDirection: SortDirection.Desc });
+        expect(emitted).toEqual([
+            slice.actions.listThreadsSuccess({ key, page: result, sortDirection: SortDirection.Desc, anchorUuid: 'r21' }),
+        ]);
     });
 
     test('403 locks the panel with a permission lock', async () => {
@@ -156,8 +214,43 @@ describe('listReplies epic', () => {
 
         const emitted = await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }), deps);
 
-        expect(calls[0].args).toEqual({ uuid: 'r1', pageNumber: 1, itemsPerPage: REPLIES_PAGE_SIZE });
+        expect(calls[0].args).toEqual({ uuid: 'r1', pageNumber: 1, itemsPerPage: REPLIES_PAGE_SIZE, anchorUuid: undefined });
         expect(emitted).toEqual([slice.actions.listRepliesSuccess({ rootUuid: 'r1', page: result })]);
+    });
+
+    test('an anchored reply reaches the API and comes back with the page', async () => {
+        const result = page([comment('c41')], { pageNumber: 3, totalItems: 41, totalPages: 3 });
+        const { deps, calls } = createDeps({ listReplies: () => of(result) });
+
+        const emitted = await run(
+            EpicIndex.ListReplies,
+            slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, anchorUuid: 'c41' }),
+            deps,
+        );
+
+        expect(calls[0].args).toMatchObject({ uuid: 'r1', pageNumber: 1, anchorUuid: 'c41' });
+        expect(emitted).toEqual([slice.actions.listRepliesSuccess({ rootUuid: 'r1', page: result, anchorUuid: 'c41' })]);
+    });
+
+    test('a thread that is gone under an anchored reply is the stale anchor, reported without an alert', async () => {
+        const { deps } = createDeps({ listReplies: () => throwError(() => ajaxError(404)) });
+
+        const emitted = await run(
+            EpicIndex.ListReplies,
+            slice.actions.listReplies({ rootUuid: 'gone', pageNumber: 1, anchorUuid: 'c1' }),
+            deps,
+        );
+
+        expect(emitted).toEqual([slice.actions.listRepliesFailure({ rootUuid: 'gone', missingAnchor: 'c1' })]);
+    });
+
+    test('a 404 without an anchor is an ordinary failure', async () => {
+        const { deps } = createDeps({ listReplies: () => throwError(() => ajaxError(404)) });
+
+        const emitted = await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'gone', pageNumber: 1 }), deps);
+
+        expect(emitted[0]).toEqual(slice.actions.listRepliesFailure({ rootUuid: 'gone' }));
+        expect(emitted[1]).toMatchObject({ type: alertActions.error.type });
     });
 
     test('failure reports through an alert, never a lock', async () => {
@@ -167,6 +260,45 @@ describe('listReplies epic', () => {
 
         expect(emitted[0]).toEqual(slice.actions.listRepliesFailure({ rootUuid: 'c1' }));
         expect(emitted[1]).toMatchObject({ type: alertActions.error.type, payload: expect.stringContaining('not a thread root') });
+    });
+});
+
+describe('refreshPanel epic', () => {
+    const loaded = (comments: CommentDto[], overrides: Partial<CommentResponseDto> = {}) => ({
+        ...page(comments, overrides),
+        firstPage: 1,
+        isFetching: false,
+        isPosting: false,
+        postSucceeded: false,
+    });
+
+    test('re-reads the roots window and every thread whose replies were opened, as single first pages', async () => {
+        const state = stateWith({
+            threads: {
+                [key]: {
+                    ...loaded([comment('r1'), comment('r2'), comment('r3')], { pageNumber: 2, itemsPerPage: 10 }),
+                    sortDirection: SortDirection.Asc,
+                },
+            },
+            // r1 was opened and paged, r2 was never opened, and the entry for a root of another object is not ours.
+            replies: {
+                r1: loaded([comment('c1')], { pageNumber: 2, itemsPerPage: REPLIES_PAGE_SIZE }),
+                other: loaded([comment('c9')]),
+            },
+        });
+
+        const emitted = await run(EpicIndex.RefreshPanel, refreshPanel({ resource, objectUuid }), createDeps().deps, state);
+
+        expect(emitted).toEqual([
+            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: 20 }),
+            slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: 40 }),
+        ]);
+    });
+
+    test('a panel that has not loaded yet reads its first page', async () => {
+        const emitted = await run(EpicIndex.RefreshPanel, refreshPanel({ resource, objectUuid }), createDeps().deps);
+
+        expect(emitted).toEqual([slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: THREADS_PAGE_SIZE })]);
     });
 });
 

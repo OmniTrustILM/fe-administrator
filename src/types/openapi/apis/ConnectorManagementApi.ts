@@ -408,6 +408,7 @@ export class ConnectorManagementApi extends BaseAPI {
     }
 
     /**
+     * Returns every Connector matching the supplied function group, kind and status, unpaged.  Those three query parameters are the only narrowing this listing offers, and it takes neither ordering nor column selection. The Connector listing that accepts request filters, ordering and columns is `POST /v2/connectors/list`.
      * List Connectors by Function Group and Kind
      */
     listConnectors({ functionGroup, kind, status }: ListConnectorsRequest): Observable<Array<ConnectorDto>>;

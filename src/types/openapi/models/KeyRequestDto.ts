@@ -54,4 +54,10 @@ export interface KeyRequestDto {
      * @memberof KeyRequestDto
      */
     enabled?: boolean;
+    /**
+     * Whether the created key may later be exported. Defaults to false, and false is final: a key created non-exportable can never become exportable. It can only be requested where the token profile reports key export as available for the key type.
+     * @type {boolean}
+     * @memberof KeyRequestDto
+     */
+    exportable?: boolean;
 }

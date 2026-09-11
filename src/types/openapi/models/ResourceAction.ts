@@ -46,6 +46,8 @@ export enum ResourceAction {
     Verify = 'verify',
     Sign = 'sign',
     GetProxyInstallation = 'getProxyInstallation',
+    ImportKey = 'importKey',
+    ExportKey = 'exportKey',
     GetSecretContent = 'getSecretContent',
     UpdateSourceVaultProfile = 'updateSourceVaultProfile',
     Timestamp = 'timestamp',

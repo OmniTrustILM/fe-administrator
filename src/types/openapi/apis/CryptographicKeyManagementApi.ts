@@ -30,6 +30,8 @@ import type {
     KeyDetailDto,
     KeyDto,
     KeyEventHistoryDto,
+    KeyExportRequestDto,
+    KeyImportRequestDto,
     KeyItemDetailDto,
     KeyRequestDto,
     KeyRequestType,
@@ -107,6 +109,11 @@ export interface DisableKeyRequest {
     requestBody?: Array<string>;
 }
 
+export interface DisableKeyExportRequest {
+    uuid: string;
+    keyItemUuid: string;
+}
+
 export interface DisableKeyItemsRequest {
     requestBody: Array<string>;
 }
@@ -151,6 +158,12 @@ export interface EnableKeysRequest {
     requestBody: Array<string>;
 }
 
+export interface ExportKeyRequest {
+    uuid: string;
+    keyItemUuid: string;
+    keyExportRequestDto: KeyExportRequestDto;
+}
+
 export interface GetEventHistoryRequest {
     uuid: string;
     keyItemUuid: string;
@@ -182,6 +195,13 @@ export interface GetKeyWithTokenRequest {
     uuid: string;
 }
 
+export interface ImportKeyRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
+    type: KeyRequestType;
+    keyImportRequestDto: KeyImportRequestDto;
+}
+
 export interface ListCreateKeyAttributesRequest {
     tokenInstanceUuid: string;
     tokenProfileUuid: string;
@@ -190,6 +210,17 @@ export interface ListCreateKeyAttributesRequest {
 
 export interface ListCryptographicKeysRequest {
     searchRequestDto: SearchRequestDto;
+}
+
+export interface ListExportKeyAttributesRequest {
+    uuid: string;
+    keyItemUuid: string;
+}
+
+export interface ListImportKeyAttributesRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
+    type: KeyRequestType;
 }
 
 export interface ListKeyPairsRequest {
@@ -602,6 +633,30 @@ export class CryptographicKeyManagementApi extends BaseAPI {
     }
 
     /**
+     * Make a key item non-exportable, by setting its `exportable` flag to false.  There is no operation for the other direction. A key created or imported as non-exportable carries the guarantee that its material never leaves, and an operation lifting the flag would void that guarantee for every key that already exists. The technologies behind the providers set extractability once, at creation, for the same reason. A key that has to be exportable is created or imported as exportable.
+     * Disable export for a key item
+     */
+    disableKeyExport({ uuid, keyItemUuid }: DisableKeyExportRequest): Observable<KeyItemDetailDto>;
+    disableKeyExport({ uuid, keyItemUuid }: DisableKeyExportRequest, opts?: OperationOpts): Observable<AjaxResponse<KeyItemDetailDto>>;
+    disableKeyExport(
+        { uuid, keyItemUuid }: DisableKeyExportRequest,
+        opts?: OperationOpts,
+    ): Observable<KeyItemDetailDto | AjaxResponse<KeyItemDetailDto>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'disableKeyExport');
+        throwIfNullOrUndefined(keyItemUuid, 'keyItemUuid', 'disableKeyExport');
+
+        return this.request<KeyItemDetailDto>(
+            {
+                url: '/v1/keys/{uuid}/items/{keyItemUuid}/export/disable'
+                    .replace('{uuid}', encodeURI(uuid))
+                    .replace('{keyItemUuid}', encodeURI(keyItemUuid)),
+                method: 'PATCH',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
      * Disable multiple Key Items
      */
     disableKeyItems({ requestBody }: DisableKeyItemsRequest): Observable<void>;
@@ -841,6 +896,36 @@ export class CryptographicKeyManagementApi extends BaseAPI {
     }
 
     /**
+     * Export a key item as a protected PKCS#8 file in PEM form.  This is a POST because the passphrase travels in the body: a URL is recorded by proxies, browser history and access logs, so a passphrase must never appear in one. The response is not cacheable and carries a sanitized download filename.  Only a key created or imported as exportable can be exported.
+     * Export a key
+     */
+    exportKey({ uuid, keyItemUuid, keyExportRequestDto }: ExportKeyRequest): Observable<Blob>;
+    exportKey({ uuid, keyItemUuid, keyExportRequestDto }: ExportKeyRequest, opts?: OperationOpts): Observable<AjaxResponse<Blob>>;
+    exportKey({ uuid, keyItemUuid, keyExportRequestDto }: ExportKeyRequest, opts?: OperationOpts): Observable<Blob | AjaxResponse<Blob>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'exportKey');
+        throwIfNullOrUndefined(keyItemUuid, 'keyItemUuid', 'exportKey');
+        throwIfNullOrUndefined(keyExportRequestDto, 'keyExportRequestDto', 'exportKey');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<Blob>(
+            {
+                url: '/v1/keys/{uuid}/items/{keyItemUuid}/export'
+                    .replace('{uuid}', encodeURI(uuid))
+                    .replace('{keyItemUuid}', encodeURI(keyItemUuid)),
+                method: 'POST',
+                headers,
+                body: keyExportRequestDto,
+                responseType: 'blob',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Besides the conditions a field may be filtered with, each field reports whether it can serve as a configurable column of the listing: `displayable` marks the fields that may be named in `columns`, and `sortable` those the listing may be ordered by. A field that reports neither flag is filter-only, so an absent flag is to be read as `false` rather than as unknown.  Both flags are answered per field, and that answer is authoritative for attribute-sourced fields as much as for property ones: whether a given attribute may be ordered on depends on the resource and is reported here rather than assumed. A field that may be shown but not ordered on reports `displayable` without `sortable`.
      * Get CryptographicKey searchable fields information
      */
     getCryptographicKeySearchableFields(): Observable<Array<SearchFieldDataByGroupDto>>;
@@ -1007,6 +1092,42 @@ export class CryptographicKeyManagementApi extends BaseAPI {
     }
 
     /**
+     * Import a key from an uploaded file into the token profile.  The file travels base64-encoded in `file`, like every upload in the platform, and is held in memory rather than written anywhere; it is never echoed in an error, since it carries key material. `inputPassphrase` opens the uploaded file and is absent for a file that carries no protection of its own; the platform re-protects the material before it reaches the provider, so neither the file nor that passphrase is ever forwarded.  Certificates found alongside a key are not imported here. Use the certificate import operation for a file that carries both.
+     * Import a key
+     */
+    importKey({ tokenInstanceUuid, tokenProfileUuid, type, keyImportRequestDto }: ImportKeyRequest): Observable<KeyDetailDto>;
+    importKey(
+        { tokenInstanceUuid, tokenProfileUuid, type, keyImportRequestDto }: ImportKeyRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<KeyDetailDto>>;
+    importKey(
+        { tokenInstanceUuid, tokenProfileUuid, type, keyImportRequestDto }: ImportKeyRequest,
+        opts?: OperationOpts,
+    ): Observable<KeyDetailDto | AjaxResponse<KeyDetailDto>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'importKey');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'importKey');
+        throwIfNullOrUndefined(type, 'type', 'importKey');
+        throwIfNullOrUndefined(keyImportRequestDto, 'keyImportRequestDto', 'importKey');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<KeyDetailDto>(
+            {
+                url: '/v1/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/keys/{type}/import'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid))
+                    .replace('{type}', encodeURI(type)),
+                method: 'POST',
+                headers,
+                body: keyImportRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
      * List of Attributes to create a Key
      */
     listCreateKeyAttributes({
@@ -1039,6 +1160,7 @@ export class CryptographicKeyManagementApi extends BaseAPI {
     }
 
     /**
+     * Ordering and columns address a field by its source together with its identifier, because an identifier is unique only within its source. Both halves, and which fields may be shown or ordered on, come from the searchable-fields operation of this resource.  `sort` orders the whole result set before it is paged, so paging walks the sorted set rather than sorting one page at a time; only fields the catalogue marks `sortable` may be used. `columns` names the fields the caller means to display, and only fields the catalogue marks `displayable` may be named. It does not narrow the response: every listing object comes back whole, and naming a property field asks for nothing extra because the object already carries it. Naming an attribute-sourced field is what has an effect, described below.  A request that carries neither `sort` nor `columns` is answered exactly as it was before the two fields existed: the endpoint\'s own default ordering, the full default shape of every object, and no `attributeValues` member. A caller written against the previous contract therefore needs no change.  Requesting attribute-sourced columns adds an `attributeValues` member to each returned object, keyed by field source and then by field identifier. A field the object holds no value for is absent rather than empty, and a multi-valued attribute arrives in its stored `item_order`.
      * List cryptographic keys
      */
     listCryptographicKeys({ searchRequestDto }: ListCryptographicKeysRequest): Observable<CryptographicKeyResponseDto>;
@@ -1062,6 +1184,66 @@ export class CryptographicKeyManagementApi extends BaseAPI {
                 method: 'POST',
                 headers,
                 body: searchRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Attributes the provider holding this key requires to export it.  Present so a caller can render the export form before it asks for the key. The result is the provider\'s own schema and never contains resolved credentials or secret values.
+     * List key export attributes
+     */
+    listExportKeyAttributes({ uuid, keyItemUuid }: ListExportKeyAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    listExportKeyAttributes(
+        { uuid, keyItemUuid }: ListExportKeyAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    listExportKeyAttributes(
+        { uuid, keyItemUuid }: ListExportKeyAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'listExportKeyAttributes');
+        throwIfNullOrUndefined(keyItemUuid, 'keyItemUuid', 'listExportKeyAttributes');
+
+        return this.request<Array<BaseAttributeDto>>(
+            {
+                url: '/v1/keys/{uuid}/items/{keyItemUuid}/export/attributes'
+                    .replace('{uuid}', encodeURI(uuid))
+                    .replace('{keyItemUuid}', encodeURI(keyItemUuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Attributes the provider behind this token profile requires to import a key of the given type.  Present so a caller can render the import form before it uploads anything. The result is the provider\'s own schema and never contains resolved credentials or secret values.
+     * List key import attributes
+     */
+    listImportKeyAttributes({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+        type,
+    }: ListImportKeyAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    listImportKeyAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, type }: ListImportKeyAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    listImportKeyAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, type }: ListImportKeyAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'listImportKeyAttributes');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'listImportKeyAttributes');
+        throwIfNullOrUndefined(type, 'type', 'listImportKeyAttributes');
+
+        return this.request<Array<BaseAttributeDto>>(
+            {
+                url: '/v1/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/keys/{type}/import/attributes'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid))
+                    .replace('{type}', encodeURI(type)),
+                method: 'GET',
             },
             opts?.responseOpts,
         );

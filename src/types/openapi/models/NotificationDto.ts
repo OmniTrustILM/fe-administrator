@@ -60,4 +60,22 @@ export interface NotificationDto {
      * @memberof NotificationDto
      */
     targetObjectIdentification?: Array<string>;
+    /**
+     * Type of the object within the target that the notification is about, when it is not the target itself - a comment on the object, for instance
+     * @type {Resource}
+     * @memberof NotificationDto
+     */
+    subjectObjectType?: Resource;
+    /**
+     * Identification (UUID) of the object within the target that the notification is about
+     * @type {string}
+     * @memberof NotificationDto
+     */
+    subjectObjectIdentification?: string;
+    /**
+     * Identification (UUID) of the object the subject is nested in, when the subject is not top-level within the target - the thread root of a comment reply, for instance
+     * @type {string}
+     * @memberof NotificationDto
+     */
+    subjectParentIdentification?: string;
 }

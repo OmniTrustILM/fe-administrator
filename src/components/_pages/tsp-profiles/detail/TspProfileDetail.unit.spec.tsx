@@ -17,6 +17,7 @@ vi.mock('react-router', () => ({
     Link: ({ to, children }: any) => <a href={to}>{children}</a>,
     useParams: () => ({ id: 'tsp-1' }),
     useNavigate: () => () => {},
+    useSearchParams: () => [new URLSearchParams(), () => undefined],
 }));
 
 vi.mock('components/Breadcrumb', () => ({ default: () => <div data-testid="breadcrumb" /> }));

@@ -16,6 +16,7 @@ vi.mock('react-redux', async () => {
 vi.mock('react-router', () => ({
     useParams: () => ({ id: 'auth-1' }),
     useNavigate: () => vi.fn(),
+    useSearchParams: () => [new URLSearchParams(), () => undefined],
     Link: ({ children }: any) => <span>{children}</span>,
 }));
 

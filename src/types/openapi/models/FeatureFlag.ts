@@ -20,6 +20,8 @@ export enum FeatureFlag {
     Stateless = 'stateless',
     OpenMetrics = 'openMetrics',
     Asynchronous = 'asynchronous',
+    KeyImport = 'keyImport',
+    KeyExport = 'keyExport',
     SecretVersioning = 'secretVersioning',
     SecretRotation = 'secretRotation',
     ContentSigning = 'contentSigning',

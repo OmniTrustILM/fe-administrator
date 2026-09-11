@@ -49,13 +49,13 @@ export interface TokenInstanceDto {
      */
     connectorName?: string;
     /**
-     * Connector kind. Required for connectors based on version 1 of the connector framework; omitted for connectors based on version 2 (NG) of the connector framework.
+     * Connector UUID
      * @type {string}
      * @memberof TokenInstanceDto
      */
     connectorUuid?: string;
     /**
-     * Connector Kind
+     * Connector kind. Required for connectors based on version 1 of the connector framework; omitted for connectors based on version 2 (NG) of the connector framework.
      * @type {string}
      * @memberof TokenInstanceDto
      */

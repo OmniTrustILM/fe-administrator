@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { KeyUsage, ResponseAttribute, TokenInstanceStatus } from './';
+import type { KeyTransferCapabilityDto, KeyUsage, ResponseAttribute, TokenInstanceStatus } from './';
 
 /**
  * @export
@@ -78,4 +78,10 @@ export interface TokenProfileDetailDto {
      * @memberof TokenProfileDetailDto
      */
     usages: Array<KeyUsage>;
+    /**
+     * Whether key material can be imported into or exported from this token profile, and for which key types
+     * @type {KeyTransferCapabilityDto}
+     * @memberof TokenProfileDetailDto
+     */
+    keyTransfer?: KeyTransferCapabilityDto;
 }

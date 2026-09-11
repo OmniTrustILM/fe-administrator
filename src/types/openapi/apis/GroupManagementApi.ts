@@ -15,7 +15,7 @@ import type { Observable } from 'rxjs';
 import type { AjaxResponse } from 'rxjs/ajax';
 import { BaseAPI, throwIfNullOrUndefined, encodeURI } from '../runtime';
 import type { OperationOpts, HttpHeaders } from '../runtime';
-import type { AuthenticationServiceExceptionDto, ErrorMessageDto, GroupDto, GroupRequestDto, UuidDto } from '../models';
+import type { AuthenticationServiceExceptionDto, ErrorMessageDto, GroupDto, GroupRequestDto, NameAndUuidDto, UuidDto } from '../models';
 
 export interface BulkDeleteGroupRequest {
     requestBody: Array<string>;
@@ -35,6 +35,10 @@ export interface EditGroupRequest {
 }
 
 export interface GetGroupRequest {
+    uuid: string;
+}
+
+export interface GetGroupUsersRequest {
     uuid: string;
 }
 
@@ -140,6 +144,26 @@ export class GroupManagementApi extends BaseAPI {
         return this.request<GroupDto>(
             {
                 url: '/v1/groups/{uuid}'.replace('{uuid}', encodeURI(uuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Get Group Users
+     */
+    getGroupUsers({ uuid }: GetGroupUsersRequest): Observable<Array<NameAndUuidDto>>;
+    getGroupUsers({ uuid }: GetGroupUsersRequest, opts?: OperationOpts): Observable<AjaxResponse<Array<NameAndUuidDto>>>;
+    getGroupUsers(
+        { uuid }: GetGroupUsersRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<NameAndUuidDto> | AjaxResponse<Array<NameAndUuidDto>>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'getGroupUsers');
+
+        return this.request<Array<NameAndUuidDto>>(
+            {
+                url: '/v1/groups/{uuid}/users'.replace('{uuid}', encodeURI(uuid)),
                 method: 'GET',
             },
             opts?.responseOpts,

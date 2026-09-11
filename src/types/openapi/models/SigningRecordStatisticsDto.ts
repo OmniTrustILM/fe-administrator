@@ -24,13 +24,13 @@ export interface SigningRecordStatisticsDto {
      */
     totalRetained?: number;
     /**
-     * Signing records whose signing time falls within the last 24 hours
+     * Signings performed in the last 24 hours, including those whose records have since been deleted. History is kept per hour, so the window opens at the start of the hour rather than 24 hours to the second.
      * @type {number}
      * @memberof SigningRecordStatisticsDto
      */
     countLast24h?: number;
     /**
-     * Signing records whose signing time falls within the last 7 days
+     * Signings performed in the last 7 days, including those whose records have since been deleted. History is kept per hour, so the window opens at the start of the hour rather than 7 days to the second.
      * @type {number}
      * @memberof SigningRecordStatisticsDto
      */
@@ -48,7 +48,7 @@ export interface SigningRecordStatisticsDto {
      */
     distinctRequesterCount?: number;
     /**
-     * Signing volume over the requested period. Ordered map of bucket start to count, keyed by ISO-8601 UTC instant (hourly buckets for the 24h period, daily otherwise). Buckets are dense: every bucket in the window is present, with 0 for buckets that had no signings.
+     * Signing volume over the requested period, including signings whose records have since been deleted. Ordered map of bucket start to count, keyed by ISO-8601 UTC instant (hourly buckets for the 24h period, daily otherwise). Buckets are dense: every bucket in the window is present, with 0 for buckets that had no signings.
      * @type {{ [key: string]: number; }}
      * @memberof SigningRecordStatisticsDto
      */

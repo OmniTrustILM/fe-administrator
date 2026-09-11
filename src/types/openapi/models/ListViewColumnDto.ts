@@ -25,7 +25,7 @@ export interface ListViewColumnDto {
      */
     fieldSource: FilterFieldSource;
     /**
-     * Field identifier of the column, resolved against the resource\'s field catalogue when the view is read
+     * Field identifier of the column, resolved against the resource\'s field catalogue when the view is read. Available fields with their identifiers can be retrieved from the resource\'s searchable-fields operation, for example `GET /v1/certificates/search` or `GET /v2/connectors/search`.
      * @type {string}
      * @memberof ListViewColumnDto
      */

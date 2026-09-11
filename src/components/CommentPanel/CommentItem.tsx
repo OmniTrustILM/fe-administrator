@@ -2,6 +2,7 @@ import Badge from 'components/Badge';
 import Button from 'components/Button';
 import cn from 'classnames';
 import { Check, Reply, RotateCcw, Trash2 } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import type { CommentDto } from 'types/openapi';
 import { dateFormatter } from 'utils/dateUtil';
 import CommentBody from './CommentBody';
@@ -14,16 +15,38 @@ type Props = {
     onResolve?: () => void;
     onUnresolve?: () => void;
     onDelete: () => void;
+    /** The comment a notification led to: brought into view and marked out from its neighbours. */
+    highlighted?: boolean;
 };
 
-export default function CommentItem({ comment, isRoot, busy, onReply, onResolve, onUnresolve, onDelete }: Readonly<Props>) {
+export default function CommentItem({
+    comment,
+    isRoot,
+    busy,
+    onReply,
+    onResolve,
+    onUnresolve,
+    onDelete,
+    highlighted = false,
+}: Readonly<Props>) {
     const resolved = isRoot && comment.resolved === true;
     const uuid = comment.uuid;
+    const article = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        if (highlighted) article.current?.scrollIntoView({ block: 'center' });
+    }, [highlighted]);
 
     return (
         <article
-            className={cn('flex flex-col gap-2 rounded-lg border border-divider px-4 py-3 bg-surface-raised', { 'opacity-75': resolved })}
+            ref={article}
+            className={cn(
+                'flex flex-col gap-2 rounded-lg border px-4 py-3 bg-surface-raised',
+                highlighted ? 'border-brand ring-1 ring-brand' : 'border-divider',
+                { 'opacity-75': resolved },
+            )}
             data-testid={`comment-${uuid}`}
+            data-highlighted={highlighted || undefined}
             aria-busy={busy || undefined}
         >
             <header className="flex items-center justify-between gap-2 flex-wrap">

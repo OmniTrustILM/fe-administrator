@@ -3,17 +3,26 @@ import type { UnknownAction } from 'redux';
 import { type Observable, of } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
 import { catchError, filter, groupBy, map, mergeMap, switchMap } from 'rxjs/operators';
-import type { Resource } from 'types/openapi';
+import { type Resource, SortDirection } from 'types/openapi';
 import { LockTypeEnum, type WidgetLockErrorModel } from 'types/user-interface';
 import { extractError, getLockWidgetObject } from 'utils/net';
 import { actions as alertActions } from './alerts';
-import { type CommentRefPayload, panelKey, REPLIES_PAGE_SIZE, slice, THREADS_PAGE_SIZE } from './comments';
+import {
+    type CommentRefPayload,
+    loadedWindow,
+    panelKey,
+    refreshPanel as refreshPanelAction,
+    REPLIES_PAGE_SIZE,
+    slice,
+    THREADS_PAGE_SIZE,
+} from './comments';
 
 const status = (err: unknown) => (err instanceof AjaxError ? err.status : undefined);
 
 /** 422 is a message about the request, not a denied-access state, so it never reaches the widget lock. */
 const isValidationError = (err: unknown) => status(err) === 422;
 const isDenied = (err: unknown) => status(err) === 403;
+const isNotFound = (err: unknown) => status(err) === 404;
 
 const networkLock: WidgetLockErrorModel = {
     lockTitle: 'Comments unavailable',
@@ -32,7 +41,7 @@ const deniedMessage = (err: unknown, fallback: string) =>
  */
 const refreshThreads = (state: AppState, resource: Resource, objectUuid: string, extra = 0): UnknownAction => {
     const threads = state.comments?.threads[panelKey(resource, objectUuid)];
-    const loaded = threads ? threads.pageNumber * threads.itemsPerPage : 0;
+    const loaded = threads ? loadedWindow(threads) : 0;
     return slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: Math.max(THREADS_PAGE_SIZE, loaded + extra) });
 };
 
@@ -42,7 +51,7 @@ const refreshThreads = (state: AppState, resource: Resource, objectUuid: string,
  */
 const refreshReplies = (state: AppState, rootUuid: string, extra = 0): UnknownAction => {
     const replies = state.comments?.replies[rootUuid];
-    const loaded = replies ? replies.pageNumber * replies.itemsPerPage : 0;
+    const loaded = replies ? loadedWindow(replies) : 0;
     return slice.actions.listReplies({ rootUuid, pageNumber: 1, itemsPerPage: Math.max(REPLIES_PAGE_SIZE, loaded + extra) });
 };
 
@@ -51,6 +60,20 @@ const refreshAfterChange = (state: AppState, resource: Resource, objectUuid: str
     ...(parentUuid ? [refreshReplies(state, parentUuid)] : []),
     refreshThreads(state, resource, objectUuid),
 ];
+
+/** A thread whose replies were never opened has nothing to refresh; one that was opened is re-read even if collapsed since. */
+const refreshPanel: AppEpic = (action$, state$) => {
+    return action$.pipe(
+        filter(refreshPanelAction.match),
+        mergeMap((action) => {
+            const { resource, objectUuid } = action.payload;
+            const state = state$.value;
+            const roots = state.comments?.threads[panelKey(resource, objectUuid)]?.comments ?? [];
+            const opened = roots.filter((root) => state.comments?.replies[root.uuid] !== undefined);
+            return of(refreshThreads(state, resource, objectUuid), ...opened.map((root) => refreshReplies(state, root.uuid)));
+        }),
+    );
+};
 
 const listThreads: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
@@ -61,22 +84,27 @@ const listThreads: AppEpic = (action$, state$, deps) => {
         mergeMap((panel$) =>
             panel$.pipe(
                 switchMap((action) => {
-                    const { resource, objectUuid, pageNumber, itemsPerPage = THREADS_PAGE_SIZE } = action.payload;
+                    const { resource, objectUuid, pageNumber, itemsPerPage = THREADS_PAGE_SIZE, anchorUuid } = action.payload;
                     const key = panelKey(resource, objectUuid);
-                    return deps.apiClients.comments.listComments({ resource, objectUuid, pageNumber, itemsPerPage }).pipe(
-                        map((page) => slice.actions.listThreadsSuccess({ key, page })),
-                        catchError((err) => {
-                            // A panel that already shows comments keeps them: a failed refresh reports itself as a
-                            // message, so a transient blip cannot replace the list, and the draft under it, with a lock.
-                            const isLoaded = (state$.value.comments?.threads[key]?.comments.length ?? 0) > 0;
-                            return isValidationError(err) || isLoaded
-                                ? of(
-                                      slice.actions.listThreadsFailure({ key }),
-                                      alertActions.error(extractError(err, 'Failed to list comments')),
-                                  )
-                                : of(slice.actions.listThreadsFailure({ key, lock: toLock(err) }));
-                        }),
-                    );
+                    // A request that names no direction keeps the one the list holds, so a refresh never flips the order.
+                    const sortDirection =
+                        action.payload.sortDirection ?? state$.value.comments?.threads[key]?.sortDirection ?? SortDirection.Asc;
+                    return deps.apiClients.comments
+                        .listComments({ resource, objectUuid, pageNumber, itemsPerPage, sortDirection, anchorUuid })
+                        .pipe(
+                            map((page) => slice.actions.listThreadsSuccess({ key, page, sortDirection, anchorUuid })),
+                            catchError((err) => {
+                                // A panel that already shows comments keeps them: a failed refresh reports itself as a
+                                // message, so a transient blip cannot replace the list, and the draft under it, with a lock.
+                                const isLoaded = (state$.value.comments?.threads[key]?.comments.length ?? 0) > 0;
+                                return isValidationError(err) || isLoaded
+                                    ? of(
+                                          slice.actions.listThreadsFailure({ key }),
+                                          alertActions.error(extractError(err, 'Failed to list comments')),
+                                      )
+                                    : of(slice.actions.listThreadsFailure({ key, lock: toLock(err) }));
+                            }),
+                        );
                 }),
             ),
         ),
@@ -91,14 +119,18 @@ const listReplies: AppEpic = (action$, state$, deps) => {
         mergeMap((thread$) =>
             thread$.pipe(
                 switchMap((action) => {
-                    const { rootUuid, pageNumber, itemsPerPage = REPLIES_PAGE_SIZE } = action.payload;
-                    return deps.apiClients.comments.listReplies({ uuid: rootUuid, pageNumber, itemsPerPage }).pipe(
-                        map((page) => slice.actions.listRepliesSuccess({ rootUuid, page })),
+                    const { rootUuid, pageNumber, itemsPerPage = REPLIES_PAGE_SIZE, anchorUuid } = action.payload;
+                    return deps.apiClients.comments.listReplies({ uuid: rootUuid, pageNumber, itemsPerPage, anchorUuid }).pipe(
+                        map((page) => slice.actions.listRepliesSuccess({ rootUuid, page, anchorUuid })),
+                        // A thread that is gone answers 404; when a reply was anchored on it, that is the stale anchor
+                        // the panel reports itself, not a failure to alert about.
                         catchError((err) =>
-                            of(
-                                slice.actions.listRepliesFailure({ rootUuid }),
-                                alertActions.error(extractError(err, 'Failed to list replies')),
-                            ),
+                            anchorUuid !== undefined && isNotFound(err)
+                                ? of(slice.actions.listRepliesFailure({ rootUuid, missingAnchor: anchorUuid }))
+                                : of(
+                                      slice.actions.listRepliesFailure({ rootUuid }),
+                                      alertActions.error(extractError(err, 'Failed to list replies')),
+                                  ),
                         ),
                     );
                 }),
@@ -204,6 +236,6 @@ const deleteComment: AppEpic = (action$, state$, deps) => {
     );
 };
 
-const epics = [listThreads, listReplies, createComment, resolveComment, unresolveComment, deleteComment];
+const epics = [listThreads, listReplies, createComment, resolveComment, unresolveComment, deleteComment, refreshPanel];
 
 export default epics;

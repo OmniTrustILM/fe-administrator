@@ -1,7 +1,18 @@
 import { describe, expect, test } from 'vitest';
-import { type CommentDto, type CommentResponseDto, Resource } from 'types/openapi';
+import { type CommentDto, type CommentResponseDto, Resource, SortDirection } from 'types/openapi';
 import { LockTypeEnum } from 'types/user-interface';
-import reducer, { actions, initialState, panelKey, REPLIES_PAGE_SIZE, selectors, type State, THREADS_PAGE_SIZE } from './comments';
+import reducer, {
+    actions,
+    initialState,
+    loadedBefore,
+    loadedWindow,
+    panelKey,
+    remainingAfter,
+    REPLIES_PAGE_SIZE,
+    selectors,
+    type State,
+    THREADS_PAGE_SIZE,
+} from './comments';
 
 const resource = Resource.Certificates;
 const objectUuid = 'obj-1';
@@ -31,12 +42,29 @@ const lock = { lockTitle: 'Access Denied', lockText: 'no', lockType: LockTypeEnu
 const withThreads = (comments: CommentDto[]): State =>
     reducer(
         reducer(initialState, actions.listThreads({ resource, objectUuid, pageNumber: 1 })),
-        actions.listThreadsSuccess({ key, page: page(comments) }),
+        actions.listThreadsSuccess({ key, page: page(comments), sortDirection: SortDirection.Asc }),
     );
 
 describe('comments slice: panel key', () => {
     test('is the resource and object pair', () => {
         expect(panelKey(Resource.Discoveries, 'x')).toBe('discoveries/x');
+    });
+});
+
+describe('comments slice: page arithmetic', () => {
+    const paged = { comments: [comment('a'), comment('b')], totalItems: 32, totalPages: 4, pageNumber: 3, itemsPerPage: 10, firstPage: 3 };
+
+    test('counts the items before and after an accumulated list that starts on a deeper page', () => {
+        expect(loadedBefore(paged)).toBe(20);
+        expect(remainingAfter(paged)).toBe(10);
+        expect(loadedWindow(paged)).toBe(30);
+    });
+
+    test('a list that starts on the first page has nothing before it and never reports a negative remainder', () => {
+        const first = { ...paged, firstPage: 1, pageNumber: 1, totalItems: 2 };
+        expect(loadedBefore(first)).toBe(0);
+        expect(remainingAfter(first)).toBe(0);
+        expect(remainingAfter({ ...first, totalItems: 1 })).toBe(0);
     });
 });
 
@@ -66,13 +94,89 @@ describe('comments slice: threads', () => {
             actions.listThreadsSuccess({
                 key,
                 page: page([comment('r2'), comment('r3')], { pageNumber: 2, totalItems: 3, totalPages: 2 }),
+                sortDirection: SortDirection.Asc,
             }),
         );
         expect(state.threads[key].comments.map((c) => c.uuid)).toEqual(['r1', 'r2', 'r3']);
         expect(state.threads[key].pageNumber).toBe(2);
 
-        state = reducer(state, actions.listThreadsSuccess({ key, page: page([comment('r9')]) }));
+        state = reducer(state, actions.listThreadsSuccess({ key, page: page([comment('r9')]), sortDirection: SortDirection.Asc }));
         expect(state.threads[key].comments.map((c) => c.uuid)).toEqual(['r9']);
+    });
+
+    test('the list holds the direction it was loaded in, oldest-first until told otherwise', () => {
+        expect(withThreads([comment('r1')]).threads[key].sortDirection).toBe(SortDirection.Asc);
+        const state = reducer(
+            initialState,
+            actions.listThreadsSuccess({ key, page: page([comment('r2'), comment('r1')]), sortDirection: SortDirection.Desc }),
+        );
+        expect(state.threads[key].sortDirection).toBe(SortDirection.Desc);
+    });
+
+    test('a page read in the other direction replaces the list instead of joining it, even as a later page', () => {
+        let state = withThreads([comment('r1'), comment('r2')]);
+        // What a direction change delivers: the same roots the other way round. Appending would show r1 and r2 twice.
+        state = reducer(
+            state,
+            actions.listThreadsSuccess({
+                key,
+                page: page([comment('r2'), comment('r1')], { pageNumber: 2, totalItems: 20, totalPages: 2 }),
+                sortDirection: SortDirection.Desc,
+            }),
+        );
+        expect(state.threads[key].comments.map((c) => c.uuid)).toEqual(['r2', 'r1']);
+        expect(state.threads[key].sortDirection).toBe(SortDirection.Desc);
+
+        // Once the list holds the new direction, its later pages join it as before.
+        state = reducer(
+            state,
+            actions.listThreadsSuccess({
+                key,
+                page: page([comment('r0')], { pageNumber: 3, totalItems: 20, totalPages: 3 }),
+                sortDirection: SortDirection.Desc,
+            }),
+        );
+        expect(state.threads[key].comments.map((c) => c.uuid)).toEqual(['r2', 'r1', 'r0']);
+    });
+
+    test('an anchored page replaces the list and records where it starts', () => {
+        let state = withThreads([comment('r1'), comment('r2')]);
+        expect(state.threads[key].firstPage).toBe(1);
+        state = reducer(
+            state,
+            actions.listThreadsSuccess({
+                key,
+                page: page([comment('r21'), comment('r22')], { pageNumber: 3, totalItems: 22, totalPages: 3 }),
+                sortDirection: SortDirection.Asc,
+                anchorUuid: 'r22',
+            }),
+        );
+        expect(state.threads[key].comments.map((c) => c.uuid)).toEqual(['r21', 'r22']);
+        expect(state.threads[key]).toMatchObject({ pageNumber: 3, firstPage: 3, missingAnchor: undefined });
+
+        // A later page keeps the start; a first page moves it back.
+        state = reducer(
+            state,
+            actions.listThreadsSuccess({
+                key,
+                page: page([comment('r31')], { pageNumber: 4, totalItems: 31, totalPages: 4 }),
+                sortDirection: SortDirection.Asc,
+            }),
+        );
+        expect(state.threads[key].firstPage).toBe(3);
+        state = reducer(state, actions.listThreadsSuccess({ key, page: page([comment('r1')]), sortDirection: SortDirection.Asc }));
+        expect(state.threads[key].firstPage).toBe(1);
+    });
+
+    test('an anchor absent from the page that came back is reported as missing until the next listing', () => {
+        let state = reducer(
+            initialState,
+            actions.listThreadsSuccess({ key, page: page([comment('r1')]), sortDirection: SortDirection.Asc, anchorUuid: 'gone' }),
+        );
+        expect(state.threads[key].missingAnchor).toBe('gone');
+        expect(state.threads[key].comments.map((c) => c.uuid)).toEqual(['r1']);
+        state = reducer(state, actions.listThreads({ resource, objectUuid, pageNumber: 1 }));
+        expect(state.threads[key].missingAnchor).toBeUndefined();
     });
 
     test('listThreadsFailure with a lock locks the panel; without one it only stops fetching', () => {
@@ -129,12 +233,32 @@ describe('comments slice: replies', () => {
         expect(state.replies.r1.comments.map((c) => c.uuid)).toEqual(['c9']);
     });
 
-    test('listRepliesFailure stops fetching', () => {
-        const state = reducer(
-            reducer(initialState, actions.listReplies({ rootUuid: 'r1', pageNumber: 1 })),
-            actions.listRepliesFailure({ rootUuid: 'r1' }),
+    test('an anchored page of replies replaces the thread and reports an absent anchor', () => {
+        let state = reducer(initialState, actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c1')]) }));
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({
+                rootUuid: 'r1',
+                page: page([comment('c41')], { pageNumber: 3, totalItems: 41, totalPages: 3 }),
+                anchorUuid: 'c41',
+            }),
         );
-        expect(state.replies.r1.isFetching).toBe(false);
+        expect(state.replies.r1.comments.map((c) => c.uuid)).toEqual(['c41']);
+        expect(state.replies.r1).toMatchObject({ pageNumber: 3, firstPage: 3, missingAnchor: undefined });
+
+        state = reducer(state, actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c1')]), anchorUuid: 'gone' }));
+        expect(state.replies.r1.missingAnchor).toBe('gone');
+        state = reducer(state, actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }));
+        expect(state.replies.r1.missingAnchor).toBeUndefined();
+    });
+
+    test('listRepliesFailure stops fetching, and a thread that is gone reads as a missing anchor', () => {
+        const fetching = reducer(initialState, actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }));
+        expect(reducer(fetching, actions.listRepliesFailure({ rootUuid: 'r1' })).replies.r1).toMatchObject({
+            isFetching: false,
+            missingAnchor: undefined,
+        });
+        expect(reducer(fetching, actions.listRepliesFailure({ rootUuid: 'r1', missingAnchor: 'c1' })).replies.r1.missingAnchor).toBe('c1');
     });
 });
 

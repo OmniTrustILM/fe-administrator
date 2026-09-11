@@ -11,11 +11,24 @@
  * Do not edit the class manually.
  */
 
-import type { NameAndUuidDto, TimestampSourceDto, TimestampSourceType } from './';
+import type { NameAndUuidDto, TimestampSourceType } from './';
 
 /**
- * @type InternalTimestampSourceDto
  * Timestamp source referencing the Timestamping Signing Profile on this platform that issues the timestamps
  * @export
+ * @interface InternalTimestampSourceDto
  */
-export type InternalTimestampSourceDto = TimestampSourceDto;
+export interface InternalTimestampSourceDto {
+    /**
+     * Timestamping Signing Profile that issues the timestamps
+     * @type {NameAndUuidDto}
+     * @memberof InternalTimestampSourceDto
+     */
+    signingProfile: NameAndUuidDto;
+    /**
+     * Kind of timestamp source, and the discriminator selecting the fields that accompany it
+     * @type {TimestampSourceType}
+     * @memberof InternalTimestampSourceDto
+     */
+    type: TimestampSourceType;
+}

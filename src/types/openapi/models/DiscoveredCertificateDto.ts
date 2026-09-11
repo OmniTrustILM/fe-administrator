@@ -11,10 +11,22 @@
  * Do not edit the class manually.
  */
 
-import type { DiscoveredItemPayload, KeyAlgorithm, KeyFormat, KeyType, Resource } from './';
+import type { Resource } from './';
 
 /**
- * @type DiscoveredCertificateDto
  * @export
+ * @interface DiscoveredCertificateDto
  */
-export type DiscoveredCertificateDto = DiscoveredItemPayload;
+export interface DiscoveredCertificateDto {
+    /**
+     * @type {Resource}
+     * @memberof DiscoveredCertificateDto
+     */
+    resource: Resource;
+    /**
+     * Base64-encoded certificate data (DER)
+     * @type {string}
+     * @memberof DiscoveredCertificateDto
+     */
+    certificateData: string;
+}

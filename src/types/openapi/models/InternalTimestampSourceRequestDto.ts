@@ -11,11 +11,24 @@
  * Do not edit the class manually.
  */
 
-import type { TimestampSourceRequestDto, TimestampSourceType } from './';
+import type { TimestampSourceType } from './';
 
 /**
- * @type InternalTimestampSourceRequestDto
  * Timestamp source referencing a Timestamping Signing Profile on this platform by UUID, as supplied on create and update
  * @export
+ * @interface InternalTimestampSourceRequestDto
  */
-export type InternalTimestampSourceRequestDto = TimestampSourceRequestDto;
+export interface InternalTimestampSourceRequestDto {
+    /**
+     * UUID of the Timestamping Signing Profile that issues the timestamps. ILM rejects a UUID that is not a Timestamping profile.
+     * @type {string}
+     * @memberof InternalTimestampSourceRequestDto
+     */
+    signingProfileUuid: string;
+    /**
+     * Kind of timestamp source, and the discriminator selecting the fields that accompany it
+     * @type {TimestampSourceType}
+     * @memberof InternalTimestampSourceRequestDto
+     */
+    type: TimestampSourceType;
+}

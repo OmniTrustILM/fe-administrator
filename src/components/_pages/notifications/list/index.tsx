@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router';
 import Button from 'components/Button';
 import type { SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { notificationTargetPath } from 'utils/comment-anchor';
 import { dateFormatter } from 'utils/dateUtil';
 import { ArrowRight } from 'lucide-react';
 
@@ -61,50 +62,43 @@ function NotificationsList() {
 
     const notificationsList: TableDataRow[] = useMemo(
         () =>
-            notifications.map((notification) => ({
-                id: notification.uuid,
-                columns: [
-                    dateFormatter(notification.sentAt),
-                    <div key={notification.uuid} className={`flex items-center ${notification.readAt ? '' : 'font-semibold'}`}>
-                        <button
-                            type="button"
-                            className="text-left bg-transparent border-0 p-0 font-inherit"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                if (!notification.readAt) {
-                                    dispatch(actions.markAsReadNotification({ uuid: notification.uuid }));
-                                }
-                            }}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
+            notifications.map((notification) => {
+                const targetPath = notificationTargetPath(notification);
+                return {
+                    id: notification.uuid,
+                    columns: [
+                        dateFormatter(notification.sentAt),
+                        <div key={notification.uuid} className={`flex items-center ${notification.readAt ? '' : 'font-semibold'}`}>
+                            <button
+                                type="button"
+                                className="text-left bg-transparent border-0 p-0 font-inherit"
+                                onClick={(event) => {
                                     event.stopPropagation();
                                     if (!notification.readAt) {
                                         dispatch(actions.markAsReadNotification({ uuid: notification.uuid }));
                                     }
-                                }
-                            }}
-                        >
-                            {notification.message}
-                        </button>
-                        {notification.targetObjectType && notification.targetObjectIdentification && (
-                            <Button
-                                color="secondary"
-                                className="ml-2 !rounded-full !p-0.5"
-                                onClick={() => {
-                                    navigate(
-                                        `/${notification.targetObjectType}/detail/${notification.targetObjectIdentification?.reduce(
-                                            (prev, curr) => prev + '/' + curr,
-                                        )}`,
-                                    );
+                                }}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                        event.stopPropagation();
+                                        if (!notification.readAt) {
+                                            dispatch(actions.markAsReadNotification({ uuid: notification.uuid }));
+                                        }
+                                    }
                                 }}
                             >
-                                <ArrowRight size={10} strokeWidth={3} />
-                            </Button>
-                        )}
-                    </div>,
-                ],
-                detailColumns: notification.detail ? [notification.detail] : undefined,
-            })),
+                                {notification.message}
+                            </button>
+                            {targetPath && (
+                                <Button color="secondary" className="ml-2 !rounded-full !p-0.5" onClick={() => navigate(targetPath)}>
+                                    <ArrowRight size={10} strokeWidth={3} />
+                                </Button>
+                            )}
+                        </div>,
+                    ],
+                    detailColumns: notification.detail ? [notification.detail] : undefined,
+                };
+            }),
         [notifications, dispatch, navigate],
     );
     const onListCallback = useCallback(

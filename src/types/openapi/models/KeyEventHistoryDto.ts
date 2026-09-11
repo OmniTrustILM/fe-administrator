@@ -72,6 +72,9 @@ export interface KeyEventHistoryDto {
  */
 export enum KeyEventHistoryDtoEventEnum {
     CreateKey = 'Create Key',
+    ImportKey = 'Import Key',
+    ExportKey = 'Export Key',
+    DisableKeyExport = 'Disable Key Export',
     CompromisedKey = 'Compromised Key',
     DestroyKey = 'Destroy Key',
     UpdateKeyUsages = 'Update Key Usages',

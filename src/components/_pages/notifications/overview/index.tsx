@@ -8,6 +8,7 @@ import Dropdown from 'components/Dropdown';
 import { useNavigate, Link } from 'react-router';
 import Button from 'components/Button';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { notificationTargetPath } from 'utils/comment-anchor';
 import { formatTimeAgo } from 'utils/dateUtil';
 import Widget from 'components/Widget';
 
@@ -23,40 +24,41 @@ function NotificationsOverview() {
         () =>
             overviewNotifications.length === 0
                 ? 'No unread notifications'
-                : overviewNotifications.map((notification, index) => (
-                      <React.Fragment key={notification.uuid}>
-                          <div className="flex items-start gap-1 mb-2">
-                              <Button
-                                  variant="transparent"
-                                  title="Mark as read"
-                                  onClick={() => dispatch(actions.markAsReadNotification({ uuid: notification.uuid }))}
-                              >
-                                  <Check size={16} />
-                              </Button>
-                              <div>
-                                  <div className="text-sm leading-[16px] font-medium text-content">{notification.message}</div>
-                                  <span className="text-xs leading-[16px] text-content-subtle mr-2 whitespace-nowrap">
-                                      {formatTimeAgo(notification.sentAt)}
-                                  </span>
+                : overviewNotifications.map((notification, index) => {
+                      const targetPath = notificationTargetPath(notification);
+                      return (
+                          <React.Fragment key={notification.uuid}>
+                              <div className="flex items-start gap-1 mb-2">
                                   <Button
-                                      color="secondary"
-                                      className="!rounded-full !p-0.5 relative top-[1px]"
-                                      onClick={() => {
-                                          navigate(
-                                              `/${notification.targetObjectType}/detail/${notification.targetObjectIdentification?.reduce(
-                                                  (prev, curr) => prev + '/' + curr,
-                                              )}`,
-                                          );
-                                          setOpen(false);
-                                      }}
+                                      variant="transparent"
+                                      title="Mark as read"
+                                      onClick={() => dispatch(actions.markAsReadNotification({ uuid: notification.uuid }))}
                                   >
-                                      <ArrowRight size={10} strokeWidth={3} />
+                                      <Check size={16} />
                                   </Button>
+                                  <div>
+                                      <div className="text-sm leading-[16px] font-medium text-content">{notification.message}</div>
+                                      <span className="text-xs leading-[16px] text-content-subtle mr-2 whitespace-nowrap">
+                                          {formatTimeAgo(notification.sentAt)}
+                                      </span>
+                                      {targetPath && (
+                                          <Button
+                                              color="secondary"
+                                              className="!rounded-full !p-0.5 relative top-[1px]"
+                                              onClick={() => {
+                                                  navigate(targetPath);
+                                                  setOpen(false);
+                                              }}
+                                          >
+                                              <ArrowRight size={10} strokeWidth={3} />
+                                          </Button>
+                                      )}
+                                  </div>
                               </div>
-                          </div>
-                          {index < overviewNotifications.length - 1 && <hr className="border-divider mb-2" />}
-                      </React.Fragment>
-                  )),
+                              {index < overviewNotifications.length - 1 && <hr className="border-divider mb-2" />}
+                          </React.Fragment>
+                      );
+                  }),
         [overviewNotifications, dispatch, navigate],
     );
 

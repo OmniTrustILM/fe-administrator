@@ -29,6 +29,9 @@ import type {
     CertificateEventHistoryDto,
     CertificateFormat,
     CertificateFormatEncoding,
+    CertificateImportRequestDto,
+    CertificateImportResponseDto,
+    CertificateKeystoreRequestDto,
     CertificateRelationsDto,
     CertificateResponseDto,
     CertificateSearchRequestDto,
@@ -39,6 +42,7 @@ import type {
     FingerprintDto,
     LocationDto,
     MultipleCertificateObjectUpdateDto,
+    ProblemDetailExtended,
     RemoveCertificateDto,
     SearchFieldDataByGroupDto,
     UploadCertificateRequestDto,
@@ -91,6 +95,11 @@ export interface DownloadCertificateChainRequest {
     withEndCertificate?: boolean;
 }
 
+export interface DownloadKeystoreRequest {
+    uuid: string;
+    certificateKeystoreRequestDto: CertificateKeystoreRequestDto;
+}
+
 export interface GetCertificateRequest {
     uuid: string;
 }
@@ -118,6 +127,10 @@ export interface GetCertificateValidationResultRequest {
 
 export interface GetCsrGenerationAttributesRequest {
     raProfileUuid?: string;
+}
+
+export interface ImportCertificatesRequest {
+    certificateImportRequestDto: CertificateImportRequestDto;
 }
 
 export interface ListCertificateApprovalsRequest {
@@ -438,6 +451,38 @@ export class CertificateInventoryApi extends BaseAPI {
     }
 
     /**
+     * Download a certificate, its chain and its private key as one PKCS#12 file.  This is a POST because the passphrase travels in the body: a URL is recorded by proxies, browser history and access logs, so a passphrase must never appear in one. The response is not cacheable and carries a sanitized download filename.  It is a separate operation from the certificate content download, which serves certificates only. Only a key created or imported as exportable can be included.
+     * Download a certificate with its private key
+     */
+    downloadKeystore({ uuid, certificateKeystoreRequestDto }: DownloadKeystoreRequest): Observable<Blob>;
+    downloadKeystore(
+        { uuid, certificateKeystoreRequestDto }: DownloadKeystoreRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Blob>>;
+    downloadKeystore(
+        { uuid, certificateKeystoreRequestDto }: DownloadKeystoreRequest,
+        opts?: OperationOpts,
+    ): Observable<Blob | AjaxResponse<Blob>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'downloadKeystore');
+        throwIfNullOrUndefined(certificateKeystoreRequestDto, 'certificateKeystoreRequestDto', 'downloadKeystore');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<Blob>(
+            {
+                url: '/v1/certificates/{uuid}/keystore'.replace('{uuid}', encodeURI(uuid)),
+                method: 'POST',
+                headers,
+                body: certificateKeystoreRequestDto,
+                responseType: 'blob',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
      * Get Certificate Details
      */
     getCertificate({ uuid }: GetCertificateRequest): Observable<CertificateDetailDto>;
@@ -564,6 +609,7 @@ export class CertificateInventoryApi extends BaseAPI {
     }
 
     /**
+     * Besides the conditions a field may be filtered with, each field reports whether it can serve as a configurable column of the listing: `displayable` marks the fields that may be named in `columns`, and `sortable` those the listing may be ordered by. A field that reports neither flag is filter-only, so an absent flag is to be read as `false` rather than as unknown.  Both flags are answered per field, and that answer is authoritative for attribute-sourced fields as much as for property ones: whether a given attribute may be ordered on depends on the resource and is reported here rather than assumed. A field that may be shown but not ordered on reports `displayable` without `sortable`.
      * Get Certificate searchable fields information
      */
     getCertificateSearchableFields(): Observable<Array<SearchFieldDataByGroupDto>>;
@@ -633,6 +679,36 @@ export class CertificateInventoryApi extends BaseAPI {
     }
 
     /**
+     * Import named entries from an uploaded file.  The file travels base64-encoded in `file`, like every upload in the platform, and is held in memory rather than written anywhere; it is never echoed in an error, since it may carry key material. Every entry to import is named, and nothing else in the file is touched: an import never takes in material the caller did not ask for.  An entry reference is derived from the entry\'s own content — a certificate fingerprint, a public key fingerprint, or a digest of the protected key — so naming one selects that content, not a position in a file. A caller showing a user what is inside reads the file first with `POST /v1/inspections` and names what the user chose. A caller that already knows what it is importing computes the reference itself and imports in one call.  Each entry says where its own key material goes, because a file can hold entries of different key types and each key type has its own provider attribute schema.  Entries succeed or fail on their own and the response reports the outcome of each. Each entry carries its own `importId`, so repeating a request returns what already succeeded and retries only what did not: a caller recovering from a lost or partial response resends the same body and needs to work out nothing.
+     * Import certificates and keys from an uploaded file
+     */
+    importCertificates({ certificateImportRequestDto }: ImportCertificatesRequest): Observable<CertificateImportResponseDto>;
+    importCertificates(
+        { certificateImportRequestDto }: ImportCertificatesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<CertificateImportResponseDto>>;
+    importCertificates(
+        { certificateImportRequestDto }: ImportCertificatesRequest,
+        opts?: OperationOpts,
+    ): Observable<CertificateImportResponseDto | AjaxResponse<CertificateImportResponseDto>> {
+        throwIfNullOrUndefined(certificateImportRequestDto, 'certificateImportRequestDto', 'importCertificates');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<CertificateImportResponseDto>(
+            {
+                url: '/v1/certificates/import',
+                method: 'POST',
+                headers,
+                body: certificateImportRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
      * List Certificates Approvals
      */
     listCertificateApprovals({ uuid, itemsPerPage, pageNumber }: ListCertificateApprovalsRequest): Observable<ApprovalResponseDto>;
@@ -689,6 +765,7 @@ export class CertificateInventoryApi extends BaseAPI {
     }
 
     /**
+     * Ordering and columns address a field by its source together with its identifier, because an identifier is unique only within its source. Both halves, and which fields may be shown or ordered on, come from the searchable-fields operation of this resource.  `sort` orders the whole result set before it is paged, so paging walks the sorted set rather than sorting one page at a time; only fields the catalogue marks `sortable` may be used. `columns` names the fields the caller means to display, and only fields the catalogue marks `displayable` may be named. It does not narrow the response: every listing object comes back whole, and naming a property field asks for nothing extra because the object already carries it. Naming an attribute-sourced field is what has an effect, described below.  A request that carries neither `sort` nor `columns` is answered exactly as it was before the two fields existed: the endpoint\'s own default ordering, the full default shape of every object, and no `attributeValues` member. A caller written against the previous contract therefore needs no change.  Requesting attribute-sourced columns adds an `attributeValues` member to each returned object, keyed by field source and then by field identifier. A field the object holds no value for is absent rather than empty, and a multi-valued attribute arrives in its stored `item_order`.
      * List Certificates
      */
     listCertificates({ certificateSearchRequestDto }: ListCertificatesRequest): Observable<CertificateResponseDto>;

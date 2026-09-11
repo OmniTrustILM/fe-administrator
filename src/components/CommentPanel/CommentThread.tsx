@@ -1,6 +1,6 @@
 import Button from 'components/Button';
 import Spinner from 'components/Spinner';
-import { actions, selectors } from 'ducks/comments';
+import { actions, loadedBefore, loadedWindow, remainingAfter, selectors } from 'ducks/comments';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -14,17 +14,25 @@ type Props = {
     root: CommentDto;
     busy: Record<string, boolean>;
     onDelete: (comment: CommentDto, parentUuid?: string) => void;
+    /** The comment a notification led to, when it is this root or one of its replies. */
+    highlightUuid?: string;
+    /** Set when a notification led to a reply in this thread: the panel has already asked for the anchored replies. */
+    anchored?: boolean;
 };
 
 const replyLabel = (count: number) => (count === 1 ? '1 reply' : `${count} replies`);
 
-export default function CommentThread({ resource, objectUuid, root, busy, onDelete }: Readonly<Props>) {
+export default function CommentThread({ resource, objectUuid, root, busy, onDelete, highlightUuid, anchored = false }: Readonly<Props>) {
     const dispatch = useDispatch();
     const repliesSelector = useMemo(() => selectors.replies(root.uuid), [root.uuid]);
     const replies = useSelector(repliesSelector);
 
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(anchored);
     const [replying, setReplying] = useState(false);
+
+    useEffect(() => {
+        if (anchored) setExpanded(true);
+    }, [anchored]);
 
     const replyCount = root.replyCount ?? 0;
     const uuid = root.uuid;
@@ -48,7 +56,15 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
         wasSucceeded.current = postSucceeded;
     }, [postSucceeded]);
 
-    const remaining = replies ? Math.max(0, replies.totalItems - replies.comments.length) : 0;
+    // An anchored load lands on the page holding the reply, so there may be replies before the list as well as after.
+    const earlier = replies ? loadedBefore(replies) : 0;
+    const remaining = replies ? remainingAfter(replies) : 0;
+
+    // Everything up to the page shown is re-read as one first page, the same window a refresh uses.
+    const onLoadEarlier = useCallback(() => {
+        if (!replies) return;
+        dispatch(actions.listReplies({ rootUuid: uuid, pageNumber: 1, itemsPerPage: loadedWindow(replies) }));
+    }, [dispatch, uuid, replies]);
 
     const onLoadMore = useCallback(() => {
         if (!replies) return;
@@ -69,6 +85,7 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
                 comment={root}
                 isRoot
                 busy={!!busy[uuid]}
+                highlighted={highlightUuid === uuid}
                 onReply={() => {
                     setReplying(true);
                     expand();
@@ -95,12 +112,25 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
 
                     {expanded && (
                         <div className="relative flex flex-col gap-2" data-testid={`thread-${uuid}-replies`}>
+                            {earlier > 0 && (
+                                <Button
+                                    variant="outline"
+                                    color="primary"
+                                    className="self-start !py-1.5 !px-3 text-xs"
+                                    onClick={onLoadEarlier}
+                                    disabled={replies?.isFetching}
+                                    data-testid={`thread-${uuid}-load-earlier`}
+                                >
+                                    Show earlier replies ({earlier})
+                                </Button>
+                            )}
                             {replies?.comments.map((reply) => (
                                 <CommentItem
                                     key={reply.uuid}
                                     comment={reply}
                                     isRoot={false}
                                     busy={!!busy[reply.uuid]}
+                                    highlighted={highlightUuid === reply.uuid}
                                     onDelete={() => onDelete(reply, uuid)}
                                 />
                             ))}

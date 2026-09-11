@@ -11,11 +11,53 @@
  * Do not edit the class manually.
  */
 
-import type { DiscoveredItemPayload, KeyAlgorithm, KeyFormat, KeyType, Resource } from './';
+import type { KeyAlgorithm, KeyFormat, KeyType, Resource } from './';
 
 /**
- * @type DiscoveredKeyDto
  * A connector reports a key\'s existence, intrinsic metadata, and at most its public part; private, secret and split key material must never be sent. A PRIVATE_KEY, SECRET_KEY or SPLIT_KEY report MUST omit publicKey and publicKeyFormat entirely.
  * @export
+ * @interface DiscoveredKeyDto
  */
-export type DiscoveredKeyDto = DiscoveredItemPayload;
+export interface DiscoveredKeyDto {
+    /**
+     * @type {Resource}
+     * @memberof DiscoveredKeyDto
+     */
+    resource: Resource;
+    /**
+     * Key type: whether this is a public, private, secret, or split key
+     * @type {KeyType}
+     * @memberof DiscoveredKeyDto
+     */
+    type: KeyType;
+    /**
+     * Cryptographic algorithm of the key
+     * @type {KeyAlgorithm}
+     * @memberof DiscoveredKeyDto
+     */
+    algorithm: KeyAlgorithm;
+    /**
+     * Key length in bits
+     * @type {number}
+     * @memberof DiscoveredKeyDto
+     */
+    length?: number;
+    /**
+     * Intrinsic key fingerprint; correlates the same key across runs, connectors, and certificates without exposing key material
+     * @type {string}
+     * @memberof DiscoveredKeyDto
+     */
+    fingerprint?: string;
+    /**
+     * Format of publicKey when present (typically SubjectPublicKeyInfo); absent when publicKey is absent
+     * @type {KeyFormat}
+     * @memberof DiscoveredKeyDto
+     */
+    publicKeyFormat?: KeyFormat;
+    /**
+     * Base64-encoded public key material. Absent for PRIVATE_KEY, SECRET_KEY or SPLIT_KEY discoveries, where only existence and intrinsic metadata are ever reported
+     * @type {string}
+     * @memberof DiscoveredKeyDto
+     */
+    publicKey?: string;
+}

@@ -157,13 +157,19 @@ models/CertificateContentDto.ts
 models/CertificateDetailDto.ts
 models/CertificateDownloadResponseDto.ts
 models/CertificateDto.ts
+models/CertificateEntryKeyDestinationDto.ts
 models/CertificateEventHistoryDto.ts
 models/CertificateExtension.ts
 models/CertificateExtensionOidPropertiesDto.ts
 models/CertificateFormat.ts
 models/CertificateFormatEncoding.ts
+models/CertificateImportEntryDto.ts
+models/CertificateImportRequestDto.ts
+models/CertificateImportResponseDto.ts
+models/CertificateImportResultDto.ts
 models/CertificateInLocationDto.ts
 models/CertificateKeyUsage.ts
+models/CertificateKeystoreRequestDto.ts
 models/CertificateOperationKind.ts
 models/CertificateProtocol.ts
 models/CertificateProtocolDto.ts
@@ -208,9 +214,6 @@ models/CmpProfileDetailDto.ts
 models/CmpProfileDto.ts
 models/CmpProfileEditRequestDto.ts
 models/CmpProfileRequestDto.ts
-models/CommentCreateRequestDto.ts
-models/CommentDto.ts
-models/CommentResponseDto.ts
 models/CodeBlockAttributeContentData.ts
 models/CodeBlockAttributeContentV2.ts
 models/CodeBlockAttributeContentV3.ts
@@ -348,6 +351,7 @@ models/EntityInstanceRequestDto.ts
 models/EntityInstanceResponseDto.ts
 models/EntityInstanceUpdateRequestDto.ts
 models/EnumItemDto.ts
+models/ErrorCode.ts
 models/ErrorMessageDto.ts
 models/EventHistoryDto.ts
 models/EventHistoryRequestDto.ts
@@ -394,6 +398,7 @@ models/HealthStatus.ts
 models/InfoAttributeProperties.ts
 models/InfoAttributeV2.ts
 models/InfoAttributeV3.ts
+models/InspectedEntryKind.ts
 models/IntegerAttributeContentV2.ts
 models/IntegerAttributeContentV3.ts
 models/InternalTimestampSourceDto.ts
@@ -408,7 +413,9 @@ models/KeyCompromiseReason.ts
 models/KeyDetailDto.ts
 models/KeyDto.ts
 models/KeyEventHistoryDto.ts
+models/KeyExportRequestDto.ts
 models/KeyFormat.ts
+models/KeyImportRequestDto.ts
 models/KeyItemDetailDto.ts
 models/KeyItemDto.ts
 models/KeyRequestDto.ts
@@ -416,6 +423,8 @@ models/KeyRequestType.ts
 models/KeyState.ts
 models/KeyStoreSecretContent.ts
 models/KeyStoreType.ts
+models/KeyTransferAvailabilityDto.ts
+models/KeyTransferCapabilityDto.ts
 models/KeyType.ts
 models/KeyUsage.ts
 models/KeyUsageMappedField.ts
@@ -487,6 +496,7 @@ models/PlatformEnum.ts
 models/PlatformSettingsDto.ts
 models/PlatformSettingsUpdateDto.ts
 models/PrivateKeySecretContent.ts
+models/ProblemDetailExtended.ts
 models/ProgrammingLanguageEnum.ts
 models/ProtectionLevel.ts
 models/ProtectionMethod.ts
@@ -529,6 +539,8 @@ models/RequestAttributeCallback.ts
 models/RequestAttributeV2.ts
 models/RequestAttributeV3.ts
 models/Resource.ts
+models/ResourceAction.ts
+models/ResourceActionsDto.ts
 models/ResourceCertificateContentData.ts
 models/ResourceDto.ts
 models/ResourceEvent.ts

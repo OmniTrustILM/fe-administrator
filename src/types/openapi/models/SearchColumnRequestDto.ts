@@ -25,7 +25,7 @@ export interface SearchColumnRequestDto {
      */
     fieldSource: FilterFieldSource;
     /**
-     * Field identifier of the column. Available fields with their identifiers can be retrieved from the corresponding endpoint `GET /v1/{resource}/search`; only fields marked as displayable may be requested as a column.
+     * Field identifier of the column. Available fields with their identifiers can be retrieved from the resource\'s searchable-fields operation, for example `GET /v1/certificates/search` or `GET /v2/connectors/search`; only fields marked as displayable may be requested as a column.
      * @type {string}
      * @memberof SearchColumnRequestDto
      */
