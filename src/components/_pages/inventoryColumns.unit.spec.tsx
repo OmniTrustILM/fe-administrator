@@ -37,7 +37,7 @@ const inventories = [
             'DISCOVERY_CONNECTOR_NAME',
             'DISCOVERY_KIND',
         ],
-        displayOnly: ['DISCOVERY_DURATION'],
+        displayOnly: ['DISCOVERY_CONNECTOR_INTERFACE', 'DISCOVERY_DURATION'],
     },
     {
         name: 'connectors',
@@ -203,6 +203,10 @@ describe('cells whose value can be absent', () => {
         return render(discovery as DiscoveryResponseModel, DISCOVERY_COLUMNS, discoveryRegistry, 'DISCOVERY_DURATION');
     }
 
+    function discoveryInterface(discovery: Partial<DiscoveryResponseModel>) {
+        return render(discovery as DiscoveryResponseModel, DISCOVERY_COLUMNS, discoveryRegistry, 'DISCOVERY_CONNECTOR_INTERFACE');
+    }
+
     it('reaches the empty state for a connector carrying no version', () => {
         expect(connectorVersion({ uuid: 'connector-1' })).toContain('No value');
     });
@@ -213,6 +217,13 @@ describe('cells whose value can be absent', () => {
 
     it('reaches the empty state for a discovery that has not started', () => {
         expect(discoveryDuration({ uuid: 'discovery-1' })).toContain('No value');
+    });
+
+    it('names the generation a run was driven by, legacy included', () => {
+        expect(discoveryInterface({ uuid: 'discovery-1' })).toContain('Legacy (v1)');
+        expect(
+            discoveryInterface({ uuid: 'discovery-1', connectorInterface: { uuid: 'iface-1', code: 'discovery' as any, version: 'v2' } }),
+        ).toContain('Discovery (v2)');
     });
 
     it('shows the duration a started discovery has run for', () => {

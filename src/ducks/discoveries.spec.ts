@@ -186,6 +186,143 @@ describe('discoveries slice', () => {
     });
 });
 
+describe('discoveries slice - v2 additions', () => {
+    test('listDiscoveryResources / success / failure / clear', () => {
+        let next = reducer(
+            { ...initialState, discoveryResources: ['certificates'] as any },
+            actions.listDiscoveryResources({ connectorUuid: 'c-1' }),
+        );
+        expect(next.discoveryResources).toBeUndefined();
+        expect(next.isFetchingDiscoveryResources).toBe(true);
+
+        next = reducer(next, actions.listDiscoveryResourcesSuccess({ resources: ['certificates', 'keys'] as any }));
+        expect(next.discoveryResources).toEqual(['certificates', 'keys']);
+        expect(next.isFetchingDiscoveryResources).toBe(false);
+
+        next = reducer({ ...next, isFetchingDiscoveryResources: true }, actions.listDiscoveryResourcesFailure({ error: 'err' }));
+        expect(next.isFetchingDiscoveryResources).toBe(false);
+
+        next = reducer(next, actions.clearDiscoveryResources());
+        expect(next.discoveryResources).toBeUndefined();
+    });
+
+    test('the v2 run-level relay fills the same descriptor slot as the v1 path', () => {
+        const next = reducer(
+            { ...initialState, discoveryProviderAttributeDescriptors: [{ uuid: 'stale' } as any] },
+            actions.getDiscoveryInterfaceAttributesDescriptors({ connectorUuid: 'c-1' }),
+        );
+        expect(next.discoveryProviderAttributeDescriptors).toEqual([]);
+        expect(next.isFetchingDiscoveryProviderAttributeDescriptors).toBe(true);
+    });
+
+    test('per-resource descriptors are keyed by resource and tracked in flight independently', () => {
+        let next = reducer(
+            initialState,
+            actions.getDiscoveryResourceAttributesDescriptors({ connectorUuid: 'c-1', resource: 'keys' as any }),
+        );
+        next = reducer(next, actions.getDiscoveryResourceAttributesDescriptors({ connectorUuid: 'c-1', resource: 'certificates' as any }));
+        expect(next.fetchingResourceAttributeDescriptors).toEqual(['keys', 'certificates']);
+
+        next = reducer(
+            next,
+            actions.getDiscoveryResourceAttributesDescriptorsSuccess({
+                resource: 'keys' as any,
+                attributeDescriptor: [{ uuid: 'k' } as any],
+            }),
+        );
+        expect(next.discoveryProviderResourceAttributeDescriptors.keys).toEqual([{ uuid: 'k' }]);
+        expect(next.fetchingResourceAttributeDescriptors).toEqual(['certificates']);
+
+        next = reducer(next, actions.getDiscoveryResourceAttributesDescriptorsFailure({ resource: 'certificates' as any, error: 'err' }));
+        expect(next.fetchingResourceAttributeDescriptors).toEqual([]);
+        expect(next.discoveryProviderResourceAttributeDescriptors.certificates).toBeUndefined();
+
+        next = reducer(next, actions.clearDiscoveryResourceAttributeDescriptors({ resource: 'keys' as any }));
+        expect(next.discoveryProviderResourceAttributeDescriptors).toEqual({});
+    });
+
+    test('clearing without a resource drops every per-resource set', () => {
+        const pre = { ...initialState, discoveryProviderResourceAttributeDescriptors: { keys: [], certificates: [] } };
+        expect(reducer(pre, actions.clearDiscoveryResourceAttributeDescriptors({})).discoveryProviderResourceAttributeDescriptors).toEqual(
+            {},
+        );
+    });
+
+    test('getDiscoveryItems / success / failure', () => {
+        let next = reducer({ ...initialState, discoveryItems: { items: [] } as any }, actions.getDiscoveryItems({ uuid: 'd-1' }));
+        expect(next.discoveryItems).toBeUndefined();
+        expect(next.isFetchingDiscoveryItems).toBe(true);
+
+        const page = { items: [{ uuid: 'i-1' }], totalItems: 1, pageNumber: 1, itemsPerPage: 10, totalPages: 1 } as any;
+        next = reducer(next, actions.getDiscoveryItemsSuccess(page));
+        expect(next.discoveryItems).toEqual(page);
+        expect(next.isFetchingDiscoveryItems).toBe(false);
+
+        next = reducer({ ...next, isFetchingDiscoveryItems: true }, actions.getDiscoveryItemsFailure({ error: 'err' }));
+        expect(next.isFetchingDiscoveryItems).toBe(false);
+    });
+
+    test('getDiscoveryMessages / success / failure', () => {
+        let next = reducer(initialState, actions.getDiscoveryMessages({ uuid: 'd-1' }));
+        expect(next.isFetchingDiscoveryMessages).toBe(true);
+
+        const page = { items: [{ code: 'X' }], totalItems: 1, pageNumber: 1, itemsPerPage: 10, totalPages: 1 } as any;
+        next = reducer(next, actions.getDiscoveryMessagesSuccess(page));
+        expect(next.discoveryMessages).toEqual(page);
+        expect(next.isFetchingDiscoveryMessages).toBe(false);
+
+        next = reducer({ ...next, isFetchingDiscoveryMessages: true }, actions.getDiscoveryMessagesFailure({ error: 'err' }));
+        expect(next.isFetchingDiscoveryMessages).toBe(false);
+    });
+
+    test.each([
+        ['stop', actions.stopDiscovery, actions.stopDiscoverySuccess, actions.stopDiscoveryFailure, 'isStopping'],
+        ['resume', actions.resumeDiscovery, actions.resumeDiscoverySuccess, actions.resumeDiscoveryFailure, 'isResuming'],
+        ['cancel', actions.cancelDiscovery, actions.cancelDiscoverySuccess, actions.cancelDiscoveryFailure, 'isCancelling'],
+    ] as const)('%s lifecycle action toggles its flag and nothing else', (_name, start, success, failure, flag) => {
+        let next = reducer(initialState, start({ uuid: 'd-1' }));
+        expect(next[flag]).toBe(true);
+
+        next = reducer(next, success({ uuid: 'd-1' }));
+        expect(next[flag]).toBe(false);
+        // The detail is re-read by the epic rather than patched here: a 204 carries no state.
+        expect(next.discovery).toBeUndefined();
+
+        next = reducer(reducer(initialState, start({ uuid: 'd-1' })), failure({ error: 'refused' }));
+        expect(next[flag]).toBe(false);
+    });
+
+    test('new selectors read their slots', () => {
+        const featureState = {
+            ...initialState,
+            discoveryResources: ['keys'],
+            discoveryProviderResourceAttributeDescriptors: { keys: [] },
+            fetchingResourceAttributeDescriptors: ['keys'],
+            discoveryItems: { items: [] },
+            discoveryMessages: { items: [] },
+            isFetchingDiscoveryResources: true,
+            isFetchingDiscoveryItems: true,
+            isFetchingDiscoveryMessages: true,
+            isStopping: true,
+            isResuming: true,
+            isCancelling: true,
+        } as any;
+        const state = { discoveries: featureState } as any;
+
+        expect(selectors.discoveryResources(state)).toEqual(['keys']);
+        expect(selectors.discoveryProviderResourceAttributeDescriptors(state)).toEqual({ keys: [] });
+        expect(selectors.fetchingResourceAttributeDescriptors(state)).toEqual(['keys']);
+        expect(selectors.discoveryItems(state)).toEqual({ items: [] });
+        expect(selectors.discoveryMessages(state)).toEqual({ items: [] });
+        expect(selectors.isFetchingDiscoveryResources(state)).toBe(true);
+        expect(selectors.isFetchingDiscoveryItems(state)).toBe(true);
+        expect(selectors.isFetchingDiscoveryMessages(state)).toBe(true);
+        expect(selectors.isStopping(state)).toBe(true);
+        expect(selectors.isResuming(state)).toBe(true);
+        expect(selectors.isCancelling(state)).toBe(true);
+    });
+});
+
 describe('discoveries selectors', () => {
     test('all selectors read correct values from store', () => {
         const featureState = {

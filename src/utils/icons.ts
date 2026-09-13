@@ -42,6 +42,8 @@ import {
     Unplug,
     ShieldCheck,
     Eye,
+    Pause,
+    Play,
 } from 'lucide-react';
 import EditIcon from 'components/icons/EditIcon';
 import type { IconName } from 'types/icons';
@@ -93,4 +95,7 @@ export const iconRegistry: Record<IconName, React.ComponentType<{ size?: number 
     unplug: Unplug,
     repeat: Repeat,
     eye: Eye,
+    pause: Pause,
+    play: Play,
+    cancel: Ban,
 };

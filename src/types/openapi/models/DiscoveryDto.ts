@@ -43,6 +43,12 @@ export interface DiscoveryDto {
      */
     connectorUuid: string;
     /**
+     * UUID of the DISCOVERY Connector Interface to bind this run to. Required when the Connector exposes more than one; selected automatically when it exposes exactly one. A Connector with no DISCOVERY interface yields a legacy v1 run.
+     * @type {string}
+     * @memberof DiscoveryDto
+     */
+    interfaceUuid?: string;
+    /**
      * Discovery Kind
      * @type {string}
      * @memberof DiscoveryDto

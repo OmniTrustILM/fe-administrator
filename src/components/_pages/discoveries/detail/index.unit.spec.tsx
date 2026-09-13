@@ -1,0 +1,365 @@
+import { act } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createRoot, type Root } from 'react-dom/client';
+
+import DiscoveryDetail from './index';
+import { DiscoveryStatus, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
+import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
+
+setupReactActEnvironment();
+
+vi.mock('react-redux', async () => await import('../../test-utils/reactReduxMockModule'));
+
+vi.mock('react-router', () => ({
+    useParams: () => ({ id: 'disc-1' }),
+    useNavigate: () => vi.fn(),
+    useLocation: () => ({ pathname: '/discoveries/detail/disc-1' }),
+    useSearchParams: () => [new URLSearchParams(), () => undefined],
+    Link: ({ children }: any) => <span>{children}</span>,
+}));
+
+vi.mock('components/Container', async () => {
+    const { containerMockModule } = await import('../../test-utils/mockModules');
+    return containerMockModule();
+});
+
+vi.mock('components/Widget', async () => {
+    const { widgetMockModule } = await import('../../test-utils/mockModules');
+    return widgetMockModule();
+});
+
+vi.mock('components/CustomTable', async () => {
+    const { customTableMockModule } = await import('../../test-utils/mockModules');
+    return customTableMockModule();
+});
+
+vi.mock('components/Dialog', async () => {
+    const { dialogMockModule } = await import('../../test-utils/mockModules');
+    return dialogMockModule();
+});
+
+// Every tab's content is rendered so the Details, Results and Run Messages tabs can all be asserted in one mount.
+vi.mock('components/Layout/TabLayout', () => ({
+    default: ({ tabs }: any) => (
+        <div>
+            {tabs.map((t: any, i: number) => (
+                <section key={t.tabKey ?? (typeof t.title === 'string' ? t.title : i)} data-testid={`tab-${t.tabKey ?? t.title}`}>
+                    <h2>{t.title}</h2>
+                    {t.content}
+                </section>
+            ))}
+        </div>
+    ),
+}));
+
+vi.mock('components/Breadcrumb', () => ({ default: ({ items }: any) => <div>{items?.[1]?.label}</div> }));
+vi.mock('components/Label', () => ({ default: ({ children }: any) => <div>{children}</div> }));
+vi.mock('components/DetailPageSkeleton', () => ({ default: () => <div data-testid="skeleton">skeleton</div> }));
+vi.mock('components/Attributes/AttributeViewer', () => ({
+    default: () => <div data-testid="attributes">attributes</div>,
+    ATTRIBUTE_VIEWER_TYPE: { METADATA: 'metadata' },
+}));
+vi.mock('components/Attributes/CustomAttributeWidget', () => ({ default: () => <div data-testid="custom-attributes" /> }));
+vi.mock('components/EnumDescription', () => ({ EnumColumnDescription: () => <span /> }));
+vi.mock('components/ConnectorLink', () => ({ default: ({ name }: any) => <span>{name}</span> }));
+vi.mock('components/_pages/notifications/events-settings/ObjectEventHistoryWidget', () => ({ default: () => <div /> }));
+vi.mock('components/CommentPanel', () => ({ default: () => <div /> }));
+vi.mock('./DiscoveryCertificates', () => ({ default: () => <div data-testid="discovery-certificates">certificates view</div> }));
+vi.mock('./DiscoveryItemsTable', () => ({
+    default: ({ resource }: any) => <div data-testid={`discovery-items-${resource}`}>items view</div>,
+}));
+vi.mock('./DiscoveryRunMessages', () => ({ default: () => <div data-testid="run-messages">run messages</div> }));
+vi.mock('utils/widget', () => ({ createWidgetDetailHeaders: () => [] }));
+
+const v1Run = {
+    uuid: 'disc-1',
+    name: 'nightly-scan',
+    kind: 'IP-HostName',
+    status: DiscoveryStatus.Completed,
+    connectorStatus: DiscoveryStatus.Completed,
+    connectorUuid: 'conn-1',
+    connectorName: 'network-discovery',
+    totalCertificatesDiscovered: 4,
+    connectorTotalCertificatesDiscovered: 4,
+    attributes: [],
+    customAttributes: [],
+    triggers: [],
+    resources: [Resource.Certificates],
+    runMessageCount: 0,
+    stoppable: false,
+    itemsNewlyDiscovered: 0,
+    itemsProcessed: 0,
+    itemsFailed: 0,
+};
+
+const v2Run = {
+    ...v1Run,
+    status: DiscoveryStatus.InProgress,
+    connectorStatus: DiscoveryStatus.InProgress,
+    connectorInterface: { uuid: 'iface-1', code: 'discovery', version: 'v2' },
+    resources: [Resource.Certificates, Resource.Keys],
+    runMessageCount: 3,
+    stoppable: true,
+    itemsDiscovered: 52,
+    itemsNewlyDiscovered: 7,
+    itemsProcessed: 5,
+    itemsFailed: 1,
+    totalCertificatesDiscovered: 48,
+    connectorTotalCertificatesDiscovered: 48,
+    progress: {
+        targetsProcessed: 12,
+        targetsTotal: 30,
+        targetsFailed: 3,
+        phase: 'scanning',
+        byResource: { certificates: { produced: 48, totalEstimate: 120, phase: 'collecting' }, keys: { produced: 4 } },
+        updatedAt: '2026-09-13T12:32:07.000Z',
+    },
+};
+
+const allDiscoveryActions = [ResourceAction.Stop, ResourceAction.Resume, ResourceAction.Cancel, ResourceAction.Delete];
+
+function buildState(discovery: any, allowedActions: ResourceAction[] = allDiscoveryActions, messages?: any) {
+    return {
+        discoveries: {
+            discovery,
+            discoveryMessages: messages,
+            isFetchingDetail: false,
+            isDeleting: false,
+            isStopping: false,
+            isResuming: false,
+            isCancelling: false,
+        },
+        auth: {
+            profile: {
+                permissions: { allowedListings: [], allowedActions: [{ resource: Resource.Discoveries, actions: allowedActions }] },
+            },
+        },
+        rules: {
+            triggerHistorySummary: undefined,
+            isFetchingTriggerHistorySummary: false,
+            isFetchingTriggerHistories: false,
+        },
+        enums: {
+            platformEnums: {
+                [PlatformEnum.Resource]: {
+                    [Resource.Discoveries]: { label: 'Discoveries' },
+                    [Resource.Certificates]: { label: 'Certificates' },
+                    [Resource.Keys]: { label: 'Keys' },
+                },
+                [PlatformEnum.TriggerType]: {},
+                [PlatformEnum.ResourceEvent]: {},
+            },
+        },
+    };
+}
+
+describe('DiscoveryDetail', () => {
+    let container: HTMLDivElement;
+    let root: Root;
+    const dispatch = vi.fn();
+
+    beforeEach(() => {
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        root = createRoot(container);
+        dispatch.mockReset();
+        useDispatchMock.mockReturnValue(dispatch);
+    });
+
+    afterEach(async () => {
+        await act(async () => root.unmount());
+        container.remove();
+        vi.clearAllMocks();
+    });
+
+    async function render(state: any) {
+        useSelectorMock.mockImplementation((selector: any) => selector(state));
+        await act(async () => {
+            root.render(<DiscoveryDetail />);
+        });
+    }
+
+    const headerButtons = () =>
+        Array.from(container.querySelectorAll<HTMLButtonElement>('[data-testid="widget-Discovery Details"] > button')).map((b) => b.title);
+
+    const rowText = (id: string) => container.querySelector(`[data-testid="row-${id}"]`)?.textContent;
+
+    describe('a run against a v1 Discovery Provider renders as before', () => {
+        it('carries exactly the delete button, no interface row, no progress widget', async () => {
+            await render(buildState(v1Run));
+
+            expect(headerButtons()).toEqual(['Delete']);
+            expect(container.querySelector('[data-testid="row-connectorInterface"]')).toBeNull();
+            expect(container.querySelector('[data-testid="widget-Progress"]')).toBeNull();
+            expect(container.querySelector('[data-testid="discovery-certificates"]')).not.toBeNull();
+            expect(container.querySelector('[data-testid^="discovery-items-"]')).toBeNull();
+        });
+
+        it('reports zero on every import count rather than an empty bar, and a dash where a v1 run has no figure', async () => {
+            await render(buildState(v1Run));
+
+            expect(rowText('itemsDiscovered')).toContain('—');
+            expect(rowText('itemsNewlyDiscovered')).toBe('New to the inventory0');
+            expect(rowText('itemsProcessed')).toBe('Imported0');
+            expect(rowText('itemsFailed')).toBe('Failed to import0');
+            expect(rowText('totalCertificatesDiscovered')).toBe('Saved4');
+            expect(rowText('connectorTotalCertificatesDiscovered')).toContain('4');
+            expect(container.querySelector('[data-testid="reported-exceeds-saved"]')).toBeNull();
+        });
+
+        it('no longer shows the two mislabelled certificate rows on the details table', async () => {
+            await render(buildState(v1Run));
+
+            expect(container.querySelector('[data-testid="row-totalCertificatesDownloaded"]')).toBeNull();
+            expect(container.textContent).not.toContain('Total Certificates Downloaded');
+        });
+    });
+
+    describe('lifecycle controls: stoppable × status × permission', () => {
+        it('offers stop and cancel while a stoppable run is in progress', async () => {
+            await render(buildState(v2Run));
+
+            expect(headerButtons()).toEqual(['Stop', 'Cancel', 'Delete']);
+        });
+
+        it('offers resume and cancel while stopped', async () => {
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Stopped }));
+
+            expect(headerButtons()).toEqual(['Resume', 'Cancel', 'Delete']);
+        });
+
+        it('offers nothing once the platform is processing', async () => {
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Processing }));
+
+            expect(headerButtons()).toEqual(['Delete']);
+        });
+
+        it('hides a control the user lacks permission for rather than disabling it', async () => {
+            await render(buildState(v2Run, [ResourceAction.Cancel]));
+
+            expect(headerButtons()).toEqual(['Cancel', 'Delete']);
+        });
+
+        it('stops immediately, but confirms a cancel in words that say what is lost', async () => {
+            await render(buildState(v2Run));
+
+            await act(async () => {
+                container.querySelector<HTMLButtonElement>('[data-testid="widget-Discovery Details"] > button[title="Stop"]')?.click();
+            });
+            expect(dispatch).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'discoveries/stopDiscovery', payload: { uuid: 'disc-1' } }),
+            );
+
+            await act(async () => {
+                container.querySelector<HTMLButtonElement>('[data-testid="widget-Discovery Details"] > button[title="Cancel"]')?.click();
+            });
+            const dialog = container.querySelector('[data-testid="dialog"]');
+            expect(dialog?.textContent).toContain('never imported');
+            expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'discoveries/cancelDiscovery' }));
+
+            await act(async () => {
+                Array.from(dialog?.querySelectorAll('button') ?? [])
+                    .find((b) => b.textContent === 'Cancel discovery')
+                    ?.click();
+            });
+            expect(dispatch).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'discoveries/cancelDiscovery', payload: { uuid: 'disc-1' } }),
+            );
+        });
+    });
+
+    describe('progress', () => {
+        it('draws a determinate Provider bar with its caption, phase and failures', async () => {
+            await render(buildState(v2Run));
+
+            const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
+            expect(bar?.getAttribute('aria-valuenow')).toBe('12');
+            expect(bar?.getAttribute('aria-valuemax')).toBe('30');
+            expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('12 / 30 targets');
+            expect(container.querySelector('[data-testid="progress-phase"]')?.textContent).toBe('Phase: scanning');
+            expect(container.querySelector('[data-testid="progress-recorded"]')?.textContent).toMatch(/^as of \d{4}-/);
+            expect(container.querySelector('[data-testid="targets-failed"]')?.textContent).toBe('3 targets failed');
+        });
+
+        it('renders an indeterminate bar when the Provider sent no total, never a computed percentage', async () => {
+            const progress = { ...v2Run.progress, targetsTotal: undefined };
+            await render(buildState({ ...v2Run, progress }));
+
+            const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
+            expect(bar?.getAttribute('data-indeterminate')).toBe('true');
+            expect(bar?.hasAttribute('aria-valuenow')).toBe(false);
+            expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('12 targets');
+        });
+
+        it('adds the platform import bar only while processing, counted in items', async () => {
+            await render(buildState(v2Run));
+            expect(container.querySelector('[data-testid="import-progress"]')).toBeNull();
+
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Processing }));
+            const bar = container.querySelector('[data-testid="import-progress-bar"] [role="progressbar"]');
+            expect(bar?.getAttribute('aria-valuenow')).toBe('5');
+            expect(bar?.getAttribute('aria-valuemax')).toBe('7');
+            expect(container.querySelector('[data-testid="import-progress"]')?.textContent).toContain('1 waiting, 1 failed');
+        });
+
+        it('lists the per-resource breakdown by resource label', async () => {
+            await render(buildState(v2Run));
+
+            expect(rowText('certificates')).toBe('Certificates48~120collecting');
+            expect(rowText('keys')).toBe('Keys4——');
+        });
+    });
+
+    describe('results', () => {
+        it('groups the counts and flags a failed import', async () => {
+            await render(buildState(v2Run));
+
+            expect(rowText('itemsDiscovered')).toBe('Items collected52');
+            expect(rowText('itemsNewlyDiscovered')).toBe('New to the inventory7');
+            expect(container.querySelector('[data-testid="items-failed"]')?.textContent).toBe('1');
+            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('This run — all resources');
+            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('Certificates only');
+        });
+
+        it('says so when the Provider reported more certificates than were saved', async () => {
+            await render(buildState({ ...v2Run, totalCertificatesDiscovered: 40, connectorTotalCertificatesDiscovered: 48 }));
+
+            expect(container.querySelector('[data-testid="reported-exceeds-saved"]')).not.toBeNull();
+        });
+
+        it('derives one Results view per run resource, certificates keeping their own view', async () => {
+            await render(buildState(v2Run));
+
+            expect(container.querySelector('[data-testid="discovery-certificates"]')).not.toBeNull();
+            expect(container.querySelector('[data-testid="discovery-items-keys"]')).not.toBeNull();
+        });
+
+        it.each([DiscoveryStatus.Cancelled, DiscoveryStatus.Failed])('shows the not-processed banner for a %s run', async (status) => {
+            await render(buildState({ ...v2Run, status }));
+
+            expect(container.querySelector('[data-testid="not-processed-banner"]')).not.toBeNull();
+        });
+
+        it('shows no banner for a run that completed', async () => {
+            await render(buildState(v1Run));
+
+            expect(container.querySelector('[data-testid="not-processed-banner"]')).toBeNull();
+        });
+    });
+
+    describe('run messages', () => {
+        it('badges the tab from the detail count without fetching the log', async () => {
+            await render(buildState(v2Run));
+
+            expect(container.querySelector('[data-testid="run-message-count"]')?.textContent).toBe('3');
+            expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'discoveries/getDiscoveryMessages' }));
+        });
+
+        it('shows the interface the run is driven through', async () => {
+            await render(buildState(v2Run));
+
+            expect(rowText('connectorInterface')).toBe('Connector InterfaceDiscovery (v2)');
+        });
+    });
+});
