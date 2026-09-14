@@ -3,6 +3,7 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import Widget from 'components/Widget';
 import { useMemo } from 'react';
 import type { DiscoveryResponseDetailModel } from 'types/discoveries';
+import { certificateNotes } from './discoveryDetailHelpers';
 
 type Props = Readonly<{
     discovery: DiscoveryResponseDetailModel;
@@ -11,9 +12,13 @@ type Props = Readonly<{
 }>;
 
 /**
- * The four numbers on a run are distinct facts, and two of them are certificate-only. Left as one undifferentiated
- * row, a run that found 48 certificates and 4 keys reads as 52 collected but only 48 saved, which looks like four items
- * lost. The group headings stay even on a certificates-only run, where the groups happen to agree.
+ * Four figures with four meanings. "Items received" counts every item the provider handed over, repeats included; the
+ * certificate rows count what the platform saved, once per distinct certificate, against the items the provider
+ * reported. A provider figure above the saved one is usually the same certificate reported more than once, and the
+ * note under it says which it was rather than leaving the reader to subtract. Why a provider repeats an item is its
+ * own business: several hosts serving one chain, several logs listing one certificate, a chunk re-scanned after a
+ * resume. Core collapses all of them on the item reference. The group headings stay even on a
+ * certificates-only run, where the groups happen to agree.
  */
 export default function DiscoveryResultsSummary({ discovery, headers, className }: Props) {
     const thisRun: TableDataRow[] = useMemo(() => {
@@ -22,7 +27,7 @@ export default function DiscoveryResultsSummary({ discovery, headers, className 
             {
                 id: 'itemsDiscovered',
                 columns: [
-                    'Items collected',
+                    'Items received',
                     discovery.itemsDiscovered === undefined ? (
                         <span key="itemsDiscovered" title="Not reported by a v1 Discovery Provider">
                             —
@@ -51,26 +56,34 @@ export default function DiscoveryResultsSummary({ discovery, headers, className 
     }, [discovery.itemsDiscovered, discovery.itemsNewlyDiscovered, discovery.itemsProcessed, discovery.itemsFailed]);
 
     const certificatesOnly: TableDataRow[] = useMemo(() => {
-        const saved = discovery.totalCertificatesDiscovered ?? 0;
-        const reported = discovery.connectorTotalCertificatesDiscovered ?? 0;
+        const notes = certificateNotes(discovery);
         return [
-            { id: 'totalCertificatesDiscovered', columns: ['Saved', String(saved)] },
+            {
+                id: 'totalCertificatesDiscovered',
+                columns: ['Distinct certificates saved', String(discovery.totalCertificatesDiscovered ?? 0)],
+            },
             {
                 id: 'connectorTotalCertificatesDiscovered',
                 columns: [
-                    'Provider reported',
-                    <span key="reported" className="inline-flex flex-wrap items-baseline gap-2">
-                        <span>{String(reported)}</span>
-                        {reported > saved ? (
-                            <span className="text-xs text-warning" data-testid="reported-exceeds-saved">
-                                the run ended before everything was collected
+                    'Certificate items reported by the provider',
+                    <span key="reported" className="inline-flex flex-col gap-0.5">
+                        <span>{String(discovery.connectorTotalCertificatesDiscovered ?? 0)}</span>
+                        {notes.map((note) => (
+                            <span
+                                key={note.kind}
+                                className={note.kind === 'notHandedOver' ? 'text-xs text-warning' : 'text-xs text-content-muted'}
+                                data-testid={`certificate-note-${note.kind}`}
+                            >
+                                {note.kind === 'repeats'
+                                    ? `${note.count} repeated a certificate already received in this run`
+                                    : `${note.count} reported by the provider were never handed over`}
                             </span>
-                        ) : null}
+                        ))}
                     </span>,
                 ],
             },
         ];
-    }, [discovery.totalCertificatesDiscovered, discovery.connectorTotalCertificatesDiscovered]);
+    }, [discovery]);
 
     return (
         <Widget title="Results" titleSize="large" className={className} dataTestId="discovery-results">

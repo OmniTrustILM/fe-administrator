@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DiscoveryStatus, Resource } from 'types/openapi';
 import {
+    certificateNotes,
     connectorInterfaceLabel,
     connectorInterfaceVersion,
     type DiscoveryLifecycleAction,
@@ -130,6 +131,61 @@ describe('importRemainder', () => {
         expect(importRemainder({ itemsNewlyDiscovered: 0, itemsProcessed: 0, itemsFailed: 0 })).toBe(0);
         expect(importRemainder({ itemsNewlyDiscovered: 3, itemsProcessed: 3, itemsFailed: 1 })).toBe(0);
         expect(importRemainder({} as any)).toBe(0);
+    });
+});
+
+describe('certificateNotes', () => {
+    const certificatesOnly = { resources: [Resource.Certificates] };
+
+    it('reads a provider figure above the saved one as repeats when everything was handed over', () => {
+        // Four hosts answered with a three-certificate chain each: 12 items, 8 distinct certificates.
+        expect(
+            certificateNotes({
+                ...certificatesOnly,
+                itemsDiscovered: 12,
+                totalCertificatesDiscovered: 8,
+                connectorTotalCertificatesDiscovered: 12,
+            }),
+        ).toEqual([{ kind: 'repeats', count: 4 }]);
+    });
+
+    it('reads items reported above items received as never handed over', () => {
+        expect(
+            certificateNotes({
+                ...certificatesOnly,
+                itemsDiscovered: 9,
+                totalCertificatesDiscovered: 8,
+                connectorTotalCertificatesDiscovered: 12,
+            }),
+        ).toEqual([
+            { kind: 'notHandedOver', count: 3 },
+            { kind: 'repeats', count: 1 },
+        ]);
+    });
+
+    it('says nothing when the figures agree', () => {
+        expect(
+            certificateNotes({
+                ...certificatesOnly,
+                itemsDiscovered: 8,
+                totalCertificatesDiscovered: 8,
+                connectorTotalCertificatesDiscovered: 8,
+            }),
+        ).toEqual([]);
+    });
+
+    it('says nothing for a v1 run or a run with other resources, whose figures cannot be split', () => {
+        expect(certificateNotes({ ...certificatesOnly, totalCertificatesDiscovered: 8, connectorTotalCertificatesDiscovered: 12 })).toEqual(
+            [],
+        );
+        expect(
+            certificateNotes({
+                resources: [Resource.Certificates, Resource.Keys],
+                itemsDiscovered: 52,
+                totalCertificatesDiscovered: 48,
+                connectorTotalCertificatesDiscovered: 48,
+            }),
+        ).toEqual([]);
     });
 });
 

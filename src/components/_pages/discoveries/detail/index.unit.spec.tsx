@@ -204,9 +204,9 @@ describe('DiscoveryDetail', () => {
             expect(rowText('itemsNewlyDiscovered')).toBe('New to the inventory0');
             expect(rowText('itemsProcessed')).toBe('Imported0');
             expect(rowText('itemsFailed')).toBe('Failed to import0');
-            expect(rowText('totalCertificatesDiscovered')).toBe('Saved4');
+            expect(rowText('totalCertificatesDiscovered')).toBe('Distinct certificates saved4');
             expect(rowText('connectorTotalCertificatesDiscovered')).toContain('4');
-            expect(container.querySelector('[data-testid="reported-exceeds-saved"]')).toBeNull();
+            expect(container.querySelector('[data-testid^="certificate-note-"]')).toBeNull();
         });
 
         it('no longer shows the two mislabelled certificate rows on the details table', async () => {
@@ -316,17 +316,44 @@ describe('DiscoveryDetail', () => {
         it('groups the counts and flags a failed import', async () => {
             await render(buildState(v2Run));
 
-            expect(rowText('itemsDiscovered')).toBe('Items collected52');
+            expect(rowText('itemsDiscovered')).toBe('Items received52');
             expect(rowText('itemsNewlyDiscovered')).toBe('New to the inventory7');
             expect(container.querySelector('[data-testid="items-failed"]')?.textContent).toBe('1');
             expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('All resources');
             expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('Certificates only');
         });
 
-        it('says so when the Provider reported more certificates than were saved', async () => {
-            await render(buildState({ ...v2Run, totalCertificatesDiscovered: 40, connectorTotalCertificatesDiscovered: 48 }));
+        it('explains a provider figure above the saved one as repeats on a completed certificates-only run', async () => {
+            await render(
+                buildState({
+                    ...v2Run,
+                    status: DiscoveryStatus.Completed,
+                    resources: [Resource.Certificates],
+                    itemsDiscovered: 12,
+                    totalCertificatesDiscovered: 8,
+                    connectorTotalCertificatesDiscovered: 12,
+                }),
+            );
 
-            expect(container.querySelector('[data-testid="reported-exceeds-saved"]')).not.toBeNull();
+            expect(container.querySelector('[data-testid="certificate-note-repeats"]')?.textContent).toBe(
+                '4 repeated a certificate already received in this run',
+            );
+            expect(container.querySelector('[data-testid="certificate-note-notHandedOver"]')).toBeNull();
+        });
+
+        it('says what was never handed over when a run ended before its provider finished', async () => {
+            await render(
+                buildState({
+                    ...v2Run,
+                    status: DiscoveryStatus.Cancelled,
+                    resources: [Resource.Certificates],
+                    itemsDiscovered: 9,
+                    totalCertificatesDiscovered: 8,
+                    connectorTotalCertificatesDiscovered: 12,
+                }),
+            );
+
+            expect(container.querySelector('[data-testid="certificate-note-notHandedOver"]')?.textContent).toContain('3 reported');
         });
 
         it('derives one Results view per run resource, certificates keeping their own view', async () => {

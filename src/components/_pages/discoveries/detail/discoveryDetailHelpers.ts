@@ -77,6 +77,35 @@ export function targetsCaption(targetsProcessed: number | undefined, targetsTota
     return `${targetsProcessed ?? 0} / ${targetsTotal} targets`;
 }
 
+export type CertificateNote = { kind: 'repeats' | 'notHandedOver'; count: number };
+
+/**
+ * What a gap between the provider's certificate figure and the saved one means, for a certificates-only v2 run. The
+ * provider counts items as it found them, repeats included; the platform saves each distinct certificate once; and
+ * `itemsDiscovered` counts every item actually handed over. So items received above certificates saved are
+ * repeats collapsed on the same certificate, and items reported above items received were never handed over, which
+ * only a run that did not finish leaves behind. A run with other resources cannot be split this way and gets no note;
+ * neither does a v1 run, which reports no item count.
+ */
+export function certificateNotes(
+    run: Pick<
+        DiscoveryResponseDetailModel,
+        'resources' | 'itemsDiscovered' | 'totalCertificatesDiscovered' | 'connectorTotalCertificatesDiscovered'
+    >,
+): CertificateNote[] {
+    const resources = resultResources(run.resources);
+    if (run.itemsDiscovered === undefined || resources.length !== 1 || resources[0] !== Resource.Certificates) {
+        return [];
+    }
+    const received = run.itemsDiscovered;
+    const saved = run.totalCertificatesDiscovered ?? 0;
+    const reported = run.connectorTotalCertificatesDiscovered ?? received;
+    const notes: CertificateNote[] = [];
+    if (reported > received) notes.push({ kind: 'notHandedOver', count: reported - received });
+    if (received > saved) notes.push({ kind: 'repeats', count: received - saved });
+    return notes;
+}
+
 /** Where the object an item was imported as lives, relative to the discovery detail route. */
 export function inventoryPath(resource: Resource, inventoryUuid: string): string | undefined {
     switch (resource) {
