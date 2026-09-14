@@ -364,6 +364,17 @@ describe('DiscoveryDetail', () => {
             expect(container.querySelector('[data-testid="row-kind"]')).toBeNull();
         });
 
+        it('says when a v2 provider has reported no run metadata, and stays quiet for a v1 run', async () => {
+            await render(buildState(v2Run));
+            expect(container.querySelector('[data-testid="no-run-metadata"]')).not.toBeNull();
+
+            await render(buildState({ ...v2Run, metadata: [{ connectorUuid: 'conn-1', connectorName: 'x', items: [] }] }));
+            expect(container.querySelector('[data-testid="no-run-metadata"]')).toBeNull();
+
+            await render(buildState(v1Run));
+            expect(container.querySelector('[data-testid="no-run-metadata"]')).toBeNull();
+        });
+
         it('titles the tab Messages', async () => {
             await render(buildState(v2Run));
 

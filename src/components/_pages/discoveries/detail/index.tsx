@@ -354,6 +354,12 @@ export default function DiscoveryDetail() {
                                         </Widget>
 
                                         <Widget title="Metadata" titleSize="large" className="w-full md:w-1/2">
+                                            {discovery?.connectorInterface && !discovery.metadata?.length ? (
+                                                <p className="mb-2 text-sm text-content-muted" data-testid="no-run-metadata">
+                                                    The Discovery Provider has reported no metadata about this run. Its counters are under
+                                                    Progress.
+                                                </p>
+                                            ) : null}
                                             <AttributeViewer viewerType={ATTRIBUTE_VIEWER_TYPE.METADATA} metadata={discovery?.metadata} />
                                         </Widget>
                                     </Container>
