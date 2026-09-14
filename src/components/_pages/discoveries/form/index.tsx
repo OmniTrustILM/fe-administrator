@@ -223,19 +223,24 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
         [dispatch, discoveryProviders, setValue],
     );
 
+    // v1 only: a kind is what scopes the function-group attribute endpoint. A v2 provider has no kinds.
     const onKindChange = useCallback(
         (kind: string | undefined) => {
-            if (!kind || !discoveryProvider) return;
+            if (!kind || !discoveryProvider || isV2Provider) return;
             dispatch(connectorActions.clearCallbackData());
             setGroupAttributesCallbackAttributes([]);
-            if (isV2Provider) {
-                dispatch(discoveryActions.getDiscoveryInterfaceAttributesDescriptors({ connectorUuid: discoveryProvider.uuid }));
-            } else {
-                dispatch(discoveryActions.getDiscoveryProviderAttributesDescriptors({ uuid: discoveryProvider.uuid, kind }));
-            }
+            dispatch(discoveryActions.getDiscoveryProviderAttributesDescriptors({ uuid: discoveryProvider.uuid, kind }));
         },
         [dispatch, discoveryProvider, isV2Provider],
     );
+
+    // v2: the run-level definitions come through the connector relay as soon as the run is bound to an interface.
+    useEffect(() => {
+        if (!isV2Provider || !discoveryProvider || !watchedInterfaceUuid) return;
+        dispatch(connectorActions.clearCallbackData());
+        setGroupAttributesCallbackAttributes([]);
+        dispatch(discoveryActions.getDiscoveryInterfaceAttributesDescriptors({ connectorUuid: discoveryProvider.uuid }));
+    }, [dispatch, isV2Provider, discoveryProvider, watchedInterfaceUuid]);
 
     // Selecting a resource fetches its attribute definitions and adds its tab; deselecting drops both, along with
     // whatever the user had typed into that tab.
@@ -289,7 +294,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                         name: values.name,
                         triggers: showCertificateTriggers && selectedTriggers.length ? selectedTriggers : undefined,
                         connectorUuid: values.discoveryProvider!,
-                        kind: values.storeKind!,
+                        kind: isV2Provider ? undefined : values.storeKind,
                         interfaceUuid: isV2Provider ? values.interfaceUuid : undefined,
                         resources,
                         attributes: collectFormAttributes(
@@ -587,7 +592,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                             )}
                         />
 
-                        {discoveryProvider && (
+                        {discoveryProvider && !isV2Provider && (
                             <Controller
                                 name="storeKind"
                                 control={control}
@@ -666,7 +671,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                                     title: 'Connector Attributes',
                                     content:
                                         discoveryProvider &&
-                                        watchedStoreKind &&
+                                        (isV2Provider ? watchedInterfaceUuid : watchedStoreKind) &&
                                         discoveryProviderAttributeDescriptors &&
                                         discoveryProviderAttributeDescriptors.length > 0 ? (
                                             <AttributeEditor

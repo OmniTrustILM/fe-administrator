@@ -82,7 +82,7 @@ export default function DiscoveryRunMessages({ discoveryUuid }: Props) {
     );
 
     return (
-        <Widget title="Run Messages" titleSize="large" busy={isFetchingDiscoveryMessages}>
+        <Widget title="Messages" titleSize="large" busy={isFetchingDiscoveryMessages}>
             <p className="mb-3 text-sm text-content-muted">
                 Messages are advisory: a non-empty log does not mean the run failed. Repeated problems are aggregated into one row, with how
                 often each occurred and when it was first and last seen.

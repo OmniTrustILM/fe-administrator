@@ -31,11 +31,11 @@ export interface DiscoveryListDto {
      */
     name: string;
     /**
-     * Discovery Kind
+     * Discovery Kind. Absent for a run against a v2 Discovery Provider, which has no kinds.
      * @type {string}
      * @memberof DiscoveryListDto
      */
-    kind: string;
+    kind?: string;
     /**
      * @type {DiscoveryStatus}
      * @memberof DiscoveryListDto

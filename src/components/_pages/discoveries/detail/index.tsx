@@ -161,10 +161,15 @@ export default function DiscoveryDetail() {
                           id: 'name',
                           columns: ['Name', discovery.name],
                       },
-                      {
-                          id: 'kind',
-                          columns: ['Kind', discovery.kind],
-                      },
+                      // A v2 run has no kind; its generation shows on the Connector Interface row instead.
+                      ...(discovery.connectorInterface
+                          ? []
+                          : [
+                                {
+                                    id: 'kind',
+                                    columns: ['Kind', discovery.kind ?? ''],
+                                },
+                            ]),
                       {
                           id: 'discoveryProviderUUID',
                           columns: ['Discovery Provider UUID', discovery.connectorUuid],
@@ -234,7 +239,7 @@ export default function DiscoveryDetail() {
         const hasError = discoveryMessages?.items.some((message) => message.severity === DiscoveryMessageSeverity.Error) ?? false;
         return (
             <span className="inline-flex items-center gap-2">
-                Run Messages
+                Messages
                 <Badge color={hasError ? 'danger' : 'secondary'} dataTestId="run-message-count">
                     {discovery?.runMessageCount ?? 0}
                 </Badge>
@@ -395,7 +400,7 @@ export default function DiscoveryDetail() {
                             ) : null,
                         },
                         {
-                            tabKey: 'run-messages',
+                            tabKey: 'messages',
                             title: runMessagesTitle,
                             content: discovery ? (
                                 <Container>

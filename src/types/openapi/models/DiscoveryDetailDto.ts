@@ -39,11 +39,11 @@ export interface DiscoveryDetailDto {
      */
     name: string;
     /**
-     * Discovery Kind
+     * Discovery Kind. Absent for a run against a v2 Discovery Provider, which has no kinds.
      * @type {string}
      * @memberof DiscoveryDetailDto
      */
-    kind: string;
+    kind?: string;
     /**
      * @type {DiscoveryStatus}
      * @memberof DiscoveryDetailDto

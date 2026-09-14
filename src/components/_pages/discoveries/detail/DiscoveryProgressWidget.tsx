@@ -74,7 +74,7 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
                             caption={
                                 <span className="flex flex-wrap gap-x-3">
                                     {progress.phase ? <span data-testid="progress-phase">Phase: {progress.phase}</span> : null}
-                                    {recorded ? <span data-testid="progress-recorded">{recorded}</span> : null}
+                                    <span data-testid="progress-recorded">{recorded ?? 'time of this reading not recorded'}</span>
                                 </span>
                             }
                         />

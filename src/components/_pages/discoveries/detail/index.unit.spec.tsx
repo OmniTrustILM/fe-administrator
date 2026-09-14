@@ -190,6 +190,7 @@ describe('DiscoveryDetail', () => {
             await render(buildState(v1Run));
 
             expect(headerButtons()).toEqual(['Delete']);
+            expect(rowText('kind')).toBe('KindIP-HostName');
             expect(container.querySelector('[data-testid="row-connectorInterface"]')).toBeNull();
             expect(container.querySelector('[data-testid="widget-Progress"]')).toBeNull();
             expect(container.querySelector('[data-testid="discovery-certificates"]')).not.toBeNull();
@@ -318,7 +319,7 @@ describe('DiscoveryDetail', () => {
             expect(rowText('itemsDiscovered')).toBe('Items collected52');
             expect(rowText('itemsNewlyDiscovered')).toBe('New to the inventory7');
             expect(container.querySelector('[data-testid="items-failed"]')?.textContent).toBe('1');
-            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('This run — all resources');
+            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('All resources');
             expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('Certificates only');
         });
 
@@ -356,10 +357,23 @@ describe('DiscoveryDetail', () => {
             expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'discoveries/getDiscoveryMessages' }));
         });
 
-        it('shows the interface the run is driven through', async () => {
+        it('shows the interface the run is driven through, and no kind, which a v2 provider does not have', async () => {
             await render(buildState(v2Run));
 
             expect(rowText('connectorInterface')).toBe('Connector InterfaceDiscovery (v2)');
+            expect(container.querySelector('[data-testid="row-kind"]')).toBeNull();
+        });
+
+        it('titles the tab Messages', async () => {
+            await render(buildState(v2Run));
+
+            expect(container.querySelector('[data-testid="tab-messages"] h2')?.textContent).toBe('Messages3');
+        });
+
+        it('says when a reading carries no time rather than leaving the caption blank', async () => {
+            await render(buildState({ ...v2Run, progress: { ...v2Run.progress, updatedAt: undefined } }));
+
+            expect(container.querySelector('[data-testid="progress-recorded"]')?.textContent).toBe('time of this reading not recorded');
         });
     });
 });

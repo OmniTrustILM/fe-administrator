@@ -7,7 +7,7 @@ import { FilterFieldSource, FilterFieldType } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import type { ColumnSort } from 'utils/tableColumns';
 import DiscoveryStatus from './DiscoveryStatus';
-import { connectorInterfaceLabel } from './detail/discoveryDetailHelpers';
+import { connectorInterfaceVersion } from './detail/discoveryDetailHelpers';
 
 export interface BuildDiscoveryCellsOpts {
     dateFormatter: (date: string | Date) => string;
@@ -88,9 +88,11 @@ export function buildDiscoveryCellRegistry({
         'property:DISCOVERY_CONNECTOR_NAME': (discovery) => (
             <ConnectorLink uuid={discovery.connectorUuid} name={discovery.connectorName} fallback="Unassigned" />
         ),
-        'property:DISCOVERY_KIND': (discovery) => (discovery.kind ? <Badge color="secondary">{discovery.kind}</Badge> : null),
+        // A v2 run has no kind: its provider registers a DISCOVERY interface rather than a kind-scoped function group.
+        'property:DISCOVERY_KIND': (discovery) =>
+            !discovery.connectorInterface && discovery.kind ? <Badge color="secondary">{discovery.kind}</Badge> : null,
         'property:DISCOVERY_CONNECTOR_INTERFACE': (discovery) => (
-            <Badge color={discovery.connectorInterface ? 'info' : 'gray'}>{connectorInterfaceLabel(discovery.connectorInterface)}</Badge>
+            <Badge color={discovery.connectorInterface ? 'info' : 'gray'}>{connectorInterfaceVersion(discovery.connectorInterface)}</Badge>
         ),
         'property:DISCOVERY_START_TIME': (discovery) =>
             discovery.startTime ? <span className="whitespace-nowrap">{dateFormatter(discovery.startTime)}</span> : null,

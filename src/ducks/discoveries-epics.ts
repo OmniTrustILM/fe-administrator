@@ -1,9 +1,10 @@
 import type { AppEpic, EpicDependencies } from 'ducks';
 import type { UnknownAction } from '@reduxjs/toolkit';
-import { iif, type Observable, of } from 'rxjs';
+import { forkJoin, iif, type Observable, of, throwError } from 'rxjs';
+import { AjaxError } from 'rxjs/ajax';
 import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
-import { FunctionGroupCode, type UuidDto } from '../types/openapi';
+import { ConnectorInterface, FilterConditionOperator, FilterFieldSource, FunctionGroupCode, type UuidDto } from '../types/openapi';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { actions as userInterfaceActions } from './user-interface';
@@ -15,7 +16,7 @@ import { EntityType } from './filters';
 import { actions as pagingActions } from './paging';
 import { transformAttributeDescriptorDtoToModel } from './transform/attributes';
 import { transformSearchRequestModelToDto } from './transform/certificates';
-import { transformConnectorResponseDtoToModel } from './transform/connectors';
+import { transformConnectorDtoV2ToModel, transformConnectorResponseDtoToModel } from './transform/connectors';
 import {
     transformDiscoveryCertificateListDtoToModel,
     transformDiscoveryItemListDtoToModel,
@@ -73,16 +74,46 @@ const getDiscoveryDetail: AppEpic = (action$, state$, deps) => {
     );
 };
 
-const listDiscoveryProviders: AppEpic = (action$, state, deps) => {
+const NG_CONNECTORS_PAGE_SIZE = 1000;
+
+// A v1 provider registers the DISCOVERY_PROVIDER function group; a v2 provider registers a DISCOVERY interface and no
+// function group at all, so it is only reachable through the interface-filtered listing. Both are offered, the same
+// way the authority form merges its two generations; a connector present in both lists keeps the model that carries
+// its interfaces.
+export const listDiscoveryProviders: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.listDiscoveryProviders.match),
         switchMap(() =>
-            deps.apiClients.connectors.listConnectors({ functionGroup: FunctionGroupCode.DiscoveryProvider }).pipe(
-                map((providers) =>
-                    slice.actions.listDiscoveryProvidersSuccess({
-                        connectors: providers.map(transformConnectorResponseDtoToModel),
-                    }),
-                ),
+            forkJoin({
+                legacy: deps.apiClients.connectors.listConnectors({ functionGroup: FunctionGroupCode.DiscoveryProvider }),
+                ng: deps.apiClients.connectorsV2
+                    .listConnectorsV2({
+                        searchRequestDto: transformSearchRequestModelToDto({
+                            itemsPerPage: NG_CONNECTORS_PAGE_SIZE,
+                            pageNumber: 1,
+                            filters: [
+                                {
+                                    fieldSource: FilterFieldSource.Property,
+                                    fieldIdentifier: 'CONNECTOR_INTERFACE',
+                                    condition: FilterConditionOperator.Equals,
+                                    value: ConnectorInterface.Discovery,
+                                },
+                            ],
+                        }),
+                    })
+                    .pipe(
+                        catchError((err) =>
+                            err instanceof AjaxError && err.status === 404 ? of({ items: [], totalItems: 0 }) : throwError(() => err),
+                        ),
+                    ),
+            }).pipe(
+                map(({ legacy, ng }) => {
+                    const byUuid = new Map(legacy.map((connector) => [connector.uuid, transformConnectorResponseDtoToModel(connector)]));
+                    ng.items.forEach((connector) => {
+                        byUuid.set(connector.uuid, transformConnectorDtoV2ToModel(connector));
+                    });
+                    return slice.actions.listDiscoveryProvidersSuccess({ connectors: Array.from(byUuid.values()) });
+                }),
 
                 catchError((err) =>
                     of(

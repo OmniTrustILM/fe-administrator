@@ -219,11 +219,25 @@ describe('cells whose value can be absent', () => {
         expect(discoveryDuration({ uuid: 'discovery-1' })).toContain('No value');
     });
 
-    it('names the generation a run was driven by, legacy included', () => {
-        expect(discoveryInterface({ uuid: 'discovery-1' })).toContain('Legacy (v1)');
+    it('shows the interface version a run was driven by, v1 for a legacy run', () => {
+        expect(discoveryInterface({ uuid: 'discovery-1' })).toContain('v1');
         expect(
             discoveryInterface({ uuid: 'discovery-1', connectorInterface: { uuid: 'iface-1', code: 'discovery' as any, version: 'v2' } }),
-        ).toContain('Discovery (v2)');
+        ).toContain('v2');
+    });
+
+    it('shows a kind for a legacy run only, since a v2 provider has none', () => {
+        const kind = (discovery: Partial<DiscoveryResponseModel>) =>
+            render(discovery as DiscoveryResponseModel, DISCOVERY_COLUMNS, discoveryRegistry, 'DISCOVERY_KIND');
+
+        expect(kind({ uuid: 'discovery-1', kind: 'IP-HostName' })).toContain('IP-HostName');
+        expect(
+            kind({
+                uuid: 'discovery-1',
+                kind: 'IP-HostName',
+                connectorInterface: { uuid: 'iface-1', code: 'discovery' as any, version: 'v2' },
+            }),
+        ).not.toContain('IP-HostName');
     });
 
     it('shows the duration a started discovery has run for', () => {

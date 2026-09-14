@@ -49,11 +49,11 @@ export interface DiscoveryDto {
      */
     interfaceUuid?: string;
     /**
-     * Discovery Kind
+     * Discovery Kind. Required for a run against a v1 Discovery Provider, whose function group is kind-scoped. A v2 Discovery Provider has no kinds — omit it for a run bound to a DISCOVERY interface.
      * @type {string}
      * @memberof DiscoveryDto
      */
-    kind: string;
+    kind?: string;
     /**
      * List of triggers to be triggered after the discovery is finished, triggers will be evaluated in given order
      * @type {Array<string>}

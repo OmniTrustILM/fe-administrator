@@ -76,14 +76,16 @@ const v1Provider = {
     interfaces: [],
 };
 
+// A v2 provider registers a DISCOVERY interface and no function group, so it has no kinds to offer.
 const singleInterfaceProvider = {
-    ...v1Provider,
+    uuid: 'conn-1',
     name: 'v2 scanner',
+    functionGroups: [],
     interfaces: [{ uuid: 'iface-1', code: ConnectorInterface.Discovery, version: 'v2' }],
 };
 
 const multiInterfaceProvider = {
-    ...v1Provider,
+    ...singleInterfaceProvider,
     name: 'v2 scanner with two interfaces',
     interfaces: [
         { uuid: 'iface-1', code: ConnectorInterface.Discovery, version: 'v2' },
@@ -176,27 +178,28 @@ describe('DiscoveryForm', () => {
     const createdRequest = () =>
         dispatch.mock.calls.map((c) => c[0]).find((a) => a.type === 'discoveries/createDiscovery')?.payload.request;
 
+    const dispatched = (type: string) => dispatch.mock.calls.map((c) => c[0]).filter((a) => a.type === type);
+
     describe('a v1 Discovery Provider renders the form exactly as before', () => {
-        it('shows neither interface nor resource fields and fetches kind-scoped attributes', async () => {
+        it('asks for a kind, shows neither interface nor resource fields, and fetches kind-scoped attributes', async () => {
             await render(buildState({ discoveryProviders: [v1Provider], descriptors }));
 
             await click('select-discoveryProviderSelect');
+            expect(container.querySelector('[data-testid="select-storeKindSelect"]')).not.toBeNull();
             await click('select-storeKindSelect');
 
             expect(container.querySelector('[data-testid="select-interfaceSelect"]')).toBeNull();
             expect(container.querySelector('[data-testid="select-resourcesSelect"]')).toBeNull();
             expect(container.querySelector('[data-testid="trigger-editor"]')).not.toBeNull();
-            expect(dispatch).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'discoveries/getDiscoveryProviderAttributesDescriptors',
-                    payload: { uuid: 'conn-1', kind: 'IP-HostName' },
-                }),
-            );
-            expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'discoveries/listDiscoveryResources' }));
+            const kindScoped = dispatched('discoveries/getDiscoveryProviderAttributesDescriptors');
+            expect(kindScoped.length).toBeGreaterThan(0);
+            kindScoped.forEach((a) => expect(a.payload).toEqual({ uuid: 'conn-1', kind: 'IP-HostName' }));
+            expect(dispatched('discoveries/listDiscoveryResources')).toHaveLength(0);
+            expect(dispatched('discoveries/getDiscoveryInterfaceAttributesDescriptors')).toHaveLength(0);
             expect(container.querySelector('[data-testid="attr-editor-discovery"]')?.getAttribute('data-kind')).toBe('IP-HostName');
         });
 
-        it('submits without interfaceUuid, resources or resourceAttributes', async () => {
+        it('submits the kind and nothing of the v2 shape', async () => {
             await render(buildState({ discoveryProviders: [v1Provider], descriptors }));
 
             await click('select-discoveryProviderSelect');
@@ -206,14 +209,30 @@ describe('DiscoveryForm', () => {
 
             const request = createdRequest();
             expect(request).toBeDefined();
+            expect(request.kind).toBe('IP-HostName');
             expect(request.interfaceUuid).toBeUndefined();
             expect(request.resources).toBeUndefined();
             expect(request.resourceAttributes).toBeUndefined();
-            expect(request.kind).toBe('IP-HostName');
         });
     });
 
-    describe('interface selection', () => {
+    describe('a v2 Discovery Provider', () => {
+        it('has no kind: the field is not offered and none is sent', async () => {
+            await render(buildState({ discoveryProviders: [singleInterfaceProvider], descriptors }));
+
+            await click('select-discoveryProviderSelect');
+            expect(container.querySelector('[data-testid="select-storeKindSelect"]')).toBeNull();
+
+            await click('select-resourcesSelect');
+            await typeName('scan');
+            await submit();
+
+            const request = createdRequest();
+            expect(request).toBeDefined();
+            expect(request.kind).toBeUndefined();
+            expect(dispatched('discoveries/getDiscoveryProviderAttributesDescriptors')).toHaveLength(0);
+        });
+
         it('binds a single-interface connector silently and shows no interface field', async () => {
             await render(buildState({ discoveryProviders: [singleInterfaceProvider], descriptors }));
 
@@ -221,11 +240,8 @@ describe('DiscoveryForm', () => {
 
             expect(container.querySelector('[data-testid="select-interfaceSelect"]')).toBeNull();
             expect(container.querySelector('[data-testid="select-resourcesSelect"]')).not.toBeNull();
-            expect(dispatch).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'discoveries/listDiscoveryResources', payload: { connectorUuid: 'conn-1' } }),
-            );
+            expect(dispatched('discoveries/listDiscoveryResources').map((a) => a.payload)).toEqual([{ connectorUuid: 'conn-1' }]);
 
-            await click('select-storeKindSelect');
             await click('select-resourcesSelect');
             await typeName('scan');
             await submit();
@@ -241,7 +257,6 @@ describe('DiscoveryForm', () => {
             await click('select-discoveryProviderSelect');
             expect(container.querySelector('[data-testid="select-interfaceSelect"]')).not.toBeNull();
 
-            await click('select-storeKindSelect');
             await click('select-resourcesSelect');
             await typeName('scan');
             await submit();
@@ -253,24 +268,29 @@ describe('DiscoveryForm', () => {
             expect(createdRequest()?.interfaceUuid).toBe('iface-2');
         });
 
-        it('fetches the v2 run-level attributes through the connector relay and hands the interface to the editor', async () => {
+        it('fetches the run-level attributes through the connector relay once the interface is bound, and hands it to the editor', async () => {
             await render(buildState({ discoveryProviders: [singleInterfaceProvider], descriptors }));
 
             await click('select-discoveryProviderSelect');
-            await click('select-storeKindSelect');
 
-            expect(dispatch).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'discoveries/getDiscoveryInterfaceAttributesDescriptors',
-                    payload: { connectorUuid: 'conn-1' },
-                }),
-            );
-            expect(dispatch).not.toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'discoveries/getDiscoveryProviderAttributesDescriptors' }),
-            );
+            expect(dispatched('discoveries/getDiscoveryInterfaceAttributesDescriptors').map((a) => a.payload)).toEqual([
+                { connectorUuid: 'conn-1' },
+            ]);
             const editor = container.querySelector('[data-testid="attr-editor-discovery"]');
             expect(editor?.getAttribute('data-interface')).toBe('iface-1');
             expect(editor?.getAttribute('data-kind')).toBe('');
+        });
+
+        it('waits for the interface choice before fetching run-level attributes on a multi-interface connector', async () => {
+            await render(buildState({ discoveryProviders: [multiInterfaceProvider], descriptors }));
+
+            await click('select-discoveryProviderSelect');
+            expect(dispatched('discoveries/getDiscoveryInterfaceAttributesDescriptors')).toHaveLength(0);
+            expect(container.querySelector('[data-testid="attr-editor-discovery"]')).toBeNull();
+
+            await click('select-interfaceSelect');
+            expect(dispatched('discoveries/getDiscoveryInterfaceAttributesDescriptors')).toHaveLength(1);
+            expect(container.querySelector('[data-testid="attr-editor-discovery"]')?.getAttribute('data-interface')).toBe('iface-2');
         });
     });
 
@@ -289,20 +309,15 @@ describe('DiscoveryForm', () => {
             );
 
             await click('select-discoveryProviderSelect');
-            await click('select-storeKindSelect');
             await click('select-resourcesSelect');
 
             expect(container.querySelector('[data-testid="resource-attributes-certificates"]')).not.toBeNull();
             expect(container.querySelector('[data-testid="resource-attributes-keys"]')).not.toBeNull();
             expect(container.querySelector('[data-testid="resource-attributes-keys"]')?.textContent).toContain('no attributes of its own');
-            for (const resource of [Resource.Certificates, Resource.Keys]) {
-                expect(dispatch).toHaveBeenCalledWith(
-                    expect.objectContaining({
-                        type: 'discoveries/getDiscoveryResourceAttributesDescriptors',
-                        payload: { connectorUuid: 'conn-1', resource },
-                    }),
-                );
-            }
+            expect(dispatched('discoveries/getDiscoveryResourceAttributesDescriptors').map((a) => a.payload)).toEqual([
+                { connectorUuid: 'conn-1', resource: Resource.Certificates },
+                { connectorUuid: 'conn-1', resource: Resource.Keys },
+            ]);
 
             await typeName('scan');
             await submit();

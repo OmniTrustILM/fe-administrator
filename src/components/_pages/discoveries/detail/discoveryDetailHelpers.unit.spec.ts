@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { DiscoveryStatus, Resource } from 'types/openapi';
 import {
     connectorInterfaceLabel,
+    connectorInterfaceVersion,
     type DiscoveryLifecycleAction,
     importRemainder,
     inventoryPath,
@@ -56,6 +57,11 @@ describe('connectorInterfaceLabel', () => {
 
     it('calls a run with no interface what it is', () => {
         expect(connectorInterfaceLabel(undefined)).toBe('Legacy (v1)');
+    });
+
+    it('offers the version alone for a list column', () => {
+        expect(connectorInterfaceVersion({ uuid: 'i-1', code: 'discovery' as any, version: 'v2' })).toBe('v2');
+        expect(connectorInterfaceVersion(undefined)).toBe('v1');
     });
 });
 

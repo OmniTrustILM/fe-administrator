@@ -8,13 +8,14 @@ import {
     describeLifecycleRefusal,
     getDiscoveryInterfaceAttributesDescriptors,
     getDiscoveryResourceAttributesDescriptors,
+    listDiscoveryProviders,
     listDiscoveryResources,
     resumeDiscovery,
     stopDiscovery,
 } from './discoveries-epics';
 import { slice } from './discoveries';
 import { alertsSlice } from './alert-slice';
-import { Resource } from 'types/openapi';
+import { ConnectorInterface, Resource } from 'types/openapi';
 
 vi.mock('./alerts', () => ({
     actions: {
@@ -26,16 +27,93 @@ vi.mock('./alerts', () => ({
 
 vi.mock('../App', () => ({ store: { dispatch: vi.fn() } }));
 
+type ApiClients = Record<string, Record<string, (args: any) => any>>;
+
 function ajaxError(status: number, response: unknown): AjaxError {
     return Object.assign(Object.create(AjaxError.prototype), { status, message: `HTTP ${status}`, response });
 }
 
-async function runEpic(epic: any, action: any, discoveries: Record<string, (args: any) => any>, takeCount: number): Promise<any[]> {
+async function runEpic(epic: any, action: any, apiClients: ApiClients, takeCount: number): Promise<any[]> {
     const state$ = of({}) as any;
     state$.value = {};
-    const output$ = epic(of(action), state$, { apiClients: { discoveries } });
+    const output$ = epic(of(action), state$, { apiClients });
     return firstValueFrom(output$.pipe(take(takeCount), toArray()));
 }
+
+const emptyPage = { items: [], totalItems: 0, pageNumber: 1, itemsPerPage: 1000, totalPages: 0 };
+
+const legacyConnector = (uuid: string, name: string) => ({
+    uuid,
+    name,
+    url: 'http://legacy',
+    authType: 'none',
+    status: 'connected',
+    functionGroups: [{ functionGroupCode: 'discoveryProvider', kinds: ['IP-HostName'], endPoints: [] }],
+});
+
+const ngConnector = (uuid: string, name: string) => ({
+    uuid,
+    name,
+    url: 'http://ng',
+    status: 'connected',
+    version: 'v2',
+    functionGroups: [],
+    interfaces: [{ uuid: `${uuid}-iface`, code: ConnectorInterface.Discovery, version: 'v2' }],
+});
+
+describe('listDiscoveryProviders', () => {
+    test('offers both generations: the function-group list and the DISCOVERY-interface list', async () => {
+        const listConnectorsV2 = vi.fn(() => of({ ...emptyPage, items: [ngConnector('ng-1', 'v2 scanner')], totalItems: 1 }));
+        const emitted = await runEpic(
+            listDiscoveryProviders,
+            slice.actions.listDiscoveryProviders(),
+            {
+                connectors: { listConnectors: () => of([legacyConnector('legacy-1', 'Legacy scanner')]) },
+                connectorsV2: { listConnectorsV2 },
+            },
+            1,
+        );
+
+        expect(emitted[0].type).toBe(slice.actions.listDiscoveryProvidersSuccess.type);
+        expect(emitted[0].payload.connectors.map((c: any) => c.uuid).sort()).toEqual(['legacy-1', 'ng-1']);
+
+        const { searchRequestDto } = (listConnectorsV2.mock.calls[0] as unknown as [any])[0];
+        expect(searchRequestDto.filters).toEqual([
+            expect.objectContaining({ fieldIdentifier: 'CONNECTOR_INTERFACE', value: ConnectorInterface.Discovery }),
+        ]);
+    });
+
+    test('a connector in both lists keeps the model that carries its interfaces', async () => {
+        const emitted = await runEpic(
+            listDiscoveryProviders,
+            slice.actions.listDiscoveryProviders(),
+            {
+                connectors: { listConnectors: () => of([legacyConnector('shared', 'Both')]) },
+                connectorsV2: { listConnectorsV2: () => of({ ...emptyPage, items: [ngConnector('shared', 'Both')], totalItems: 1 }) },
+            },
+            1,
+        );
+
+        const connectors = emitted[0].payload.connectors;
+        expect(connectors).toHaveLength(1);
+        expect(connectors[0].interfaces?.[0]?.code).toBe(ConnectorInterface.Discovery);
+    });
+
+    test('still offers legacy providers when the interface listing is unavailable (404)', async () => {
+        const emitted = await runEpic(
+            listDiscoveryProviders,
+            slice.actions.listDiscoveryProviders(),
+            {
+                connectors: { listConnectors: () => of([legacyConnector('legacy-1', 'Legacy scanner')]) },
+                connectorsV2: { listConnectorsV2: () => throwError(() => ajaxError(404, undefined)) },
+            },
+            1,
+        );
+
+        expect(emitted[0].type).toBe(slice.actions.listDiscoveryProvidersSuccess.type);
+        expect(emitted[0].payload.connectors.map((c: any) => c.uuid)).toEqual(['legacy-1']);
+    });
+});
 
 describe('describeLifecycleRefusal', () => {
     test('reads the array of strings a 422 carries', () => {
@@ -58,7 +136,7 @@ describe('lifecycle epics', () => {
         const emitted = await runEpic(
             stopDiscovery,
             slice.actions.stopDiscovery({ uuid: 'd-1' }),
-            { stopDiscovery: () => of(undefined) },
+            { discoveries: { stopDiscovery: () => of(undefined) } },
             3,
         );
 
@@ -74,7 +152,11 @@ describe('lifecycle epics', () => {
         const emitted = await runEpic(
             stopDiscovery,
             slice.actions.stopDiscovery({ uuid: 'd-1' }),
-            { stopDiscovery: () => throwError(() => ajaxError(422, ['The Discovery Provider is past its point of no return.'])) },
+            {
+                discoveries: {
+                    stopDiscovery: () => throwError(() => ajaxError(422, ['The Discovery Provider is past its point of no return.'])),
+                },
+            },
             3,
         );
 
@@ -90,7 +172,7 @@ describe('lifecycle epics', () => {
         const resumed = await runEpic(
             resumeDiscovery,
             slice.actions.resumeDiscovery({ uuid: 'd-1' }),
-            { resumeDiscovery: () => of(undefined) },
+            { discoveries: { resumeDiscovery: () => of(undefined) } },
             3,
         );
         expect(resumed[0].type).toBe(slice.actions.resumeDiscoverySuccess.type);
@@ -99,7 +181,7 @@ describe('lifecycle epics', () => {
         const cancelled = await runEpic(
             cancelDiscovery,
             slice.actions.cancelDiscovery({ uuid: 'd-1' }),
-            { cancelDiscovery: () => of(undefined) },
+            { discoveries: { cancelDiscovery: () => of(undefined) } },
             3,
         );
         expect(cancelled[0].type).toBe(slice.actions.cancelDiscoverySuccess.type);
@@ -113,7 +195,7 @@ describe('connector-keyed relays', () => {
         const emitted = await runEpic(
             listDiscoveryResources,
             slice.actions.listDiscoveryResources({ connectorUuid: 'c-1' }),
-            { listDiscoveryResources: list },
+            { discoveries: { listDiscoveryResources: list } },
             1,
         );
 
@@ -126,7 +208,7 @@ describe('connector-keyed relays', () => {
         const emitted = await runEpic(
             getDiscoveryResourceAttributesDescriptors,
             slice.actions.getDiscoveryResourceAttributesDescriptors({ connectorUuid: 'c-1', resource: Resource.Keys }),
-            { getDiscoveryResourceAttributes },
+            { discoveries: { getDiscoveryResourceAttributes } },
             1,
         );
 
@@ -139,7 +221,7 @@ describe('connector-keyed relays', () => {
         const emitted = await runEpic(
             getDiscoveryResourceAttributesDescriptors,
             slice.actions.getDiscoveryResourceAttributesDescriptors({ connectorUuid: 'c-1', resource: Resource.Keys }),
-            { getDiscoveryResourceAttributes: () => throwError(() => ajaxError(422, { message: 'not discoverable' })) },
+            { discoveries: { getDiscoveryResourceAttributes: () => throwError(() => ajaxError(422, { message: 'not discoverable' })) } },
             1,
         );
 
@@ -151,7 +233,7 @@ describe('connector-keyed relays', () => {
         const emitted = await runEpic(
             getDiscoveryInterfaceAttributesDescriptors,
             slice.actions.getDiscoveryInterfaceAttributesDescriptors({ connectorUuid: 'c-1' }),
-            { getDiscoveryAttributes: () => of([]) },
+            { discoveries: { getDiscoveryAttributes: () => of([]) } },
             1,
         );
 

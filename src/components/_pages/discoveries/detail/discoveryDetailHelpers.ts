@@ -34,6 +34,11 @@ export function connectorInterfaceLabel(connectorInterface: ConnectorInterfaceDt
     return connectorInterface ? `Discovery (${connectorInterface.version})` : 'Legacy (v1)';
 }
 
+/** The interface version alone, for a list column where the word "Discovery" would repeat on every row. */
+export function connectorInterfaceVersion(connectorInterface: ConnectorInterfaceDto | undefined): string {
+    return connectorInterface?.version ?? 'v1';
+}
+
 /** A run that ended here staged items but never imported them, and no triggers ran on them. */
 export function isNotProcessedRun(status: DiscoveryStatus | undefined): boolean {
     return status === DiscoveryStatus.Cancelled || status === DiscoveryStatus.Failed;
