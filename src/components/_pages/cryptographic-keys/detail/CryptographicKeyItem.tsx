@@ -20,7 +20,7 @@ import { KeyCompromiseReason, KeyState, KeyUsage, PlatformEnum } from 'types/ope
 import { dateFormatter } from 'utils/dateUtil';
 import KeyStateBadge from '../KeyStateBadge';
 import KeyStatus from '../KeyStatus';
-import KeyUsageSelect from '../KeyUsageSelect';
+import KeyUsageSelect, { filterKeyUsagesByType } from 'components/_pages/cryptographic-keys/KeyUsageSelect';
 import SignVerifyData from './SignVerifyData';
 import { composeValidators, validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import EditableTableCell from 'components/CustomTable/EditableTableCell';
@@ -72,6 +72,11 @@ export default function CryptographicKeyItem({
     const [keyUsageUpdate, setKeyUsageUpdate] = useState<boolean>(false);
 
     const [keyUsages, setKeyUsages] = useState<KeyUsage[]>([]);
+    const allowedKeyUsages = useMemo(
+        () => filterKeyUsagesByType(supportedKeyUsages ?? [], keyItem.type),
+        [supportedKeyUsages, keyItem.type],
+    );
+    const selectedKeyUsages = keyUsages.filter((usage) => allowedKeyUsages.includes(usage));
 
     const [displayKeyData, setDisplayKeyData] = useState<boolean>(false);
     const keyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyUsage));
@@ -94,8 +99,10 @@ export default function CryptographicKeyItem({
     }, [history, keyItem.uuid]);
 
     useEffect(() => {
-        setKeyUsages(keyItem?.usage || []);
-    }, [keyUsageUpdate, keyItem?.usage]);
+        if (keyUsageUpdate) {
+            setKeyUsages((keyItem.usage ?? []).filter((usage) => allowedKeyUsages.includes(usage)));
+        }
+    }, [keyUsageUpdate, keyItem.usage, allowedKeyUsages]);
 
     const onEnableClick = useCallback(() => {
         if (!keyItem) return;
@@ -122,11 +129,11 @@ export default function CryptographicKeyItem({
         dispatch(
             actions.updateKeyUsage({
                 uuid: keyUuid,
-                usage: { usage: keyUsages, uuids: [keyItem.uuid] },
+                usage: { usage: keyUsages.filter((usage) => allowedKeyUsages.includes(usage)), uuids: [keyItem.uuid] },
             }),
         );
         setKeyUsageUpdate(false);
-    }, [dispatch, keyUsages, keyItem, keyUuid, supportedKeyUsages]);
+    }, [dispatch, keyUsages, keyItem, keyUuid, supportedKeyUsages, allowedKeyUsages]);
 
     const onDeleteConfirmed = useCallback(() => {
         if (!keyItem) return;
@@ -625,7 +632,7 @@ export default function CryptographicKeyItem({
                 caption="Update Key Usage"
                 body={
                     <KeyUsageSelect
-                        value={keyUsages}
+                        value={selectedKeyUsages}
                         onChange={setKeyUsages}
                         keyUsageEnum={keyUsageEnum}
                         keyType={keyItem.type}

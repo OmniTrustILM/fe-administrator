@@ -37,6 +37,10 @@ function aSynchronizedKey() {
             key.tokenProfileUuid = uuid;
             return this;
         },
+        withUsages(usages: KeyUsage[]) {
+            key.items[0].usage = usages;
+            return this;
+        },
         build: () => key,
     };
 }
@@ -55,6 +59,42 @@ function aTokenProfile(usages: KeyUsage[]): TokenProfileDetailResponseModel {
 }
 
 test.describe('CryptographicKeyDetail usage editing', () => {
+    for (const profileUsages of [[KeyUsage.Sign, KeyUsage.Verify], []]) {
+        test(`drops unsupported existing usages when the profile supports [${profileUsages.join(', ')}]`, async ({ mount, page }) => {
+            // given
+            const existingUsages = [KeyUsage.Sign, KeyUsage.Decrypt, KeyUsage.Verify];
+            const expectedUsages = profileUsages.includes(KeyUsage.Sign) ? [KeyUsage.Sign] : [];
+            const tokenProfile = aTokenProfile(profileUsages);
+            const cryptographicKey = aSynchronizedKey().withTokenProfile(tokenProfile.uuid).withUsages(existingUsages).build();
+            const dispatched: UnknownAction[] = [];
+            await mount(
+                <CryptographicKeyDetailWithStore
+                    cryptographicKey={cryptographicKey}
+                    tokenProfile={tokenProfile}
+                    onAction={(action) => dispatched.push(action)}
+                />,
+            );
+
+            // when
+            await page.getByTestId('key-button').click();
+
+            // then
+            const dialog = page.getByRole('dialog');
+            await expect(dialog.getByText(KeyUsage.Decrypt, { exact: true })).toHaveCount(0);
+            await expect(dialog.getByText(KeyUsage.Verify, { exact: true })).toHaveCount(0);
+            await expect(dialog.getByRole('button', { name: `Remove ${KeyUsage.Sign}`, exact: true })).toHaveCount(expectedUsages.length);
+            await dialog.getByRole('button', { name: 'Update', exact: true }).click();
+            await expect
+                .poll(() => dispatched.find(keyActions.updateKeyUsage.match))
+                .toEqual(
+                    keyActions.updateKeyUsage({
+                        uuid: cryptographicKey.uuid,
+                        usage: { usage: expectedUsages, uuids: [cryptographicKey.items[0].uuid] },
+                    }),
+                );
+        });
+    }
+
     test('allows a synchronized key without a profile to submit usages filtered by key type', async ({ mount, page }) => {
         // given
         const cryptographicKey = aSynchronizedKey().build();
