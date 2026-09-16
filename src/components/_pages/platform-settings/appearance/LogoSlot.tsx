@@ -70,7 +70,7 @@ function LogoSlot({ id, label, value, fileName, error, onSelect, onDelete, disab
 
     return (
         <div className="flex flex-col gap-2" data-testid={`logo-slot-${id}`}>
-            <Label htmlFor={id} className="mb-0">
+            <Label htmlFor={id} className="!mb-0">
                 {label}
             </Label>
 

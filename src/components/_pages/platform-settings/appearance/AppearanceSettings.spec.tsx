@@ -76,6 +76,21 @@ test.describe('AppearanceSettings', () => {
     });
 
     /**
+     * `Label` carries its own `mb-2`, and `classnames` does not resolve a Tailwind conflict: `.mb-0` is emitted first,
+     * so a plain `mb-0` loses and the dead margin drops the icon below the text it labels.
+     */
+    test('should center the info tooltip on its label', async ({ mount, page }) => {
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+
+        const label = await page.getByTestId('label-primaryColor').boundingBox();
+        const icon = await page.getByTestId('color-help-primaryColor').boundingBox();
+
+        expect(label).not.toBeNull();
+        expect(icon).not.toBeNull();
+        expect(Math.abs(label!.y + label!.height / 2 - (icon!.y + icon!.height / 2))).toBeLessThanOrEqual(1);
+    });
+
+    /**
      * Behind a toggletip rather than a hover tooltip: the description is the only place saying which theme a colour
      * reaches, so it has to be reachable without a pointer.
      */
