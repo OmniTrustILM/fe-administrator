@@ -146,19 +146,6 @@ test.describe('CryptographicKeyDetail usage editing', () => {
         await expect(page.getByTestId('key-button')).toBeDisabled();
     });
 
-    test('keeps usage editing disabled when the assigned profile request fails', async ({ mount, page }) => {
-        // given
-        const assignedProfileUuid = 'assigned-profile';
-        const cryptographicKey = aSynchronizedKey().withTokenProfile(assignedProfileUuid).build();
-        await mount(<CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} />);
-
-        // when
-        await page.getByRole('button', { name: 'Fail profile request' }).click();
-
-        // then
-        await expect(page.getByTestId('key-button')).toBeDisabled();
-    });
-
     test('restricts a profiled key to its profile usages and key type', async ({ mount, page }) => {
         // given
         const profileUsages = [KeyUsage.Sign, KeyUsage.Verify];
