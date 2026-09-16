@@ -104,6 +104,13 @@ test.describe('TextArea', () => {
         await expect(component.getByText('This field is required')).toBeVisible();
     });
 
+    test('names its error paragraph in aria-describedby when used on its own', async ({ mount }) => {
+        const component = await mount(<TextArea id="notes" value="" onChange={() => {}} error="This field is required" />);
+
+        await expect(component.locator('textarea#notes')).toHaveAttribute('aria-describedby', 'notes-error');
+        await expect(component.locator('#notes-error')).toHaveText('This field is required');
+    });
+
     test('should apply invalid styling when invalid is true', async ({ mount }) => {
         const component = await mount(
             <div>

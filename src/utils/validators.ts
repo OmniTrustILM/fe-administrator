@@ -78,6 +78,14 @@ export const validateCustomIp = (value: string) => {
     return !value || IP_REGEX.test(value) ? undefined : 'Value must be a valid ip address';
 };
 
+/** A numeric ceiling; leaves non-numbers to the pattern validator composed before it. */
+export const validateMaximum = (max: number) => (value: unknown) => {
+    const validationInput = getValueFromObject(value);
+    if (!validationInput) return undefined;
+    const number = Number(validationInput);
+    return Number.isNaN(number) || number <= max ? undefined : `Value must not exceed ${max}`;
+};
+
 export const validateLength = (min: number, max: number) => (value: unknown) => {
     const validationInput = getValueFromObject(value);
     if (!validationInput) return undefined;

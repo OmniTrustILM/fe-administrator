@@ -327,6 +327,17 @@ test.describe('DatePicker', () => {
         await expect(component.getByText('This field is required')).toBeVisible();
     });
 
+    test('names its error paragraph in aria-describedby when used on its own', async ({ mount }) => {
+        const component = await mount(
+            <div>
+                <DatePicker id="validFrom" value="" onChange={() => {}} error="This field is required" />
+            </div>,
+        );
+
+        await expect(component.locator('input#validFrom')).toHaveAttribute('aria-describedby', 'validFrom-error');
+        await expect(component.locator('#validFrom-error')).toHaveText('This field is required');
+    });
+
     test('should apply invalid styling when invalid is true', async ({ mount }) => {
         const component = await mount(
             <div>

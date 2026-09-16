@@ -1,18 +1,37 @@
 export const CBOM_REPOSITORY_HEALTH_WARNING_MESSAGE = 'Ensure that entered CBOM Repository URL is reachable. Health check failed.';
+export const UTILS_SERVICE_HEALTH_WARNING_MESSAGE = 'Ensure that entered Utils Service URL is reachable. Health check failed.';
 
+const URL_ERROR_MESSAGE = 'Please enter valid URL.';
+
+/**
+ * A whole http(s) base URL, parsed rather than prefix-matched. Surrounding whitespace is ignored (a pasted value is
+ * trimmed on save as well); text after a valid-looking start, a scheme without `//`, a query or a fragment are refused
+ * -- the health probe appends its path to the value, and the last two would break it. The probe is a warning, not a
+ * validation error, so this is the only check that keeps a malformed URL from being saved.
+ */
 export const validateUrl = (url?: string): string | undefined => {
-    if (!url || /^https?:\/\/[a-zA-Z0-9\-.]+(:\d+?)?(\/[a-zA-Z0-9\-.]*)*/.test(url)) {
+    const value = url?.trim();
+    if (!value) {
         return undefined;
     }
-    return 'Please enter valid URL.';
+    if (/\s/.test(value) || !/^https?:\/\//i.test(value)) {
+        return URL_ERROR_MESSAGE;
+    }
+    try {
+        const { search, hash } = new URL(value);
+        return search === '' && hash === '' ? undefined : URL_ERROR_MESSAGE;
+    } catch {
+        return URL_ERROR_MESSAGE;
+    }
 };
 
 const normalizeUrl = (url: string): string => {
-    let endIndex = url.length;
-    while (endIndex > 0 && (url.codePointAt(endIndex - 1) ?? -1) === 47) {
+    const trimmed = url.trim();
+    let endIndex = trimmed.length;
+    while (endIndex > 0 && (trimmed.codePointAt(endIndex - 1) ?? -1) === 47) {
         endIndex -= 1;
     }
-    return endIndex === url.length ? url : url.slice(0, endIndex);
+    return endIndex === trimmed.length ? trimmed : trimmed.slice(0, endIndex);
 };
 
 export const buildCbomHealthPath = (url: string): string => {
