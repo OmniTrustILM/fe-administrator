@@ -1,7 +1,7 @@
 import PagedList from 'components/PagedList/PagedList';
 import { buildCryptoAssetRows, CRYPTO_ASSET_HEADERS } from 'components/_pages/crypto-assets/cryptoAssetTableHelpers';
 import { actions, selectors } from 'ducks/crypto-assets';
-import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
+import { getEnumDescription, getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { EntityType } from 'ducks/filters';
 import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,7 +20,7 @@ function CryptoAssetsList() {
     const pqcVerdictEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.PqcVerdict));
 
     const rows = useMemo(
-        () => buildCryptoAssetRows(assets, { typeEnum, pqcVerdictEnum, getEnumLabel }),
+        () => buildCryptoAssetRows(assets, { typeEnum, pqcVerdictEnum, getEnumLabel, getEnumDescription }),
         [assets, typeEnum, pqcVerdictEnum],
     );
 

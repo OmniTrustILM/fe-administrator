@@ -16,8 +16,6 @@ export interface BuildCbomCellsOpts {
     renderActions: (cbom: CbomDto) => ReactNode;
 }
 
-export { toFiniteNumber };
-
 /** A centred numeric column. Every count this inventory shows is one, differing only in its identifier and headings. */
 function countColumn(fieldIdentifier: string, catalogueLabel: string, label: string): ColumnDefinition {
     return {

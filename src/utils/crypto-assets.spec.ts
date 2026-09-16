@@ -18,6 +18,11 @@ describe('getPqcVerdictBadgeColor', () => {
             expect(textSafe).toContain(getPqcVerdictBadgeColor(verdict));
         }
     });
+
+    // A verdict core adds later must not land on the neutral badge, which reads as "nothing to do here".
+    test('a verdict this build does not know reads as needing a look, not as benign', () => {
+        expect(getPqcVerdictBadgeColor('somethingCoreAddedLater' as PqcVerdict)).toBe('warning');
+    });
 });
 
 describe('getPqcVerdictDotClass', () => {
@@ -34,5 +39,9 @@ describe('getPqcVerdictDotClass', () => {
         for (const verdict of Object.values(PqcVerdict)) {
             expect(getPqcVerdictDotClass(verdict)).toMatch(/^bg-[a-z-]+$/);
         }
+    });
+
+    test('an unknown verdict takes the amber dot, matching its badge', () => {
+        expect(getPqcVerdictDotClass('somethingCoreAddedLater' as PqcVerdict)).toBe('bg-warning-solid');
     });
 });

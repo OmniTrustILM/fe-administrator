@@ -10,6 +10,7 @@ export interface BuildCryptoAssetRowsOpts {
     typeEnum: PlatformEnumMap;
     pqcVerdictEnum: PlatformEnumMap;
     getEnumLabel: (enumMap: PlatformEnumMap, key: string) => string;
+    getEnumDescription: (enumMap: PlatformEnumMap, key: string | undefined) => string | undefined;
 }
 
 export const QUARANTINE_TOOLTIP = 'Sources make contradicting claims about this asset; the record is quarantined pending reconciliation';
@@ -26,7 +27,7 @@ export const CRYPTO_ASSET_HEADERS: TableHeader[] = [
 // The name becomes a link once the detail route lands with fe#2082.
 export function buildCryptoAssetRows(
     assets: CryptographicAssetDto[],
-    { typeEnum, pqcVerdictEnum, getEnumLabel }: BuildCryptoAssetRowsOpts,
+    { typeEnum, pqcVerdictEnum, getEnumLabel, getEnumDescription }: BuildCryptoAssetRowsOpts,
 ): TableDataRow[] {
     return assets.map((asset) => ({
         id: asset.uuid,
@@ -43,7 +44,12 @@ export function buildCryptoAssetRows(
             <Badge key="type" color="secondary">
                 {getEnumLabel(typeEnum, asset.type)}
             </Badge>,
-            <PqcVerdictBadge key="verdict" verdict={asset.pqcVerdict} label={getEnumLabel(pqcVerdictEnum, asset.pqcVerdict)} />,
+            <PqcVerdictBadge
+                key="verdict"
+                verdict={asset.pqcVerdict}
+                label={getEnumLabel(pqcVerdictEnum, asset.pqcVerdict)}
+                title={getEnumDescription(pqcVerdictEnum, asset.pqcVerdict)}
+            />,
             <span key="sources" className="tabular-nums">
                 {toFiniteNumber(asset.sourceCbomCount).toLocaleString()}
             </span>,

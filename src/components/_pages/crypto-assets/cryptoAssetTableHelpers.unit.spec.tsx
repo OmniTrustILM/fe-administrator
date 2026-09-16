@@ -1,4 +1,4 @@
-import { getEnumLabel } from 'ducks/enums';
+import { getEnumDescription, getEnumLabel } from 'ducks/enums';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type { CryptographicAssetDto } from 'types/openapi';
@@ -10,7 +10,13 @@ import { buildCryptoAssetRows, CRYPTO_ASSET_HEADERS, QUARANTINE_TOOLTIP } from '
 setupReactActEnvironment();
 
 const typeEnum = { [CryptographicAssetType.Algorithm]: { code: 'algorithm', label: 'Algorithm' } };
-const pqcVerdictEnum = { [PqcVerdict.NotReady]: { code: 'notReady', label: 'Not PQC ready' } };
+const pqcVerdictEnum = {
+    [PqcVerdict.NotReady]: {
+        code: 'notReady',
+        label: 'Not PQC ready',
+        description: 'The asset relies on cryptography a quantum computer breaks',
+    },
+};
 
 const asset = (overrides: Partial<CryptographicAssetDto> = {}): CryptographicAssetDto => ({
     uuid: 'asset-1',
@@ -23,7 +29,8 @@ const asset = (overrides: Partial<CryptographicAssetDto> = {}): CryptographicAss
     ...overrides,
 });
 
-const build = (assets: CryptographicAssetDto[]) => buildCryptoAssetRows(assets, { typeEnum, pqcVerdictEnum, getEnumLabel });
+const build = (assets: CryptographicAssetDto[]) =>
+    buildCryptoAssetRows(assets, { typeEnum, pqcVerdictEnum, getEnumLabel, getEnumDescription });
 
 describe('CRYPTO_ASSET_HEADERS', () => {
     // Paging is served, so a client-side sort would reorder one page and present it as the estate's order; core also
@@ -116,8 +123,21 @@ describe('buildCryptoAssetRows', () => {
         expect(cell('pqcVerdict').querySelector('[data-testid="pqc-verdict-badge"]')?.classList.contains('bg-danger-surface')).toBe(true);
     });
 
+    test('the verdict badge explains itself with the platform enum description', async () => {
+        await renderRow([asset()]);
+
+        expect(cell('pqcVerdict').querySelector('[data-testid="pqc-verdict-badge"]')?.getAttribute('title')).toBe(
+            'The asset relies on cryptography a quantum computer breaks',
+        );
+    });
+
     test('an enum the platform has not loaded falls back to the code rather than rendering blank', async () => {
-        const [row] = buildCryptoAssetRows([asset()], { typeEnum: undefined, pqcVerdictEnum: undefined, getEnumLabel });
+        const [row] = buildCryptoAssetRows([asset()], {
+            typeEnum: undefined,
+            pqcVerdictEnum: undefined,
+            getEnumLabel,
+            getEnumDescription,
+        });
         await act(async () => {
             root.render(<div>{row.columns}</div>);
         });

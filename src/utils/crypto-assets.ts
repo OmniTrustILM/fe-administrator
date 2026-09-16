@@ -2,6 +2,7 @@ import type { BadgeColor } from 'components/Badge';
 import { PqcVerdict } from 'types/openapi';
 
 // `unknown` is amber, not neutral: the rule set could not classify the asset, which is a call to fix the producer's data.
+// A verdict this build does not know takes the same amber, so a value core adds later never reads as settled.
 export function getPqcVerdictBadgeColor(verdict: PqcVerdict): BadgeColor {
     switch (verdict) {
         case PqcVerdict.Ready:
@@ -10,11 +11,11 @@ export function getPqcVerdictBadgeColor(verdict: PqcVerdict): BadgeColor {
         case PqcVerdict.NotReady:
             return 'danger';
 
-        case PqcVerdict.Unknown:
-            return 'warning';
+        case PqcVerdict.NotApplicable:
+            return 'secondary';
 
         default:
-            return 'secondary';
+            return 'warning';
     }
 }
 
@@ -27,10 +28,10 @@ export function getPqcVerdictDotClass(verdict: PqcVerdict): string {
         case PqcVerdict.NotReady:
             return 'bg-danger-solid';
 
-        case PqcVerdict.Unknown:
-            return 'bg-warning-solid';
+        case PqcVerdict.NotApplicable:
+            return 'bg-outline';
 
         default:
-            return 'bg-outline';
+            return 'bg-warning-solid';
     }
 }
