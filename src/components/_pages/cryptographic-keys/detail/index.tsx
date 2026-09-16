@@ -96,7 +96,7 @@ export default function CryptographicKeyDetail() {
 
     useEffect(() => {
         if (!tokenInstanceUuid || !tokenProfileUuid) return;
-        dispatch(tokenProfileActions.getTokenProfileDetail({ tokenInstanceUuid, uuid: tokenProfileUuid }));
+        dispatch(tokenProfileActions.getTokenProfileDetail({ tokenInstanceUuid, uuid: tokenProfileUuid, skipWidgetLock: true }));
     }, [dispatch, tokenInstanceUuid, tokenProfileUuid]);
 
     const onEditClick = useCallback(() => {

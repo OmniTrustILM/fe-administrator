@@ -104,7 +104,7 @@ export const slice = createSlice({
             state.isFetchingList = false;
         },
 
-        getTokenProfileDetail: (state, action: PayloadAction<{ tokenInstanceUuid: string; uuid: string }>) => {
+        getTokenProfileDetail: (state, action: PayloadAction<{ tokenInstanceUuid: string; uuid: string; skipWidgetLock?: boolean }>) => {
             if (state.tokenProfile?.uuid !== action.payload.uuid) {
                 state.tokenProfile = undefined;
             }

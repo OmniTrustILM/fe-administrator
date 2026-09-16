@@ -137,7 +137,11 @@ test.describe('CryptographicKeyDetail usage editing', () => {
         await expect
             .poll(() => dispatched.find(profileActions.getTokenProfileDetail.match))
             .toEqual(
-                profileActions.getTokenProfileDetail({ tokenInstanceUuid: cryptographicKey.tokenInstanceUuid!, uuid: assignedProfileUuid }),
+                profileActions.getTokenProfileDetail({
+                    tokenInstanceUuid: cryptographicKey.tokenInstanceUuid!,
+                    uuid: assignedProfileUuid,
+                    skipWidgetLock: true,
+                }),
             );
         await expect(page.getByTestId('key-button')).toBeDisabled();
     });
