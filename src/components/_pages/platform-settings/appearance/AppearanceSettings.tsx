@@ -7,7 +7,7 @@ import Toggletip from 'components/Toggletip';
 import { actions, selectors } from 'ducks/branding';
 import type { BrandingSettingsModel, BrandingSettingsUpdateModel } from 'types/branding';
 import { brandContrastFindings, describeFinding } from 'utils/brand-contrast';
-import { brandColors } from 'utils/brand-tokens';
+import { BRAND_DEFAULT_COLORS, brandColors } from 'utils/brand-tokens';
 import { isBrandColor, LOGO_HELP, readLogoFile } from 'utils/branding';
 import ColorField from './ColorField';
 import LogoSlot from './LogoSlot';
@@ -18,24 +18,36 @@ type LogoKey = 'lightLogo' | 'darkLogo';
 /**
  * Each colour says what it actually drives and which theme it reaches, because the label alone does not: an operator
  * choosing "Background" has no way to know it will not touch the dark theme.
+ *
+ * `defaultColor` is the platform value the field falls back to when it is left unset, and is the light-theme one even
+ * for the two colours that reach both themes: one input drives both, and the dark step is derived from it rather than
+ * entered here.
  */
-const COLOR_FIELDS: ReadonlyArray<{ key: ColorKey; label: string; description: string }> = [
+const COLOR_FIELDS: ReadonlyArray<{ key: ColorKey; label: string; description: string; defaultColor: string }> = [
     {
         key: 'primaryColor',
         label: 'Primary',
         description: 'Buttons, links, active states and the page header. Applies to both the light and the dark theme.',
+        defaultColor: BRAND_DEFAULT_COLORS.primary,
     },
     {
         key: 'secondaryColor',
         label: 'Secondary',
         description: 'Accents, chips and informational badges. Applies to both the light and the dark theme.',
+        defaultColor: BRAND_DEFAULT_COLORS.secondary,
     },
     {
         key: 'backgroundColor',
         label: 'Background',
         description: 'The page background and raised surfaces such as cards and dialogs. Light theme only.',
+        defaultColor: BRAND_DEFAULT_COLORS.background,
     },
-    { key: 'textColor', label: 'Text', description: 'Body text and headings. Light theme only.' },
+    {
+        key: 'textColor',
+        label: 'Text',
+        description: 'Body text and headings. Light theme only.',
+        defaultColor: BRAND_DEFAULT_COLORS.text,
+    },
 ];
 
 const LOGO_FALLBACK = "Each theme uses its own logo. A slot left empty shows the platform logo in that theme rather than the other slot's.";
@@ -244,13 +256,14 @@ function AppearanceSettings() {
             <div className="space-y-2">
                 <h3 className="text-lg font-bold text-content">Colors</h3>
                 <div className="grid gap-4 @md:grid-cols-2">
-                    {COLOR_FIELDS.map(({ key, label, description }) => (
+                    {COLOR_FIELDS.map(({ key, label, description, defaultColor }) => (
                         <ColorField
                             key={key}
                             id={key}
                             label={label}
                             description={description}
                             value={colors[key]}
+                            defaultColor={defaultColor}
                             disabled={isReadOnly}
                             onChange={(value) => onColorChange(key, value)}
                         />

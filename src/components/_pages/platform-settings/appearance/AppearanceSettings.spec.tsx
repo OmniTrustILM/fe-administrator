@@ -112,6 +112,26 @@ test.describe('AppearanceSettings', () => {
         await expect(page.getByTestId('color-hex-primaryColor')).toBeFocused();
     });
 
+    /**
+     * An empty field means the platform default applies, so both hints an unset field shows - the placeholder and the
+     * swatch the browser cannot leave blank - have to name that field's own default rather than one colour for all four.
+     */
+    const PLATFORM_DEFAULTS = [
+        { key: 'primaryColor', hex: '#0073CF' },
+        { key: 'secondaryColor', hex: '#0369A1' },
+        { key: 'backgroundColor', hex: '#F8FAFC' },
+        { key: 'textColor', hex: '#1F2937' },
+    ];
+
+    for (const { key, hex } of PLATFORM_DEFAULTS) {
+        test(`should hint the platform default for ${key} while it is unset`, async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+
+            await expect(page.getByTestId(`color-hex-${key}`)).toHaveAttribute('placeholder', hex);
+            await expect(page.getByTestId(`color-swatch-${key}`)).toHaveValue(hex.toLowerCase());
+        });
+    }
+
     test('should not offer a tertiary colour', async ({ mount, page }) => {
         await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
 
@@ -148,12 +168,13 @@ test.describe('AppearanceSettings', () => {
     });
 
     test('should treat an emptied field as a saveable unset value rather than invalid input', async ({ mount, page }) => {
-        await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+        // Stored away from the platform default, so the swatch below can only read it back from the fallback.
+        await mount(<AppearanceSettingsTestWrapper preloadedState={storedBranding({ ...COMPLETE_BRANDING, primaryColor: '#00A3E0' })} />);
         await setHex(page, 'primaryColor', '');
 
         await expect(page.getByTestId('color-error-primaryColor')).toHaveCount(0);
-        // The swatch cannot hold an empty value, so it falls back to black for display only.
-        await expect(page.getByTestId('color-swatch-primaryColor')).toHaveValue('#000000');
+        // The swatch cannot hold an empty value, so it falls back to the field's own default for display only.
+        await expect(page.getByTestId('color-swatch-primaryColor')).toHaveValue('#0073cf');
         await expect(page.getByTestId('appearance-save')).toBeEnabled();
     });
 

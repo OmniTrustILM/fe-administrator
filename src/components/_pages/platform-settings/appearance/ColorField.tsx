@@ -10,23 +10,24 @@ type Props = {
     label: string;
     description: string;
     value: string;
+    defaultColor: string;
     onChange: (value: string) => void;
     disabled?: boolean;
 };
 
 /**
- * One brand colour: a hex field and a swatch, kept in sync in both directions. The swatch is a native `input type=color`
- * rather than a picker component, so it is keyboard operable and themed by the platform for free. It cannot express an
- * empty or malformed value, so it falls back to black for display only and never writes that back on its own. That
- * fallback asks a different question from `valid` below: whether the control can render the value at all, not whether
- * the value is acceptable input. An empty string is acceptable input the control cannot hold, and handing it one
- * leaves React believing the value is `''` while the browser shows `#000000`, rewritten on every render.
+ * One brand colour: a hex field and a native `input type=color`, kept in sync in both directions.
  *
- * An empty field is valid and means the colour is unset - Core clears any field left out - so only a non-empty value
- * that is not a six-digit hex is an error. Clearing it needs its own control for the same reason the swatch shows
- * black: neither the swatch nor a colour picker can express "no colour".
+ * The swatch cannot hold an empty or malformed value, so it shows `defaultColor` instead - for display only, never
+ * written back. Handing it `''` would leave React believing the value is empty while the browser shows a colour and
+ * rewrites it on every render.
+ *
+ * An empty field is valid and means unset: Core clears any field left out, so only a non-empty value that is not a
+ * six-digit hex is an error, and clearing needs its own control because neither the swatch nor a picker can express
+ * "no colour". Both the swatch fallback and the placeholder name this field's own default, since an unset field is
+ * the one that will use it.
  */
-function ColorField({ id, label, description, value, onChange, disabled = false }: Readonly<Props>) {
+function ColorField({ id, label, description, value, defaultColor, onChange, disabled = false }: Readonly<Props>) {
     const valid = value === '' || isBrandColor(value);
     const errorId = `${id}-error`;
 
@@ -52,7 +53,7 @@ function ColorField({ id, label, description, value, onChange, disabled = false 
                         value={value}
                         onChange={onChange}
                         disabled={disabled}
-                        placeholder="#0073CF"
+                        placeholder={defaultColor}
                         invalid={!valid}
                         dataTestId={`color-hex-${id}`}
                         ariaDescribedBy={valid ? undefined : errorId}
@@ -63,7 +64,7 @@ function ColorField({ id, label, description, value, onChange, disabled = false 
                         type="color"
                         aria-label={`${label} color picker`}
                         className="h-full w-full cursor-pointer rounded-lg border border-outline bg-surface-raised p-1 disabled:cursor-not-allowed disabled:opacity-35"
-                        value={isBrandColor(value) ? value : '#000000'}
+                        value={isBrandColor(value) ? value : defaultColor}
                         disabled={disabled}
                         onChange={(event) => onChange(event.target.value.toUpperCase())}
                         data-testid={`color-swatch-${id}`}
