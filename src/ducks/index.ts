@@ -48,6 +48,7 @@ import schedulerEpics from './scheduler-epics';
 import signingProfilesEpics from './signing-profiles-epics';
 import signingRecordsEpics from './signing-records-epics';
 import signingRecordsDashboardEpics from './signing-records-dashboard-epics';
+import cryptoAssetsDashboardEpics from './crypto-assets-dashboard-epics';
 import settingsEpics from './settings-epics';
 import raProfileRequestAttributesEpics from './raProfileRequestAttributes-epics';
 import startupEpics from './startup-epics';
@@ -118,6 +119,7 @@ export const epics = combineEpics(
     ...signingProfilesEpics,
     ...signingRecordsEpics,
     ...signingRecordsDashboardEpics,
+    ...cryptoAssetsDashboardEpics,
     ...profileApprovalEpics,
     ...approvalsEpic,
     ...notificationsEpics,
