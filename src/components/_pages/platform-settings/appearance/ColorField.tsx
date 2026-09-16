@@ -40,7 +40,7 @@ function ColorField({ id, label, description, value, onChange, disabled = false 
     return (
         <div className="flex flex-col gap-1" data-testid={`color-field-${id}`}>
             <div className="flex items-center gap-1.5">
-                <Label htmlFor={id} className="mb-0">
+                <Label htmlFor={id} className="!mb-0">
                     {label}
                 </Label>
                 <Toggletip ariaLabel={`About the ${label} color`} content={description} dataTestId={`color-help-${id}`} />
