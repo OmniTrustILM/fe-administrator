@@ -3,11 +3,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import Button from 'components/Button';
 import Dialog from 'components/Dialog';
 import ProgressButton from 'components/ProgressButton';
+import Toggletip from 'components/Toggletip';
 import { actions, selectors } from 'ducks/branding';
 import type { BrandingSettingsModel, BrandingSettingsUpdateModel } from 'types/branding';
 import { brandContrastFindings, describeFinding } from 'utils/brand-contrast';
 import { brandColors } from 'utils/brand-tokens';
-import { isBrandColor, readLogoFile } from 'utils/branding';
+import { isBrandColor, LOGO_HELP, readLogoFile } from 'utils/branding';
 import ColorField from './ColorField';
 import LogoSlot from './LogoSlot';
 
@@ -37,19 +38,12 @@ const COLOR_FIELDS: ReadonlyArray<{ key: ColorKey; label: string; description: s
     { key: 'textColor', label: 'Text', description: 'Body text and headings. Light theme only.' },
 ];
 
-/**
- * The one thing no single row can say. Background and Text are chosen against a light page, so reusing them on a dark
- * one is exactly what would break its readability - which is why the dark theme keeps its own surfaces instead.
- */
-const COLOR_COMPOSITION =
-    'No color is inverted to produce the other theme. Primary and Secondary apply to both; Background and Text apply to the light theme only, and the dark theme keeps its own surfaces.';
+const LOGO_FALLBACK = "Each theme uses its own logo. A slot left empty shows the platform logo in that theme rather than the other slot's.";
 
 const LOGO_SLOTS: ReadonlyArray<{ key: LogoKey; label: string }> = [
-    { key: 'lightLogo', label: 'Light Logo' },
-    { key: 'darkLogo', label: 'Dark Logo' },
+    { key: 'lightLogo', label: 'Light' },
+    { key: 'darkLogo', label: 'Dark' },
 ];
-
-const LOGO_COMPOSITION = 'Each theme uses its own logo, so both are required. Neither slot falls back to the other.';
 
 /**
  * Contrast warns, it never blocks: the brand belongs to the operator, and the platform's job is to say what a choice
@@ -118,17 +112,6 @@ function AppearanceSettings() {
     }, [branding]);
 
     const isBusy = isFetching || isUpdating || isResetting;
-
-    // Branding is saved whole or not at all. Core clears any field left out of an update, so a partial save is not a
-    // partial brand but a brand with holes in it - a light logo and no dark one, or a background with no text colour
-    // to sit on. Reset to Default is the way back to the platform look, not an emptied field.
-    const missingFields = useMemo(
-        () => [
-            ...COLOR_FIELDS.filter(({ key }) => colors[key] === '').map(({ label }) => label),
-            ...LOGO_SLOTS.filter(({ key }) => logos[key].dataUri === undefined).map(({ label }) => label),
-        ],
-        [colors, logos],
-    );
 
     // A read that succeeds always leaves a value behind - a Core with nothing stored answers 404, which the epic maps
     // to an empty success - so an absent one means no read has landed. The form seeded from it is empty and looks
@@ -212,8 +195,10 @@ function AppearanceSettings() {
             darkLogo: logos.darkLogo.dataUri,
         };
 
+        // An unset colour is omitted rather than sent as an empty string: Core validates the format of any value it
+        // is given, so '' is rejected outright, while an absent field is what clears that part of the brand.
         for (const { key } of COLOR_FIELDS) {
-            update[key] = colors[key];
+            update[key] = colors[key] === '' ? undefined : colors[key];
         }
 
         dispatch(actions.updateBranding({ branding: update }));
@@ -258,9 +243,6 @@ function AppearanceSettings() {
 
             <div className="space-y-2">
                 <h3 className="text-lg font-bold text-content">Colors</h3>
-                <p className="text-sm text-content-muted" data-testid="appearance-color-composition">
-                    {COLOR_COMPOSITION}
-                </p>
                 <div className="grid gap-4 @md:grid-cols-2">
                     {COLOR_FIELDS.map(({ key, label, description }) => (
                         <ColorField
@@ -270,7 +252,6 @@ function AppearanceSettings() {
                             description={description}
                             value={colors[key]}
                             disabled={isReadOnly}
-                            required
                             onChange={(value) => onColorChange(key, value)}
                         />
                     ))}
@@ -278,10 +259,19 @@ function AppearanceSettings() {
             </div>
 
             <div className="space-y-2">
-                <h3 className="text-lg font-bold text-content">Logos</h3>
-                <p className="text-sm text-content-muted" data-testid="appearance-logo-composition">
-                    {LOGO_COMPOSITION}
-                </p>
+                <div className="flex items-center gap-1.5">
+                    <h3 className="text-lg font-bold text-content">Logos</h3>
+                    <Toggletip
+                        ariaLabel="Logo requirements"
+                        content={
+                            <>
+                                <p>{LOGO_HELP}</p>
+                                <p className="mt-2">{LOGO_FALLBACK}</p>
+                            </>
+                        }
+                        dataTestId="appearance-logo-help"
+                    />
+                </div>
                 <div className="grid gap-6 @md:grid-cols-2">
                     {LOGO_SLOTS.map(({ key, label }) => (
                         <LogoSlot
@@ -292,19 +282,12 @@ function AppearanceSettings() {
                             fileName={logos[key].fileName}
                             error={logos[key].error}
                             disabled={isReadOnly}
-                            required
                             onSelect={(file) => void onLogoSelect(key, file)}
                             onDelete={() => onLogoDelete(key)}
                         />
                     ))}
                 </div>
             </div>
-
-            {hasKnownBranding && missingFields.length > 0 && (
-                <p className="rounded-lg bg-info-surface px-3 py-2 text-sm text-info" data-testid="appearance-incomplete">
-                    Every color and both logos are required before branding can be saved. Still to fill in: {missingFields.join(', ')}.
-                </p>
-            )}
 
             {error && (
                 <p className="rounded-lg bg-danger-surface px-3 py-2 text-sm text-danger" role="alert" data-testid="appearance-error">
@@ -318,7 +301,7 @@ function AppearanceSettings() {
                     inProgress={isUpdating}
                     type="button"
                     onClick={onSave}
-                    disabled={isReadOnly || isReadingLogo || hasInvalidColor || missingFields.length > 0 || !isDirty}
+                    disabled={isReadOnly || isReadingLogo || hasInvalidColor || !isDirty}
                     dataTestId="appearance-save"
                 />
                 <Button

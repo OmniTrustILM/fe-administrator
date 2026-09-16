@@ -11,6 +11,7 @@ import {
     TRIGGER_CLEARABLE_CLASSES,
     TRIGGER_DISABLED_CLASSES,
     PLACEHOLDER_CLASSES,
+    TRIGGER_NO_OPTIONS_CLASSES,
     CHEVRON_CLASSES,
     CONTENT_CLASSES,
     CONTENT_FLUID_WIDTH_CLASSES,
@@ -376,7 +377,11 @@ function Select({
     const triggerDisplay = useMemo(() => {
         if (isMulti) {
             if (!multiValues || multiValues.length === 0) {
-                return <span className={PLACEHOLDER_CLASSES}>{hasOptions ? placeholder : 'No options'}</span>;
+                return (
+                    <span className={hasOptions ? PLACEHOLDER_CLASSES : TRIGGER_NO_OPTIONS_CLASSES}>
+                        {hasOptions ? placeholder : 'No options'}
+                    </span>
+                );
             }
             return (
                 <div className="flex flex-wrap items-center gap-y-1 min-w-0 w-full">
@@ -405,7 +410,11 @@ function Select({
         }
         // single
         if (singleRawValue == null || singleRawValue === '') {
-            return <span className={PLACEHOLDER_CLASSES}>{hasOptions ? placeholder : 'No options'}</span>;
+            return (
+                <span className={hasOptions ? PLACEHOLDER_CLASSES : TRIGGER_NO_OPTIONS_CLASSES}>
+                    {hasOptions ? placeholder : 'No options'}
+                </span>
+            );
         }
         const matched = options.find((o) => valuesMatch(o.value, singleRawValue));
         const labelText = matched?.label ?? getOptionValueString(singleRawValue);

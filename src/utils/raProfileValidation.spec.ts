@@ -1,7 +1,5 @@
 import { describe, expect, test } from 'vitest';
 
-import { AttributeSetMergeMode } from 'types/openapi';
-
 import {
     extractComplianceErrors,
     externalCsrValidationModeDescription,
@@ -80,33 +78,8 @@ describe('requestValidationFormValuesToUpdateDto', () => {
         expect(dto.externalCsrValidationStrict).toBeNull();
     });
 
-    test('coerces merge mode to Static only and drops bindings while the feature is hidden, but echoes request attributes', () => {
+    test('echoes the current definitions, merge mode and bindings so the replace-style update does not wipe them', () => {
         const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: false, strict: true }, currentConfiguration);
-        expect(dto).toEqual({
-            requestAttributes: [{ uuid: 'attr-1' }],
-            mergeMode: AttributeSetMergeMode.StaticOnly,
-            valueSourceBindings: [],
-            externalCsrValidationStrict: true,
-        });
-    });
-
-    test('null survives JSON serialization so the backend receives the inherit marker', () => {
-        const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: true, strict: false }, currentConfiguration);
-        expect(JSON.parse(JSON.stringify(dto))).toEqual({
-            requestAttributes: [{ uuid: 'attr-1' }],
-            mergeMode: AttributeSetMergeMode.StaticOnly,
-            valueSourceBindings: [],
-            externalCsrValidationStrict: null,
-        });
-    });
-
-    test('omits requestAttributes but still coerces merge mode and bindings when there is no current configuration', () => {
-        const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: true, strict: false });
-        expect(JSON.stringify(dto)).toBe('{"mergeMode":"staticOnly","valueSourceBindings":[],"externalCsrValidationStrict":null}');
-    });
-
-    test('round-trips merge mode and bindings once the feature is re-enabled', () => {
-        const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: false, strict: true }, currentConfiguration, true);
         expect(dto).toEqual({
             requestAttributes: [{ uuid: 'attr-1' }],
             mergeMode: 'merge',
@@ -115,11 +88,28 @@ describe('requestValidationFormValuesToUpdateDto', () => {
         });
     });
 
-    test('leaves merge mode and bindings undefined when re-enabled with no current configuration', () => {
-        const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: true, strict: false }, undefined, true);
-        expect(dto.mergeMode).toBeUndefined();
-        expect(dto.valueSourceBindings).toBeUndefined();
-        expect(dto.externalCsrValidationStrict).toBeNull();
+    test('null survives JSON serialization so the backend receives the inherit marker', () => {
+        const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: true, strict: false }, currentConfiguration);
+        expect(JSON.parse(JSON.stringify(dto))).toEqual({
+            requestAttributes: [{ uuid: 'attr-1' }],
+            mergeMode: 'merge',
+            valueSourceBindings: [{ attributeName: 'cn' }],
+            externalCsrValidationStrict: null,
+        });
+    });
+
+    test('omits the echoed fields when there is no current configuration, so Core preserves them instead of clearing', () => {
+        const dto = requestValidationFormValuesToUpdateDto({ usePlatformSettings: true, strict: false });
+        expect(JSON.stringify(dto)).toBe('{"externalCsrValidationStrict":null}');
+    });
+
+    test('a profile without bindings omits the field rather than sending an empty list', () => {
+        const dto = requestValidationFormValuesToUpdateDto(
+            { usePlatformSettings: false, strict: false },
+            { ...currentConfiguration, valueSourceBindings: undefined },
+        );
+        expect('valueSourceBindings' in JSON.parse(JSON.stringify(dto))).toBe(false);
+        expect(dto.mergeMode).toBe('merge');
     });
 });
 

@@ -109,4 +109,39 @@ test.describe('TableRowCell', () => {
         await expect(button).toHaveCount(0);
         await expect(component.locator('td').filter({ hasText: 'Plain' })).toBeVisible();
     });
+
+    test('detail button uses the brand colour so it reads as a link', async ({ mount }) => {
+        const rowWithDetails: TableDataRow = {
+            id: 'row-1',
+            columns: ['1', 'Data'],
+            detailColumns: ['Detail A'],
+        };
+
+        const component = await mount(
+            withProviders(
+                <div>
+                    <span className="text-brand" data-testid="brand-reference">
+                        reference
+                    </span>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <TableRowCell
+                                    column="1"
+                                    index={0}
+                                    row={rowWithDetails}
+                                    tblHeaders={mockHeaders}
+                                    hasDetails={true}
+                                    onDetailClick={() => {}}
+                                />
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>,
+            ),
+        );
+
+        const brandColor = await component.getByTestId('brand-reference').evaluate((el) => getComputedStyle(el).color);
+        await expect(component.locator('td button')).toHaveCSS('color', brandColor);
+    });
 });

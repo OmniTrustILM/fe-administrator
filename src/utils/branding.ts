@@ -200,3 +200,53 @@ export const readLogoFile = async (file: File): Promise<LogoReadResult> => {
 
     return ratioError ? { error: ratioError } : { dataUri };
 };
+
+/**
+ * How long after a local branding change an anonymous read bypasses the browser cache.
+ *
+ * Deliberately longer than the `max-age` Core serves that response with rather than equal to it: the two live in
+ * different repositories with nothing tying them together, so matching exactly would silently stop working the day
+ * Core raises its own value. Over-covering costs one administrator a few uncached reads.
+ */
+export const BRANDING_CACHE_BYPASS_WINDOW_MS = 10 * 60_000;
+
+const BRANDING_CHANGED_STORAGE_KEY = 'branding-changed-at';
+
+/**
+ * Records that this browser just changed the branding.
+ *
+ * The anonymous response is `max-age=60, public`, so for the following minute a reload is answered from the browser's
+ * own cache with the branding that was just replaced - the token layer then paints it back and re-caches it, and the
+ * change looks not to have taken. The authenticated read the Appearance tab uses is `no-store`, which is why the form
+ * shows the new state while the page around it does not.
+ */
+export const markBrandingChanged = (now: number = Date.now()): void => {
+    try {
+        globalThis.localStorage?.setItem(BRANDING_CHANGED_STORAGE_KEY, String(now));
+    } catch {
+        // Storage can be unavailable through private browsing or an exceeded quota. Without the mark a reload inside
+        // the cache window may show the previous branding, which is what this avoids rather than something it needs.
+    }
+};
+
+/** Whether an anonymous branding read has to bypass the browser cache because this browser changed it recently. */
+export const shouldBypassBrandingCache = (now: number = Date.now()): boolean => {
+    try {
+        const stored = globalThis.localStorage?.getItem(BRANDING_CHANGED_STORAGE_KEY);
+
+        if (stored === null || stored === undefined) {
+            return false;
+        }
+
+        const changedAt = Number(stored);
+
+        if (!Number.isFinite(changedAt) || Math.abs(now - changedAt) > BRANDING_CACHE_BYPASS_WINDOW_MS) {
+            globalThis.localStorage?.removeItem(BRANDING_CHANGED_STORAGE_KEY);
+            return false;
+        }
+
+        return true;
+    } catch {
+        return false;
+    }
+};

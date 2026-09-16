@@ -65,9 +65,9 @@ function RaProfileList() {
         setIsAddModalOpen(true);
     }, []);
 
-    // True while the create form is running its create → request-attributes PATCH → redirect chain.
-    // Dismissing the modal during that window would unmount the form and drop the pending PATCH, so
-    // the create-profile Dialog's toggle is blocked until the chain settles.
+    // True while the form is running its create → request-attributes PATCH → redirect chain, or an
+    // edit's PATCH → PUT chain. Dismissing the modal during that window would unmount the form and drop
+    // the pending request, so the Dialog's toggle is blocked until the chain settles.
     const createInFlightRef = useRef(false);
 
     const handleCloseAddModal = useCallback(() => {

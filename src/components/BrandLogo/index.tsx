@@ -19,8 +19,8 @@ type Props = {
  * The application logo: the operator's for the active theme, or the platform's own.
  *
  * The fallback is per slot rather than per brand. An operator who has uploaded only a light logo gets their logo in
- * the light theme and the platform's mark in the dark one, rather than no logo at all - which matters because Core's
- * per-field fallback means a half-uploaded brand can exist even though the Appearance tab will not save one.
+ * the light theme and the platform's mark in the dark one, rather than no logo at all - which matters because every
+ * branding field stands on its own, so one logo and no other is a brand the Appearance tab will save.
  *
  * The logo is always an `img` with the data URI as its `src`, and no code path inlines SVG markup into the document.
  * Core sanitizes an uploaded SVG, and this is the second half of that defence: an `img` renders SVG inert, so a script

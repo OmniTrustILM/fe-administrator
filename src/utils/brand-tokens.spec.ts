@@ -25,7 +25,7 @@ const EXPECTED_FAMILIES = {
     primary: ['brand', 'brand-solid', 'brand-solid-hover', 'brand-hover', 'brand-subtle', 'surface-header'],
     secondary: ['info', 'info-surface', 'info-solid'],
     background: ['surface', 'surface-raised', 'surface-sunken', 'surface-hover', 'surface-active'],
-    text: ['content', 'content-muted', 'content-subtle'],
+    text: ['content', 'content-muted', 'content-subtle', 'content-hint'],
 } as const;
 
 /** Tokens branding must never touch, either because they carry a fixed meaning or because they are the fixed side of a
@@ -279,5 +279,18 @@ describe('brand-tokens', () => {
 
             expect(globalThis.localStorage.getItem(BRAND_CSS_STORAGE_KEY)).toBeNull();
         });
+    });
+
+    /**
+     * Placeholders sit on `surface-raised`, which moves with the operator's Background. A `content-hint` left out of
+     * the override layer would stay at the platform grey while the surface behind it moved, which on a mid grey
+     * background renders them invisible.
+     */
+    test('should derive the placeholder colour from the brand text colour', () => {
+        const values = brandTokenValues(brandColors({ ...ALL_COLORS, textColor: '#3b0764' }), 'light');
+
+        expect(values['content-hint']).toBeDefined();
+        expect(values['content-hint']).not.toBe('#b6b6b6');
+        expect(values['content-hint']).not.toBe(values['content-subtle']);
     });
 });

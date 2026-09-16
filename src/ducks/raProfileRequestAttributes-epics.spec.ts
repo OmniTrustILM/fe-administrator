@@ -3,6 +3,7 @@ import type { UnknownAction } from '@reduxjs/toolkit';
 import { firstValueFrom, of, throwError } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
 
+import { actions as raProfilesActions } from './ra-profiles';
 import { slice } from './raProfileRequestAttributes';
 import { AttributeSetMergeMode } from 'types/openapi';
 
@@ -78,9 +79,28 @@ describe('raProfileRequestAttributes epics', () => {
         });
 
         test('emits success with the returned set on 200', async () => {
-            const out = await runEpic('updateRaProfileRequestAttributes', action, { takeCount: 2 });
+            const out = await runEpic('updateRaProfileRequestAttributes', action, { takeCount: 3 });
             expect(out[0].type).toBe(slice.actions.updateRaProfileRequestAttributesSuccess.type);
             expect((out[0] as any).payload.set.mergeMode).toBe(AttributeSetMergeMode.Merge);
+        });
+
+        test('patches the loaded profile in the raprofiles slice from the response instead of refetching it', async () => {
+            const out = await runEpic('updateRaProfileRequestAttributes', action, { takeCount: 3 });
+            expect(out[1].type).toBe(raProfilesActions.raProfileRequestAttributesUpdated.type);
+            expect((out[1] as any).payload).toEqual({
+                uuid: 'ra-1',
+                certificateRequestAttributes: (out[0] as any).payload.set,
+            });
+        });
+
+        test('rereads the profile instead of patching it when the response omits the set', async () => {
+            const out = await runEpic('updateRaProfileRequestAttributes', action, {
+                takeCount: 3,
+                depsOverrides: { raProfiles: { updateRaProfileRequestAttributesConfiguration: () => of({ uuid: 'ra-1' }) } },
+            });
+            expect(out.map((a) => a.type)).not.toContain(raProfilesActions.raProfileRequestAttributesUpdated.type);
+            expect(out[1].type).toBe(raProfilesActions.getRaProfileDetail.type);
+            expect((out[1] as any).payload).toEqual({ authorityUuid: 'auth-1', uuid: 'ra-1' });
         });
 
         test('emits failure on error', async () => {

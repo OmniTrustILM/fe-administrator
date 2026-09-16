@@ -109,6 +109,7 @@ export const BRAND_TOKEN_RULES: readonly Rule[] = [
     { token: 'content', light: { source: 'text' } },
     { token: 'content-muted', light: { source: 'text', towards: 'white', weight: 0.78 } },
     { token: 'content-subtle', light: { source: 'text', towards: 'white', weight: 0.66 } },
+    { token: 'content-hint', light: { source: 'text', towards: 'white', weight: 0.3 } },
 ];
 
 const MIX_TARGET_HEX: Record<'white' | 'black', string> = { white: '#ffffff', black: '#000000' };

@@ -23,7 +23,6 @@ import {
     emptyAuthoredAttribute,
     emptyAuthoringForm,
     emptyValueSourceBinding,
-    gateMergeModeAndBindings,
     hasAuthoredRequestAttributes,
     getRegexPatternError,
     isContentTypeAllowedForMapping,
@@ -850,34 +849,6 @@ describe('requestAttributeAuthoring', () => {
         test('non-default merge mode → true', () => {
             const other = Object.values(AttributeSetMergeMode).find((m) => m !== DEFAULT_MERGE_MODE)!;
             expect(hasAuthoredRequestAttributes({ ...emptyAuthoringForm(), mergeMode: other })).toBe(true);
-        });
-    });
-
-    describe('gateMergeModeAndBindings', () => {
-        test('forces Static only and drops bindings while the feature is disabled', () => {
-            const gated = gateMergeModeAndBindings({
-                ...emptyAuthoringForm(),
-                mergeMode: AttributeSetMergeMode.Merge,
-                attributes: [baseAttr()],
-                valueSourceBindings: [{ ...emptyValueSourceBinding(), attributeUuid: 'x' }],
-            });
-            expect(gated.mergeMode).toBe(AttributeSetMergeMode.StaticOnly);
-            expect(gated.valueSourceBindings).toEqual([]);
-            expect(gated.attributes).toHaveLength(1);
-        });
-
-        test('passes merge mode and bindings through unchanged once the feature is re-enabled', () => {
-            const binding = { ...emptyValueSourceBinding(), attributeUuid: 'x' };
-            const form = {
-                ...emptyAuthoringForm(),
-                mergeMode: AttributeSetMergeMode.Merge,
-                attributes: [baseAttr()],
-                valueSourceBindings: [binding],
-            };
-            const gated = gateMergeModeAndBindings(form, true);
-            expect(gated).toBe(form);
-            expect(gated.mergeMode).toBe(AttributeSetMergeMode.Merge);
-            expect(gated.valueSourceBindings).toEqual([binding]);
         });
     });
 });

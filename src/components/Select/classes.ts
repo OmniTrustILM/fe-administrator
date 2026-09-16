@@ -12,7 +12,10 @@ export const TRIGGER_CLEARABLE_CLASSES =
 
 export const TRIGGER_DISABLED_CLASSES = 'pointer-events-none opacity-50';
 
-export const PLACEHOLDER_CLASSES = 'text-content-subtle';
+export const PLACEHOLDER_CLASSES = 'text-content-hint';
+
+/** The empty-state message shares the placeholder's slot but is not an example value, so it keeps body contrast. */
+export const TRIGGER_NO_OPTIONS_CLASSES = 'text-content-subtle';
 
 export const CHEVRON_CLASSES = 'absolute top-1/2 end-3 -translate-y-1/2 shrink-0 size-3.5 text-content-subtle';
 
@@ -24,7 +27,7 @@ export const CONTENT_FLUID_WIDTH_CLASSES = 'w-[var(--radix-popover-trigger-width
 export const SEARCH_WRAPPER_CLASSES = 'bg-surface-raised p-2 sticky top-0 z-10';
 
 export const SEARCH_INPUT_CLASSES =
-    'block w-full sm:text-sm border border-outline rounded-lg focus:ring-transparent bg-surface-raised text-content placeholder-content-subtle py-1.5 sm:py-2 px-3';
+    'block w-full sm:text-sm border border-outline rounded-lg focus:ring-transparent bg-surface-raised text-content placeholder-content-hint py-1.5 sm:py-2 px-3';
 
 export const LISTBOX_CLASSES = 'p-1';
 

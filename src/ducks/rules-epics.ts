@@ -1,8 +1,8 @@
-import { from, of } from 'rxjs';
+import { from, type Observable, of } from 'rxjs';
 import { catchError, concatMap, exhaustMap, filter, map, mergeMap, switchMap, toArray } from 'rxjs/operators';
 
 import type { AppEpic } from 'ducks';
-import { extractError } from 'utils/net';
+import { extractError, extractErrorReason } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 
@@ -704,35 +704,54 @@ const associateEventTriggers: AppEpic = (action$, state, deps) => {
     );
 };
 
+type DeleteOutcome = { uuid: string; ok: true } | { uuid: string; ok: false; reason: string | undefined };
+
+type BulkDeleteResults = {
+    deletedUuids: string[];
+    failures: Extract<DeleteOutcome, { ok: false }>[];
+};
+
+function deleteSequentially(uuids: string[], deleteOne: (uuid: string) => Observable<unknown>): Observable<BulkDeleteResults> {
+    return from(uuids).pipe(
+        concatMap((uuid) =>
+            deleteOne(uuid).pipe(
+                map((): DeleteOutcome => ({ uuid, ok: true })),
+                catchError((err) => of<DeleteOutcome>({ uuid, ok: false, reason: extractErrorReason(err) })),
+            ),
+        ),
+        toArray(),
+        map((results) => ({
+            deletedUuids: results.filter((r) => r.ok).map((r) => r.uuid),
+            failures: results.filter((r) => !r.ok),
+        })),
+    );
+}
+
+function bulkDeleteFailureMessage(failures: BulkDeleteResults['failures'], noun: string, items: { uuid: string; name: string }[]): string {
+    const names = new Map(items.map((item) => [item.uuid, item.name]));
+    const headline = `Failed to delete ${failures.length} ${noun}${failures.length === 1 ? '' : 's'}`;
+    const details = failures.map(({ uuid, reason }) => {
+        const name = names.get(uuid) ?? uuid;
+        return reason ? `${name}: ${reason}` : name;
+    });
+    return [headline, ...details].join('\n');
+}
+
 export const bulkDeleteRules: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.bulkDeleteRules.match),
         exhaustMap((action) =>
-            from(action.payload.ruleUuids).pipe(
-                concatMap((ruleUuid) =>
-                    deps.apiClients.rules.deleteRule({ ruleUuid }).pipe(
-                        map(() => ({ uuid: ruleUuid, ok: true })),
-                        catchError(() => of({ uuid: ruleUuid, ok: false })),
-                    ),
-                ),
-                toArray(),
-                mergeMap((results) => {
-                    const deletedUuids = results.filter((r) => r.ok).map((r) => r.uuid);
-                    const failedDeletes = results.length - deletedUuids.length;
-
-                    if (failedDeletes === 0) {
+            deleteSequentially(action.payload.ruleUuids, (ruleUuid) => deps.apiClients.rules.deleteRule({ ruleUuid })).pipe(
+                mergeMap(({ deletedUuids, failures }) => {
+                    if (failures.length === 0) {
                         return of(slice.actions.bulkDeleteRulesSuccess({ ruleUuids: deletedUuids }));
                     }
 
+                    const message = bulkDeleteFailureMessage(failures, 'rule', slice.selectors.rules(state.value));
                     return of(
                         slice.actions.bulkDeleteRulesSuccess({ ruleUuids: deletedUuids }),
-                        slice.actions.bulkDeleteRulesFailure({
-                            error: `Failed to delete ${failedDeletes} rule${failedDeletes === 1 ? '' : 's'}`,
-                        }),
-                        appRedirectActions.fetchError({
-                            error: undefined,
-                            message: `Failed to delete ${failedDeletes} rule${failedDeletes === 1 ? '' : 's'}`,
-                        }),
+                        slice.actions.bulkDeleteRulesFailure({ error: message }),
+                        appRedirectActions.fetchError({ error: undefined, message }),
                     );
                 }),
                 catchError((error) =>
@@ -750,31 +769,17 @@ export const bulkDeleteActions: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.bulkDeleteActions.match),
         exhaustMap((action) =>
-            from(action.payload.actionUuids).pipe(
-                concatMap((actionUuid) =>
-                    deps.apiClients.actions.deleteAction({ actionUuid }).pipe(
-                        map(() => ({ uuid: actionUuid, ok: true })),
-                        catchError(() => of({ uuid: actionUuid, ok: false })),
-                    ),
-                ),
-                toArray(),
-                mergeMap((results) => {
-                    const deletedUuids = results.filter((r) => r.ok).map((r) => r.uuid);
-                    const failedDeletes = results.length - deletedUuids.length;
-
-                    if (failedDeletes === 0) {
+            deleteSequentially(action.payload.actionUuids, (actionUuid) => deps.apiClients.actions.deleteAction({ actionUuid })).pipe(
+                mergeMap(({ deletedUuids, failures }) => {
+                    if (failures.length === 0) {
                         return of(slice.actions.bulkDeleteActionsSuccess({ actionUuids: deletedUuids }));
                     }
 
+                    const message = bulkDeleteFailureMessage(failures, 'action', slice.selectors.actionsList(state.value));
                     return of(
                         slice.actions.bulkDeleteActionsSuccess({ actionUuids: deletedUuids }),
-                        slice.actions.bulkDeleteActionsFailure({
-                            error: `Failed to delete ${failedDeletes} action${failedDeletes === 1 ? '' : 's'}`,
-                        }),
-                        appRedirectActions.fetchError({
-                            error: undefined,
-                            message: `Failed to delete ${failedDeletes} action${failedDeletes === 1 ? '' : 's'}`,
-                        }),
+                        slice.actions.bulkDeleteActionsFailure({ error: message }),
+                        appRedirectActions.fetchError({ error: undefined, message }),
                     );
                 }),
                 catchError((error) =>
@@ -792,31 +797,19 @@ export const bulkDeleteConditions: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.bulkDeleteConditions.match),
         exhaustMap((action) =>
-            from(action.payload.conditionUuids).pipe(
-                concatMap((conditionUuid) =>
-                    deps.apiClients.rules.deleteCondition({ conditionUuid }).pipe(
-                        map(() => ({ uuid: conditionUuid, ok: true })),
-                        catchError(() => of({ uuid: conditionUuid, ok: false })),
-                    ),
-                ),
-                toArray(),
-                mergeMap((results) => {
-                    const deletedUuids = results.filter((r) => r.ok).map((r) => r.uuid);
-                    const failedDeletes = results.length - deletedUuids.length;
-
-                    if (failedDeletes === 0) {
+            deleteSequentially(action.payload.conditionUuids, (conditionUuid) =>
+                deps.apiClients.rules.deleteCondition({ conditionUuid }),
+            ).pipe(
+                mergeMap(({ deletedUuids, failures }) => {
+                    if (failures.length === 0) {
                         return of(slice.actions.bulkDeleteConditionsSuccess({ conditionUuids: deletedUuids }));
                     }
 
+                    const message = bulkDeleteFailureMessage(failures, 'condition', slice.selectors.conditions(state.value));
                     return of(
                         slice.actions.bulkDeleteConditionsSuccess({ conditionUuids: deletedUuids }),
-                        slice.actions.bulkDeleteConditionsFailure({
-                            error: `Failed to delete ${failedDeletes} condition${failedDeletes === 1 ? '' : 's'}`,
-                        }),
-                        appRedirectActions.fetchError({
-                            error: undefined,
-                            message: `Failed to delete ${failedDeletes} condition${failedDeletes === 1 ? '' : 's'}`,
-                        }),
+                        slice.actions.bulkDeleteConditionsFailure({ error: message }),
+                        appRedirectActions.fetchError({ error: undefined, message }),
                     );
                 }),
                 catchError((error) =>
@@ -834,31 +827,17 @@ export const bulkDeleteTriggers: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.bulkDeleteTriggers.match),
         exhaustMap((action) =>
-            from(action.payload.triggerUuids).pipe(
-                concatMap((triggerUuid) =>
-                    deps.apiClients.triggers.deleteTrigger({ triggerUuid }).pipe(
-                        map(() => ({ uuid: triggerUuid, ok: true })),
-                        catchError(() => of({ uuid: triggerUuid, ok: false })),
-                    ),
-                ),
-                toArray(),
-                mergeMap((results) => {
-                    const deletedUuids = results.filter((r) => r.ok).map((r) => r.uuid);
-                    const failedDeletes = results.length - deletedUuids.length;
-
-                    if (failedDeletes === 0) {
+            deleteSequentially(action.payload.triggerUuids, (triggerUuid) => deps.apiClients.triggers.deleteTrigger({ triggerUuid })).pipe(
+                mergeMap(({ deletedUuids, failures }) => {
+                    if (failures.length === 0) {
                         return of(slice.actions.bulkDeleteTriggersSuccess({ triggerUuids: deletedUuids }));
                     }
 
+                    const message = bulkDeleteFailureMessage(failures, 'trigger', slice.selectors.triggers(state.value));
                     return of(
                         slice.actions.bulkDeleteTriggersSuccess({ triggerUuids: deletedUuids }),
-                        slice.actions.bulkDeleteTriggersFailure({
-                            error: `Failed to delete ${failedDeletes} trigger${failedDeletes === 1 ? '' : 's'}`,
-                        }),
-                        appRedirectActions.fetchError({
-                            error: undefined,
-                            message: `Failed to delete ${failedDeletes} trigger${failedDeletes === 1 ? '' : 's'}`,
-                        }),
+                        slice.actions.bulkDeleteTriggersFailure({ error: message }),
+                        appRedirectActions.fetchError({ error: undefined, message }),
                     );
                 }),
                 catchError((error) =>
@@ -876,31 +855,19 @@ export const bulkDeleteExecutions: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.bulkDeleteExecutions.match),
         exhaustMap((action) =>
-            from(action.payload.executionUuids).pipe(
-                concatMap((executionUuid) =>
-                    deps.apiClients.actions.deleteExecution({ executionUuid }).pipe(
-                        map(() => ({ uuid: executionUuid, ok: true })),
-                        catchError(() => of({ uuid: executionUuid, ok: false })),
-                    ),
-                ),
-                toArray(),
-                mergeMap((results) => {
-                    const deletedUuids = results.filter((r) => r.ok).map((r) => r.uuid);
-                    const failedDeletes = results.length - deletedUuids.length;
-
-                    if (failedDeletes === 0) {
+            deleteSequentially(action.payload.executionUuids, (executionUuid) =>
+                deps.apiClients.actions.deleteExecution({ executionUuid }),
+            ).pipe(
+                mergeMap(({ deletedUuids, failures }) => {
+                    if (failures.length === 0) {
                         return of(slice.actions.bulkDeleteExecutionsSuccess({ executionUuids: deletedUuids }));
                     }
 
+                    const message = bulkDeleteFailureMessage(failures, 'execution', slice.selectors.executions(state.value));
                     return of(
                         slice.actions.bulkDeleteExecutionsSuccess({ executionUuids: deletedUuids }),
-                        slice.actions.bulkDeleteExecutionsFailure({
-                            error: `Failed to delete ${failedDeletes} execution${failedDeletes === 1 ? '' : 's'}`,
-                        }),
-                        appRedirectActions.fetchError({
-                            error: undefined,
-                            message: `Failed to delete ${failedDeletes} execution${failedDeletes === 1 ? '' : 's'}`,
-                        }),
+                        slice.actions.bulkDeleteExecutionsFailure({ error: message }),
+                        appRedirectActions.fetchError({ error: undefined, message }),
                     );
                 }),
                 catchError((error) =>

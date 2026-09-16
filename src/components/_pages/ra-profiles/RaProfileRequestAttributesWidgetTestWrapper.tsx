@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, type Middleware, type UnknownAction } from '@reduxjs/toolkit';
 import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
@@ -16,18 +16,23 @@ type Props = Readonly<{
 /**
  * Playwright CT cannot carry a live Redux store instance created in the test file across the
  * Node/browser boundary, so the store is built inside the mounted component — the same pattern as
- * CertificateFormTestWrapper.
+ * CertificateFormTestWrapper. Every dispatched action is recorded on window.__raProfileWidgetActions__
+ * so the spec can assert what the widget sends to the store (there are no epics here).
  */
 export function RaProfileRequestAttributesWidgetTestWrapper({ certificateRequestAttributes, preloadedState }: Props) {
-    const store = useMemo(
-        () =>
-            configureStore({
-                reducer: testReducers,
-                middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
-                preloadedState: { ...testInitialState, ...preloadedState },
-            }),
-        [preloadedState],
-    );
+    const store = useMemo(() => {
+        const capturedActions: UnknownAction[] = [];
+        (globalThis as unknown as { __raProfileWidgetActions__: UnknownAction[] }).__raProfileWidgetActions__ = capturedActions;
+        const captureMiddleware: Middleware = () => (next) => (action) => {
+            capturedActions.push(action as UnknownAction);
+            return next(action);
+        };
+        return configureStore({
+            reducer: testReducers,
+            middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(captureMiddleware),
+            preloadedState: { ...testInitialState, ...preloadedState },
+        });
+    }, [preloadedState]);
 
     return (
         <Provider store={store}>

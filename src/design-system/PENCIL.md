@@ -208,6 +208,7 @@ Dark page instead sets the literal hex value directly via `$color.semantic.<role
 | `content` | `#1f2937` | `#f5f5f5` |
 | `content-muted` | `#525252` | `#d4d4d4` |
 | `content-subtle` | `#6e6e6e` | `#a3a3a3` |
+| `content-hint` | `#b6b6b6` | `#5d5d5d` |
 | `content-inverse` | `#ffffff` | `#f5f5f5` |
 | `content-on-brand` | `#ffffff` | `#ffffff` |
 | `divider` | `#e8e8e8` | `#262626` |
