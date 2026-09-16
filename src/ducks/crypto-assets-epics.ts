@@ -38,6 +38,31 @@ const listCryptoAssets: AppEpic = (action$, state, deps) => {
     );
 };
 
-const epics = [listCryptoAssets];
+const getCryptoAssetDetail: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getCryptoAssetDetail.match),
+        switchMap((action) =>
+            deps.apiClients.cryptographicAssets.getCryptographicAsset({ uuid: action.payload.uuid }).pipe(
+                mergeMap((detail) =>
+                    of(
+                        slice.actions.getCryptoAssetDetailSuccess({ detail }),
+                        userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.CryptoAssetDetail),
+                    ),
+                ),
+                catchError((err) =>
+                    of(
+                        slice.actions.getCryptoAssetDetailFailure({
+                            error: extractError(err, 'Failed to fetch cryptographic asset'),
+                            statusCode: typeof err?.status === 'number' ? err.status : undefined,
+                        }),
+                        userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.CryptoAssetDetail),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
+const epics = [listCryptoAssets, getCryptoAssetDetail];
 
 export default epics;

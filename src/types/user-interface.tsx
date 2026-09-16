@@ -101,6 +101,7 @@ export enum LockWidgetNameEnum {
     CbomDetail,
     CbomVersions,
     ListOfCryptoAssets,
+    CryptoAssetDetail,
     ListOfSigningRecords,
     SigningRecordDetail,
     ProxyStore,

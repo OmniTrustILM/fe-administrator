@@ -178,6 +178,7 @@ const CbomDetail = lazyWithRetry(() => import('components/_pages/cboms/detail'))
 const CbomVersionsHistory = lazyWithRetry(() => import('components/_pages/cboms/versions'));
 
 const CryptoAssetsList = lazyWithRetry(() => import('components/_pages/crypto-assets/list'));
+const CryptoAssetDetail = lazyWithRetry(() => import('components/_pages/crypto-assets/detail'));
 
 const RouteFallback = () => <Spinner size="xl" />;
 
@@ -478,6 +479,7 @@ export default function AppRouter() {
                     <Route path={`/${Resource.Cboms.toLowerCase()}/detail/:id/versions/:versionId?`} element={<CbomVersionsHistory />} />
 
                     <Route path={`/${Resource.CryptoAssets.toLowerCase()}`} element={<CryptoAssetsList />} />
+                    <Route path={`/${Resource.CryptoAssets.toLowerCase()}/detail/:id`} element={<CryptoAssetDetail />} />
                 </Route>
 
                 {/*

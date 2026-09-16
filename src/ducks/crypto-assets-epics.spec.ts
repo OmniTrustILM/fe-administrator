@@ -8,12 +8,14 @@ import { EntityType } from './filters';
 import { actions as pagingActions } from './paging';
 import { actions as userInterfaceActions } from './user-interface';
 
-const [listCryptoAssets] = cryptoAssetEpics;
+const [listCryptoAssets, getCryptoAssetDetail] = cryptoAssetEpics;
 
 const emptyPage = { items: [], totalItems: 0, pageNumber: 1, itemsPerPage: 10, totalPages: 0 };
+const assetDetail = { uuid: 'asset-1', name: 'RSA-2048' };
 
 type CryptoAssetApi = {
     listCryptographicAssets: (args: { searchRequestDto: unknown }) => unknown;
+    getCryptographicAsset: (args: { uuid: string }) => unknown;
 };
 
 function createDeps(cryptographicAssets: Partial<CryptoAssetApi> = {}) {
@@ -21,6 +23,7 @@ function createDeps(cryptographicAssets: Partial<CryptoAssetApi> = {}) {
         apiClients: {
             cryptographicAssets: {
                 listCryptographicAssets: () => of(emptyPage),
+                getCryptographicAsset: () => of(assetDetail),
                 ...cryptographicAssets,
             },
         },
@@ -84,5 +87,41 @@ describe('crypto asset epics', () => {
         expect(slice.actions.listCryptoAssetsFailure.match(emitted[1] as never)).toBe(true);
         expect(emitted[2]).toEqual(pagingActions.listFailure(EntityType.CRYPTO_ASSET));
         expect(emitted[3]).toEqual(userInterfaceActions.insertWidgetLock(error as never, LockWidgetNameEnum.ListOfCryptoAssets));
+    });
+
+    test('getCryptoAssetDetail fetches the requested uuid and releases the detail lock', async () => {
+        const deps = createDeps({
+            getCryptographicAsset: ({ uuid }) => {
+                expect(uuid).toBe('asset-1');
+                return of(assetDetail);
+            },
+        });
+
+        const emitted = await run(getCryptoAssetDetail, slice.actions.getCryptoAssetDetail({ uuid: 'asset-1' }), deps, 2);
+
+        expect(emitted).toEqual([
+            slice.actions.getCryptoAssetDetailSuccess({ detail: assetDetail as never }),
+            userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.CryptoAssetDetail),
+        ]);
+    });
+
+    test('getCryptoAssetDetail failure keeps the status code and locks the detail widget', async () => {
+        const error = { status: 403 };
+        const deps = createDeps({ getCryptographicAsset: () => throwError(() => error) });
+
+        const emitted = await run(getCryptoAssetDetail, slice.actions.getCryptoAssetDetail({ uuid: 'asset-1' }), deps, 2);
+
+        const failure = emitted[0] as ReturnType<typeof slice.actions.getCryptoAssetDetailFailure>;
+        expect(slice.actions.getCryptoAssetDetailFailure.match(failure)).toBe(true);
+        expect(failure.payload.statusCode).toBe(403);
+        expect(emitted[1]).toEqual(userInterfaceActions.insertWidgetLock(error as never, LockWidgetNameEnum.CryptoAssetDetail));
+    });
+
+    test('a failure without an HTTP status reports no status code rather than a made-up one', async () => {
+        const deps = createDeps({ getCryptographicAsset: () => throwError(() => new Error('offline')) });
+
+        const emitted = await run(getCryptoAssetDetail, slice.actions.getCryptoAssetDetail({ uuid: 'asset-1' }), deps, 2);
+
+        expect((emitted[0] as ReturnType<typeof slice.actions.getCryptoAssetDetailFailure>).payload.statusCode).toBeUndefined();
     });
 });

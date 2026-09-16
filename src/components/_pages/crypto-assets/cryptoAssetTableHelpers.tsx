@@ -2,6 +2,7 @@ import Badge from 'components/Badge';
 import type { TableDataRow, TableHeader } from 'components/CustomTable';
 import PqcVerdictBadge from 'components/PqcVerdictBadge';
 import { TriangleAlert } from 'lucide-react';
+import { Link } from 'react-router';
 import type { PlatformEnumMap } from 'types/enums';
 import type { CryptographicAssetDto } from 'types/openapi';
 import { toFiniteNumber } from 'utils/common-utils';
@@ -23,7 +24,6 @@ export const CRYPTO_ASSET_HEADERS: TableHeader[] = [
     { id: 'occurrenceCount', content: 'Occurrences', align: 'right' },
 ];
 
-// The name becomes a link once the detail route lands with fe#2082.
 export function buildCryptoAssetRows(
     assets: CryptographicAssetDto[],
     { typeEnum, pqcVerdictEnum, getEnumLabel }: BuildCryptoAssetRowsOpts,
@@ -32,7 +32,9 @@ export function buildCryptoAssetRows(
         id: asset.uuid,
         columns: [
             <span key="name" className="flex items-center gap-2">
-                <span className="font-medium">{asset.name}</span>
+                <Link className="font-medium" to={`/cryptoassets/detail/${asset.uuid}`}>
+                    {asset.name}
+                </Link>
                 {asset.quarantined && (
                     <Badge color="warning" title={QUARANTINE_TOOLTIP} dataTestId="crypto-asset-quarantined-badge">
                         <TriangleAlert size={12} strokeWidth={2.2} aria-hidden="true" />
