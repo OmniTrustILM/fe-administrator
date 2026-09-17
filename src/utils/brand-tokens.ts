@@ -2,10 +2,12 @@
  * Turns the operator's four brand colours into an override layer over the semantic colour tokens.
  *
  * Four inputs cannot drive thirty tokens one-to-one, so each input drives a *family* and the intermediate steps are
- * derived rather than configured. The derivations live in one table, {@link BRAND_TOKEN_RULES}, which is rendered two
- * ways: to CSS by {@link brandTokenCss}, for the browser to mix, and to concrete hex by {@link brandTokenValues}, for
- * anything that has to know a derived colour before it is painted. Both readings describe the same colours, which is
- * what lets a caller measure what the page will actually show.
+ * derived rather than configured. The derivations live in one table, {@link BRAND_TOKEN_RULES}, which is read three
+ * ways: to CSS by {@link brandTokenCss}, for the browser to mix; to concrete hex by {@link brandTokenValues}, for
+ * anything that has to know a derived colour before it is painted; and to the input a token came from by
+ * {@link brandTokenSources}, for anything that has to report which colour is responsible. The first two describe the
+ * same colours, which is what lets a caller measure what the page will actually show, and the third has to cover the
+ * same tokens as the second or a report would name the wrong field.
  *
  * The overrides are emitted as a separate stylesheet rather than by editing `tailwindcss.css`, for two reasons. An
  * unbranded instance then produces no override at all, so its rendering is unchanged by construction rather than by
@@ -113,6 +115,51 @@ export const BRAND_TOKEN_RULES: readonly Rule[] = [
 ];
 
 /**
+ * Every Tailwind 4 utility family that takes a colour, longest spelling first so `text-shadow-brand` is not read as
+ * `text` followed by a token named `shadow-brand`. Listed in full rather than restricted to the families in use today,
+ * because the utility this has to catch is the one somebody adds later.
+ */
+const COLOR_UTILITY_PREFIXES = [
+    'inset-shadow',
+    'text-shadow',
+    'inset-ring',
+    'ring-offset',
+    'placeholder',
+    'decoration',
+    'divide',
+    'outline',
+    'stroke',
+    'shadow',
+    'accent',
+    'border',
+    'caret',
+    'fill',
+    'ring',
+    'text',
+    'from',
+    'via',
+    'bg',
+    'to',
+];
+
+/**
+ * Whether a Tailwind utility paints in a token the operator's brand overrides.
+ *
+ * Both spellings of a token are caught: the named one Tailwind generates from the theme (`bg-brand`) and the two
+ * arbitrary-value forms that reach the same custom property (`bg-(--brand)`, `bg-[var(--brand)]`). Lives beside the
+ * rule table rather than in either suite that asks: two copies drift, and the copy that stops matching is the one
+ * nobody notices.
+ */
+const BRANDED_UTILITY = (() => {
+    const tokens = BRAND_TOKEN_RULES.map(({ token }) => token).join('|');
+    const value = `(?:${tokens})|\\(--(?:${tokens})\\)|\\[var\\(--(?:${tokens})\\)\\]`;
+
+    return new RegExp(`(^|:)!?(${COLOR_UTILITY_PREFIXES.join('|')})(-(x|y|s|e|t|r|b|l))?-(${value})(\\/|$)`);
+})();
+
+export const isBrandedUtility = (utility: string): boolean => BRANDED_UTILITY.test(utility);
+
+/**
  * The platform value each colour falls back to when left unset: the light-theme value of the token that colour leads.
  *
  * Held as literals because neither other source works - the custom properties carry the operator's brand at runtime,
@@ -202,6 +249,24 @@ export const brandTokenValues = (colors: BrandColors, theme: ResolvedTheme): Rec
     }
 
     return values;
+};
+
+/**
+ * Which input each overridden token comes from in one composition, over exactly the tokens {@link brandTokenValues}
+ * resolves. It is what lets a caller name the field behind a colour it measured rather than the colour itself.
+ */
+export const brandTokenSources = (colors: BrandColors, theme: ResolvedTheme): Record<string, BrandColorKey> => {
+    const sources: Record<string, BrandColorKey> = {};
+
+    for (const rule of BRAND_TOKEN_RULES) {
+        const step = rule[theme];
+
+        if (step && colors[step.source]) {
+            sources[rule.token] = step.source;
+        }
+    }
+
+    return sources;
 };
 
 const declarations = (colors: BrandColors, theme: ResolvedTheme): string => {

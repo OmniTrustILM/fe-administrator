@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/experimental-ct-react';
+import { isBrandedUtility } from 'utils/brand-tokens';
 import AppearanceSettingsTestWrapper from './AppearanceSettingsTestWrapper';
 
 /** A real 1x1 PNG: the ratio check measures it, so an invented payload would fail to load and skip the check. */
@@ -590,6 +591,8 @@ test.describe('AppearanceSettings', () => {
         );
 
         await expect(page.getByTestId('appearance-error')).toHaveText('Access denied for action UPDATE_BRANDING');
+        // It arrives while the operator is looking at the form they just submitted, so it has to interrupt.
+        await expect(page.getByTestId('appearance-error')).toHaveRole('alert');
     });
 
     /**
@@ -709,21 +712,159 @@ test.describe('AppearanceSettings', () => {
             await expect(page.getByTestId('sent-branding')).toContainText('"primaryColor":"#1D4ED8"');
         });
 
-        test('should name each failing pair with its ratio and threshold', async ({ mount, page }) => {
+        /**
+         * The dialog reports the operator's own colours, so nothing the warning itself renders may be painted in one:
+         * a branded token would render the complaint at the ratio it is complaining about. Derived from the override
+         * table rather than listed here, and walked over every element, since this is markup no token suite can check.
+         *
+         * `Dialog`'s own chrome - the panel, the caption and the footer buttons - is outside this and stays on the
+         * platform tokens every other dialog uses. Pinning it to unbranded ones is a decision about the whole modal
+         * system rather than about this one dialog.
+         */
+        test('should paint the boxes only in tokens branding leaves alone', async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+            await setHex(page, 'primaryColor', '#7FC4FF');
+
+            await page.getByTestId('appearance-save').click();
+            await expect(page.getByTestId('appearance-contrast-primary')).toBeVisible();
+
+            const classesIn = (testId: string) =>
+                page.getByTestId(testId).evaluate((box) => [box, ...box.querySelectorAll('*')].flatMap((el) => [...el.classList]));
+
+            // The lead and the legend carry the message as much as the boxes do, and the lead is the sentence a
+            // failing content-muted on surface-raised would make unreadable, so the dialog's own chrome will not do.
+            for (const testId of ['appearance-contrast-lead', 'appearance-contrast-findings', 'appearance-contrast-legend']) {
+                const classes = await classesIn(testId);
+
+                expect(classes.length, testId).toBeGreaterThan(0);
+                expect(classes.filter(isBrandedUtility), testId).toStrictEqual([]);
+            }
+        });
+
+        /** Pins the heading icon to the warning family rather than whatever `Dialog`'s named icon resolves to. */
+        test('should head the dialog in the warning colour rather than the danger one', async ({ mount, page }) => {
             await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
             await setHex(page, 'primaryColor', '#7FC4FF');
 
             await page.getByTestId('appearance-save').click();
 
-            const findings = page.getByTestId('appearance-contrast-findings');
+            const paints = await page.getByTestId('appearance-contrast-dialog-icon').evaluate((icon) => {
+                const probe = document.createElement('span');
 
-            await expect(findings).toBeVisible();
-            await expect(findings.getByRole('listitem')).toHaveCount(3);
-            await expect(findings).toContainText('Light theme: Links and active states on cards and dialogs reaches 1.81:1');
-            await expect(findings).toContainText('below the required 4.5:1');
-            // The header takes Primary in both compositions, so the same choice is reported against each.
-            await expect(findings).toContainText('Light theme: White text on the page header and primary buttons');
-            await expect(findings).toContainText('Dark theme: White text on the page header and primary buttons');
+                // Beside the icon rather than inside it: an HTML child of an SVG is outside the SVG rendering model,
+                // and engines disagree on whether it takes styles at all.
+                icon.parentElement?.append(probe);
+
+                const resolve = (value: string) => {
+                    probe.style.color = value;
+
+                    return getComputedStyle(probe).color;
+                };
+                const measured = {
+                    icon: getComputedStyle(icon).color,
+                    warning: resolve('var(--warning)'),
+                    danger: resolve('var(--danger)'),
+                };
+
+                probe.remove();
+
+                return measured;
+            });
+
+            expect(paints.icon).toBe(paints.warning);
+            expect(paints.icon).not.toBe(paints.danger);
+        });
+
+        /** The figures under each line mean nothing without the scale, so the scale is on screen rather than behind a control. */
+        test('should lead with one line and spell out what the ratios mean', async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+            await setHex(page, 'primaryColor', '#7FC4FF');
+
+            await page.getByTestId('appearance-save').click();
+
+            const dialog = page.getByTestId('appearance-contrast-dialog');
+
+            await expect(dialog).toContainText('Some of these colors will be hard to read. You can save anyway.');
+            // The boxes unmount when a suggestion is taken and this sentence changes in place, so it has to announce.
+            await expect(page.getByTestId('appearance-contrast-lead')).toHaveRole('status');
+            await expect(dialog).toContainText('at least 4.5:1 for text and 3:1 for outlines and indicators');
+            await expect(dialog.getByRole('link', { name: 'How WCAG measures contrast' })).toHaveAttribute(
+                'href',
+                'https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html',
+            );
+        });
+
+        test('should offer a shade that passes and put it in the field', async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+            await setHex(page, 'primaryColor', '#7FC4FF');
+
+            await page.getByTestId('appearance-save').click();
+
+            const fix = page.getByTestId('appearance-contrast-fix-primary');
+
+            await expect(fix).toContainText('Use #');
+
+            const suggested = (await fix.textContent())?.match(/#[0-9A-F]{6}/)?.[0];
+
+            // The name names the field, and opens with the visible text so that saying it aloud activates the button.
+            const name = `Use ${suggested} instead for Primary`;
+
+            await expect(fix).toHaveAccessibleName(name);
+            expect(name.startsWith((await fix.textContent())?.trim() ?? '')).toBe(true);
+
+            await fix.click();
+
+            await expect(page.getByTestId('color-hex-primaryColor')).toHaveValue(suggested ?? 'no suggestion');
+            // The save the operator started is still theirs to finish, so the dialog stays and says where it stands.
+            await expect(page.getByTestId('appearance-contrast-dialog')).toBeVisible();
+            await expect(page.getByTestId('appearance-contrast-primary')).toHaveCount(0);
+
+            const lead = page.getByTestId('appearance-contrast-lead');
+
+            // Pressing the fix unmounts the button, which would otherwise leave focus parked on the dialog itself.
+            await expect(lead).toBeFocused();
+            await expect(lead).toContainText('These colors all pass now');
+            // Nothing is wrong any more, so the sentence saying so must not still be dressed as a problem.
+            await expect(lead).toHaveClass(/bg-success-surface/);
+            await expect(lead).not.toHaveClass(/bg-warning-surface/);
+            // The legend explains figures, and there are none left to explain.
+            await expect(page.getByTestId('appearance-contrast-legend')).toHaveCount(0);
+        });
+
+        test('should box each finding under the colour that causes it, with the measurement underneath', async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+            await setHex(page, 'primaryColor', '#7FC4FF');
+
+            await page.getByTestId('appearance-save').click();
+
+            const primary = page.getByTestId('appearance-contrast-primary');
+
+            await expect(primary).toBeVisible();
+            await expect(primary).toContainText('Primary');
+            await expect(primary.getByRole('listitem')).toHaveCount(2);
+            await expect(primary).toContainText('Links and active controls are hard to read on cards and dialogs in the light theme.');
+            await expect(primary).toContainText('1.81:1, needs 4.5:1');
+            // The field to change is the box's heading, so the list has to carry it: read inside the list alone, a
+            // consequence never says which of the four colours produced it.
+            await expect(primary.getByRole('list')).toHaveAccessibleName('Primary');
+            // The header takes Primary in both compositions, and one line says so rather than two saying it apart.
+            await expect(primary).toContainText(
+                'White text is hard to read on the page header and on primary buttons in the light and dark themes.',
+            );
+            await expect(page.getByTestId('appearance-contrast-text')).toHaveCount(0);
+        });
+
+        test('should give each colour its own box', async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+            await setHex(page, 'primaryColor', '#7FC4FF');
+            await setHex(page, 'backgroundColor', '#FFFFFF');
+            await setHex(page, 'textColor', '#C9C9C9');
+
+            await page.getByTestId('appearance-save').click();
+
+            await expect(page.getByTestId('appearance-contrast-primary')).toBeVisible();
+            await expect(page.getByTestId('appearance-contrast-text')).toContainText('Text');
+            await expect(page.getByTestId('appearance-contrast-text')).toContainText('Body text is hard to read on the page background');
         });
 
         test('should report a non-text pairing against the 3:1 threshold', async ({ mount, page }) => {
@@ -732,8 +873,10 @@ test.describe('AppearanceSettings', () => {
 
             await page.getByTestId('appearance-save').click();
 
-            await expect(page.getByTestId('appearance-contrast-findings')).toContainText('Informational indicators on cards and dialogs');
-            await expect(page.getByTestId('appearance-contrast-findings')).toContainText('below the required 3:1');
+            const secondary = page.getByTestId('appearance-contrast-secondary');
+
+            await expect(secondary).toContainText('Informational status dots are hard to see on cards and dialogs');
+            await expect(secondary).toContainText('needs 3:1');
         });
 
         test('should send nothing when the warning is cancelled', async ({ mount, page }) => {
@@ -768,9 +911,9 @@ test.describe('AppearanceSettings', () => {
 
             const findings = page.getByTestId('appearance-contrast-findings');
 
-            await expect(findings).toContainText('Secondary text on the page background');
-            await expect(findings).toContainText('Hint text on cards and dialogs');
-            await expect(findings).not.toContainText('Body text on the page background reaches');
+            await expect(findings).toContainText('Supporting text is hard to read on the page background');
+            await expect(findings).toContainText('Hint text is hard to read on cards and dialogs');
+            await expect(findings).not.toContainText('Body text is hard to read on the page background');
         });
     });
 });
