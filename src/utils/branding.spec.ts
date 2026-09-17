@@ -8,7 +8,6 @@ import {
     isRenderableLogo,
     LOGO_MAX_DECODED_BYTES,
     logoContent,
-    logoRatioError,
     logoSizeError,
     readFileAsDataUri,
     readLogoFile,
@@ -199,31 +198,6 @@ describe('branding', () => {
         });
     });
 
-    describe('logoRatioError', () => {
-        test.each([
-            [100, 100],
-            [200, 100],
-            [300, 100],
-            [150, 100],
-        ])('should accept %sx%s', (width, height) => {
-            expect(logoRatioError(width, height)).toBeUndefined();
-        });
-
-        test.each([
-            [100, 200],
-            [301, 100],
-        ])('should reject %sx%s', (width, height) => {
-            expect(logoRatioError(width, height)).toBe('Logo aspect ratio must be between 1:1 and 3:1.');
-        });
-
-        test.each([
-            [0, 100],
-            [100, 0],
-        ])('should skip the check for an image declaring no intrinsic size (%sx%s)', (width, height) => {
-            expect(logoRatioError(width, height)).toBeUndefined();
-        });
-    });
-
     describe('isRenderableLogo', () => {
         // A real 1x1 PNG and a minimal SVG, in the exact form Core stores: `BrandingLogoValidator` re-encodes a
         // sanitized SVG and returns a PNG unchanged only after walking its chunks, so this is the only shape a stored
@@ -338,8 +312,8 @@ describe('branding', () => {
         });
 
         /**
-         * The disguise this check exists for: the size and ratio rules pass, and the browser reports `image/png`
-         * because the name says so, so only the content can tell the two apart.
+         * The disguise this check exists for: the size rule passes, and the browser reports `image/png` because the
+         * name says so, so only the content can tell the two apart.
          */
         test('should refuse a JPEG named as a PNG', async () => {
             const disguised = new File([Uint8Array.from([0xff, 0xd8, 0xff, 0xe0])], 'logo.png', { type: 'image/png' });
@@ -394,23 +368,26 @@ describe('branding', () => {
             vi.unstubAllGlobals();
         });
 
-        test('should refuse a file whose ratio is out of range', async () => {
+        test('should accept a file whose ratio is far outside the recommendation', async () => {
             measuring(100, 400);
 
-            await expect(readLogoFile(pngFile())).resolves.toEqual({
-                error: 'Logo aspect ratio must be between 1:1 and 3:1.',
-            });
+            const result = await readLogoFile(pngFile());
+
+            expect(result.error).toBeUndefined();
+            expect(result.dataUri).toMatch(/^data:image\/png;base64,/);
+            expect(result.ratio).toBe(0.25);
 
             vi.unstubAllGlobals();
         });
 
-        test('should return the data URI for an acceptable file', async () => {
+        test('should return the data URI and the measured ratio for an acceptable file', async () => {
             measuring(300, 150);
 
             const result = await readLogoFile(pngFile());
 
             expect(result.error).toBeUndefined();
             expect(result.dataUri).toMatch(/^data:image\/png;base64,/);
+            expect(result.ratio).toBe(2);
 
             vi.unstubAllGlobals();
         });
@@ -463,6 +440,20 @@ describe('branding', () => {
 
             expect(result.error).toBeUndefined();
             expect(result.dataUri).toMatch(/^data:image\/svg\+xml;base64,/);
+            expect(result.ratio).toBeUndefined();
+
+            vi.unstubAllGlobals();
+        });
+
+        /** An image declaring a zero side has no extent to advise on, which is not the same as a flat shape. */
+        test('should report no ratio for an image that measures as zero', async () => {
+            measuring(0, 0);
+
+            const svg = new File(['<svg xmlns="http://www.w3.org/2000/svg"/>'], 'logo.svg', { type: 'image/svg+xml' });
+            const result = await readLogoFile(svg);
+
+            expect(result.error).toBeUndefined();
+            expect(result.ratio).toBeUndefined();
 
             vi.unstubAllGlobals();
         });

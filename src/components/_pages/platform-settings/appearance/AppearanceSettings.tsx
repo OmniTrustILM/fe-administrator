@@ -72,7 +72,7 @@ const RESET_CONFIRMATION =
     'This removes the configured colors, logos and default theme, and the instance returns to the platform default look. Continue?';
 
 type Colors = Record<ColorKey, string>;
-type LogoState = { dataUri?: string; fileName?: string; error?: string };
+type LogoState = { dataUri?: string; fileName?: string; ratio?: number; error?: string };
 type Logos = Record<LogoKey, LogoState>;
 
 const toColors = (branding?: BrandingSettingsModel): Colors => ({
@@ -172,7 +172,7 @@ function AppearanceSettings() {
                     ...current,
                     [key]: result.error
                         ? { ...current[key], error: result.error }
-                        : { dataUri: result.dataUri, fileName: file.name, error: undefined },
+                        : { dataUri: result.dataUri, fileName: file.name, ratio: result.ratio, error: undefined },
                 }));
             }
         } catch {
@@ -195,7 +195,7 @@ function AppearanceSettings() {
         logoReadTokens.current[key] += 1;
 
         setReadingLogos((current) => ({ ...current, [key]: false }));
-        setLogos((current) => ({ ...current, [key]: { dataUri: undefined, fileName: undefined, error: undefined } }));
+        setLogos((current) => ({ ...current, [key]: { dataUri: undefined, fileName: undefined, ratio: undefined, error: undefined } }));
     }, []);
 
     const sendSave = useCallback(() => {
@@ -293,6 +293,7 @@ function AppearanceSettings() {
                             label={label}
                             value={logos[key].dataUri}
                             fileName={logos[key].fileName}
+                            ratio={logos[key].ratio}
                             error={logos[key].error}
                             disabled={isReadOnly}
                             onSelect={(file) => void onLogoSelect(key, file)}

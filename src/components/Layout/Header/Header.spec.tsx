@@ -63,6 +63,29 @@ test.describe('Header', () => {
         expect(logoBox?.height).toBeLessThanOrEqual(headerBox?.height ?? 0);
     });
 
+    /**
+     * Nothing refuses a logo for its shape, so the header's own layout is the only thing keeping an extreme one from
+     * pushing the controls off the narrowest screen. 12:1 at the fixed 36px height wants 432px, more than a 375px
+     * viewport holds even before the controls.
+     */
+    test('should keep an unusually wide logo inside the header width', async ({ mount, page }) => {
+        const wide = `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="100" viewBox="0 0 1200 100"><rect width="1200" height="100"/></svg>').toString('base64')}`;
+        await mount(<HeaderWithStore sidebarToggle={() => {}} branding={{ configured: true, lightLogo: wide, darkLogo: null }} />);
+
+        const header = page.getByTestId('header');
+        await expect(header).toBeVisible();
+
+        const logoBox = await page.getByTestId('header-logo').boundingBox();
+        const headerBox = await header.boundingBox();
+        const toggleBox = await page.getByTestId('header-sidebar-toggle').boundingBox();
+
+        expect((logoBox?.x ?? 0) + (logoBox?.width ?? 0)).toBeLessThanOrEqual(headerBox?.width ?? 0);
+        expect((toggleBox?.x ?? 0) + (toggleBox?.width ?? 0)).toBeLessThanOrEqual(headerBox?.width ?? 0);
+        expect(await header.evaluate((node) => node.scrollWidth - node.clientWidth)).toBe(0);
+        // Shrinking the mark away would satisfy every bound above, and is the way this layout actually fails.
+        expect(logoBox?.width ?? 0).toBeGreaterThan(0);
+    });
+
     test('should call sidebarToggle when menu button clicked', async ({ mount, page }) => {
         let toggled = false;
         await mount(
