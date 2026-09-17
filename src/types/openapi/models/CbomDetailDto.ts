@@ -103,6 +103,12 @@ export interface CbomDetailDto {
      */
     assetSyncedAt?: string;
     /**
+     * Why the last cryptographic asset sync attempt for this record failed or refused the document, in words meant for an operator; never a raw driver or parser message. A later attempt that succeeds clears it. Absent while there is no failure to report, and on platform versions predating it.
+     * @type {string}
+     * @memberof CbomDetailDto
+     */
+    assetSyncError?: string;
+    /**
      * Values of the attribute-sourced fields requested as columns, keyed by field source and then by field identifier. Present only when the listing request asked for attribute-sourced columns; a field the object has no value for is absent rather than empty, and a multi-valued attribute arrives in its stored item_order.
      * @type {{ [key: string]: { [key: string]: Array<BaseAttributeContentDtoV3>; }; }}
      * @memberof CbomDetailDto

@@ -9,6 +9,7 @@ import {
     validateEmail,
     validateLength,
     validateMaximum,
+    validateMinimum,
     validateDuration,
     composeValidators,
     validateRoutelessUrl,
@@ -234,6 +235,26 @@ describe('validators', () => {
         test('should reject value too long', () => {
             const validator = validateLength(2, 5);
             expect(validator('abcdef')).toBe('Value must be between 2 and 5 characters long');
+        });
+    });
+
+    describe('validateMinimum', () => {
+        test('should accept a value at or above the minimum', () => {
+            expect(validateMinimum(1)('1')).toBeUndefined();
+            expect(validateMinimum(1)('42')).toBeUndefined();
+        });
+
+        test('should accept empty or undefined value', () => {
+            expect(validateMinimum(1)('')).toBeUndefined();
+            expect(validateMinimum(1)(undefined)).toBeUndefined();
+        });
+
+        test('should reject a value below the minimum, zero included', () => {
+            expect(validateMinimum(1)('0')).toBe('Value must be at least 1');
+        });
+
+        test('should leave a non-numeric value to the pattern validator composed before it', () => {
+            expect(validateMinimum(1)('abc')).toBeUndefined();
         });
     });
 

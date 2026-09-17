@@ -46,4 +46,10 @@ export interface UtilsSettingsDto {
      * @memberof UtilsSettingsDto
      */
     cbomSyncMaxIngestDocuments?: number;
+    /**
+     * How many days after its last attempt a CBOM Repository entry the sync gave up on (permanently skipped) stays listed before its record is removed; an entry still being retried is kept whatever its age. At least one day: a retention of nothing would remove a write-off as it lands
+     * @type {number}
+     * @memberof UtilsSettingsDto
+     */
+    cbomSyncSkipRetentionDays?: number;
 }
