@@ -908,12 +908,12 @@ export default function RequestAttributeAuthoringEditor({
 
         return (
             <div data-testid={`${dataTestId}-targets`}>
-                <Label htmlFor="ra-attr-mapping-targets" labelTooltip={MAPPING_TARGET_TOOLTIP} dataTestId={`${dataTestId}-targets-label`}>
+                <Label labelTooltip={MAPPING_TARGET_TOOLTIP} dataTestId={`${dataTestId}-targets-label`}>
                     Mapping targets
                 </Label>
                 <FieldError testId={`${dataTestId}-mapping-error`} message={attrErrors.mapping} />
                 <div className="space-y-2 rounded-xl bg-surface-sunken p-3">
-                    {targets.map(renderRow)}
+                    {targets.map((target, index) => renderRow(target, index))}
                     {structured ? (
                         <p className="text-xs text-content-subtle" data-testid={`${dataTestId}-targets-structured-hint`}>
                             {`${FIELD_TYPE_LABELS[structuredMappingTarget(d) ?? FieldType.KeyUsage]} takes the whole attribute: its permitted set is the attribute's content, so no other target can be added.`}

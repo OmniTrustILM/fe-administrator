@@ -57,6 +57,8 @@ export interface MappingTargetFormValues {
     criticalOverridable?: boolean;
     /** Kept as loaded: the editor has no control for it. */
     source?: FieldSource;
+    /** As loaded; see `buildFieldMapping` for when it is kept. */
+    order?: number;
     /** Client-only React key that survives reordering; never persisted. */
     rowId?: string;
 }
@@ -365,21 +367,31 @@ function buildMappedField(target: MappingTargetFormValues): MappedFieldModel | u
     }
 }
 
-/** `order` is the 1-based position among fields of the same type; incomplete rows are left out. */
+/**
+ * Keeps the loaded `order` of a field type while its rows still ascend, and a lone row without one
+ * stays without, so an untouched mapping saves unchanged. Otherwise the type is numbered 1..n by
+ * position. Incomplete rows are left out.
+ */
 function buildFieldMapping(form: AuthoredAttributeFormValues): FieldMappingModel | undefined {
-    const countByType = new Map<FieldType, number>();
-    const fields: MappedFieldModel[] = [];
-    for (const target of form.mappingTargets) {
+    const rows = form.mappingTargets.flatMap((target) => {
         const field = buildMappedField(target);
-        if (field) {
-            const order = (countByType.get(field.fieldType) ?? 0) + 1;
-            countByType.set(field.fieldType, order);
-            fields.push({ ...field, order, source: target.source });
-        }
-    }
-    if (fields.length === 0) {
+        return field ? [{ field, loadedOrder: target.order, source: target.source }] : [];
+    });
+    if (rows.length === 0) {
         return undefined;
     }
+    const keepsLoadedOrder = new Map<FieldType, boolean>();
+    for (const fieldType of new Set(rows.map((row) => row.field.fieldType))) {
+        const orders = rows.filter((row) => row.field.fieldType === fieldType).map((row) => row.loadedOrder);
+        const ascending = orders.every((order, i) => order !== undefined && (i === 0 || order > (orders[i - 1] ?? order)));
+        keepsLoadedOrder.set(fieldType, ascending || (orders.length === 1 && orders[0] === undefined));
+    }
+    const positionByType = new Map<FieldType, number>();
+    const fields = rows.map(({ field, loadedOrder, source }): MappedFieldModel => {
+        const position = (positionByType.get(field.fieldType) ?? 0) + 1;
+        positionByType.set(field.fieldType, position);
+        return { ...field, order: keepsLoadedOrder.get(field.fieldType) ? loadedOrder : position, source };
+    });
     return { objectType: form.mappingObjectType ?? ObjectType.X509Certificate, fields };
 }
 
@@ -588,6 +600,7 @@ function parseMappingTarget(field: MappedFieldModel): MappingTargetFormValues {
         extensionOid: ext?.extensionOid ?? '',
         criticalOverridable: ext?.criticalOverridable ?? false,
         source: field.source,
+        order: field.order,
     };
 }
 

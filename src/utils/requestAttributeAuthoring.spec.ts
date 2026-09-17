@@ -139,11 +139,11 @@ describe('requestAttributeAuthoring', () => {
             expect(buildAuthoredAttributeDto({ ...baseAttr(), description: '' }).description).toBeUndefined();
         });
 
-        test('writes an RDN mapping with the code, order 1 and default x509Certificate object type', () => {
+        test('writes an RDN mapping with the code and default x509Certificate object type', () => {
             const dto = buildAuthoredAttributeDto(mapped(rdnTarget('CN')));
             const mapping = mappingOf(dto);
             expect(mapping?.objectType).toBe(ObjectType.X509Certificate);
-            expect(mapping?.fields).toEqual([{ fieldType: FieldType.Rdn, rdn: 'CN', order: 1 }]);
+            expect(mapping?.fields).toEqual([{ fieldType: FieldType.Rdn, rdn: 'CN' }]);
         });
 
         test('writes a SAN mapping with generalNameType and omits otherName fields for non-OTHER_NAME', () => {
@@ -154,7 +154,6 @@ describe('requestAttributeAuthoring', () => {
                     generalNameType: GeneralNameType.Dns,
                     otherNameOid: undefined,
                     otherNameValueEncoding: undefined,
-                    order: 1,
                 },
             ]);
         });
@@ -176,7 +175,7 @@ describe('requestAttributeAuthoring', () => {
         test('writes an extension mapping with OID and criticalOverridable', () => {
             const dto = buildAuthoredAttributeDto(mapped(extensionTarget('2.5.29.17', { criticalOverridable: true })));
             expect(mappingOf(dto)?.fields).toEqual([
-                { fieldType: FieldType.Extension, extensionOid: '2.5.29.17', criticalOverridable: true, order: 1 },
+                { fieldType: FieldType.Extension, extensionOid: '2.5.29.17', criticalOverridable: true },
             ]);
         });
 
@@ -971,7 +970,7 @@ describe('structured mapping targets (Key Usage / Extended Key Usage)', () => {
     test('builds a bare mapped field carrying no properties of its own', () => {
         for (const fieldType of [FieldType.KeyUsage, FieldType.ExtendedKeyUsage]) {
             const dto = buildAuthoredAttributeDto(structuredAttr(fieldType));
-            expect(mappingOf(dto)).toEqual({ objectType: ObjectType.X509Certificate, fields: [{ fieldType, order: 1 }] });
+            expect(mappingOf(dto)).toEqual({ objectType: ObjectType.X509Certificate, fields: [{ fieldType }] });
         }
     });
 
@@ -1171,7 +1170,36 @@ describe('several mapping targets', () => {
 
     test('an unpicked row is left out of the mapping', () => {
         const dto = buildAuthoredAttributeDto(mapped(rdnTarget('CN'), { fieldType: undefined }));
-        expect(mappingOf(dto)?.fields).toEqual([{ fieldType: FieldType.Rdn, rdn: 'CN', order: 1 }]);
+        expect(mappingOf(dto)?.fields).toEqual([{ fieldType: FieldType.Rdn, rdn: 'CN' }]);
+    });
+
+    test('loaded orders with gaps save unchanged', () => {
+        const gaps = storedAttribute({
+            objectType: ObjectType.X509Certificate,
+            fields: [
+                { fieldType: FieldType.Rdn, rdn: 'CN', order: 1 },
+                { fieldType: FieldType.Rdn, rdn: 'OU', order: 3 },
+            ],
+        });
+        expect(mappingOf(buildAuthoredAttributeDto(parseAuthoredAttributeDto(gaps)))).toEqual(
+            mappingOf(gaps as { fieldMapping?: unknown }),
+        );
+    });
+
+    test('a new row numbers its type by position, and new rows of one type are numbered too', () => {
+        const parsed = parseAuthoredAttributeDto(
+            storedAttribute({
+                objectType: ObjectType.X509Certificate,
+                fields: [
+                    { fieldType: FieldType.Rdn, rdn: 'CN', order: 1 },
+                    { fieldType: FieldType.Rdn, rdn: 'OU', order: 3 },
+                ],
+            }),
+        );
+        const added = buildAuthoredAttributeDto({ ...parsed, mappingTargets: [...parsed.mappingTargets, rdnTarget('O')] });
+        expect(mappingOf(added)?.fields.map((field) => field.order)).toEqual([1, 2, 3]);
+        const fresh = buildAuthoredAttributeDto(mapped(rdnTarget('CN'), rdnTarget('OU')));
+        expect(mappingOf(fresh)?.fields.map((field) => field.order)).toEqual([1, 2]);
     });
 
     test('saving the RA-profile set keeps every attribute mapping, including ones not edited', () => {

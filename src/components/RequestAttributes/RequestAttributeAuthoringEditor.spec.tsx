@@ -110,7 +110,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
 
         // Guidance now lives in an info icon next to the field label, not in inline hint paragraphs.
         await expect(page.getByTestId('label-tooltip-ra-attr-name')).toBeVisible();
-        await expect(page.getByTestId('label-tooltip-ra-attr-mapping-targets')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-targets-label').getByTestId('label-tooltip')).toBeVisible();
         // Label and Description are self-explanatory, so they carry no tooltip.
         await expect(page.getByTestId('label-tooltip-ra-attr-label')).toHaveCount(0);
         await expect(page.getByTestId('label-tooltip-ra-attr-description')).toHaveCount(0);
@@ -120,7 +120,7 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showMergeMode />));
 
         await component.getByTestId('request-attribute-authoring-attribute-add').click();
-        await page.getByTestId('label-tooltip-ra-attr-mapping-targets').hover();
+        await page.getByTestId('request-attribute-authoring-targets-label').getByTestId('label-tooltip').hover();
 
         await expect(page.getByRole('tooltip')).toContainText('certificate');
     });
