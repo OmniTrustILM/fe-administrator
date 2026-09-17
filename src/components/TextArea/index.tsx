@@ -1,4 +1,6 @@
 import cn from 'classnames';
+import { useId } from 'react';
+import { joinAriaIds } from 'utils/aria';
 import Label from 'components/Label';
 
 type Props = {
@@ -16,6 +18,8 @@ type Props = {
     rows?: number;
     /** Id of an element describing the field (typically an error paragraph) — announced by screen readers. */
     ariaDescribedBy?: string;
+    /** Id of the error paragraph; derived from `id` when not given. It is named in `aria-describedby` while an error shows. */
+    errorId?: string;
 };
 
 function TextArea({
@@ -32,7 +36,10 @@ function TextArea({
     required = false,
     rows = 3,
     ariaDescribedBy,
+    errorId,
 }: Readonly<Props>) {
+    const generatedId = useId();
+    const resolvedErrorId = errorId ?? `${id ?? `textarea-${generatedId.replaceAll(':', '')}`}-error`;
     return (
         <>
             {label && (
@@ -59,9 +66,13 @@ function TextArea({
                 id={id}
                 rows={rows}
                 aria-invalid={invalid || undefined}
-                aria-describedby={ariaDescribedBy}
+                aria-describedby={joinAriaIds(ariaDescribedBy, error ? resolvedErrorId : undefined)}
             />
-            {error && <p className="mt-1 text-sm text-danger">{error}</p>}
+            {error && (
+                <p id={resolvedErrorId} className="mt-1 text-sm text-danger">
+                    {error}
+                </p>
+            )}
         </>
     );
 }

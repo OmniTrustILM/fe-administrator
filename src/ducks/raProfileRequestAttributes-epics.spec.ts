@@ -136,15 +136,23 @@ describe('raProfileRequestAttributes epics', () => {
             data: { requestAttributes: [] },
         });
 
-        test('merges into existing certificate settings and preserves validation', async () => {
+        test('sends only the request-attributes group, merged over the stored one', async () => {
             const captured: any[] = [];
             const out = await runEpic('updatePlatformDefaultRequestAttributes', action, {
                 takeCount: 2,
                 depsOverrides: {
                     settings: {
+                        // Everything a GET carries, including what Core fills in itself: the CBOM sync defaults in
+                        // `utils` (core#2249) and `branding`, which the update body does not even have.
                         getPlatformSettings: () =>
                             of({
-                                certificates: { validation: { enabled: true }, requestAttributes: { externalCsrValidationStrict: false } },
+                                utils: { cbomSyncOverlapSeconds: 60, cbomSyncSkippedRetryRuns: 3, cbomSyncMaxIngestDocuments: 50 },
+                                branding: { platformTitle: 'ILM' },
+                                certificates: {
+                                    validation: { enabled: true },
+                                    registration: { defaultIssuanceWindowDays: 7 },
+                                    requestAttributes: { externalCsrValidationStrict: false },
+                                },
                             }),
                         updatePlatformSettings: (args: any) => {
                             captured.push(args);
@@ -154,8 +162,11 @@ describe('raProfileRequestAttributes epics', () => {
                 },
             });
             expect(out[0].type).toBe(slice.actions.updatePlatformDefaultRequestAttributesSuccess.type);
-            // validation preserved, requestAttributes replaced, externalCsrValidationStrict preserved
-            expect(captured[0].platformSettingsUpdateDto.certificates.validation).toEqual({ enabled: true });
+            // A section or group left out of the body is untouched by Core; a present one is stored as sent. So only the
+            // owned group goes: re-sending `utils` would store Core's filled-in defaults as operator values.
+            expect(Object.keys(captured[0].platformSettingsUpdateDto)).toEqual(['certificates']);
+            expect(Object.keys(captured[0].platformSettingsUpdateDto.certificates)).toEqual(['requestAttributes']);
+            // requestAttributes replaced, externalCsrValidationStrict preserved
             expect(captured[0].platformSettingsUpdateDto.certificates.requestAttributes).toEqual({
                 externalCsrValidationStrict: false,
                 requestAttributes: [],
