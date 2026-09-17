@@ -10,6 +10,7 @@ import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 
 import { actions, selectors } from 'ducks/cryptographic-keys';
+import { actions as tokenProfileActions, selectors as tokenProfileSelectors } from 'ducks/token-profiles';
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -18,7 +19,7 @@ import Select from 'components/Select';
 
 import { selectors as enumSelectors, getEnumLabel, getEnumDescription } from 'ducks/enums';
 import { EnumColumnDescription } from 'components/EnumDescription';
-import { KeyCompromiseReason, KeyState, KeyType, PlatformEnum, Resource } from 'types/openapi';
+import { KeyCompromiseReason, KeyState, KeyType, KeyUsage, PlatformEnum, Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { dateFormatter } from 'utils/dateUtil';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
@@ -29,6 +30,8 @@ import Container from 'components/Container';
 import { keyWithoutTokenInstanceActionNotes } from './constants';
 import CryptographicKeyForm from '../form';
 
+const allKeyUsages = Object.values(KeyUsage);
+
 export default function CryptographicKeyDetail() {
     const dispatch = useDispatch();
 
@@ -36,6 +39,23 @@ export default function CryptographicKeyDetail() {
     const keysListPath = '/keys';
 
     const cryptographicKey = useSelector(selectors.cryptographicKey);
+    const tokenProfile = useSelector(tokenProfileSelectors.tokenProfile);
+    const isFetchingTokenProfile = useSelector(tokenProfileSelectors.isFetchingDetail);
+    const tokenProfileFetchSucceeded = useSelector(tokenProfileSelectors.detailFetchSucceeded);
+    const tokenInstanceUuid = cryptographicKey?.uuid === id ? cryptographicKey?.tokenInstanceUuid : undefined;
+    const tokenProfileUuid = cryptographicKey?.uuid === id ? cryptographicKey?.tokenProfileUuid : undefined;
+    // Synchronized keys may have no profile; KeyUsageSelect still filters these usages by key type.
+    const supportedKeyUsages =
+        cryptographicKey && cryptographicKey.uuid === id && !tokenProfileUuid
+            ? allKeyUsages
+            : tokenProfileUuid &&
+                tokenInstanceUuid &&
+                !isFetchingTokenProfile &&
+                tokenProfileFetchSucceeded &&
+                tokenProfile?.uuid === tokenProfileUuid &&
+                tokenProfile.tokenInstanceUuid === tokenInstanceUuid
+              ? tokenProfile.usages
+              : undefined;
     const state = useSelector(selectors.state);
     const isUpdatingKeyUsage = useSelector(selectors.isUpdatingKeyUsage);
 
@@ -73,6 +93,11 @@ export default function CryptographicKeyDetail() {
     useEffect(() => {
         getFreshCryptographicKeyDetails();
     }, [getFreshCryptographicKeyDetails, id]);
+
+    useEffect(() => {
+        if (!tokenInstanceUuid || !tokenProfileUuid) return;
+        dispatch(tokenProfileActions.getTokenProfileDetail({ tokenInstanceUuid, uuid: tokenProfileUuid, skipWidgetLock: true }));
+    }, [dispatch, tokenInstanceUuid, tokenProfileUuid]);
 
     const onEditClick = useCallback(() => {
         if (!cryptographicKey) return;
@@ -362,13 +387,14 @@ export default function CryptographicKeyDetail() {
                         keyUuid={cryptographicKey!.uuid}
                         tokenInstanceUuid={cryptographicKey!.tokenInstanceUuid}
                         tokenProfileUuid={cryptographicKey!.tokenProfileUuid}
+                        supportedKeyUsages={supportedKeyUsages}
                         totalKeyItems={cryptographicKey!.items.length}
                     />
                 </Widget>
             ),
         }));
         return { tabs };
-    }, [cryptographicKey, isBusy, isFetchingHistory, keyTypeEnum]);
+    }, [cryptographicKey, isBusy, isFetchingHistory, keyTypeEnum, supportedKeyUsages]);
 
     useEffect(() => {
         if (cryptographicKey?.items) {

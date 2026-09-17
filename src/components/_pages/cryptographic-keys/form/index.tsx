@@ -28,7 +28,7 @@ import { selectors as enumSelectors, getEnumLabel, getEnumDescription } from 'du
 import { validateAlphaNumericWithSpecialChars, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from '../../../../ducks/customAttributes';
-import { KeyRequestType, PlatformEnum, Resource } from '../../../../types/openapi';
+import { type KeyRequestType, PlatformEnum, Resource } from 'types/openapi';
 import Container from 'components/Container';
 import Button from 'components/Button';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
@@ -67,6 +67,8 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
     const users = useSelector(userSelectors.users);
     const auth = useSelector(authSelectors.profile);
     const keyRequestTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyRequestType));
+    const supportedKeyRequestTypes = useSelector(cryptographicKeysSelectors.supportedKeyRequestTypes);
+    const isFetchingSupportedKeyRequestTypes = useSelector(cryptographicKeysSelectors.isFetchingSupportedKeyRequestTypes);
 
     const tokenProfiles = useSelector(tokenProfilesSelectors.tokenProfiles);
     const cryptographicKeyAttributeDescriptors = useSelector(cryptographicKeysSelectors.keyAttributeDescriptors);
@@ -84,6 +86,20 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
     const [groupAttributesCallbackAttributes, setGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
 
     const [tokenProfile, setTokenProfile] = useState<TokenProfileResponseModel>();
+
+    useEffect(() => {
+        if (!editMode && tokenProfile) {
+            dispatch(
+                cryptographicKeysActions.listSupportedKeyRequestTypes({
+                    tokenInstanceUuid: tokenProfile.tokenInstanceUuid,
+                    tokenProfileUuid: tokenProfile.uuid,
+                }),
+            );
+        }
+        return () => {
+            dispatch(cryptographicKeysActions.clearSupportedKeyRequestTypes());
+        };
+    }, [dispatch, editMode, tokenProfile]);
 
     const isBusy = useMemo(
         () => isFetchingDetail || isCreating || isUpdating || isFetchingCryptographicKeyAttributes || isFetchingResourceCustomAttributes,
@@ -282,11 +298,11 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
 
     const optionsForType = () => {
         const options: { value: string; label: string; description?: string }[] = [];
-        for (const key in KeyRequestType) {
+        for (const type of supportedKeyRequestTypes) {
             options.push({
-                value: KeyRequestType[key as keyof typeof KeyRequestType],
-                label: getEnumLabel(keyRequestTypeEnum, KeyRequestType[key as keyof typeof KeyRequestType]),
-                description: getEnumDescription(keyRequestTypeEnum, KeyRequestType[key as keyof typeof KeyRequestType]),
+                value: type,
+                label: getEnumLabel(keyRequestTypeEnum, type),
+                description: getEnumDescription(keyRequestTypeEnum, type),
             });
         }
         return options;
@@ -313,7 +329,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                 content: cryptographicKeyAttributeDescriptors ? (
                     <AttributeEditor
                         id="cryptographicKey"
-                        callbackParentUuid={keyDetail?.tokenProfileUuid || tokenProfileUuid || ''}
+                        callbackParentUuid={tokenProfileUuid || ''}
                         callbackResource={Resource.Keys}
                         attributeDescriptors={cryptographicKeyAttributeDescriptors || []}
                         groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
@@ -494,6 +510,8 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                                         id="tokenProfileSelect"
                                         value={field.value || ''}
                                         onChange={(value) => {
+                                            if (value === field.value) return;
+
                                             const formValues = getValues();
                                             Object.keys(formValues).forEach((key) => {
                                                 if (key.startsWith('__attributes__cryptographicKey__')) {
@@ -501,6 +519,8 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                                                 }
                                             });
                                             setValue('type', undefined);
+                                            dispatch(cryptographicKeysActions.clearSupportedKeyRequestTypes());
+                                            setTokenProfile(undefined);
                                             field.onChange(value);
                                         }}
                                         options={optionsForKeys}
@@ -539,6 +559,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                                                 field.onChange(value);
                                             }}
                                             options={optionsForType()}
+                                            isDisabled={isFetchingSupportedKeyRequestTypes}
                                             placeholder="Select to change Key Type"
                                             placement="bottom"
                                             showOptionDescriptionInDropdown
