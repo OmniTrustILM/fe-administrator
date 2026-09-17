@@ -33,12 +33,15 @@ function ajaxError(status: number, response: unknown): AjaxError {
     return Object.assign(Object.create(AjaxError.prototype), { status, message: `HTTP ${status}`, response });
 }
 
-async function runEpic(epic: any, action: any, apiClients: ApiClients, takeCount: number): Promise<any[]> {
-    const state$ = of({}) as any;
-    state$.value = {};
+async function runEpic(epic: any, action: any, apiClients: ApiClients, takeCount?: number, stateValue: any = {}): Promise<any[]> {
+    const state$ = of(stateValue) as any;
+    state$.value = stateValue;
     const output$ = epic(of(action), state$, { apiClients });
-    return firstValueFrom(output$.pipe(take(takeCount), toArray()));
+    return firstValueFrom(takeCount === undefined ? output$.pipe(toArray()) : output$.pipe(take(takeCount), toArray()));
 }
+
+// The detail page that dispatched the lifecycle action is still showing the run.
+const showing = (uuid: string) => ({ discoveries: { discovery: { uuid } } });
 
 const emptyPage = { items: [], totalItems: 0, pageNumber: 1, itemsPerPage: 1000, totalPages: 0 };
 
@@ -132,12 +135,13 @@ describe('describeLifecycleRefusal', () => {
 });
 
 describe('lifecycle epics', () => {
-    test('a stop that is accepted re-reads the detail, since the 204 carries no state', async () => {
+    test('a stop that is accepted re-reads the detail in place, since the 204 carries no state', async () => {
         const emitted = await runEpic(
             stopDiscovery,
             slice.actions.stopDiscovery({ uuid: 'd-1' }),
             { discoveries: { stopDiscovery: () => of(undefined) } },
             3,
+            showing('d-1'),
         );
 
         expect(emitted.map((a) => a.type)).toEqual([
@@ -145,7 +149,20 @@ describe('lifecycle epics', () => {
             alertsSlice.actions.success.type,
             slice.actions.getDiscoveryDetail.type,
         ]);
-        expect(emitted[2].payload).toEqual({ uuid: 'd-1' });
+        // keepCurrent: the page stays up while the re-read is in flight rather than dropping to its skeleton.
+        expect(emitted[2].payload).toEqual({ uuid: 'd-1', keepCurrent: true });
+    });
+
+    test('a lifecycle answer for a run the page has left does not drag that run back onto the screen', async () => {
+        const emitted = await runEpic(
+            stopDiscovery,
+            slice.actions.stopDiscovery({ uuid: 'd-1' }),
+            { discoveries: { stopDiscovery: () => of(undefined) } },
+            undefined,
+            showing('d-2'),
+        );
+
+        expect(emitted.map((a) => a.type)).toEqual([slice.actions.stopDiscoverySuccess.type, alertsSlice.actions.success.type]);
     });
 
     test('a refused stop surfaces the returned text and still re-reads the detail, because the button set is stale', async () => {
@@ -158,6 +175,7 @@ describe('lifecycle epics', () => {
                 },
             },
             3,
+            showing('d-1'),
         );
 
         expect(emitted.map((a) => a.type)).toEqual([
@@ -174,6 +192,7 @@ describe('lifecycle epics', () => {
             slice.actions.resumeDiscovery({ uuid: 'd-1' }),
             { discoveries: { resumeDiscovery: () => of(undefined) } },
             3,
+            showing('d-1'),
         );
         expect(resumed[0].type).toBe(slice.actions.resumeDiscoverySuccess.type);
         expect(resumed[2].type).toBe(slice.actions.getDiscoveryDetail.type);
@@ -183,6 +202,7 @@ describe('lifecycle epics', () => {
             slice.actions.cancelDiscovery({ uuid: 'd-1' }),
             { discoveries: { cancelDiscovery: () => of(undefined) } },
             3,
+            showing('d-1'),
         );
         expect(cancelled[0].type).toBe(slice.actions.cancelDiscoverySuccess.type);
         expect(cancelled[2].type).toBe(slice.actions.getDiscoveryDetail.type);
@@ -215,6 +235,8 @@ describe('connector-keyed relays', () => {
         expect(getDiscoveryResourceAttributes).toHaveBeenCalledWith({ connectorUuid: 'c-1', resource: Resource.Keys });
         expect(emitted[0].type).toBe(slice.actions.getDiscoveryResourceAttributesDescriptorsSuccess.type);
         expect(emitted[0].payload.resource).toBe(Resource.Keys);
+        // The reducer drops an answer for a connector the user has since left, so the answer must say whose it is.
+        expect(emitted[0].payload.connectorUuid).toBe('c-1');
     });
 
     test('a failed per-resource fetch releases that resource, and only that resource, from the in-flight set', async () => {
@@ -227,6 +249,7 @@ describe('connector-keyed relays', () => {
 
         expect(emitted[0].type).toBe(slice.actions.getDiscoveryResourceAttributesDescriptorsFailure.type);
         expect(emitted[0].payload.resource).toBe(Resource.Keys);
+        expect(emitted[0].payload.connectorUuid).toBe('c-1');
     });
 
     test('the v2 run-level relay lands in the same descriptor slot the v1 path fills', async () => {
@@ -238,5 +261,6 @@ describe('connector-keyed relays', () => {
         );
 
         expect(emitted[0].type).toBe(slice.actions.getDiscoveryProviderAttributesDescriptorsSuccess.type);
+        expect(emitted[0].payload.connectorUuid).toBe('c-1');
     });
 });

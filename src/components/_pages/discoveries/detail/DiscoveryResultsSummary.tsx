@@ -3,7 +3,8 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import Widget from 'components/Widget';
 import { useMemo } from 'react';
 import type { DiscoveryResponseDetailModel } from 'types/discoveries';
-import { certificateNotes } from './discoveryDetailHelpers';
+import { Resource } from 'types/openapi';
+import { certificateNotes, resultResources } from './discoveryDetailHelpers';
 
 type Props = Readonly<{
     discovery: DiscoveryResponseDetailModel;
@@ -12,13 +13,11 @@ type Props = Readonly<{
 }>;
 
 /**
- * Four figures with four meanings. "Items received" counts every item the provider handed over, repeats included; the
- * certificate rows count what the platform saved, once per distinct certificate, against the items the provider
- * reported. A provider figure above the saved one is usually the same certificate reported more than once, and the
- * note under it says which it was rather than leaving the reader to subtract. Why a provider repeats an item is its
- * own business: several hosts serving one chain, several logs listing one certificate, a chunk re-scanned after a
- * resume. Core collapses all of them on the item reference. The group headings stay even on a
- * certificates-only run, where the groups happen to agree.
+ * Four figures with four meanings: "Items received" counts every item the provider handed over, repeats included; the
+ * certificate rows count what the platform saved, once per distinct certificate, against what the provider reported.
+ * The note under the provider figure comes from `certificateNotes`, which explains the gap. The group headings stay
+ * even on a certificates-only run, where the groups happen to agree; a run that never targeted certificates has no
+ * certificate group at all.
  */
 export default function DiscoveryResultsSummary({ discovery, headers, className }: Props) {
     const thisRun: TableDataRow[] = useMemo(() => {
@@ -54,6 +53,8 @@ export default function DiscoveryResultsSummary({ discovery, headers, className 
             },
         ];
     }, [discovery.itemsDiscovered, discovery.itemsNewlyDiscovered, discovery.itemsProcessed, discovery.itemsFailed]);
+
+    const targetsCertificates = resultResources(discovery.resources).includes(Resource.Certificates);
 
     const certificatesOnly: TableDataRow[] = useMemo(() => {
         const notes = certificateNotes(discovery);
@@ -92,10 +93,12 @@ export default function DiscoveryResultsSummary({ discovery, headers, className 
                     <p className="mb-1 text-xs font-medium uppercase tracking-wide text-content-muted">All resources</p>
                     <CustomTable headers={headers} data={thisRun} />
                 </div>
-                <div>
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-content-muted">Certificates only</p>
-                    <CustomTable headers={headers} data={certificatesOnly} />
-                </div>
+                {targetsCertificates ? (
+                    <div>
+                        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-content-muted">Certificates only</p>
+                        <CustomTable headers={headers} data={certificatesOnly} />
+                    </div>
+                ) : null}
             </div>
         </Widget>
     );

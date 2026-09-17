@@ -44,6 +44,16 @@ export function isNotProcessedRun(status: DiscoveryStatus | undefined): boolean 
     return status === DiscoveryStatus.Cancelled || status === DiscoveryStatus.Failed;
 }
 
+/** A run in one of these has ended for good; its figures will not move again. */
+export function isTerminalRun(status: DiscoveryStatus | undefined): boolean {
+    return (
+        status === DiscoveryStatus.Completed ||
+        status === DiscoveryStatus.Warning ||
+        status === DiscoveryStatus.Failed ||
+        status === DiscoveryStatus.Cancelled
+    );
+}
+
 /**
  * The resources a run's Results tab has a view for, in the contract's order. Core synthesizes ["certificates"] for a
  * run against a v1 Provider, so an absent or empty list only ever comes from a response older than that field.
@@ -74,7 +84,8 @@ export function importRemainder(
 export function targetsCaption(targetsProcessed: number | undefined, targetsTotal: number | undefined): string {
     if (targetsProcessed === undefined && targetsTotal === undefined) return 'No target count reported';
     if (targetsTotal === undefined) return `${targetsProcessed} targets`;
-    return `${targetsProcessed ?? 0} / ${targetsTotal} targets`;
+    if (targetsProcessed === undefined) return `${targetsTotal} targets in total`;
+    return `${targetsProcessed} / ${targetsTotal} targets`;
 }
 
 export type CertificateNote = { kind: 'repeats' | 'notHandedOver'; count: number };
@@ -83,14 +94,15 @@ export type CertificateNote = { kind: 'repeats' | 'notHandedOver'; count: number
  * What a gap between the provider's certificate figure and the saved one means, for a certificates-only v2 run. The
  * provider counts items as it found them, repeats included; the platform saves each distinct certificate once; and
  * `itemsDiscovered` counts every item actually handed over. So items received above certificates saved are
- * repeats collapsed on the same certificate, and items reported above items received were never handed over, which
- * only a run that did not finish leaves behind. A run with other resources cannot be split this way and gets no note;
- * neither does a v1 run, which reports no item count.
+ * repeats collapsed on the same certificate, and items reported above items received were never handed over. That
+ * second note waits for a terminal status: while the run is live the provider is expected to lead the drain by a page.
+ * A run with other resources cannot be split this way and gets no note; neither does a v1 run, which reports no item
+ * count.
  */
 export function certificateNotes(
     run: Pick<
         DiscoveryResponseDetailModel,
-        'resources' | 'itemsDiscovered' | 'totalCertificatesDiscovered' | 'connectorTotalCertificatesDiscovered'
+        'status' | 'resources' | 'itemsDiscovered' | 'totalCertificatesDiscovered' | 'connectorTotalCertificatesDiscovered'
     >,
 ): CertificateNote[] {
     const resources = resultResources(run.resources);
@@ -101,7 +113,7 @@ export function certificateNotes(
     const saved = run.totalCertificatesDiscovered ?? 0;
     const reported = run.connectorTotalCertificatesDiscovered ?? received;
     const notes: CertificateNote[] = [];
-    if (reported > received) notes.push({ kind: 'notHandedOver', count: reported - received });
+    if (reported > received && isTerminalRun(run.status)) notes.push({ kind: 'notHandedOver', count: reported - received });
     if (received > saved) notes.push({ kind: 'repeats', count: received - saved });
     return notes;
 }

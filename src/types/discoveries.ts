@@ -25,7 +25,7 @@ export type {
     PaginationResponseDtoDiscoveryMessageDto as DiscoveryMessageListDto,
 } from './openapi';
 
-export type DiscoveryResponseDetailModel = Omit<DiscoveryDetailDto, 'attributes | metadata | customAttributes'> & {
+export type DiscoveryResponseDetailModel = Omit<DiscoveryDetailDto, 'attributes' | 'metadata' | 'customAttributes'> & {
     attributes: Array<AttributeResponseModel>;
     metadata?: Array<MetadataModel>;
     customAttributes?: Array<AttributeResponseModel>;

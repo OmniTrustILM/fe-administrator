@@ -48,7 +48,13 @@ vi.mock('components/Button', () => ({
         </button>
     ),
 }));
-vi.mock('components/ProgressButton', () => ({ default: ({ title, type }: any) => <button type={type ?? 'button'}>{title}</button> }));
+vi.mock('components/ProgressButton', () => ({
+    default: ({ title, type, disabled }: any) => (
+        <button type={type ?? 'button'} disabled={disabled}>
+            {title}
+        </button>
+    ),
+}));
 vi.mock('components/Layout/TabLayout', () => ({
     default: ({ tabs }: any) => (
         <div>
@@ -60,11 +66,30 @@ vi.mock('components/Layout/TabLayout', () => ({
         </div>
     ),
 }));
-vi.mock('components/Attributes/AttributeEditor', () => ({
-    default: ({ id, interfaceUuid, kind }: any) => (
-        <div data-testid={`attr-editor-${id}`} data-interface={interfaceUuid ?? ''} data-kind={kind ?? ''} />
-    ),
-}));
+// The editor stub keeps the one piece of form state the real editor owns besides its values: the deletion marker it
+// registers under deletedAttributes_<id>. A provider or resource change must clear it along with the values.
+vi.mock('components/Attributes/AttributeEditor', async () => {
+    const { useFormContext } = await import('react-hook-form');
+    return {
+        default: ({ id, interfaceUuid, kind }: any) => {
+            const { setValue, watch } = useFormContext();
+            const deletedKey = `deletedAttributes_${id}`;
+            const deleted = watch(deletedKey);
+            return (
+                <div
+                    data-testid={`attr-editor-${id}`}
+                    data-interface={interfaceUuid ?? ''}
+                    data-kind={kind ?? ''}
+                    data-deleted={deleted ? 'yes' : 'no'}
+                >
+                    <button type="button" data-testid={`delete-in-${id}`} onClick={() => setValue(deletedKey, ['attr'])}>
+                        delete an attribute
+                    </button>
+                </div>
+            );
+        },
+    };
+});
 vi.mock('components/TriggerEditorWidget', () => ({ default: () => <div data-testid="trigger-editor" /> }));
 vi.mock('components/CronBuilder', () => ({ default: () => <div /> }));
 vi.mock('components/CronScheduleHint', () => ({ default: () => <div /> }));
@@ -102,7 +127,7 @@ function buildState(over: any = {}) {
             discoveryProviders: over.discoveryProviders ?? [],
             discoveryProviderAttributeDescriptors: over.descriptors ?? [],
             discoveryProviderResourceAttributeDescriptors: over.resourceDescriptors ?? {},
-            fetchingResourceAttributeDescriptors: [],
+            fetchingResourceAttributeDescriptors: over.fetchingResourceAttributeDescriptors ?? [],
             discoveryResources: over.discoveryResources ?? [Resource.Certificates, Resource.Keys],
             isFetchingDetail: false,
             isFetchingDiscoveryProviders: false,
@@ -193,7 +218,7 @@ describe('DiscoveryForm', () => {
             expect(container.querySelector('[data-testid="trigger-editor"]')).not.toBeNull();
             const kindScoped = dispatched('discoveries/getDiscoveryProviderAttributesDescriptors');
             expect(kindScoped.length).toBeGreaterThan(0);
-            kindScoped.forEach((a) => expect(a.payload).toEqual({ uuid: 'conn-1', kind: 'IP-HostName' }));
+            for (const a of kindScoped) expect(a.payload).toEqual({ uuid: 'conn-1', kind: 'IP-HostName' });
             expect(dispatched('discoveries/listDiscoveryResources')).toHaveLength(0);
             expect(dispatched('discoveries/getDiscoveryInterfaceAttributesDescriptors')).toHaveLength(0);
             expect(container.querySelector('[data-testid="attr-editor-discovery"]')?.getAttribute('data-kind')).toBe('IP-HostName');
@@ -260,7 +285,6 @@ describe('DiscoveryForm', () => {
             await click('select-resourcesSelect');
             await typeName('scan');
             await submit();
-            // Nothing is sent while the interface is unchosen: the field is required.
             expect(createdRequest()).toBeUndefined();
 
             await click('select-interfaceSelect');
@@ -325,6 +349,49 @@ describe('DiscoveryForm', () => {
             const request = createdRequest();
             expect(request.resources).toEqual([Resource.Certificates, Resource.Keys]);
             expect(Object.keys(request.resourceAttributes)).toEqual([Resource.Certificates, Resource.Keys]);
+        });
+
+        it("forgets an editor's deletion state when its resource is dropped, so a re-added resource starts clean", async () => {
+            await render(
+                buildState({
+                    discoveryProviders: [singleInterfaceProvider],
+                    descriptors,
+                    resourceDescriptors: { [Resource.Certificates]: [] },
+                }),
+            );
+            await click('select-discoveryProviderSelect');
+            await click('select-resourcesSelect');
+            const editor = () => container.querySelector('[data-testid="attr-editor-discovery-certificates"]');
+            expect(editor()).not.toBeNull();
+
+            await click('delete-in-discovery-certificates');
+            expect(editor()?.getAttribute('data-deleted')).toBe('yes');
+
+            multiSelection = [];
+            await click('select-resourcesSelect');
+            expect(editor()).toBeNull();
+
+            multiSelection = [{ value: Resource.Certificates, label: 'Certificates' }];
+            await click('select-resourcesSelect');
+            expect(editor()?.getAttribute('data-deleted')).toBe('no');
+        });
+
+        it("waits for a resource's definitions before the run can be created, and says so in the tab", async () => {
+            await render(
+                buildState({
+                    discoveryProviders: [singleInterfaceProvider],
+                    descriptors,
+                    fetchingResourceAttributeDescriptors: [Resource.Certificates],
+                }),
+            );
+            await click('select-discoveryProviderSelect');
+            await click('select-resourcesSelect');
+            await typeName('scan');
+
+            expect(container.querySelector('[data-testid="resource-attributes-certificates"]')?.textContent).toContain(
+                'Loading attributes',
+            );
+            expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true);
         });
 
         it('offers the certificate triggers only when certificates are targeted', async () => {

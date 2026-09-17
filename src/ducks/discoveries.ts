@@ -24,6 +24,9 @@ export type State = {
     discoveryProviderResourceAttributeDescriptors: { [resource: string]: AttributeDescriptorModel[] };
     // Resource wire codes a v2 connector can discover; the relay synthesizes ["certificates"] for a v1 connector.
     discoveryResources?: Resource[];
+    // The connector whose attribute definitions were last asked for. An answer for any other connector arrived after the
+    // user moved on and is dropped, so a slow relay can never render one provider's schema under another.
+    descriptorsConnectorUuid?: string;
 
     discoveryCertificates?: DiscoveryCertificateListModel;
     discoveryItems?: DiscoveryItemListModel;
@@ -100,29 +103,37 @@ export const slice = createSlice({
 
         // v1: kind-scoped definitions from the connector's function-group endpoint.
         getDiscoveryProviderAttributesDescriptors: (state, action: PayloadAction<{ uuid: string; kind: string }>) => {
+            state.descriptorsConnectorUuid = action.payload.uuid;
             state.discoveryProviderAttributeDescriptors = [];
             state.isFetchingDiscoveryProviderAttributeDescriptors = true;
         },
 
         // v2: run-level definitions relayed from the connector's DISCOVERY interface; lands in the same success action.
         getDiscoveryInterfaceAttributesDescriptors: (state, action: PayloadAction<{ connectorUuid: string }>) => {
+            state.descriptorsConnectorUuid = action.payload.connectorUuid;
             state.discoveryProviderAttributeDescriptors = [];
             state.isFetchingDiscoveryProviderAttributeDescriptors = true;
         },
 
         getDiscoveryProviderAttributesDescriptorsSuccess: (
             state,
-            action: PayloadAction<{ attributeDescriptor: AttributeDescriptorModel[] }>,
+            action: PayloadAction<{ connectorUuid: string; attributeDescriptor: AttributeDescriptorModel[] }>,
         ) => {
+            if (action.payload.connectorUuid !== state.descriptorsConnectorUuid) return;
             state.discoveryProviderAttributeDescriptors = action.payload.attributeDescriptor;
             state.isFetchingDiscoveryProviderAttributeDescriptors = false;
         },
 
-        getDiscoveryProviderAttributeDescriptorsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+        getDiscoveryProviderAttributeDescriptorsFailure: (
+            state,
+            action: PayloadAction<{ connectorUuid: string; error: string | undefined }>,
+        ) => {
+            if (action.payload.connectorUuid !== state.descriptorsConnectorUuid) return;
             state.isFetchingDiscoveryProviderAttributeDescriptors = false;
         },
 
         getDiscoveryResourceAttributesDescriptors: (state, action: PayloadAction<{ connectorUuid: string; resource: Resource }>) => {
+            state.descriptorsConnectorUuid = action.payload.connectorUuid;
             delete state.discoveryProviderResourceAttributeDescriptors[action.payload.resource];
             if (!state.fetchingResourceAttributeDescriptors.includes(action.payload.resource)) {
                 state.fetchingResourceAttributeDescriptors.push(action.payload.resource);
@@ -131,8 +142,9 @@ export const slice = createSlice({
 
         getDiscoveryResourceAttributesDescriptorsSuccess: (
             state,
-            action: PayloadAction<{ resource: Resource; attributeDescriptor: AttributeDescriptorModel[] }>,
+            action: PayloadAction<{ connectorUuid: string; resource: Resource; attributeDescriptor: AttributeDescriptorModel[] }>,
         ) => {
+            if (action.payload.connectorUuid !== state.descriptorsConnectorUuid) return;
             state.discoveryProviderResourceAttributeDescriptors[action.payload.resource] = action.payload.attributeDescriptor;
             state.fetchingResourceAttributeDescriptors = state.fetchingResourceAttributeDescriptors.filter(
                 (resource) => resource !== action.payload.resource,
@@ -141,8 +153,9 @@ export const slice = createSlice({
 
         getDiscoveryResourceAttributesDescriptorsFailure: (
             state,
-            action: PayloadAction<{ resource: Resource; error: string | undefined }>,
+            action: PayloadAction<{ connectorUuid: string; resource: Resource; error: string | undefined }>,
         ) => {
+            if (action.payload.connectorUuid !== state.descriptorsConnectorUuid) return;
             state.fetchingResourceAttributeDescriptors = state.fetchingResourceAttributeDescriptors.filter(
                 (resource) => resource !== action.payload.resource,
             );
@@ -154,6 +167,7 @@ export const slice = createSlice({
                 delete state.discoveryProviderResourceAttributeDescriptors[action.payload.resource];
             } else {
                 state.discoveryProviderResourceAttributeDescriptors = {};
+                state.fetchingResourceAttributeDescriptors = [];
             }
         },
 
@@ -225,8 +239,9 @@ export const slice = createSlice({
             state.discoveries = action.payload;
         },
 
-        getDiscoveryDetail: (state, action: PayloadAction<{ uuid: string }>) => {
-            state.discovery = undefined;
+        // keepCurrent: a refresh of the run already on screen, which stays up while the re-read is in flight.
+        getDiscoveryDetail: (state, action: PayloadAction<{ uuid: string; keepCurrent?: boolean }>) => {
+            if (!action.payload.keepCurrent) state.discovery = undefined;
             state.isFetchingDetail = true;
         },
 
@@ -309,8 +324,7 @@ export const slice = createSlice({
             state.isBulkDeleting = false;
         },
 
-        // The three lifecycle actions answer 204 and carry no body; the epic re-reads the detail afterwards, and does so
-        // on a refusal too, because a 422 means the run has moved past the state that made the control valid.
+        // Flags only: the 204 carries no state, so lifecycleEpic in discoveries-epics.ts re-reads the detail.
         stopDiscovery: (state, action: PayloadAction<{ uuid: string }>) => {
             state.isStopping = true;
         },

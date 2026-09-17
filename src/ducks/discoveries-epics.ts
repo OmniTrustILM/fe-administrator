@@ -139,6 +139,7 @@ const getDiscoveryProviderAttributesDescriptors: AppEpic = (action$, state, deps
                 .pipe(
                     map((attributeDescriptors) =>
                         slice.actions.getDiscoveryProviderAttributesDescriptorsSuccess({
+                            connectorUuid: action.payload.uuid,
                             attributeDescriptor: attributeDescriptors.map(transformAttributeDescriptorDtoToModel),
                         }),
                     ),
@@ -146,6 +147,7 @@ const getDiscoveryProviderAttributesDescriptors: AppEpic = (action$, state, deps
                     catchError((err) =>
                         of(
                             slice.actions.getDiscoveryProviderAttributeDescriptorsFailure({
+                                connectorUuid: action.payload.uuid,
                                 error: extractError(err, 'Failed to get Discovery Provider Attribute list'),
                             }),
                             appRedirectActions.fetchError({ error: err, message: 'Failed to get Discovery Provider Attribute list' }),
@@ -165,6 +167,7 @@ export const getDiscoveryInterfaceAttributesDescriptors: AppEpic = (action$, sta
             deps.apiClients.discoveries.getDiscoveryAttributes({ connectorUuid: action.payload.connectorUuid }).pipe(
                 map((attributeDescriptors) =>
                     slice.actions.getDiscoveryProviderAttributesDescriptorsSuccess({
+                        connectorUuid: action.payload.connectorUuid,
                         attributeDescriptor: attributeDescriptors.map(transformAttributeDescriptorDtoToModel),
                     }),
                 ),
@@ -172,6 +175,7 @@ export const getDiscoveryInterfaceAttributesDescriptors: AppEpic = (action$, sta
                 catchError((err) =>
                     of(
                         slice.actions.getDiscoveryProviderAttributeDescriptorsFailure({
+                            connectorUuid: action.payload.connectorUuid,
                             error: extractError(err, 'Failed to get Discovery Attribute list'),
                         }),
                         appRedirectActions.fetchError({ error: err, message: 'Failed to get Discovery Attribute list' }),
@@ -192,6 +196,7 @@ export const getDiscoveryResourceAttributesDescriptors: AppEpic = (action$, stat
                 .pipe(
                     map((attributeDescriptors) =>
                         slice.actions.getDiscoveryResourceAttributesDescriptorsSuccess({
+                            connectorUuid: action.payload.connectorUuid,
                             resource: action.payload.resource,
                             attributeDescriptor: attributeDescriptors.map(transformAttributeDescriptorDtoToModel),
                         }),
@@ -200,6 +205,7 @@ export const getDiscoveryResourceAttributesDescriptors: AppEpic = (action$, stat
                     catchError((err) =>
                         of(
                             slice.actions.getDiscoveryResourceAttributesDescriptorsFailure({
+                                connectorUuid: action.payload.connectorUuid,
                                 resource: action.payload.resource,
                                 error: extractError(err, 'Failed to get Discovery Resource Attribute list'),
                             }),
@@ -385,29 +391,25 @@ const lifecycleEpic = (
     return (action$, state$, deps) =>
         action$.pipe(
             filter(match),
-            switchMap((action) =>
-                call(deps, action.payload.uuid).pipe(
-                    // The action answers 204 with no body; the detail carries the new state, so it is re-read.
-                    mergeMap(() =>
-                        of(
-                            onSuccess(action.payload.uuid),
-                            alertActions.success(successMessage),
-                            slice.actions.getDiscoveryDetail({ uuid: action.payload.uuid }),
-                        ),
-                    ),
+            switchMap((action) => {
+                // The action answers 204 with no body, so the detail is re-read for the new state: in place, so the page
+                // stays up, and only while the page still shows this run. A stop that completes after the user has moved
+                // to another run must not drag the first one back onto the screen.
+                const refresh = () =>
+                    state$.value.discoveries.discovery?.uuid === action.payload.uuid
+                        ? [slice.actions.getDiscoveryDetail({ uuid: action.payload.uuid, keepCurrent: true })]
+                        : [];
+                return call(deps, action.payload.uuid).pipe(
+                    mergeMap(() => of(onSuccess(action.payload.uuid), alertActions.success(successMessage), ...refresh())),
                     // A visible control can still be refused: the provider may pass its point of no return between
                     // the read that rendered the button and the click. The run has moved on, so the detail is re-read
                     // here too and the stale button set goes with it.
                     catchError((err) => {
                         const message = describeLifecycleRefusal(err, headline);
-                        return of(
-                            onFailure(message),
-                            alertActions.error(message),
-                            slice.actions.getDiscoveryDetail({ uuid: action.payload.uuid }),
-                        );
+                        return of(onFailure(message), alertActions.error(message), ...refresh());
                     }),
-                ),
-            ),
+                );
+            }),
         );
 };
 

@@ -12,6 +12,10 @@ import { actions as userInterfaceActions } from 'ducks/user-interface';
 
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
+import {
+    getAttributeEditorAttributesKey,
+    getAttributeEditorDeletedAttributesKey,
+} from 'components/Attributes/AttributeEditor/attributeEditorKeys';
 import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
 import Button from 'components/Button';
@@ -49,8 +53,9 @@ interface FormValues {
     cronExpression: string | undefined;
     scheduled: boolean;
     oneTime: boolean;
-    // Attribute fields are registered dynamically by AttributeEditor.
+    // Attribute fields and deletion markers are registered dynamically by AttributeEditor, one pair per editor id.
     [attributeField: `__attributes__${string}`]: unknown;
+    [deletedField: `deletedAttributes_${string}`]: unknown;
 }
 
 const DEFAULT_CRON_EXPRESSION = '0 0 00 1/1 * ? *';
@@ -90,6 +95,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
             isCreating ||
             isFetchingAttributeDescriptors ||
             isFetchingDiscoveryResources ||
+            fetchingResourceAttributeDescriptors.length > 0 ||
             isFetchingResourceCustomAttributes,
         [
             isFetchingDiscoveryDetail,
@@ -97,6 +103,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
             isCreating,
             isFetchingAttributeDescriptors,
             isFetchingDiscoveryResources,
+            fetchingResourceAttributeDescriptors,
             isFetchingResourceCustomAttributes,
         ],
     );
@@ -154,7 +161,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
         control,
         formState: { isDirty, isSubmitting, isValid },
         setValue,
-        getValues,
+        unregister,
     } = methods;
 
     const watchedScheduled = useWatch({
@@ -182,16 +189,14 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
         name: 'cronExpression',
     });
 
-    const clearAttributeValues = useCallback(
-        (prefix: string) => {
-            const formValues = getValues();
-            Object.keys(formValues).forEach((key) => {
-                if (key.startsWith(prefix)) {
-                    setValue(key as `__attributes__${string}`, undefined);
-                }
-            });
+    // Both keys an AttributeEditor registers: its values and its deletion marker. Clearing the values alone would leave
+    // an attribute the user removed under the previous schema silently removed under the next one.
+    const clearEditor = useCallback(
+        (editorId: string) => {
+            unregister(getAttributeEditorAttributesKey(editorId));
+            unregister(getAttributeEditorDeletedAttributesKey(editorId));
         },
-        [getValues, setValue],
+        [unregister],
     );
 
     const onDiscoveryProviderChange = useCallback(
@@ -253,7 +258,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
         const removed = previous.filter((resource) => !current.includes(resource));
         removed.forEach((resource) => {
             dispatch(discoveryActions.clearDiscoveryResourceAttributeDescriptors({ resource }));
-            clearAttributeValues(`__attributes__${resourceEditorId(resource)}__`);
+            clearEditor(resourceEditorId(resource));
             setResourceGroupCallbackAttributes((prev) => {
                 const { [resource]: _dropped, ...rest } = prev;
                 return rest;
@@ -266,7 +271,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
             .forEach((resource) => {
                 dispatch(discoveryActions.getDiscoveryResourceAttributesDescriptors({ connectorUuid: discoveryProvider.uuid, resource }));
             });
-    }, [watchedResources, discoveryProvider, isV2Provider, dispatch, clearAttributeValues]);
+    }, [watchedResources, discoveryProvider, isV2Provider, dispatch, clearEditor]);
 
     // One stable setter per resource, shaped like React's own so AttributeEditor can pass functional updates.
     const resourceGroupCallbackSetters = useMemo(() => {
@@ -415,6 +420,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                           title: getEnumLabel(resourceEnum, resource),
                           content: (
                               <div data-testid={`resource-attributes-${resource}`}>
+                                  {!loaded ? <p className="text-sm text-content-muted">Loading attributes…</p> : null}
                                   {loaded && descriptors.length === 0 ? (
                                       <p className="text-sm text-content-muted">
                                           {getEnumLabel(resourceEnum, resource)} has no attributes of its own to configure on this Discovery
@@ -569,9 +575,9 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                                         label="Discovery Provider"
                                         value={field.value || ''}
                                         onChange={(value) => {
-                                            // Both the run-level editor ("discovery") and the per-resource editors
-                                            // ("discovery-<resource>") register under this prefix; "customDiscovery" does not.
-                                            clearAttributeValues('__attributes__discovery');
+                                            // The run-level editor here; the per-resource editors go when the resources
+                                            // are reset below, through the effect that watches them.
+                                            clearEditor('discovery');
                                             setValue('storeKind', undefined);
                                             setValue('triggers', undefined);
                                             onDiscoveryProviderChange(value as string);
@@ -712,7 +718,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                         title="Create"
                         inProgressTitle="Creating..."
                         inProgress={isSubmitting}
-                        disabled={!isDirty || !isValid}
+                        disabled={!isDirty || !isValid || isBusy}
                         type="submit"
                     />
                 </Container>

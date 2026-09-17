@@ -66,6 +66,9 @@ export default function DiscoveryDetail() {
     const isFetchingRuleTriggerHistories = useSelector(ruleSelectors.isFetchingTriggerHistories);
 
     const isChangingLifecycle = isStopping || isResuming || isCancelling;
+    // One mutation at a time: a delete racing a stop, or a stop racing a delete, would hand the server two contradictory
+    // orders and then refresh a run that may no longer exist.
+    const isMutating = isDeleting || isChangingLifecycle;
 
     const isBusy = useMemo(
         () => isFetching || isDeleting || isFetchingRuleTriggerHistories || isChangingLifecycle,
@@ -111,19 +114,19 @@ export default function DiscoveryDetail() {
         const lifecycleButtons: Record<DiscoveryLifecycleAction, (uuid: string) => WidgetButtonProps> = {
             stop: (uuid) => ({
                 icon: 'pause',
-                disabled: isChangingLifecycle,
+                disabled: isMutating,
                 tooltip: 'Stop',
                 onClick: () => dispatch(actions.stopDiscovery({ uuid })),
             }),
             resume: (uuid) => ({
                 icon: 'play',
-                disabled: isChangingLifecycle,
+                disabled: isMutating,
                 tooltip: 'Resume',
                 onClick: () => dispatch(actions.resumeDiscovery({ uuid })),
             }),
             cancel: () => ({
                 icon: 'cancel',
-                disabled: isChangingLifecycle,
+                disabled: isMutating,
                 tooltip: 'Cancel',
                 onClick: () => setConfirmCancel(true),
             }),
@@ -138,14 +141,14 @@ export default function DiscoveryDetail() {
             ...lifecycle,
             {
                 icon: 'trash',
-                disabled: false,
+                disabled: isMutating,
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
                 },
             },
         ];
-    }, [discovery, profile, isChangingLifecycle, dispatch]);
+    }, [discovery, profile, isMutating, dispatch]);
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
 
@@ -247,7 +250,8 @@ export default function DiscoveryDetail() {
         );
     }, [discovery?.runMessageCount, discoveryMessages]);
 
-    if (isFetching) {
+    // Only the first load gets the skeleton; a refresh keeps the page and lets the widgets show busy.
+    if (isFetching && !discovery) {
         return <DetailPageSkeleton layout="tabs" tabCount={6} />;
     }
 

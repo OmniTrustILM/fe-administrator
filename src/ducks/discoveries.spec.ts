@@ -38,13 +38,16 @@ describe('discoveries slice', () => {
         expect(next.isFetchingDiscoveryProviderAttributeDescriptors).toBe(true);
 
         const descriptors = [{ uuid: 'attr-1' } as any];
-        next = reducer(next, actions.getDiscoveryProviderAttributesDescriptorsSuccess({ attributeDescriptor: descriptors }));
+        next = reducer(
+            next,
+            actions.getDiscoveryProviderAttributesDescriptorsSuccess({ connectorUuid: 'p-1', attributeDescriptor: descriptors }),
+        );
         expect(next.discoveryProviderAttributeDescriptors).toEqual(descriptors);
         expect(next.isFetchingDiscoveryProviderAttributeDescriptors).toBe(false);
 
         next = reducer(
             { ...next, isFetchingDiscoveryProviderAttributeDescriptors: true },
-            actions.getDiscoveryProviderAttributeDescriptorsFailure({ error: 'err' }),
+            actions.getDiscoveryProviderAttributeDescriptorsFailure({ connectorUuid: 'p-1', error: 'err' }),
         );
         expect(next.isFetchingDiscoveryProviderAttributeDescriptors).toBe(false);
     });
@@ -226,6 +229,7 @@ describe('discoveries slice - v2 additions', () => {
         next = reducer(
             next,
             actions.getDiscoveryResourceAttributesDescriptorsSuccess({
+                connectorUuid: 'c-1',
                 resource: 'keys' as any,
                 attributeDescriptor: [{ uuid: 'k' } as any],
             }),
@@ -233,12 +237,85 @@ describe('discoveries slice - v2 additions', () => {
         expect(next.discoveryProviderResourceAttributeDescriptors.keys).toEqual([{ uuid: 'k' }]);
         expect(next.fetchingResourceAttributeDescriptors).toEqual(['certificates']);
 
-        next = reducer(next, actions.getDiscoveryResourceAttributesDescriptorsFailure({ resource: 'certificates' as any, error: 'err' }));
+        next = reducer(
+            next,
+            actions.getDiscoveryResourceAttributesDescriptorsFailure({
+                connectorUuid: 'c-1',
+                resource: 'certificates' as any,
+                error: 'err',
+            }),
+        );
         expect(next.fetchingResourceAttributeDescriptors).toEqual([]);
         expect(next.discoveryProviderResourceAttributeDescriptors.certificates).toBeUndefined();
 
         next = reducer(next, actions.clearDiscoveryResourceAttributeDescriptors({ resource: 'keys' as any }));
         expect(next.discoveryProviderResourceAttributeDescriptors).toEqual({});
+    });
+
+    test('a run-level answer for a connector that is no longer selected is ignored', () => {
+        let next = reducer(initialState, actions.getDiscoveryInterfaceAttributesDescriptors({ connectorUuid: 'c-1' }));
+        next = reducer(next, actions.getDiscoveryProviderAttributesDescriptors({ uuid: 'c-2', kind: 'IP-HostName' }));
+
+        const stale = reducer(
+            next,
+            actions.getDiscoveryProviderAttributesDescriptorsSuccess({
+                connectorUuid: 'c-1',
+                attributeDescriptor: [{ uuid: 'old' } as any],
+            }),
+        );
+        expect(stale.discoveryProviderAttributeDescriptors).toEqual([]);
+        expect(stale.isFetchingDiscoveryProviderAttributeDescriptors).toBe(true);
+
+        const current = reducer(
+            stale,
+            actions.getDiscoveryProviderAttributesDescriptorsSuccess({
+                connectorUuid: 'c-2',
+                attributeDescriptor: [{ uuid: 'new' } as any],
+            }),
+        );
+        expect(current.discoveryProviderAttributeDescriptors).toEqual([{ uuid: 'new' }]);
+        expect(current.isFetchingDiscoveryProviderAttributeDescriptors).toBe(false);
+    });
+
+    test('a per-resource answer for a connector that is no longer selected is ignored', () => {
+        let next = reducer(
+            initialState,
+            actions.getDiscoveryResourceAttributesDescriptors({ connectorUuid: 'c-1', resource: 'keys' as any }),
+        );
+        next = reducer(next, actions.clearDiscoveryResourceAttributeDescriptors({}));
+        next = reducer(next, actions.getDiscoveryResourceAttributesDescriptors({ connectorUuid: 'c-2', resource: 'keys' as any }));
+
+        const stale = reducer(
+            next,
+            actions.getDiscoveryResourceAttributesDescriptorsSuccess({
+                connectorUuid: 'c-1',
+                resource: 'keys' as any,
+                attributeDescriptor: [{ uuid: 'old' } as any],
+            }),
+        );
+        expect(stale.discoveryProviderResourceAttributeDescriptors.keys).toBeUndefined();
+        expect(stale.fetchingResourceAttributeDescriptors).toEqual(['keys']);
+    });
+
+    test('clearing every per-resource set also forgets what was in flight for the previous provider', () => {
+        const pre = {
+            ...initialState,
+            discoveryProviderResourceAttributeDescriptors: { keys: [] },
+            fetchingResourceAttributeDescriptors: ['certificates'],
+        } as any;
+        const next = reducer(pre, actions.clearDiscoveryResourceAttributeDescriptors({}));
+        expect(next.fetchingResourceAttributeDescriptors).toEqual([]);
+    });
+
+    test('a detail refresh keeps the current run on screen while a first load does not', () => {
+        const shown = { ...initialState, discovery: { uuid: 'd-1' } } as any;
+
+        const refreshing = reducer(shown, actions.getDiscoveryDetail({ uuid: 'd-1', keepCurrent: true }));
+        expect(refreshing.discovery).toEqual({ uuid: 'd-1' });
+        expect(refreshing.isFetchingDetail).toBe(true);
+
+        const loading = reducer(shown, actions.getDiscoveryDetail({ uuid: 'd-2' }));
+        expect(loading.discovery).toBeUndefined();
     });
 
     test('clearing without a resource drops every per-resource set', () => {

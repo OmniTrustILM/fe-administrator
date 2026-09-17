@@ -37,10 +37,8 @@ const HEADERS: TableHeader[] = [
 ];
 
 /**
- * Each entry is one kind of problem, not one occurrence: repeats aggregate, so a run that hit one fault tens of
- * thousands of times still shows one row, and the occurrence count and first/last-seen window are what make it
- * readable. Entries aggregate by code together with message text, so several rows may share a code; the row key never
- * rests on the code alone.
+ * Entries aggregate by code together with message text, so several rows may share a code; the row key never rests on
+ * the code alone.
  */
 export default function DiscoveryRunMessages({ discoveryUuid }: Props) {
     const dispatch = useDispatch();

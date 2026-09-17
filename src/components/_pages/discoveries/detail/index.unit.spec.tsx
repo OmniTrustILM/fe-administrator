@@ -242,6 +242,19 @@ describe('DiscoveryDetail', () => {
             expect(headerButtons()).toEqual(['Cancel', 'Delete']);
         });
 
+        it('disables delete while a lifecycle call is in flight, so two mutations never race', async () => {
+            const state = buildState(v2Run);
+            state.discoveries.isStopping = true;
+            await render(state);
+
+            const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('[data-testid="widget-Discovery Details"] > button'));
+            expect(buttons.map((b) => [b.title, b.disabled])).toEqual([
+                ['Stop', true],
+                ['Cancel', true],
+                ['Delete', true],
+            ]);
+        });
+
         it('stops immediately, but confirms a cancel in words that say what is lost', async () => {
             await render(buildState(v2Run));
 
@@ -304,6 +317,22 @@ describe('DiscoveryDetail', () => {
             expect(container.querySelector('[data-testid="import-progress"]')?.textContent).toContain('1 waiting, 1 failed');
         });
 
+        it('says one target failed without a plural', async () => {
+            await render(buildState({ ...v2Run, progress: { ...v2Run.progress, targetsFailed: 1 } }));
+
+            expect(container.querySelector('[data-testid="targets-failed"]')?.textContent).toBe('1 target failed');
+        });
+
+        it('draws a full bar when there is nothing to import, never an indeterminate one', async () => {
+            await render(
+                buildState({ ...v2Run, status: DiscoveryStatus.Processing, itemsNewlyDiscovered: 0, itemsProcessed: 0, itemsFailed: 0 }),
+            );
+
+            const bar = container.querySelector('[data-testid="import-progress-bar"] [role="progressbar"]');
+            expect(bar?.hasAttribute('data-indeterminate')).toBe(false);
+            expect(container.querySelector('[data-testid="import-progress"]')?.textContent).toContain('Nothing to import');
+        });
+
         it('lists the per-resource breakdown by resource label', async () => {
             await render(buildState(v2Run));
 
@@ -356,6 +385,38 @@ describe('DiscoveryDetail', () => {
             expect(container.querySelector('[data-testid="certificate-note-notHandedOver"]')?.textContent).toContain('3 reported');
         });
 
+        it('holds the never-handed-over note while a certificates-only run is still live', async () => {
+            await render(
+                buildState({
+                    ...v2Run,
+                    status: DiscoveryStatus.InProgress,
+                    resources: [Resource.Certificates],
+                    itemsDiscovered: 9,
+                    totalCertificatesDiscovered: 8,
+                    connectorTotalCertificatesDiscovered: 12,
+                }),
+            );
+
+            expect(container.querySelector('[data-testid="certificate-note-notHandedOver"]')).toBeNull();
+            expect(container.querySelector('[data-testid="certificate-note-repeats"]')).not.toBeNull();
+        });
+
+        it('omits the certificate counters for a run that never targeted certificates', async () => {
+            await render(buildState({ ...v2Run, resources: [Resource.Keys] }));
+
+            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('All resources');
+            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).not.toContain('Certificates only');
+        });
+
+        it('names the ending in words rather than the wire code', async () => {
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Cancelled }));
+            expect(container.querySelector('[data-testid="not-processed-banner"]')?.textContent).toContain('This run was cancelled');
+
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Failed }));
+            expect(container.querySelector('[data-testid="not-processed-banner"]')?.textContent).toContain('This run failed');
+            expect(container.querySelector('[data-testid="not-processed-banner"]')?.textContent).not.toContain('ended failed');
+        });
+
         it('derives one Results view per run resource, certificates keeping their own view', async () => {
             await render(buildState(v2Run));
 
@@ -373,6 +434,21 @@ describe('DiscoveryDetail', () => {
             await render(buildState(v1Run));
 
             expect(container.querySelector('[data-testid="not-processed-banner"]')).toBeNull();
+        });
+    });
+
+    describe('refreshing', () => {
+        it('keeps the page while a refresh is in flight and shows the skeleton only before the first load', async () => {
+            const refreshing = buildState(v2Run);
+            refreshing.discoveries.isFetchingDetail = true;
+            await render(refreshing);
+            expect(container.querySelector('[data-testid="skeleton"]')).toBeNull();
+            expect(container.querySelector('[data-testid="widget-Discovery Details"]')).not.toBeNull();
+
+            const firstLoad = buildState(undefined);
+            firstLoad.discoveries.isFetchingDetail = true;
+            await render(firstLoad);
+            expect(container.querySelector('[data-testid="skeleton"]')).not.toBeNull();
         });
     });
 

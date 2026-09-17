@@ -1,5 +1,6 @@
 import cn from 'classnames';
 import type React from 'react';
+import { useId } from 'react';
 
 export type ProgressBarTone = 'brand' | 'success' | 'warning' | 'danger' | 'info';
 
@@ -44,16 +45,26 @@ export function progressRatio(value?: number, max?: number): number | undefined 
 export default function ProgressBar({ value, max, label, caption, tone = 'brand', size = 'md', className, dataTestId, ariaLabel }: Props) {
     const ratio = progressRatio(value, max);
     const indeterminate = ratio === undefined;
+    const labelId = useId();
+    // The fill is clamped to the track; ARIA gets the same clamped figure, so a value overshooting a shrinking
+    // estimate never leaves the declared range.
+    const valueNow = indeterminate || value === undefined || max === undefined ? undefined : Math.min(Math.max(value, 0), max);
 
     return (
         <div className={cn('flex w-full flex-col gap-1', className)} data-testid={dataTestId ?? 'progress-bar'}>
-            {label ? <div className="flex items-center justify-between gap-2 text-sm text-content">{label}</div> : null}
+            {label ? (
+                <div id={labelId} className="flex items-center justify-between gap-2 text-sm text-content">
+                    {label}
+                </div>
+            ) : null}
             <div
                 role="progressbar"
                 aria-label={ariaLabel}
+                aria-labelledby={!ariaLabel && label ? labelId : undefined}
                 aria-valuemin={0}
                 aria-valuemax={indeterminate ? undefined : max}
-                aria-valuenow={indeterminate ? undefined : value}
+                aria-valuenow={valueNow}
+                aria-valuetext={indeterminate ? 'total unknown' : undefined}
                 data-indeterminate={indeterminate ? 'true' : undefined}
                 className={cn('relative w-full overflow-hidden rounded-full bg-surface-sunken', size === 'sm' ? 'h-1.5' : 'h-2.5')}
             >

@@ -6,6 +6,7 @@ type MockButton = {
     tooltip?: string;
     icon?: string;
     onClick?: () => void;
+    disabled?: boolean;
 };
 
 type MockDialogButton = {
@@ -43,7 +44,13 @@ export const widgetMockModule = () => ({
     default: ({ title, widgetButtons, children }: { title?: string; widgetButtons?: MockButton[]; children?: ReactNode }) => (
         <div data-testid={`widget-${title || 'root'}`}>
             {(widgetButtons || []).map((button) => (
-                <button type="button" key={button.tooltip ?? button.icon} title={button.tooltip} onClick={button.onClick}>
+                <button
+                    type="button"
+                    key={button.tooltip ?? button.icon}
+                    title={button.tooltip}
+                    onClick={button.onClick}
+                    disabled={button.disabled}
+                >
                     {button.icon}
                 </button>
             ))}

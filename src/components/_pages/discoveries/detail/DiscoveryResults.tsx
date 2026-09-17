@@ -3,7 +3,7 @@ import TabLayout from 'components/Layout/TabLayout';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { useSelector } from 'react-redux';
 import type { DiscoveryResponseDetailModel } from 'types/discoveries';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { DiscoveryStatus, PlatformEnum, Resource } from 'types/openapi';
 import type { TriggerHistorySummaryModel } from 'types/rules';
 import DiscoveryCertificates from './DiscoveryCertificates';
 import DiscoveryItemsTable from './DiscoveryItemsTable';
@@ -40,8 +40,8 @@ export default function DiscoveryResults({ discovery, triggerHistorySummary }: P
                     data-testid="not-processed-banner"
                     className="rounded-lg border border-warning bg-warning-surface p-4 text-sm text-warning"
                 >
-                    This run ended {discovery.status} and its items were never processed: nothing below was imported into the inventory, and
-                    no triggers ran on it.
+                    {discovery.status === DiscoveryStatus.Cancelled ? 'This run was cancelled' : 'This run failed'} and its items were never
+                    processed: nothing below was imported into the inventory, and no triggers ran on it.
                 </div>
             ) : null}
             {resources.length === 1 ? (

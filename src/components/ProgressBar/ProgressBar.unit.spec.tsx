@@ -92,6 +92,28 @@ describe('ProgressBar', () => {
         expect(track()?.hasAttribute('data-indeterminate')).toBe(false);
     });
 
+    it('keeps aria-valuenow inside the range even when the value overshoots or undershoots', async () => {
+        await render(<ProgressBar value={45} max={30} ariaLabel="Targets" />);
+        expect(track()?.getAttribute('aria-valuenow')).toBe('30');
+
+        await render(<ProgressBar value={-3} max={30} ariaLabel="Targets" />);
+        expect(track()?.getAttribute('aria-valuenow')).toBe('0');
+    });
+
+    it('names itself from its label when no aria-label is given', async () => {
+        await render(<ProgressBar value={1} max={4} label={<span>Targets</span>} />);
+
+        const labelledBy = track()?.getAttribute('aria-labelledby');
+        expect(labelledBy).toBeTruthy();
+        expect(container.querySelector(`[id="${labelledBy}"]`)?.textContent).toContain('Targets');
+    });
+
+    it('tells assistive technology the total is unknown when it renders indeterminate', async () => {
+        await render(<ProgressBar value={12} ariaLabel="Targets" />);
+
+        expect(track()?.getAttribute('aria-valuetext')).toBe('total unknown');
+    });
+
     it('renders the label and caption it is given', async () => {
         await render(<ProgressBar value={1} max={4} label={<span>Targets</span>} caption="as of 14:32" />);
 

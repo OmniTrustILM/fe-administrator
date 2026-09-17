@@ -52,6 +52,10 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
     const recorded = progressRecordedCaption(progress?.updatedAt);
     const remaining = importRemainder(discovery);
     const failed = discovery.itemsFailed ?? 0;
+    const toImport = discovery.itemsNewlyDiscovered ?? 0;
+    // A run that rediscovered only what the inventory already held has no import to draw; a full bar says so, where an
+    // empty total would read as work of unknown size.
+    const nothingToImport = toImport === 0;
 
     return (
         <Widget title="Progress" titleSize="large" refreshAction={onRefresh} className={className} dataTestId="discovery-progress">
@@ -80,7 +84,7 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
                         />
                         {progress.targetsFailed ? (
                             <p className="mt-1 text-sm text-warning" data-testid="targets-failed">
-                                {progress.targetsFailed} targets failed
+                                {progress.targetsFailed} {progress.targetsFailed === 1 ? 'target' : 'targets'} failed
                             </p>
                         ) : null}
                     </div>
@@ -89,8 +93,8 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
                 {processing ? (
                     <div data-testid="import-progress">
                         <ProgressBar
-                            value={discovery.itemsProcessed ?? 0}
-                            max={discovery.itemsNewlyDiscovered ?? 0}
+                            value={nothingToImport ? 1 : (discovery.itemsProcessed ?? 0)}
+                            max={nothingToImport ? 1 : toImport}
                             tone="info"
                             ariaLabel="Platform import"
                             dataTestId="import-progress-bar"
@@ -98,13 +102,14 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
                                 <>
                                     <span>Platform import</span>
                                     <span className="tabular-nums">
-                                        {discovery.itemsProcessed ?? 0} / {discovery.itemsNewlyDiscovered ?? 0} items
+                                        {discovery.itemsProcessed ?? 0} / {toImport} items
                                     </span>
                                 </>
                             }
                             caption={
                                 <span>
-                                    {remaining} waiting{failed ? `, ${failed} failed` : ''} — counted on every read
+                                    {nothingToImport ? 'Nothing to import' : `${remaining} waiting${failed ? `, ${failed} failed` : ''}`} —
+                                    counted on every read
                                 </span>
                             }
                         />

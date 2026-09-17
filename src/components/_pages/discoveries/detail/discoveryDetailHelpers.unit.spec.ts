@@ -117,7 +117,7 @@ describe('targetsCaption', () => {
     it('shows a denominator only when the Provider sent one', () => {
         expect(targetsCaption(12, 30)).toBe('12 / 30 targets');
         expect(targetsCaption(12, undefined)).toBe('12 targets');
-        expect(targetsCaption(undefined, 30)).toBe('0 / 30 targets');
+        expect(targetsCaption(undefined, 30)).toBe('30 targets in total');
         expect(targetsCaption(undefined, undefined)).toBe('No target count reported');
     });
 });
@@ -135,7 +135,7 @@ describe('importRemainder', () => {
 });
 
 describe('certificateNotes', () => {
-    const certificatesOnly = { resources: [Resource.Certificates] };
+    const certificatesOnly = { resources: [Resource.Certificates], status: DiscoveryStatus.Completed };
 
     it('reads a provider figure above the saved one as repeats when everything was handed over', () => {
         // Four hosts answered with a three-certificate chain each: 12 items, 8 distinct certificates.
@@ -149,10 +149,11 @@ describe('certificateNotes', () => {
         ).toEqual([{ kind: 'repeats', count: 4 }]);
     });
 
-    it('reads items reported above items received as never handed over', () => {
+    it('reads items reported above items received as never handed over once the run has ended', () => {
         expect(
             certificateNotes({
                 ...certificatesOnly,
+                status: DiscoveryStatus.Cancelled,
                 itemsDiscovered: 9,
                 totalCertificatesDiscovered: 8,
                 connectorTotalCertificatesDiscovered: 12,
@@ -161,6 +162,18 @@ describe('certificateNotes', () => {
             { kind: 'notHandedOver', count: 3 },
             { kind: 'repeats', count: 1 },
         ]);
+    });
+
+    it('holds the never-handed-over note while the run is still live, when the provider is expected to lead', () => {
+        expect(
+            certificateNotes({
+                ...certificatesOnly,
+                status: DiscoveryStatus.InProgress,
+                itemsDiscovered: 9,
+                totalCertificatesDiscovered: 8,
+                connectorTotalCertificatesDiscovered: 12,
+            }),
+        ).toEqual([{ kind: 'repeats', count: 1 }]);
     });
 
     it('says nothing when the figures agree', () => {
@@ -181,6 +194,7 @@ describe('certificateNotes', () => {
         expect(
             certificateNotes({
                 resources: [Resource.Certificates, Resource.Keys],
+                status: DiscoveryStatus.Completed,
                 itemsDiscovered: 52,
                 totalCertificatesDiscovered: 48,
                 connectorTotalCertificatesDiscovered: 48,
