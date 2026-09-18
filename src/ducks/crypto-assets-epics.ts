@@ -45,6 +45,26 @@ const listCryptoAssets: AppEpic = (action$, state, deps) => {
     );
 };
 
-const epics = [listCryptoAssets];
+const getCryptoAssetDetail: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getCryptoAssetDetail.match),
+        switchMap((action) =>
+            deps.apiClients.cryptographicAssets.getCryptographicAsset({ uuid: action.payload.uuid }).pipe(
+                mergeMap((detail) => of(slice.actions.getCryptoAssetDetailSuccess({ detail }))),
+                // No widget lock: the request clears the asset, so the page's own error card is what renders.
+                catchError((err) =>
+                    of(
+                        slice.actions.getCryptoAssetDetailFailure({
+                            error: extractError(err, 'Failed to fetch cryptographic asset'),
+                            statusCode: typeof err?.status === 'number' ? err.status : undefined,
+                        }),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
+const epics = [listCryptoAssets, getCryptoAssetDetail];
 
 export default epics;
