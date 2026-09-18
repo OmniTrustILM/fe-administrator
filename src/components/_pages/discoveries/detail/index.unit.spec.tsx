@@ -221,25 +221,38 @@ describe('DiscoveryDetail', () => {
         it('offers stop and cancel while a stoppable run is in progress', async () => {
             await render(buildState(v2Run));
 
-            expect(headerButtons()).toEqual(['Stop', 'Cancel', 'Delete']);
+            expect(headerButtons()).toEqual(['Stop', 'Cancel', 'Delete (cancel the run first)']);
         });
 
         it('offers resume and cancel while stopped', async () => {
             await render(buildState({ ...v2Run, status: DiscoveryStatus.Stopped }));
 
-            expect(headerButtons()).toEqual(['Resume', 'Cancel', 'Delete']);
+            expect(headerButtons()).toEqual(['Resume', 'Cancel', 'Delete (cancel the run first)']);
         });
 
         it('offers nothing once the platform is processing', async () => {
             await render(buildState({ ...v2Run, status: DiscoveryStatus.Processing }));
 
-            expect(headerButtons()).toEqual(['Delete']);
+            expect(headerButtons()).toEqual(['Delete (cancel the run first)']);
+        });
+
+        it('disables delete while a v2 run is live, since Core refuses to delete a run that has not ended', async () => {
+            const deleteButton = () =>
+                container.querySelector<HTMLButtonElement>('[data-testid="widget-Discovery Details"] > button[title^="Delete"]');
+
+            await render(buildState(v2Run));
+            expect(deleteButton()?.disabled).toBe(true);
+            expect(deleteButton()?.title).toBe('Delete (cancel the run first)');
+
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Completed }));
+            expect(deleteButton()?.disabled).toBe(false);
+            expect(deleteButton()?.title).toBe('Delete');
         });
 
         it('hides a control the user lacks permission for rather than disabling it', async () => {
             await render(buildState(v2Run, [ResourceAction.Cancel]));
 
-            expect(headerButtons()).toEqual(['Cancel', 'Delete']);
+            expect(headerButtons()).toEqual(['Cancel', 'Delete (cancel the run first)']);
         });
 
         it('disables delete while a lifecycle call is in flight, so two mutations never race', async () => {
@@ -251,7 +264,7 @@ describe('DiscoveryDetail', () => {
             expect(buttons.map((b) => [b.title, b.disabled])).toEqual([
                 ['Stop', true],
                 ['Cancel', true],
-                ['Delete', true],
+                ['Delete (cancel the run first)', true],
             ]);
         });
 
