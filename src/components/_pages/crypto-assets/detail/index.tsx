@@ -9,7 +9,6 @@ import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router';
 import { PlatformEnum } from 'types/openapi';
-import { LockWidgetNameEnum } from 'types/user-interface';
 import {
     CryptoAssetIdentity,
     CryptoAssetPayloads,
@@ -102,12 +101,7 @@ export default function CryptoAssetDetail() {
         <div>
             {breadcrumb}
             <Container>
-                <Widget
-                    title="Summary"
-                    titleSize="large"
-                    widgetLockName={LockWidgetNameEnum.CryptoAssetDetail}
-                    refreshAction={getFreshDetail}
-                >
+                <Widget title="Summary" titleSize="large" refreshAction={getFreshDetail}>
                     <CryptoAssetSummary detail={detail} typeLabel={getEnumLabel(typeEnum, detail.type)} verdictLabel={verdictLabel} />
                 </Widget>
                 <div className="grid gap-4 md:grid-cols-2">

@@ -73,6 +73,13 @@ describe('fieldMappingSummary', () => {
         ]);
         expect(fieldMappingSummary(fm)).toBe('Subject CN + Subject OU + SAN dNSName + Extension 2.5.29.17');
     });
+    test('an absent order sorts first within its type, as Core reads it as 0', () => {
+        const fm = mapping([
+            { fieldType: FieldType.Rdn, rdn: 'OU', order: 1 },
+            { fieldType: FieldType.Rdn, rdn: 'CN' },
+        ]);
+        expect(fieldMappingSummary(fm)).toBe('Subject CN + Subject OU');
+    });
     test('unknown fieldType falls back to the raw fieldType', () => {
         expect(fieldMappingSummary(mapping([{ fieldType: 'newKind' }]))).toBe('newKind');
     });

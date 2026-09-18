@@ -16,15 +16,21 @@ export const BRAND_COLOR_MESSAGE = "Color must be a six-digit hexadecimal value 
 /** Matches `BrandingSettingsUpdateDto.LOGO_MAX_DECODED_BYTES` - one mebibyte of image data, before base64. */
 export const LOGO_MAX_DECODED_BYTES = 1024 * 1024;
 
-export const LOGO_MIN_RATIO = 1;
-export const LOGO_MAX_RATIO = 3;
-
 export const LOGO_MEDIA_TYPES = ['image/png', 'image/svg+xml'] as const;
 
 /** Fed to the file input, so the picker filters to what Core accepts. Extensions included: Windows reports SVG as ''. */
 export const LOGO_ACCEPT = '.png,.svg,image/png,image/svg+xml';
 
-export const LOGO_HELP = 'PNG or SVG with a transparent background, up to 1 MB, aspect ratio between 1:1 and 3:1.';
+/**
+ * Advice, not a rule: nothing refuses a logo for its shape, and the slot repeats these numbers in its own note.
+ *
+ * The maximum sits above the platform's own 5.15:1 wordmark deliberately. Wide wordmarks are common, so the
+ * recommendation must include them.
+ */
+export const LOGO_RECOMMENDED_MIN_RATIO = 1;
+export const LOGO_RECOMMENDED_MAX_RATIO = 6;
+
+export const LOGO_HELP = `PNG or SVG with a transparent background, up to 1 MB, ideally with an aspect ratio between ${LOGO_RECOMMENDED_MIN_RATIO}:1 and ${LOGO_RECOMMENDED_MAX_RATIO}:1.`;
 
 export const isBrandColor = (value: string): boolean => BRAND_COLOR_PATTERN.test(value);
 
@@ -54,6 +60,86 @@ const LOGO_PNG_ERROR = 'Logo must be a well-formed PNG image.';
 const LOGO_NAMESPACE_ERROR = 'Logo SVG must declare xmlns="http://www.w3.org/2000/svg".';
 
 const isPng = (bytes: Uint8Array): boolean => PNG_SIGNATURE.every((byte, index) => bytes[index] === byte);
+
+/** A chunk's length, type and trailing CRC - everything in it that is not its data. */
+const PNG_CHUNK_OVERHEAD = 12;
+
+const PNG_CHUNK_TYPE_LENGTH = 4;
+
+const PNG_IHDR_DATA_LENGTH = 13;
+
+const CRC_TABLE = Uint32Array.from({ length: 256 }, (_entry, index) => {
+    let value = index;
+
+    for (let bit = 0; bit < 8; bit += 1) {
+        value = (value >>> 1) ^ (0xedb88320 & -(value & 1));
+    }
+
+    return value >>> 0;
+});
+
+const crc32 = (bytes: Uint8Array, from: number, to: number): number => {
+    let crc = ~0;
+
+    for (let index = from; index < to; index += 1) {
+        crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ bytes[index]) & 0xff];
+    }
+
+    return ~crc >>> 0;
+};
+
+const readUint32 = (bytes: Uint8Array, offset: number): number =>
+    ((bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3]) >>> 0;
+
+const chunkType = (bytes: Uint8Array, offset: number): string =>
+    String.fromCharCode(...bytes.subarray(offset, offset + PNG_CHUNK_TYPE_LENGTH));
+
+/**
+ * Mirrors `BrandingLogoValidator.pngDimensions`: IHDR first at its declared length, every chunk's CRC intact, image
+ * data present, and IEND closing the file exactly at its end. Walking the sequence is what makes the signature check
+ * mean something - a browser draws a PNG with bytes appended after IEND, and Core refuses it.
+ *
+ * Every step is bounded by the buffer, so a truncated or hostile chunk length ends the walk rather than driving it.
+ */
+const isWellFormedPng = (bytes: Uint8Array): boolean => {
+    let sawHeader = false;
+    let sawImageData = false;
+    let offset = PNG_SIGNATURE.length;
+
+    while (offset + PNG_CHUNK_OVERHEAD <= bytes.length) {
+        const dataLength = readUint32(bytes, offset);
+
+        if (dataLength > bytes.length - offset - PNG_CHUNK_OVERHEAD) {
+            return false;
+        }
+
+        const typeOffset = offset + PNG_CHUNK_TYPE_LENGTH;
+        const type = chunkType(bytes, typeOffset);
+        const crcOffset = typeOffset + PNG_CHUNK_TYPE_LENGTH + dataLength;
+
+        if (crc32(bytes, typeOffset, crcOffset) !== readUint32(bytes, crcOffset)) {
+            return false;
+        }
+
+        if (!sawHeader) {
+            if (type !== 'IHDR' || dataLength !== PNG_IHDR_DATA_LENGTH) {
+                return false;
+            }
+
+            sawHeader = true;
+        } else if (type === 'IHDR') {
+            return false;
+        } else if (type === 'IDAT') {
+            sawImageData = true;
+        } else if (type === 'IEND') {
+            return dataLength === 0 && sawImageData && offset + PNG_CHUNK_OVERHEAD === bytes.length;
+        }
+
+        offset += PNG_CHUNK_OVERHEAD + dataLength;
+    }
+
+    return false;
+};
 
 /**
  * A failed parse is reported two ways depending on the browser - a `parsererror` root, or one inserted as the root's
@@ -123,7 +209,7 @@ export type LogoContent = { mediaType: string; error?: undefined } | { mediaType
  */
 export const logoContent = (bytes: Uint8Array): LogoContent => {
     if (isPng(bytes)) {
-        return { mediaType: 'image/png' };
+        return isWellFormedPng(bytes) ? { mediaType: 'image/png' } : { error: LOGO_PNG_ERROR };
     }
 
     const markup = decodeXml(bytes);
@@ -147,20 +233,6 @@ export const logoContent = (bytes: Uint8Array): LogoContent => {
 
 export const logoSizeError = (bytes: number): string | undefined =>
     bytes > LOGO_MAX_DECODED_BYTES ? 'Logo must be at most 1 MB.' : undefined;
-
-/**
- * Zero on either side means the image declares no intrinsic size, which an SVG without width and height attributes
- * does. There is nothing to measure, so the check is skipped and Core decides.
- */
-export const logoRatioError = (width: number, height: number): string | undefined => {
-    if (width <= 0 || height <= 0) {
-        return undefined;
-    }
-
-    const ratio = width / height;
-
-    return ratio < LOGO_MIN_RATIO || ratio > LOGO_MAX_RATIO ? 'Logo aspect ratio must be between 1:1 and 3:1.' : undefined;
-};
 
 /**
  * The shape of a stored logo, mirroring `BrandingLogoValidator.DATA_URI` in Core: a media type, then a base64 payload
@@ -255,7 +327,9 @@ export const measureDataUri = (dataUri: string): Promise<{ width: number; height
         image.src = dataUri;
     });
 
-export type LogoReadResult = { dataUri: string; error?: undefined } | { dataUri?: undefined; error: string };
+export type LogoReadResult =
+    | { dataUri: string; ratio?: number; error?: undefined }
+    | { dataUri?: undefined; ratio?: undefined; error: string };
 
 /** The bytes a base64 data URI carries, or undefined for anything else. */
 const decodeDataUri = (dataUri: string): Uint8Array | undefined => {
@@ -272,7 +346,12 @@ const decodeDataUri = (dataUri: string): Uint8Array | undefined => {
     }
 };
 
-/** Reads a chosen file into the data URI Core expects, refusing it on any rule above - mirrored or not. */
+/**
+ * Reads a chosen file into the data URI Core expects, refusing it on any rule above - mirrored or not.
+ *
+ * An unusual aspect ratio is not one of them - neither this nor Core refuses a shape - so the measurement comes back
+ * with the URI, for the slot to advise on.
+ */
 export const readLogoFile = async (file: File): Promise<LogoReadResult> => {
     const sizeError = logoSizeError(file.size);
 
@@ -310,9 +389,11 @@ export const readLogoFile = async (file: File): Promise<LogoReadResult> => {
         return { error: LOGO_PNG_ERROR };
     }
 
-    const ratioError = measured ? logoRatioError(measured.width, measured.height) : undefined;
+    // A browser substitutes its own 300x150 for an SVG that declares no size at all, so a zero here is the image
+    // stating one - and a shape with no extent is not one to advise on.
+    const hasSize = measured !== undefined && measured.width > 0 && measured.height > 0;
 
-    return ratioError ? { error: ratioError } : { dataUri };
+    return { dataUri, ratio: hasSize ? measured.width / measured.height : undefined };
 };
 
 /**

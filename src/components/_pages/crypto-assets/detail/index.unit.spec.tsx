@@ -2,7 +2,6 @@ import { act } from 'react';
 import { Provider } from 'react-redux';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { LockTypeEnum, LockWidgetNameEnum } from 'types/user-interface';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createMockStore } from 'utils/test-helpers';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
@@ -18,20 +17,11 @@ vi.mock('./CryptoAssetDetailSections', () => ({
     CryptoAssetPayloads: () => <div />,
 }));
 
-// The epic locks this widget name on every failure, so the failed page has to be tested with the lock in the store.
-const detailLock = {
-    widgetName: LockWidgetNameEnum.CryptoAssetDetail,
-    lockTitle: 'Not Found',
-    lockText: 'The requested resource does not exist',
-    lockType: LockTypeEnum.GENERIC,
-};
-
 type CryptoAssetsState = { assetDetail?: unknown; assetDetailError?: string; assetDetailErrorStatusCode?: number };
 
-const storeWith = (cryptoAssets: CryptoAssetsState, widgetLocks: unknown[] = [detailLock]) =>
+const storeWith = (cryptoAssets: CryptoAssetsState) =>
     createMockStore({
-        cryptoAssets: { cryptoAssets: [], isFetchingList: false, isFetchingDetail: false, ...cryptoAssets } as never,
-        userInterface: { widgetLocks } as never,
+        cryptoAssets: { assetsData: undefined, isFetchingList: false, isFetchingDetail: false, ...cryptoAssets } as never,
     });
 
 describe('CryptoAssetDetail', () => {
@@ -84,7 +74,7 @@ describe('CryptoAssetDetail', () => {
     });
 
     test('a loaded asset heads the page with its name and shows the summary', async () => {
-        await render(storeWith({ assetDetail: { uuid: 'asset-1', name: 'RSA-2048', type: 'algorithm', pqcVerdict: 'notReady' } }, []));
+        await render(storeWith({ assetDetail: { uuid: 'asset-1', name: 'RSA-2048', type: 'algorithm', pqcVerdict: 'notReady' } }));
 
         expect(container.querySelector('h1')?.textContent).toBe('RSA-2048');
         expect(container.querySelector('[data-testid="crypto-asset-summary"]')).not.toBeNull();

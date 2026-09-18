@@ -9,7 +9,9 @@ import {
     BRAND_TOKENS_STYLE_ID,
     brandColors,
     brandTokenCss,
+    brandTokenSources,
     brandTokenValues,
+    isBrandedUtility,
     storeBrandCss,
 } from './brand-tokens';
 import type { BrandColorKey } from './brand-tokens';
@@ -195,6 +197,88 @@ describe('brand-tokens', () => {
 
         test('should contain nothing the pre-paint guard in index.html would reject', () => {
             expect(brandTokenCss(brandColors(ALL_COLORS))).toMatch(/^[a-z0-9\s#(),.%:;{}_-]+$/i);
+        });
+    });
+
+    /**
+     * Attribution is only honest while both readings cover the same tokens: one says what a token becomes, the other
+     * which input it came from, and they walk the rule table separately.
+     */
+    describe('brandTokenSources', () => {
+        test.each(['light', 'dark'] as const)('should cover exactly the tokens brandTokenValues resolves in %s', (theme) => {
+            const colors = brandColors(ALL_COLORS);
+
+            expect(Object.keys(brandTokenSources(colors, theme)).sort()).toStrictEqual(Object.keys(brandTokenValues(colors, theme)).sort());
+        });
+
+        test.each(['light', 'dark'] as const)('should cover the same tokens for a partly set brand in %s', (theme) => {
+            const colors = brandColors({ primaryColor: '#0073cf', textColor: '#1f2937' });
+
+            expect(Object.keys(brandTokenSources(colors, theme)).sort()).toStrictEqual(Object.keys(brandTokenValues(colors, theme)).sort());
+        });
+
+        test('should name the input each token derives from', () => {
+            expect(brandTokenSources(brandColors(ALL_COLORS), 'light')).toMatchObject({
+                brand: 'primary',
+                info: 'secondary',
+                surface: 'background',
+                content: 'text',
+            });
+        });
+    });
+
+    /**
+     * The guard the contrast dialog is checked against, so a spelling it misses is a branded colour that suite lets
+     * through. One case per utility family and per way of naming a token, since a regexp silently covers neither.
+     */
+    describe('isBrandedUtility', () => {
+        test.each([
+            'bg-surface-raised',
+            'text-content-muted',
+            'border-brand',
+            'border-l-brand-solid',
+            'ring-brand',
+            'ring-offset-surface',
+            'inset-ring-brand',
+            'outline-brand',
+            'fill-info-solid',
+            'stroke-brand',
+            'divide-y-content',
+            'placeholder-content-hint',
+            'decoration-brand',
+            'accent-brand',
+            'caret-content',
+            'shadow-brand',
+            'inset-shadow-brand',
+            'text-shadow-brand',
+            'from-brand',
+            'via-info',
+            'to-surface-sunken',
+            'bg-brand/50',
+            '!bg-brand',
+            'hover:bg-brand-hover',
+            'bg-(--brand)',
+            'bg-[var(--brand)]',
+            'dark:text-[var(--content-muted)]/80',
+        ])('should catch %s', (utility) => {
+            expect(isBrandedUtility(utility)).toBe(true);
+        });
+
+        test.each([
+            'bg-warning-surface',
+            'text-warning',
+            'border-divider',
+            'border-l-warning-solid',
+            'outline-outline',
+            'shadow-sm',
+            'bg-current/12',
+            'text-shadow-sm',
+            'rounded-lg',
+            'bg-(--warning)',
+            'bg-[var(--danger)]',
+            'text-content-adjacent',
+        ])('should leave %s alone', (utility) => {
+            expect(isBrandedUtility(utility)).toBe(false);
         });
     });
 

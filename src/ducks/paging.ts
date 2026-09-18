@@ -63,10 +63,13 @@ export const slice = createSlice({
             });
         },
 
-        listSuccess: (state, action: PayloadAction<{ entity: EntityType; totalItems: number }>) => {
+        listSuccess: (state, action: PayloadAction<{ entity: EntityType; totalItems: number; pageSize?: number }>) => {
             updatePagingState(state, action.payload.entity, (paging) => {
                 paging.isFetchingList = false;
                 paging.totalItems = action.payload.totalItems;
+                if (action.payload.pageSize !== undefined) {
+                    paging.pageSize = normalizePositiveInteger(action.payload.pageSize, paging.pageSize || 10);
+                }
             });
         },
 

@@ -8,7 +8,6 @@ import {
     isRenderableLogo,
     LOGO_MAX_DECODED_BYTES,
     logoContent,
-    logoRatioError,
     logoSizeError,
     readFileAsDataUri,
     readLogoFile,
@@ -21,6 +20,67 @@ const PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNg
 const pngBytes = () => Uint8Array.from(atob(PNG_BASE64), (character) => character.charCodeAt(0));
 
 const utf8 = (text: string) => new TextEncoder().encode(text);
+
+const PNG_ERROR = 'Logo must be a well-formed PNG image.';
+
+/** Independent of the implementation's own, so the two have to agree for a well-formed PNG to pass. */
+const crc32 = (bytes: Uint8Array): number => {
+    let crc = ~0;
+
+    for (const byte of bytes) {
+        crc ^= byte;
+
+        for (let bit = 0; bit < 8; bit += 1) {
+            crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+        }
+    }
+
+    return ~crc >>> 0;
+};
+
+const chunk = (type: string, data: Uint8Array = new Uint8Array()) => {
+    const signed = Uint8Array.from([...utf8(type), ...data]);
+    const bytes = new Uint8Array(signed.length + 8);
+    const view = new DataView(bytes.buffer);
+
+    view.setUint32(0, data.length);
+    bytes.set(signed, 4);
+    view.setUint32(bytes.length - 4, crc32(signed));
+
+    return bytes;
+};
+
+/** The signature, then IHDR's length and type - so IHDR's data starts here, in the real fixture and an assembly alike. */
+const IHDR_DATA_OFFSET = 16;
+const IHDR_DATA_LENGTH = 13;
+const IHDR_CRC_OFFSET = IHDR_DATA_OFFSET + IHDR_DATA_LENGTH;
+
+/** The real fixture's IHDR payload, so a structural test is not also asserting made-up dimensions. */
+const IHDR_DATA = pngBytes().slice(IHDR_DATA_OFFSET, IHDR_CRC_OFFSET);
+const IDAT_DATA = Uint8Array.from([0x78, 0x9c, 0x63, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01]);
+
+const assemble = (...chunks: Uint8Array[]) => Uint8Array.from([...pngBytes().slice(0, 8), ...chunks.flatMap((part) => [...part])]);
+
+const header = () => chunk('IHDR', IHDR_DATA);
+const imageData = () => chunk('IDAT', IDAT_DATA);
+const end = () => chunk('IEND');
+
+/** IHDR carries width and height first, so the bit depth is the ninth byte of its data and the colour type the tenth. */
+const BIT_DEPTH_OFFSET = 8;
+const COLOR_TYPE_OFFSET = 9;
+
+/**
+ * Structurally whole, and stored by Core, but drawn by nothing: colour type 7 is not one of the five PNG defines, and
+ * Core interprets only the width and height. That combination is what the measurement guard is for, so the fixture has
+ * to be a file Core accepts - a broken chunk sequence would be refused before the measurement, and a zero width
+ * refused by Core as well, and neither would isolate the rule that is deliberately stricter here.
+ */
+const undrawablePng = () => {
+    const data = Uint8Array.from(IHDR_DATA);
+    data[COLOR_TYPE_OFFSET] = 7;
+
+    return assemble(chunk('IHDR', data), imageData(), end());
+};
 
 /** Core reads the encoding from the BOM, so these are documents it would parse rather than refuse. */
 const utf16 = (text: string, endianness: 'le' | 'be') => {
@@ -183,6 +243,72 @@ describe('branding', () => {
 
             expect(logoContent(utf8(doctyped))).toEqual({ error: 'Logo SVG must not carry a document type declaration.' });
         });
+
+        /**
+         * Mirrors `BrandingLogoValidator.pngDimensions`. Every case breaks exactly one structural rule and keeps the
+         * rest intact - chunks are re-signed as they are built, so a test for the IEND rules is not quietly answered by
+         * the CRC rule firing first.
+         */
+        describe('a PNG whose chunk sequence is broken', () => {
+            test('should read one whose chunks are intact', () => {
+                expect(logoContent(assemble(header(), imageData(), end()))).toEqual({ mediaType: 'image/png' });
+            });
+
+            /** The premise of the measurement guard below: the walk reads the chunk structure, not the pixel format. */
+            test('should read one whose colour type no browser draws', () => {
+                expect(logoContent(undrawablePng())).toEqual({ mediaType: 'image/png' });
+            });
+
+            test('should refuse bytes after IEND', () => {
+                expect(logoContent(Uint8Array.from([...assemble(header(), imageData(), end()), 0x00]))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse a chunk whose CRC does not cover its data', () => {
+                const broken = assemble(header(), imageData(), end());
+                broken[IHDR_DATA_OFFSET + BIT_DEPTH_OFFSET] ^= 0xff;
+
+                expect(logoContent(broken)).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse a chunk whose stored CRC is wrong', () => {
+                const broken = assemble(header(), imageData(), end());
+                broken[IHDR_CRC_OFFSET + 1] ^= 0xff;
+
+                expect(logoContent(broken)).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse one that never reaches IEND', () => {
+                expect(logoContent(assemble(header(), imageData()))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse an IEND carrying data', () => {
+                expect(logoContent(assemble(header(), imageData(), chunk('IEND', Uint8Array.from([0x00]))))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse one closing with no image data', () => {
+                expect(logoContent(assemble(header(), end()))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse a first chunk that is not IHDR', () => {
+                expect(logoContent(assemble(imageData(), header(), end()))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse an IHDR that is not thirteen bytes', () => {
+                expect(logoContent(assemble(chunk('IHDR', IHDR_DATA.slice(0, 12)), imageData(), end()))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse a second IHDR', () => {
+                expect(logoContent(assemble(header(), header(), imageData(), end()))).toEqual({ error: PNG_ERROR });
+            });
+
+            /** A hostile length must terminate the walk rather than drive it past the end of the buffer. */
+            test('should refuse a chunk claiming more data than the file holds', () => {
+                const overrun = assemble(header(), imageData(), end());
+                new DataView(overrun.buffer).setUint32(8, 0xfffffff0);
+
+                expect(logoContent(overrun)).toEqual({ error: PNG_ERROR });
+            });
+        });
     });
 
     describe('logoSizeError', () => {
@@ -196,31 +322,6 @@ describe('branding', () => {
 
         test('should mirror the one mebibyte Core enforces', () => {
             expect(LOGO_MAX_DECODED_BYTES).toBe(1024 * 1024);
-        });
-    });
-
-    describe('logoRatioError', () => {
-        test.each([
-            [100, 100],
-            [200, 100],
-            [300, 100],
-            [150, 100],
-        ])('should accept %sx%s', (width, height) => {
-            expect(logoRatioError(width, height)).toBeUndefined();
-        });
-
-        test.each([
-            [100, 200],
-            [301, 100],
-        ])('should reject %sx%s', (width, height) => {
-            expect(logoRatioError(width, height)).toBe('Logo aspect ratio must be between 1:1 and 3:1.');
-        });
-
-        test.each([
-            [0, 100],
-            [100, 0],
-        ])('should skip the check for an image declaring no intrinsic size (%sx%s)', (width, height) => {
-            expect(logoRatioError(width, height)).toBeUndefined();
         });
     });
 
@@ -338,8 +439,8 @@ describe('branding', () => {
         });
 
         /**
-         * The disguise this check exists for: the size and ratio rules pass, and the browser reports `image/png`
-         * because the name says so, so only the content can tell the two apart.
+         * The disguise this check exists for: the size rule passes, and the browser reports `image/png` because the
+         * name says so, so only the content can tell the two apart.
          */
         test('should refuse a JPEG named as a PNG', async () => {
             const disguised = new File([Uint8Array.from([0xff, 0xd8, 0xff, 0xe0])], 'logo.png', { type: 'image/png' });
@@ -377,40 +478,48 @@ describe('branding', () => {
          * it - and a logo nothing can draw is not worth storing, whatever Core's chunk walk would make of it.
          */
         test('should refuse a PNG the browser cannot decode', async () => {
+            const loaded: string[] = [];
+
             vi.stubGlobal(
                 'Image',
                 class {
                     onerror: (() => void) | null = null;
-                    set src(_value: string) {
+                    set src(value: string) {
+                        loaded.push(value);
                         queueMicrotask(() => this.onerror?.());
                     }
                 },
             );
 
-            const truncated = new File([pngBytes().slice(0, 12)], 'logo.png', { type: 'image/png' });
+            const undrawable = new File([undrawablePng()], 'logo.png', { type: 'image/png' });
 
-            await expect(readLogoFile(truncated)).resolves.toEqual({ error: 'Logo must be a well-formed PNG image.' });
+            await expect(readLogoFile(undrawable)).resolves.toEqual({ error: PNG_ERROR });
+            // The walk refuses with the same message, and only a file it accepted is ever handed to an `Image`.
+            expect(loaded).toEqual([expect.stringMatching(/^data:image\/png;base64,/)]);
 
             vi.unstubAllGlobals();
         });
 
-        test('should refuse a file whose ratio is out of range', async () => {
+        test('should accept a file whose ratio is far outside the recommendation', async () => {
             measuring(100, 400);
 
-            await expect(readLogoFile(pngFile())).resolves.toEqual({
-                error: 'Logo aspect ratio must be between 1:1 and 3:1.',
-            });
+            const result = await readLogoFile(pngFile());
+
+            expect(result.error).toBeUndefined();
+            expect(result.dataUri).toMatch(/^data:image\/png;base64,/);
+            expect(result.ratio).toBe(0.25);
 
             vi.unstubAllGlobals();
         });
 
-        test('should return the data URI for an acceptable file', async () => {
+        test('should return the data URI and the measured ratio for an acceptable file', async () => {
             measuring(300, 150);
 
             const result = await readLogoFile(pngFile());
 
             expect(result.error).toBeUndefined();
             expect(result.dataUri).toMatch(/^data:image\/png;base64,/);
+            expect(result.ratio).toBe(2);
 
             vi.unstubAllGlobals();
         });
@@ -463,6 +572,20 @@ describe('branding', () => {
 
             expect(result.error).toBeUndefined();
             expect(result.dataUri).toMatch(/^data:image\/svg\+xml;base64,/);
+            expect(result.ratio).toBeUndefined();
+
+            vi.unstubAllGlobals();
+        });
+
+        /** An image declaring a zero side has no extent to advise on, which is not the same as a flat shape. */
+        test('should report no ratio for an image that measures as zero', async () => {
+            measuring(0, 0);
+
+            const svg = new File(['<svg xmlns="http://www.w3.org/2000/svg"/>'], 'logo.svg', { type: 'image/svg+xml' });
+            const result = await readLogoFile(svg);
+
+            expect(result.error).toBeUndefined();
+            expect(result.ratio).toBeUndefined();
 
             vi.unstubAllGlobals();
         });

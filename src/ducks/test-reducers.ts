@@ -484,7 +484,7 @@ function secretsTestReducer(state: SecretsTestState | undefined, _action: Unknow
 }
 
 export type CryptoAssetsTestState = {
-    cryptoAssets: unknown[];
+    assetsData?: unknown;
     assetDetail?: unknown;
     assetDetailError?: string;
     assetDetailErrorStatusCode?: number;
@@ -493,7 +493,6 @@ export type CryptoAssetsTestState = {
 };
 
 const cryptoAssetsTestInitialState: CryptoAssetsTestState = {
-    cryptoAssets: [],
     isFetchingList: false,
     isFetchingDetail: false,
 };

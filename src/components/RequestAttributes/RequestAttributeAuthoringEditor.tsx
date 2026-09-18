@@ -9,7 +9,7 @@ import RadioRow from 'components/RadioRow';
 import Select from 'components/Select';
 import TextArea from 'components/TextArea';
 import TextInput from 'components/TextInput';
-import { Plus } from 'lucide-react';
+import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getStepValue } from 'utils/common-utils';
 import {
@@ -18,14 +18,16 @@ import {
     ExtensionValueEncoding,
     FieldType,
     GeneralNameType,
-    ObjectType,
     ValueSourceType,
 } from 'types/openapi';
 import type { OidSelectOption } from 'utils/oid';
 import {
     emptyAuthoredAttribute,
+    emptyMappingTarget,
     emptyValueSourceBinding,
-    isContentTypeAllowedForMapping,
+    firstAuthoredAttributeError,
+    hasMappingTarget,
+    hasStructuredMappingTarget,
     isJsonSchemaConstraintSupportedForContentType,
     isRegexConstraintSupportedForContentType,
     isStaticListSupportedForContentType,
@@ -33,10 +35,16 @@ import {
     isValueSourceBindingValid,
     MAPPED_CONTENT_TYPES,
     STRUCTURED_EXTENSION_OIDS,
+    SUBJECT_ALT_NAME_OID,
+    structuredMappingTarget,
     validateAuthoredAttribute,
     withBooleanReadOnlyDefault,
+    withMappingTargetRows,
+    withMappingTargets,
     type AuthoredAttributeErrors,
     type AuthoredAttributeFormValues,
+    type MappingTargetErrors,
+    type MappingTargetFormValues,
     type RequestAttributeAuthoringFormValues,
     type ValueSourceBindingFormValues,
 } from 'utils/requestAttributeAuthoring';
@@ -93,6 +101,9 @@ const MAPPING_OPTIONS = AUTHORABLE_FIELD_TYPES.map((v) => ({
     label: FIELD_TYPE_LABELS[v],
     description: FIELD_TYPE_DESCRIPTIONS[v],
 }));
+
+const MAPPING_TARGET_TOOLTIP =
+    "Where this attribute's value is placed in the issued certificate: an RDN (subject) component, a Subject Alternative Name, a certificate extension, or the Key Usage / Extended Key Usage extension. Every value is written to every target; targets of the same kind are applied in the order listed.";
 
 const GENERAL_NAME_TYPE_LABELS: Record<GeneralNameType, string> = {
     [GeneralNameType.Dns]: 'dNSName',
@@ -296,10 +307,10 @@ export default function RequestAttributeAuthoringEditor({
 
     const patch = useCallback((next: Partial<RequestAttributeAuthoringFormValues>) => onChange({ ...value, ...next }), [onChange, value]);
 
-    // Key Usage / Extended Key Usage OIDs are refused on the generic Extension target, so the
-    // picker must not offer them; their typed targets cover those extensions.
+    // Key Usage / Extended Key Usage and subjectAltName OIDs are refused on the generic Extension
+    // target, so the picker must not offer them; their typed targets cover those extensions.
     const genericExtensionOptions = useMemo(
-        () => extensionOptions.filter((o) => !(o.value in STRUCTURED_EXTENSION_OIDS)),
+        () => extensionOptions.filter((o) => !(o.value in STRUCTURED_EXTENSION_OIDS) && o.value !== SUBJECT_ALT_NAME_OID),
         [extensionOptions],
     );
 
@@ -342,8 +353,9 @@ export default function RequestAttributeAuthoringEditor({
     // removed. Skipped while the vocabulary is empty, loading or failed, so an unavailable
     // vocabulary cannot lock an unrelated edit by flagging every stored value.
     const structuredSetOffListError = (d: AuthoredAttributeFormValues): string | undefined => {
-        if (!isStructuredMappingTarget(d.mappingFieldType)) return undefined;
-        const isKeyUsage = d.mappingFieldType === FieldType.KeyUsage;
+        const structuredType = structuredMappingTarget(d);
+        if (structuredType === undefined) return undefined;
+        const isKeyUsage = structuredType === FieldType.KeyUsage;
         if (!isKeyUsage && (extendedKeyUsageOptionsError || !extendedKeyUsageOptionsLoaded)) return undefined;
         const vocabulary = new Set((isKeyUsage ? keyUsageOptions : extendedKeyUsageOptions).map((o) => o.value));
         if (vocabulary.size === 0) return undefined;
@@ -351,7 +363,14 @@ export default function RequestAttributeAuthoringEditor({
         if (offList.length === 0) return undefined;
         return `Remove the unregistered value(s) ${offList.join(', ')} — the permitted set may only contain registered ones.`;
     };
-    const allAttrErrors: AuthoredAttributeErrors = attrDraft ? validateAuthoredAttribute(attrDraft.data) : {};
+    const resolveRdn = useCallback(
+        (value: string) => {
+            const canonical = resolveOidValue(rdnOptions, value) ?? value;
+            return rdnOptions.find((o) => o.value === canonical)?.code ?? canonical;
+        },
+        [rdnOptions],
+    );
+    const allAttrErrors: AuthoredAttributeErrors = attrDraft ? validateAuthoredAttribute(attrDraft.data, resolveRdn) : {};
     if (attrDraft && !allAttrErrors.staticValues) {
         const offListError = structuredSetOffListError(attrDraft.data);
         if (offListError) allAttrErrors.staticValues = offListError;
@@ -363,7 +382,7 @@ export default function RequestAttributeAuthoringEditor({
     // Every draft is seeded through the Boolean read-only normaliser, so a stored read-only Boolean
     // attribute with no default opens showing the `false` its switch is already displaying.
     const openAttrDraft = (index: number | null, data: AuthoredAttributeFormValues) =>
-        setAttrDraft({ index, data: withBooleanReadOnlyDefault(data), submitted: false });
+        setAttrDraft({ index, data: withBooleanReadOnlyDefault(withMappingTargetRows(data)), submitted: false });
 
     const saveAttribute = () => {
         if (!attrDraft) return;
@@ -402,24 +421,29 @@ export default function RequestAttributeAuthoringEditor({
         return rdnOptions.find((o) => o.value === v)?.code ?? v;
     };
 
-    const mappingSummary = (attr: AuthoredAttributeFormValues) => {
-        switch (attr.mappingFieldType) {
+    const targetSummary = (target: MappingTargetFormValues) => {
+        switch (target.fieldType) {
             case FieldType.Rdn:
-                return `→ RDN ${rdnCodeDisplay(attr.mappingRdnCode)}`;
+                return `RDN ${rdnCodeDisplay(target.rdnCode)}`;
             case FieldType.San:
-                return `→ SAN ${attr.mappingGeneralNameType ? GENERAL_NAME_TYPE_LABELS[attr.mappingGeneralNameType] : '?'}`;
+                return `SAN ${target.generalNameType ? GENERAL_NAME_TYPE_LABELS[target.generalNameType] : '?'}`;
             case FieldType.Extension:
-                return `→ ext ${attr.mappingExtensionOid || '?'}`;
+                return `ext ${target.extensionOid || '?'}`;
             case FieldType.KeyUsage:
-                return '→ Key Usage';
+                return 'Key Usage';
             case FieldType.ExtendedKeyUsage:
-                return '→ Extended Key Usage';
+                return 'Extended Key Usage';
             default:
-                return 'unmapped';
+                return '?';
         }
     };
 
-    const firstError = (attr: AuthoredAttributeFormValues) => Object.values(validateAuthoredAttribute(attr))[0];
+    const mappingSummary = (attr: AuthoredAttributeFormValues) => {
+        const targets = attr.mappingTargets.filter((target) => target.fieldType !== undefined).map(targetSummary);
+        return targets.length > 0 ? `→ ${targets.join(' + ')}` : 'unmapped';
+    };
+
+    const firstError = (attr: AuthoredAttributeFormValues) => firstAuthoredAttributeError(validateAuthoredAttribute(attr, resolveRdn));
 
     const renderAttributeList = () => (
         <div className="space-y-2" data-testid={`${dataTestId}-attributes`}>
@@ -499,7 +523,7 @@ export default function RequestAttributeAuthoringEditor({
         const d = attrDraft.data;
         // A structured target's permitted-set multi-select replaces the value-source selector, the
         // generic static-list editor and the free-input default.
-        const structured = isStructuredMappingTarget(d.mappingFieldType);
+        const structured = hasStructuredMappingTarget(d);
         const set = (p: Partial<AuthoredAttributeFormValues>) =>
             setAttrDraft({ ...attrDraft, data: withBooleanReadOnlyDefault({ ...d, ...p }) });
         // Drop the static list and the default so a value typed under the old type can never serialise
@@ -559,7 +583,7 @@ export default function RequestAttributeAuthoringEditor({
                     labelTooltip="The data type of the value the requester provides. A mapped attribute is written into the certificate as text, so only String and Text are offered once a mapping target is set."
                     value={d.contentType}
                     onChange={(v) => setContentType(v as AttributeContentType)}
-                    options={d.mappingFieldType ? MAPPED_CONTENT_TYPE_OPTIONS : CONTENT_TYPE_OPTIONS}
+                    options={hasMappingTarget(d) ? MAPPED_CONTENT_TYPE_OPTIONS : CONTENT_TYPE_OPTIONS}
                 />
                 <FieldError testId={`${dataTestId}-attribute-content-type-error`} message={attrErrors.contentType} />
                 {isRegexConstraintSupportedForContentType(d.contentType) && (
@@ -628,141 +652,7 @@ export default function RequestAttributeAuthoringEditor({
                         )}
                     </div>
                 )}
-                <Select
-                    id="ra-attr-mapping"
-                    label="Mapping target"
-                    required
-                    labelTooltip="Where this attribute's value is placed in the issued certificate: an RDN (subject) component, a Subject Alternative Name, a certificate extension, or the Key Usage / Extended Key Usage extension."
-                    value={d.mappingFieldType ?? ''}
-                    onChange={(v) => {
-                        const mappingFieldType = (v as FieldType) || undefined;
-                        const changes: Partial<AuthoredAttributeFormValues> = {
-                            mappingFieldType,
-                            mappingObjectType: ObjectType.X509Certificate,
-                        };
-                        // Otherwise the dialog would show a content type its own dropdown no longer offers.
-                        if (mappingFieldType && !isContentTypeAllowedForMapping(d.contentType)) {
-                            changes.contentType = AttributeContentType.String;
-                            changes.staticValues = [];
-                            changes.defaultValue = undefined;
-                        }
-                        if (isStructuredMappingTarget(mappingFieldType)) {
-                            // A structured target's content is a permitted set picked from a closed
-                            // vocabulary: force the list shape, seed multi-select (a certificate
-                            // typically carries several bits/purposes) and clear everything the
-                            // generic value-source editors could have left behind.
-                            Object.assign(changes, {
-                                valueSourceType: ValueSourceType.None,
-                                list: true,
-                                multiSelect: true,
-                                readOnly: false,
-                                extensibleList: false,
-                                staticValues: [],
-                                defaultValue: undefined,
-                            });
-                        } else if (isStructuredMappingTarget(d.mappingFieldType)) {
-                            // Leaving a structured target: its permitted-set values (key-usage codes,
-                            // purpose OIDs) are meaningless for the new target, so drop them.
-                            Object.assign(changes, {
-                                list: false,
-                                multiSelect: false,
-                                extensibleList: false,
-                                staticValues: [],
-                            });
-                        }
-                        set(changes);
-                    }}
-                    options={MAPPING_OPTIONS}
-                    placeholder="Select mapping target"
-                />
-                <FieldError testId={`${dataTestId}-attribute-mapping-error`} message={attrErrors.mappingFieldType} />
-                {d.mappingFieldType === FieldType.Rdn && (
-                    <>
-                        <OidMappingSelect
-                            id="ra-attr-rdn"
-                            label="RDN"
-                            placeholder="Select an RDN"
-                            testIdPrefix={`${dataTestId}-rdn`}
-                            emptyHint="No RDNs are available. Register one under Settings → Custom OIDs."
-                            errorHint="Failed to load RDNs."
-                            options={rdnOptions}
-                            optionsError={rdnOptionsError}
-                            optionsLoaded={rdnOptionsLoaded}
-                            value={d.mappingRdnCode}
-                            onChange={(v) => set({ mappingRdnCode: v })}
-                            disabled={disabled}
-                        />
-                        <FieldError testId={`${dataTestId}-attribute-rdn-error`} message={attrErrors.mappingRdnCode} />
-                    </>
-                )}
-                {d.mappingFieldType === FieldType.San && (
-                    <>
-                        <Select
-                            id="ra-attr-general-name-type"
-                            label="SAN type"
-                            required
-                            value={d.mappingGeneralNameType ?? ''}
-                            onChange={(v) => set({ mappingGeneralNameType: (v as GeneralNameType) || undefined })}
-                            options={GENERAL_NAME_TYPE_OPTIONS}
-                            placeholder="Select SAN type"
-                        />
-                        <FieldError testId={`${dataTestId}-attribute-san-error`} message={attrErrors.mappingGeneralNameType} />
-                        {d.mappingGeneralNameType === GeneralNameType.OtherName && (
-                            <>
-                                <TextInput
-                                    id="ra-attr-othername-oid"
-                                    label="otherName OID"
-                                    required
-                                    value={d.mappingOtherNameOid ?? ''}
-                                    onChange={(v) => set({ mappingOtherNameOid: v })}
-                                />
-                                <FieldError
-                                    testId={`${dataTestId}-attribute-othername-oid-error`}
-                                    message={attrErrors.mappingOtherNameOid}
-                                />
-                                <Select
-                                    id="ra-attr-othername-encoding"
-                                    label="otherName value encoding"
-                                    required
-                                    value={d.mappingOtherNameEncoding ?? ''}
-                                    onChange={(v) => set({ mappingOtherNameEncoding: (v as ExtensionValueEncoding) || undefined })}
-                                    options={ENCODING_OPTIONS}
-                                    placeholder="Select encoding"
-                                />
-                                <FieldError
-                                    testId={`${dataTestId}-attribute-othername-encoding-error`}
-                                    message={attrErrors.mappingOtherNameEncoding}
-                                />
-                            </>
-                        )}
-                    </>
-                )}
-                {d.mappingFieldType === FieldType.Extension && (
-                    <>
-                        <OidMappingSelect
-                            id="ra-attr-extension-oid"
-                            label="Extension"
-                            placeholder="Select an extension"
-                            testIdPrefix={`${dataTestId}-extension`}
-                            emptyHint="No certificate extensions are available. Register one under Settings → Custom OIDs."
-                            errorHint="Failed to load certificate extensions."
-                            options={genericExtensionOptions}
-                            optionsError={extensionOptionsError}
-                            optionsLoaded={extensionOptionsLoaded}
-                            value={d.mappingExtensionOid}
-                            onChange={(v) => set({ mappingExtensionOid: v })}
-                            disabled={disabled}
-                        />
-                        <FieldError testId={`${dataTestId}-attribute-extension-error`} message={attrErrors.mappingExtensionOid} />
-                        <Checkbox
-                            id="ra-attr-critical-overridable"
-                            checked={d.mappingCriticalOverridable ?? false}
-                            onChange={(c) => set({ mappingCriticalOverridable: c })}
-                            label="Requester may override criticality"
-                            disabled={disabled}
-                        />
-                    </>
-                )}
+                {renderMappingTargets(d, set)}
                 {structured && renderStructuredSet(d, set)}
                 {!structured && (
                     <Select
@@ -845,12 +735,215 @@ export default function RequestAttributeAuthoringEditor({
         );
     };
 
+    const renderMappingTargets = (d: AuthoredAttributeFormValues, set: (p: Partial<AuthoredAttributeFormValues>) => void) => {
+        const targets = d.mappingTargets;
+        const structured = hasStructuredMappingTarget(d);
+        const many = targets.length > 1;
+        const rowErrors = attrErrors.mappingTargets ?? [];
+        const setTargets = (mappingTargets: MappingTargetFormValues[]) => set(withMappingTargets(d, mappingTargets));
+        const setTarget = (index: number, p: Partial<MappingTargetFormValues>) =>
+            setTargets(targets.map((target, i) => (i === index ? { ...target, ...p } : target)));
+        const setTargetType = (index: number, fieldType?: FieldType) => {
+            // Select also fires when the current kind is picked again, which must not blank the row.
+            if (targets[index]?.fieldType === fieldType) return;
+            setTargets(targets.map((target, i) => (i === index ? { rowId: target.rowId, source: target.source, fieldType } : target)));
+        };
+        const moveTarget = (index: number, delta: number) => {
+            const mappingTargets = [...targets];
+            const [row] = mappingTargets.splice(index, 1);
+            mappingTargets.splice(index + delta, 0, row);
+            setTargets(mappingTargets);
+        };
+        // A row that already holds a structured kind keeps it as an option, or its picker shows the raw value.
+        const optionsFor = (target: MappingTargetFormValues) =>
+            many ? MAPPING_OPTIONS.filter((o) => !isStructuredMappingTarget(o.value) || o.value === target.fieldType) : MAPPING_OPTIONS;
+
+        const renderRow = (target: MappingTargetFormValues, index: number) => {
+            const rowTestId = `${dataTestId}-target-${index}`;
+            const errors: MappingTargetErrors = rowErrors[index] ?? {};
+            return (
+                <div
+                    key={target.rowId}
+                    className={`space-y-3 rounded-lg border bg-surface-raised p-3 ${Object.keys(errors).length > 0 ? 'border-danger' : 'border-divider'}`}
+                    data-testid={rowTestId}
+                >
+                    <div>
+                        <Label htmlFor={`ra-attr-mapping-${index}`} required>
+                            Target
+                        </Label>
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                                <Select
+                                    id={`ra-attr-mapping-${index}`}
+                                    value={target.fieldType ?? ''}
+                                    onChange={(v) => setTargetType(index, (v as FieldType) || undefined)}
+                                    options={optionsFor(target)}
+                                    placeholder="Select mapping target"
+                                />
+                            </div>
+                            {many && (
+                                <div className="flex shrink-0">
+                                    <Button
+                                        variant="transparent"
+                                        title="Move up"
+                                        aria-label={`Move mapping target ${index + 1} up`}
+                                        onClick={() => moveTarget(index, -1)}
+                                        disabled={disabled || index === 0}
+                                        data-testid={`${rowTestId}-move-up`}
+                                    >
+                                        <ArrowUp size={16} aria-hidden />
+                                    </Button>
+                                    <Button
+                                        variant="transparent"
+                                        title="Move down"
+                                        aria-label={`Move mapping target ${index + 1} down`}
+                                        onClick={() => moveTarget(index, 1)}
+                                        disabled={disabled || index === targets.length - 1}
+                                        data-testid={`${rowTestId}-move-down`}
+                                    >
+                                        <ArrowDown size={16} aria-hidden />
+                                    </Button>
+                                    <Button
+                                        variant="transparent"
+                                        color="danger"
+                                        title="Remove"
+                                        aria-label={`Remove mapping target ${index + 1}`}
+                                        onClick={() => setTargets(targets.filter((_, i) => i !== index))}
+                                        disabled={disabled}
+                                        data-testid={`${rowTestId}-remove`}
+                                    >
+                                        <Trash2 size={16} aria-hidden />
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <FieldError testId={`${rowTestId}-mapping-error`} message={errors.fieldType} />
+                    {target.fieldType === FieldType.Rdn && (
+                        <>
+                            <OidMappingSelect
+                                id={`ra-attr-rdn-${index}`}
+                                label="RDN"
+                                placeholder="Select an RDN"
+                                testIdPrefix={`${rowTestId}-rdn-options`}
+                                emptyHint="No RDNs are available. Register one under Settings → Custom OIDs."
+                                errorHint="Failed to load RDNs."
+                                options={rdnOptions}
+                                optionsError={rdnOptionsError}
+                                optionsLoaded={rdnOptionsLoaded}
+                                value={target.rdnCode}
+                                onChange={(v) => setTarget(index, { rdnCode: v })}
+                                disabled={disabled}
+                            />
+                            <FieldError testId={`${rowTestId}-rdn-error`} message={errors.rdnCode} />
+                        </>
+                    )}
+                    {target.fieldType === FieldType.San && (
+                        <>
+                            <Select
+                                id={`ra-attr-general-name-type-${index}`}
+                                label="SAN type"
+                                required
+                                value={target.generalNameType ?? ''}
+                                onChange={(v) => setTarget(index, { generalNameType: (v as GeneralNameType) || undefined })}
+                                options={GENERAL_NAME_TYPE_OPTIONS}
+                                placeholder="Select SAN type"
+                            />
+                            <FieldError testId={`${rowTestId}-san-error`} message={errors.generalNameType} />
+                            {target.generalNameType === GeneralNameType.OtherName && (
+                                <>
+                                    <TextInput
+                                        id={`ra-attr-othername-oid-${index}`}
+                                        label="otherName OID"
+                                        required
+                                        value={target.otherNameOid ?? ''}
+                                        onChange={(v) => setTarget(index, { otherNameOid: v })}
+                                    />
+                                    <FieldError testId={`${rowTestId}-othername-oid-error`} message={errors.otherNameOid} />
+                                    <Select
+                                        id={`ra-attr-othername-encoding-${index}`}
+                                        label="otherName value encoding"
+                                        required
+                                        value={target.otherNameEncoding ?? ''}
+                                        onChange={(v) =>
+                                            setTarget(index, { otherNameEncoding: (v as ExtensionValueEncoding) || undefined })
+                                        }
+                                        options={ENCODING_OPTIONS}
+                                        placeholder="Select encoding"
+                                    />
+                                    <FieldError testId={`${rowTestId}-othername-encoding-error`} message={errors.otherNameEncoding} />
+                                </>
+                            )}
+                        </>
+                    )}
+                    {target.fieldType === FieldType.Extension && (
+                        <>
+                            <OidMappingSelect
+                                id={`ra-attr-extension-oid-${index}`}
+                                label="Extension"
+                                placeholder="Select an extension"
+                                testIdPrefix={`${rowTestId}-extension-options`}
+                                emptyHint="No certificate extensions are available. Register one under Settings → Custom OIDs."
+                                errorHint="Failed to load certificate extensions."
+                                options={genericExtensionOptions}
+                                optionsError={extensionOptionsError}
+                                optionsLoaded={extensionOptionsLoaded}
+                                value={target.extensionOid}
+                                onChange={(v) => setTarget(index, { extensionOid: v })}
+                                disabled={disabled}
+                            />
+                            <FieldError testId={`${rowTestId}-extension-error`} message={errors.extensionOid} />
+                            <Checkbox
+                                id={`ra-attr-critical-overridable-${index}`}
+                                checked={target.criticalOverridable ?? false}
+                                onChange={(c) => setTarget(index, { criticalOverridable: c })}
+                                label="Requester may override criticality"
+                                disabled={disabled}
+                            />
+                        </>
+                    )}
+                </div>
+            );
+        };
+
+        return (
+            <div data-testid={`${dataTestId}-targets`}>
+                <Label labelTooltip={MAPPING_TARGET_TOOLTIP} dataTestId={`${dataTestId}-targets-label`}>
+                    Mapping targets
+                </Label>
+                <FieldError testId={`${dataTestId}-mapping-error`} message={attrErrors.mapping} />
+                <div className="space-y-2 rounded-xl bg-surface-sunken p-3">
+                    {targets.map((target, index) => renderRow(target, index))}
+                    {structured ? (
+                        <p className="text-xs text-content-subtle" data-testid={`${dataTestId}-targets-structured-hint`}>
+                            {`${FIELD_TYPE_LABELS[structuredMappingTarget(d) ?? FieldType.KeyUsage]} takes the whole attribute: its permitted set is the attribute's content, so no other target can be added.`}
+                        </p>
+                    ) : (
+                        <div className="flex justify-end">
+                            <Button
+                                variant="transparent"
+                                className="text-brand"
+                                onClick={() => setTargets([...targets, emptyMappingTarget()])}
+                                disabled={disabled}
+                                type="button"
+                                data-testid={`${dataTestId}-target-add`}
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add mapping target
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     // The permitted set of a structured mapping target (Key Usage bits / EKU purposes), authored as
     // a multi-select over the closed vocabulary and stored in the attribute `content` array exactly
     // like a static list. What a selection submits is the CertificateKeyUsage code, respectively the
     // dotted-decimal purpose OID — never a display label.
     const renderStructuredSet = (d: AuthoredAttributeFormValues, set: (p: Partial<AuthoredAttributeFormValues>) => void) => {
-        const isKeyUsage = d.mappingFieldType === FieldType.KeyUsage;
+        const isKeyUsage = structuredMappingTarget(d) === FieldType.KeyUsage;
         const vocabulary: { value: string; label: string; description?: string }[] = isKeyUsage
             ? keyUsageOptions
             : extendedKeyUsageOptions.map((o) => ({ value: o.value, label: o.label, description: o.description }));
