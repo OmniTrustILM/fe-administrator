@@ -459,7 +459,11 @@ export default function FilterWidget({
     const fieldOptions = useMemo(() => {
         if (!currentFields) return [];
         const labelMap = filterGroup ? fieldLabelMapsBySource.get(filterGroup.value) : undefined;
-        return currentFields.map((f) => ({ label: labelMap?.get(f.fieldIdentifier) ?? f.fieldLabel, value: f.fieldIdentifier }));
+        // A catalogue may publish a field for ordering alone, with no conditions. Offering it here would be a dead
+        // end: picking it leaves the condition list empty and no filter can be built.
+        return currentFields
+            .filter((f) => f.conditions.length > 0)
+            .map((f) => ({ label: labelMap?.get(f.fieldIdentifier) ?? f.fieldLabel, value: f.fieldIdentifier }));
     }, [currentFields, filterGroup, fieldLabelMapsBySource]);
 
     const isValidValue = useMemo(() => {
