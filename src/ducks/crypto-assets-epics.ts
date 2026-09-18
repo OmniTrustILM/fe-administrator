@@ -8,6 +8,12 @@ import { EntityType } from './filters';
 import { actions as pagingActions } from './paging';
 import { actions as userInterfaceActions } from './user-interface';
 
+function clampedPageSize(requested: number | undefined, served: number | undefined): number | undefined {
+    if (typeof served !== 'number' || served < 1) return undefined;
+    if (served === requested) return undefined;
+    return served;
+}
+
 const listCryptoAssets: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.listCryptoAssets.match),
@@ -21,6 +27,7 @@ const listCryptoAssets: AppEpic = (action$, state, deps) => {
                             pagingActions.listSuccess({
                                 entity: EntityType.CRYPTO_ASSET,
                                 totalItems: response.totalItems ?? response.items?.length ?? 0,
+                                pageSize: clampedPageSize(action.payload.itemsPerPage, response.itemsPerPage),
                             }),
                             userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ListOfCryptoAssets),
                         ),

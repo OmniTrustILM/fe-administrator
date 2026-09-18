@@ -69,6 +69,33 @@ describe('crypto asset epics', () => {
         expect(emitted[2]).toEqual(pagingActions.listSuccess({ entity: EntityType.CRYPTO_ASSET, totalItems: 2 }));
     });
 
+    test('a page size the server clamped is reported back, so paging follows the served boundaries', async () => {
+        const deps = createDeps({
+            listCryptographicAssets: () => of({ items: [{ uuid: 'a' }], totalItems: 5000, pageNumber: 1, itemsPerPage: 1000 }),
+        });
+
+        const emitted = await run(
+            listCryptoAssets,
+            slice.actions.listCryptoAssets({ pageNumber: 1, itemsPerPage: 2000, filters: [] } as never),
+            deps,
+            4,
+        );
+
+        expect(emitted[2]).toEqual(pagingActions.listSuccess({ entity: EntityType.CRYPTO_ASSET, totalItems: 5000, pageSize: 1000 }));
+    });
+
+    // A response overtaken by a newer page-size choice must not put the old size back.
+    test('a page size the server served unchanged is not reported back', async () => {
+        const emitted = await run(
+            listCryptoAssets,
+            slice.actions.listCryptoAssets({ pageNumber: 1, itemsPerPage: 10, filters: [] } as never),
+            createDeps(),
+            4,
+        );
+
+        expect((emitted[2] as { payload: { pageSize?: number } }).payload.pageSize).toBeUndefined();
+    });
+
     test('listCryptoAssets failure locks the list widget', async () => {
         const error = { status: 403 };
         const deps = createDeps({ listCryptographicAssets: () => throwError(() => error) });
