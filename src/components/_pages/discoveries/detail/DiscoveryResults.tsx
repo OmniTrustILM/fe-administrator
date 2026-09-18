@@ -35,14 +35,13 @@ export default function DiscoveryResults({ discovery, triggerHistorySummary }: P
     return (
         <Container>
             {isNotProcessedRun(discovery.status) ? (
-                <div
-                    role="status"
+                <output
                     data-testid="not-processed-banner"
-                    className="rounded-lg border border-warning bg-warning-surface p-4 text-sm text-warning"
+                    className="block rounded-lg border border-warning bg-warning-surface p-4 text-sm text-warning"
                 >
                     {discovery.status === DiscoveryStatus.Cancelled ? 'This run was cancelled' : 'This run failed'} and its items were never
                     processed: nothing below was imported into the inventory, and no triggers ran on it.
-                </div>
+                </output>
             ) : null}
             {resources.length === 1 ? (
                 viewFor(resources[0])
