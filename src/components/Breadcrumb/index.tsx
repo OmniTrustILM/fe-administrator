@@ -20,10 +20,19 @@ function Breadcrumb({ items, title: titleProp, rightContent }: Readonly<Props>) 
                     <li
                         key={item.label}
                         className={cn('inline-flex items-center text-sm', {
-                            'text-content-muted': index < items.length - 1,
+                            'shrink-0 text-content-muted': index < items.length - 1,
+                            'min-w-0': index === items.length - 1,
                         })}
                     >
-                        {item.href ? <Link to={item.href}>{item.label}</Link> : <span>{item.label}</span>}
+                        {item.href ? (
+                            <Link className="truncate" to={item.href}>
+                                {item.label}
+                            </Link>
+                        ) : (
+                            <span className="truncate" title={item.label}>
+                                {item.label}
+                            </span>
+                        )}
                         {index < items.length - 1 && (
                             <svg
                                 className="shrink-0 size-5 text-content-subtle mx-2"
@@ -41,8 +50,12 @@ function Breadcrumb({ items, title: titleProp, rightContent }: Readonly<Props>) 
                 ))}
             </ol>
             {(title || rightContent) && (
-                <div className="mt-4 md:mt-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    {title && <h1 className="text-2xl font-semibold">{title}</h1>}
+                <div className="mt-4 md:mt-8 flex min-w-0 flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    {title && (
+                        <h1 className="min-w-0 text-2xl font-semibold break-words line-clamp-2" title={title}>
+                            {title}
+                        </h1>
+                    )}
                     {rightContent}
                 </div>
             )}

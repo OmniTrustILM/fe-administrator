@@ -48,6 +48,31 @@ test.describe('HorizontalBarChart', () => {
         await expect(component.getByText(/more/)).toHaveCount(0);
     });
 
+    test('a bar label is reachable by keyboard and opens the same filtered list the bar does', async ({ mount, page }) => {
+        let drilledInto: string | undefined;
+        await mount(
+            <HorizontalBarChartWithStore
+                title="Top Requesters"
+                data={{ alice: 8, bob: 5 }}
+                entity={EntityType.SIGNING_RECORD}
+                redirect="/signingrecords"
+                onSetFilter={(label) => {
+                    drilledInto = label;
+                    return [];
+                }}
+            />,
+        );
+
+        await expect(page.getByTestId('horizontal-bar-chart-label')).toHaveCount(2);
+
+        const label = page.locator('[aria-label="alice: open the filtered list"]');
+        await label.focus();
+        await expect(label).toBeFocused();
+        await page.keyboard.press('Enter');
+
+        await expect.poll(() => drilledInto).toBe('alice');
+    });
+
     test('paints each bar with its own colour from colorOptions', async ({ mount, page }) => {
         await mount(
             <HorizontalBarChartWithStore

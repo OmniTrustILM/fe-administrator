@@ -133,6 +133,12 @@ const menuItemMappings: MenuItemMapping[] = [
                 link: '/dashboard/signing-records',
                 requiredResources: [Resource.SigningRecords],
             },
+            {
+                _key: '/dashboard/crypto-assets',
+                name: 'Crypto Assets',
+                link: '/dashboard/crypto-assets',
+                requiredResources: [Resource.CryptoAssets],
+            },
         ],
     },
     {

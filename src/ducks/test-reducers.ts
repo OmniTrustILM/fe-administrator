@@ -483,6 +483,24 @@ function secretsTestReducer(state: SecretsTestState | undefined, _action: Unknow
     return state ?? secretsTestInitialState;
 }
 
+export type CryptoAssetsTestState = {
+    assetsData?: unknown;
+    assetDetail?: unknown;
+    assetDetailError?: string;
+    assetDetailErrorStatusCode?: number;
+    isFetchingList: boolean;
+    isFetchingDetail: boolean;
+};
+
+const cryptoAssetsTestInitialState: CryptoAssetsTestState = {
+    isFetchingList: false,
+    isFetchingDetail: false,
+};
+
+function cryptoAssetsTestReducer(state: CryptoAssetsTestState | undefined, _action: UnknownAction): CryptoAssetsTestState {
+    return state ?? cryptoAssetsTestInitialState;
+}
+
 export type VaultProfilesTestState = {
     vaultProfiles: unknown[];
 };
@@ -788,6 +806,23 @@ function signingRecordsDashboardTestReducer(
     _action: UnknownAction,
 ): SigningRecordsDashboardTestState {
     return state ?? signingRecordsDashboardTestInitialState;
+}
+
+type CryptoAssetsDashboardTestState = {
+    isFetching: boolean;
+    statistics?: unknown;
+};
+
+const cryptoAssetsDashboardTestInitialState: CryptoAssetsDashboardTestState = {
+    isFetching: false,
+    statistics: undefined,
+};
+
+function cryptoAssetsDashboardTestReducer(
+    state: CryptoAssetsDashboardTestState | undefined,
+    _action: UnknownAction,
+): CryptoAssetsDashboardTestState {
+    return state ?? cryptoAssetsDashboardTestInitialState;
 }
 
 type RaProfileRequestAttributesTestState = {
@@ -1398,6 +1433,7 @@ export const testReducers = combineReducers({
     auth: authTestReducer,
     customAttributes: customAttributesTestReducer,
     connectors: connectorsTestReducer,
+    cryptoAssets: cryptoAssetsTestReducer,
     secrets: secretsTestReducer,
     vaultProfiles: vaultProfilesTestReducer,
     tablePagination: tablePaginationTestReducer,
@@ -1407,6 +1443,7 @@ export const testReducers = combineReducers({
     utilsCertificate: utilsCertificateTestReducer,
     utilsActuator: utilsActuatorTestReducer,
     signingRecordsDashboard: signingRecordsDashboardTestReducer,
+    cryptoAssetsDashboard: cryptoAssetsDashboardTestReducer,
     raprofiles: raProfilesTestReducer,
     authorities: authoritiesTestReducer,
     cryptographicOperations: cryptographicOperationsTestReducer,
@@ -1438,6 +1475,7 @@ export const testInitialState = {
     auth: authTestInitialState,
     customAttributes: customAttributesTestInitialState,
     connectors: connectorsTestInitialState,
+    cryptoAssets: cryptoAssetsTestInitialState,
     secrets: secretsTestInitialState,
     vaultProfiles: vaultProfilesTestInitialState,
     tablePagination: tablePaginationTestInitialState,
@@ -1447,6 +1485,7 @@ export const testInitialState = {
     utilsCertificate: utilsCertificateTestInitialState,
     utilsActuator: utilsActuatorTestInitialState,
     signingRecordsDashboard: signingRecordsDashboardTestInitialState,
+    cryptoAssetsDashboard: cryptoAssetsDashboardTestInitialState,
     raprofiles: raProfilesTestInitialState,
     authorities: authoritiesTestInitialState,
     cryptographicOperations: cryptographicOperationsTestInitialState,

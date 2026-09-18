@@ -75,6 +75,34 @@ test.describe('Breadcrumb', () => {
         await expect(firstItem).toHaveClass(/text-content-muted/);
     });
 
+    // A detail page names the record it shows, and that name can be a long run of characters with nowhere to wrap.
+    test('should keep a long current page inside the page width', async ({ mount, page }) => {
+        const label = 'A'.repeat(1024);
+        const component = await mount(
+            <MemoryRouter>
+                <div style={{ width: '600px' }}>
+                    <Breadcrumb items={[{ label: 'Crypto Assets', href: '/cryptoassets' }, { label }]} />
+                </div>
+            </MemoryRouter>,
+        );
+
+        const crumb = component.locator('ol li:last-child span');
+        const crumbMetrics = await crumb.evaluate((element) => ({
+            scrollWidth: element.scrollWidth,
+            clientWidth: element.clientWidth,
+        }));
+
+        expect(crumbMetrics.scrollWidth).toBeGreaterThan(crumbMetrics.clientWidth);
+
+        // Two lines of the heading, not the forty the name would otherwise take.
+        const heading = await component.getByRole('heading', { level: 1 }).boundingBox();
+        expect(heading?.height).toBeLessThan(100);
+
+        // The crumb before it is a section name, and stays whole.
+        await expect(component.getByRole('link', { name: 'Crypto Assets' })).toHaveText('Crypto Assets');
+        expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+    });
+
     test('should render custom title and right content', async ({ mount }) => {
         const component = await mount(
             <MemoryRouter>

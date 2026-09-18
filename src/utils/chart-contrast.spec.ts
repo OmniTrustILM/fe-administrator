@@ -18,6 +18,7 @@ import {
     getDefaultColors,
     getDonutChartColorsByRandomNumberOfOptions,
 } from './dashboard';
+import { FALLBACK_SERIES_COLOR, PQC_VERDICT_CHART_COLORS } from './cryptoAssetsDashboard';
 import { getSecretStatusColor } from './secret';
 import { readSemanticTokens } from './theme-tokens';
 
@@ -92,6 +93,14 @@ describe('chart contrast', () => {
 
         test.each(Object.values(SecretState))('should keep the %s secret status dot legible', (status) => {
             expectLegible(getSecretStatusColor(status));
+        });
+
+        test.each(Object.entries(PQC_VERDICT_CHART_COLORS))('should keep the %s PQC verdict series legible', (_verdict, colour) => {
+            expectLegible(colour);
+        });
+
+        test('should keep the series colour an unknown verdict falls back to legible', () => {
+            expectLegible(FALLBACK_SERIES_COLOR);
         });
 
         test('should keep the default donut palette legible', () => {
