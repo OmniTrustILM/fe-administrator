@@ -43,11 +43,17 @@ export interface DiscoveryDto {
      */
     connectorUuid: string;
     /**
-     * Discovery Kind
+     * UUID of the DISCOVERY Connector Interface to bind this run to. Required when the Connector exposes more than one; selected automatically when it exposes exactly one. A Connector with no DISCOVERY interface yields a legacy v1 run.
      * @type {string}
      * @memberof DiscoveryDto
      */
-    kind: string;
+    interfaceUuid?: string;
+    /**
+     * Discovery Kind. Required for a run against a v1 Discovery Provider, whose function group is kind-scoped. A v2 Discovery Provider has no kinds — omit it for a run bound to a DISCOVERY interface.
+     * @type {string}
+     * @memberof DiscoveryDto
+     */
+    kind?: string;
     /**
      * List of triggers to be triggered after the discovery is finished, triggers will be evaluated in given order
      * @type {Array<string>}
