@@ -121,7 +121,10 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
                 'grid-rows-[1fr] opacity-100': !isHiding,
             })}
         >
-            <div className={cn('min-h-0', { 'overflow-hidden': isHiding })}>
+            {/* `min-w-0` keeps the card inside the stack: `overflow-wrap: break-word` wraps a long unbroken token -
+                a JSON error body - without lowering the min-content width this grid item is sized from, so without it
+                the card stretches past the viewport and takes the dismiss button off screen with it. */}
+            <div className={cn('min-h-0 min-w-0', { 'overflow-hidden': isHiding })}>
                 <div
                     role={config.role}
                     data-testid={`alert-${alert.id}`}
@@ -136,6 +139,7 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
                     <div className="min-w-0 flex-1">
                         <div
                             ref={contentRef}
+                            data-testid={`alert-message-${alert.id}`}
                             className={cn('break-words whitespace-pre-line', isExpanded ? 'max-h-[50vh] overflow-y-auto' : 'line-clamp-4')}
                         >
                             {alert.message.trimEnd()}
