@@ -52,6 +52,11 @@ describe('CRYPTO_ASSET_HEADERS', () => {
         ]);
     });
 
+    // A producer can name an asset with a whole certificate subject; without the cap that one row widens the table.
+    test('the name column caps its width, which is what turns the one-line clipping on', () => {
+        expect(CRYPTO_ASSET_HEADERS.find((header) => header.id === 'name')?.maxWidth).toBeGreaterThan(0);
+    });
+
     test('the two counts are right-aligned so their digits line up', () => {
         const counts = CRYPTO_ASSET_HEADERS.filter((header) => header.id.endsWith('Count'));
 
@@ -113,6 +118,22 @@ describe('buildCryptoAssetRows', () => {
 
         expect(cell('name').textContent).toBe('RSA-2048');
         expect(cell('name').querySelector('a')).toBeNull();
+    });
+
+    test('a long name is clipped to one line, with the full value left to the cell tooltip', async () => {
+        await renderRow([asset({ name: 'A'.repeat(300) })]);
+
+        const name = cell('name').querySelector('[data-testid="crypto-asset-name"]');
+
+        expect(name?.textContent).toBe('A'.repeat(300));
+        expect(name?.className).toContain('text-ellipsis');
+        expect(name?.className).toContain('whitespace-nowrap');
+    });
+
+    test('the quarantine badge keeps its width while the name shrinks', async () => {
+        await renderRow([asset({ quarantined: true })]);
+
+        expect(cell('name').querySelector('[data-testid="crypto-asset-quarantined-badge"]')?.className).toContain('shrink-0');
     });
 
     test('type and verdict are labelled from the platform enums, not from the raw code', async () => {
