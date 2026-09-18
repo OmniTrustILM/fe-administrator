@@ -50,6 +50,17 @@ test.describe('TruncatedCell', () => {
         await expect(page.getByRole('tooltip')).toHaveText(LONG_VALUE);
     });
 
+    test('keeps the tooltip inside the viewport when the value is absurdly long', async ({ mount, page }) => {
+        await mount(withProviders(inBox(120, 'A'.repeat(2000))));
+
+        await page.getByTestId('cell').hover();
+
+        const tooltip = await page.getByRole('tooltip').boundingBox();
+        const viewport = page.viewportSize();
+
+        expect(tooltip?.height).toBeLessThan(viewport?.height ?? 0);
+    });
+
     test('measures a link the same way, so a linked value is not cut off unreadably', async ({ mount, page }) => {
         await mount(withProviders(linkInBox(120, LONG_VALUE)));
 

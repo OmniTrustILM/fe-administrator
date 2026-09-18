@@ -23,6 +23,7 @@ import {
     Network,
     FileLock2,
     FileSignature,
+    ShieldCheck,
 } from 'lucide-react';
 import Button from 'components/Button';
 import { Resource } from 'types/openapi';
@@ -175,6 +176,13 @@ const menuItemMappings: MenuItemMapping[] = [
         header: 'CBOMs',
         headerLink: '/cboms',
         requiredResources: [Resource.Cboms],
+    },
+    {
+        _key: `/${Resource.CryptoAssets.toLowerCase()}`,
+        icon: <ShieldCheck size={16} strokeWidth={1.5} />,
+        header: 'Crypto Assets',
+        headerLink: `/${Resource.CryptoAssets.toLowerCase()}`,
+        requiredResources: [Resource.CryptoAssets],
     },
     {
         _key: `/${Resource.SigningRecords.toLowerCase()}`,

@@ -8,6 +8,7 @@ import {
     base64ToUtf8,
     getFormTypeFromAttributeContentType,
     getFormTypeFromFilterFieldType,
+    toFiniteNumber,
 } from './common-utils';
 import { AttributeContentType, FilterFieldType } from 'types/openapi';
 
@@ -143,5 +144,18 @@ describe('common-utils', () => {
         test('should default to text for unknown', () => {
             expect(getFormTypeFromFilterFieldType('unknown' as FilterFieldType)).toBe('text');
         });
+    });
+});
+
+describe('toFiniteNumber', () => {
+    test.each([
+        [14, 14],
+        ['42', 42],
+        [undefined, 0],
+        [null, 0],
+        ['not a number', 0],
+        [Number.POSITIVE_INFINITY, 0],
+    ])('%s renders as %s', (input, expected) => {
+        expect(toFiniteNumber(input)).toBe(expected);
     });
 });

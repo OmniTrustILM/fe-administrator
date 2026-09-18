@@ -20,6 +20,7 @@ export * from './ConnectorManagementApi';
 export * from './ConnectorManagementV2Api';
 export * from './ConnectorRegistrationApi';
 export * from './CredentialManagementApi';
+export * from './CryptographicAssetInventoryApi';
 export * from './CryptographicKeyManagementApi';
 export * from './CryptographicOperationsControllerApi';
 export * from './CustomAttributesApi';

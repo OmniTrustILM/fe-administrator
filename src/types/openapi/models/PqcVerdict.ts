@@ -11,18 +11,14 @@
  * Do not edit the class manually.
  */
 
-import type {
-    AttributeContentType,
-    AttributeType,
-    AttributeVersion,
-    BaseAttributeContentDtoV3,
-    ResponseAttributeV2,
-    ResponseAttributeV3,
-} from './';
-
 /**
- * @type ResponseAttribute
- * Response attribute to send attribute content for object
+ *
  * @export
+ * @enum {string}
  */
-export type ResponseAttribute = ResponseAttributeV2 | ResponseAttributeV3;
+export enum PqcVerdict {
+    Ready = 'ready',
+    NotReady = 'notReady',
+    NotApplicable = 'notApplicable',
+    Unknown = 'unknown',
+}
