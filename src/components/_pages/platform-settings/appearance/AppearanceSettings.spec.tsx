@@ -290,14 +290,29 @@ test.describe('AppearanceSettings', () => {
         await expect(page.getByTestId('logo-preview-lightLogo')).toHaveCount(0);
     });
 
-    /** A PNG that keeps its signature but nothing else: the browser cannot decode it, and Core's chunk walk refuses it. */
-    test('should reject a PNG the browser cannot decode', async ({ mount, page }) => {
+    /** Signature plus four bytes: too short for a chunk header, so the walk reads no chunk at all and refuses it. */
+    test('should reject a PNG too short to hold a chunk', async ({ mount, page }) => {
         const truncated = Buffer.from(PNG_DATA_URI.split(',')[1], 'base64').subarray(0, 12);
         await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
         await chooseFile(page.getByTestId('logo-input-lightLogo'), 'logo.png', 'image/png', truncated);
 
         await expect(page.getByTestId('logo-error-lightLogo')).toHaveText('Logo must be a well-formed PNG image.');
         await expect(page.getByTestId('logo-preview-lightLogo')).toHaveCount(0);
+    });
+
+    /**
+     * The case the chunk walk exists for: every browser draws this, so a decode alone accepts it and only the sequence
+     * says the file does not end where IEND does. Left to Core it comes back a 422, behind the contrast dialog when
+     * the colours fail as well.
+     */
+    test('should reject a PNG carrying bytes after its IEND', async ({ mount, page }) => {
+        const trailing = Buffer.concat([Buffer.from(PNG_DATA_URI.split(',')[1], 'base64'), Buffer.from([0x00])]);
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+        await chooseFile(page.getByTestId('logo-input-lightLogo'), 'logo.png', 'image/png', trailing);
+
+        await expect(page.getByTestId('logo-error-lightLogo')).toHaveText('Logo must be a well-formed PNG image.');
+        await expect(page.getByTestId('logo-preview-lightLogo')).toHaveCount(0);
+        await expect(page.getByTestId('appearance-save')).toBeDisabled();
     });
 
     /**
