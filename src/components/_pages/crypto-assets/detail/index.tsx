@@ -1,4 +1,5 @@
 import Breadcrumb from 'components/Breadcrumb';
+import Button from 'components/Button';
 import Container from 'components/Container';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import Widget from 'components/Widget';
@@ -6,7 +7,7 @@ import { actions, selectors } from 'ducks/crypto-assets';
 import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { PlatformEnum } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import {
@@ -21,6 +22,7 @@ const LIST_PATH = '/cryptoassets';
 
 export default function CryptoAssetDetail() {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { id = '' } = useParams();
 
     const detail = useSelector(selectors.selectCryptoAssetDetail);
@@ -67,12 +69,27 @@ export default function CryptoAssetDetail() {
             <div>
                 {breadcrumb}
                 <Container>
-                    <Widget titleSize="large" widgetLockName={LockWidgetNameEnum.CryptoAssetDetail}>
-                        <p className="py-8 px-4 text-sm text-content-muted">
-                            {detailErrorStatusCode === 404
-                                ? 'This cryptographic asset is not in the inventory.'
-                                : (detailError ?? 'Unable to load the cryptographic asset.')}
-                        </p>
+                    <Widget titleSize="large">
+                        <div className="py-8 px-4">
+                            <p className="text-base font-medium">
+                                {detailErrorStatusCode === 404
+                                    ? 'This cryptographic asset is not in the inventory.'
+                                    : 'Unable to load the cryptographic asset.'}
+                            </p>
+                            <p className="mt-2 text-sm text-content-muted">
+                                {detailErrorStatusCode === 404
+                                    ? 'It may have been removed when its source documents were last synced.'
+                                    : (detailError ?? 'Please try again later.')}
+                            </p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                <Button type="button" variant="solid" color="primary" onClick={() => navigate(LIST_PATH)}>
+                                    Back to Crypto Assets
+                                </Button>
+                                <Button type="button" variant="outline" color="secondary" onClick={getFreshDetail}>
+                                    Retry
+                                </Button>
+                            </div>
+                        </div>
                     </Widget>
                 </Container>
             </div>
@@ -85,7 +102,12 @@ export default function CryptoAssetDetail() {
         <div>
             {breadcrumb}
             <Container>
-                <Widget titleSize="large" widgetLockName={LockWidgetNameEnum.CryptoAssetDetail} refreshAction={getFreshDetail}>
+                <Widget
+                    title="Summary"
+                    titleSize="large"
+                    widgetLockName={LockWidgetNameEnum.CryptoAssetDetail}
+                    refreshAction={getFreshDetail}
+                >
                     <CryptoAssetSummary detail={detail} typeLabel={getEnumLabel(typeEnum, detail.type)} verdictLabel={verdictLabel} />
                 </Widget>
                 <div className="grid gap-4 md:grid-cols-2">

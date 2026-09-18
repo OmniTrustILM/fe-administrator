@@ -23,6 +23,7 @@ import {
     type PayloadDifference,
     type PayloadDifferenceKind,
 } from 'utils/crypto-assets';
+import { toFiniteNumber } from 'utils/common-utils';
 import { dateFormatter } from 'utils/dateUtil';
 
 type DetailProps = Readonly<{ detail: CryptographicAssetDetailDto }>;
@@ -82,9 +83,6 @@ export function CryptoAssetSummary({
     return (
         <div className="flex flex-col gap-2" data-testid="crypto-asset-summary">
             <div className="flex flex-wrap items-center gap-2">
-                <h2 className="min-w-0 text-xl font-semibold text-content break-words line-clamp-2" title={detail.name}>
-                    {detail.name}
-                </h2>
                 <Badge color="secondary">{typeLabel}</Badge>
                 <PqcVerdictBadge verdict={detail.pqcVerdict} label={verdictLabel} />
                 {detail.quarantined && (
@@ -95,8 +93,8 @@ export function CryptoAssetSummary({
                 )}
             </div>
             <p className="text-sm text-content-subtle" data-testid="crypto-asset-claims">
-                Claimed by {pluralize(detail.sourceCbomCount, 'CBOM', 'CBOMs')} ·{' '}
-                {pluralize(detail.occurrenceCount, 'occurrence', 'occurrences')}
+                Claimed by {pluralize(toFiniteNumber(detail.sourceCbomCount), 'CBOM', 'CBOMs')} ·{' '}
+                {pluralize(toFiniteNumber(detail.occurrenceCount), 'occurrence', 'occurrences')}
             </p>
         </div>
     );
@@ -202,10 +200,10 @@ export function CryptoAssetVerdict({ detail, verdictLabel }: LabelledDetailProps
     return <CustomTable headers={KEY_VALUE_HEADERS} data={rows} />;
 }
 
-function EvidenceTable({ source }: Readonly<{ source: CryptographicAssetSourceDto }>) {
+function EvidenceTable({ source, panelId }: Readonly<{ source: CryptographicAssetSourceDto; panelId: string }>) {
     const evidence = source.evidence ?? [];
-    const rows: TableDataRow[] = evidence.map((entry) => ({
-        id: `${entry.location}#${entry.line ?? ''}#${entry.offset ?? ''}#${entry.symbol ?? ''}`,
+    const rows: TableDataRow[] = evidence.map((entry, index) => ({
+        id: `${index}#${entry.location}#${entry.line ?? ''}#${entry.offset ?? ''}#${entry.symbol ?? ''}`,
         columns: [
             <span key="location" className={cn('font-mono text-xs', WRAPPING_VALUE)}>
                 {entry.location}
@@ -223,12 +221,12 @@ function EvidenceTable({ source }: Readonly<{ source: CryptographicAssetSourceDt
     }));
 
     return (
-        <div className="flex flex-col gap-2" data-testid="crypto-asset-evidence">
+        <div className="flex flex-col gap-2" id={panelId} data-testid="crypto-asset-evidence">
             <p className="text-sm font-medium text-content break-words">
                 Occurrences in {source.serialNumber} · v{source.version}
             </p>
             <CustomTable headers={EVIDENCE_HEADERS} data={rows} />
-            {evidence.length < source.occurrenceCount && (
+            {evidence.length < toFiniteNumber(source.occurrenceCount) && (
                 <p className="text-xs text-content-subtle" data-testid="crypto-asset-evidence-capped-note">
                     Core keeps a capped sample of occurrences per source. The count is the true total; the list is a sample.
                 </p>
@@ -251,7 +249,9 @@ export function CryptoAssetSources({ detail }: DetailProps) {
 
     const rows: TableDataRow[] = sources.map((source) => {
         const shown = source.evidence?.length ?? 0;
+        const occurrences = toFiniteNumber(source.occurrenceCount);
         const isOpen = source.cbomUuid === openCbomUuid;
+        const evidencePanelId = `crypto-asset-evidence-${source.cbomUuid}`;
         const isElected = detail.electedPayload !== undefined && isSamePayload(detail.electedPayload, source.payload);
         return {
             id: source.cbomUuid,
@@ -275,16 +275,20 @@ export function CryptoAssetSources({ detail }: DetailProps) {
                 </span>,
                 source.source,
                 <span key="occurrences" className="tabular-nums">
-                    {source.occurrenceCount.toLocaleString()}
+                    {occurrences.toLocaleString()}
                 </span>,
                 <span key="coverage" data-testid="crypto-asset-evidence-coverage">
-                    {describeEvidenceCoverage(shown, source.occurrenceCount)}
+                    {describeEvidenceCoverage(shown, occurrences)}
                 </span>,
                 <Button
                     key="toggle"
                     type="button"
                     variant="outline"
                     disabled={shown === 0}
+                    aria-label={`${isOpen ? 'Hide' : 'Show'} occurrences in ${source.serialNumber}`}
+                    aria-expanded={isOpen}
+                    aria-controls={evidencePanelId}
+                    disabledTooltip="This source recorded no occurrence evidence"
                     onClick={() => setOpenCbomUuid(isOpen ? undefined : source.cbomUuid)}
                 >
                     {isOpen ? 'Hide' : 'Show'}
@@ -298,7 +302,7 @@ export function CryptoAssetSources({ detail }: DetailProps) {
     return (
         <div className="flex flex-col gap-4">
             <CustomTable headers={SOURCE_HEADERS} data={rows} />
-            {openSource && <EvidenceTable source={openSource} />}
+            {openSource && <EvidenceTable source={openSource} panelId={`crypto-asset-evidence-${openSource.cbomUuid}`} />}
         </div>
     );
 }

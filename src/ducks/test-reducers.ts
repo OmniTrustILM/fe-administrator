@@ -483,6 +483,25 @@ function secretsTestReducer(state: SecretsTestState | undefined, _action: Unknow
     return state ?? secretsTestInitialState;
 }
 
+export type CryptoAssetsTestState = {
+    cryptoAssets: unknown[];
+    assetDetail?: unknown;
+    assetDetailError?: string;
+    assetDetailErrorStatusCode?: number;
+    isFetchingList: boolean;
+    isFetchingDetail: boolean;
+};
+
+const cryptoAssetsTestInitialState: CryptoAssetsTestState = {
+    cryptoAssets: [],
+    isFetchingList: false,
+    isFetchingDetail: false,
+};
+
+function cryptoAssetsTestReducer(state: CryptoAssetsTestState | undefined, _action: UnknownAction): CryptoAssetsTestState {
+    return state ?? cryptoAssetsTestInitialState;
+}
+
 export type VaultProfilesTestState = {
     vaultProfiles: unknown[];
 };
@@ -1362,6 +1381,7 @@ export const testReducers = combineReducers({
     auth: authTestReducer,
     customAttributes: customAttributesTestReducer,
     connectors: connectorsTestReducer,
+    cryptoAssets: cryptoAssetsTestReducer,
     secrets: secretsTestReducer,
     vaultProfiles: vaultProfilesTestReducer,
     tablePagination: tablePaginationTestReducer,
@@ -1401,6 +1421,7 @@ export const testInitialState = {
     auth: authTestInitialState,
     customAttributes: customAttributesTestInitialState,
     connectors: connectorsTestInitialState,
+    cryptoAssets: cryptoAssetsTestInitialState,
     secrets: secretsTestInitialState,
     vaultProfiles: vaultProfilesTestInitialState,
     tablePagination: tablePaginationTestInitialState,
