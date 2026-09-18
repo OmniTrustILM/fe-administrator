@@ -328,6 +328,8 @@ export default function CbomDetail() {
             { id: 'spec-version', columns: ['Spec version', toCellValue(detail?.specVersion)] },
             { id: 'source', columns: ['Source', toCellValue(detail?.source)] },
             { id: 'total-assets', columns: ['Total assets', toCellValue(detail?.totalAssets)] },
+            // Why asset ingest last failed or refused this document; "-" while there is nothing to report.
+            { id: 'asset-sync-error', columns: ['Asset sync error', toCellValue(detail?.assetSyncError)] },
         ],
         [detail],
     );

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router';
 import { firstValueFrom } from 'rxjs';
 import WidgetButtons, { type WidgetButtonProps } from 'components/WidgetButtons';
 import Dialog from 'components/Dialog';
@@ -20,6 +21,7 @@ import { actions as pagingActions } from 'ducks/paging';
 
 function CbomsList() {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
 
     const cboms = useSelector(selectors.selectCbomList);
     const assetSyncStateEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CbomAssetSyncState));
@@ -49,8 +51,15 @@ function CbomsList() {
                 tooltip: 'Sync CBOMs',
                 onClick: () => dispatch(actions.syncCboms()),
             },
+            {
+                id: 'sync-skips',
+                icon: 'cross-circle',
+                disabled: false,
+                tooltip: 'Skipped documents: what the sync could not store',
+                onClick: () => navigate('./sync-skips'),
+            },
         ],
-        [dispatch, isSyncing],
+        [dispatch, isSyncing, navigate],
     );
 
     const getCbomJson = useCallback(async (uuid: string): Promise<string> => {
