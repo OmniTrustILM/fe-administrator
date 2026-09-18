@@ -1,9 +1,8 @@
 import { actions, selectors } from 'ducks/crypto-assets-dashboard';
 import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
-import { EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
+import { EntityType } from 'ducks/filters';
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { ApiClients } from 'src/api';
 import { PlatformEnum, PqcVerdict } from 'types/openapi';
 import {
     CRYPTO_ASSET_FILTER_FIELDS,
@@ -41,7 +40,6 @@ function CryptoAssetsDashboard() {
 
     const statistics = useSelector(selectors.statistics);
     const isFetching = useSelector(selectors.isFetching);
-    const availableFilters = useSelector(filterSelectors.availableFilters(EntityType.CRYPTO_ASSET));
 
     const typeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CryptographicAssetType));
     const verdictEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.PqcVerdict));
@@ -49,12 +47,6 @@ function CryptoAssetsDashboard() {
 
     useEffect(() => {
         dispatch(actions.getStatistics());
-        dispatch(
-            filterActions.getAvailableFilters({
-                entity: EntityType.CRYPTO_ASSET,
-                getAvailableFiltersApi: (clients: ApiClients) => clients.cryptographicAssets.getCryptographicAssetSearchableFields(),
-            }),
-        );
     }, [dispatch]);
 
     const completeness = useMemo(() => summarizeSyncCompleteness(statistics?.syncCompleteness), [statistics?.syncCompleteness]);
@@ -126,7 +118,7 @@ function CryptoAssetsDashboard() {
                         title="Not PQC ready"
                         link={LINK}
                         entity={EntityType.CRYPTO_ASSET}
-                        onSetFilter={() => buildEqualsFilter(availableFilters, CRYPTO_ASSET_FILTER_FIELDS.pqcVerdict, PqcVerdict.NotReady)}
+                        onSetFilter={() => buildEqualsFilter(CRYPTO_ASSET_FILTER_FIELDS.pqcVerdict, PqcVerdict.NotReady)}
                         extraComponent={notReadyShare ? caption(notReadyShare) : undefined}
                     />
                 </div>
@@ -157,7 +149,7 @@ function CryptoAssetsDashboard() {
                         data={labelled(statistics.statByType, (code) => getEnumLabel(typeEnum, code))}
                         colorOptions={typeColors}
                         entity={EntityType.CRYPTO_ASSET}
-                        onSetFilter={(index) => buildEqualsFilter(availableFilters, CRYPTO_ASSET_FILTER_FIELDS.type, typeKeys[index])}
+                        onSetFilter={(index) => buildEqualsFilter(CRYPTO_ASSET_FILTER_FIELDS.type, typeKeys[index])}
                         redirect={REDIRECT}
                     />
                 )}
@@ -168,9 +160,7 @@ function CryptoAssetsDashboard() {
                         data={labelled(statistics.statByPqcVerdict, (code) => getEnumLabel(verdictEnum, code))}
                         colorOptions={verdictColors}
                         entity={EntityType.CRYPTO_ASSET}
-                        onSetFilter={(index) =>
-                            buildEqualsFilter(availableFilters, CRYPTO_ASSET_FILTER_FIELDS.pqcVerdict, verdictKeys[index])
-                        }
+                        onSetFilter={(index) => buildEqualsFilter(CRYPTO_ASSET_FILTER_FIELDS.pqcVerdict, verdictKeys[index])}
                         redirect={REDIRECT}
                     />
                 )}
@@ -182,7 +172,7 @@ function CryptoAssetsDashboard() {
                         entity={EntityType.CRYPTO_ASSET}
                         redirect={REDIRECT}
                         overflowCount={statistics.distinctAlgorithmFamilyCount}
-                        onSetFilter={(label) => buildEqualsFilter(availableFilters, CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily, label)}
+                        onSetFilter={(label) => buildEqualsFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily, label)}
                     />
                 )}
             </div>
@@ -194,7 +184,7 @@ function CryptoAssetsDashboard() {
                         title="Assets with no algorithm family"
                         link={LINK}
                         entity={EntityType.CRYPTO_ASSET}
-                        onSetFilter={() => buildEmptyFilter(availableFilters, CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily)}
+                        onSetFilter={() => buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily)}
                         extraComponent={caption('the family concept does not apply to most related crypto material')}
                     />
                 </div>

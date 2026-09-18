@@ -1,12 +1,6 @@
 import type { ColorOptions } from 'components/_pages/dashboard/DashboardItem/DonutChart';
-import type { SearchFieldListModel, SearchFilterModel } from 'types/certificate';
-import {
-    type CryptographicAssetSyncCompletenessDto,
-    FilterConditionOperator,
-    FilterFieldSource,
-    PqcVerdict,
-    type SearchFieldDataDto,
-} from 'types/openapi';
+import type { SearchFilterModel } from 'types/certificate';
+import { type CryptographicAssetSyncCompletenessDto, FilterConditionOperator, FilterFieldSource, PqcVerdict } from 'types/openapi';
 
 export const CRYPTO_ASSET_FILTER_FIELDS = {
     type: 'CBOM_ASSET_TYPE',
@@ -31,13 +25,7 @@ export function getPqcVerdictChartColors(statByPqcVerdict?: Record<string, numbe
     };
 }
 
-function findFilterField(availableFilters: SearchFieldListModel[], fieldIdentifier: string): SearchFieldDataDto | undefined {
-    return availableFilters.flatMap((group) => group.searchFieldData ?? []).find((field) => field.fieldIdentifier === fieldIdentifier);
-}
-
-// No field, no filter: landing on the unfiltered inventory beats sending a filter the server would reject.
-export function buildEqualsFilter(availableFilters: SearchFieldListModel[], fieldIdentifier: string, value: string): SearchFilterModel[] {
-    if (!findFilterField(availableFilters, fieldIdentifier)) return [];
+export function buildEqualsFilter(fieldIdentifier: string, value: string): SearchFilterModel[] {
     return [
         {
             fieldSource: FilterFieldSource.Property,
@@ -48,8 +36,7 @@ export function buildEqualsFilter(availableFilters: SearchFieldListModel[], fiel
     ];
 }
 
-export function buildEmptyFilter(availableFilters: SearchFieldListModel[], fieldIdentifier: string): SearchFilterModel[] {
-    if (!findFilterField(availableFilters, fieldIdentifier)) return [];
+export function buildEmptyFilter(fieldIdentifier: string): SearchFilterModel[] {
     return [
         {
             fieldSource: FilterFieldSource.Property,

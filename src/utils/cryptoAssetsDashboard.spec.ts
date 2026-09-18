@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { FilterConditionOperator, FilterFieldType, PqcVerdict } from 'types/openapi';
-import type { SearchFieldListModel } from 'types/certificate';
+import { FilterConditionOperator, PqcVerdict } from 'types/openapi';
 import { CHART_MIN_CONTRAST, CHART_SURFACES } from './chart-contrast';
 import { contrastRatio } from './contrast';
 import {
@@ -13,23 +12,9 @@ import {
     summarizeSyncCompleteness,
 } from './cryptoAssetsDashboard';
 
-const availableFilters: SearchFieldListModel[] = [
-    {
-        searchFieldData: [
-            { fieldIdentifier: CRYPTO_ASSET_FILTER_FIELDS.type, fieldLabel: 'Asset Type', type: FilterFieldType.String, conditions: [] },
-            {
-                fieldIdentifier: CRYPTO_ASSET_FILTER_FIELDS.pqcVerdict,
-                fieldLabel: 'PQC Readiness',
-                type: FilterFieldType.String,
-                conditions: [],
-            },
-        ],
-    } as never,
-];
-
 describe('crypto asset dashboard filters', () => {
-    test('an equals drill-through carries the server field the catalogue offers', () => {
-        expect(buildEqualsFilter(availableFilters, CRYPTO_ASSET_FILTER_FIELDS.pqcVerdict, PqcVerdict.NotReady)).toEqual([
+    test('an equals drill-through carries the server field for the picked value', () => {
+        expect(buildEqualsFilter(CRYPTO_ASSET_FILTER_FIELDS.pqcVerdict, PqcVerdict.NotReady)).toEqual([
             {
                 fieldSource: 'property',
                 condition: FilterConditionOperator.Equals,
@@ -39,13 +24,15 @@ describe('crypto asset dashboard filters', () => {
         ]);
     });
 
-    test('a field the server does not offer lands on the unfiltered inventory instead of a rejected filter', () => {
-        expect(buildEqualsFilter(availableFilters, CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily, 'RSA')).toEqual([]);
-        expect(buildEmptyFilter(availableFilters, CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily)).toEqual([]);
+    // A filter read out of the catalogue would come back empty for as long as that request is in flight, and the
+    // click would land on the whole inventory instead of the segment.
+    test('a drill-through is built without the searchable-fields catalogue', () => {
+        expect(buildEqualsFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily, 'RSA')).toHaveLength(1);
+        expect(buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily)).toHaveLength(1);
     });
 
     test('the no-family bucket asks for the empty condition, not for an empty string value', () => {
-        const [filter] = buildEmptyFilter(availableFilters, CRYPTO_ASSET_FILTER_FIELDS.type);
+        const [filter] = buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.type);
 
         expect(filter.condition).toBe(FilterConditionOperator.Empty);
         expect(filter.fieldIdentifier).toBe(CRYPTO_ASSET_FILTER_FIELDS.type);

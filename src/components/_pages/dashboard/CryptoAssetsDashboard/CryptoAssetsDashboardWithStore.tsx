@@ -2,20 +2,12 @@ import { Provider, useSelector } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import ThemeProvider from 'components/ThemeProvider';
 import { EntityType, selectors as filterSelectors } from 'ducks/filters';
-import { CryptographicAssetType, FilterFieldType, PqcVerdict } from 'types/openapi';
+import { CryptographicAssetType, PqcVerdict } from 'types/openapi';
 import TestRouteDisplay from 'utils/TestRouteDisplay';
 import { createMockStore } from 'utils/test-helpers';
-import { CRYPTO_ASSET_FILTER_FIELDS } from 'utils/cryptoAssetsDashboard';
 import CryptoAssetsDashboard from './index';
 
 type Variant = 'synced' | 'partial' | 'empty';
-
-const searchField = (fieldIdentifier: string, fieldLabel: string) => ({
-    fieldIdentifier,
-    fieldLabel,
-    type: FilterFieldType.String,
-    conditions: [],
-});
 
 const statistics = {
     totalAssets: 12418,
@@ -60,28 +52,6 @@ function CurrentFiltersProbe() {
 
 export default function CryptoAssetsDashboardWithStore({ variant = 'synced' }: Readonly<{ variant?: Variant }>) {
     const store = createMockStore({
-        filters: {
-            filters: [
-                {
-                    entity: EntityType.CRYPTO_ASSET,
-                    filter: {
-                        availableFilters: [
-                            {
-                                searchFieldData: [
-                                    searchField(CRYPTO_ASSET_FILTER_FIELDS.type, 'Asset Type'),
-                                    searchField(CRYPTO_ASSET_FILTER_FIELDS.pqcVerdict, 'PQC Readiness'),
-                                    searchField(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily, 'Algorithm Family'),
-                                ],
-                            },
-                        ],
-                        currentFilters: [],
-                        preservedFilters: [],
-                        isFetchingFilters: false,
-                        hasLoadedFilters: true,
-                    },
-                },
-            ],
-        },
         cryptoAssetsDashboard: { isFetching: false, statistics: statisticsFor(variant) },
     } as Parameters<typeof createMockStore>[0]);
 
