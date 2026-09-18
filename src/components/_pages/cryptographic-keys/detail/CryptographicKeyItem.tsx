@@ -20,7 +20,7 @@ import { KeyCompromiseReason, KeyState, KeyUsage, PlatformEnum } from 'types/ope
 import { dateFormatter } from 'utils/dateUtil';
 import KeyStateBadge from '../KeyStateBadge';
 import KeyStatus from '../KeyStatus';
-import KeyUsageSelect from '../KeyUsageSelect';
+import KeyUsageSelect, { filterKeyUsagesByType } from 'components/_pages/cryptographic-keys/KeyUsageSelect';
 import SignVerifyData from './SignVerifyData';
 import { composeValidators, validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import EditableTableCell from 'components/CustomTable/EditableTableCell';
@@ -34,11 +34,19 @@ type Props = Readonly<{
     keyUuid: string;
     tokenInstanceUuid?: string;
     tokenProfileUuid?: string;
+    supportedKeyUsages?: KeyUsage[];
     keyItem: CryptographicKeyItemDetailResponseModel;
     totalKeyItems: number;
 }>;
 
-export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, tokenProfileUuid, keyItem, totalKeyItems }: Props) {
+export default function CryptographicKeyItem({
+    keyUuid,
+    tokenInstanceUuid,
+    tokenProfileUuid,
+    supportedKeyUsages,
+    keyItem,
+    totalKeyItems,
+}: Props) {
     const dispatch = useDispatch();
 
     const isUpdatingKeyItem = useSelector(selectors.isUpdatingKeyItem);
@@ -64,6 +72,11 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
     const [keyUsageUpdate, setKeyUsageUpdate] = useState<boolean>(false);
 
     const [keyUsages, setKeyUsages] = useState<KeyUsage[]>([]);
+    const allowedKeyUsages = useMemo(
+        () => filterKeyUsagesByType(supportedKeyUsages ?? [], keyItem.type),
+        [supportedKeyUsages, keyItem.type],
+    );
+    const selectedKeyUsages = keyUsages.filter((usage) => allowedKeyUsages.includes(usage));
 
     const [displayKeyData, setDisplayKeyData] = useState<boolean>(false);
     const keyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyUsage));
@@ -86,8 +99,10 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
     }, [history, keyItem.uuid]);
 
     useEffect(() => {
-        setKeyUsages(keyItem?.usage || []);
-    }, [keyUsageUpdate, keyItem?.usage]);
+        if (keyUsageUpdate) {
+            setKeyUsages((keyItem.usage ?? []).filter((usage) => allowedKeyUsages.includes(usage)));
+        }
+    }, [keyUsageUpdate, keyItem.usage, allowedKeyUsages]);
 
     const onEnableClick = useCallback(() => {
         if (!keyItem) return;
@@ -110,15 +125,15 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
     }, [dispatch, keyItem, keyUuid]);
 
     const onUpdateKeyUsageConfirmed = useCallback(() => {
-        if (!keyItem) return;
+        if (!keyItem || !supportedKeyUsages) return;
         dispatch(
             actions.updateKeyUsage({
                 uuid: keyUuid,
-                usage: { usage: keyUsages, uuids: [keyItem.uuid] },
+                usage: { usage: keyUsages.filter((usage) => allowedKeyUsages.includes(usage)), uuids: [keyItem.uuid] },
             }),
         );
         setKeyUsageUpdate(false);
-    }, [dispatch, keyUsages, keyItem, keyUuid]);
+    }, [dispatch, keyUsages, keyItem, keyUuid, supportedKeyUsages, allowedKeyUsages]);
 
     const onDeleteConfirmed = useCallback(() => {
         if (!keyItem) return;
@@ -206,7 +221,7 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
             {
                 id: 'key',
                 icon: 'key',
-                disabled: false,
+                disabled: !supportedKeyUsages,
                 tooltip: 'Update Key Usage',
                 onClick: () => {
                     setKeyUsageUpdate(true);
@@ -263,6 +278,7 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
             keyItem.state,
             keyItem.usage,
             tokenInstanceUuid,
+            supportedKeyUsages,
         ],
     );
 
@@ -614,12 +630,21 @@ export default function CryptographicKeyItem({ keyUuid, tokenInstanceUuid, token
             <Dialog
                 isOpen={keyUsageUpdate}
                 caption="Update Key Usage"
-                body={<KeyUsageSelect value={keyUsages} onChange={setKeyUsages} keyUsageEnum={keyUsageEnum} keyType={keyItem.type} />}
+                body={
+                    <KeyUsageSelect
+                        value={selectedKeyUsages}
+                        onChange={setKeyUsages}
+                        keyUsageEnum={keyUsageEnum}
+                        keyType={keyItem.type}
+                        supportedKeyUsages={supportedKeyUsages ?? []}
+                        isDisabled={!supportedKeyUsages}
+                    />
+                }
                 toggle={() => setKeyUsageUpdate(false)}
                 size="md"
                 buttons={[
                     { color: 'secondary', variant: 'outline', onClick: () => setKeyUsageUpdate(false), body: 'Cancel' },
-                    { color: 'primary', onClick: onUpdateKeyUsageConfirmed, body: 'Update' },
+                    { color: 'primary', onClick: onUpdateKeyUsageConfirmed, body: 'Update', disabled: !supportedKeyUsages },
                 ]}
             />
         </div>

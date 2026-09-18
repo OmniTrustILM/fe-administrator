@@ -7,15 +7,18 @@ import { actions, selectors } from 'ducks/settings';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { getFieldErrorMessage } from 'utils/validators-helper';
+import { composeValidators, validateMaximum, validatePositiveInteger } from 'utils/validators';
 import { useDispatch, useSelector } from 'react-redux';
 import type { SettingsPlatformModel } from 'types/settings';
 import {
     buildCbomHealthPath,
     CBOM_REPOSITORY_HEALTH_WARNING_MESSAGE,
+    UTILS_SERVICE_HEALTH_WARNING_MESSAGE,
     validateCbomRepositoryUrl,
     validateHealthUrl,
     validateUrl,
 } from './UtilsSettingsForm.validation';
+import { CBOM_SYNC_TUNABLES, type CbomSyncTunableName, describeTunable, integerText, parseOptionalInteger } from './UtilsSettings.tunables';
 
 class DebouncingHealthValidation {
     clearTimeout = () => {};
@@ -38,7 +41,7 @@ class DebouncingHealthValidation {
 type FormValues = {
     utilsServiceUrl?: string;
     cbomRepositoryUrl?: string;
-};
+} & Partial<Record<CbomSyncTunableName, string>>;
 
 interface UtilsSettingsFormProps {
     onCancel?: () => void;
@@ -54,14 +57,24 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
 
     const isBusy = useMemo(() => isFetchingPlatform || isUpdatingPlatform, [isFetchingPlatform, isUpdatingPlatform]);
 
-    const emptySettings = useMemo(() => ({ utils: {} }), []);
+    const utilsServiceUrl = platformSettings?.utils?.utilsServiceUrl;
+    const cbomRepositoryUrl = platformSettings?.utils?.cbomRepositoryUrl;
+    const cbomSyncOverlapSeconds = platformSettings?.utils?.cbomSyncOverlapSeconds;
+    const cbomSyncSkippedRetryRuns = platformSettings?.utils?.cbomSyncSkippedRetryRuns;
+    const cbomSyncMaxIngestDocuments = platformSettings?.utils?.cbomSyncMaxIngestDocuments;
 
-    const defaultValues = useMemo(() => {
-        return {
-            utilsServiceUrl: platformSettings?.utils?.utilsServiceUrl || '',
-            cbomRepositoryUrl: platformSettings?.utils?.cbomRepositoryUrl || '',
-        };
-    }, [platformSettings?.utils?.utilsServiceUrl, platformSettings?.utils?.cbomRepositoryUrl]);
+    // Keyed on the values, not the utils object: every fetch builds a new object, and a reset on identity alone would
+    // wipe an edit in progress whenever a refetch lands with the same content.
+    const defaultValues = useMemo<FormValues>(
+        () => ({
+            utilsServiceUrl: utilsServiceUrl || '',
+            cbomRepositoryUrl: cbomRepositoryUrl || '',
+            cbomSyncOverlapSeconds: integerText(cbomSyncOverlapSeconds),
+            cbomSyncSkippedRetryRuns: integerText(cbomSyncSkippedRetryRuns),
+            cbomSyncMaxIngestDocuments: integerText(cbomSyncMaxIngestDocuments),
+        }),
+        [utilsServiceUrl, cbomRepositoryUrl, cbomSyncOverlapSeconds, cbomSyncSkippedRetryRuns, cbomSyncMaxIngestDocuments],
+    );
 
     const methods = useForm<FormValues>({
         defaultValues,
@@ -74,6 +87,7 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
         formState: { isDirty, isSubmitting, isValid },
         reset,
     } = methods;
+    const [utilsServiceHealthWarning, setUtilsServiceHealthWarning] = useState<string | undefined>(undefined);
     const [cbomRepositoryHealthWarning, setCbomRepositoryHealthWarning] = useState<string | undefined>(undefined);
 
     // Reset form when platformSettings change
@@ -89,11 +103,39 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
 
     const debouncingUtilsHealthValidation = useMemo(() => new DebouncingHealthValidation(), []);
     const debouncingCbomHealthValidation = useMemo(() => new DebouncingHealthValidation(), []);
+    const utilsServiceUrlValue = useWatch({ control, name: 'utilsServiceUrl' });
     const cbomRepositoryUrlValue = useWatch({ control, name: 'cbomRepositoryUrl' });
 
+    // The health probe is a warning, not a validation error, as for the CBOM Repository URL below: a probe that fails
+    // (service down, /health not reachable from the browser) is shown, and it runs on the stored URL as soon as the
+    // form opens. As an error it would disable Save for the whole form, the CBOM sync tunables included, with the
+    // message hidden until the URL field itself was touched.
     useEffect(() => {
+        // Cleared before every probe as well as for an empty or malformed value: the warning on screen always belongs
+        // to the URL in the field, never to the one probed before it.
+        setUtilsServiceHealthWarning(undefined);
+        if (!utilsServiceUrlValue || validateUrl(utilsServiceUrlValue)) {
+            return;
+        }
+
+        let active = true;
+
+        void debouncingUtilsHealthValidation
+            .validateHealth(utilsServiceUrlValue, '/health', UTILS_SERVICE_HEALTH_WARNING_MESSAGE)
+            .then((warningMessage) => {
+                if (!active) return;
+                setUtilsServiceHealthWarning(warningMessage);
+            });
+
+        return () => {
+            active = false;
+            debouncingUtilsHealthValidation.clearTimeout();
+        };
+    }, [utilsServiceUrlValue, debouncingUtilsHealthValidation]);
+
+    useEffect(() => {
+        setCbomRepositoryHealthWarning(undefined);
         if (!cbomRepositoryUrlValue || validateCbomRepositoryUrl(cbomRepositoryUrlValue)) {
-            setCbomRepositoryHealthWarning(undefined);
             return;
         }
 
@@ -114,18 +156,19 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
 
     const onSubmit = useCallback(
         (values: FormValues) => {
-            const requestSettings: SettingsPlatformModel =
-                values.utilsServiceUrl || values.cbomRepositoryUrl
-                    ? {
-                          utils: {
-                              utilsServiceUrl: values.utilsServiceUrl,
-                              cbomRepositoryUrl: values.cbomRepositoryUrl,
-                          },
-                      }
-                    : emptySettings;
+            // The utils section is stored as sent: a URL left empty is cleared, a tunable left empty returns to the
+            // platform default. Empty fields are left out of the body rather than sent as empty strings.
+            const utils: NonNullable<SettingsPlatformModel['utils']> = {
+                utilsServiceUrl: values.utilsServiceUrl?.trim() || undefined,
+                cbomRepositoryUrl: values.cbomRepositoryUrl?.trim() || undefined,
+            };
+            for (const tunable of CBOM_SYNC_TUNABLES) {
+                utils[tunable.name] = parseOptionalInteger(values[tunable.name]);
+            }
+            const requestSettings: SettingsPlatformModel = { utils };
             dispatch(actions.updatePlatformSettings(requestSettings));
         },
-        [dispatch, emptySettings],
+        [dispatch],
     );
 
     const wasUpdating = useRef(isUpdatingPlatform);
@@ -145,60 +188,93 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
                 <Controller
                     name="utilsServiceUrl"
                     control={control}
-                    rules={{
-                        validate: async (value) => {
-                            const urlError = validateUrl(value);
-                            if (urlError) return urlError;
-                            if (value) {
-                                return await debouncingUtilsHealthValidation.validateHealth(
-                                    value,
-                                    '/health',
-                                    'Please enter reachable and valid Utils Service URL (with /health endpoint).',
-                                );
-                            }
-                            return undefined;
-                        },
+                    rules={{ validate: (value) => validateUrl(value) }}
+                    render={({ field, fieldState }) => {
+                        const warning = fieldState.error ? undefined : utilsServiceHealthWarning;
+                        return (
+                            <>
+                                <TextInput
+                                    {...field}
+                                    id="utilsServiceUrl"
+                                    type="text"
+                                    label="Utils Service URL"
+                                    placeholder="Utils Service URL"
+                                    invalid={fieldState.error && fieldState.isTouched}
+                                    error={getFieldErrorMessage(fieldState)}
+                                    ariaDescribedBy={warning ? 'utils-service-health-warning' : undefined}
+                                />
+                                {/* Always mounted: a live region announces changes, not its own arrival with text. */}
+                                <p
+                                    id="utils-service-health-warning"
+                                    aria-live="polite"
+                                    className={warning ? 'mt-1 text-sm text-warning' : 'text-sm text-warning'}
+                                    data-testid="utils-service-health-warning"
+                                >
+                                    {warning ?? ''}
+                                </p>
+                            </>
+                        );
                     }}
-                    render={({ field, fieldState }) => (
-                        <TextInput
-                            {...field}
-                            id="utilsServiceUrl"
-                            type="text"
-                            label="Utils Service URL"
-                            placeholder="Utils Service URL"
-                            invalid={fieldState.error && fieldState.isTouched}
-                            error={getFieldErrorMessage(fieldState)}
-                        />
-                    )}
                 />
 
                 <Controller
                     name="cbomRepositoryUrl"
                     control={control}
-                    rules={{
-                        validate: async (value) => {
-                            return validateCbomRepositoryUrl(value);
-                        },
-                    }}
-                    render={({ field, fieldState }) => (
-                        <>
-                            <TextInput
-                                {...field}
-                                id="cbomRepositoryUrl"
-                                type="text"
-                                label="CBOM Repository URL"
-                                placeholder="CBOM Repository URL"
-                                invalid={fieldState.error && fieldState.isTouched}
-                                error={getFieldErrorMessage(fieldState)}
-                            />
-                            {!fieldState.error && cbomRepositoryHealthWarning && (
-                                <p className="mt-1 text-sm text-warning" data-testid="cbom-repository-health-warning">
-                                    {cbomRepositoryHealthWarning}
+                    rules={{ validate: (value) => validateCbomRepositoryUrl(value) }}
+                    render={({ field, fieldState }) => {
+                        const warning = fieldState.error ? undefined : cbomRepositoryHealthWarning;
+                        return (
+                            <>
+                                <TextInput
+                                    {...field}
+                                    id="cbomRepositoryUrl"
+                                    type="text"
+                                    label="CBOM Repository URL"
+                                    placeholder="CBOM Repository URL"
+                                    invalid={fieldState.error && fieldState.isTouched}
+                                    error={getFieldErrorMessage(fieldState)}
+                                    ariaDescribedBy={warning ? 'cbom-repository-health-warning' : undefined}
+                                />
+                                <p
+                                    id="cbom-repository-health-warning"
+                                    aria-live="polite"
+                                    className={warning ? 'mt-1 text-sm text-warning' : 'text-sm text-warning'}
+                                    data-testid="cbom-repository-health-warning"
+                                >
+                                    {warning ?? ''}
                                 </p>
-                            )}
-                        </>
-                    )}
+                            </>
+                        );
+                    }}
                 />
+
+                {CBOM_SYNC_TUNABLES.map((tunable) => (
+                    <Controller
+                        key={tunable.name}
+                        name={tunable.name}
+                        control={control}
+                        rules={{ validate: composeValidators(validatePositiveInteger(), validateMaximum(tunable.max)) }}
+                        render={({ field, fieldState }) => (
+                            <div>
+                                <TextInput
+                                    {...field}
+                                    id={tunable.name}
+                                    type="text"
+                                    inputMode="numeric"
+                                    label={`${tunable.label} (${tunable.unit})`}
+                                    placeholder={String(tunable.defaultValue)}
+                                    invalid={fieldState.error && fieldState.isTouched}
+                                    error={getFieldErrorMessage(fieldState)}
+                                    ariaDescribedBy={`${tunable.name}-help`}
+                                />
+                                <p id={`${tunable.name}-help`} className="text-sm text-content-subtle mt-2">
+                                    {tunable.help} Clear to return to the platform default ({describeTunable(tunable, tunable.defaultValue)}
+                                    ).
+                                </p>
+                            </div>
+                        )}
+                    />
+                ))}
 
                 <Container className="flex-row justify-end modal-footer" gap={4}>
                     <Button variant="outline" onClick={onCancel} disabled={isSubmitting || isBusy} type="button">

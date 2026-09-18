@@ -112,6 +112,26 @@ test.describe('AppearanceSettings', () => {
         await expect(page.getByTestId('color-hex-primaryColor')).toBeFocused();
     });
 
+    /**
+     * An empty field means the platform default applies, so both hints an unset field shows - the placeholder and the
+     * swatch the browser cannot leave blank - have to name that field's own default rather than one colour for all four.
+     */
+    const PLATFORM_DEFAULTS = [
+        { key: 'primaryColor', hex: '#0073CF' },
+        { key: 'secondaryColor', hex: '#0369A1' },
+        { key: 'backgroundColor', hex: '#F8FAFC' },
+        { key: 'textColor', hex: '#1F2937' },
+    ];
+
+    for (const { key, hex } of PLATFORM_DEFAULTS) {
+        test(`should hint the platform default for ${key} while it is unset`, async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+
+            await expect(page.getByTestId(`color-hex-${key}`)).toHaveAttribute('placeholder', hex);
+            await expect(page.getByTestId(`color-swatch-${key}`)).toHaveValue(hex.toLowerCase());
+        });
+    }
+
     test('should not offer a tertiary colour', async ({ mount, page }) => {
         await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
 
@@ -148,12 +168,13 @@ test.describe('AppearanceSettings', () => {
     });
 
     test('should treat an emptied field as a saveable unset value rather than invalid input', async ({ mount, page }) => {
-        await mount(<AppearanceSettingsTestWrapper preloadedState={branded} />);
+        // Stored away from the platform default, so the swatch below can only read it back from the fallback.
+        await mount(<AppearanceSettingsTestWrapper preloadedState={storedBranding({ ...COMPLETE_BRANDING, primaryColor: '#00A3E0' })} />);
         await setHex(page, 'primaryColor', '');
 
         await expect(page.getByTestId('color-error-primaryColor')).toHaveCount(0);
-        // The swatch cannot hold an empty value, so it falls back to black for display only.
-        await expect(page.getByTestId('color-swatch-primaryColor')).toHaveValue('#000000');
+        // The swatch cannot hold an empty value, so it falls back to the field's own default for display only.
+        await expect(page.getByTestId('color-swatch-primaryColor')).toHaveValue('#0073cf');
         await expect(page.getByTestId('appearance-save')).toBeEnabled();
     });
 
@@ -243,6 +264,75 @@ test.describe('AppearanceSettings', () => {
         // The rejection has to reach the input it describes, not only the alert that announced it once.
         await expect(page.getByTestId('logo-error-lightLogo')).toHaveAttribute('id', 'lightLogo-error');
         await expect(page.getByTestId('logo-input-lightLogo')).toHaveAttribute('aria-describedby', 'lightLogo-error');
+    });
+
+    test('should reject a file whose content is not the format its name claims', async ({ mount, page }) => {
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+        await chooseFile(page.getByTestId('logo-input-lightLogo'), 'logo.png', 'image/png', Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
+
+        await expect(page.getByTestId('logo-error-lightLogo')).toHaveText('Logo must be a PNG or an SVG.');
+        await expect(page.getByTestId('logo-preview-lightLogo')).toHaveCount(0);
+        await expect(page.getByTestId('appearance-save')).toBeDisabled();
+    });
+
+    /** Browsers report a failed parse differently, so this pins the rejection in each one rather than only the logic. */
+    test('should reject an SVG the browser cannot parse', async ({ mount, page }) => {
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+        await chooseFile(page.getByTestId('logo-input-lightLogo'), 'logo.svg', 'image/svg+xml', Buffer.from('<svg><g></svg>'));
+
+        await expect(page.getByTestId('logo-error-lightLogo')).toHaveText('Logo must be a PNG or an SVG.');
+        await expect(page.getByTestId('logo-preview-lightLogo')).toHaveCount(0);
+    });
+
+    /** A PNG that keeps its signature but nothing else: the browser cannot decode it, and Core's chunk walk refuses it. */
+    test('should reject a PNG the browser cannot decode', async ({ mount, page }) => {
+        const truncated = Buffer.from(PNG_DATA_URI.split(',')[1], 'base64').subarray(0, 12);
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+        await chooseFile(page.getByTestId('logo-input-lightLogo'), 'logo.png', 'image/png', truncated);
+
+        await expect(page.getByTestId('logo-error-lightLogo')).toHaveText('Logo must be a well-formed PNG image.');
+        await expect(page.getByTestId('logo-preview-lightLogo')).toHaveCount(0);
+    });
+
+    /**
+     * XML lets the declaration space its `=`, and a legacy export that does is a document Core stores. Pinned here
+     * rather than in the unit suite because happy-dom refuses the spaced form that real engines accept.
+     */
+    test('should accept an SVG whose declaration spaces the equals sign and names a legacy encoding', async ({ mount, page }) => {
+        const markup =
+            '<?xml version = "1.0" encoding = "windows-1252"?>' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><title>Caf\u00e9</title><rect width="200" height="100"/></svg>';
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+        await chooseFile(page.getByTestId('logo-input-lightLogo'), 'legacy.svg', 'image/svg+xml', Buffer.from(markup, 'latin1'));
+
+        await expect(page.getByTestId('logo-preview-lightLogo')).toBeVisible();
+        await expect(page.getByTestId('logo-error-lightLogo')).toHaveCount(0);
+    });
+
+    /** Pinned in a real browser because the parse, not the rule, is what differs between engines. */
+    test('should reject an SVG carrying a document type declaration', async ({ mount, page }) => {
+        const doctyped = Buffer.from(
+            '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">' +
+                '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"/>',
+        );
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+        await chooseFile(page.getByTestId('logo-input-lightLogo'), 'logo.svg', 'image/svg+xml', doctyped);
+
+        await expect(page.getByTestId('logo-error-lightLogo')).toHaveText('Logo SVG must not carry a document type declaration.');
+        await expect(page.getByTestId('logo-preview-lightLogo')).toHaveCount(0);
+    });
+
+    /** Windows reports no media type for an SVG, which is why the format is read from the content rather than declared. */
+    test('should accept an SVG the browser reported no media type for', async ({ mount, page }) => {
+        const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><rect width="200" height="100"/></svg>');
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+        await chooseFile(page.getByTestId('logo-input-lightLogo'), 'logo.svg', '', svg);
+
+        const preview = page.getByTestId('logo-preview-lightLogo');
+
+        await expect(preview).toBeVisible();
+        await expect(preview).toHaveAttribute('src', /^data:image\/svg\+xml;base64,/);
+        await expect(page.getByTestId('logo-error-lightLogo')).toHaveCount(0);
     });
 
     test('should reject a file over the size ceiling', async ({ mount, page }) => {

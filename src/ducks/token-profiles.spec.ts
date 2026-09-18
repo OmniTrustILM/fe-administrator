@@ -1,7 +1,28 @@
 import { describe, expect, test } from 'vitest';
-import { KeyUsage } from 'types/openapi';
+import { KeyUsage, TokenInstanceStatus } from 'types/openapi';
+import type { TokenProfileDetailResponseModel } from 'types/token-profiles';
 
 import reducer, { actions, initialState, selectors } from './token-profiles';
+
+function aTokenProfile() {
+    const profile: TokenProfileDetailResponseModel = {
+        uuid: 'token-profile',
+        name: 'Token profile',
+        tokenInstanceUuid: 'token-instance',
+        tokenInstanceName: 'Token instance',
+        tokenInstanceStatus: TokenInstanceStatus.Activated,
+        enabled: true,
+        attributes: [],
+        usages: [],
+    };
+    return {
+        withUsages(usages: KeyUsage[]) {
+            profile.usages = usages;
+            return this;
+        },
+        build: () => profile,
+    };
+}
 
 describe('tokenProfiles slice', () => {
     test('returns initial state for unknown action', () => {
@@ -83,11 +104,45 @@ describe('tokenProfiles slice', () => {
         expect(next.tokenProfile).toBeUndefined();
     });
 
-    test('getTokenProfileDetail keeps profile when refetching the same uuid', () => {
-        const state = { ...initialState, tokenProfile: { uuid: 'tp-1' } as any };
-        const next = reducer(state, actions.getTokenProfileDetail({ tokenInstanceUuid: 't-1', uuid: 'tp-1' }));
-        expect(next.tokenProfile?.uuid).toBe('tp-1');
+    test('getTokenProfileDetail_invalidatesPreviousSuccess_whileKeepingCachedProfile', () => {
+        // given
+        const profile = aTokenProfile().build();
+        const loadedState = reducer(initialState, actions.getTokenProfileDetailSuccess({ tokenProfile: profile }));
+
+        // when
+        const next = reducer(loadedState, actions.getTokenProfileDetail(profile));
+
+        // then
+        expect(next.tokenProfile).toEqual(profile);
         expect(next.isFetchingDetail).toBe(true);
+        expect(next.detailFetchSucceeded).toBe(false);
+    });
+
+    test('getTokenProfileDetailFailure_keepsCachedProfileUnavailableUntilRetrySucceeds', () => {
+        // given
+        const cachedUsages = [KeyUsage.Sign];
+        const refreshedUsages = [KeyUsage.Decrypt];
+        const profile = aTokenProfile().withUsages(cachedUsages).build();
+        const refreshedProfile = aTokenProfile().withUsages(refreshedUsages).build();
+        const loadedState = reducer(initialState, actions.getTokenProfileDetailSuccess({ tokenProfile: profile }));
+        const loadingState = reducer(loadedState, actions.getTokenProfileDetail(profile));
+
+        // when
+        const failedState = reducer(loadingState, actions.getTokenProfileDetailFailure({ error: 'Profile unavailable' }));
+
+        // then
+        expect(failedState.tokenProfile).toEqual(profile);
+        expect(failedState.isFetchingDetail).toBe(false);
+        expect(failedState.detailFetchSucceeded).toBe(false);
+
+        // when
+        const retryingState = reducer(failedState, actions.getTokenProfileDetail(profile));
+        const next = reducer(retryingState, actions.getTokenProfileDetailSuccess({ tokenProfile: refreshedProfile }));
+
+        // then
+        expect(next.tokenProfile).toEqual(refreshedProfile);
+        expect(next.isFetchingDetail).toBe(false);
+        expect(next.detailFetchSucceeded).toBe(true);
     });
 
     test('getSupportedTokenProfileKeyUsages_clearsWhileLoading_andStoresCurrentTokenUsages', () => {

@@ -12,6 +12,11 @@ const KEY_TYPE_ALLOWED_USAGES: Partial<Record<KeyType, KeyUsage[]>> = {
     [KeyType.Private]: [KeyUsage.Sign, KeyUsage.Decrypt, KeyUsage.Unwrap],
 };
 
+export function filterKeyUsagesByType(usages: KeyUsage[], keyType?: KeyType): KeyUsage[] {
+    const allowedUsages = keyType ? KEY_TYPE_ALLOWED_USAGES[keyType] : undefined;
+    return usages.filter((usage) => !allowedUsages || allowedUsages.includes(usage));
+}
+
 export type KeyUsageSelectProps = Readonly<{
     value: KeyUsage[];
     onChange: (values: KeyUsage[]) => void;
@@ -47,12 +52,11 @@ export default function KeyUsageSelect({
     id = 'field',
     label = 'Key Usage',
 }: KeyUsageSelectProps) {
-    const allowedUsages = keyType ? KEY_TYPE_ALLOWED_USAGES[keyType] : undefined;
     const availableUsages = supportedKeyUsages ?? Object.values(KeyUsage);
 
     const options = useMemo(() => {
-        return getKeyUsageOptions(availableUsages, keyUsageEnum, allowedUsages);
-    }, [availableUsages, keyUsageEnum, allowedUsages]);
+        return getKeyUsageOptions(filterKeyUsagesByType(availableUsages, keyType), keyUsageEnum);
+    }, [availableUsages, keyUsageEnum, keyType]);
 
     const selectValue = useMemo(
         () =>

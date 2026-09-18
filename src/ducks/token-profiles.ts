@@ -25,6 +25,7 @@ export type State = {
 
     isFetchingList: boolean;
     isFetchingDetail: boolean;
+    detailFetchSucceeded: boolean;
     isFetchingAttributes: boolean;
     isFetchingSupportedTokenProfileKeyUsages: boolean;
     isUpdatingKeyUsage: boolean;
@@ -53,6 +54,7 @@ export const initialState: State = {
 
     isFetchingList: false,
     isFetchingDetail: false,
+    detailFetchSucceeded: false,
     isFetchingAttributes: false,
     isFetchingSupportedTokenProfileKeyUsages: false,
     isUpdatingKeyUsage: false,
@@ -102,20 +104,23 @@ export const slice = createSlice({
             state.isFetchingList = false;
         },
 
-        getTokenProfileDetail: (state, action: PayloadAction<{ tokenInstanceUuid: string; uuid: string }>) => {
+        getTokenProfileDetail: (state, action: PayloadAction<{ tokenInstanceUuid: string; uuid: string; skipWidgetLock?: boolean }>) => {
             if (state.tokenProfile?.uuid !== action.payload.uuid) {
                 state.tokenProfile = undefined;
             }
             state.isFetchingDetail = true;
+            state.detailFetchSucceeded = false;
         },
 
         getTokenProfileDetailSuccess: (state, action: PayloadAction<{ tokenProfile: TokenProfileDetailResponseModel }>) => {
             state.isFetchingDetail = false;
+            state.detailFetchSucceeded = true;
             state.tokenProfile = action.payload.tokenProfile;
         },
 
         getTokenProfileDetailFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingDetail = false;
+            state.detailFetchSucceeded = false;
         },
 
         clearSupportedTokenProfileKeyUsages: (state, action: PayloadAction<void>) => {
@@ -348,6 +353,7 @@ const supportedTokenProfileKeyUsagesTokenInstanceUuid = createSelector(
 
 const isFetchingList = createSelector(state, (state: State) => state.isFetchingList);
 const isFetchingDetail = createSelector(state, (state: State) => state.isFetchingDetail);
+const detailFetchSucceeded = createSelector(state, (state: State) => state.detailFetchSucceeded);
 const isFetchingAttributes = createSelector(state, (state: State) => state.isFetchingAttributes);
 const isFetchingSupportedTokenProfileKeyUsages = createSelector(state, (state: State) => state.isFetchingSupportedTokenProfileKeyUsages);
 const isCreating = createSelector(state, (state: State) => state.isCreating);
@@ -375,6 +381,7 @@ export const selectors = {
 
     isFetchingList,
     isFetchingDetail,
+    detailFetchSucceeded,
     isFetchingAttributes,
     isFetchingSupportedTokenProfileKeyUsages,
     isCreating,

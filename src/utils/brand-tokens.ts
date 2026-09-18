@@ -112,6 +112,20 @@ export const BRAND_TOKEN_RULES: readonly Rule[] = [
     { token: 'content-hint', light: { source: 'text', towards: 'white', weight: 0.3 } },
 ];
 
+/**
+ * The platform value each colour falls back to when left unset: the light-theme value of the token that colour leads.
+ *
+ * Held as literals because neither other source works - the custom properties carry the operator's brand at runtime,
+ * and `brand-contrast.ts`'s copy cannot be read back here since it imports this module. `brand-tokens.spec.ts` keeps
+ * them honest against the stylesheet and against the rule pairing each colour with its token.
+ */
+export const BRAND_DEFAULT_COLORS: Record<BrandColorKey, string> = {
+    primary: '#0073CF',
+    secondary: '#0369A1',
+    background: '#F8FAFC',
+    text: '#1F2937',
+};
+
 const MIX_TARGET_HEX: Record<'white' | 'black', string> = { white: '#ffffff', black: '#000000' };
 
 /** Trailing zeros trimmed, so a weight of 0.8 reads as `80%` rather than `80.0%`. */
