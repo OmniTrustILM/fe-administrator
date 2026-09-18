@@ -233,7 +233,7 @@ describe('DiscoveryDetail', () => {
         it('offers nothing once the platform is processing', async () => {
             await render(buildState({ ...v2Run, status: DiscoveryStatus.Processing }));
 
-            expect(headerButtons()).toEqual(['Delete (cancel the run first)']);
+            expect(headerButtons()).toEqual(['Delete (wait for the run to end)']);
         });
 
         it('disables delete while a v2 run is live, since Core refuses to delete a run that has not ended', async () => {
@@ -243,6 +243,11 @@ describe('DiscoveryDetail', () => {
             await render(buildState(v2Run));
             expect(deleteButton()?.disabled).toBe(true);
             expect(deleteButton()?.title).toBe('Delete (cancel the run first)');
+
+            // Cancel is refused once Core is processing the run, so sending the user there would be a dead end.
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Processing }));
+            expect(deleteButton()?.disabled).toBe(true);
+            expect(deleteButton()?.title).toBe('Delete (wait for the run to end)');
 
             await render(buildState({ ...v2Run, status: DiscoveryStatus.Completed }));
             expect(deleteButton()?.disabled).toBe(false);

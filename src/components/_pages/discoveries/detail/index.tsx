@@ -30,7 +30,13 @@ import DiscoveryProgressWidget from './DiscoveryProgressWidget';
 import DiscoveryResults from './DiscoveryResults';
 import DiscoveryResultsSummary from './DiscoveryResultsSummary';
 import DiscoveryRunMessages from './DiscoveryRunMessages';
-import { connectorInterfaceLabel, type DiscoveryLifecycleAction, isTerminalRun, visibleLifecycleActions } from './discoveryDetailHelpers';
+import {
+    connectorInterfaceLabel,
+    deleteTooltip,
+    type DiscoveryLifecycleAction,
+    isTerminalRun,
+    visibleLifecycleActions,
+} from './discoveryDetailHelpers';
 import ObjectEventHistoryWidget from 'components/_pages/notifications/events-settings/ObjectEventHistoryWidget';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
@@ -145,7 +151,7 @@ export default function DiscoveryDetail() {
             {
                 icon: 'trash',
                 disabled: isMutating || !deletable,
-                tooltip: deletable ? 'Delete' : 'Delete (cancel the run first)',
+                tooltip: deleteTooltip(discovery?.status, deletable),
                 onClick: () => {
                     setConfirmDelete(true);
                 },

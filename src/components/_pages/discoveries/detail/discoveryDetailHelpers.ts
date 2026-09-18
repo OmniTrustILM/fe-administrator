@@ -55,6 +55,15 @@ export function isTerminalRun(status: DiscoveryStatus | undefined): boolean {
 }
 
 /**
+ * What the delete button says when Core will refuse the call. Cancel is itself refused once the run is processing -
+ * the Provider is done and the remaining import is not abortable - so the only way out of that state is waiting.
+ */
+export function deleteTooltip(status: DiscoveryStatus | undefined, deletable: boolean): string {
+    if (deletable) return 'Delete';
+    return status === DiscoveryStatus.Processing ? 'Delete (wait for the run to end)' : 'Delete (cancel the run first)';
+}
+
+/**
  * The resources a run's Results tab has a view for, in the contract's order. Core synthesizes ["certificates"] for a
  * run against a v1 Provider, so an absent or empty list only ever comes from a response older than that field.
  */
