@@ -845,6 +845,60 @@ describe('certificates epics', () => {
             expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
         });
 
+        test('a profile whose authority connector serves no request schema resolves to the platform default set without failing', async () => {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const platformDefaultSet = [{ uuid: 'platform-cn', name: 'commonName' }];
+            const deps = {
+                apiClients: {
+                    certificates: { getCsrGenerationAttributes: () => of(platformDefaultSet) },
+                },
+            };
+
+            const output$ = epics[GET_CSR_ATTRIBUTES_EPIC_INDEX](
+                of(certificatesActions.getCsrAttributes({ raProfileUuid: 'ra-no-connector' })),
+                of({}) as any,
+                deps as any,
+            );
+            const emitted = await firstValueFrom(output$.pipe(toArray()));
+
+            expect(emitted.map((a) => a.type)).toEqual([certificatesActions.getCsrAttributesSuccess.type]);
+            expect((emitted[0] as any).payload.csrAttributes).toEqual(platformDefaultSet);
+        });
+
+        test('switching RA Profiles refetches, and the earlier in-flight set is dropped so the newly selected profile wins', async () => {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const action$ = new Subject<UnknownAction>();
+            const responses: Record<string, Subject<any>> = { 'ra-1': new Subject(), 'ra-2': new Subject() };
+            const requested: string[] = [];
+            const deps = {
+                apiClients: {
+                    certificates: {
+                        getCsrGenerationAttributes: ({ raProfileUuid }: { raProfileUuid: string }) => {
+                            requested.push(raProfileUuid);
+                            return responses[raProfileUuid];
+                        },
+                    },
+                },
+            };
+
+            const output$ = epics[GET_CSR_ATTRIBUTES_EPIC_INDEX](action$, of({}) as any, deps as any);
+            const emitted: UnknownAction[] = [];
+            const subscription = output$.subscribe((action) => emitted.push(action));
+
+            action$.next(certificatesActions.getCsrAttributes({ raProfileUuid: 'ra-1' }));
+            action$.next(certificatesActions.getCsrAttributes({ raProfileUuid: 'ra-2' }));
+            responses['ra-2'].next([{ uuid: 'ra-2-connector-attr' }]);
+            responses['ra-2'].complete();
+            // The first profile's response arriving late must not replace the second profile's set.
+            responses['ra-1'].next([{ uuid: 'ra-1-attr' }]);
+            responses['ra-1'].complete();
+
+            expect(requested).toEqual(['ra-1', 'ra-2']);
+            expect(emitted.map((a) => a.type)).toEqual([certificatesActions.getCsrAttributesSuccess.type]);
+            expect((emitted[0] as any).payload.csrAttributes).toEqual([{ uuid: 'ra-2-connector-attr' }]);
+            subscription.unsubscribe();
+        });
+
         test('cancels the in-flight fetch when the RA Profile is cleared before the response resolves', async () => {
             const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
             const action$ = new Subject<UnknownAction>();

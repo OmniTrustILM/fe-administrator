@@ -235,23 +235,15 @@ export default function ApprovalDetails() {
         }
     }, []);
 
-    const renderRecipiensDetails = useCallback((approvalStep: DetailApprovalStepModel) => {
-        const data = approvalStep.approvalStepRecipients.map((recipient, i) => ({
-            id: recipient.approvalRecipientUuid,
-            columns: [
-                <Link key="username" to={`../users/detail/${approvalStep.userUuid}`}>
-                    {recipient.username}
-                </Link>,
-                recipient.closedAt ? dateFormatter(recipient.closedAt) : '',
-                <StatusBadge key="status" textStatus={recipient.status} />,
-                recipient.comment || '',
-            ],
-        }));
-
-        const headers = [
+    const approversHeaders: TableHeader[] = useMemo(
+        () => [
             {
-                id: 'recipient',
-                content: 'Recipient',
+                id: 'step',
+                content: 'Step',
+            },
+            {
+                id: 'approver',
+                content: 'Approver',
             },
             {
                 id: 'closedAt',
@@ -270,10 +262,34 @@ export default function ApprovalDetails() {
                 id: 'comment',
                 content: 'Comment',
             },
-        ];
+        ],
+        [],
+    );
 
-        return <CustomTable data={data} headers={headers} />;
-    }, []);
+    const approversRows: TableDataRow[] = useMemo(
+        () =>
+            (approvalDetails?.approvalSteps ?? []).flatMap((approvalStep) =>
+                approvalStep.approvalStepRecipients.map((recipient) => ({
+                    id: recipient.approvalRecipientUuid,
+                    columns: [
+                        approvalStep.order.toString(),
+                        recipient.userUuid ? (
+                            <Link key="approver" to={`../users/detail/${recipient.userUuid}`}>
+                                {recipient.username ?? recipient.userUuid}
+                            </Link>
+                        ) : (
+                            ''
+                        ),
+                        recipient.closedAt ? dateFormatter(recipient.closedAt) : '',
+                        <StatusBadge key="status" textStatus={recipient.status} />,
+                        <div key="comment" className="whitespace-pre-wrap break-words min-w-60 max-w-xl">
+                            {recipient.comment ?? ''}
+                        </div>,
+                    ],
+                })),
+            ),
+        [approvalDetails],
+    );
 
     const stepsRows: TableDataRow[] = useMemo(
         () =>
@@ -291,20 +307,12 @@ export default function ApprovalDetails() {
 
                           approvalStep.description || '',
                       ],
-                      detailColumns: [
-                          <></>,
-                          <></>,
-                          <></>,
-                          <></>,
-                          <></>,
-                          approvalStep.approvalStepRecipients.length ? renderRecipiensDetails(approvalStep) : '',
-                      ],
                   }))
                 : [],
-        [approvalDetails, renderApproverRedirect, renderRecipiensDetails],
+        [approvalDetails, renderApproverRedirect],
     );
 
-    if (isFetchingDetail) {
+    if (isFetchingDetail && approvalDetails?.approvalUuid !== id) {
         return <DetailPageSkeleton layout="simple" buttonsCount={2} />;
     }
 
@@ -323,7 +331,7 @@ export default function ApprovalDetails() {
                         {
                             title: 'Details',
                             content: (
-                                <>
+                                <Container>
                                     <Widget
                                         title="Approval Details"
                                         busy={isBusy}
@@ -334,9 +342,12 @@ export default function ApprovalDetails() {
                                         <CustomTable headers={detailHeaders} data={detailData} />
                                     </Widget>
                                     <Widget title="Approval Steps" busy={isBusy}>
-                                        <CustomTable headers={stepsHeaders} data={stepsRows} hasDetails={true} />
+                                        <CustomTable headers={stepsHeaders} data={stepsRows} />
                                     </Widget>
-                                </>
+                                    <Widget title="Approvers" busy={isBusy}>
+                                        <CustomTable headers={approversHeaders} data={approversRows} />
+                                    </Widget>
+                                </Container>
                             ),
                         },
                         {

@@ -17,6 +17,29 @@ export const platformDefaultBranding: PublicBrandingModel = {
     darkLogo: null,
 };
 
+export const toPublicBranding = (stored: BrandingSettingsModel): PublicBrandingModel => {
+    const fields = [
+        stored.primaryColor,
+        stored.secondaryColor,
+        stored.backgroundColor,
+        stored.textColor,
+        stored.lightLogo,
+        stored.darkLogo,
+        stored.defaultTheme,
+    ];
+
+    return {
+        configured: fields.some((field) => field !== undefined && field !== null),
+        primaryColor: stored.primaryColor ?? null,
+        secondaryColor: stored.secondaryColor ?? null,
+        backgroundColor: stored.backgroundColor ?? null,
+        textColor: stored.textColor ?? null,
+        lightLogo: stored.lightLogo ?? null,
+        darkLogo: stored.darkLogo ?? null,
+        defaultTheme: stored.defaultTheme,
+    };
+};
+
 export type State = {
     /** The operator's stored branding, read through the authenticated settings API for the Appearance tab. */
     branding?: BrandingSettingsModel;

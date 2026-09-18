@@ -204,6 +204,43 @@ describe('raProfiles slice', () => {
         expect(next.isUpdating).toBe(false);
     });
 
+    test('raProfileRequestAttributesUpdated patches the loaded profile in place and touches nothing else', () => {
+        const existingProfile = {
+            uuid: 'ra-1',
+            name: 'RA Profile',
+            attributes: [{ uuid: 'attr-1' }],
+            customAttributes: [],
+            certificateRequestAttributes: { mergeMode: 'staticOnly', requestAttributes: [] },
+        } as any;
+        const persistedSet = { mergeMode: 'merge', requestAttributes: [], valueSourceBindings: [{ attributeName: 'cn' }] } as any;
+
+        const next = reducer(
+            { ...initialState, raProfile: existingProfile, isUpdating: true },
+            actions.raProfileRequestAttributesUpdated({ uuid: 'ra-1', certificateRequestAttributes: persistedSet }),
+        );
+        expect(next.raProfile?.certificateRequestAttributes).toEqual(persistedSet);
+        expect(next.raProfile?.name).toBe('RA Profile');
+        expect(next.raProfile?.attributes).toEqual([{ uuid: 'attr-1' }]);
+        expect(next.isUpdating).toBe(true);
+    });
+
+    test('raProfileRequestAttributesUpdated ignores a response for a profile other than the loaded one', () => {
+        const existingProfile = { uuid: 'ra-1', certificateRequestAttributes: { mergeMode: 'staticOnly' } } as any;
+        const state = { ...initialState, raProfile: existingProfile };
+
+        const next = reducer(
+            state,
+            actions.raProfileRequestAttributesUpdated({ uuid: 'ra-2', certificateRequestAttributes: { mergeMode: 'merge' } as any }),
+        );
+        expect(next.raProfile).toBe(existingProfile);
+
+        const noProfile = reducer(
+            { ...initialState, raProfile: undefined },
+            actions.raProfileRequestAttributesUpdated({ uuid: 'ra-1', certificateRequestAttributes: { mergeMode: 'merge' } as any }),
+        );
+        expect(noProfile.raProfile).toBeUndefined();
+    });
+
     test('enableRaProfile / success updates list and detail / failure', () => {
         const items = [{ uuid: 'ra-1', enabled: false } as any];
         const profile = { uuid: 'ra-1', enabled: false } as any;

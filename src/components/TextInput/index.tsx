@@ -5,6 +5,7 @@ import Label from 'components/Label';
 import DatePicker from 'components/DatePicker';
 import TextArea from 'components/TextArea';
 import { inputBaseClassName } from './inputStyles';
+import { joinAriaIds } from 'utils/aria';
 
 export { inputBaseClassName } from './inputStyles';
 
@@ -26,6 +27,8 @@ type Props = {
     dataTestId?: string;
     /** Id of an element describing the field (typically an error paragraph) — announced by screen readers. */
     ariaDescribedBy?: string;
+    /** Virtual keyboard hint; a numeric field kept as `type="text"` so the validator sees what was typed uses `numeric`. */
+    inputMode?: 'numeric' | 'decimal' | 'text';
 };
 
 function TextInput({
@@ -45,9 +48,14 @@ function TextInput({
     buttonRight,
     dataTestId,
     ariaDescribedBy,
+    inputMode,
 }: Readonly<Props>) {
     const inputRef = useRef<HTMLInputElement>(null);
     const generatedId = useId();
+    const errorId = `${id ?? `text-input-${generatedId.replaceAll(':', '')}`}-error`;
+    // The error paragraph is always announced; a caller's own describing element (help text) comes along with it.
+    // DatePicker and TextArea compose the same way themselves, so they get the raw ids and no repeated token.
+    const describedBy = joinAriaIds(ariaDescribedBy, error ? errorId : undefined);
     const [passwordVisible, setPasswordVisible] = useState(false);
     const passwordToggleTargetId = type === 'password' ? id || `text-input-password-${generatedId.replaceAll(':', '')}` : null;
 
@@ -94,6 +102,7 @@ function TextInput({
                     className={className}
                     required={required}
                     ariaDescribedBy={ariaDescribedBy}
+                    errorId={errorId}
                 />
             </>
         );
@@ -119,6 +128,7 @@ function TextInput({
                     className={className}
                     required={required}
                     ariaDescribedBy={ariaDescribedBy}
+                    errorId={errorId}
                 />
             </>
         );
@@ -159,7 +169,8 @@ function TextInput({
                     disabled={disabled}
                     id={passwordToggleTargetId ?? id}
                     aria-invalid={invalid || undefined}
-                    aria-describedby={ariaDescribedBy}
+                    aria-describedby={describedBy}
+                    inputMode={inputMode}
                     autoComplete={getAutoComplete()}
                     data-form-type="other"
                     data-testid={dataTestId ?? (id ? `text-input-${id}` : 'text-input')}
@@ -185,7 +196,11 @@ function TextInput({
                     </div>
                 )}
             </div>
-            {error && <p className="mt-1 text-sm text-danger">{error}</p>}
+            {error && (
+                <p id={errorId} className="mt-1 text-sm text-danger">
+                    {error}
+                </p>
+            )}
         </>
     );
 }

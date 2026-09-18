@@ -31,6 +31,30 @@ describe('theme-tokens', () => {
         });
     });
 
+    /**
+     * `content-hint` is the one text token deliberately below AA body contrast, and it is asserted here so the
+     * exception is measured and gated rather than hidden in an opacity modifier the parser cannot see.
+     *
+     * A placeholder is a supplementary example of a value, never the accessible name of a field - every input in this
+     * design system renders a real `label`, which is what a reader relies on. Holding a placeholder at the 4.5:1 that
+     * `content-subtle` already meets is exactly what made an empty field read as a filled one.
+     *
+     * Asserted as a floor and as quieter than `content-subtle`, deliberately not as an upper bound on the ratio
+     * itself: a bound below 4.5:1 would be a ratchet, failing the suite the day someone decides to raise placeholders
+     * back to AA. That decision should be argued, not blocked by a test.
+     */
+    describe.each(['light', 'dark'] as const)('%s theme placeholder contrast', (theme) => {
+        const ratio = contrastRatio(tokens[theme]['content-hint'], tokens[theme]['surface-raised']);
+
+        test('should stay legible against the raised surface', () => {
+            expect(ratio).toBeGreaterThanOrEqual(2);
+        });
+
+        test('should stay quieter than the subtle body token it replaced', () => {
+            expect(ratio).toBeLessThan(contrastRatio(tokens[theme]['content-subtle'], tokens[theme]['surface-raised']));
+        });
+    });
+
     describe.each(['light', 'dark'] as const)('%s theme contrast', (theme) => {
         const token = (name: string) => tokens[theme][name];
 

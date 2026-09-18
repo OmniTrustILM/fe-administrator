@@ -22,6 +22,7 @@ import type {
     BulkTokenProfileKeyUsageRequestDto,
     EditTokenProfileRequestDto,
     ErrorMessageDto,
+    KeyRequestType,
     KeyUsage,
     TokenProfileDetailDto,
     TokenProfileDto,
@@ -73,6 +74,11 @@ export interface EnableTokenProfilesRequest {
 export interface GetTokenProfileRequest {
     tokenInstanceUuid: string;
     uuid: string;
+}
+
+export interface ListSupportedKeyRequestTypesRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
 }
 
 export interface ListSupportedTokenProfileKeyUsagesRequest {
@@ -348,6 +354,36 @@ export class TokenProfileManagementApi extends BaseAPI {
                 url: '/v1/tokens/{tokenInstanceUuid}/tokenProfiles/{uuid}'
                     .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
                     .replace('{uuid}', encodeURI(uuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Returns the Key Request Types supported for the specified token profile, based on its token configuration, profile attributes and selected key usages
+     * List supported Key Request Types
+     */
+    listSupportedKeyRequestTypes({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+    }: ListSupportedKeyRequestTypesRequest): Observable<Array<KeyRequestType>>;
+    listSupportedKeyRequestTypes(
+        { tokenInstanceUuid, tokenProfileUuid }: ListSupportedKeyRequestTypesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<KeyRequestType>>>;
+    listSupportedKeyRequestTypes(
+        { tokenInstanceUuid, tokenProfileUuid }: ListSupportedKeyRequestTypesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<KeyRequestType> | AjaxResponse<Array<KeyRequestType>>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'listSupportedKeyRequestTypes');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'listSupportedKeyRequestTypes');
+
+        return this.request<Array<KeyRequestType>>(
+            {
+                url: '/v1/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/keys/types'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid)),
                 method: 'GET',
             },
             opts?.responseOpts,

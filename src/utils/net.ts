@@ -1,10 +1,28 @@
 import { AjaxError } from 'rxjs/ajax';
 import { ErrorCodeDetailMap, ErrorCodeTexteMap, LockTypeEnum, type WidgetLockErrorModel } from 'types/user-interface';
 
+export function extractErrorReason(err: unknown): string | undefined {
+    if (err instanceof AjaxError) return extractResponseMessage(err.response) ?? err.message;
+    if (err instanceof Event) return 'Network connection failure';
+    return err instanceof Error ? err.message : undefined;
+}
+
+function extractResponseMessage(response: unknown): string | undefined {
+    if (typeof response === 'string') return response === '' ? undefined : response;
+    if (Array.isArray(response)) {
+        const messages = response.filter((item): item is string => typeof item === 'string' && item !== '');
+        return messages.length > 0 ? messages.join('\n') : undefined;
+    }
+    if (typeof response === 'object' && response !== null && 'message' in response && typeof response.message === 'string') {
+        return response.message;
+    }
+    return undefined;
+}
+
 export function extractError(err: Error, headline: string): string {
     if (!err) return headline;
 
-    if (err instanceof AjaxError) return `${headline} (${err.status}): ${err.response?.message ?? err.response ?? err.message}`;
+    if (err instanceof AjaxError) return `${headline} (${err.status}): ${extractErrorReason(err)}`;
     if (err instanceof Event) return `${headline}: Network connection failure`;
 
     return `${headline}. ${err.message}`;

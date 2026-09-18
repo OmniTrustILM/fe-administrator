@@ -788,12 +788,13 @@ function CustomTable({
                             <div className="max-w-sm">
                                 <input
                                     id="search"
+                                    aria-label="Search"
                                     placeholder="Search"
                                     value={searchKey}
                                     onChange={(event) => setSearchKey(event.target.value)}
                                     type="text"
                                     disabled={disableSearchControls}
-                                    className="py-2.5 sm:py-3 px-4 block w-full border-outline rounded-lg sm:text-sm focus:border-brand focus:ring-brand disabled:opacity-50 disabled:pointer-events-none bg-surface-raised text-content placeholder-content-subtle"
+                                    className="py-2.5 sm:py-3 px-4 block w-full border-outline rounded-lg sm:text-sm focus:border-brand focus:ring-brand disabled:opacity-50 disabled:pointer-events-none bg-surface-raised text-content placeholder-content-hint"
                                 />
                             </div>
                         </div>

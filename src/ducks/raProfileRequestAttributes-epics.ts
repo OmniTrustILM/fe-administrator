@@ -6,6 +6,7 @@ import type { CertificateRequestAttributesSettingsDto, PlatformSettingsUpdateDto
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
+import { actions as raProfilesActions } from './ra-profiles';
 import { slice } from './raProfileRequestAttributes';
 
 export const updateRaProfileRequestAttributes: AppEpic = (action$, state$, deps) => {
@@ -19,12 +20,20 @@ export const updateRaProfileRequestAttributes: AppEpic = (action$, state$, deps)
                     raProfileCertificateRequestAttributesUpdateDto: action.payload.data,
                 })
                 .pipe(
-                    switchMap((raProfileDto) =>
-                        of(
-                            slice.actions.updateRaProfileRequestAttributesSuccess({ set: raProfileDto.certificateRequestAttributes }),
+                    switchMap((raProfileDto) => {
+                        const { authorityUuid, raProfileUuid } = action.payload;
+                        const set = raProfileDto.certificateRequestAttributes;
+                        return of(
+                            slice.actions.updateRaProfileRequestAttributesSuccess({ set }),
+                            set
+                                ? raProfilesActions.raProfileRequestAttributesUpdated({
+                                      uuid: raProfileUuid,
+                                      certificateRequestAttributes: set,
+                                  })
+                                : raProfilesActions.getRaProfileDetail({ authorityUuid, uuid: raProfileUuid }),
                             alertActions.success('Request attributes updated successfully.'),
-                        ),
-                    ),
+                        );
+                    }),
                     catchError((err) =>
                         of(
                             slice.actions.updateRaProfileRequestAttributesFailure({
@@ -62,26 +71,22 @@ export const getPlatformDefaultRequestAttributes: AppEpic = (action$, state$, de
 export const updatePlatformDefaultRequestAttributes: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.updatePlatformDefaultRequestAttributes.match),
-        // Read current platform settings first, then merge only the requestAttributes
-        // sub-section so validation and other certificate settings are preserved.
+        // Read the current request-attributes group first, then send only that group back.
         //
-        // This re-sends the read DTO as an update, relying on PlatformSettingsDto being
-        // structurally assignable to PlatformSettingsUpdateDto (true field-for-field under Core
-        // spec 2.18.1). The explicit `PlatformSettingsUpdateDto` annotation below pins that
-        // assumption at compile time: if a future spec bump diverges the read/update shapes, the
-        // assignment stops compiling and this mapping must be revisited rather than silently
-        // shipping stale/read-only fields or dropping new required ones. This slice deliberately
-        // owns only the request-attributes sub-section; the general settings duck's update epic
-        // likewise just forwards a caller-built UpdateDto, so there is no shared write path to route
-        // through — only a per-save read-modify-write here.
+        // Core's PUT works per section and, inside `certificates`, per group (`validation`,
+        // `requestAttributes`, `registration`): whatever is left out of the body is left untouched,
+        // whatever is present is stored as sent. So this sends exactly the group this slice owns.
+        // Re-sending the read `utils` section would turn the CBOM sync defaults Core fills into
+        // that GET into stored operator values, `branding` is not part of the update body at all,
+        // and re-sending the other certificate groups would pin whatever Core fills into them one
+        // day for the same reason. The general settings duck's update epic just forwards a
+        // caller-built UpdateDto, so there is no shared write path to route through.
         switchMap((action) =>
             deps.apiClients.settings.getPlatformSettings().pipe(
                 concatMap((current) => {
                     const platformSettingsUpdateDto: PlatformSettingsUpdateDto = {
-                        ...current,
                         certificates: {
-                            ...current.certificates,
-                            // Spread the existing sub-object first so fields we don't own here
+                            // Spread the existing group first so fields we don't own here
                             // (e.g. externalCsrValidationStrict, owned by the strictness toggle) are preserved.
                             requestAttributes: {
                                 ...current.certificates?.requestAttributes,

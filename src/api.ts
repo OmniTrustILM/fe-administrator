@@ -69,9 +69,23 @@ import {
     Configuration as ConfigurationUtils,
     OIDUtilsAPIApi,
 } from 'types/openapi/utils';
+import { shouldBypassBrandingCache } from 'utils/branding';
 
 const apiUrl = (globalThis as typeof globalThis & { __ENV__?: Env }).__ENV__?.API_URL || '/api';
 const configuration = new Configuration({ basePath: apiUrl });
+
+/** Varies the URL inside the window `shouldBypassBrandingCache` defines, so a just-changed brand is not read back stale. */
+const brandingConfiguration = new Configuration({
+    basePath: apiUrl,
+    middleware: [
+        {
+            pre: (request) =>
+                shouldBypassBrandingCache()
+                    ? { ...request, url: `${request.url}${request.url.includes('?') ? '&' : '?'}_=${Date.now()}` }
+                    : request,
+        },
+    ],
+});
 
 export interface ApiClients {
     auth: AuthenticationManagementApi;
@@ -180,7 +194,7 @@ const factories: Partial<{ [K in ApiClientKey]: () => ApiClients[K] }> = {
     customAttributes: () => new CustomAttributesApi(configuration),
     globalMetadata: () => new GlobalMetadataApi(configuration),
     settings: () => new SettingsApi(configuration),
-    branding: () => new BrandingApi(configuration),
+    branding: () => new BrandingApi(brandingConfiguration),
     comments: () => new CommentsApi(configuration),
     listViews: () => new ListViewApi(configuration),
     scheduler: () => new ScheduledJobsManagementApi(configuration),

@@ -232,7 +232,8 @@ export default function CommentComposer({
                     <textarea
                         ref={textareaRef}
                         id={id}
-                        className="py-2.5 sm:py-3 px-4 block w-full border-0 text-sm text-content focus:ring-0 focus:outline-hidden disabled:opacity-50 disabled:pointer-events-none bg-surface-raised placeholder-content-subtle min-h-24 resize-none overflow-y-auto"
+                        aria-label={placeholder}
+                        className="py-2.5 sm:py-3 px-4 block w-full border-0 text-sm text-content focus:ring-0 focus:outline-hidden disabled:opacity-50 disabled:pointer-events-none bg-surface-raised placeholder-content-hint min-h-24 resize-none overflow-y-auto"
                         value={body}
                         onChange={(event) => updateBody(event.target.value)}
                         onKeyDown={onKeyDown}
