@@ -16,15 +16,21 @@ export const BRAND_COLOR_MESSAGE = "Color must be a six-digit hexadecimal value 
 /** Matches `BrandingSettingsUpdateDto.LOGO_MAX_DECODED_BYTES` - one mebibyte of image data, before base64. */
 export const LOGO_MAX_DECODED_BYTES = 1024 * 1024;
 
-export const LOGO_MIN_RATIO = 1;
-export const LOGO_MAX_RATIO = 3;
-
 export const LOGO_MEDIA_TYPES = ['image/png', 'image/svg+xml'] as const;
 
 /** Fed to the file input, so the picker filters to what Core accepts. Extensions included: Windows reports SVG as ''. */
 export const LOGO_ACCEPT = '.png,.svg,image/png,image/svg+xml';
 
-export const LOGO_HELP = 'PNG or SVG with a transparent background, up to 1 MB, aspect ratio between 1:1 and 3:1.';
+/**
+ * Advice, not a rule: nothing refuses a logo for its shape, and the slot repeats these numbers in its own note.
+ *
+ * The maximum sits above the platform's own 5.15:1 wordmark deliberately. Wide wordmarks are common, so the
+ * recommendation must include them.
+ */
+export const LOGO_RECOMMENDED_MIN_RATIO = 1;
+export const LOGO_RECOMMENDED_MAX_RATIO = 6;
+
+export const LOGO_HELP = `PNG or SVG with a transparent background, up to 1 MB, ideally with an aspect ratio between ${LOGO_RECOMMENDED_MIN_RATIO}:1 and ${LOGO_RECOMMENDED_MAX_RATIO}:1.`;
 
 export const isBrandColor = (value: string): boolean => BRAND_COLOR_PATTERN.test(value);
 
@@ -149,20 +155,6 @@ export const logoSizeError = (bytes: number): string | undefined =>
     bytes > LOGO_MAX_DECODED_BYTES ? 'Logo must be at most 1 MB.' : undefined;
 
 /**
- * Zero on either side means the image declares no intrinsic size, which an SVG without width and height attributes
- * does. There is nothing to measure, so the check is skipped and Core decides.
- */
-export const logoRatioError = (width: number, height: number): string | undefined => {
-    if (width <= 0 || height <= 0) {
-        return undefined;
-    }
-
-    const ratio = width / height;
-
-    return ratio < LOGO_MIN_RATIO || ratio > LOGO_MAX_RATIO ? 'Logo aspect ratio must be between 1:1 and 3:1.' : undefined;
-};
-
-/**
  * The shape of a stored logo, mirroring `BrandingLogoValidator.DATA_URI` in Core: a media type, then a base64 payload
  * in the standard alphabet with at most two padding characters. The media type is captured rather than fixed here so
  * that it can be compared case-insensitively, as Core compares it, and the payload so its length can be checked.
@@ -255,7 +247,9 @@ export const measureDataUri = (dataUri: string): Promise<{ width: number; height
         image.src = dataUri;
     });
 
-export type LogoReadResult = { dataUri: string; error?: undefined } | { dataUri?: undefined; error: string };
+export type LogoReadResult =
+    | { dataUri: string; ratio?: number; error?: undefined }
+    | { dataUri?: undefined; ratio?: undefined; error: string };
 
 /** The bytes a base64 data URI carries, or undefined for anything else. */
 const decodeDataUri = (dataUri: string): Uint8Array | undefined => {
@@ -272,7 +266,12 @@ const decodeDataUri = (dataUri: string): Uint8Array | undefined => {
     }
 };
 
-/** Reads a chosen file into the data URI Core expects, refusing it on any rule above - mirrored or not. */
+/**
+ * Reads a chosen file into the data URI Core expects, refusing it on any rule above - mirrored or not.
+ *
+ * An unusual aspect ratio is not one of them - neither this nor Core refuses a shape - so the measurement comes back
+ * with the URI, for the slot to advise on.
+ */
 export const readLogoFile = async (file: File): Promise<LogoReadResult> => {
     const sizeError = logoSizeError(file.size);
 
@@ -310,9 +309,11 @@ export const readLogoFile = async (file: File): Promise<LogoReadResult> => {
         return { error: LOGO_PNG_ERROR };
     }
 
-    const ratioError = measured ? logoRatioError(measured.width, measured.height) : undefined;
+    // A browser substitutes its own 300x150 for an SVG that declares no size at all, so a zero here is the image
+    // stating one - and a shape with no extent is not one to advise on.
+    const hasSize = measured !== undefined && measured.width > 0 && measured.height > 0;
 
-    return ratioError ? { error: ratioError } : { dataUri };
+    return { dataUri, ratio: hasSize ? measured.width / measured.height : undefined };
 };
 
 /**

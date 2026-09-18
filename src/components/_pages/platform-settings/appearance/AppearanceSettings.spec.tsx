@@ -1,13 +1,13 @@
 import { expect, test, type Locator, type Page } from '@playwright/experimental-ct-react';
 import AppearanceSettingsTestWrapper from './AppearanceSettingsTestWrapper';
 
-/** A real 1x1 PNG: the ratio check measures it, so an invented payload would fail to load and skip the check. */
+/** A real 1x1 PNG: the slot measures the selection, so an invented payload would fail to load and be left unmeasured. */
 const PNG_DATA_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=';
 
 /** The same image as a byte array, for the selections that have to be driven from inside the browser. */
 const PNG_BYTES = [...Buffer.from(PNG_DATA_URI.split(',')[1], 'base64')];
 
-/** A second real PNG, 2x1 so it clears the ratio check. Distinct bytes, so replacing a stored logo with it is a change. */
+/** A second real PNG, 2x1 and so inside the recommendation. Distinct bytes, so replacing a stored logo with it is a change. */
 const OTHER_PNG_DATA_URI =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAIAAAB7QOjdAAAADUlEQVR4nGNgKD4PRAAHNwKFC/xdIQAAAABJRU5ErkJggg==';
 
@@ -56,6 +56,9 @@ const setHex = async (page: Page, key: string, value: string) => {
 };
 
 const chooseFile = (input: Locator, name: string, mimeType: string, buffer: Buffer) => input.setInputFiles({ name, mimeType, buffer });
+
+/** Both slots mount a status region, so the role is asserted on the slot under test rather than used to find it. */
+const ratioNote = (page: Page, key: string) => page.getByRole('status').and(page.getByTestId(`logo-ratio-note-${key}`));
 
 test.describe('AppearanceSettings', () => {
     test('should render each colour row with its label and an info tooltip', async ({ mount, page }) => {
@@ -250,7 +253,9 @@ test.describe('AppearanceSettings', () => {
 
         const content = page.getByTestId('appearance-logo-help-content');
 
-        await expect(content).toContainText('PNG or SVG with a transparent background, up to 1 MB, aspect ratio between 1:1 and 3:1.');
+        await expect(content).toContainText(
+            'PNG or SVG with a transparent background, up to 1 MB, ideally with an aspect ratio between 1:1 and 6:1.',
+        );
         // A one-logo brand is saveable now, so the tab has to say what the empty slot falls back to.
         await expect(content).toContainText('shows the platform logo in that theme');
     });
@@ -342,14 +347,60 @@ test.describe('AppearanceSettings', () => {
         await expect(page.getByTestId('logo-error-lightLogo')).toHaveText('Logo must be at most 1 MB.');
     });
 
-    test('should reject a file whose aspect ratio is out of range', async ({ mount, page }) => {
+    for (const [shape, name, base64] of [
+        // 12x1 and 1x4, either side of the recommended range.
+        ['wider', 'wide.png', 'iVBORw0KGgoAAAANSUhEUgAAAAwAAAABCAYAAADq6085AAAADElEQVR4nGNgIBEAAAAxAAG3NQZcAAAAAElFTkSuQmCC'],
+        ['taller', 'tall.png', 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAAECAYAAABP2FU6AAAAC0lEQVR4nGNgwAQAABQAAX3+Hu4AAAAASUVORK5CYII='],
+    ]) {
+        test(`should accept a logo ${shape} than the recommendation and note how it will render`, async ({ mount, page }) => {
+            await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+
+            await chooseFile(page.getByTestId('logo-input-lightLogo'), name, 'image/png', Buffer.from(base64, 'base64'));
+
+            await expect(page.getByTestId('logo-preview-lightLogo')).toBeVisible();
+            await expect(page.getByTestId('logo-error-lightLogo')).toHaveCount(0);
+            await expect(ratioNote(page, 'lightLogo')).toContainText('render as a thin band in the header');
+            await expect(page.getByTestId('logo-input-lightLogo')).toHaveAttribute('aria-describedby', 'lightLogo-ratio-note');
+            await expect(page.getByTestId('appearance-save')).toBeEnabled();
+        });
+    }
+
+    /**
+     * A wide wordmark is the ordinary logo shape, so the recommendation has to reach past the platform's own 5.15:1.
+     * 103x20 is a shade wider than that, so narrowing the recommendation back over the platform mark fails here first.
+     */
+    test('should say nothing about a mark shaped like the platform wordmark', async ({ mount, page }) => {
+        const wordmark = Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAGcAAAAUCAIAAAAflbTBAAAAHElEQVR4nO3BMQEAAADCoPVP7WENoAAAAAAAAG4YOAABpMF26gAAAABJRU5ErkJggg==',
+            'base64',
+        );
         await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
-        // 1x4: taller than wide, so below the 1:1 floor.
-        const tall = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAAECAYAAABP2FU6AAAAC0lEQVR4nGNgwAQAABQAAX3+Hu4AAAAASUVORK5CYII=', 'base64');
 
-        await chooseFile(page.getByTestId('logo-input-lightLogo'), 'tall.png', 'image/png', tall);
+        await chooseFile(page.getByTestId('logo-input-lightLogo'), 'wordmark.png', 'image/png', wordmark);
 
-        await expect(page.getByTestId('logo-error-lightLogo')).toHaveText('Logo aspect ratio must be between 1:1 and 3:1.');
+        await expect(page.getByTestId('logo-preview-lightLogo')).toBeVisible();
+        await expect(ratioNote(page, 'lightLogo')).toBeEmpty();
+        await expect(page.getByTestId('logo-input-lightLogo')).not.toHaveAttribute('aria-describedby');
+    });
+
+    /**
+     * A rejected selection leaves the slot holding the one before it, so the note from that earlier logo stays on
+     * screen beside the new error. Both then describe the input, or a screen reader is told only half of what it says.
+     */
+    test('should describe the input by both the note and the error when a rejection follows an unusual shape', async ({ mount, page }) => {
+        const wide = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAwAAAABCAYAAADq6085AAAADElEQVR4nGNgIBEAAAAxAAG3NQZcAAAAAElFTkSuQmCC', 'base64');
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+        const input = page.getByTestId('logo-input-lightLogo');
+
+        await chooseFile(input, 'wide.png', 'image/png', wide);
+        // The paragraph is always mounted, so an empty one still counts as visible - only its text proves a note.
+        await expect(ratioNote(page, 'lightLogo')).toContainText('render as a thin band');
+
+        await chooseFile(input, 'huge.png', 'image/png', Buffer.alloc(1024 * 1024 + 1));
+
+        await expect(page.getByTestId('logo-error-lightLogo')).toHaveText('Logo must be at most 1 MB.');
+        await expect(ratioNote(page, 'lightLogo')).not.toBeEmpty();
+        await expect(input).toHaveAttribute('aria-describedby', 'lightLogo-error lightLogo-ratio-note');
     });
 
     test('should preview the pending file and show its name', async ({ mount, page }) => {
@@ -366,6 +417,10 @@ test.describe('AppearanceSettings', () => {
         await expect(preview).toBeVisible();
         await expect(preview).toHaveAttribute('src', /^data:image\/png;base64,/);
         await expect(page.getByTestId('logo-filename-lightLogo')).toHaveText('brand.png');
+        // The region stands ready to announce, so a usual shape leaves it empty rather than absent.
+        await expect(ratioNote(page, 'lightLogo')).toBeEmpty();
+        // Nothing to describe, so the attribute is absent rather than empty: an empty one points a reader at nothing.
+        await expect(page.getByTestId('logo-input-lightLogo')).not.toHaveAttribute('aria-describedby');
     });
 
     /**

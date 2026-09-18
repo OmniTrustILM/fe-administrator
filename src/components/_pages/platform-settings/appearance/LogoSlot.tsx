@@ -3,7 +3,8 @@ import cn from 'classnames';
 import { Trash2, Upload } from 'lucide-react';
 import Button from 'components/Button';
 import Label from 'components/Label';
-import { LOGO_ACCEPT } from 'utils/branding';
+import { joinAriaIds } from 'utils/aria';
+import { LOGO_ACCEPT, LOGO_RECOMMENDED_MAX_RATIO, LOGO_RECOMMENDED_MIN_RATIO } from 'utils/branding';
 
 type Props = {
     id: string;
@@ -11,11 +12,15 @@ type Props = {
     /** The pending selection before save, or the stored logo afterwards. Always a data URI. */
     value?: string;
     fileName?: string;
+    /** The measured aspect ratio of a pending selection, absent for a stored logo or one declaring no intrinsic size. */
+    ratio?: number;
     error?: string;
     onSelect: (file: File) => void;
     onDelete: () => void;
     disabled?: boolean;
 };
+
+const RATIO_NOTE = `This shape is outside the recommended ${LOGO_RECOMMENDED_MIN_RATIO}:1 to ${LOGO_RECOMMENDED_MAX_RATIO}:1, so the mark will render as a thin band in the header, or shrink below its height on a narrow screen.`;
 
 /**
  * One logo slot. The preview is an `img` pointed at the data URI and never inlined markup: an operator-supplied SVG is
@@ -24,10 +29,15 @@ type Props = {
  * The preview doubles as the drop zone and the file picker's trigger, so it is a `button` rather than a `div`: a
  * drop target is invisible to anyone not using a mouse, and the same box then stays reachable by keyboard.
  */
-function LogoSlot({ id, label, value, fileName, error, onSelect, onDelete, disabled = false }: Readonly<Props>) {
+function LogoSlot({ id, label, value, fileName, ratio, error, onSelect, onDelete, disabled = false }: Readonly<Props>) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const errorId = `${id}-error`;
+    const ratioNoteId = `${id}-ratio-note`;
+    const hasUnusualRatio = ratio !== undefined && (ratio < LOGO_RECOMMENDED_MIN_RATIO || ratio > LOGO_RECOMMENDED_MAX_RATIO);
+
+    // A rejected selection leaves the previous one's note standing, so both can describe the input at once.
+    const describedById = joinAriaIds(error && errorId, hasUnusualRatio && ratioNoteId);
 
     // Dragging over a child fires dragleave on the element being left, so the counter keeps the highlight from
     // flickering off while the pointer is still inside the zone.
@@ -140,7 +150,7 @@ function LogoSlot({ id, label, value, fileName, error, onSelect, onDelete, disab
                 type="file"
                 accept={LOGO_ACCEPT}
                 className="sr-only"
-                aria-describedby={error ? errorId : undefined}
+                aria-describedby={describedById}
                 disabled={disabled}
                 data-testid={`logo-input-${id}`}
                 onChange={(event) => {
@@ -159,6 +169,15 @@ function LogoSlot({ id, label, value, fileName, error, onSelect, onDelete, disab
                     {error}
                 </p>
             )}
+
+            {/*
+                Mounted empty rather than conditionally: a polite region inserted together with its text is not
+                announced. `empty:sr-only` takes the empty paragraph out of the flex flow so it draws no gap; `hidden`
+                would drop the region from the accessible tree and bring the silence back.
+            */}
+            <p id={ratioNoteId} className="text-xs text-warning empty:sr-only" role="status" data-testid={`logo-ratio-note-${id}`}>
+                {hasUnusualRatio && RATIO_NOTE}
+            </p>
         </div>
     );
 }
