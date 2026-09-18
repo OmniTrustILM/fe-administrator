@@ -84,6 +84,23 @@ describe('diffPayloads', () => {
 
         expect(diffPayloads(elected, source)).toEqual([{ path: 'algorithmProperties.cryptoFunctions', kind: 'changed' }]);
     });
+
+    test('an object inside an array is read by its keys, not by the order they were written in', () => {
+        const withProperties = { ...elected, properties: [{ name: 'fips', value: 'true' }] };
+        const reordered = { ...elected, properties: [{ value: 'true', name: 'fips' }] };
+
+        expect(diffPayloads(withProperties, reordered)).toEqual([]);
+        expect(isSamePayload(withProperties, reordered)).toBe(true);
+    });
+
+    test('a genuinely different entry, and a list of a different length, are still reported', () => {
+        const withProperties = { ...elected, properties: [{ name: 'fips', value: 'true' }] };
+        const changedEntry = { ...elected, properties: [{ name: 'fips', value: 'false' }] };
+        const shorter = { ...elected, properties: [] };
+
+        expect(diffPayloads(withProperties, changedEntry)).toEqual([{ path: 'properties', kind: 'changed' }]);
+        expect(diffPayloads(withProperties, shorter)).toEqual([{ path: 'properties', kind: 'changed' }]);
+    });
 });
 
 describe('describeEvidenceCoverage', () => {

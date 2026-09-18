@@ -23,6 +23,7 @@ import {
     type PayloadDifference,
     type PayloadDifferenceKind,
 } from 'utils/crypto-assets';
+import { toFiniteNumber } from 'utils/common-utils';
 import { dateFormatter } from 'utils/dateUtil';
 
 type DetailProps = Readonly<{ detail: CryptographicAssetDetailDto }>;
@@ -30,6 +31,8 @@ type DetailProps = Readonly<{ detail: CryptographicAssetDetailDto }>;
 type LabelledDetailProps = Readonly<{ detail: CryptographicAssetDetailDto; verdictLabel: string }>;
 
 const EMPTY_VALUE = '-';
+
+const WRAPPING_VALUE = 'block max-w-[420px] whitespace-normal break-words';
 
 const KEY_VALUE_HEADERS: TableHeader[] = [
     { id: 'property', content: 'Property' },
@@ -80,7 +83,6 @@ export function CryptoAssetSummary({
     return (
         <div className="flex flex-col gap-2" data-testid="crypto-asset-summary">
             <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-semibold text-content">{detail.name}</h2>
                 <Badge color="secondary">{typeLabel}</Badge>
                 <PqcVerdictBadge verdict={detail.pqcVerdict} label={verdictLabel} />
                 {detail.quarantined && (
@@ -91,8 +93,8 @@ export function CryptoAssetSummary({
                 )}
             </div>
             <p className="text-sm text-content-subtle" data-testid="crypto-asset-claims">
-                Claimed by {pluralize(detail.sourceCbomCount, 'CBOM', 'CBOMs')} ·{' '}
-                {pluralize(detail.occurrenceCount, 'occurrence', 'occurrences')}
+                Claimed by {pluralize(toFiniteNumber(detail.sourceCbomCount), 'CBOM', 'CBOMs')} ·{' '}
+                {pluralize(toFiniteNumber(detail.occurrenceCount), 'occurrence', 'occurrences')}
             </p>
         </div>
     );
@@ -106,7 +108,9 @@ function OidList({ oids }: Readonly<{ oids: CryptographicAssetOidDto[] }>) {
         <ul className="flex flex-col gap-1">
             {oids.map((entry) => (
                 <li key={entry.oid} className="flex flex-wrap items-center gap-2" data-testid="crypto-asset-oid">
-                    <span className={cn('font-mono text-xs', { 'text-content-subtle line-through': entry.refuted })}>{entry.oid}</span>
+                    <span className={cn('font-mono text-xs', WRAPPING_VALUE, { 'text-content-subtle line-through': entry.refuted })}>
+                        {entry.oid}
+                    </span>
                     {entry.refuted && (
                         <Badge
                             color="warning"
@@ -124,7 +128,15 @@ function OidList({ oids }: Readonly<{ oids: CryptographicAssetOidDto[] }>) {
 
 export function CryptoAssetIdentity({ detail }: DetailProps) {
     const rows: TableDataRow[] = [
-        ...NORMALIZED_FIELDS.map(({ key, label }) => ({ id: key, columns: [label, detail.normalizedFields?.[key] ?? EMPTY_VALUE] })),
+        ...NORMALIZED_FIELDS.map(({ key, label }) => ({
+            id: key,
+            columns: [
+                label,
+                <span key={key} className={WRAPPING_VALUE}>
+                    {detail.normalizedFields?.[key] ?? EMPTY_VALUE}
+                </span>,
+            ],
+        })),
         { id: 'oids', columns: ['OIDs', <OidList key="oids" oids={detail.oids ?? []} />] },
     ];
     return <CustomTable headers={KEY_VALUE_HEADERS} data={rows} />;
@@ -145,8 +157,24 @@ export function CryptoAssetVerdict({ detail, verdictLabel }: LabelledDetailProps
     const rows: TableDataRow[] = [
         { id: 'verdict', columns: ['Verdict', <PqcVerdictBadge key="verdict" verdict={detail.pqcVerdict} label={verdictLabel} />] },
         { id: 'ruleSet', columns: ['Rule set', `v${verdict.ruleSetVersion}`] },
-        { id: 'rule', columns: ['Rule', verdict.ruleId ?? 'No rule matched, so the rule set default applies'] },
-        { id: 'reason', columns: ['Reason', verdict.reason ?? EMPTY_VALUE] },
+        {
+            id: 'rule',
+            columns: [
+                'Rule',
+                <span key="rule" className={WRAPPING_VALUE}>
+                    {verdict.ruleId ?? 'No rule matched, so the rule set default applies'}
+                </span>,
+            ],
+        },
+        {
+            id: 'reason',
+            columns: [
+                'Reason',
+                <span key="reason" className={WRAPPING_VALUE}>
+                    {verdict.reason ?? EMPTY_VALUE}
+                </span>,
+            ],
+        },
         { id: 'decidedAt', columns: ['Decided', dateFormatter(verdict.decidedAt)] },
         { id: 'evaluatedAt', columns: ['Last evaluated', dateFormatter(verdict.evaluatedAt)] },
         {
@@ -158,8 +186,8 @@ export function CryptoAssetVerdict({ detail, verdictLabel }: LabelledDetailProps
                 ) : (
                     <ul key="fields" className="flex flex-wrap gap-1">
                         {evaluatedFields.map(([name, value]) => (
-                            <li key={name}>
-                                <code className="font-mono text-xs">
+                            <li key={name} className="min-w-0">
+                                <code className={cn('font-mono text-xs', WRAPPING_VALUE)}>
                                     {name} = {formatFieldValue(value)}
                                 </code>
                             </li>
@@ -172,12 +200,12 @@ export function CryptoAssetVerdict({ detail, verdictLabel }: LabelledDetailProps
     return <CustomTable headers={KEY_VALUE_HEADERS} data={rows} />;
 }
 
-function EvidenceTable({ source }: Readonly<{ source: CryptographicAssetSourceDto }>) {
+function EvidenceTable({ source, panelId }: Readonly<{ source: CryptographicAssetSourceDto; panelId: string }>) {
     const evidence = source.evidence ?? [];
-    const rows: TableDataRow[] = evidence.map((entry) => ({
-        id: `${entry.location}#${entry.line ?? ''}#${entry.offset ?? ''}#${entry.symbol ?? ''}`,
+    const rows: TableDataRow[] = evidence.map((entry, index) => ({
+        id: `${index}#${entry.location}#${entry.line ?? ''}#${entry.offset ?? ''}#${entry.symbol ?? ''}`,
         columns: [
-            <span key="location" className="font-mono text-xs break-all">
+            <span key="location" className={cn('font-mono text-xs', WRAPPING_VALUE)}>
                 {entry.location}
             </span>,
             <span key="line" className="tabular-nums">
@@ -186,19 +214,19 @@ function EvidenceTable({ source }: Readonly<{ source: CryptographicAssetSourceDt
             <span key="offset" className="tabular-nums">
                 {entry.offset ?? EMPTY_VALUE}
             </span>,
-            <span key="symbol" className="font-mono text-xs">
+            <span key="symbol" className={cn('font-mono text-xs', WRAPPING_VALUE)}>
                 {entry.symbol ?? EMPTY_VALUE}
             </span>,
         ],
     }));
 
     return (
-        <div className="flex flex-col gap-2" data-testid="crypto-asset-evidence">
-            <p className="text-sm font-medium text-content">
+        <div className="flex flex-col gap-2" id={panelId} data-testid="crypto-asset-evidence">
+            <p className="text-sm font-medium text-content break-words">
                 Occurrences in {source.serialNumber} · v{source.version}
             </p>
             <CustomTable headers={EVIDENCE_HEADERS} data={rows} />
-            {evidence.length < source.occurrenceCount && (
+            {evidence.length < toFiniteNumber(source.occurrenceCount) && (
                 <p className="text-xs text-content-subtle" data-testid="crypto-asset-evidence-capped-note">
                     Core keeps a capped sample of occurrences per source. The count is the true total; the list is a sample.
                 </p>
@@ -221,7 +249,9 @@ export function CryptoAssetSources({ detail }: DetailProps) {
 
     const rows: TableDataRow[] = sources.map((source) => {
         const shown = source.evidence?.length ?? 0;
+        const occurrences = toFiniteNumber(source.occurrenceCount);
         const isOpen = source.cbomUuid === openCbomUuid;
+        const evidencePanelId = `crypto-asset-evidence-${source.cbomUuid}`;
         const isElected = detail.electedPayload !== undefined && isSamePayload(detail.electedPayload, source.payload);
         return {
             id: source.cbomUuid,
@@ -245,16 +275,20 @@ export function CryptoAssetSources({ detail }: DetailProps) {
                 </span>,
                 source.source,
                 <span key="occurrences" className="tabular-nums">
-                    {source.occurrenceCount.toLocaleString()}
+                    {occurrences.toLocaleString()}
                 </span>,
                 <span key="coverage" data-testid="crypto-asset-evidence-coverage">
-                    {describeEvidenceCoverage(shown, source.occurrenceCount)}
+                    {describeEvidenceCoverage(shown, occurrences)}
                 </span>,
                 <Button
                     key="toggle"
                     type="button"
                     variant="outline"
                     disabled={shown === 0}
+                    aria-label={`${isOpen ? 'Hide' : 'Show'} occurrences in ${source.serialNumber}`}
+                    aria-expanded={isOpen}
+                    aria-controls={evidencePanelId}
+                    disabledTooltip="This source recorded no occurrence evidence"
                     onClick={() => setOpenCbomUuid(isOpen ? undefined : source.cbomUuid)}
                 >
                     {isOpen ? 'Hide' : 'Show'}
@@ -268,7 +302,7 @@ export function CryptoAssetSources({ detail }: DetailProps) {
     return (
         <div className="flex flex-col gap-4">
             <CustomTable headers={SOURCE_HEADERS} data={rows} />
-            {openSource && <EvidenceTable source={openSource} />}
+            {openSource && <EvidenceTable source={openSource} panelId={`crypto-asset-evidence-${openSource.cbomUuid}`} />}
         </div>
     );
 }
@@ -350,7 +384,11 @@ export function CryptoAssetPayloads({ detail }: DetailProps) {
                 <PayloadPane
                     title={selected ? `As recorded by ${selected.serialNumber} v${selected.version}` : 'Source payload'}
                     payload={selected?.payload}
-                    emptyText="This source recorded no payload."
+                    emptyText={
+                        selected
+                            ? 'This source recorded no payload.'
+                            : 'No source payload to compare: this asset has no source CBOM to show.'
+                    }
                     testId="crypto-asset-source-payload"
                 />
             </div>

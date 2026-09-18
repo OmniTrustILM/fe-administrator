@@ -20,7 +20,22 @@ vi.mock('components/CustomTable', async () => {
     return customTableMockModule();
 });
 vi.mock('components/JsonViewer', () => ({ default: ({ value }: { value: string }) => <pre data-testid="json-viewer">{value}</pre> }));
-vi.mock('components/Select', () => ({ default: () => null }));
+// Clickable, because picking another source is this section's one interaction: each option is a button that hands
+// its value back the way Select does, plus one that clears the selection, which Select's onChange also allows.
+vi.mock('components/Select', () => ({
+    default: ({ id, value, options, onChange }: any) => (
+        <div data-testid={`select-${id}`} data-value={value}>
+            {options.map((option: any) => (
+                <button key={option.value} type="button" data-testid={`option-${option.value}`} onClick={() => onChange(option.value)}>
+                    {option.label}
+                </button>
+            ))}
+            <button type="button" data-testid="option-cleared" onClick={() => onChange(null)}>
+                Clear
+            </button>
+        </div>
+    ),
+}));
 
 const electedPayload = { assetType: 'algorithm', algorithmProperties: { primitive: 'signature', parameterSetIdentifier: '2048' } };
 
@@ -106,15 +121,29 @@ describe('crypto asset detail sections', () => {
     };
 
     describe('summary', () => {
-        test('states the name, type, verdict and how many CBOMs claim the asset', async () => {
+        test('states the type, the verdict and how many CBOMs claim the asset', async () => {
             await render(<CryptoAssetSummary detail={detail()} typeLabel="Algorithm" verdictLabel="Not PQC ready" />);
 
             const summary = text('[data-testid="crypto-asset-summary"]');
-            expect(summary).toContain('RSA-2048');
             expect(summary).toContain('Algorithm');
             expect(summary).toContain('Not PQC ready');
+            // The name heads the page, and repeating it here put it twice within one screen height.
+            expect(summary).not.toContain('RSA-2048');
             expect(text('[data-testid="crypto-asset-claims"]')).toBe(`Claimed by 2 CBOMs · ${(1321).toLocaleString()} occurrences`);
             expect(one('[data-testid="crypto-asset-quarantined-badge"]')).toBeNull();
+        });
+
+        // toFiniteNumber is what the list helper reads these two counts through, so the detail reads them the same way.
+        test('a count the API leaves out renders as zero rather than blanking the page', async () => {
+            await render(
+                <CryptoAssetSummary
+                    detail={detail({ sourceCbomCount: null as never, occurrenceCount: undefined as never })}
+                    typeLabel="Algorithm"
+                    verdictLabel="Not PQC ready"
+                />,
+            );
+
+            expect(text('[data-testid="crypto-asset-claims"]')).toBe('Claimed by 0 CBOMs · 0 occurrences');
         });
 
         test('a quarantined asset is flagged in the header', async () => {
@@ -130,6 +159,17 @@ describe('crypto asset detail sections', () => {
 
             expect(text('[data-testid="row-algorithmFamily"]')).toBe('Algorithm familyRSA');
             expect(text('[data-testid="row-curve"]')).toBe('Elliptic curve-');
+        });
+
+        // A table cell is one unwrapped line, so a value left bare is cut off at the card's edge instead.
+        test('a field value and an OID both wrap rather than run out of the card', async () => {
+            await render(<CryptoAssetIdentity detail={detail()} />);
+
+            const value = one('[data-testid="row-algorithmFamily"] span');
+            const oid = one('[data-testid="crypto-asset-oid"] span');
+
+            expect(value?.className).toContain('whitespace-normal');
+            expect(oid?.className).toContain('whitespace-normal');
         });
 
         test('a refuted OID is flagged and struck through, an accepted one is not', async () => {
@@ -204,6 +244,48 @@ describe('crypto asset detail sections', () => {
             expect(one('[data-testid="crypto-asset-evidence"]')).toBeNull();
         });
 
+        // Every row's button says the same word, so the name has to carry the source, and the panel state has to
+        // be announced rather than left to sighted reading of the table.
+        test('the toggle names the source it opens and reports the panel it controls', async () => {
+            await render(<CryptoAssetSources detail={detail()} />);
+
+            const toggle = one('[data-testid="row-cbom-1"] button') as HTMLButtonElement;
+            expect(toggle.getAttribute('aria-label')).toBe('Show occurrences in urn:uuid:7c1e');
+            expect(toggle.getAttribute('aria-expanded')).toBe('false');
+            expect(toggle.getAttribute('aria-controls')).toBe('crypto-asset-evidence-cbom-1');
+
+            await clickButton('Show');
+
+            const openToggle = one('[data-testid="row-cbom-1"] button') as HTMLButtonElement;
+            expect(openToggle.getAttribute('aria-label')).toBe('Hide occurrences in urn:uuid:7c1e');
+            expect(openToggle.getAttribute('aria-expanded')).toBe('true');
+            expect(one('[data-testid="crypto-asset-evidence"]')?.id).toBe('crypto-asset-evidence-cbom-1');
+        });
+
+        // line, offset and symbol are all optional, so the location alone does not identify an occurrence.
+        test('two occurrences recorded in one file with nothing else set both render', async () => {
+            const twice = source({
+                cbomUuid: 'cbom-3',
+                serialNumber: 'urn:uuid:0003',
+                occurrenceCount: 2,
+                evidence: [{ location: 'src/tls/handshake.c' }, { location: 'src/tls/handshake.c' }],
+            });
+            await render(<CryptoAssetSources detail={detail({ sources: [twice] })} />);
+
+            await clickButton('Show');
+
+            const rows = all('[data-testid="crypto-asset-evidence"] [data-testid^="row-"]');
+            expect(rows).toHaveLength(2);
+            expect(new Set(rows.map((row) => row.getAttribute('data-testid'))).size).toBe(2);
+        });
+
+        test('a source count the API leaves out is read as zero, not thrown on', async () => {
+            const countless = source({ cbomUuid: 'cbom-4', occurrenceCount: null as never, evidence: [] });
+            await render(<CryptoAssetSources detail={detail({ sources: [countless] })} />);
+
+            expect(text('[data-testid="row-cbom-4"] [data-testid="crypto-asset-evidence-coverage"]')).toBe('none recorded');
+        });
+
         test('an asset with no visible source says so', async () => {
             await render(<CryptoAssetSources detail={detail({ sources: [] })} />);
 
@@ -228,6 +310,36 @@ describe('crypto asset detail sections', () => {
 
             expect(one('[data-testid="crypto-asset-payload-identical"]')).not.toBeNull();
             expect(one('[data-testid="crypto-asset-payload-differences"]')).toBeNull();
+        });
+
+        test('picking another source swaps the compared pane and the difference list', async () => {
+            await render(<CryptoAssetPayloads detail={detail()} />);
+            // It opens on the source that disagrees, so the other one is the identical one.
+            expect(text('[data-testid="crypto-asset-source-payload"] p')).toBe('As recorded by urn:uuid:a91b v1');
+
+            await clickButton('urn:uuid:7c1e v3');
+
+            expect(text('[data-testid="crypto-asset-source-payload"] p')).toBe('As recorded by urn:uuid:7c1e v3');
+            expect(text('[data-testid="crypto-asset-source-payload"] pre')).toContain('"parameterSetIdentifier": "2048"');
+            expect(one('[data-testid="crypto-asset-payload-identical"]')).not.toBeNull();
+            expect(all('[data-testid="crypto-asset-payload-difference"]')).toHaveLength(0);
+        });
+
+        // Select's onChange is allowed to report a cleared selection, and there is no empty pane to fall back to.
+        test('a cleared selection keeps the pane it was on', async () => {
+            await render(<CryptoAssetPayloads detail={detail()} />);
+
+            await clickButton('Clear');
+
+            expect(text('[data-testid="crypto-asset-source-payload"] p')).toBe('As recorded by urn:uuid:a91b v1');
+        });
+
+        test('with no source served, the pane says there is none rather than blaming an empty payload', async () => {
+            await render(<CryptoAssetPayloads detail={detail({ sources: [] })} />);
+
+            const pane = text('[data-testid="crypto-asset-source-payload"]');
+            expect(pane).toContain('No source payload to compare');
+            expect(pane).not.toContain('This source recorded no payload');
         });
 
         test('with no elected payload served, the pane says so and no comparison is claimed', async () => {
