@@ -334,6 +334,14 @@ describe('crypto asset detail sections', () => {
             expect(text('[data-testid="crypto-asset-source-payload"] p')).toBe('As recorded by urn:uuid:a91b v1');
         });
 
+        test('with no source served, the pane says there is none rather than blaming an empty payload', async () => {
+            await render(<CryptoAssetPayloads detail={detail({ sources: [] })} />);
+
+            const pane = text('[data-testid="crypto-asset-source-payload"]');
+            expect(pane).toContain('No source payload to compare');
+            expect(pane).not.toContain('This source recorded no payload');
+        });
+
         test('with no elected payload served, the pane says so and no comparison is claimed', async () => {
             await render(<CryptoAssetPayloads detail={detail({ electedPayload: undefined })} />);
 

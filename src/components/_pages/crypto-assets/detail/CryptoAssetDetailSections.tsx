@@ -384,7 +384,11 @@ export function CryptoAssetPayloads({ detail }: DetailProps) {
                 <PayloadPane
                     title={selected ? `As recorded by ${selected.serialNumber} v${selected.version}` : 'Source payload'}
                     payload={selected?.payload}
-                    emptyText="This source recorded no payload."
+                    emptyText={
+                        selected
+                            ? 'This source recorded no payload.'
+                            : 'No source payload to compare: this asset has no source CBOM to show.'
+                    }
                     testId="crypto-asset-source-payload"
                 />
             </div>

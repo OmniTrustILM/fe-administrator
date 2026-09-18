@@ -48,6 +48,11 @@ const isJsonObject = (value: unknown): value is JsonObject => typeof value === '
 
 // Dotted paths from the payload root; arrays compare whole, because producers do not key their entries.
 export function diffPayloads(elected: unknown, source: unknown, path = ''): PayloadDifference[] {
+    // One difference for the whole array, but its entries still compare by keys, not by the order a producer wrote them.
+    if (Array.isArray(elected) && Array.isArray(source)) {
+        const same = elected.length === source.length && elected.every((entry, index) => diffPayloads(entry, source[index]).length === 0);
+        return same ? [] : [{ path, kind: 'changed' }];
+    }
     if (isJsonObject(elected) && isJsonObject(source)) {
         const keys = [...new Set([...Object.keys(elected), ...Object.keys(source)])].sort((a, b) => a.localeCompare(b));
         return keys.flatMap((key): PayloadDifference[] => {
