@@ -173,7 +173,7 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
                                 </div>
                             ) : null}
                             <JsonViewer
-                                value={JSON.stringify({ payload: inspected.payload, meta: inspected.meta ?? [] }, null, 2)}
+                                value={JSON.stringify({ payload: inspected.payload ?? null, meta: inspected.meta ?? [] }, null, 2)}
                                 height={420}
                             />
                         </div>

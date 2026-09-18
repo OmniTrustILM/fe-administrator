@@ -188,6 +188,20 @@ describe('DiscoveryItemsTable', () => {
         expect(dialog?.querySelector('[data-testid="json"]')?.textContent).toContain('"fingerprint": "abc"');
     });
 
+    it('lists an item whose payload could not be decoded, without a link it cannot build', async () => {
+        // Core lists the item either way so the run's counts hold, and both payload and resource go missing with it.
+        await render(buildState([item({ payload: undefined, resource: undefined, inventoryUuid: 'inv-9', processed: true })]));
+
+        const row = container.querySelector('[data-testid="row-item-1"]');
+        expect(row?.textContent).toContain('inv-9');
+        expect(row?.querySelector('a')).toBeNull();
+
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="show-item-item-1"]')?.click();
+        });
+        expect(container.querySelector('[data-testid="json"]')?.textContent).toContain('"payload": null');
+    });
+
     it('reloads the page it was asked for, filtered by the tab in the URL', async () => {
         await render(buildState([]), Resource.Keys);
         await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="reload"]')?.click());

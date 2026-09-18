@@ -49,11 +49,11 @@ export interface DiscoveryItemDto {
      */
     discoveredAt?: string;
     /**
-     * Resource-specific data the Discovery Provider reported, discriminated by resource
+     * Resource-specific data the Discovery Provider reported, discriminated by resource. Absent when the stored payload could no longer be decoded; the item is still listed, so the run\'s counts hold
      * @type {DiscoveredItemPayload}
      * @memberof DiscoveryItemDto
      */
-    payload: DiscoveredItemPayload;
+    payload?: DiscoveredItemPayload;
     /**
      * True when the object was not already in the inventory at the time this run staged it, false when the run rediscovered something the inventory already held.
      * @type {boolean}
@@ -82,5 +82,5 @@ export interface DiscoveryItemDto {
      * @type {Resource}
      * @memberof DiscoveryItemDto
      */
-    readonly resource: Resource;
+    readonly resource?: Resource;
 }

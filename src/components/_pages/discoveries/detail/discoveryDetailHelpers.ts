@@ -128,7 +128,7 @@ export function certificateNotes(
 }
 
 /** Where the object an item was imported as lives, relative to the discovery detail route. */
-export function inventoryPath(resource: Resource, inventoryUuid: string): string | undefined {
+export function inventoryPath(resource: Resource | undefined, inventoryUuid: string): string | undefined {
     switch (resource) {
         case Resource.Certificates:
             return `../../certificates/detail/${inventoryUuid}`;
