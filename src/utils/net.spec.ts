@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { AjaxError } from 'rxjs/ajax';
-import { extractError, getLockWidgetObject } from './net';
+import { extractError, extractErrorReason, getLockWidgetObject } from './net';
 import { LockTypeEnum } from 'types/user-interface';
 
 function createMockAjaxError(overrides: { status?: number; response?: any; message?: string } = {}): AjaxError {
@@ -48,6 +48,47 @@ describe('net utils', () => {
         test('should handle generic Error', () => {
             const err = new Error('Something broke');
             expect(extractError(err, 'Failed')).toBe('Failed. Something broke');
+        });
+
+        test('should put each message of an array response on its own line', () => {
+            const err = createMockAjaxError({ status: 400, response: ['First problem', 'Second problem'] });
+            expect(extractError(err, 'Failed')).toBe('Failed (400): First problem\nSecond problem');
+        });
+    });
+
+    describe('extractErrorReason', () => {
+        test('should return the message of an object response', () => {
+            const err = createMockAjaxError({ status: 500, response: { message: 'Server error' } });
+            expect(extractErrorReason(err)).toBe('Server error');
+        });
+
+        test('should return a single-message array response verbatim', () => {
+            const err = createMockAjaxError({
+                status: 422,
+                response: ['Cannot delete trigger. It has 1 event association(s): Certificate validation status changed (Settings)'],
+            });
+            expect(extractErrorReason(err)).toBe(
+                'Cannot delete trigger. It has 1 event association(s): Certificate validation status changed (Settings)',
+            );
+        });
+
+        test('should return a string response', () => {
+            const err = createMockAjaxError({ status: 404, response: 'Not found' });
+            expect(extractErrorReason(err)).toBe('Not found');
+        });
+
+        test('should fall back to the error message when the response carries none', () => {
+            expect(extractErrorReason(createMockAjaxError({ status: 500, response: null, message: 'ajax error' }))).toBe('ajax error');
+            expect(extractErrorReason(createMockAjaxError({ status: 500, response: { code: 'X' }, message: 'ajax error' }))).toBe(
+                'ajax error',
+            );
+            expect(extractErrorReason(createMockAjaxError({ status: 500, response: [], message: 'ajax error' }))).toBe('ajax error');
+        });
+
+        test('should describe network and generic failures', () => {
+            expect(extractErrorReason(new Event('error'))).toBe('Network connection failure');
+            expect(extractErrorReason(new Error('Something broke'))).toBe('Something broke');
+            expect(extractErrorReason(undefined)).toBeUndefined();
         });
     });
 

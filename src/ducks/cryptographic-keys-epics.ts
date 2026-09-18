@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
-import { iif, of } from 'rxjs';
-import { catchError, concatMap, filter, map, mergeMap, switchMap } from 'rxjs/operators';
+import { defer, iif, of } from 'rxjs';
+import { catchError, concatMap, filter, map, mergeMap, switchMap, takeUntil } from 'rxjs/operators';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
@@ -792,7 +792,31 @@ const getKeyHistory: AppEpic = (action$, state, deps) => {
     );
 };
 
+const listSupportedKeyRequestTypes: AppEpic = (action$, _state$, deps) =>
+    action$.pipe(
+        filter(slice.actions.listSupportedKeyRequestTypes.match),
+        switchMap((action) =>
+            defer(() => deps.apiClients.tokenProfiles.listSupportedKeyRequestTypes(action.payload)).pipe(
+                map((types) => slice.actions.listSupportedKeyRequestTypesSuccess(types)),
+                catchError((error) =>
+                    of(
+                        slice.actions.listSupportedKeyRequestTypesFailure(),
+                        appRedirectActions.fetchError({ error, message: 'Failed to get supported Key Types' }),
+                    ),
+                ),
+                takeUntil(
+                    action$.pipe(
+                        filter(
+                            (action) => slice.actions.clearSupportedKeyRequestTypes.match(action) || slice.actions.resetState.match(action),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    );
+
 const epics = [
+    listSupportedKeyRequestTypes,
     listCryptographicKeys,
     listCryptographicKeyPairs,
     getCryptographicKeyDetail,

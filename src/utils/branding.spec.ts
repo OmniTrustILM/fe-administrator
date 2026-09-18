@@ -1,25 +1,102 @@
 import { describe, expect, test, vi } from 'vitest';
 import {
     BRAND_COLOR_PATTERN,
-    dataUriMediaType,
+    BRANDING_CACHE_BYPASS_WINDOW_MS,
     isBrandColor,
+    markBrandingChanged,
+    shouldBypassBrandingCache,
     isRenderableLogo,
     LOGO_MAX_DECODED_BYTES,
-    logoMediaTypeFromName,
-    logoRatioError,
+    logoContent,
     logoSizeError,
-    logoTypeError,
     readFileAsDataUri,
     readLogoFile,
     withDataUriMediaType,
 } from './branding';
 
-const file = (overrides: Partial<{ type: string; name: string; size: number }> = {}) => ({
-    type: 'image/png',
-    name: 'logo.png',
-    size: 1024,
-    ...overrides,
-});
+/** A real 1x1 PNG, so the bytes the format check reads are the ones a browser would write. */
+const PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=';
+
+const pngBytes = () => Uint8Array.from(atob(PNG_BASE64), (character) => character.charCodeAt(0));
+
+const utf8 = (text: string) => new TextEncoder().encode(text);
+
+const PNG_ERROR = 'Logo must be a well-formed PNG image.';
+
+/** Independent of the implementation's own, so the two have to agree for a well-formed PNG to pass. */
+const crc32 = (bytes: Uint8Array): number => {
+    let crc = ~0;
+
+    for (const byte of bytes) {
+        crc ^= byte;
+
+        for (let bit = 0; bit < 8; bit += 1) {
+            crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+        }
+    }
+
+    return ~crc >>> 0;
+};
+
+const chunk = (type: string, data: Uint8Array = new Uint8Array()) => {
+    const signed = Uint8Array.from([...utf8(type), ...data]);
+    const bytes = new Uint8Array(signed.length + 8);
+    const view = new DataView(bytes.buffer);
+
+    view.setUint32(0, data.length);
+    bytes.set(signed, 4);
+    view.setUint32(bytes.length - 4, crc32(signed));
+
+    return bytes;
+};
+
+/** The signature, then IHDR's length and type - so IHDR's data starts here, in the real fixture and an assembly alike. */
+const IHDR_DATA_OFFSET = 16;
+const IHDR_DATA_LENGTH = 13;
+const IHDR_CRC_OFFSET = IHDR_DATA_OFFSET + IHDR_DATA_LENGTH;
+
+/** The real fixture's IHDR payload, so a structural test is not also asserting made-up dimensions. */
+const IHDR_DATA = pngBytes().slice(IHDR_DATA_OFFSET, IHDR_CRC_OFFSET);
+const IDAT_DATA = Uint8Array.from([0x78, 0x9c, 0x63, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01]);
+
+const assemble = (...chunks: Uint8Array[]) => Uint8Array.from([...pngBytes().slice(0, 8), ...chunks.flatMap((part) => [...part])]);
+
+const header = () => chunk('IHDR', IHDR_DATA);
+const imageData = () => chunk('IDAT', IDAT_DATA);
+const end = () => chunk('IEND');
+
+/** IHDR carries width and height first, so the bit depth is the ninth byte of its data and the colour type the tenth. */
+const BIT_DEPTH_OFFSET = 8;
+const COLOR_TYPE_OFFSET = 9;
+
+/**
+ * Structurally whole, and stored by Core, but drawn by nothing: colour type 7 is not one of the five PNG defines, and
+ * Core interprets only the width and height. That combination is what the measurement guard is for, so the fixture has
+ * to be a file Core accepts - a broken chunk sequence would be refused before the measurement, and a zero width
+ * refused by Core as well, and neither would isolate the rule that is deliberately stricter here.
+ */
+const undrawablePng = () => {
+    const data = Uint8Array.from(IHDR_DATA);
+    data[COLOR_TYPE_OFFSET] = 7;
+
+    return assemble(chunk('IHDR', data), imageData(), end());
+};
+
+/** Core reads the encoding from the BOM, so these are documents it would parse rather than refuse. */
+const utf16 = (text: string, endianness: 'le' | 'be') => {
+    const bytes = new Uint8Array(text.length * 2 + 2);
+
+    bytes.set(endianness === 'le' ? [0xff, 0xfe] : [0xfe, 0xff]);
+
+    for (let index = 0; index < text.length; index += 1) {
+        const unit = text.charCodeAt(index);
+        const [high, low] = [unit >> 8, unit & 0xff];
+
+        bytes.set(endianness === 'le' ? [low, high] : [high, low], 2 + index * 2);
+    }
+
+    return bytes;
+};
 
 describe('branding', () => {
     describe('isBrandColor', () => {
@@ -36,21 +113,201 @@ describe('branding', () => {
         });
     });
 
-    describe('logoTypeError', () => {
-        test.each(['image/png', 'image/svg+xml'])('should accept %s', (type) => {
-            expect(logoTypeError(file({ type }))).toBeUndefined();
+    describe('logoContent', () => {
+        const FORMAT_ERROR = 'Logo must be a PNG or an SVG.';
+
+        test('should read a PNG from its signature', () => {
+            expect(logoContent(pngBytes())).toEqual({ mediaType: 'image/png' });
         });
 
-        test.each(['logo.svg', 'logo.SVG', 'logo.png'])('should accept %s reported with no media type', (name) => {
-            expect(logoTypeError(file({ type: '', name }))).toBeUndefined();
+        test.each([
+            ['a plain document', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>'],
+            ['one behind a declaration and a comment', '<?xml version="1.0"?><!-- mark --><svg xmlns="http://www.w3.org/2000/svg"/>'],
+            ['one whose root carries a namespace prefix', '<svg:svg xmlns:svg="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>'],
+        ])('should read an SVG from %s', (_case, markup) => {
+            expect(logoContent(utf8(markup))).toEqual({ mediaType: 'image/svg+xml' });
         });
 
-        test('should reject a media type Core does not accept', () => {
-            expect(logoTypeError(file({ type: 'image/jpeg', name: 'logo.jpg' }))).toBe('Logo must be a PNG or an SVG.');
+        test('should refuse a JPEG whatever the file it came from was named', () => {
+            expect(logoContent(Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]))).toEqual({ error: FORMAT_ERROR });
         });
 
-        test('should reject an unknown extension when the media type is missing', () => {
-            expect(logoTypeError(file({ type: '', name: 'logo.gif' }))).toBe('Logo must be a PNG or an SVG.');
+        test.each([
+            ['a truncated PNG signature', Uint8Array.from([0x89, 0x50, 0x4e])],
+            ['an empty file', new Uint8Array()],
+        ])('should refuse %s', (_case, bytes) => {
+            expect(logoContent(bytes)).toEqual({ error: FORMAT_ERROR });
+        });
+
+        test('should read an SVG that declares a non-Unicode encoding', () => {
+            const markup =
+                '<?xml version="1.0" encoding="windows-1252"?>' +
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1"><title>Caf\u00e9</title></svg>';
+            const bytes = Uint8Array.from([...markup].map((character) => character.charCodeAt(0)));
+
+            expect(logoContent(bytes)).toEqual({ mediaType: 'image/svg+xml' });
+        });
+
+        /**
+         * The declared label is UTF-16LE and the bytes are ASCII of odd length, so the last byte is half a code unit.
+         * A fatal UTF-16LE decode refuses it; a UTF-8 retry would read it and find a perfectly good SVG - which is what
+         * makes this the case that fails if label resolution and decoding are ever merged back together.
+         */
+        test('should refuse bytes that are invalid in the non-UTF-8 encoding they declare', () => {
+            const markup = '<?xml version="1.0" encoding="utf-16le"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1"/>';
+            const odd = markup.length % 2 === 0 ? `${markup} ` : markup;
+
+            expect(logoContent(utf8(odd))).toEqual({ error: 'Logo must be a PNG or an SVG.' });
+        });
+
+        test('should refuse bytes that are invalid in the encoding they declare', () => {
+            const markup = '<?xml version="1.0" encoding="utf-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1"/>';
+            const bytes = utf8(markup);
+
+            expect(logoContent(Uint8Array.from([...bytes.slice(0, 50), 0xff, ...bytes.slice(50)]))).toEqual({
+                error: 'Logo must be a PNG or an SVG.',
+            });
+        });
+
+        test('should read an SVG that declares an encoding no decoder knows', () => {
+            const markup = '<?xml version="1.0" encoding="x-nonesuch"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1"/>';
+
+            expect(logoContent(utf8(markup))).toEqual({ mediaType: 'image/svg+xml' });
+        });
+
+        /** Nested where any namespace is legal, so only position tells it from an engine's own error node. */
+        test('should read an SVG carrying a foreign-namespace parsererror inside foreignObject', () => {
+            const markup =
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1">' +
+                '<foreignObject><parsererror xmlns="http://www.w3.org/1999/xhtml"/></foreignObject></svg>';
+
+            expect(logoContent(utf8(markup))).toEqual({ mediaType: 'image/svg+xml' });
+        });
+
+        /** `parsererror` is a name an author may use; only the engine's own, in its error namespace, means a failed parse. */
+        test('should read an SVG that carries an element named parsererror', () => {
+            const markup = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1"><parsererror/></svg>';
+
+            expect(logoContent(utf8(markup))).toEqual({ mediaType: 'image/svg+xml' });
+        });
+
+        /** A lenient decoder would rewrite the bad byte as U+FFFD and hand Core a document it parses differently. */
+        test('should refuse markup that is not valid in the encoding it announces', () => {
+            const svg = utf8('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1"><title>x</title></svg>');
+            const withBadByte = Uint8Array.from([...svg.slice(0, 60), 0xff, ...svg.slice(60)]);
+
+            expect(logoContent(withBadByte)).toEqual({ error: 'Logo must be a PNG or an SVG.' });
+        });
+
+        test.each([
+            ['an unclosed element', '<svg><g></svg>'],
+            ['markup that is not SVG at all', '<html><body>hello</body></html>'],
+            ['plain text', 'hello'],
+        ])('should refuse %s, which Core would refuse as unparseable', (_case, markup) => {
+            expect(logoContent(utf8(markup))).toEqual({ error: FORMAT_ERROR });
+        });
+
+        /** `svgRootOrNull` matches the local name case-sensitively, so a root in another case is not an SVG to Core. */
+        test('should refuse a root in another case', () => {
+            expect(logoContent(utf8('<SVG xmlns="http://www.w3.org/2000/svg"/>'))).toEqual({ error: FORMAT_ERROR });
+        });
+
+        /**
+         * Core refuses a foreign namespace already, so that half only reaches the operator sooner and with a message
+         * naming the fix. A root in no namespace is the half Core takes: it is refused here because the sanitizer
+         * would store it as it parsed, and no `img` renders it.
+         */
+        test.each([
+            ['declares no namespace', '<svg viewBox="0 0 2 1"/>'],
+            ['declares a foreign one', '<svg xmlns="http://example.invalid/not-svg" viewBox="0 0 2 1"/>'],
+        ])('should refuse an SVG root that %s', (_case, markup) => {
+            expect(logoContent(utf8(markup))).toEqual({ error: 'Logo SVG must declare xmlns="http://www.w3.org/2000/svg".' });
+        });
+
+        test('should read an SVG behind the UTF-8 BOM a Windows editor writes', () => {
+            expect(logoContent(utf8('\ufeff<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1"/>'))).toEqual({
+                mediaType: 'image/svg+xml',
+            });
+        });
+
+        test.each(['le', 'be'] as const)('should read an SVG stored as UTF-16%s, which Core decodes from the BOM', (endianness) => {
+            expect(logoContent(utf16('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1"/>', endianness))).toEqual({
+                mediaType: 'image/svg+xml',
+            });
+        });
+
+        test('should refuse an SVG carrying a document type declaration, naming that rule', () => {
+            const doctyped =
+                '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">' +
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1"/>';
+
+            expect(logoContent(utf8(doctyped))).toEqual({ error: 'Logo SVG must not carry a document type declaration.' });
+        });
+
+        /**
+         * Mirrors `BrandingLogoValidator.pngDimensions`. Every case breaks exactly one structural rule and keeps the
+         * rest intact - chunks are re-signed as they are built, so a test for the IEND rules is not quietly answered by
+         * the CRC rule firing first.
+         */
+        describe('a PNG whose chunk sequence is broken', () => {
+            test('should read one whose chunks are intact', () => {
+                expect(logoContent(assemble(header(), imageData(), end()))).toEqual({ mediaType: 'image/png' });
+            });
+
+            /** The premise of the measurement guard below: the walk reads the chunk structure, not the pixel format. */
+            test('should read one whose colour type no browser draws', () => {
+                expect(logoContent(undrawablePng())).toEqual({ mediaType: 'image/png' });
+            });
+
+            test('should refuse bytes after IEND', () => {
+                expect(logoContent(Uint8Array.from([...assemble(header(), imageData(), end()), 0x00]))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse a chunk whose CRC does not cover its data', () => {
+                const broken = assemble(header(), imageData(), end());
+                broken[IHDR_DATA_OFFSET + BIT_DEPTH_OFFSET] ^= 0xff;
+
+                expect(logoContent(broken)).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse a chunk whose stored CRC is wrong', () => {
+                const broken = assemble(header(), imageData(), end());
+                broken[IHDR_CRC_OFFSET + 1] ^= 0xff;
+
+                expect(logoContent(broken)).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse one that never reaches IEND', () => {
+                expect(logoContent(assemble(header(), imageData()))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse an IEND carrying data', () => {
+                expect(logoContent(assemble(header(), imageData(), chunk('IEND', Uint8Array.from([0x00]))))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse one closing with no image data', () => {
+                expect(logoContent(assemble(header(), end()))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse a first chunk that is not IHDR', () => {
+                expect(logoContent(assemble(imageData(), header(), end()))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse an IHDR that is not thirteen bytes', () => {
+                expect(logoContent(assemble(chunk('IHDR', IHDR_DATA.slice(0, 12)), imageData(), end()))).toEqual({ error: PNG_ERROR });
+            });
+
+            test('should refuse a second IHDR', () => {
+                expect(logoContent(assemble(header(), header(), imageData(), end()))).toEqual({ error: PNG_ERROR });
+            });
+
+            /** A hostile length must terminate the walk rather than drive it past the end of the buffer. */
+            test('should refuse a chunk claiming more data than the file holds', () => {
+                const overrun = assemble(header(), imageData(), end());
+                new DataView(overrun.buffer).setUint32(8, 0xfffffff0);
+
+                expect(logoContent(overrun)).toEqual({ error: PNG_ERROR });
+            });
         });
     });
 
@@ -65,45 +322,6 @@ describe('branding', () => {
 
         test('should mirror the one mebibyte Core enforces', () => {
             expect(LOGO_MAX_DECODED_BYTES).toBe(1024 * 1024);
-        });
-    });
-
-    describe('logoRatioError', () => {
-        test.each([
-            [100, 100],
-            [200, 100],
-            [300, 100],
-            [150, 100],
-        ])('should accept %sx%s', (width, height) => {
-            expect(logoRatioError(width, height)).toBeUndefined();
-        });
-
-        test.each([
-            [100, 200],
-            [301, 100],
-        ])('should reject %sx%s', (width, height) => {
-            expect(logoRatioError(width, height)).toBe('Logo aspect ratio must be between 1:1 and 3:1.');
-        });
-
-        test.each([
-            [0, 100],
-            [100, 0],
-        ])('should skip the check for an image declaring no intrinsic size (%sx%s)', (width, height) => {
-            expect(logoRatioError(width, height)).toBeUndefined();
-        });
-    });
-
-    describe('dataUriMediaType', () => {
-        test.each([
-            ['data:image/png;base64,iVBORw0KGgo=', 'image/png'],
-            ['data:image/svg+xml;base64,PHN2Zy8+', 'image/svg+xml'],
-            ['data:image/png,raw', 'image/png'],
-        ])('should read the media type out of %s', (dataUri, expected) => {
-            expect(dataUriMediaType(dataUri)).toBe(expected);
-        });
-
-        test.each(['', 'https://example.com/logo.png', 'not a data uri'])('should report none for %s', (value) => {
-            expect(dataUriMediaType(value)).toBeUndefined();
         });
     });
 
@@ -171,21 +389,6 @@ describe('branding', () => {
         });
     });
 
-    describe('logoMediaTypeFromName', () => {
-        test.each([
-            ['logo.png', 'image/png'],
-            ['LOGO.PNG', 'image/png'],
-            ['logo.svg', 'image/svg+xml'],
-            ['logo.SVG', 'image/svg+xml'],
-        ])('should read %s as %s', (name, expected) => {
-            expect(logoMediaTypeFromName(name)).toBe(expected);
-        });
-
-        test.each(['logo.jpg', 'logo', 'logo.png.txt'])('should report none for %s', (name) => {
-            expect(logoMediaTypeFromName(name)).toBeUndefined();
-        });
-    });
-
     describe('withDataUriMediaType', () => {
         test('should restate the media type of a base64 data URI', () => {
             expect(withDataUriMediaType('data:application/octet-stream;base64,PHN2Zy8+', 'image/svg+xml')).toBe(
@@ -211,80 +414,129 @@ describe('branding', () => {
     });
 
     describe('readLogoFile', () => {
-        const pngFile = (bytes: number) => new File([new Uint8Array(bytes)], 'logo.png', { type: 'image/png' }) as File;
+        const pngFile = (name = 'logo.png', type = 'image/png') => new File([pngBytes()], name, { type });
 
-        test('should refuse a media type Core does not accept before reading anything', async () => {
-            const jpeg = new File([new Uint8Array(8)], 'logo.jpg', { type: 'image/jpeg' });
+        /** Padded past the ceiling with trailing bytes, so it is a real PNG that only the size check can object to. */
+        const oversizedPngFile = () => new File([pngBytes(), new Uint8Array(LOGO_MAX_DECODED_BYTES)], 'logo.png', { type: 'image/png' });
+
+        const measuring = (width: number, height: number) =>
+            vi.stubGlobal(
+                'Image',
+                class {
+                    onload: (() => void) | null = null;
+                    naturalWidth = width;
+                    naturalHeight = height;
+                    set src(_value: string) {
+                        queueMicrotask(() => this.onload?.());
+                    }
+                },
+            );
+
+        test('should refuse content that is neither of the two formats Core accepts', async () => {
+            const jpeg = new File([Uint8Array.from([0xff, 0xd8, 0xff, 0xe0])], 'logo.jpg', { type: 'image/jpeg' });
 
             await expect(readLogoFile(jpeg)).resolves.toEqual({ error: 'Logo must be a PNG or an SVG.' });
         });
 
+        /**
+         * The disguise this check exists for: the size rule passes, and the browser reports `image/png` because the
+         * name says so, so only the content can tell the two apart.
+         */
+        test('should refuse a JPEG named as a PNG', async () => {
+            const disguised = new File([Uint8Array.from([0xff, 0xd8, 0xff, 0xe0])], 'logo.png', { type: 'image/png' });
+
+            await expect(readLogoFile(disguised)).resolves.toEqual({ error: 'Logo must be a PNG or an SVG.' });
+        });
+
+        test('should refuse an SVG the browser cannot parse', async () => {
+            const malformed = new File(['<svg><g></svg>'], 'logo.svg', { type: 'image/svg+xml' });
+
+            await expect(readLogoFile(malformed)).resolves.toEqual({ error: 'Logo must be a PNG or an SVG.' });
+        });
+
+        test('should refuse an SVG carrying a document type declaration', async () => {
+            const doctyped = new File(
+                [
+                    '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">' +
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"/>',
+                ],
+                'logo.svg',
+                { type: 'image/svg+xml' },
+            );
+
+            await expect(readLogoFile(doctyped)).resolves.toEqual({ error: 'Logo SVG must not carry a document type declaration.' });
+        });
+
         test('should refuse an oversized file before reading anything', async () => {
-            await expect(readLogoFile(pngFile(LOGO_MAX_DECODED_BYTES + 1))).resolves.toEqual({
+            await expect(readLogoFile(oversizedPngFile())).resolves.toEqual({
                 error: 'Logo must be at most 1 MB.',
             });
         });
 
-        test('should refuse a file whose ratio is out of range', async () => {
+        /**
+         * A PNG declares its size in the header, so reaching no dimensions at all means the browser could not decode
+         * it - and a logo nothing can draw is not worth storing, whatever Core's chunk walk would make of it.
+         */
+        test('should refuse a PNG the browser cannot decode', async () => {
+            const loaded: string[] = [];
+
             vi.stubGlobal(
                 'Image',
                 class {
-                    onload: (() => void) | null = null;
-                    naturalWidth = 100;
-                    naturalHeight = 400;
-                    set src(_value: string) {
-                        queueMicrotask(() => this.onload?.());
+                    onerror: (() => void) | null = null;
+                    set src(value: string) {
+                        loaded.push(value);
+                        queueMicrotask(() => this.onerror?.());
                     }
                 },
             );
 
-            await expect(readLogoFile(pngFile(8))).resolves.toEqual({
-                error: 'Logo aspect ratio must be between 1:1 and 3:1.',
-            });
+            const undrawable = new File([undrawablePng()], 'logo.png', { type: 'image/png' });
+
+            await expect(readLogoFile(undrawable)).resolves.toEqual({ error: PNG_ERROR });
+            // The walk refuses with the same message, and only a file it accepted is ever handed to an `Image`.
+            expect(loaded).toEqual([expect.stringMatching(/^data:image\/png;base64,/)]);
 
             vi.unstubAllGlobals();
         });
 
-        test('should return the data URI for an acceptable file', async () => {
-            vi.stubGlobal(
-                'Image',
-                class {
-                    onload: (() => void) | null = null;
-                    naturalWidth = 300;
-                    naturalHeight = 150;
-                    set src(_value: string) {
-                        queueMicrotask(() => this.onload?.());
-                    }
-                },
-            );
+        test('should accept a file whose ratio is far outside the recommendation', async () => {
+            measuring(100, 400);
 
-            const result = await readLogoFile(pngFile(8));
+            const result = await readLogoFile(pngFile());
 
             expect(result.error).toBeUndefined();
             expect(result.dataUri).toMatch(/^data:image\/png;base64,/);
+            expect(result.ratio).toBe(0.25);
+
+            vi.unstubAllGlobals();
+        });
+
+        test('should return the data URI and the measured ratio for an acceptable file', async () => {
+            measuring(300, 150);
+
+            const result = await readLogoFile(pngFile());
+
+            expect(result.error).toBeUndefined();
+            expect(result.dataUri).toMatch(/^data:image\/png;base64,/);
+            expect(result.ratio).toBe(2);
 
             vi.unstubAllGlobals();
         });
 
         /**
-         * `readAsDataURL` takes the media type from the blob, so a file the browser reported none for produces
-         * `application/octet-stream` - which Core rejects. The extension the type check accepted supplies it instead.
+         * `readAsDataURL` takes the media type from the blob, which is the extension's answer: empty for an SVG chosen
+         * on Windows, and wrong for a file whose name disagrees with its content. Core requires the declared type to
+         * match the bytes, so it is restated from what the content turned out to be.
          */
-        test('should declare the media type for a file the browser reported none for', async () => {
-            vi.stubGlobal(
-                'Image',
-                class {
-                    onload: (() => void) | null = null;
-                    naturalWidth = 300;
-                    naturalHeight = 150;
-                    set src(_value: string) {
-                        queueMicrotask(() => this.onload?.());
-                    }
-                },
-            );
+        test.each([
+            ['reported no media type', '', 'logo.svg'],
+            ['is named as a PNG', 'image/png', 'logo.png'],
+        ])('should declare what the content is for an SVG the browser %s', async (_case, type, name) => {
+            measuring(300, 150);
 
-            const untyped = new File(['<svg/>'], 'logo.svg', { type: '' });
-            const result = await readLogoFile(untyped);
+            const svg = new File(['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 1"/>'], name, { type });
+            const result = await readLogoFile(svg);
 
             expect(result.error).toBeUndefined();
             expect(result.dataUri).toMatch(/^data:image\/svg\+xml;base64,/);
@@ -292,12 +544,18 @@ describe('branding', () => {
             vi.unstubAllGlobals();
         });
 
-        test('should refuse a file the browser reported no type for and whose name says nothing either', async () => {
-            const untyped = new File(['<svg/>'], 'logo', { type: '' });
+        test('should declare a PNG named as an SVG for what it is rather than refuse it for its name', async () => {
+            measuring(300, 150);
 
-            await expect(readLogoFile(untyped)).resolves.toEqual({ error: 'Logo must be a PNG or an SVG.' });
+            const result = await readLogoFile(pngFile('logo.svg', 'image/svg+xml'));
+
+            expect(result.error).toBeUndefined();
+            expect(result.dataUri).toMatch(/^data:image\/png;base64,/);
+
+            vi.unstubAllGlobals();
         });
 
+        /** The same unmeasurable answer an SVG gives legitimately, which is why it is only decisive for a PNG. */
         test('should accept an image that declares no intrinsic size', async () => {
             vi.stubGlobal(
                 'Image',
@@ -309,11 +567,103 @@ describe('branding', () => {
                 },
             );
 
-            const svg = new File(['<svg/>'], 'logo.svg', { type: 'image/svg+xml' });
+            const svg = new File(['<svg xmlns="http://www.w3.org/2000/svg"/>'], 'logo.svg', { type: 'image/svg+xml' });
             const result = await readLogoFile(svg);
 
             expect(result.error).toBeUndefined();
             expect(result.dataUri).toMatch(/^data:image\/svg\+xml;base64,/);
+            expect(result.ratio).toBeUndefined();
+
+            vi.unstubAllGlobals();
+        });
+
+        /** An image declaring a zero side has no extent to advise on, which is not the same as a flat shape. */
+        test('should report no ratio for an image that measures as zero', async () => {
+            measuring(0, 0);
+
+            const svg = new File(['<svg xmlns="http://www.w3.org/2000/svg"/>'], 'logo.svg', { type: 'image/svg+xml' });
+            const result = await readLogoFile(svg);
+
+            expect(result.error).toBeUndefined();
+            expect(result.ratio).toBeUndefined();
+
+            vi.unstubAllGlobals();
+        });
+    });
+
+    describe('branding cache window', () => {
+        const KEY = 'branding-changed-at';
+
+        const withStorage = (store: Map<string, string>) => {
+            vi.stubGlobal('localStorage', {
+                getItem: (k: string) => store.get(k) ?? null,
+                setItem: (k: string, v: string) => void store.set(k, v),
+                removeItem: (k: string) => void store.delete(k),
+            });
+            return store;
+        };
+
+        test('should not bypass the cache when this browser has changed nothing', () => {
+            withStorage(new Map());
+
+            expect(shouldBypassBrandingCache()).toBe(false);
+
+            vi.unstubAllGlobals();
+        });
+
+        test('should bypass the cache for a change inside the window', () => {
+            const store = withStorage(new Map());
+            markBrandingChanged(1_000_000);
+
+            expect(store.get(KEY)).toBe('1000000');
+            expect(shouldBypassBrandingCache(1_000_000 + BRANDING_CACHE_BYPASS_WINDOW_MS)).toBe(true);
+
+            vi.unstubAllGlobals();
+        });
+
+        test('should stop bypassing, and forget the mark, once the window has passed', () => {
+            const store = withStorage(new Map());
+            markBrandingChanged(1_000_000);
+
+            expect(shouldBypassBrandingCache(1_000_000 + BRANDING_CACHE_BYPASS_WINDOW_MS + 1)).toBe(false);
+            expect(store.has(KEY)).toBe(false);
+
+            vi.unstubAllGlobals();
+        });
+
+        /** A clock that steps backwards (NTP correction, VM resume) would otherwise pin the bypass on for good. */
+        test('should stop bypassing when the mark is in the future', () => {
+            const store = withStorage(new Map());
+            markBrandingChanged(2_000_000);
+
+            expect(shouldBypassBrandingCache(1_000_000)).toBe(false);
+            expect(store.has(KEY)).toBe(false);
+
+            vi.unstubAllGlobals();
+        });
+
+        test('should ignore a stored value that is not a number', () => {
+            withStorage(new Map([[KEY, 'not-a-timestamp']]));
+
+            expect(shouldBypassBrandingCache()).toBe(false);
+
+            vi.unstubAllGlobals();
+        });
+
+        /** Private browsing and an exceeded quota both throw; the cache window is an optimisation, never a hard need. */
+        test('should treat unavailable storage as no reason to bypass', () => {
+            vi.stubGlobal('localStorage', {
+                getItem: () => {
+                    throw new Error('denied');
+                },
+                setItem: () => {
+                    throw new Error('denied');
+                },
+                removeItem: () => {},
+            });
+
+            expect(() => markBrandingChanged()).not.toThrow();
+            expect(shouldBypassBrandingCache()).toBe(false);
 
             vi.unstubAllGlobals();
         });

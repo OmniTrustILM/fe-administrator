@@ -1,11 +1,13 @@
-import { describe, expect, test } from 'vitest';
-import { firstValueFrom, lastValueFrom, type Observable, of, throwError } from 'rxjs';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import { firstValueFrom, lastValueFrom, type Observable, of, Subject, throwError } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
 import { delay, take, toArray } from 'rxjs/operators';
+import type { UnknownAction } from 'redux';
 import type { PublicBrandingModel } from 'types/branding';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
-import { platformDefaultBranding, slice } from './branding';
+import * as brandingUtils from 'utils/branding';
+import { platformDefaultBranding, slice, toPublicBranding } from './branding';
 import epics from './branding-epics';
 
 /** The anonymous response is a fixed shape, so a fixture overrides the platform default rather than listing fields. */
@@ -63,6 +65,10 @@ async function runAll(epic: EpicUnderTest, action: unknown, deps: unknown) {
 }
 
 describe('branding epics', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     test('getBranding emits the branding it read', async () => {
         const branding = { primaryColor: '#0073CF' };
         const deps = createDeps({ getBrandingSettings: () => of(branding) });
@@ -141,20 +147,29 @@ describe('branding epics', () => {
 
         expect(sent).toEqual([branding]);
         expect(emitted[0]).toEqual(slice.actions.updateBrandingSuccess({ branding: stored }));
-        expect(emitted[1]).toEqual(slice.actions.getPublicBranding());
+        expect(emitted[1]).toEqual(slice.actions.getPublicBrandingSuccess({ branding: toPublicBranding(stored) }));
         expect(emitted[2].type).toBe(alertActions.success.type);
     });
 
     /**
      * The token layer and the theme both resolve from the anonymous response, so a committed save that does not
-     * refresh it leaves the page it was made on rendering the previous palette until the next full reload.
+     * refresh it leaves the page it was made on rendering the previous palette until the next full reload. It is set
+     * from the read-back rather than re-read, because Core serves the anonymous response with a 60-second public
+     * cache and a read issued here is answered from it with the pre-write brand.
      */
-    test('updateBranding refreshes the anonymous read so the committed palette is applied', async () => {
-        const deps = createDeps();
+    test('updateBranding settles the anonymous view without re-reading the cached endpoint', async () => {
+        let anonymousReads = 0;
+        const deps = createDeps({
+            getBranding: () => {
+                anonymousReads += 1;
+                return of(platformDefaultBranding);
+            },
+        });
 
         const emitted = await run(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps, 3);
 
-        expect(emitted.map((action: { type: string }) => action.type)).toContain(slice.actions.getPublicBranding.type);
+        expect(emitted.map((action: { type: string }) => action.type)).toContain(slice.actions.getPublicBrandingSuccess.type);
+        expect(anonymousReads).toBe(0);
     });
 
     test('updateBranding failure reports the error and redirects', async () => {
@@ -196,7 +211,22 @@ describe('branding epics', () => {
             slice.actions.updateBrandingFailure({ error: 'Branding was saved but could not be read back. unreadable' }),
             appRedirectActions.fetchError({ error: err, message: 'Branding was saved but could not be read back' }),
             slice.actions.getBranding(),
+            slice.actions.getPublicBranding(),
         ]);
+    });
+
+    /**
+     * The brand changed on the server even though the read-back failed, so the applied palette is stale too. Without
+     * the mark the reload that follows is answered from the browser's cache with the brand that was just replaced.
+     */
+    test('updateBranding marks the cache window even when the read-back fails', async () => {
+        const marked: number[] = [];
+        vi.spyOn(brandingUtils, 'markBrandingChanged').mockImplementation(() => void marked.push(1));
+        const deps = createDeps({ getBrandingSettings: () => throwError(() => new Error('unreadable')) });
+
+        await runAll(epics[WRITE_BRANDING], slice.actions.updateBranding({ branding: {} }), deps);
+
+        expect(marked).toHaveLength(1);
     });
 
     /** Reset is one empty update rather than a field-by-field clear, so the body sent has to actually be empty. */
@@ -213,17 +243,61 @@ describe('branding epics', () => {
 
         expect(sent).toEqual([{}]);
         expect(emitted[0]).toEqual(slice.actions.resetBrandingSuccess());
-        expect(emitted[1]).toEqual(slice.actions.getPublicBranding());
+        expect(emitted[1]).toEqual(slice.actions.getPublicBrandingSuccess({ branding: platformDefaultBranding }));
         expect(emitted[2].type).toBe(alertActions.success.type);
     });
 
-    /** Unbranding has to take effect on the page it was requested from, for the same reason a save does. */
-    test('resetBranding refreshes the anonymous read so the platform palette is restored', async () => {
-        const deps = createDeps();
+    /**
+     * Unbranding has to take effect on the page it was requested from, and re-reading the anonymous endpoint would
+     * defeat that: its response is publicly cacheable for a minute, so the browser answers with the brand that was
+     * just cleared and the token layer paints it straight back.
+     */
+    test('resetBranding restores the platform palette without re-reading the cached endpoint', async () => {
+        let anonymousReads = 0;
+        const deps = createDeps({
+            getBranding: () => {
+                anonymousReads += 1;
+                return of(platformDefaultBranding);
+            },
+        });
 
         const emitted = await run(epics[WRITE_BRANDING], slice.actions.resetBranding(), deps, 3);
 
-        expect(emitted.map((action: { type: string }) => action.type)).toContain(slice.actions.getPublicBranding.type);
+        expect(emitted).toContainEqual(slice.actions.getPublicBrandingSuccess({ branding: platformDefaultBranding }));
+        expect(anonymousReads).toBe(0);
+    });
+
+    /** Without this the reset call could be deleted and every test would stay green, which is the defect it prevents. */
+    test('resetBranding marks the cache window on success and not on failure', async () => {
+        const marked: number[] = [];
+        vi.spyOn(brandingUtils, 'markBrandingChanged').mockImplementation(() => void marked.push(1));
+
+        await run(epics[WRITE_BRANDING], slice.actions.resetBranding(), createDeps(), 3);
+        expect(marked).toHaveLength(1);
+
+        const rejecting = createDeps({ updateBrandingSettings: () => throwError(() => new Error('denied')) });
+        await runAll(epics[WRITE_BRANDING], slice.actions.resetBranding(), rejecting);
+        expect(marked).toHaveLength(1);
+    });
+
+    /**
+     * A read that started before the write must not settle after it. `getPublicBrandingSuccess` is dispatched by the
+     * write rather than routed through the read epic's `switchMap`, so the read epic cancels itself on one instead.
+     */
+    test('should drop an anonymous read that a newer authoritative result has superseded', async () => {
+        const inFlight = new Subject<PublicBrandingModel>();
+        const deps = createDeps({ getBranding: () => inFlight });
+        const action$ = new Subject<UnknownAction>();
+        const emitted: UnknownAction[] = [];
+        const subscription = (epics[GET_PUBLIC_BRANDING] as EpicUnderTest)(action$, of({}), deps).subscribe((a) => emitted.push(a));
+
+        action$.next(slice.actions.getPublicBranding());
+        action$.next(slice.actions.getPublicBrandingSuccess({ branding: platformDefaultBranding }));
+        inFlight.next({ ...platformDefaultBranding, configured: true, primaryColor: '#0073CF' });
+        inFlight.complete();
+
+        expect(emitted).toEqual([]);
+        subscription.unsubscribe();
     });
 
     test('resetBranding failure reports the error and redirects', async () => {
@@ -254,10 +328,10 @@ describe('branding epics', () => {
 
         expect(emitted.map((action: { type: string }) => action.type)).toEqual([
             slice.actions.updateBrandingSuccess.type,
-            slice.actions.getPublicBranding.type,
+            slice.actions.getPublicBrandingSuccess.type,
             alertActions.success.type,
             slice.actions.resetBrandingSuccess.type,
-            slice.actions.getPublicBranding.type,
+            slice.actions.getPublicBrandingSuccess.type,
             alertActions.success.type,
         ]);
     });

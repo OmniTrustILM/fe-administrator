@@ -8,6 +8,7 @@ import {
     validateFloat,
     validateEmail,
     validateLength,
+    validateMaximum,
     validateDuration,
     composeValidators,
     validateRoutelessUrl,
@@ -233,6 +234,28 @@ describe('validators', () => {
         test('should reject value too long', () => {
             const validator = validateLength(2, 5);
             expect(validator('abcdef')).toBe('Value must be between 2 and 5 characters long');
+        });
+    });
+
+    describe('validateMaximum', () => {
+        test('should accept a value at or below the maximum', () => {
+            expect(validateMaximum(10)('10')).toBeUndefined();
+            expect(validateMaximum(10)('0')).toBeUndefined();
+        });
+
+        test('should accept empty or undefined value', () => {
+            expect(validateMaximum(10)('')).toBeUndefined();
+            expect(validateMaximum(10)(undefined)).toBeUndefined();
+        });
+
+        test('should reject a value above the maximum', () => {
+            expect(validateMaximum(10)('11')).toBe('Value must not exceed 10');
+        });
+
+        test('should leave a non-numeric value to the pattern validator composed before it', () => {
+            expect(validateMaximum(10)('abc')).toBeUndefined();
+            expect(composeValidators(validatePositiveInteger(), validateMaximum(10))('abc')).toBe('Value must be a positive integer');
+            expect(composeValidators(validatePositiveInteger(), validateMaximum(10))('11')).toBe('Value must not exceed 10');
         });
     });
 

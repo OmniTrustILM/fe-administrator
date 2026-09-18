@@ -73,6 +73,7 @@ export enum Operation {
     Destroy = 'destroy',
     ListKeyUsages = 'listKeyUsages',
     UpdateKeyUsage = 'updateKeyUsage',
+    ListKeyRequestTypes = 'listKeyRequestTypes',
     Encrypt = 'encrypt',
     Decrypt = 'decrypt',
     Sign = 'sign',

@@ -4,7 +4,7 @@ import type { AppState } from 'ducks';
 import type { ProfileApprovalModel } from 'types/approval-profiles';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { BulkActionModel } from 'types/connectors';
-import type { RaProfileCertificateRequestAttributesUpdateDto, Resource } from 'types/openapi';
+import type { RaProfileCertificateRequestAttributesDto, RaProfileCertificateRequestAttributesUpdateDto, Resource } from 'types/openapi';
 import type {
     ComplianceProfileSimplifiedModel,
     RaProfileAcmeDetailResponseModel,
@@ -273,6 +273,19 @@ export const slice = createSlice({
 
         updateRaProfileRequestAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isUpdating = false;
+        },
+
+        // The Attributes-tab widget saves through the raProfileRequestAttributes duck, whose PATCH
+        // response carries the persisted set, so the loaded profile is patched in place instead of
+        // being refetched (which would put the whole detail page into its busy state). The epic only
+        // dispatches this when the response actually carries the set; otherwise it refetches.
+        raProfileRequestAttributesUpdated: (
+            state,
+            action: PayloadAction<{ uuid: string; certificateRequestAttributes: RaProfileCertificateRequestAttributesDto }>,
+        ) => {
+            if (state.raProfile?.uuid === action.payload.uuid) {
+                state.raProfile.certificateRequestAttributes = action.payload.certificateRequestAttributes;
+            }
         },
 
         enableRaProfile: (state, action: PayloadAction<{ authorityUuid: string; uuid: string }>) => {

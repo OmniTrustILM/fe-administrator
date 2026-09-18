@@ -6,6 +6,7 @@ import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { SettingsPlatformModel } from 'types/settings';
 import { AlertCircle } from 'lucide-react';
+import { CBOM_SYNC_TUNABLES, describeTunable } from './UtilsSettings.tunables';
 
 const StatusIcon = ({ ok }: { ok?: boolean }) =>
     ok ? (
@@ -89,6 +90,10 @@ const UtilsSettings = ({ platformSettings }: Props) => {
                               ),
                           ],
                       },
+                      ...CBOM_SYNC_TUNABLES.map((tunable) => ({
+                          id: tunable.name,
+                          columns: [tunable.label, describeTunable(tunable, platformSettings.utils?.[tunable.name])],
+                      })),
                   ]
                 : [],
         [platformSettings, health, cbomHealth],

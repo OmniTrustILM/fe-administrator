@@ -16,6 +16,7 @@ import type { AjaxResponse } from 'rxjs/ajax';
 import { BaseAPI, throwIfNullOrUndefined, encodeURI } from '../runtime';
 import type { OperationOpts, HttpHeaders } from '../runtime';
 import type {
+    AcmeEabKeyDto,
     AcmeProfileDto,
     AcmeProfileEditRequestDto,
     AcmeProfileListDto,
@@ -282,6 +283,22 @@ export class ACMEProfileManagementApi extends BaseAPI {
                 method: 'DELETE',
                 headers,
                 body: requestBody,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Generate a random HMAC key suitable for External Account Binding and return it once. The platform neither stores nor associates the key here - store it in a secret and add that secret\'s UUID to an ACME Profile\'s eabSecretUuids to put it into use. The same value is what the ACME client MACs its binding with.
+     * Generate an External Account Binding key
+     */
+    generateEabKey(): Observable<AcmeEabKeyDto>;
+    generateEabKey(opts?: OperationOpts): Observable<AjaxResponse<AcmeEabKeyDto>>;
+    generateEabKey(opts?: OperationOpts): Observable<AcmeEabKeyDto | AjaxResponse<AcmeEabKeyDto>> {
+        return this.request<AcmeEabKeyDto>(
+            {
+                url: '/v1/acmeProfiles/eabKeys',
+                method: 'POST',
             },
             opts?.responseOpts,
         );

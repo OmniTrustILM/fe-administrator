@@ -41,6 +41,7 @@
     --content: #1f2937;
     --content-muted: #525252;
     --content-subtle: #6e6e6e;
+    --content-hint: #b6b6b6;
     --content-inverse: #ffffff;
     --content-on-brand: #ffffff;
 
@@ -135,6 +136,7 @@
     --content: #f5f5f5;
     --content-muted: #d4d4d4;
     --content-subtle: #a3a3a3;
+    --content-hint: #5d5d5d;
     --content-inverse: #f5f5f5;
     --content-on-brand: #ffffff;
 
@@ -194,6 +196,7 @@
     --color-content: var(--content);
     --color-content-muted: var(--content-muted);
     --color-content-subtle: var(--content-subtle);
+    --color-content-hint: var(--content-hint);
     --color-content-inverse: var(--content-inverse);
     --color-content-on-brand: var(--content-on-brand);
 

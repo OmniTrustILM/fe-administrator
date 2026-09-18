@@ -42,7 +42,7 @@ export default function AvailableFields({ fields, selected, search, onSearchChan
                     placeholder={`Search ${fields.length} fields...`}
                     aria-label="Search available fields"
                     data-testid="available-fields-search"
-                    className="w-full rounded-md border border-divider bg-surface-raised py-1.5 ps-8 pe-2.5 text-sm text-content placeholder:text-content-subtle focus:border-brand focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand"
+                    className="w-full rounded-md border border-divider bg-surface-raised py-1.5 ps-8 pe-2.5 text-sm text-content placeholder:text-content-hint focus:border-brand focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand"
                 />
             </div>
 

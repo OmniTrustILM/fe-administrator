@@ -34,7 +34,7 @@ function DescriptorInputControl({
     const error = getFieldErrorMessage(fieldState);
     const invalid = fieldState.error && fieldState.isTouched;
     const inputClassName = cn(
-        'py-2.5 sm:py-3 px-4 block w-full border-outline rounded-lg text-sm focus:border-brand focus:ring-brand disabled:opacity-50 disabled:pointer-events-none bg-surface-raised text-content placeholder-content-subtle',
+        'py-2.5 sm:py-3 px-4 block w-full border-outline rounded-lg text-sm focus:border-brand focus:ring-brand disabled:opacity-50 disabled:pointer-events-none bg-surface-raised text-content placeholder-content-hint',
         { 'border-danger focus:border-danger focus:ring-danger': invalid },
     );
 

@@ -13,7 +13,7 @@ import { actions as raProfilesActions, selectors as raProfilesSelectors } from '
 import { actions as settingsActions, selectors as settingsSelectors } from 'ducks/settings';
 import { actions as complianceProfileActions, selectors as complianceProfileSelectors } from 'ducks/compliance-profiles';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
@@ -191,13 +191,13 @@ export default function RaProfileDetail() {
         getFreshAssociatedApprovalProfiles();
     }, [getFreshRaProfileDetail, getFreshComplianceRaProfileDetail, getFreshAssociatedApprovalProfiles]);
 
+    // Keyed on identity, not the object: an in-place patch (request-attributes save) must not refetch the protocols.
+    const loadedRaProfileUuid = raProfile?.uuid;
+    const isLegacyAuthority = raProfile?.legacyAuthority;
     useEffect(() => {
-        if (!raProfile) return;
-
-        if (!raProfile?.legacyAuthority) {
-            getFreshAvailableProtocols();
-        }
-    }, [raProfile, getFreshAvailableProtocols]);
+        if (!loadedRaProfileUuid || isLegacyAuthority) return;
+        getFreshAvailableProtocols();
+    }, [loadedRaProfileUuid, isLegacyAuthority, getFreshAvailableProtocols]);
 
     useEffect(() => {
         if (platformSettings) return;
@@ -217,7 +217,11 @@ export default function RaProfileDetail() {
         getFreshRaProfileDetail();
     });
 
+    // Closing mid-save would unmount the form between its request-attributes PATCH and the profile PUT.
+    const editInFlightRef = useRef(false);
+
     const handleCloseEditModal = useCallback(() => {
+        if (editInFlightRef.current) return;
         setIsEditModalOpen(false);
     }, []);
 
@@ -1045,7 +1049,6 @@ export default function RaProfileDetail() {
                                                         authorityUuid={requestAttributesAuthorityUuid}
                                                         raProfileUuid={raProfile.uuid}
                                                         certificateRequestAttributes={raProfile.certificateRequestAttributes}
-                                                        onSaved={getFreshRaProfileDetail}
                                                     />
                                                 </Widget>
                                             )}
@@ -1309,6 +1312,9 @@ export default function RaProfileDetail() {
                         raProfileId={raProfile?.uuid}
                         authorityId={raProfile?.authorityInstanceUuid || authorityId}
                         onCancel={handleCloseEditModal}
+                        onInFlightChange={(inFlight) => {
+                            editInFlightRef.current = inFlight;
+                        }}
                     />
                 }
             />

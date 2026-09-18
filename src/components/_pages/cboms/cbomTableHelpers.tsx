@@ -5,6 +5,7 @@ import type { EnumItemModel } from 'types/enums';
 import type { CbomDto } from 'types/openapi';
 import { FilterFieldSource, FilterFieldType } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
+import { toFiniteNumber } from 'utils/common-utils';
 
 type PlatformEnumMap = { [key: string]: EnumItemModel } | undefined;
 
@@ -13,12 +14,6 @@ export interface BuildCbomCellsOpts {
     getEnumLabel: (enumMap: PlatformEnumMap, key: string) => string;
     dateFormatter: (date: string | Date) => string;
     renderActions: (cbom: CbomDto) => ReactNode;
-}
-
-/** A count the API may send as null or a non-number, rendered as a number either way. */
-export function toFiniteNumber(value: unknown): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
 }
 
 /** A centred numeric column. Every count this inventory shows is one, differing only in its identifier and headings. */

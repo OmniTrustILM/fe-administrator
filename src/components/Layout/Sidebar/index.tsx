@@ -23,6 +23,7 @@ import {
     Network,
     FileLock2,
     FileSignature,
+    ShieldCheck,
 } from 'lucide-react';
 import Button from 'components/Button';
 import { Resource } from 'types/openapi';
@@ -175,6 +176,13 @@ const menuItemMappings: MenuItemMapping[] = [
         header: 'CBOMs',
         headerLink: '/cboms',
         requiredResources: [Resource.Cboms],
+    },
+    {
+        _key: `/${Resource.CryptoAssets.toLowerCase()}`,
+        icon: <ShieldCheck size={16} strokeWidth={1.5} />,
+        header: 'Crypto Assets',
+        headerLink: `/${Resource.CryptoAssets.toLowerCase()}`,
+        requiredResources: [Resource.CryptoAssets],
     },
     {
         _key: `/${Resource.SigningRecords.toLowerCase()}`,
@@ -563,8 +571,13 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                     </SimpleBar>
                 </section>
             )}
+            {/*
+             * The rail carries the background, not the content inside it: SimpleBar's content wrapper is auto-height,
+             * so a `h-full` child only ever covers the menu items and leaves the page showing through below them.
+             */}
             <SimpleBar
                 forceVisible="y"
+                className="bg-surface-raised"
                 style={{
                     height: 'calc(100vh - var(--header-height))',
                     width: 'var(--sidebar-width)',
@@ -574,7 +587,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                 }}
                 data-testid="sidebar-sticky"
             >
-                <div className="p-4 w-full h-full bg-surface-raised">
+                <div className="p-4 w-full">
                     <nav className="pb-4">
                         <ul className="list-none m-0 flex flex-col gap-y-1">{allowedMenuItems.map((item) => renderMenuItem(item))}</ul>
                     </nav>

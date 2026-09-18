@@ -77,5 +77,5 @@ export interface AuthorityInstanceDto {
      * @type {string}
      * @memberof AuthorityInstanceDto
      */
-    kind?: string;
+    kind?: string | null;
 }

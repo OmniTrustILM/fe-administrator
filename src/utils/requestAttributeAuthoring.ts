@@ -16,6 +16,7 @@ import {
     type DataAttributeV3,
     type ExtensionValueEncoding,
     type FieldMapping,
+    type FieldSource,
     type RaProfileCertificateRequestAttributesDto,
     type RaProfileCertificateRequestAttributesUpdateDto,
     type SourceParam,
@@ -23,6 +24,7 @@ import {
     type ValueSourceBindingDto,
 } from 'types/openapi';
 import type { FieldMappingModel, MappedFieldModel } from 'types/requestAttributeMapping';
+import { generalNameLabel } from 'utils/requestAttributes';
 import { getJsonSchemaDocumentError } from 'utils/strictJson';
 
 /**
@@ -39,14 +41,27 @@ import { getJsonSchemaDocumentError } from 'utils/strictJson';
  *  - The RA-Profile update is NOT a server-side merge: Core writes `externalCsrValidationStrict`
  *    unconditionally, so we round-trip the loaded value (owned by the strictness toggle) instead
  *    of omitting it, which would wipe it. `params` on a value source / binding are likewise
- *    preserved on round-trip even though this editor has no UI for them yet — except that while
- *    `MERGE_MODE_AND_BINDINGS_ENABLED` is off, `gateMergeModeAndBindings` intentionally drops the
- *    whole `valueSourceBindings` array (and its params) on save, so binding round-tripping only
- *    applies once the feature is re-enabled.
+ *    preserved on round-trip even though this editor has no UI for them yet.
  */
 
 /** Primitive an authored attribute value can take, mirroring the content types this editor offers. */
 export type AuthoredAttributeValue = string | number | boolean;
+
+export interface MappingTargetFormValues {
+    fieldType?: FieldType;
+    rdnCode?: string;
+    generalNameType?: GeneralNameType;
+    otherNameOid?: string;
+    otherNameEncoding?: ExtensionValueEncoding;
+    extensionOid?: string;
+    criticalOverridable?: boolean;
+    /** Kept as loaded: the editor has no control for it. */
+    source?: FieldSource;
+    /** As loaded; see `buildFieldMapping` for when it is kept. */
+    order?: number;
+    /** Client-only React key that survives reordering; never persisted. */
+    rowId?: string;
+}
 
 export interface AuthoredAttributeFormValues {
     uuid?: string;
@@ -64,19 +79,9 @@ export interface AuthoredAttributeFormValues {
      * (Key Usage / Extended Key Usage) this is what makes an empty permitted set saveable.
      */
     extensibleList: boolean;
-    /** Mapping target — FieldType category (RDN / SAN / EXTENSION); undefined = unmapped. */
-    mappingFieldType?: FieldType;
     mappingObjectType?: ObjectType;
-    /** RDN code (e.g. "CN") or dotted OID — used when mappingFieldType === RDN. */
-    mappingRdnCode?: string;
-    /** SAN general-name-type (e.g. dNSName) — used when mappingFieldType === SAN. */
-    mappingGeneralNameType?: GeneralNameType;
-    /** otherName OID + encoding — required when mappingGeneralNameType === OTHER_NAME. */
-    mappingOtherNameOid?: string;
-    mappingOtherNameEncoding?: ExtensionValueEncoding;
-    /** Extension OID (dotted) — used when mappingFieldType === EXTENSION. */
-    mappingExtensionOid?: string;
-    mappingCriticalOverridable?: boolean;
+    /** `MappedField.order` is derived from the position among targets of the same field type. */
+    mappingTargets: MappingTargetFormValues[];
     /** How Core resolves the value; NONE = free input. */
     valueSourceType: ValueSourceType;
     /**
@@ -117,11 +122,7 @@ export interface ValueSourceBindingFormValues {
     attributeUuid?: string;
     attributeName?: string;
     valueSourceType: ValueSourceType;
-    /**
-     * Cascading dependency params, preserved on round-trip (no authoring UI yet) — but only while
-     * MERGE_MODE_AND_BINDINGS_ENABLED is on; when it is off, gateMergeModeAndBindings drops the
-     * entire binding (params included) on save.
-     */
+    /** Cascading dependency params, preserved on round-trip (no authoring UI yet). */
     params?: SourceParam[];
 }
 
@@ -137,15 +138,10 @@ export interface RequestAttributeAuthoringFormValues {
 }
 
 /**
- * Merge modes and value-source bindings are hidden until the connector request-attribute
- * handling improvements land on the backend (fe#1908). Flip to `true` to re-enable both the
- * RA-Profile merge-mode selector and the value-source bindings section, and to stop
- * `gateMergeModeAndBindings` from coercing saved values. It does NOT change the default merge
- * mode: `DEFAULT_MERGE_MODE` below is Static only regardless of this flag (it was `Merge` before
- * fe#1908), so re-enabling the UI does not restore the previous `Merge` default on its own.
+ * Merge modes are opt-in: Core reads an omitted `mergeMode` as Static only, so a profile that
+ * never touched the selector keeps resolving from its own static set (or the platform default)
+ * and does not start consulting the authority connector on its own.
  */
-export const MERGE_MODE_AND_BINDINGS_ENABLED = false;
-
 export const DEFAULT_MERGE_MODE = AttributeSetMergeMode.StaticOnly;
 
 /**
@@ -236,6 +232,16 @@ function generateUuid(): string {
     return crypto.randomUUID();
 }
 
+export function emptyMappingTarget(): MappingTargetFormValues {
+    return { rowId: generateUuid(), fieldType: undefined };
+}
+
+/** Guarantees at least one row, so an attribute stored without a mapping still opens with a target picker. */
+export function withMappingTargetRows(form: AuthoredAttributeFormValues): AuthoredAttributeFormValues {
+    const rows = form.mappingTargets.length > 0 ? form.mappingTargets : [emptyMappingTarget()];
+    return { ...form, mappingTargets: rows.map((target) => (target.rowId ? target : { ...target, rowId: generateUuid() })) };
+}
+
 export function emptyAuthoredAttribute(): AuthoredAttributeFormValues {
     return {
         uuid: generateUuid(),
@@ -248,14 +254,8 @@ export function emptyAuthoredAttribute(): AuthoredAttributeFormValues {
         list: false,
         multiSelect: false,
         extensibleList: false,
-        mappingFieldType: undefined,
         mappingObjectType: ObjectType.X509Certificate,
-        mappingRdnCode: '',
-        mappingGeneralNameType: undefined,
-        mappingOtherNameOid: '',
-        mappingOtherNameEncoding: undefined,
-        mappingExtensionOid: '',
-        mappingCriticalOverridable: false,
+        mappingTargets: [emptyMappingTarget()],
         valueSourceType: ValueSourceType.None,
         staticValues: [],
         defaultValue: undefined,
@@ -284,19 +284,6 @@ export function emptyAuthoringForm(): RequestAttributeAuthoringFormValues {
     };
 }
 
-/**
- * While the feature is hidden (fe#1908) every save path coerces the form to `DEFAULT_MERGE_MODE`
- * and drops all value-source bindings; once re-enabled the form passes through unchanged. `enabled`
- * defaults to the flag and is a seam so tests can exercise the re-enabled path.
- */
-export function gateMergeModeAndBindings(
-    form: RequestAttributeAuthoringFormValues,
-    enabled: boolean = MERGE_MODE_AND_BINDINGS_ENABLED,
-): RequestAttributeAuthoringFormValues {
-    if (enabled) return form;
-    return { ...form, mergeMode: DEFAULT_MERGE_MODE, valueSourceBindings: [] };
-}
-
 export function hasAuthoredRequestAttributes(form: RequestAttributeAuthoringFormValues): boolean {
     return (
         (form.attributes?.length ?? 0) > 0 ||
@@ -305,27 +292,69 @@ export function hasAuthoredRequestAttributes(form: RequestAttributeAuthoringForm
     );
 }
 
-function buildMappedField(form: AuthoredAttributeFormValues): MappedFieldModel | undefined {
-    switch (form.mappingFieldType) {
+export function hasMappingTarget(form: AuthoredAttributeFormValues): boolean {
+    return form.mappingTargets.some((target) => target.fieldType !== undefined);
+}
+
+export function structuredMappingTarget(form: AuthoredAttributeFormValues): FieldType | undefined {
+    return form.mappingTargets.find((target) => isStructuredMappingTarget(target.fieldType))?.fieldType;
+}
+
+export function hasStructuredMappingTarget(form: AuthoredAttributeFormValues): boolean {
+    return structuredMappingTarget(form) !== undefined;
+}
+
+/**
+ * Applies the attribute shape a change of targets implies. The permitted set is reset only when the
+ * structured target itself changes, so editing, reordering or removing another row keeps it.
+ */
+export function withMappingTargets(
+    form: AuthoredAttributeFormValues,
+    mappingTargets: MappingTargetFormValues[],
+): AuthoredAttributeFormValues {
+    const next: AuthoredAttributeFormValues = { ...form, mappingTargets };
+    if (hasMappingTarget(next) && !isContentTypeAllowedForMapping(next.contentType)) {
+        Object.assign(next, { contentType: AttributeContentType.String, staticValues: [], defaultValue: undefined });
+    }
+    const before = structuredMappingTarget(form);
+    const after = structuredMappingTarget(next);
+    if (after && after !== before) {
+        Object.assign(next, {
+            valueSourceType: ValueSourceType.None,
+            list: true,
+            multiSelect: true,
+            readOnly: false,
+            extensibleList: false,
+            staticValues: [],
+            defaultValue: undefined,
+        });
+    } else if (before && !after) {
+        Object.assign(next, { list: false, multiSelect: false, extensibleList: false, staticValues: [] });
+    }
+    return next;
+}
+
+function buildMappedField(target: MappingTargetFormValues): MappedFieldModel | undefined {
+    switch (target.fieldType) {
         case FieldType.Rdn:
-            return { fieldType: FieldType.Rdn, rdn: (form.mappingRdnCode ?? '').trim() };
+            return { fieldType: FieldType.Rdn, rdn: (target.rdnCode ?? '').trim() };
         case FieldType.San: {
-            if (!form.mappingGeneralNameType) {
+            if (!target.generalNameType) {
                 return undefined;
             }
-            const isOtherName = form.mappingGeneralNameType === GeneralNameType.OtherName;
+            const isOtherName = target.generalNameType === GeneralNameType.OtherName;
             return {
                 fieldType: FieldType.San,
-                generalNameType: form.mappingGeneralNameType,
-                otherNameOid: isOtherName ? (form.mappingOtherNameOid ?? '').trim() || undefined : undefined,
-                otherNameValueEncoding: isOtherName ? form.mappingOtherNameEncoding : undefined,
+                generalNameType: target.generalNameType,
+                otherNameOid: isOtherName ? (target.otherNameOid ?? '').trim() || undefined : undefined,
+                otherNameValueEncoding: isOtherName ? target.otherNameEncoding : undefined,
             };
         }
         case FieldType.Extension:
             return {
                 fieldType: FieldType.Extension,
-                extensionOid: (form.mappingExtensionOid ?? '').trim(),
-                criticalOverridable: form.mappingCriticalOverridable || undefined,
+                extensionOid: (target.extensionOid ?? '').trim(),
+                criticalOverridable: target.criticalOverridable || undefined,
             };
         // The structured targets carry no properties of their own — the permitted set is the
         // attribute's content, not part of the mapping.
@@ -338,16 +367,84 @@ function buildMappedField(form: AuthoredAttributeFormValues): MappedFieldModel |
     }
 }
 
+/**
+ * Keeps the loaded `order` of a field type while its rows still ascend, and a lone row without one
+ * stays without, so an untouched mapping saves unchanged. Otherwise the type is numbered 1..n by
+ * position. Incomplete rows are left out.
+ */
 function buildFieldMapping(form: AuthoredAttributeFormValues): FieldMappingModel | undefined {
-    const field = buildMappedField(form);
-    if (!field) {
+    const rows = form.mappingTargets.flatMap((target) => {
+        const field = buildMappedField(target);
+        return field ? [{ field, loadedOrder: target.order, source: target.source }] : [];
+    });
+    if (rows.length === 0) {
         return undefined;
     }
-    return {
-        objectType: form.mappingObjectType ?? ObjectType.X509Certificate,
-        fields: [field],
-    };
+    const keepsLoadedOrder = new Map<FieldType, boolean>();
+    for (const fieldType of new Set(rows.map((row) => row.field.fieldType))) {
+        const orders = rows.filter((row) => row.field.fieldType === fieldType).map((row) => row.loadedOrder);
+        const ascending = orders.every((order, i) => order !== undefined && (i === 0 || order > (orders[i - 1] ?? order)));
+        keepsLoadedOrder.set(fieldType, ascending || (orders.length === 1 && orders[0] === undefined));
+    }
+    const positionByType = new Map<FieldType, number>();
+    const fields = rows.map(({ field, loadedOrder, source }): MappedFieldModel => {
+        const position = (positionByType.get(field.fieldType) ?? 0) + 1;
+        positionByType.set(field.fieldType, position);
+        return { ...field, order: keepsLoadedOrder.get(field.fieldType) ? loadedOrder : position, source };
+    });
+    return { objectType: form.mappingObjectType ?? ObjectType.X509Certificate, fields };
 }
+
+const STRUCTURED_TARGET_OIDS: Partial<Record<FieldType, string>> = {
+    [FieldType.KeyUsage]: '2.5.29.15',
+    [FieldType.ExtendedKeyUsage]: '2.5.29.37',
+};
+
+/** Core rejects the subjectAltName OID on the Extension target: SAN has its own target. */
+export const SUBJECT_ALT_NAME_OID = '2.5.29.17';
+
+function occupiedExtensionOid(field: MappedFieldModel | undefined): string | undefined {
+    if (field?.fieldType === FieldType.Extension) {
+        return (field.extensionOid ?? '').trim() || undefined;
+    }
+    return field ? STRUCTURED_TARGET_OIDS[field.fieldType] : undefined;
+}
+
+/** Canonical spelling of a stored RDN, so a code (`OU`) and its OID (`2.5.4.11`) compare equal. */
+export type RdnResolver = (value: string) => string;
+
+/** Comparable label of the certificate field a mapped field writes to; undefined while incomplete. */
+function mappedFieldTarget(field: MappedFieldModel | undefined, resolveRdn?: RdnResolver): string | undefined {
+    switch (field?.fieldType) {
+        case FieldType.Rdn: {
+            const rdn = (field.rdn ?? '').trim();
+            if (!rdn) {
+                return undefined;
+            }
+            return `RDN ${resolveRdn ? resolveRdn(rdn) : rdn}`;
+        }
+        case FieldType.San: {
+            if (!field.generalNameType) {
+                return undefined;
+            }
+            if (field.generalNameType !== GeneralNameType.OtherName) {
+                return `SAN ${generalNameLabel(field.generalNameType)}`;
+            }
+            const otherNameOid = (field.otherNameOid ?? '').trim();
+            return otherNameOid ? `SAN ${generalNameLabel(field.generalNameType)} ${otherNameOid}` : undefined;
+        }
+        default: {
+            const oid = occupiedExtensionOid(field);
+            return oid ? `extension ${oid}` : undefined;
+        }
+    }
+}
+
+const REPEATED_TARGET_ERROR_KEY: Partial<Record<FieldType, keyof MappingTargetErrors>> = {
+    [FieldType.Rdn]: 'rdnCode',
+    [FieldType.San]: 'generalNameType',
+    [FieldType.Extension]: 'extensionOid',
+};
 
 function buildValueSource(form: AuthoredAttributeFormValues): ValueSource | undefined {
     if (!form.valueSourceType || form.valueSourceType === ValueSourceType.None) {
@@ -422,7 +519,7 @@ export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): Da
     // A structured mapping target must be a list too (its content is a permitted set), so the same
     // forcing makes Core's "target is not a list" rejection unreachable from this form.
     const isStaticList = form.valueSourceType === ValueSourceType.StaticList;
-    const isStructured = isStructuredMappingTarget(form.mappingFieldType);
+    const isStructured = hasStructuredMappingTarget(form);
     const properties: DataAttributeProperties = {
         label: form.label,
         visible: true,
@@ -477,20 +574,48 @@ export function buildAuthoredAttributeDto(form: AuthoredAttributeFormValues): Da
 /** Defensive view over the `BaseAttributeDto` union — request attributes are authored as DataAttributeV3. */
 type AuthoredAttributeView = Partial<DataAttributeV3> & { properties?: Partial<DataAttributeProperties> };
 
+/** Sorts each type by `order` within its own positions, so rows of other types stay where they were. */
+function orderedWithinType(fields: MappedFieldModel[]): MappedFieldModel[] {
+    const result = [...fields];
+    for (const fieldType of new Set(fields.map((field) => field.fieldType))) {
+        const slots = fields.flatMap((field, index) => (field.fieldType === fieldType ? [index] : []));
+        const sorted = slots.map((slot) => fields[slot]).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        slots.forEach((slot, position) => {
+            result[slot] = sorted[position];
+        });
+    }
+    return result;
+}
+
+function parseMappingTarget(field: MappedFieldModel): MappingTargetFormValues {
+    const rdn = field.fieldType === FieldType.Rdn ? field : undefined;
+    const san = field.fieldType === FieldType.San ? field : undefined;
+    const ext = field.fieldType === FieldType.Extension ? field : undefined;
+    return {
+        fieldType: field.fieldType,
+        rdnCode: rdn?.rdn ?? '',
+        generalNameType: san?.generalNameType,
+        otherNameOid: san?.otherNameOid ?? '',
+        otherNameEncoding: san?.otherNameValueEncoding,
+        extensionOid: ext?.extensionOid ?? '',
+        criticalOverridable: ext?.criticalOverridable ?? false,
+        source: field.source,
+        order: field.order,
+    };
+}
+
 export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttributeFormValues {
     const view = dto as AuthoredAttributeView;
     const mapping = view.fieldMapping as unknown as FieldMappingModel | undefined;
-    const firstField = mapping?.fields?.[0];
-    const rdn = firstField?.fieldType === FieldType.Rdn ? firstField : undefined;
-    const san = firstField?.fieldType === FieldType.San ? firstField : undefined;
-    const ext = firstField?.fieldType === FieldType.Extension ? firstField : undefined;
+    const fields = mapping?.fields;
+    const mappingTargets = Array.isArray(fields) ? orderedWithinType(fields).map(parseMappingTarget) : [];
     const valueSourceKind = view.valueSource?.kind ?? ValueSourceType.None;
     const constraints = view.constraints ?? [];
     const regex = constraints.find((c) => c.type === AttributeConstraintType.RegExp);
     const jsonSchema = constraints.find((c) => c.type === AttributeConstraintType.JsonSchema);
     // For a structured target the content array is the permitted set regardless of value source, so
     // it belongs in the set editor, not the free-input default.
-    const isStructured = isStructuredMappingTarget(firstField?.fieldType);
+    const isStructured = mappingTargets.some((target) => isStructuredMappingTarget(target.fieldType));
     return {
         uuid: view.uuid,
         name: view.name ?? '',
@@ -502,14 +627,8 @@ export function parseAuthoredAttributeDto(dto: BaseAttributeDto): AuthoredAttrib
         list: view.properties?.list ?? false,
         multiSelect: view.properties?.multiSelect ?? false,
         extensibleList: view.properties?.extensibleList ?? false,
-        mappingFieldType: firstField?.fieldType,
         mappingObjectType: mapping?.objectType ?? ObjectType.X509Certificate,
-        mappingRdnCode: rdn?.rdn ?? '',
-        mappingGeneralNameType: san?.generalNameType,
-        mappingOtherNameOid: san?.otherNameOid ?? '',
-        mappingOtherNameEncoding: san?.otherNameValueEncoding,
-        mappingExtensionOid: ext?.extensionOid ?? '',
-        mappingCriticalOverridable: ext?.criticalOverridable ?? false,
+        mappingTargets,
         valueSourceType: valueSourceKind,
         // A free-input default is stored in `content` too, so only lift `content` into `staticValues`
         // for an actual static list — otherwise a free-input default leaks into the static-list editor.
@@ -613,17 +732,23 @@ export function withBooleanReadOnlyDefault(form: AuthoredAttributeFormValues): A
     return form;
 }
 
+export interface MappingTargetErrors {
+    fieldType?: string;
+    rdnCode?: string;
+    generalNameType?: string;
+    otherNameOid?: string;
+    otherNameEncoding?: string;
+    extensionOid?: string;
+}
+
 /** Empty object means the definition is valid. */
 export interface AuthoredAttributeErrors {
     name?: string;
     label?: string;
     contentType?: string;
-    mappingFieldType?: string;
-    mappingRdnCode?: string;
-    mappingGeneralNameType?: string;
-    mappingOtherNameOid?: string;
-    mappingOtherNameEncoding?: string;
-    mappingExtensionOid?: string;
+    mapping?: string;
+    /** Aligned with `mappingTargets`; present only while some row has an error. */
+    mappingTargets?: MappingTargetErrors[];
     readOnly?: string;
     multiSelect?: string;
     defaultValue?: string;
@@ -632,59 +757,110 @@ export interface AuthoredAttributeErrors {
     jsonSchemaData?: string;
 }
 
-function validateSanMapping(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
-    if (!form.mappingGeneralNameType) {
-        return { mappingGeneralNameType: 'Select the SAN type this attribute maps to.' };
+export function firstAuthoredAttributeError(errors: AuthoredAttributeErrors): string | undefined {
+    const values: (string | MappingTargetErrors[] | undefined)[] = Object.values(errors);
+    for (const value of values) {
+        if (typeof value === 'string') {
+            return value;
+        }
+        const rowError = value?.flatMap((row): (string | undefined)[] => Object.values(row)).find((message) => message !== undefined);
+        if (rowError) {
+            return rowError;
+        }
     }
-    if (form.mappingGeneralNameType !== GeneralNameType.OtherName) {
+    return undefined;
+}
+
+const MAPPING_TARGET_REQUIRED = 'A mapping target is required: pick where this attribute lands in the certificate.';
+
+function validateSanTarget(target: MappingTargetFormValues): MappingTargetErrors {
+    if (!target.generalNameType) {
+        return { generalNameType: 'Select the SAN type this attribute maps to.' };
+    }
+    if (target.generalNameType !== GeneralNameType.OtherName) {
         return {};
     }
-    const errors: AuthoredAttributeErrors = {};
-    if (!form.mappingOtherNameOid?.trim()) {
-        errors.mappingOtherNameOid = 'An otherName OID is required.';
+    const errors: MappingTargetErrors = {};
+    if (!target.otherNameOid?.trim()) {
+        errors.otherNameOid = 'An otherName OID is required.';
     }
-    if (!form.mappingOtherNameEncoding) {
-        errors.mappingOtherNameEncoding = 'An otherName value encoding is required.';
+    if (!target.otherNameEncoding) {
+        errors.otherNameEncoding = 'An otherName value encoding is required.';
     }
     return errors;
 }
 
-function validateMapping(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
-    if (!form.mappingFieldType) {
-        return { mappingFieldType: 'A mapping target is required — pick where this attribute lands in the certificate.' };
-    }
-    const errors: AuthoredAttributeErrors = {};
-    if (!isContentTypeAllowedForMapping(form.contentType)) {
-        errors.contentType = 'A mapped request attribute must use content type String or Text.';
-    }
-    switch (form.mappingFieldType) {
+function validateMappingTarget(target: MappingTargetFormValues): MappingTargetErrors {
+    switch (target.fieldType) {
         case FieldType.Rdn:
-            if (!form.mappingRdnCode?.trim()) {
-                errors.mappingRdnCode = 'Select the RDN this attribute maps to.';
-            }
-            break;
+            return target.rdnCode?.trim() ? {} : { rdnCode: 'Select the RDN this attribute maps to.' };
         case FieldType.San:
-            Object.assign(errors, validateSanMapping(form));
-            break;
+            return validateSanTarget(target);
         case FieldType.Extension: {
-            const oid = form.mappingExtensionOid?.trim();
+            const oid = target.extensionOid?.trim();
             if (!oid) {
-                errors.mappingExtensionOid = 'Select the certificate extension this attribute maps to.';
-            } else if (oid in STRUCTURED_EXTENSION_OIDS) {
+                return { extensionOid: 'Select the certificate extension this attribute maps to.' };
+            }
+            if (oid in STRUCTURED_EXTENSION_OIDS) {
                 // The picker no longer offers these, but a legacy attribute may still store one; Core
                 // rejects the whole set until it is re-targeted.
-                const target = STRUCTURED_EXTENSION_OIDS[oid] === FieldType.KeyUsage ? 'Key Usage' : 'Extended Key Usage';
-                errors.mappingExtensionOid = `This extension has a structured mapping target — switch the mapping target to ${target}.`;
+                const structured = STRUCTURED_EXTENSION_OIDS[oid] === FieldType.KeyUsage ? 'Key Usage' : 'Extended Key Usage';
+                return { extensionOid: `This extension has a structured mapping target: switch the mapping target to ${structured}.` };
             }
-            break;
+            if (oid === SUBJECT_ALT_NAME_OID) {
+                return { extensionOid: 'This extension is the Subject Alternative Name: use the Subject Alternative Name target instead.' };
+            }
+            return {};
         }
+        case FieldType.KeyUsage:
+        case FieldType.ExtendedKeyUsage:
+            return {};
+        default:
+            return { fieldType: MAPPING_TARGET_REQUIRED };
+    }
+}
+
+/**
+ * A structured target must be the only one, since its permitted set is the attribute's content. No two
+ * rows may name the same field: Core writes every value to every target.
+ */
+export function validateMappingTargets(form: AuthoredAttributeFormValues, resolveRdn?: RdnResolver): MappingTargetErrors[] {
+    const targets = form.mappingTargets;
+    const labels = targets.map((target) => mappedFieldTarget(buildMappedField(target), resolveRdn));
+    return targets.map((target, index) => {
+        const errors = validateMappingTarget(target);
+        if (isStructuredMappingTarget(target.fieldType) && targets.length > 1) {
+            const name = target.fieldType === FieldType.KeyUsage ? 'Key Usage' : 'Extended Key Usage';
+            errors.fieldType ??= `${name} must be the only mapping target: its permitted set cannot also be written to another certificate field.`;
+        }
+        const label = labels[index];
+        const repeated = label === undefined ? -1 : labels.indexOf(label);
+        if (repeated !== -1 && repeated < index) {
+            const key = (target.fieldType && REPEATED_TARGET_ERROR_KEY[target.fieldType]) ?? 'fieldType';
+            errors[key] ??= `This target repeats ${label} above. A certificate field can be mapped only once per attribute.`;
+        }
+        return errors;
+    });
+}
+
+function validateMapping(form: AuthoredAttributeFormValues, resolveRdn?: RdnResolver): AuthoredAttributeErrors {
+    if (form.mappingTargets.length === 0) {
+        return { mapping: MAPPING_TARGET_REQUIRED };
+    }
+    const errors: AuthoredAttributeErrors = {};
+    if (hasMappingTarget(form) && !isContentTypeAllowedForMapping(form.contentType)) {
+        errors.contentType = 'A mapped request attribute must use content type String or Text.';
+    }
+    const rows = validateMappingTargets(form, resolveRdn);
+    if (rows.some((row) => Object.keys(row).length > 0)) {
+        errors.mappingTargets = rows;
     }
     return errors;
 }
 
 function validateProperties(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
     const errors: AuthoredAttributeErrors = {};
-    const isList = form.list || form.valueSourceType === ValueSourceType.StaticList || isStructuredMappingTarget(form.mappingFieldType);
+    const isList = form.list || form.valueSourceType === ValueSourceType.StaticList || hasStructuredMappingTarget(form);
     if (form.readOnly) {
         if (isList) {
             errors.readOnly = 'Read Only cannot be combined with a list.';
@@ -698,6 +874,13 @@ function validateProperties(form: AuthoredAttributeFormValues): AuthoredAttribut
     }
     if (form.multiSelect && !isList) {
         errors.multiSelect = 'Multi select requires a list.';
+    } else if (
+        form.multiSelect &&
+        form.valueSourceType === ValueSourceType.StaticList &&
+        form.mappingTargets.some((target) => target.fieldType === FieldType.Extension)
+    ) {
+        // Only a static list offers the Multi select checkbox, so only there can the author fix this.
+        errors.multiSelect = 'Multi select cannot be combined with a certificate extension target: an extension takes exactly one value.';
     }
     return errors;
 }
@@ -741,7 +924,7 @@ function validateDefaultValue(form: AuthoredAttributeFormValues): AuthoredAttrib
 }
 
 function validateStaticList(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
-    const isStructured = isStructuredMappingTarget(form.mappingFieldType);
+    const isStructured = hasStructuredMappingTarget(form);
     if (form.valueSourceType !== ValueSourceType.StaticList && !isStructured) {
         return {};
     }
@@ -772,7 +955,7 @@ function validateStaticList(form: AuthoredAttributeFormValues): AuthoredAttribut
  * The rules Core enforces on a definition, applied client-side so the dialog can flag them per field.
  * Spread order fixes the key order, which the attribute list relies on to show the first message.
  */
-export function validateAuthoredAttribute(form: AuthoredAttributeFormValues): AuthoredAttributeErrors {
+export function validateAuthoredAttribute(form: AuthoredAttributeFormValues, resolveRdn?: RdnResolver): AuthoredAttributeErrors {
     const identity: AuthoredAttributeErrors = {};
     if (!form.name.trim()) {
         identity.name = 'Name is required.';
@@ -782,7 +965,7 @@ export function validateAuthoredAttribute(form: AuthoredAttributeFormValues): Au
     }
     return {
         ...identity,
-        ...validateMapping(form),
+        ...validateMapping(form, resolveRdn),
         ...validateProperties(form),
         ...validateDefaultValue(form),
         ...validateStaticList(form),

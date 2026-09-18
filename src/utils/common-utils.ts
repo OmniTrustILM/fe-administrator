@@ -113,3 +113,9 @@ export const getFormTypeFromFilterFieldType = (type: FilterFieldType) => {
             return 'text';
     }
 };
+
+/** A count the API may send as null or a non-number, rendered as a number either way. */
+export const toFiniteNumber = (value: unknown): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+};

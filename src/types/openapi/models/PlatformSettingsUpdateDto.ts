@@ -19,7 +19,7 @@ import type { CertificateSettingsUpdateDto, UtilsSettingsDto } from './';
  */
 export interface PlatformSettingsUpdateDto {
     /**
-     * Utils settings of the platform
+     * Utils settings of the platform. When present, stored as sent: a URL left out is cleared, and a CBOM sync tunable left out returns to the platform default
      * @type {UtilsSettingsDto}
      * @memberof PlatformSettingsUpdateDto
      */

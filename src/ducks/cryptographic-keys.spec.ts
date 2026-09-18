@@ -1,8 +1,65 @@
 import { describe, expect, test } from 'vitest';
 
-import { KeyState } from 'types/openapi';
+import type { AppState } from 'ducks';
+import { KeyRequestType, KeyState } from 'types/openapi';
 
 import reducer, { actions, initialState, selectors } from './cryptographic-keys';
+
+describe('supported key request types state', () => {
+    test('listSupportedKeyRequestTypes_clearsPreviousChoicesWhileLoading', () => {
+        // given
+        const previousTypes = [KeyRequestType.Secret];
+        const request = { tokenInstanceUuid: 'selected-token', tokenProfileUuid: 'selected-profile' };
+        const loadedState = { ...initialState, supportedKeyRequestTypes: previousTypes };
+
+        // when
+        const state = { cryptographicKeys: reducer(loadedState, actions.listSupportedKeyRequestTypes(request)) } as AppState;
+
+        // then
+        expect(selectors.supportedKeyRequestTypes(state)).toEqual([]);
+        expect(selectors.isFetchingSupportedKeyRequestTypes(state)).toBe(true);
+    });
+
+    test('listSupportedKeyRequestTypesSuccess_exposesReturnedChoicesAndFinishesLoading', () => {
+        // given
+        const supportedTypes = [KeyRequestType.KeyPair];
+        const loadingState = { ...initialState, isFetchingSupportedKeyRequestTypes: true };
+
+        // when
+        const state = { cryptographicKeys: reducer(loadingState, actions.listSupportedKeyRequestTypesSuccess(supportedTypes)) } as AppState;
+
+        // then
+        expect(selectors.supportedKeyRequestTypes(state)).toEqual(supportedTypes);
+        expect(selectors.isFetchingSupportedKeyRequestTypes(state)).toBe(false);
+    });
+
+    test('listSupportedKeyRequestTypesFailure_leavesNoChoicesAndFinishesLoading', () => {
+        // given
+        const loadingState = { ...initialState, isFetchingSupportedKeyRequestTypes: true };
+
+        // when
+        const state = { cryptographicKeys: reducer(loadingState, actions.listSupportedKeyRequestTypesFailure()) } as AppState;
+
+        // then
+        expect(selectors.supportedKeyRequestTypes(state)).toEqual([]);
+        expect(selectors.isFetchingSupportedKeyRequestTypes(state)).toBe(false);
+    });
+
+    test.each([actions.clearSupportedKeyRequestTypes(), actions.resetState()])('$type_removesChoicesAndClearsLoading', (action) => {
+        // given
+        const previousTypes = [KeyRequestType.Secret];
+        const loadedState = { ...initialState, supportedKeyRequestTypes: previousTypes };
+        const loadingState = { ...initialState, isFetchingSupportedKeyRequestTypes: true };
+
+        // when
+        const clearedState = { cryptographicKeys: reducer(loadedState, action) } as AppState;
+        const cancelledState = { cryptographicKeys: reducer(loadingState, action) } as AppState;
+
+        // then
+        expect(selectors.supportedKeyRequestTypes(clearedState)).toEqual([]);
+        expect(selectors.isFetchingSupportedKeyRequestTypes(cancelledState)).toBe(false);
+    });
+});
 
 describe('cryptographic-keys slice', () => {
     test('returns initial state for unknown action', () => {

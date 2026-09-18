@@ -28,4 +28,22 @@ export interface UtilsSettingsDto {
      * @memberof UtilsSettingsDto
      */
     cbomRepositoryUrl?: string;
+    /**
+     * How far before the start of the last successful CBOM sync run each run re-lists the CBOM Repository, in seconds. It should cover the clock skew between the platform and the repository\'s object store plus the longest upload. 0 re-lists only from the start of the last run. Entries listed twice are stored once
+     * @type {number}
+     * @memberof UtilsSettingsDto
+     */
+    cbomSyncOverlapSeconds?: number;
+    /**
+     * How many later CBOM sync runs retry a repository entry that could not be stored before it is given up on as permanently skipped; 0 gives an entry up at its first failure
+     * @type {number}
+     * @memberof UtilsSettingsDto
+     */
+    cbomSyncSkippedRetryRuns?: number;
+    /**
+     * How many CBOMs one sync run ingests cryptographic assets from, beyond the entries the run has just stored: earlier failures, interrupted ingests and CBOMs uploaded through the platform API. 0 turns that catch-up off
+     * @type {number}
+     * @memberof UtilsSettingsDto
+     */
+    cbomSyncMaxIngestDocuments?: number;
 }

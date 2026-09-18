@@ -62,6 +62,7 @@ import utilsCertificateEpics from './utilsCertificate-epics';
 import utilsCertificateRequestEpics from './utilsCertificateRequest-epics';
 import utilsOidEpics from './utilsOid-epics';
 import cbomEpics from './cbom-epics';
+import cryptoAssetsEpics from './crypto-assets-epics';
 import loginEpics from './login-epics';
 import secretsEpics from './secrets-epics';
 import vaultProfilesEpics from './vault-profiles-epics';
@@ -135,6 +136,7 @@ export const epics = combineEpics(
     ...cbomActuatorEpics,
     ...oidsEpics,
     ...cbomEpics,
+    ...cryptoAssetsEpics,
     ...loginEpics,
     ...secretsEpics,
     ...vaultProfilesEpics,

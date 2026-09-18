@@ -15,7 +15,7 @@ import type {
     AttributeContentType,
     AttributeType,
     AttributeVersion,
-    BaseAttributeContentDtoV2,
+    BaseAttributeContentDtoV3,
     ResponseAttributeV2,
     ResponseAttributeV3,
 } from './';

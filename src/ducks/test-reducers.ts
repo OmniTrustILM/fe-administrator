@@ -828,6 +828,9 @@ function raProfileRequestAttributesTestReducer(
     if (failure.type === 'raProfileRequestAttributes/updatePlatformDefaultRequestAttributesFailure') {
         return { ...current, isUpdatingDefaultSet: false, updateDefaultSetSucceeded: false, updateDefaultSetError: failure.payload?.error };
     }
+    if (action.type === 'raProfileRequestAttributes/updateRaProfileRequestAttributesSuccess') {
+        return { ...current, isUpdatingRaProfileSet: false, updateRaProfileSetSucceeded: true };
+    }
     if (failure.type === 'raProfileRequestAttributes/updateRaProfileRequestAttributesFailure') {
         return {
             ...current,
@@ -845,6 +848,7 @@ export type RaProfilesTestState = {
     createRaProfileSucceeded: boolean;
     createdRaProfileUuid: string | null;
     raProfiles: any[];
+    raProfile?: any;
 };
 
 const raProfilesTestInitialState: RaProfilesTestState = {
@@ -873,6 +877,8 @@ function raProfilesTestReducer(state: RaProfilesTestState | undefined, action: U
             };
         case 'raprofiles/createRaProfileFailure':
             return { ...current, isCreating: false, createRaProfileSucceeded: false, createdRaProfileUuid: null };
+        case 'raprofiles/updateRaProfile':
+            return { ...current, isUpdating: true };
         default:
             return current;
     }
@@ -1019,6 +1025,36 @@ const certificateGroupsTestInitialState: CertificateGroupsTestState = {
 
 function certificateGroupsTestReducer(state: CertificateGroupsTestState | undefined, _action: UnknownAction): CertificateGroupsTestState {
     return state ?? certificateGroupsTestInitialState;
+}
+
+export type ApprovalsTestState = {
+    approvalDetails?: any;
+    approvals: any[];
+    approvalsTotalItems: number;
+    userApprovals: any[];
+    userApprovalsTotalItems: number;
+    isApproving: boolean;
+    isRejecting: boolean;
+    isFetchingDetail: boolean;
+    isFetchingList: boolean;
+    isFetchingUserList: boolean;
+};
+
+const approvalsTestInitialState: ApprovalsTestState = {
+    approvalDetails: undefined,
+    approvals: [],
+    approvalsTotalItems: 0,
+    userApprovals: [],
+    userApprovalsTotalItems: 0,
+    isApproving: false,
+    isRejecting: false,
+    isFetchingDetail: false,
+    isFetchingList: false,
+    isFetchingUserList: false,
+};
+
+function approvalsTestReducer(state: ApprovalsTestState | undefined, _action: UnknownAction): ApprovalsTestState {
+    return state ?? approvalsTestInitialState;
 }
 
 // Reducer key must match the real slice.name ('oids') so the real OID selectors (used by
@@ -1381,6 +1417,7 @@ export const testReducers = combineReducers({
     cryptographicKeys: cryptographicKeysTestReducer,
     users: usersTestReducer,
     certificateGroups: certificateGroupsTestReducer,
+    approvals: approvalsTestReducer,
     discoveries: discoveriesTestReducer,
     oids: oidsTestReducer,
     rules: rulesTestReducer,
@@ -1420,6 +1457,7 @@ export const testInitialState = {
     cryptographicKeys: cryptographicKeysTestInitialState,
     users: usersTestInitialState,
     certificateGroups: certificateGroupsTestInitialState,
+    approvals: approvalsTestInitialState,
     discoveries: discoveriesTestInitialState,
     oids: oidsTestInitialState,
     rules: rulesTestInitialState,

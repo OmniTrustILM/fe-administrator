@@ -19,8 +19,8 @@ type Props = {
  * The application logo: the operator's for the active theme, or the platform's own.
  *
  * The fallback is per slot rather than per brand. An operator who has uploaded only a light logo gets their logo in
- * the light theme and the platform's mark in the dark one, rather than no logo at all - which matters because Core's
- * per-field fallback means a half-uploaded brand can exist even though the Appearance tab will not save one.
+ * the light theme and the platform's mark in the dark one, rather than no logo at all - which matters because every
+ * branding field stands on its own, so one logo and no other is a brand the Appearance tab will save.
  *
  * The logo is always an `img` with the data URI as its `src`, and no code path inlines SVG markup into the document.
  * Core sanitizes an uploaded SVG, and this is the second half of that defence: an `img` renders SVG inert, so a script
@@ -51,8 +51,8 @@ function BrandLogo({ defaultLight, defaultDark, alt, className, dataTestId }: Re
         <img
             src={isRenderableLogo(uploaded) ? uploaded : platform}
             alt={alt}
-            // The height is fixed by the caller and the width follows the image, so anything between 1:1 and 3:1 keeps
-            // its proportions; object-contain is what stops a wider mark being stretched to fill.
+            // The height is fixed by the caller and the width follows the image, so a mark of any shape keeps its
+            // proportions; object-contain is what stops a wider one being stretched to fill.
             //
             // `invisible` rather than a conditional render: the element has to stay in the tree to reserve its space,
             // and `visibility: hidden` also keeps the logo out of the accessible tree while it is not the final one.

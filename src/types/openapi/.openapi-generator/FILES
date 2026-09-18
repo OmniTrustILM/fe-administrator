@@ -21,6 +21,7 @@ apis/ConnectorManagementApi.ts
 apis/ConnectorManagementV2Api.ts
 apis/ConnectorRegistrationApi.ts
 apis/CredentialManagementApi.ts
+apis/CryptographicAssetInventoryApi.ts
 apis/CryptographicKeyManagementApi.ts
 apis/CryptographicOperationsControllerApi.ts
 apis/CustomAttributesApi.ts
@@ -67,6 +68,7 @@ index.ts
 models/AccountStatus.ts
 models/AcmeAccountListResponseDto.ts
 models/AcmeAccountResponseDto.ts
+models/AcmeEabKeyDto.ts
 models/AcmeProfileDto.ts
 models/AcmeProfileEditRequestDto.ts
 models/AcmeProfileListDto.ts
@@ -290,8 +292,16 @@ models/CredentialAttributeContentV2.ts
 models/CredentialDto.ts
 models/CredentialRequestDto.ts
 models/CredentialUpdateRequestDto.ts
+models/CryptographicAssetDetailDto.ts
+models/CryptographicAssetDto.ts
+models/CryptographicAssetEvidenceDto.ts
+models/CryptographicAssetNormalizedFieldsDto.ts
+models/CryptographicAssetOidDto.ts
+models/CryptographicAssetSourceDto.ts
 models/CryptographicAssetStatisticsDto.ts
 models/CryptographicAssetSyncCompletenessDto.ts
+models/CryptographicAssetType.ts
+models/CryptographicAssetVerdictDto.ts
 models/CryptographicKeyResponseDto.ts
 models/CustomAttribute.ts
 models/CustomAttributeCreateRequestDto.ts
@@ -480,6 +490,7 @@ models/OperationSupport.ts
 models/PaginationRequestDto.ts
 models/PaginationResponseDtoCbomDto.ts
 models/PaginationResponseDtoConnectorDtoV2.ts
+models/PaginationResponseDtoCryptographicAssetDto.ts
 models/PaginationResponseDtoDiscoveryItemDto.ts
 models/PaginationResponseDtoDiscoveryMessageDto.ts
 models/PaginationResponseDtoEventHistoryDto.ts
@@ -495,6 +506,7 @@ models/PaginationResponseDtoVaultProfileDto.ts
 models/PlatformEnum.ts
 models/PlatformSettingsDto.ts
 models/PlatformSettingsUpdateDto.ts
+models/PqcVerdict.ts
 models/PrivateKeySecretContent.ts
 models/ProblemDetailExtended.ts
 models/ProgrammingLanguageEnum.ts
