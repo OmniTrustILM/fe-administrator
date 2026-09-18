@@ -112,7 +112,7 @@ Tailwind utility suffix, e.g. `--surface-raised` → `bg-surface-raised`):
 | Group | Tokens |
 |---|---|
 | Surfaces | `surface`, `surface-raised`, `surface-sunken`, `surface-hover`, `surface-active`, `surface-inverse`, `surface-header` |
-| Content | `content`, `content-muted`, `content-subtle`, `content-inverse`, `content-on-brand` |
+| Content | `content`, `content-muted`, `content-subtle`, `content-hint`, `content-inverse`, `content-on-brand` |
 | Lines | `divider`, `outline` |
 | Brand | `brand`, `brand-solid`, `brand-solid-hover`, `brand-hover`, `brand-subtle` |
 | Status | `success`, `danger`, `warning`, `info`, each with a `-surface` and `-solid` variant (`danger` and `warning` also have `-fill`/`-fill-hover`) |
@@ -211,6 +211,19 @@ cycles System → Light → Dark → System.
 and asserts WCAG AA (4.5:1) contrast for every text/background pairing, in both themes, plus AA
 non-text contrast (WCAG 1.4.11, 3:1) for `outline` and each `-solid` status token against
 `surface-raised`. Changing a token value to something that fails either threshold fails the suite.
+
+`content-hint` is the single exception, and it is asserted separately rather than left unmeasured. It
+is the placeholder colour, deliberately below AA body contrast, because holding a placeholder at the
+4.5:1 `content-subtle` meets is what makes an empty field read as a filled one.
+
+That exception is only defensible while the placeholder is a supplementary example of a value and
+never the field's only identification, so **a control using it must carry an accessible name of its
+own** — a real `label`, or an `aria-label` where the design has no visible label. Check that before
+reaching for the token. Where the placeholder is a standing instruction that no value ever replaces,
+as on the read-only attribute file field, it is not an example and keeps `content-subtle`.
+
+Use `placeholder-content-hint` for placeholder text — never `content-subtle` with an opacity
+modifier, which puts the same decision somewhere the token parser cannot see it.
 
 ### Charts
 

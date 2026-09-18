@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import cn from 'classnames';
+import { joinAriaIds } from 'utils/aria';
 import { CalendarRange } from 'lucide-react';
 import { inputBaseClassName } from 'components/TextInput/inputStyles';
 import Button from 'components/Button';
@@ -19,6 +20,8 @@ type Props = {
     timePicker?: boolean;
     /** Id of an element describing the field (typically an error paragraph) — announced by screen readers. */
     ariaDescribedBy?: string;
+    /** Id of the error paragraph; derived from `id` when not given. It is named in `aria-describedby` while an error shows. */
+    errorId?: string;
 };
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -36,7 +39,10 @@ function DatePicker({
     required,
     timePicker = false,
     ariaDescribedBy,
+    errorId,
 }: Readonly<Props>) {
+    const generatedId = useId();
+    const resolvedErrorId = errorId ?? `${id ?? `datepicker-${generatedId.replaceAll(':', '')}`}-error`;
     const [isOpen, setIsOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(value ? new Date(value) : null);
     const [selectedTime, setSelectedTime] = useState<{ hours: number; minutes: number; seconds: number }>(() => {
@@ -318,7 +324,7 @@ function DatePicker({
                     required={required}
                     id={id}
                     aria-invalid={invalid || undefined}
-                    aria-describedby={ariaDescribedBy}
+                    aria-describedby={joinAriaIds(ariaDescribedBy, error ? resolvedErrorId : undefined)}
                     onClick={() => !disabled && setIsOpen(!isOpen)}
                     placeholder={timePicker ? 'dd.mm.yyyy 00:00:00' : 'dd.mm.yyyy'}
                     className={cn(
@@ -509,7 +515,11 @@ function DatePicker({
                     </div>,
                     document.body,
                 )}
-            {error && <p className="mt-1 text-sm text-danger">{error}</p>}
+            {error && (
+                <p id={resolvedErrorId} className="mt-1 text-sm text-danger">
+                    {error}
+                </p>
+            )}
         </div>
     );
 }

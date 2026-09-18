@@ -101,7 +101,7 @@ const approveApproval: AppEpic = (action$, state$, deps) => {
     );
 };
 
-const approveApprovalRecipient: AppEpic = (action$, state$, deps) => {
+export const approveApprovalRecipient: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.approveApprovalRecipient.match),
 
@@ -112,7 +112,12 @@ const approveApprovalRecipient: AppEpic = (action$, state$, deps) => {
                     userApprovalDto: action.payload.userApproval,
                 })
                 .pipe(
-                    switchMap(() => of(slice.actions.approveApprovalRecipientSuccess({ uuid: action.payload.uuid }))),
+                    switchMap(() =>
+                        of(
+                            slice.actions.approveApprovalRecipientSuccess({ uuid: action.payload.uuid }),
+                            slice.actions.getApproval({ uuid: action.payload.uuid }),
+                        ),
+                    ),
 
                     catchError((err) =>
                         of(
@@ -144,7 +149,7 @@ const rejectApproval: AppEpic = (action$, state$, deps) => {
     );
 };
 
-const rejectApprovalRecipient: AppEpic = (action$, state$, deps) => {
+export const rejectApprovalRecipient: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.rejectApprovalRecipient.match),
 
@@ -155,7 +160,12 @@ const rejectApprovalRecipient: AppEpic = (action$, state$, deps) => {
                     userApprovalDto: action.payload.userApproval,
                 })
                 .pipe(
-                    switchMap(() => of(slice.actions.rejectApprovalRecipientSuccess({ uuid: action.payload.uuid }))),
+                    switchMap(() =>
+                        of(
+                            slice.actions.rejectApprovalRecipientSuccess({ uuid: action.payload.uuid }),
+                            slice.actions.getApproval({ uuid: action.payload.uuid }),
+                        ),
+                    ),
 
                     catchError((err) =>
                         of(

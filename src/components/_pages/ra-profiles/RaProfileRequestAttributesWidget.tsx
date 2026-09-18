@@ -13,9 +13,7 @@ import { isGroupAttributeModel } from 'types/attributes';
 import { useRunOnFailedFinish, useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import {
     buildRaProfileRequestAttributesUpdateDto,
-    gateMergeModeAndBindings,
     hasAuthoredRequestAttributes,
-    MERGE_MODE_AND_BINDINGS_ENABLED,
     parseRaProfileRequestAttributesDto,
     type RequestAttributeAuthoringFormValues,
 } from 'utils/requestAttributeAuthoring';
@@ -24,7 +22,6 @@ type Props = Readonly<{
     authorityUuid: string;
     raProfileUuid: string;
     certificateRequestAttributes?: RaProfileCertificateRequestAttributesDto;
-    onSaved?: () => void;
     disabled?: boolean;
 }>;
 
@@ -32,7 +29,6 @@ export default function RaProfileRequestAttributesWidget({
     authorityUuid,
     raProfileUuid,
     certificateRequestAttributes,
-    onSaved,
     disabled = false,
 }: Props) {
     const dispatch = useDispatch();
@@ -61,30 +57,31 @@ export default function RaProfileRequestAttributesWidget({
     const resolvedSetError = useSelector(certificatesSelectors.csrAttributesError);
 
     const [form, setForm] = useState<RequestAttributeAuthoringFormValues>(() =>
-        gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes)),
+        parseRaProfileRequestAttributesDto(certificateRequestAttributes),
     );
     const [dirty, setDirty] = useState(false);
 
+    // The descriptors live in a shared slice, so drop the previous authority's set before fetching:
+    // otherwise the binding picker offers the old connector's fields until the new response lands.
     useEffect(() => {
-        if (MERGE_MODE_AND_BINDINGS_ENABLED && authorityUuid) {
+        if (authorityUuid) {
+            dispatch(authoritiesActions.clearRAProfilesAttributesDescriptors());
             dispatch(authoritiesActions.getRAProfilesAttributesDescriptors({ authorityUuid }));
         }
     }, [dispatch, authorityUuid]);
 
     useEffect(() => {
         if (dirty) return;
-        setForm(gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes)));
+        setForm(parseRaProfileRequestAttributesDto(certificateRequestAttributes));
     }, [certificateRequestAttributes, dirty]);
 
     const connectorAttributeOptions = useMemo(
         () =>
-            MERGE_MODE_AND_BINDINGS_ENABLED
-                ? (raProfileAttributeDescriptors ?? []).map((descriptor) => ({
-                      value: descriptor.uuid ?? descriptor.name,
-                      label: isGroupAttributeModel(descriptor) ? descriptor.name : (descriptor.properties?.label ?? descriptor.name),
-                      description: descriptor.name,
-                  }))
-                : [],
+            (raProfileAttributeDescriptors ?? []).map((descriptor) => ({
+                value: descriptor.uuid ?? descriptor.name,
+                label: isGroupAttributeModel(descriptor) ? descriptor.name : (descriptor.properties?.label ?? descriptor.name),
+                description: descriptor.name,
+            })),
         [raProfileAttributeDescriptors],
     );
 
@@ -107,23 +104,22 @@ export default function RaProfileRequestAttributesWidget({
                 requestAttributesActions.updateRaProfileRequestAttributes({
                     authorityUuid,
                     raProfileUuid,
-                    data: buildRaProfileRequestAttributesUpdateDto(gateMergeModeAndBindings(next)),
+                    data: buildRaProfileRequestAttributesUpdateDto(next),
                 }),
             );
         },
         [dispatch, authorityUuid, raProfileUuid],
     );
 
-    const clearDirtyAndRefetch = useCallback(() => {
-        setDirty(false);
-        onSaved?.();
-    }, [onSaved]);
-    useRunOnSuccessfulFinish(isUpdating, updateSucceeded, clearDirtyAndRefetch);
+    // The epic patches `certificateRequestAttributes` in the raprofiles slice from the PATCH response,
+    // so clearing `dirty` is all it takes for the re-seed effect above to pick up the persisted set.
+    const clearDirty = useCallback(() => setDirty(false), []);
+    useRunOnSuccessfulFinish(isUpdating, updateSucceeded, clearDirty);
 
     // A rejected save persisted nothing, so drop the optimistic edit: the props still hold the last set
     // Core accepted, and clearing `dirty` unblocks the re-seed effect.
     const revertToPersisted = useCallback(() => {
-        setForm(gateMergeModeAndBindings(parseRaProfileRequestAttributesDto(certificateRequestAttributes)));
+        setForm(parseRaProfileRequestAttributesDto(certificateRequestAttributes));
         setDirty(false);
     }, [certificateRequestAttributes]);
     useRunOnFailedFinish(isUpdating, updateSucceeded, revertToPersisted);
@@ -158,8 +154,8 @@ export default function RaProfileRequestAttributesWidget({
             <RequestAttributeAuthoringEditor
                 value={form}
                 onChange={onChange}
-                showMergeMode={MERGE_MODE_AND_BINDINGS_ENABLED}
-                showBindings={MERGE_MODE_AND_BINDINGS_ENABLED}
+                showMergeMode
+                showBindings
                 connectorAttributeOptions={connectorAttributeOptions}
                 rdnOptions={rdnOptions}
                 extensionOptions={extensionOptions}

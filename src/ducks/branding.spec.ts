@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { BrandingTheme } from 'types/branding';
 import type { PublicBrandingModel } from 'types/branding';
-import reducer, { actions, initialState, platformDefaultBranding, selectors, slice, type State } from './branding';
+import reducer, { actions, initialState, platformDefaultBranding, selectors, slice, toPublicBranding, type State } from './branding';
 
 /**
  * The anonymous response is a fixed shape — every colour and logo is a required, nullable key — so a fixture is built
@@ -209,6 +209,38 @@ describe('branding slice', () => {
             expect(selectors.branding({} as never)).toBeUndefined();
             expect(selectors.isFetchingBranding({} as never)).toBeUndefined();
             expect(selectors.publicBrandingReadFailed({} as never)).toBe(false);
+        });
+    });
+
+    /**
+     * Pinned literally rather than against `toPublicBranding` itself. The write epics settle the anonymous view with
+     * this function, and their specs build the expected action with it too - so a wrong `configured` flag or a null
+     * that should have been a value would agree with itself and pass.
+     */
+    describe('toPublicBranding', () => {
+        test('should report a stored brand with nothing in it as unconfigured', () => {
+            expect(toPublicBranding({})).toEqual(platformDefaultBranding);
+        });
+
+        test.each([
+            ['primaryColor', { primaryColor: '#0073CF' }],
+            ['lightLogo', { lightLogo: 'data:image/png;base64,AAAA' }],
+            ['defaultTheme', { defaultTheme: 'dark' as const }],
+        ])('should report a brand carrying only %s as configured', (_field, stored) => {
+            expect(toPublicBranding(stored).configured).toBe(true);
+        });
+
+        test('should carry every field through, nulling the ones left unset', () => {
+            expect(toPublicBranding({ primaryColor: '#0073CF', darkLogo: 'data:image/png;base64,BBBB' })).toEqual({
+                configured: true,
+                primaryColor: '#0073CF',
+                secondaryColor: null,
+                backgroundColor: null,
+                textColor: null,
+                lightLogo: null,
+                darkLogo: 'data:image/png;base64,BBBB',
+                defaultTheme: undefined,
+            });
         });
     });
 });

@@ -35,7 +35,7 @@ export function TableRowCell({ column, index, row, tblHeaders, hasDetails = fals
                         e.stopPropagation();
                         onDetailClick(row.id);
                     }}
-                    className={cn('!p-0 hover:bg-transparent text-brand hover:text-brand-hover p-0 h-auto font-medium', contentClassName)}
+                    className={cn('!p-0 hover:bg-transparent !text-brand hover:!text-brand-hover h-auto font-medium', contentClassName)}
                 >
                     {column}
                 </Button>

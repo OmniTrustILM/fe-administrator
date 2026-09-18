@@ -26,6 +26,8 @@ export type State = {
     bulkDeleteErrorMessages: BulkActionModel[];
 
     keyAttributeDescriptors?: AttributeDescriptorModel[];
+    supportedKeyRequestTypes: KeyRequestType[];
+    isFetchingSupportedKeyRequestTypes: boolean;
 
     cryptographicKey?: CryptographicKeyDetailResponseModel;
     cryptographicKeys: CryptographicKeyResponseModel[];
@@ -66,6 +68,8 @@ export const initialState: State = {
     bulkDeleteErrorMessages: [],
 
     keyAttributeDescriptors: [],
+    supportedKeyRequestTypes: [],
+    isFetchingSupportedKeyRequestTypes: false,
 
     cryptographicKeys: [],
     cryptographicKeyPairs: [],
@@ -105,6 +109,22 @@ export const slice = createSlice({
     initialState,
 
     reducers: {
+        clearSupportedKeyRequestTypes: (state) => {
+            state.supportedKeyRequestTypes = [];
+            state.isFetchingSupportedKeyRequestTypes = false;
+        },
+        listSupportedKeyRequestTypes: (state, _action: PayloadAction<{ tokenInstanceUuid: string; tokenProfileUuid: string }>) => {
+            state.supportedKeyRequestTypes = [];
+            state.isFetchingSupportedKeyRequestTypes = true;
+        },
+        listSupportedKeyRequestTypesSuccess: (state, action: PayloadAction<KeyRequestType[]>) => {
+            state.supportedKeyRequestTypes = action.payload;
+            state.isFetchingSupportedKeyRequestTypes = false;
+        },
+        listSupportedKeyRequestTypesFailure: (state) => {
+            state.supportedKeyRequestTypes = [];
+            state.isFetchingSupportedKeyRequestTypes = false;
+        },
         resetState: (state, action: PayloadAction<void>) => {
             resetSliceState(state, initialState);
         },
@@ -782,6 +802,8 @@ const isFetchingHistory = createSelector(state, (state: State) => state.isFetchi
 const keyHistory = createSelector(state, (state: State) => state.keyHistory);
 
 export const selectors = {
+    supportedKeyRequestTypes: createSelector(state, (state: State) => state.supportedKeyRequestTypes),
+    isFetchingSupportedKeyRequestTypes: createSelector(state, (state: State) => state.isFetchingSupportedKeyRequestTypes),
     state,
 
     cryptographicKey,

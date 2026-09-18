@@ -83,6 +83,17 @@ test.describe('TextInput', () => {
         await expect(component.getByText('This field is required')).toBeVisible();
     });
 
+    for (const type of ['text', 'textarea', 'date'] as const) {
+        test(`names the error paragraph in aria-describedby beside the caller's own id (${type})`, async ({ mount }) => {
+            const component = await mount(
+                <TextInput id="field" type={type} value="" onChange={() => {}} error="Invalid value" ariaDescribedBy="field-help" />,
+            );
+
+            await expect(component.locator('#field')).toHaveAttribute('aria-describedby', 'field-help field-error');
+            await expect(component.locator('#field-error')).toHaveText('Invalid value');
+        });
+    }
+
     test('should apply invalid styling when invalid is true', async ({ mount }) => {
         const component = await mount(<TextInput value="" onChange={() => {}} invalid={true} />);
 

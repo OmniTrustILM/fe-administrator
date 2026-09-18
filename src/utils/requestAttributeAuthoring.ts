@@ -39,10 +39,7 @@ import { getJsonSchemaDocumentError } from 'utils/strictJson';
  *  - The RA-Profile update is NOT a server-side merge: Core writes `externalCsrValidationStrict`
  *    unconditionally, so we round-trip the loaded value (owned by the strictness toggle) instead
  *    of omitting it, which would wipe it. `params` on a value source / binding are likewise
- *    preserved on round-trip even though this editor has no UI for them yet — except that while
- *    `MERGE_MODE_AND_BINDINGS_ENABLED` is off, `gateMergeModeAndBindings` intentionally drops the
- *    whole `valueSourceBindings` array (and its params) on save, so binding round-tripping only
- *    applies once the feature is re-enabled.
+ *    preserved on round-trip even though this editor has no UI for them yet.
  */
 
 /** Primitive an authored attribute value can take, mirroring the content types this editor offers. */
@@ -117,11 +114,7 @@ export interface ValueSourceBindingFormValues {
     attributeUuid?: string;
     attributeName?: string;
     valueSourceType: ValueSourceType;
-    /**
-     * Cascading dependency params, preserved on round-trip (no authoring UI yet) — but only while
-     * MERGE_MODE_AND_BINDINGS_ENABLED is on; when it is off, gateMergeModeAndBindings drops the
-     * entire binding (params included) on save.
-     */
+    /** Cascading dependency params, preserved on round-trip (no authoring UI yet). */
     params?: SourceParam[];
 }
 
@@ -137,15 +130,10 @@ export interface RequestAttributeAuthoringFormValues {
 }
 
 /**
- * Merge modes and value-source bindings are hidden until the connector request-attribute
- * handling improvements land on the backend (fe#1908). Flip to `true` to re-enable both the
- * RA-Profile merge-mode selector and the value-source bindings section, and to stop
- * `gateMergeModeAndBindings` from coercing saved values. It does NOT change the default merge
- * mode: `DEFAULT_MERGE_MODE` below is Static only regardless of this flag (it was `Merge` before
- * fe#1908), so re-enabling the UI does not restore the previous `Merge` default on its own.
+ * Merge modes are opt-in: Core reads an omitted `mergeMode` as Static only, so a profile that
+ * never touched the selector keeps resolving from its own static set (or the platform default)
+ * and does not start consulting the authority connector on its own.
  */
-export const MERGE_MODE_AND_BINDINGS_ENABLED = false;
-
 export const DEFAULT_MERGE_MODE = AttributeSetMergeMode.StaticOnly;
 
 /**
@@ -282,19 +270,6 @@ export function emptyAuthoringForm(): RequestAttributeAuthoringFormValues {
         attributes: [],
         valueSourceBindings: [],
     };
-}
-
-/**
- * While the feature is hidden (fe#1908) every save path coerces the form to `DEFAULT_MERGE_MODE`
- * and drops all value-source bindings; once re-enabled the form passes through unchanged. `enabled`
- * defaults to the flag and is a seam so tests can exercise the re-enabled path.
- */
-export function gateMergeModeAndBindings(
-    form: RequestAttributeAuthoringFormValues,
-    enabled: boolean = MERGE_MODE_AND_BINDINGS_ENABLED,
-): RequestAttributeAuthoringFormValues {
-    if (enabled) return form;
-    return { ...form, mergeMode: DEFAULT_MERGE_MODE, valueSourceBindings: [] };
 }
 
 export function hasAuthoredRequestAttributes(form: RequestAttributeAuthoringFormValues): boolean {

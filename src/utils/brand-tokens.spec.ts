@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 import {
     applyBrandTokens,
     BRAND_CSS_STORAGE_KEY,
+    BRAND_DEFAULT_COLORS,
     BRAND_TOKEN_RULES,
     BRAND_TOKENS_STYLE_ID,
     brandColors,
@@ -11,6 +12,7 @@ import {
     brandTokenValues,
     storeBrandCss,
 } from './brand-tokens';
+import type { BrandColorKey } from './brand-tokens';
 import { readSemanticTokens } from './theme-tokens';
 
 const ALL_COLORS = {
@@ -25,7 +27,7 @@ const EXPECTED_FAMILIES = {
     primary: ['brand', 'brand-solid', 'brand-solid-hover', 'brand-hover', 'brand-subtle', 'surface-header'],
     secondary: ['info', 'info-surface', 'info-solid'],
     background: ['surface', 'surface-raised', 'surface-sunken', 'surface-hover', 'surface-active'],
-    text: ['content', 'content-muted', 'content-subtle'],
+    text: ['content', 'content-muted', 'content-subtle', 'content-hint'],
 } as const;
 
 /** Tokens branding must never touch, either because they carry a fixed meaning or because they are the fixed side of a
@@ -114,6 +116,33 @@ describe('brand-tokens', () => {
             for (const rule of BRAND_TOKEN_RULES) {
                 expect(tokens.light, `--${rule.token} is not declared in the light token block`).toHaveProperty(rule.token);
             }
+        });
+    });
+
+    /**
+     * A colour leads several tokens unmixed - Secondary drives `info` and `info-solid` alike, at different platform
+     * values - so the one an unset field falls back to is named here rather than derived.
+     */
+    const LEADING_TOKEN: Record<BrandColorKey, string> = { primary: 'brand', secondary: 'info', background: 'surface', text: 'content' };
+
+    /**
+     * Enumerated from the colours rather than from the table above: specs are excluded from the typecheck gate, so the
+     * annotation on `LEADING_TOKEN` is the one thing a new colour could slip past, and a row missing its token has to
+     * fail here instead.
+     */
+    const PINNED = (Object.keys(BRAND_DEFAULT_COLORS) as BrandColorKey[]).map((color) => [color, LEADING_TOKEN[color]] as const);
+
+    describe('BRAND_DEFAULT_COLORS', () => {
+        const tokens = readSemanticTokens(readFileSync(path.resolve(__dirname, '../tailwindcss.css'), 'utf8'));
+
+        test.each(PINNED)('should hold %s at the light-theme value of --%s', (color, token) => {
+            expect(BRAND_DEFAULT_COLORS[color].toLowerCase()).toBe(tokens.light[token]);
+        });
+
+        test.each(PINNED)('should keep %s the colour that replaces --%s outright', (color, token) => {
+            const rule = BRAND_TOKEN_RULES.find((candidate) => candidate.token === token);
+
+            expect(rule?.light).toStrictEqual({ source: color });
         });
     });
 
@@ -279,5 +308,18 @@ describe('brand-tokens', () => {
 
             expect(globalThis.localStorage.getItem(BRAND_CSS_STORAGE_KEY)).toBeNull();
         });
+    });
+
+    /**
+     * Placeholders sit on `surface-raised`, which moves with the operator's Background. A `content-hint` left out of
+     * the override layer would stay at the platform grey while the surface behind it moved, which on a mid grey
+     * background renders them invisible.
+     */
+    test('should derive the placeholder colour from the brand text colour', () => {
+        const values = brandTokenValues(brandColors({ ...ALL_COLORS, textColor: '#3b0764' }), 'light');
+
+        expect(values['content-hint']).toBeDefined();
+        expect(values['content-hint']).not.toBe('#b6b6b6');
+        expect(values['content-hint']).not.toBe(values['content-subtle']);
     });
 });

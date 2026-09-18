@@ -53,14 +53,18 @@ const getTokenProfileDetail: AppEpic = (action$, state$, deps) => {
                             slice.actions.getTokenProfileDetailSuccess({
                                 tokenProfile: transformTokenProfileDetailResponseDtoToModel(profileDto),
                             }),
-                            userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.TokenProfileDetails),
+                            ...(action.payload.skipWidgetLock
+                                ? []
+                                : [userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.TokenProfileDetails)]),
                         ),
                     ),
 
                     catchError((err) =>
                         of(
                             slice.actions.getTokenProfileDetailFailure({ error: extractError(err, 'Failed to get Token Profile detail') }),
-                            userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.TokenProfileDetails),
+                            ...(action.payload.skipWidgetLock
+                                ? []
+                                : [userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.TokenProfileDetails)]),
                         ),
                     ),
                 ),
@@ -383,5 +387,5 @@ const epics = [
     bulkUpdateKeyUsage,
 ];
 
-export { getSupportedTokenProfileKeyUsages };
+export { getSupportedTokenProfileKeyUsages, getTokenProfileDetail };
 export default epics;
