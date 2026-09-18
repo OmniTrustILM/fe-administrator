@@ -14,6 +14,9 @@ import type { GetDiscoveryCertificatesRequest, GetDiscoveryItemsRequest, GetDisc
 import { resetSliceState } from 'ducks/reducerUtils';
 import type { AppState } from 'ducks';
 
+/** What a schema load records when the relay failed without saying why. */
+const DESCRIPTOR_LOAD_FAILED = 'The Discovery Provider did not answer for this schema.';
+
 export type State = {
     discovery?: DiscoveryResponseDetailModel;
     discoveries: DiscoveryResponseModel[];
@@ -36,6 +39,10 @@ export type State = {
     isFetchingDiscoveryProviderAttributeDescriptors: boolean;
     // Several resources may be in flight at once, so this holds the codes rather than one flag.
     fetchingResourceAttributeDescriptors: string[];
+    // Why a schema load ended, keyed by resource code, and for the run-level relay. An absent entry means the load
+    // succeeded or was never asked for: a cleared in-flight flag alone cannot tell those from a failure.
+    resourceAttributeDescriptorErrors: Record<string, string | undefined>;
+    interfaceAttributeDescriptorError?: string;
     isFetchingDiscoveryResources: boolean;
     isFetchingDiscoveryCertificates: boolean;
     isFetchingDiscoveryItems: boolean;
@@ -54,6 +61,7 @@ export type State = {
 export const initialState: State = {
     discoveries: [],
     discoveryProviderResourceAttributeDescriptors: {},
+    resourceAttributeDescriptorErrors: {},
 
     isFetchingDiscoveryProviders: false,
     isFetchingDiscoveryProviderAttributeDescriptors: false,
@@ -112,6 +120,7 @@ export const slice = createSlice({
         getDiscoveryInterfaceAttributesDescriptors: (state, action: PayloadAction<{ connectorUuid: string }>) => {
             state.descriptorsConnectorUuid = action.payload.connectorUuid;
             state.discoveryProviderAttributeDescriptors = [];
+            state.interfaceAttributeDescriptorError = undefined;
             state.isFetchingDiscoveryProviderAttributeDescriptors = true;
         },
 
@@ -121,6 +130,7 @@ export const slice = createSlice({
         ) => {
             if (action.payload.connectorUuid !== state.descriptorsConnectorUuid) return;
             state.discoveryProviderAttributeDescriptors = action.payload.attributeDescriptor;
+            state.interfaceAttributeDescriptorError = undefined;
             state.isFetchingDiscoveryProviderAttributeDescriptors = false;
         },
 
@@ -129,12 +139,14 @@ export const slice = createSlice({
             action: PayloadAction<{ connectorUuid: string; error: string | undefined }>,
         ) => {
             if (action.payload.connectorUuid !== state.descriptorsConnectorUuid) return;
+            state.interfaceAttributeDescriptorError = action.payload.error ?? DESCRIPTOR_LOAD_FAILED;
             state.isFetchingDiscoveryProviderAttributeDescriptors = false;
         },
 
         getDiscoveryResourceAttributesDescriptors: (state, action: PayloadAction<{ connectorUuid: string; resource: Resource }>) => {
             state.descriptorsConnectorUuid = action.payload.connectorUuid;
             delete state.discoveryProviderResourceAttributeDescriptors[action.payload.resource];
+            delete state.resourceAttributeDescriptorErrors[action.payload.resource];
             if (!state.fetchingResourceAttributeDescriptors.includes(action.payload.resource)) {
                 state.fetchingResourceAttributeDescriptors.push(action.payload.resource);
             }
@@ -146,6 +158,7 @@ export const slice = createSlice({
         ) => {
             if (action.payload.connectorUuid !== state.descriptorsConnectorUuid) return;
             state.discoveryProviderResourceAttributeDescriptors[action.payload.resource] = action.payload.attributeDescriptor;
+            delete state.resourceAttributeDescriptorErrors[action.payload.resource];
             state.fetchingResourceAttributeDescriptors = state.fetchingResourceAttributeDescriptors.filter(
                 (resource) => resource !== action.payload.resource,
             );
@@ -156,6 +169,7 @@ export const slice = createSlice({
             action: PayloadAction<{ connectorUuid: string; resource: Resource; error: string | undefined }>,
         ) => {
             if (action.payload.connectorUuid !== state.descriptorsConnectorUuid) return;
+            state.resourceAttributeDescriptorErrors[action.payload.resource] = action.payload.error ?? DESCRIPTOR_LOAD_FAILED;
             state.fetchingResourceAttributeDescriptors = state.fetchingResourceAttributeDescriptors.filter(
                 (resource) => resource !== action.payload.resource,
             );
@@ -165,8 +179,10 @@ export const slice = createSlice({
         clearDiscoveryResourceAttributeDescriptors: (state, action: PayloadAction<{ resource?: Resource }>) => {
             if (action.payload.resource) {
                 delete state.discoveryProviderResourceAttributeDescriptors[action.payload.resource];
+                delete state.resourceAttributeDescriptorErrors[action.payload.resource];
             } else {
                 state.discoveryProviderResourceAttributeDescriptors = {};
+                state.resourceAttributeDescriptorErrors = {};
                 state.fetchingResourceAttributeDescriptors = [];
             }
         },
@@ -383,6 +399,8 @@ const isFetchingDiscoveryProviderAttributeDescriptors = createSelector(
     (state) => state.isFetchingDiscoveryProviderAttributeDescriptors,
 );
 const fetchingResourceAttributeDescriptors = createSelector(state, (state) => state.fetchingResourceAttributeDescriptors);
+const resourceAttributeDescriptorErrors = createSelector(state, (state) => state.resourceAttributeDescriptorErrors);
+const interfaceAttributeDescriptorError = createSelector(state, (state) => state.interfaceAttributeDescriptorError);
 const isFetchingDiscoveryResources = createSelector(state, (state) => state.isFetchingDiscoveryResources);
 const isFetchingDiscoveryCertificates = createSelector(state, (state) => state.isFetchingDiscoveryCertificates);
 const isFetchingDiscoveryItems = createSelector(state, (state) => state.isFetchingDiscoveryItems);
@@ -415,6 +433,8 @@ export const selectors = {
     isFetchingDiscoveryProviders,
     isFetchingDiscoveryProviderAttributeDescriptors,
     fetchingResourceAttributeDescriptors,
+    resourceAttributeDescriptorErrors,
+    interfaceAttributeDescriptorError,
     isFetchingDiscoveryResources,
     isFetchingDiscoveryCertificates,
     isFetchingDiscoveryItems,

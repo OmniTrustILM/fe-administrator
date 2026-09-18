@@ -13,6 +13,7 @@ vi.mock('react-redux', async () => await import('../../test-utils/reactReduxMock
 
 // A click on a mocked select picks the value registered for its id; the multi-select picks the resources listed.
 let multiSelection: { value: string; label: string }[] = [{ value: Resource.Certificates, label: 'Certificates' }];
+let interfaceChoice = 'iface-2';
 
 vi.mock('components/Select', () => ({
     default: ({ id, onChange, isMulti }: any) => (
@@ -24,7 +25,9 @@ vi.mock('components/Select', () => ({
                     onChange(multiSelection);
                     return;
                 }
-                onChange({ discoveryProviderSelect: 'conn-1', storeKindSelect: 'IP-HostName', interfaceSelect: 'iface-2' }[id as string]);
+                onChange(
+                    { discoveryProviderSelect: 'conn-1', storeKindSelect: 'IP-HostName', interfaceSelect: interfaceChoice }[id as string],
+                );
             }}
         >
             select
@@ -128,6 +131,7 @@ function buildState(over: any = {}) {
             discoveryProviderAttributeDescriptors: over.descriptors ?? [],
             discoveryProviderResourceAttributeDescriptors: over.resourceDescriptors ?? {},
             fetchingResourceAttributeDescriptors: over.fetchingResourceAttributeDescriptors ?? [],
+            resourceAttributeDescriptorErrors: over.resourceAttributeDescriptorErrors ?? {},
             discoveryResources: over.discoveryResources ?? [Resource.Certificates, Resource.Keys],
             isFetchingDetail: false,
             isFetchingDiscoveryProviders: false,
@@ -162,6 +166,7 @@ describe('DiscoveryForm', () => {
         dispatch.mockReset();
         useDispatchMock.mockReturnValue(dispatch);
         multiSelection = [{ value: Resource.Certificates, label: 'Certificates' }];
+        interfaceChoice = 'iface-2';
     });
 
     afterEach(async () => {
@@ -392,6 +397,50 @@ describe('DiscoveryForm', () => {
                 'Loading attributes',
             );
             expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true);
+        });
+
+        it("keeps the run uncreatable when a resource's definitions failed to load, and says which way it went", async () => {
+            await render(
+                buildState({
+                    discoveryProviders: [singleInterfaceProvider],
+                    descriptors,
+                    resourceAttributeDescriptorErrors: { [Resource.Certificates]: 'Connector unreachable' },
+                }),
+            );
+            await click('select-discoveryProviderSelect');
+            await click('select-resourcesSelect');
+            await typeName('scan');
+
+            // A failed relay used to read as "still loading" while Create went live, so a run could be submitted with
+            // none of the resource's attributes.
+            const tab = container.querySelector('[data-testid="resource-attributes-certificates"]');
+            expect(tab?.textContent).toContain('Connector unreachable');
+            expect(tab?.textContent).not.toContain('Loading attributes');
+            expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true);
+        });
+
+        it("drops the previous interface's attribute state when the interface changes", async () => {
+            await render(
+                buildState({
+                    discoveryProviders: [multiInterfaceProvider],
+                    descriptors,
+                    resourceDescriptors: { [Resource.Certificates]: descriptors },
+                }),
+            );
+            await click('select-discoveryProviderSelect');
+            await click('select-interfaceSelect');
+            await click('select-resourcesSelect');
+            await click('delete-in-discovery-certificates');
+            const resourceEditor = () => container.querySelector('[data-testid="attr-editor-discovery-certificates"]');
+            expect(resourceEditor()?.getAttribute('data-deleted')).toBe('yes');
+
+            interfaceChoice = 'iface-1';
+            await click('select-interfaceSelect');
+
+            // Every schema on screen belongs to the interface that published it, so none of it survives the switch.
+            expect(resourceEditor()?.getAttribute('data-deleted')).toBe('no');
+            expect(dispatched('discoveries/clearDiscoveryResourceAttributeDescriptors').length).toBeGreaterThan(0);
+            expect(dispatched('discoveries/getDiscoveryResourceAttributesDescriptors').length).toBeGreaterThan(1);
         });
 
         it('offers the certificate triggers only when certificates are targeted', async () => {

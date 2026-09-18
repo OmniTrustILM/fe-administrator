@@ -71,6 +71,8 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
     const discoveryProviders = useSelector(discoverySelectors.discoveryProviders);
     const discoveryProviderAttributeDescriptors = useSelector(discoverySelectors.discoveryProviderAttributeDescriptors);
     const resourceAttributeDescriptors = useSelector(discoverySelectors.discoveryProviderResourceAttributeDescriptors);
+    const resourceAttributeDescriptorErrors = useSelector(discoverySelectors.resourceAttributeDescriptorErrors);
+    const interfaceAttributeDescriptorError = useSelector(discoverySelectors.interfaceAttributeDescriptorError);
     const fetchingResourceAttributeDescriptors = useSelector(discoverySelectors.fetchingResourceAttributeDescriptors);
     const discoveryResources = useSelector(discoverySelectors.discoveryResources);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
@@ -240,12 +242,27 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
     );
 
     // v2: the run-level definitions come through the connector relay as soon as the run is bound to an interface.
+    // Everything on screen belongs to the interface that published it, so a switch takes all of it with it: the
+    // editors' values and deletion markers, the per-resource definitions, and the callback descriptors derived from
+    // them. What the newly selected interface publishes is then asked for again.
+    const previousInterfaceRef = useRef<string | undefined>(undefined);
     useEffect(() => {
         if (!isV2Provider || !discoveryProvider || !watchedInterfaceUuid) return;
+        // Only a change of interface clears anything: a resource change is the next effect's work, and re-running
+        // this one on it would re-fetch every resource's definitions on each tick of the multi-select.
+        if (previousInterfaceRef.current === watchedInterfaceUuid) return;
+        previousInterfaceRef.current = watchedInterfaceUuid;
         dispatch(connectorActions.clearCallbackData());
         setGroupAttributesCallbackAttributes([]);
+        setResourceGroupCallbackAttributes({});
+        clearEditor('discovery');
+        dispatch(discoveryActions.clearDiscoveryResourceAttributeDescriptors({}));
         dispatch(discoveryActions.getDiscoveryInterfaceAttributesDescriptors({ connectorUuid: discoveryProvider.uuid }));
-    }, [dispatch, isV2Provider, discoveryProvider, watchedInterfaceUuid]);
+        (watchedResources ?? []).forEach((resource) => {
+            clearEditor(resourceEditorId(resource));
+            dispatch(discoveryActions.getDiscoveryResourceAttributesDescriptors({ connectorUuid: discoveryProvider.uuid, resource }));
+        });
+    }, [dispatch, isV2Provider, discoveryProvider, watchedInterfaceUuid, watchedResources, clearEditor]);
 
     // Selecting a resource fetches its attribute definitions and adds its tab; deselecting drops both, along with
     // whatever the user had typed into that tab.
@@ -409,18 +426,40 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
         );
     }, [dispatch, setValue, watchedCronExpression, cronBuilderValueRef]);
 
+    // A schema that failed leaves no descriptors behind, so the editor registers none of the connector's required
+    // fields. Creating then sends a run configured with nothing the operator was shown.
+    const schemasLoaded = useMemo(() => {
+        if (!isV2Provider) return true;
+        if (interfaceAttributeDescriptorError) return false;
+        return (watchedResources ?? []).every(
+            (resource) => resourceAttributeDescriptors[resource] !== undefined && !resourceAttributeDescriptorErrors[resource],
+        );
+    }, [
+        isV2Provider,
+        interfaceAttributeDescriptorError,
+        watchedResources,
+        resourceAttributeDescriptors,
+        resourceAttributeDescriptorErrors,
+    ]);
+
     const resourceTabs = useMemo(
         () =>
             isV2Provider && discoveryProvider
                 ? (watchedResources ?? []).map((resource) => {
                       const descriptors = resourceAttributeDescriptors[resource];
+                      const failure = resourceAttributeDescriptorErrors[resource];
                       const loaded = descriptors !== undefined && !fetchingResourceAttributeDescriptors.includes(resource);
                       return {
                           tabKey: `resource-${resource}`,
                           title: getEnumLabel(resourceEnum, resource),
                           content: (
                               <div data-testid={`resource-attributes-${resource}`}>
-                                  {!loaded ? <p className="text-sm text-content-muted">Loading attributes…</p> : null}
+                                  {failure ? (
+                                      <p role="alert" className="text-sm text-danger">
+                                          {failure}
+                                      </p>
+                                  ) : null}
+                                  {!loaded && !failure ? <p className="text-sm text-content-muted">Loading attributes…</p> : null}
                                   {loaded && descriptors.length === 0 ? (
                                       <p className="text-sm text-content-muted">
                                           {getEnumLabel(resourceEnum, resource)} has no attributes of its own to configure on this Discovery
@@ -445,6 +484,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
             discoveryProvider,
             watchedResources,
             resourceAttributeDescriptors,
+            resourceAttributeDescriptorErrors,
             fetchingResourceAttributeDescriptors,
             resourceEnum,
             watchedInterfaceUuid,
@@ -718,7 +758,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                         title="Create"
                         inProgressTitle="Creating..."
                         inProgress={isSubmitting}
-                        disabled={!isDirty || !isValid || isBusy}
+                        disabled={!isDirty || !isValid || isBusy || !schemasLoaded}
                         type="submit"
                     />
                 </Container>
