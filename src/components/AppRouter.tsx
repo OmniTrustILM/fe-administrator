@@ -188,6 +188,8 @@ export default function AppRouter() {
 
     const { isProxiesEnabled, isTrustedCertificatesEnabled } = featureFlags;
 
+    const canListCryptoAssets = profile?.permissions.allowedListings.includes(Resource.CryptoAssets) ?? false;
+
     const appRoutes = useMemo(
         () => (
             <>
@@ -480,8 +482,12 @@ export default function AppRouter() {
                     <Route path={`/${Resource.Cboms.toLowerCase()}/detail/:id`} element={<CbomDetail />} />
                     <Route path={`/${Resource.Cboms.toLowerCase()}/detail/:id/versions/:versionId?`} element={<CbomVersionsHistory />} />
 
-                    <Route path={`/${Resource.CryptoAssets.toLowerCase()}`} element={<CryptoAssetsList />} />
-                    <Route path={`/${Resource.CryptoAssets.toLowerCase()}/detail/:id`} element={<CryptoAssetDetail />} />
+                    {canListCryptoAssets && (
+                        <>
+                            <Route path={`/${Resource.CryptoAssets.toLowerCase()}`} element={<CryptoAssetsList />} />
+                            <Route path={`/${Resource.CryptoAssets.toLowerCase()}/detail/:id`} element={<CryptoAssetDetail />} />
+                        </>
+                    )}
                 </Route>
 
                 {/*
@@ -491,7 +497,7 @@ export default function AppRouter() {
                 <Route path="*" element={<h1>404</h1>} />
             </>
         ),
-        [isProxiesEnabled, isTrustedCertificatesEnabled],
+        [isProxiesEnabled, isTrustedCertificatesEnabled, canListCryptoAssets],
     );
 
     return (

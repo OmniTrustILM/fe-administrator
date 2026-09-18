@@ -1,4 +1,4 @@
-import { getEnumLabel } from 'ducks/enums';
+import { getEnumDescription, getEnumLabel } from 'ducks/enums';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
@@ -11,7 +11,13 @@ import { buildCryptoAssetRows, CRYPTO_ASSET_HEADERS, QUARANTINE_TOOLTIP } from '
 setupReactActEnvironment();
 
 const typeEnum = { [CryptographicAssetType.Algorithm]: { code: 'algorithm', label: 'Algorithm' } };
-const pqcVerdictEnum = { [PqcVerdict.NotReady]: { code: 'notReady', label: 'Not PQC ready' } };
+const pqcVerdictEnum = {
+    [PqcVerdict.NotReady]: {
+        code: 'notReady',
+        label: 'Not PQC ready',
+        description: 'The asset relies on cryptography a quantum computer breaks',
+    },
+};
 
 const asset = (overrides: Partial<CryptographicAssetDto> = {}): CryptographicAssetDto => ({
     uuid: 'asset-1',
@@ -24,7 +30,8 @@ const asset = (overrides: Partial<CryptographicAssetDto> = {}): CryptographicAss
     ...overrides,
 });
 
-const build = (assets: CryptographicAssetDto[]) => buildCryptoAssetRows(assets, { typeEnum, pqcVerdictEnum, getEnumLabel });
+const build = (assets: CryptographicAssetDto[]) =>
+    buildCryptoAssetRows(assets, { typeEnum, pqcVerdictEnum, getEnumLabel, getEnumDescription });
 
 describe('CRYPTO_ASSET_HEADERS', () => {
     // Paging is served, so a client-side sort would reorder one page and present it as the estate's order; core also
@@ -44,6 +51,11 @@ describe('CRYPTO_ASSET_HEADERS', () => {
             'sourceCbomCount',
             'occurrenceCount',
         ]);
+    });
+
+    // A producer can name an asset with a whole certificate subject; without the cap that one row widens the table.
+    test('the name column caps its width, which is what turns the one-line clipping on', () => {
+        expect(CRYPTO_ASSET_HEADERS.find((header) => header.id === 'name')?.maxWidth).toBeGreaterThan(0);
     });
 
     test('the two counts are right-aligned so their digits line up', () => {
@@ -108,8 +120,25 @@ describe('buildCryptoAssetRows', () => {
         await renderRow([asset()]);
 
         const link = cell('name').querySelector('a');
+
         expect(link?.textContent).toBe('RSA-2048');
         expect(link?.getAttribute('href')).toBe('/cryptoassets/detail/asset-1');
+    });
+
+    test('a long name is clipped to one line, with the full value left to the cell tooltip', async () => {
+        await renderRow([asset({ name: 'A'.repeat(300) })]);
+
+        const name = cell('name').querySelector('[data-testid="crypto-asset-name"]');
+
+        expect(name?.textContent).toBe('A'.repeat(300));
+        expect(name?.className).toContain('text-ellipsis');
+        expect(name?.className).toContain('whitespace-nowrap');
+    });
+
+    test('the quarantine badge keeps its width while the name shrinks', async () => {
+        await renderRow([asset({ quarantined: true })]);
+
+        expect(cell('name').querySelector('[data-testid="crypto-asset-quarantined-badge"]')?.className).toContain('shrink-0');
     });
 
     test('type and verdict are labelled from the platform enums, not from the raw code', async () => {
@@ -120,8 +149,21 @@ describe('buildCryptoAssetRows', () => {
         expect(cell('pqcVerdict').querySelector('[data-testid="pqc-verdict-badge"]')?.classList.contains('bg-danger-surface')).toBe(true);
     });
 
+    test('the verdict badge explains itself with the platform enum description', async () => {
+        await renderRow([asset()]);
+
+        expect(cell('pqcVerdict').querySelector('[data-testid="pqc-verdict-badge"]')?.getAttribute('title')).toBe(
+            'The asset relies on cryptography a quantum computer breaks',
+        );
+    });
+
     test('an enum the platform has not loaded falls back to the code rather than rendering blank', async () => {
-        const [row] = buildCryptoAssetRows([asset()], { typeEnum: undefined, pqcVerdictEnum: undefined, getEnumLabel });
+        const [row] = buildCryptoAssetRows([asset()], {
+            typeEnum: undefined,
+            pqcVerdictEnum: undefined,
+            getEnumLabel,
+            getEnumDescription,
+        });
         await act(async () => {
             root.render(
                 <MemoryRouter>

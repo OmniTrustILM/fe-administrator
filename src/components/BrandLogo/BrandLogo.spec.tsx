@@ -151,7 +151,7 @@ test.describe('BrandLogo', () => {
     });
 
     test('should keep its aspect ratio inside the height its caller fixes', async ({ mount, page }) => {
-        // A 3:1 mark, the widest the upload rules permit, in a 36px slot.
+        // A 3:1 mark in a 36px slot.
         const wide = `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100" viewBox="0 0 300 100"><rect width="300" height="100"/></svg>').toString('base64')}`;
 
         await mount(<BrandLogoWithStore branding={{ ...branded, lightLogo: wide }} />);

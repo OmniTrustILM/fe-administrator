@@ -36,8 +36,10 @@ export default function TruncatedCell({ value, to, dataTestId }: Props) {
 
     if (!isTruncated) return text;
 
+    // A value can be arbitrarily long, and an unclamped tooltip then grows past the viewport and
+    // covers the row it was meant to explain, so only its first lines are revealed.
     return (
-        <Tooltip content={value} className="w-full align-bottom" triggerClassName="block w-full">
+        <Tooltip content={<span className="line-clamp-6">{value}</span>} className="w-full align-bottom" triggerClassName="block w-full">
             {text}
         </Tooltip>
     );

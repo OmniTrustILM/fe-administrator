@@ -6,6 +6,7 @@ import {
     AttributeType,
     AttributeVersion,
     ExtensionValueEncoding,
+    FieldSource,
     FieldType,
     GeneralNameType,
     ObjectType,
@@ -24,21 +25,27 @@ import {
     emptyAuthoringForm,
     emptyValueSourceBinding,
     hasAuthoredRequestAttributes,
+    firstAuthoredAttributeError,
     getRegexPatternError,
+    hasMappingTarget,
     isContentTypeAllowedForMapping,
     isJsonSchemaConstraintSupportedForContentType,
     isRegexConstraintSupportedForContentType,
     isStructuredMappingTarget,
+    structuredMappingTarget,
     isReadOnlyDefaultValid,
     isStaticListSupportedForContentType,
     isValueSourceBindingValid,
     isValueValidForContentType,
     validateAuthoredAttribute,
+    validateMappingTargets,
     withBooleanReadOnlyDefault,
+    withMappingTargets,
     parseAuthoredAttributeDto,
     parsePlatformDefaultDto,
     parseRaProfileRequestAttributesDto,
     type AuthoredAttributeFormValues,
+    type MappingTargetFormValues,
     type ValueSourceBindingFormValues,
 } from './requestAttributeAuthoring';
 
@@ -58,6 +65,19 @@ const freeInput = (over: Partial<AuthoredAttributeFormValues>): AuthoredAttribut
     ...over,
 });
 
+const rdnTarget = (rdnCode: string): MappingTargetFormValues => ({ fieldType: FieldType.Rdn, rdnCode });
+const sanTarget = (generalNameType: GeneralNameType, over: Partial<MappingTargetFormValues> = {}): MappingTargetFormValues => ({
+    fieldType: FieldType.San,
+    generalNameType,
+    ...over,
+});
+const extensionTarget = (extensionOid: string, over: Partial<MappingTargetFormValues> = {}): MappingTargetFormValues => ({
+    fieldType: FieldType.Extension,
+    extensionOid,
+    ...over,
+});
+const mapped = (...mappingTargets: MappingTargetFormValues[]): AuthoredAttributeFormValues => ({ ...baseAttr(), mappingTargets });
+
 describe('requestAttributeAuthoring', () => {
     describe('defaults', () => {
         test('DEFAULT_MERGE_MODE is STATIC_ONLY', () => {
@@ -71,9 +91,10 @@ describe('requestAttributeAuthoring', () => {
             expect(form.valueSourceBindings).toEqual([]);
         });
 
-        test('emptyAuthoredAttribute has no mapping and NONE value source', () => {
+        test('emptyAuthoredAttribute starts with one unpicked mapping target and NONE value source', () => {
             const attr = emptyAuthoredAttribute();
-            expect(attr.mappingFieldType).toBeUndefined();
+            expect(attr.mappingTargets).toHaveLength(1);
+            expect(hasMappingTarget(attr)).toBe(false);
             expect(attr.valueSourceType).toBe(ValueSourceType.None);
         });
 
@@ -119,18 +140,14 @@ describe('requestAttributeAuthoring', () => {
         });
 
         test('writes an RDN mapping with the code and default x509Certificate object type', () => {
-            const dto = buildAuthoredAttributeDto({ ...baseAttr(), mappingFieldType: FieldType.Rdn, mappingRdnCode: 'CN' });
+            const dto = buildAuthoredAttributeDto(mapped(rdnTarget('CN')));
             const mapping = mappingOf(dto);
             expect(mapping?.objectType).toBe(ObjectType.X509Certificate);
             expect(mapping?.fields).toEqual([{ fieldType: FieldType.Rdn, rdn: 'CN' }]);
         });
 
         test('writes a SAN mapping with generalNameType and omits otherName fields for non-OTHER_NAME', () => {
-            const dto = buildAuthoredAttributeDto({
-                ...baseAttr(),
-                mappingFieldType: FieldType.San,
-                mappingGeneralNameType: GeneralNameType.Dns,
-            });
+            const dto = buildAuthoredAttributeDto(mapped(sanTarget(GeneralNameType.Dns)));
             expect(mappingOf(dto)?.fields).toEqual([
                 {
                     fieldType: FieldType.San,
@@ -142,32 +159,28 @@ describe('requestAttributeAuthoring', () => {
         });
 
         test('writes otherName OID + encoding when generalNameType is OTHER_NAME', () => {
-            const dto = buildAuthoredAttributeDto({
-                ...baseAttr(),
-                mappingFieldType: FieldType.San,
-                mappingGeneralNameType: GeneralNameType.OtherName,
-                mappingOtherNameOid: '1.3.6.1.4.1.311.20.2.3',
-                mappingOtherNameEncoding: ExtensionValueEncoding.Utf8String,
-            });
+            const dto = buildAuthoredAttributeDto(
+                mapped(
+                    sanTarget(GeneralNameType.OtherName, {
+                        otherNameOid: '1.3.6.1.4.1.311.20.2.3',
+                        otherNameEncoding: ExtensionValueEncoding.Utf8String,
+                    }),
+                ),
+            );
             const field = mappingOf(dto)?.fields[0] as { otherNameOid?: string; otherNameValueEncoding?: string };
             expect(field.otherNameOid).toBe('1.3.6.1.4.1.311.20.2.3');
             expect(field.otherNameValueEncoding).toBe(ExtensionValueEncoding.Utf8String);
         });
 
         test('writes an extension mapping with OID and criticalOverridable', () => {
-            const dto = buildAuthoredAttributeDto({
-                ...baseAttr(),
-                mappingFieldType: FieldType.Extension,
-                mappingExtensionOid: '2.5.29.17',
-                mappingCriticalOverridable: true,
-            });
+            const dto = buildAuthoredAttributeDto(mapped(extensionTarget('2.5.29.17', { criticalOverridable: true })));
             expect(mappingOf(dto)?.fields).toEqual([
                 { fieldType: FieldType.Extension, extensionOid: '2.5.29.17', criticalOverridable: true },
             ]);
         });
 
         test('SAN mapping without a generalNameType produces no fieldMapping', () => {
-            expect(buildAuthoredAttributeDto({ ...baseAttr(), mappingFieldType: FieldType.San }).fieldMapping).toBeUndefined();
+            expect(buildAuthoredAttributeDto(mapped({ fieldType: FieldType.San })).fieldMapping).toBeUndefined();
         });
 
         test('omits valueSource when NONE', () => {
@@ -310,9 +323,8 @@ describe('requestAttributeAuthoring', () => {
                 uuid: 'u1',
                 description: 'the fqdn',
                 list: true,
-                mappingFieldType: FieldType.Rdn,
                 mappingObjectType: ObjectType.X509Certificate,
-                mappingRdnCode: 'CN',
+                mappingTargets: [rdnTarget('CN')],
                 valueSourceType: ValueSourceType.StaticList,
             };
             const parsed = parseAuthoredAttributeDto(buildAuthoredAttributeDto(original) as BaseAttributeDto);
@@ -321,8 +333,8 @@ describe('requestAttributeAuthoring', () => {
             expect(parsed.required).toBe(true);
             expect(parsed.list).toBe(true);
             expect(parsed.description).toBe('the fqdn');
-            expect(parsed.mappingFieldType).toBe(FieldType.Rdn);
-            expect(parsed.mappingRdnCode).toBe('CN');
+            expect(parsed.mappingTargets).toHaveLength(1);
+            expect(parsed.mappingTargets[0]).toMatchObject({ fieldType: FieldType.Rdn, rdnCode: 'CN' });
             expect(parsed.valueSourceType).toBe(ValueSourceType.StaticList);
             expect(parsed.uuid).toBe('u1');
         });
@@ -340,24 +352,27 @@ describe('requestAttributeAuthoring', () => {
 
         test('round-trips a SAN otherName mapping', () => {
             const parsed = parseAuthoredAttributeDto(
-                buildAuthoredAttributeDto({
-                    ...baseAttr(),
-                    mappingFieldType: FieldType.San,
-                    mappingGeneralNameType: GeneralNameType.OtherName,
-                    mappingOtherNameOid: '1.2.3',
-                    mappingOtherNameEncoding: ExtensionValueEncoding.Utf8String,
-                }) as BaseAttributeDto,
+                buildAuthoredAttributeDto(
+                    mapped(
+                        sanTarget(GeneralNameType.OtherName, {
+                            otherNameOid: '1.2.3',
+                            otherNameEncoding: ExtensionValueEncoding.Utf8String,
+                        }),
+                    ),
+                ) as BaseAttributeDto,
             );
-            expect(parsed.mappingFieldType).toBe(FieldType.San);
-            expect(parsed.mappingGeneralNameType).toBe(GeneralNameType.OtherName);
-            expect(parsed.mappingOtherNameOid).toBe('1.2.3');
-            expect(parsed.mappingOtherNameEncoding).toBe(ExtensionValueEncoding.Utf8String);
+            expect(parsed.mappingTargets[0]).toMatchObject({
+                fieldType: FieldType.San,
+                generalNameType: GeneralNameType.OtherName,
+                otherNameOid: '1.2.3',
+                otherNameEncoding: ExtensionValueEncoding.Utf8String,
+            });
         });
 
         test('falls back to NONE value source and no mapping when absent', () => {
             const parsed = parseAuthoredAttributeDto(buildAuthoredAttributeDto(baseAttr()) as BaseAttributeDto);
             expect(parsed.valueSourceType).toBe(ValueSourceType.None);
-            expect(parsed.mappingFieldType).toBeUndefined();
+            expect(parsed.mappingTargets).toEqual([]);
         });
     });
 
@@ -414,11 +429,7 @@ describe('requestAttributeAuthoring', () => {
     });
 
     describe('validateAuthoredAttribute', () => {
-        const mappedAttr = (): AuthoredAttributeFormValues => ({
-            ...baseAttr(),
-            mappingFieldType: FieldType.Rdn,
-            mappingRdnCode: '2.5.4.3',
-        });
+        const mappedAttr = (): AuthoredAttributeFormValues => mapped(rdnTarget('2.5.4.3'));
 
         test('a mapped String attribute with name and label is valid', () => {
             expect(validateAuthoredAttribute(mappedAttr())).toEqual({});
@@ -433,45 +444,40 @@ describe('requestAttributeAuthoring', () => {
         // keep coming first however the rule checks are split up internally.
         test('reports the missing name before the missing mapping', () => {
             const errors = validateAuthoredAttribute({ ...baseAttr(), name: '', label: '' });
-            expect(Object.keys(errors)).toEqual(['name', 'label', 'mappingFieldType']);
+            expect(Object.keys(errors)).toEqual(['name', 'label', 'mappingTargets']);
         });
 
-        test('a mapping target is required', () => {
-            expect(validateAuthoredAttribute(baseAttr()).mappingFieldType).toBeTruthy();
+        test('a mapping target is required, on the unpicked row or on the mapping when there is no row', () => {
+            expect(validateAuthoredAttribute(baseAttr()).mappingTargets?.[0].fieldType).toContain('mapping target is required');
+            expect(validateAuthoredAttribute({ ...baseAttr(), mappingTargets: [] }).mapping).toContain('mapping target is required');
         });
 
         test('RDN requires a code', () => {
-            expect(validateAuthoredAttribute({ ...mappedAttr(), mappingRdnCode: '' }).mappingRdnCode).toBeTruthy();
-            expect(validateAuthoredAttribute(mappedAttr()).mappingRdnCode).toBeUndefined();
+            expect(validateAuthoredAttribute(mapped(rdnTarget(''))).mappingTargets?.[0].rdnCode).toBeTruthy();
+            expect(validateAuthoredAttribute(mappedAttr()).mappingTargets).toBeUndefined();
         });
 
         test('SAN requires a generalNameType, and OTHER_NAME requires oid + encoding', () => {
-            const san = { ...mappedAttr(), mappingFieldType: FieldType.San, mappingRdnCode: '' };
-            expect(validateAuthoredAttribute(san).mappingGeneralNameType).toBeTruthy();
-            expect(validateAuthoredAttribute({ ...san, mappingGeneralNameType: GeneralNameType.Dns })).toEqual({});
+            expect(validateAuthoredAttribute(mapped({ fieldType: FieldType.San })).mappingTargets?.[0].generalNameType).toBeTruthy();
+            expect(validateAuthoredAttribute(mapped(sanTarget(GeneralNameType.Dns)))).toEqual({});
 
-            const otherName = { ...san, mappingGeneralNameType: GeneralNameType.OtherName, mappingOtherNameOid: '1.2.3' };
-            expect(validateAuthoredAttribute(otherName).mappingOtherNameEncoding).toBeTruthy();
-            expect(validateAuthoredAttribute({ ...otherName, mappingOtherNameEncoding: ExtensionValueEncoding.Utf8String })).toEqual({});
+            const otherName = sanTarget(GeneralNameType.OtherName, { otherNameOid: '1.2.3' });
+            expect(validateAuthoredAttribute(mapped(otherName)).mappingTargets?.[0].otherNameEncoding).toBeTruthy();
+            expect(validateAuthoredAttribute(mapped({ ...otherName, otherNameEncoding: ExtensionValueEncoding.Utf8String }))).toEqual({});
             expect(
-                validateAuthoredAttribute({
-                    ...otherName,
-                    mappingOtherNameOid: '',
-                    mappingOtherNameEncoding: ExtensionValueEncoding.Utf8String,
-                }).mappingOtherNameOid,
+                validateAuthoredAttribute(mapped({ ...otherName, otherNameOid: '', otherNameEncoding: ExtensionValueEncoding.Utf8String }))
+                    .mappingTargets?.[0].otherNameOid,
             ).toBeTruthy();
         });
 
         test('EXTENSION requires an OID', () => {
-            const ext = { ...mappedAttr(), mappingFieldType: FieldType.Extension, mappingRdnCode: '' };
-            expect(validateAuthoredAttribute(ext).mappingExtensionOid).toBeTruthy();
-            expect(validateAuthoredAttribute({ ...ext, mappingExtensionOid: '2.5.29.17' })).toEqual({});
+            expect(validateAuthoredAttribute(mapped({ fieldType: FieldType.Extension })).mappingTargets?.[0].extensionOid).toBeTruthy();
+            expect(validateAuthoredAttribute(mapped(extensionTarget('2.5.29.32')))).toEqual({});
         });
 
         test('EXTENSION rejects OIDs with a structured mapping target, steering to the typed target', () => {
-            const ext = { ...mappedAttr(), mappingFieldType: FieldType.Extension, mappingRdnCode: '' };
-            expect(validateAuthoredAttribute({ ...ext, mappingExtensionOid: '2.5.29.15' }).mappingExtensionOid).toContain('Key Usage');
-            expect(validateAuthoredAttribute({ ...ext, mappingExtensionOid: '2.5.29.37' }).mappingExtensionOid).toContain(
+            expect(validateAuthoredAttribute(mapped(extensionTarget('2.5.29.15'))).mappingTargets?.[0].extensionOid).toContain('Key Usage');
+            expect(validateAuthoredAttribute(mapped(extensionTarget('2.5.29.37'))).mappingTargets?.[0].extensionOid).toContain(
                 'Extended Key Usage',
             );
         });
@@ -488,7 +494,7 @@ describe('requestAttributeAuthoring', () => {
         test('the content-type restriction only applies to mapped attributes', () => {
             const errors = validateAuthoredAttribute({ ...baseAttr(), contentType: AttributeContentType.Integer });
             expect(errors.contentType).toBeUndefined();
-            expect(errors.mappingFieldType).toBeTruthy();
+            expect(errors.mappingTargets?.[0].fieldType).toBeTruthy();
         });
 
         test('Read Only requires a non-blank default value', () => {
@@ -867,9 +873,7 @@ describe('buildPlatformDefaultUpdateDto strict flag', () => {
 
 describe('regular-expression constraint', () => {
     const stringAttr = (over: Partial<AuthoredAttributeFormValues> = {}): AuthoredAttributeFormValues => ({
-        ...baseAttr(),
-        mappingFieldType: FieldType.Rdn,
-        mappingRdnCode: '2.5.4.3',
+        ...mapped(rdnTarget('2.5.4.3')),
         ...over,
     });
 
@@ -947,8 +951,7 @@ describe('regular-expression constraint', () => {
 
 describe('structured mapping targets (Key Usage / Extended Key Usage)', () => {
     const structuredAttr = (fieldType: FieldType, over: Partial<AuthoredAttributeFormValues> = {}): AuthoredAttributeFormValues => ({
-        ...baseAttr(),
-        mappingFieldType: fieldType,
+        ...mapped({ fieldType }),
         list: true,
         multiSelect: true,
         staticValues: fieldType === FieldType.KeyUsage ? ['digitalSignature', 'cRLSign'] : ['1.3.6.1.5.5.7.3.1'],
@@ -985,7 +988,7 @@ describe('structured mapping targets (Key Usage / Extended Key Usage)', () => {
         expect(dto.properties.extensibleList).toBe(true);
         const parsed = parseAuthoredAttributeDto(dto as BaseAttributeDto);
         expect(parsed.extensibleList).toBe(true);
-        expect(parsed.mappingFieldType).toBe(FieldType.ExtendedKeyUsage);
+        expect(structuredMappingTarget(parsed)).toBe(FieldType.ExtendedKeyUsage);
         expect(parsed.staticValues).toEqual(['1.3.6.1.5.5.7.3.1']);
     });
 
@@ -1033,9 +1036,7 @@ describe('structured mapping targets (Key Usage / Extended Key Usage)', () => {
 
 describe('JSON-schema constraint', () => {
     const stringAttr = (over: Partial<AuthoredAttributeFormValues> = {}): AuthoredAttributeFormValues => ({
-        ...baseAttr(),
-        mappingFieldType: FieldType.Rdn,
-        mappingRdnCode: '2.5.4.3',
+        ...mapped(rdnTarget('2.5.4.3')),
         ...over,
     });
 
@@ -1111,5 +1112,220 @@ describe('JSON-schema constraint', () => {
             { type: AttributeConstraintType.JsonSchema, data: '{"type":"object"}', description: undefined, errorMessage: undefined },
             range,
         ]);
+    });
+});
+
+describe('several mapping targets', () => {
+    const multiTargetMapping = (): FieldMappingModel => ({
+        objectType: ObjectType.X509Certificate,
+        fields: [
+            { fieldType: FieldType.Rdn, rdn: 'CN', order: 1, source: FieldSource.CsrThenPlatform },
+            { fieldType: FieldType.San, generalNameType: GeneralNameType.Dns, order: 1 },
+            { fieldType: FieldType.Rdn, rdn: 'OU', order: 2 },
+        ],
+    });
+
+    const storedAttribute = (fieldMapping: FieldMappingModel = multiTargetMapping()) =>
+        ({ ...buildAuthoredAttributeDto(baseAttr()), fieldMapping }) as BaseAttributeDto;
+
+    test('parse lists every target with its source, in the order Core applies them', () => {
+        const parsed = parseAuthoredAttributeDto(
+            storedAttribute({
+                objectType: ObjectType.X509Certificate,
+                fields: [
+                    { fieldType: FieldType.Rdn, rdn: 'OU', order: 2 },
+                    { fieldType: FieldType.Rdn, rdn: 'CN', order: 1, source: FieldSource.Csr },
+                ],
+            }),
+        );
+        expect(parsed.mappingTargets.map((target) => [target.fieldType, target.rdnCode, target.source])).toEqual([
+            [FieldType.Rdn, 'CN', FieldSource.Csr],
+            [FieldType.Rdn, 'OU', undefined],
+        ]);
+    });
+
+    test('reloading a saved mapping keeps rows of different types where the author put them', () => {
+        const arranged = mapped(rdnTarget('CN'), rdnTarget('OU'), sanTarget(GeneralNameType.Dns));
+        const reloaded = parseAuthoredAttributeDto(buildAuthoredAttributeDto(arranged) as BaseAttributeDto);
+        expect(
+            reloaded.mappingTargets.map((target) => (target.fieldType === FieldType.Rdn ? target.rdnCode : target.generalNameType)),
+        ).toEqual(['CN', 'OU', GeneralNameType.Dns]);
+    });
+
+    test('open and save round-trips a multi-target mapping unchanged', () => {
+        const rebuilt = buildAuthoredAttributeDto(parseAuthoredAttributeDto(storedAttribute()));
+        expect(mappingOf(rebuilt)).toEqual(multiTargetMapping());
+    });
+
+    test('order is the position among targets of the same type, so reordering the rows reorders the fields', () => {
+        const parsed = parseAuthoredAttributeDto(storedAttribute());
+        const [cn, dns, ou] = parsed.mappingTargets;
+        const rebuilt = buildAuthoredAttributeDto({ ...parsed, mappingTargets: [ou, dns, cn] });
+        expect(mappingOf(rebuilt)?.fields).toEqual([
+            { fieldType: FieldType.Rdn, rdn: 'OU', order: 1 },
+            { fieldType: FieldType.San, generalNameType: GeneralNameType.Dns, order: 1 },
+            { fieldType: FieldType.Rdn, rdn: 'CN', order: 2, source: FieldSource.CsrThenPlatform },
+        ]);
+    });
+
+    test('an unpicked row is left out of the mapping', () => {
+        const dto = buildAuthoredAttributeDto(mapped(rdnTarget('CN'), { fieldType: undefined }));
+        expect(mappingOf(dto)?.fields).toEqual([{ fieldType: FieldType.Rdn, rdn: 'CN' }]);
+    });
+
+    test('loaded orders with gaps save unchanged', () => {
+        const gaps = storedAttribute({
+            objectType: ObjectType.X509Certificate,
+            fields: [
+                { fieldType: FieldType.Rdn, rdn: 'CN', order: 1 },
+                { fieldType: FieldType.Rdn, rdn: 'OU', order: 3 },
+            ],
+        });
+        expect(mappingOf(buildAuthoredAttributeDto(parseAuthoredAttributeDto(gaps)))).toEqual(
+            mappingOf(gaps as { fieldMapping?: unknown }),
+        );
+    });
+
+    test('a new row numbers its type by position, and new rows of one type are numbered too', () => {
+        const parsed = parseAuthoredAttributeDto(
+            storedAttribute({
+                objectType: ObjectType.X509Certificate,
+                fields: [
+                    { fieldType: FieldType.Rdn, rdn: 'CN', order: 1 },
+                    { fieldType: FieldType.Rdn, rdn: 'OU', order: 3 },
+                ],
+            }),
+        );
+        const added = buildAuthoredAttributeDto({ ...parsed, mappingTargets: [...parsed.mappingTargets, rdnTarget('O')] });
+        expect(mappingOf(added)?.fields.map((field) => field.order)).toEqual([1, 2, 3]);
+        const fresh = buildAuthoredAttributeDto(mapped(rdnTarget('CN'), rdnTarget('OU')));
+        expect(mappingOf(fresh)?.fields.map((field) => field.order)).toEqual([1, 2]);
+    });
+
+    test('saving the RA-profile set keeps every attribute mapping, including ones not edited', () => {
+        const other = buildAuthoredAttributeDto({ ...mapped(rdnTarget('O')), name: 'other' });
+        const form = parseRaProfileRequestAttributesDto({
+            mergeMode: AttributeSetMergeMode.StaticOnly,
+            requestAttributes: [storedAttribute(), other as BaseAttributeDto],
+        });
+        form.attributes[1] = { ...form.attributes[1], label: 'Renamed' };
+        const dto = buildRaProfileRequestAttributesUpdateDto(form);
+        expect(mappingOf(dto.requestAttributes?.[0] as { fieldMapping?: unknown })).toEqual(multiTargetMapping());
+    });
+
+    test('saving the platform default set keeps every attribute mapping', () => {
+        const attributes = parsePlatformDefaultDto({ requestAttributes: [storedAttribute()] });
+        const dto = buildPlatformDefaultUpdateDto(attributes);
+        expect(mappingOf(dto.requestAttributes?.[0] as { fieldMapping?: unknown })).toEqual(multiTargetMapping());
+    });
+
+    test('the same certificate field cannot be targeted twice; a different one of the same type is fine', () => {
+        const rows = validateMappingTargets(mapped(rdnTarget('CN'), sanTarget(GeneralNameType.Dns), rdnTarget('CN')));
+        expect(rows[0]).toEqual({});
+        expect(rows[1]).toEqual({});
+        expect(rows[2].rdnCode).toContain('RDN CN above');
+        expect(validateMappingTargets(mapped(sanTarget(GeneralNameType.Dns), sanTarget(GeneralNameType.Dns)))[1].generalNameType).toContain(
+            'SAN dNSName above',
+        );
+        expect(
+            validateAuthoredAttribute(mapped(extensionTarget('1.2.3.4'), extensionTarget(' 1.2.3.4 '))).mappingTargets?.[1].extensionOid,
+        ).toContain('1.2.3.4');
+        expect(validateAuthoredAttribute(mapped(sanTarget(GeneralNameType.Dns), sanTarget(GeneralNameType.Email)))).toEqual({});
+        expect(validateAuthoredAttribute(mapped(rdnTarget('CN'), rdnTarget('OU')))).toEqual({});
+    });
+
+    test('an RDN stored as a code and one picked as its OID are the same field once a resolver is given', () => {
+        const attr = mapped(rdnTarget('OU'), rdnTarget('2.5.4.11'));
+        expect(validateAuthoredAttribute(attr)).toEqual({});
+        const byCode = (value: string) => (value === '2.5.4.11' ? 'OU' : value);
+        expect(validateAuthoredAttribute(attr, byCode).mappingTargets?.[1].rdnCode).toContain('RDN OU above');
+        expect(validateAuthoredAttribute(mapped(rdnTarget('CN'), rdnTarget('2.5.4.11')), byCode)).toEqual({});
+    });
+
+    test('a structured target must be the only one, and it claims its extension OID', () => {
+        const permitted = { list: true, staticValues: ['digitalSignature'] };
+        const withKeyUsage = { ...mapped(rdnTarget('CN'), { fieldType: FieldType.KeyUsage }), ...permitted };
+        expect(validateAuthoredAttribute(withKeyUsage).mappingTargets?.[1].fieldType).toContain('only mapping target');
+
+        const withLegacyOid = { ...mapped({ fieldType: FieldType.KeyUsage }, extensionTarget('2.5.29.15')), ...permitted };
+        const errors = validateAuthoredAttribute(withLegacyOid).mappingTargets;
+        expect(errors?.[0].fieldType).toContain('only mapping target');
+        expect(errors?.[1].extensionOid).toBeTruthy();
+    });
+
+    test('two otherName targets are not a repeat until their OIDs match', () => {
+        const otherName = (otherNameOid: string) =>
+            sanTarget(GeneralNameType.OtherName, { otherNameOid, otherNameEncoding: ExtensionValueEncoding.Utf8String });
+        expect(validateMappingTargets(mapped(otherName(''), otherName('')))[1]).toEqual({ otherNameOid: 'An otherName OID is required.' });
+        expect(validateMappingTargets(mapped(otherName('1.2.3'), otherName('1.2.3')))[1].generalNameType).toContain('above');
+    });
+
+    test('the subjectAltName OID is refused on the Extension target', () => {
+        expect(validateAuthoredAttribute(mapped(extensionTarget('2.5.29.17'))).mappingTargets?.[0].extensionOid).toContain(
+            'Subject Alternative Name',
+        );
+    });
+
+    test('multi select cannot feed a certificate extension, which takes exactly one value', () => {
+        const attr = {
+            ...mapped(sanTarget(GeneralNameType.Dns), extensionTarget('1.2.3.4')),
+            valueSourceType: ValueSourceType.StaticList,
+            staticValues: ['a', 'b'],
+            list: true,
+            multiSelect: true,
+        };
+        expect(validateAuthoredAttribute(attr).multiSelect).toContain('extension');
+        expect(validateAuthoredAttribute({ ...attr, multiSelect: false })).toEqual({});
+        // Free input hides the checkbox, so the rule is not raised where it could not be fixed.
+        expect(validateAuthoredAttribute({ ...attr, valueSourceType: ValueSourceType.None, staticValues: [] }).multiSelect).toBeUndefined();
+    });
+
+    describe('withMappingTargets', () => {
+        const keyUsageAttr = (): AuthoredAttributeFormValues => ({
+            ...mapped({ fieldType: FieldType.KeyUsage }, rdnTarget('CN')),
+            list: true,
+            multiSelect: true,
+            extensibleList: true,
+            staticValues: ['digitalSignature'],
+        });
+
+        test('entering a structured target forces the permitted-set shape', () => {
+            const next = withMappingTargets({ ...mapped(rdnTarget('CN')), readOnly: true, defaultValue: 'x' }, [
+                { fieldType: FieldType.KeyUsage },
+            ]);
+            expect(next).toMatchObject({ list: true, multiSelect: true, readOnly: false, extensibleList: false, staticValues: [] });
+            expect(next.defaultValue).toBeUndefined();
+        });
+
+        test('changing another row keeps the permitted set', () => {
+            const attr = keyUsageAttr();
+            const next = withMappingTargets(attr, [attr.mappingTargets[0], sanTarget(GeneralNameType.Dns)]);
+            expect(next).toMatchObject({ staticValues: ['digitalSignature'], extensibleList: true, list: true });
+        });
+
+        test('switching Key Usage to Extended Key Usage starts an empty set', () => {
+            const next = withMappingTargets(keyUsageAttr(), [{ fieldType: FieldType.ExtendedKeyUsage }]);
+            expect(next).toMatchObject({ staticValues: [], extensibleList: false });
+        });
+
+        test('removing the structured row drops the permitted set and the list shape', () => {
+            const attr = keyUsageAttr();
+            const next = withMappingTargets(attr, [attr.mappingTargets[1]]);
+            expect(next).toMatchObject({ list: false, multiSelect: false, extensibleList: false, staticValues: [] });
+        });
+
+        test('a mapped attribute is narrowed to String', () => {
+            const next = withMappingTargets({ ...baseAttr(), contentType: AttributeContentType.Integer, defaultValue: 3 }, [
+                rdnTarget('CN'),
+            ]);
+            expect(next.contentType).toBe(AttributeContentType.String);
+            expect(next.defaultValue).toBeUndefined();
+        });
+    });
+
+    test('firstAuthoredAttributeError looks into the rows, in key order', () => {
+        expect(firstAuthoredAttributeError({})).toBeUndefined();
+        expect(firstAuthoredAttributeError({ mappingTargets: [{}, { rdnCode: 'row two' }], staticValues: 'later' })).toBe('row two');
+        expect(firstAuthoredAttributeError({ label: 'first', mappingTargets: [{ fieldType: 'row' }] })).toBe('first');
     });
 });

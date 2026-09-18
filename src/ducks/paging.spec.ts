@@ -26,6 +26,22 @@ describe('paging slice', () => {
         expect(next.pagings[0].paging.isFetchingList).toBe(false);
     });
 
+    test('listSuccess adopts a page size the server clamped, so the page count matches the served rows', () => {
+        let next = reducer(initialState, actions.setPagination({ entity: EntityType.CBOM, pageNumber: 1, pageSize: 2000 }));
+
+        next = reducer(next, actions.listSuccess({ entity: EntityType.CBOM, totalItems: 5000, pageSize: 1000 }));
+
+        expect(next.pagings[0].paging.pageSize).toBe(1000);
+    });
+
+    test('listSuccess without a page size leaves the chosen one alone', () => {
+        let next = reducer(initialState, actions.setPagination({ entity: EntityType.CBOM, pageNumber: 1, pageSize: 50 }));
+
+        next = reducer(next, actions.listSuccess({ entity: EntityType.CBOM, totalItems: 77 }));
+
+        expect(next.pagings[0].paging.pageSize).toBe(50);
+    });
+
     test('setCheckedRows stores checked row ids for entity', () => {
         const next = reducer(
             initialState,
