@@ -96,6 +96,14 @@ export default function DiscoveryDetail() {
         dispatch(rulesActions.getTriggerHistorySummary({ triggerObjectUuid: id }));
     }, [id, dispatch]);
 
+    // What a refresh button does: re-read the run that is already on screen and leave it standing, as the lifecycle
+    // epic does. Resetting first would blank the page and show the full skeleton for a re-read of one widget.
+    const refreshDiscoveryDetails = useCallback(() => {
+        if (!id) return;
+        dispatch(actions.getDiscoveryDetail({ uuid: id, keepCurrent: true }));
+        dispatch(rulesActions.getTriggerHistorySummary({ triggerObjectUuid: id }));
+    }, [id, dispatch]);
+
     useEffect(() => {
         getFreshDiscoveryDetails();
     }, [id, getFreshDiscoveryDetails]);
@@ -360,7 +368,7 @@ export default function DiscoveryDetail() {
                                             title="Discovery Details"
                                             widgetButtons={buttons}
                                             titleSize="large"
-                                            refreshAction={getFreshDiscoveryDetails}
+                                            refreshAction={refreshDiscoveryDetails}
                                             className="w-full md:w-1/2"
                                         >
                                             <CustomTable headers={detailHeaders} data={detailData} />
@@ -381,7 +389,7 @@ export default function DiscoveryDetail() {
                                         <Container marginTop className="md:flex-row items-start">
                                             <DiscoveryProgressWidget
                                                 discovery={discovery}
-                                                onRefresh={getFreshDiscoveryDetails}
+                                                onRefresh={refreshDiscoveryDetails}
                                                 className="w-full md:flex-1"
                                             />
                                             <DiscoveryResultsSummary

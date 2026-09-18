@@ -41,8 +41,25 @@ export const containerMockModule = () => ({
 });
 
 export const widgetMockModule = () => ({
-    default: ({ title, widgetButtons, children }: { title?: string; widgetButtons?: MockButton[]; children?: ReactNode }) => (
+    default: ({
+        title,
+        widgetButtons,
+        refreshAction,
+        children,
+    }: {
+        title?: string;
+        widgetButtons?: MockButton[];
+        refreshAction?: () => void;
+        children?: ReactNode;
+    }) => (
         <div data-testid={`widget-${title || 'root'}`}>
+            {refreshAction ? (
+                <span>
+                    <button type="button" data-testid={`refresh-${title || 'root'}`} onClick={refreshAction}>
+                        refresh
+                    </button>
+                </span>
+            ) : null}
             {(widgetButtons || []).map((button) => (
                 <button
                     type="button"

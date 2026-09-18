@@ -254,6 +254,24 @@ describe('DiscoveryDetail', () => {
             expect(deleteButton()?.title).toBe('Delete');
         });
 
+        it('refreshes a widget in place, keeping the run that is on screen', async () => {
+            await render(buildState(v2Run));
+            dispatch.mockClear();
+
+            await act(async () => {
+                container.querySelector<HTMLButtonElement>('[data-testid="refresh-Progress"]')?.click();
+            });
+
+            const actions = dispatch.mock.calls.map((call) => call[0]);
+            // resetState would blank the page and show the full skeleton, which is what the lifecycle refresh
+            // deliberately avoids.
+            expect(actions.map((action) => action?.type)).not.toContain('discoveries/resetState');
+            expect(actions.find((action) => action?.type === 'discoveries/getDiscoveryDetail')?.payload).toEqual({
+                uuid: 'disc-1',
+                keepCurrent: true,
+            });
+        });
+
         it('hides a control the user lacks permission for rather than disabling it', async () => {
             await render(buildState(v2Run, [ResourceAction.Cancel]));
 
