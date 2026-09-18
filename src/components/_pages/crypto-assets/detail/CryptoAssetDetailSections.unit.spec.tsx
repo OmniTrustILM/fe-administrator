@@ -117,6 +117,18 @@ describe('crypto asset detail sections', () => {
             expect(one('[data-testid="crypto-asset-quarantined-badge"]')).toBeNull();
         });
 
+        // A producer can name an asset with a run of characters that has nowhere to wrap.
+        test('a name with nothing to wrap on is broken and cut at two lines, with the whole of it on hover', async () => {
+            const name = 'A'.repeat(1024);
+            await render(<CryptoAssetSummary detail={detail({ name })} typeLabel="Algorithm" verdictLabel="PQC ready" />);
+
+            const heading = one('[data-testid="crypto-asset-summary"] h2');
+
+            expect(heading?.className).toContain('break-words');
+            expect(heading?.className).toContain('line-clamp-2');
+            expect(heading?.getAttribute('title')).toBe(name);
+        });
+
         test('a quarantined asset is flagged in the header', async () => {
             await render(<CryptoAssetSummary detail={detail({ quarantined: true })} typeLabel="Algorithm" verdictLabel="Not PQC ready" />);
 
@@ -130,6 +142,17 @@ describe('crypto asset detail sections', () => {
 
             expect(text('[data-testid="row-algorithmFamily"]')).toBe('Algorithm familyRSA');
             expect(text('[data-testid="row-curve"]')).toBe('Elliptic curve-');
+        });
+
+        // A table cell is one unwrapped line, so a value left bare is cut off at the card's edge instead.
+        test('a field value and an OID both wrap rather than run out of the card', async () => {
+            await render(<CryptoAssetIdentity detail={detail()} />);
+
+            const value = one('[data-testid="row-algorithmFamily"] span');
+            const oid = one('[data-testid="crypto-asset-oid"] span');
+
+            expect(value?.className).toContain('whitespace-normal');
+            expect(oid?.className).toContain('whitespace-normal');
         });
 
         test('a refuted OID is flagged and struck through, an accepted one is not', async () => {
