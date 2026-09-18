@@ -21,9 +21,9 @@ async function authorSanAttribute(page: Page) {
     await page.locator('#ra-attr-name').fill('commonName');
     await page.locator('#ra-attr-label').click();
     await page.locator('#ra-attr-label').fill('Common Name');
-    await page.getByTestId('select-ra-attr-mapping-trigger').click();
+    await page.getByTestId('select-ra-attr-mapping-0-trigger').click();
     await page.getByRole('option', { name: 'Subject Alternative Name' }).click();
-    await page.getByTestId('select-ra-attr-general-name-type-trigger').click();
+    await page.getByTestId('select-ra-attr-general-name-type-0-trigger').click();
     await page.getByRole('option', { name: 'dNSName' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
 }

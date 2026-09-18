@@ -28,9 +28,9 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
         // A definition must carry a mapping target; SAN/dNSName needs no OID options wired into the store.
-        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByTestId('select-ra-attr-mapping-0-trigger').click();
         await page.getByRole('option', { name: 'Subject Alternative Name' }).click();
-        await page.getByTestId('select-ra-attr-general-name-type-trigger').click();
+        await page.getByTestId('select-ra-attr-general-name-type-0-trigger').click();
         await page.getByRole('option', { name: 'dNSName' }).click();
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
 
@@ -50,9 +50,9 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await page.locator('#ra-attr-name').fill('environment');
         await page.locator('#ra-attr-label').click();
         await page.locator('#ra-attr-label').fill('Environment');
-        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByTestId('select-ra-attr-mapping-0-trigger').click();
         await page.getByRole('option', { name: 'Subject Alternative Name' }).click();
-        await page.getByTestId('select-ra-attr-general-name-type-trigger').click();
+        await page.getByTestId('select-ra-attr-general-name-type-0-trigger').click();
         await page.getByRole('option', { name: 'dNSName' }).click();
         await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
 
@@ -109,11 +109,11 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         );
 
         await component.getByTestId('request-attribute-authoring-attribute-add').click();
-        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByTestId('select-ra-attr-mapping-0-trigger').click();
         await page.getByRole('option', { name: 'Certificate extension' }).click();
 
-        await expect(page.getByTestId('request-attribute-authoring-extension-empty')).toHaveCount(0);
-        await page.getByTestId('select-ra-attr-extension-oid-trigger').click();
+        await expect(page.getByTestId('request-attribute-authoring-target-0-extension-options-empty')).toHaveCount(0);
+        await page.getByTestId('select-ra-attr-extension-oid-0-trigger').click();
         await expect(page.getByRole('option', { name: 'Basic Constraints' })).toBeVisible();
         await expect(page.getByRole('option', { name: 'Extended Key Usage' })).toHaveCount(0);
     });
@@ -140,11 +140,11 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         );
 
         await component.getByTestId('request-attribute-authoring-attribute-add').click();
-        await page.getByTestId('select-ra-attr-mapping-trigger').click();
+        await page.getByTestId('select-ra-attr-mapping-0-trigger').click();
         await page.getByRole('option', { name: 'Certificate extension' }).click();
 
-        await expect(page.getByTestId('request-attribute-authoring-extension-error')).toBeVisible();
-        await page.getByTestId('select-ra-attr-extension-oid-trigger').click();
+        await expect(page.getByTestId('request-attribute-authoring-target-0-extension-options-error')).toBeVisible();
+        await page.getByTestId('select-ra-attr-extension-oid-0-trigger').click();
         await expect(page.getByRole('option', { name: 'Internal Marker' })).toBeVisible();
     });
 });

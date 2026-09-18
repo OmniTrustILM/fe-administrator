@@ -28,7 +28,7 @@ export function getFieldMapping(descriptor: AnyDescriptor): FieldMapping | undef
     return (descriptor as DataAttributeV3).fieldMapping ?? undefined;
 }
 
-function generalNameLabel(value: string): string {
+export function generalNameLabel(value: string): string {
     return GENERAL_NAME_LABELS[value as GeneralNameType] ?? value;
 }
 
@@ -74,7 +74,8 @@ export function fieldMappingTokens(fieldMapping: FieldMapping | undefined, rdnCo
         .sort((a, b) => {
             const byType = typeRank(a) - typeRank(b);
             if (byType !== 0) return byType;
-            return (a?.order ?? Number.MAX_SAFE_INTEGER) - (b?.order ?? Number.MAX_SAFE_INTEGER);
+            // Core reads an absent order as 0.
+            return (a?.order ?? 0) - (b?.order ?? 0);
         })
         .map((field) => fieldToken(field, rdnCodeByOid))
         .filter((token) => token.length > 0);
