@@ -18,11 +18,12 @@ import LogoSlot from './LogoSlot';
 type ColorKey = 'primaryColor' | 'secondaryColor' | 'backgroundColor' | 'textColor';
 type LogoKey = 'lightLogo' | 'darkLogo';
 
-type ColorFieldSpec = { category: BrandColorKey; key: ColorKey; label: string; description: string; defaultColor: string };
+type ColorFieldSpec = { category: BrandColorKey; key: ColorKey; label: string; scope?: string; description: string; defaultColor: string };
 
 /**
- * Each colour says what it actually drives and which theme it reaches, because the label alone does not: an operator
- * choosing "Background" has no way to know it will not touch the dark theme.
+ * Each colour says what it actually drives, and the two that reach one composition only carry `scope` so their label
+ * says which. An operator choosing "Background" expects it to behave as Primary does and reach both themes, so the
+ * restriction has to be on the field rather than behind its toggletip, which is read only by someone already unsure.
  *
  * `defaultColor` is the platform value the field falls back to when it is left unset, and is the light-theme one even
  * for the two colours that reach both themes: one input drives both, and the dark step is derived from it rather than
@@ -47,14 +48,17 @@ const COLOR_FIELDS: readonly ColorFieldSpec[] = [
         category: 'background',
         key: 'backgroundColor',
         label: 'Background',
-        description: 'The page background and raised surfaces such as cards and dialogs. Light theme only.',
+        scope: 'light theme only',
+        description:
+            'The page background and raised surfaces such as cards and dialogs. The dark theme keeps its own surfaces, so this color does not reach it.',
         defaultColor: BRAND_DEFAULT_COLORS.background,
     },
     {
         category: 'text',
         key: 'textColor',
         label: 'Text',
-        description: 'Body text and headings. Light theme only.',
+        scope: 'light theme only',
+        description: 'Body text and headings. The dark theme keeps its own content colors, so this color does not reach it.',
         defaultColor: BRAND_DEFAULT_COLORS.text,
     },
 ];
@@ -315,11 +319,12 @@ function AppearanceSettings() {
             <div className="space-y-2">
                 <h3 className="text-lg font-bold text-content">Colors</h3>
                 <div className="grid gap-4 @md:grid-cols-2">
-                    {COLOR_FIELDS.map(({ key, label, description, defaultColor }) => (
+                    {COLOR_FIELDS.map(({ key, label, scope, description, defaultColor }) => (
                         <ColorField
                             key={key}
                             id={key}
                             label={label}
+                            scope={scope}
                             description={description}
                             value={colors[key]}
                             defaultColor={defaultColor}
