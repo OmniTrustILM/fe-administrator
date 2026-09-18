@@ -73,13 +73,13 @@ export interface DiscoveryDetailDto {
      */
     endTime?: string | null;
     /**
-     * Number of certificates that are discovered
+     * How many certificates this discovery found and saved.
      * @type {number}
      * @memberof DiscoveryDetailDto
      */
     totalCertificatesDiscovered?: number;
     /**
-     * Number of certificates that were discovered by connector
+     * How many certificate items the Discovery Provider reported. Counts items, so a certificate found on several hosts counts once per host; totalCertificatesDiscovered counts it once.
      * @type {number}
      * @memberof DiscoveryDetailDto
      */
@@ -133,6 +133,7 @@ export interface DiscoveryDetailDto {
      */
     resources: Array<Resource>;
     /**
+     * Progress counters reported by the connector, with an optional per-resource breakdown. Omitted for a v1 run and when the connector reports no progress. The counters inside are independently optional.
      * @type {DiscoveryProgressDto}
      * @memberof DiscoveryDetailDto
      */
