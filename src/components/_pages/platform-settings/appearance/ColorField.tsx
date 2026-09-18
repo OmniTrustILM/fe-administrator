@@ -8,6 +8,7 @@ import { BRAND_COLOR_MESSAGE, isBrandColor } from 'utils/branding';
 type Props = {
     id: string;
     label: string;
+    scope?: string;
     description: string;
     value: string;
     defaultColor: string;
@@ -26,8 +27,11 @@ type Props = {
  * six-digit hex is an error, and clearing needs its own control because neither the swatch nor a picker can express
  * "no colour". Both the swatch fallback and the placeholder name this field's own default, since an unset field is
  * the one that will use it.
+ *
+ * `scope` names the composition a colour is limited to. It sits inside the `label` element so it is part of the
+ * field's accessible name, and the controls keep naming the colour alone, which is what identifies them.
  */
-function ColorField({ id, label, description, value, defaultColor, onChange, disabled = false }: Readonly<Props>) {
+function ColorField({ id, label, scope, description, value, defaultColor, onChange, disabled = false }: Readonly<Props>) {
     const valid = value === '' || isBrandColor(value);
     const errorId = `${id}-error`;
 
@@ -43,6 +47,7 @@ function ColorField({ id, label, description, value, defaultColor, onChange, dis
             <div className="flex items-center gap-1.5">
                 <Label htmlFor={id} className="!mb-0">
                     {label}
+                    {scope && <span className="font-normal text-content-subtle">{` (${scope})`}</span>}
                 </Label>
                 <Toggletip ariaLabel={`About the ${label} color`} content={description} dataTestId={`color-help-${id}`} />
             </div>
