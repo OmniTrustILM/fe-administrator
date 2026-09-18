@@ -55,6 +55,86 @@ const LOGO_NAMESPACE_ERROR = 'Logo SVG must declare xmlns="http://www.w3.org/200
 
 const isPng = (bytes: Uint8Array): boolean => PNG_SIGNATURE.every((byte, index) => bytes[index] === byte);
 
+/** A chunk's length, type and trailing CRC - everything in it that is not its data. */
+const PNG_CHUNK_OVERHEAD = 12;
+
+const PNG_CHUNK_TYPE_LENGTH = 4;
+
+const PNG_IHDR_DATA_LENGTH = 13;
+
+const CRC_TABLE = Uint32Array.from({ length: 256 }, (_entry, index) => {
+    let value = index;
+
+    for (let bit = 0; bit < 8; bit += 1) {
+        value = (value >>> 1) ^ (0xedb88320 & -(value & 1));
+    }
+
+    return value >>> 0;
+});
+
+const crc32 = (bytes: Uint8Array, from: number, to: number): number => {
+    let crc = ~0;
+
+    for (let index = from; index < to; index += 1) {
+        crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ bytes[index]) & 0xff];
+    }
+
+    return ~crc >>> 0;
+};
+
+const readUint32 = (bytes: Uint8Array, offset: number): number =>
+    ((bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3]) >>> 0;
+
+const chunkType = (bytes: Uint8Array, offset: number): string =>
+    String.fromCharCode(...bytes.subarray(offset, offset + PNG_CHUNK_TYPE_LENGTH));
+
+/**
+ * Mirrors `BrandingLogoValidator.pngDimensions`: IHDR first at its declared length, every chunk's CRC intact, image
+ * data present, and IEND closing the file exactly at its end. Walking the sequence is what makes the signature check
+ * mean something - a browser draws a PNG with bytes appended after IEND, and Core refuses it.
+ *
+ * Every step is bounded by the buffer, so a truncated or hostile chunk length ends the walk rather than driving it.
+ */
+const isWellFormedPng = (bytes: Uint8Array): boolean => {
+    let sawHeader = false;
+    let sawImageData = false;
+    let offset = PNG_SIGNATURE.length;
+
+    while (offset + PNG_CHUNK_OVERHEAD <= bytes.length) {
+        const dataLength = readUint32(bytes, offset);
+
+        if (dataLength > bytes.length - offset - PNG_CHUNK_OVERHEAD) {
+            return false;
+        }
+
+        const typeOffset = offset + PNG_CHUNK_TYPE_LENGTH;
+        const type = chunkType(bytes, typeOffset);
+        const crcOffset = typeOffset + PNG_CHUNK_TYPE_LENGTH + dataLength;
+
+        if (crc32(bytes, typeOffset, crcOffset) !== readUint32(bytes, crcOffset)) {
+            return false;
+        }
+
+        if (!sawHeader) {
+            if (type !== 'IHDR' || dataLength !== PNG_IHDR_DATA_LENGTH) {
+                return false;
+            }
+
+            sawHeader = true;
+        } else if (type === 'IHDR') {
+            return false;
+        } else if (type === 'IDAT') {
+            sawImageData = true;
+        } else if (type === 'IEND') {
+            return dataLength === 0 && sawImageData && offset + PNG_CHUNK_OVERHEAD === bytes.length;
+        }
+
+        offset += PNG_CHUNK_OVERHEAD + dataLength;
+    }
+
+    return false;
+};
+
 /**
  * A failed parse is reported two ways depending on the browser - a `parsererror` root, or one inserted as the root's
  * first child - so position alone cannot decide it, and neither can the name: a well-formed SVG may carry an element
@@ -123,7 +203,7 @@ export type LogoContent = { mediaType: string; error?: undefined } | { mediaType
  */
 export const logoContent = (bytes: Uint8Array): LogoContent => {
     if (isPng(bytes)) {
-        return { mediaType: 'image/png' };
+        return isWellFormedPng(bytes) ? { mediaType: 'image/png' } : { error: LOGO_PNG_ERROR };
     }
 
     const markup = decodeXml(bytes);
