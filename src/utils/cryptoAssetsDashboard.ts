@@ -1,6 +1,12 @@
 import type { ColorOptions } from 'components/_pages/dashboard/DashboardItem/DonutChart';
 import type { SearchFilterModel } from 'types/certificate';
-import { type CryptographicAssetSyncCompletenessDto, FilterConditionOperator, FilterFieldSource, PqcVerdict } from 'types/openapi';
+import {
+    CbomAssetSyncState,
+    type CryptographicAssetSyncCompletenessDto,
+    FilterConditionOperator,
+    FilterFieldSource,
+    PqcVerdict,
+} from 'types/openapi';
 
 export const CRYPTO_ASSET_FILTER_FIELDS = {
     type: 'CBOM_ASSET_TYPE',
@@ -17,7 +23,7 @@ export const PQC_VERDICT_CHART_COLORS: Record<string, string> = {
     [PqcVerdict.NotApplicable]: '#6c757d',
 };
 
-const FALLBACK_SERIES_COLOR = '#6c757d';
+export const FALLBACK_SERIES_COLOR = '#6c757d';
 
 export function getPqcVerdictChartColors(statByPqcVerdict?: Record<string, number>): ColorOptions {
     return {
@@ -55,12 +61,10 @@ export type SyncCompleteness = {
     lastCompletedSyncAt?: string;
 };
 
-const SYNCED_STATE_CODE = 'synced';
-
 export function summarizeSyncCompleteness(completeness?: CryptographicAssetSyncCompletenessDto): SyncCompleteness {
     const states = Object.entries(completeness?.cbomStatBySyncState ?? {}).map(([code, count]) => ({ code, count }));
     const total = states.reduce((sum, state) => sum + state.count, 0);
-    const synced = states.find((state) => state.code.toLowerCase() === SYNCED_STATE_CODE)?.count ?? 0;
+    const synced = states.find((state) => state.code === CbomAssetSyncState.Synced)?.count ?? 0;
 
     return {
         total,

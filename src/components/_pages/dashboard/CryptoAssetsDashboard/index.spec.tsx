@@ -33,6 +33,8 @@ test.describe('CryptoAssetsDashboard', () => {
 
         await expect(component.getByTestId('crypto-assets-dashboard-coverage-empty')).toBeVisible();
         await expect(component.getByTestId('crypto-assets-dashboard-charts')).toBeEmpty();
+        // Core omits a count it has nothing for, and a tile left without a number reads as a heading over a gap.
+        await expect(component.getByTestId('crypto-assets-dashboard-counts').locator('.text-3xl')).toHaveText(['0', '0', '0', '0']);
     });
 
     test('the Not PQC ready tile drills through to the inventory filtered on that verdict', async ({ mount }) => {

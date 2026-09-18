@@ -104,7 +104,7 @@ function CryptoAssetsDashboard() {
             <div className="flex flex-row gap-4 md:gap-8 mb-4 md:mb-8 flex-wrap" data-testid="crypto-assets-dashboard-counts">
                 <div className="flex-1 min-w-[180px]">
                     <CountBadge
-                        data={statistics.totalAssets}
+                        data={statistics.totalAssets ?? 0}
                         title="Crypto Assets"
                         link={LINK}
                         entity={EntityType.CRYPTO_ASSET}
@@ -114,7 +114,7 @@ function CryptoAssetsDashboard() {
                 </div>
                 <div className="flex-1 min-w-[180px]">
                     <CountBadge
-                        data={notReadyCount}
+                        data={notReadyCount ?? 0}
                         title="Not PQC ready"
                         link={LINK}
                         entity={EntityType.CRYPTO_ASSET}
@@ -124,7 +124,7 @@ function CryptoAssetsDashboard() {
                 </div>
                 <div className="flex-1 min-w-[180px]">
                     <CountBadge
-                        data={statistics.distinctAlgorithmFamilyCount}
+                        data={statistics.distinctAlgorithmFamilyCount ?? 0}
                         title="Algorithm families"
                         link={LINK}
                         entity={EntityType.CRYPTO_ASSET}
@@ -134,7 +134,7 @@ function CryptoAssetsDashboard() {
                 </div>
                 <div className="flex-1 min-w-[180px]">
                     <CountBadge
-                        data={statistics.sourceCbomCount}
+                        data={statistics.sourceCbomCount ?? 0}
                         title="Source CBOMs"
                         link={CBOMS_LINK}
                         extraComponent={caption('contributing at least one asset')}

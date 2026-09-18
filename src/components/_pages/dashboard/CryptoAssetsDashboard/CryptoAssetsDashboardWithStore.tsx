@@ -29,13 +29,9 @@ const partialStatistics = {
 };
 
 const emptyStatistics = {
-    totalAssets: 0,
-    sourceCbomCount: 0,
     statByType: {},
     statByPqcVerdict: {},
     statByAlgorithmFamily: {},
-    distinctAlgorithmFamilyCount: 0,
-    unassignedAssetCount: 0,
     syncCompleteness: { cbomStatBySyncState: { synced: 0, pending: 0, failed: 0 } },
 };
 

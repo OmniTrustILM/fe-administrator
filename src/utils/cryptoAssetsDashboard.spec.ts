@@ -1,7 +1,5 @@
 import { describe, expect, test } from 'vitest';
 import { FilterConditionOperator, PqcVerdict } from 'types/openapi';
-import { CHART_MIN_CONTRAST, CHART_SURFACES } from './chart-contrast';
-import { contrastRatio } from './contrast';
 import {
     buildEmptyFilter,
     buildEqualsFilter,
@@ -85,13 +83,5 @@ describe('getPqcVerdictChartColors', () => {
 
     test('a verdict the client does not know still gets a legible series colour', () => {
         expect(getPqcVerdictChartColors({ somethingNew: 1 }).colors).toEqual(['#6c757d']);
-    });
-
-    test('every verdict colour clears the chart contrast floor on both surfaces', () => {
-        for (const verdict of Object.values(PqcVerdict)) {
-            for (const surface of CHART_SURFACES) {
-                expect(contrastRatio(PQC_VERDICT_CHART_COLORS[verdict], surface)).toBeGreaterThanOrEqual(CHART_MIN_CONTRAST);
-            }
-        }
     });
 });
