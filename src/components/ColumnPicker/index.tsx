@@ -179,7 +179,7 @@ export default function ColumnPicker({
                             onResetToStandard={handleResetToStandard}
                         />
                     </div>
-                    <HeaderPreview columns={draft} getSourceLabel={resolveSourceLabel} />
+                    <HeaderPreview columns={draft} />
                 </div>
             }
             buttons={[

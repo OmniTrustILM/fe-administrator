@@ -219,18 +219,13 @@ describe('renderColumnHeading', () => {
         expect(html).toContain(`>${abbreviation}<`);
         expect(html).toContain(`class="sr-only">${name}<`);
         expect(html).toContain('Cost centre');
+        expect(html).not.toContain(`${abbreviation}${name}`);
     });
 
     it('separates the badge from the heading with a real space, so the text content is not one word', () => {
         const html = markup(renderColumnHeading(column()));
 
         expect(html).toContain('</span> Cost centre');
-    });
-
-    it('announces a caller-supplied source label over the default', () => {
-        const html = markup(renderColumnHeading(column(), () => 'Vlastní atribut'));
-
-        expect(html).toContain('class="sr-only">Vlastní atribut<');
     });
 
     it('tags the view override rather than the catalogue label, so a renamed column keeps its badge', () => {
