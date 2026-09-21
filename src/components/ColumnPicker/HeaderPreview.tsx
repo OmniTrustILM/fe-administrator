@@ -1,5 +1,5 @@
 import type { PickerColumn } from 'types/tableColumns';
-import { getColumnHeading, getColumnKey } from 'utils/tableColumns';
+import { getColumnKey, renderColumnHeading } from 'utils/tableColumns';
 
 type Props = Readonly<{
     columns: PickerColumn[];
@@ -25,7 +25,7 @@ export default function HeaderPreview({ columns }: Props) {
                     <ul className="m-0 flex list-none items-center gap-4 px-3 py-2">
                         {rendered.map((column) => (
                             <li key={getColumnKey(column)} className="text-xs font-medium whitespace-nowrap text-content">
-                                {getColumnHeading(column)}
+                                {renderColumnHeading(column)}
                             </li>
                         ))}
                     </ul>

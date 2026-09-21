@@ -244,6 +244,17 @@ test.describe('ColumnPicker', () => {
         await expect(page.getByTestId('selected-column-property:COMMON_NAME-revert')).toHaveCount(0);
     });
 
+    test('tags an attribute column in the header preview, so it matches the header the table will render', async ({ mount, page }) => {
+        await mount(picker());
+
+        await page.getByTestId('add-field-custom:environment').click();
+
+        const preview = page.getByTestId('header-preview');
+        await expect(preview.getByTestId('source-badge')).toHaveCount(1);
+        await expect(preview.getByTestId('source-badge').locator('[aria-hidden="true"]')).toHaveText('Custom');
+        await expect(preview.getByTestId('source-badge').locator('.sr-only')).toHaveText('Custom attribute');
+    });
+
     test('the header preview follows the current selection and order live', async ({ mount, page }) => {
         await mount(picker());
 

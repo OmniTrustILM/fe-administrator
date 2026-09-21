@@ -3,7 +3,7 @@ import type { FilterFieldSource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { groupCatalogueFields, isColumnSelected } from 'utils/columnPicker';
 import { getColumnKey } from 'utils/tableColumns';
-import SourceBadge from './SourceBadge';
+import SourceBadge from 'components/SourceBadge';
 
 type Props = Readonly<{
     fields: SourcedCatalogueField[];

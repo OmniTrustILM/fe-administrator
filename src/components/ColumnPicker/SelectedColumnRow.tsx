@@ -5,7 +5,7 @@ import Badge from 'components/Badge';
 import type { FilterFieldSource } from 'types/openapi';
 import type { PickerColumn } from 'types/tableColumns';
 import { getColumnHeading } from 'utils/tableColumns';
-import SourceBadge from './SourceBadge';
+import SourceBadge from 'components/SourceBadge';
 
 type Props = Readonly<{
     column: PickerColumn;

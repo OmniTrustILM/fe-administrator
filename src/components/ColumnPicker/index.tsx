@@ -6,7 +6,7 @@ import { isColumnSelected, isSameResolution, moveColumn, resolveColumns, toCatal
 import AvailableFields from './AvailableFields';
 import HeaderPreview from './HeaderPreview';
 import SelectedColumns from './SelectedColumns';
-import { DEFAULT_SOURCE_LABELS } from './SourceBadge';
+import { DEFAULT_SOURCE_LABELS } from 'components/SourceBadge';
 
 const NO_STANDARD_COLUMNS: ColumnDefinition[] = [];
 

@@ -1,4 +1,5 @@
 import type { SortDirection, TableHeader } from 'components/CustomTable/types';
+import SourceBadge from 'components/SourceBadge';
 import type { ReactNode } from 'react';
 import type { BaseAttributeContentModel } from 'types/attributes';
 import { AttributeContentType, FilterFieldSource, FilterFieldType, type SearchColumnRequestDto } from 'types/openapi';
@@ -83,6 +84,23 @@ export function getColumnHeading(column: ColumnDefinition): string {
 }
 
 /**
+ * The heading as a table header renders it. An attribute column carries the source badge the column
+ * picker tags it with, so a custom attribute sharing a property's label is still tellable apart; a
+ * property column is the baseline and stays a plain string.
+ */
+export function renderColumnHeading(column: ColumnDefinition): ReactNode {
+    const heading = getColumnHeading(column);
+    if (column.fieldSource === FilterFieldSource.Property) return heading;
+
+    return (
+        <span className="inline-flex items-center gap-1.5">
+            <SourceBadge source={column.fieldSource} />
+            {heading}
+        </span>
+    );
+}
+
+/**
  * A stable key for a column. A field identifier is unique only within its source, so the source has
  * to qualify it — `property:name` and `custom:name` are different columns.
  *
@@ -164,7 +182,7 @@ export function buildColumnHeaders(columns: ColumnDefinition[], options: BuildCo
         const info = options.info?.[key];
         return {
             id: key,
-            content: getColumnHeading(column),
+            content: renderColumnHeading(column),
             ...(info ? { info } : {}),
             ...(column.headingHidden ? { headingHidden: true } : {}),
             sortable: column.sortable === true,
