@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { PaginationResponseDtoCryptographicAssetDto } from 'types/openapi';
+import type { CryptographicAssetDetailDto, PaginationResponseDtoCryptographicAssetDto } from 'types/openapi';
 import reducer, { actions, initialState, selectors } from './crypto-assets';
 
 const page = {
@@ -67,5 +67,52 @@ describe('cryptoAssets slice', () => {
         const listing = reducer(initialState, actions.listCryptoAssets(request));
 
         expect(selectors.selectIsFetchingList({ cryptoAssets: listing } as never)).toBe(true);
+    });
+});
+
+const detail = { uuid: 'asset-1', name: 'RSA-2048' } as CryptographicAssetDetailDto;
+
+describe('cryptoAssets slice, detail', () => {
+    test('getCryptoAssetDetail drops the previous asset and its error, so a new uuid never shows the old one', () => {
+        const failed = reducer(initialState, actions.getCryptoAssetDetailFailure({ error: 'gone', statusCode: 404 }));
+        const loaded = reducer(failed, actions.getCryptoAssetDetailSuccess({ detail }));
+
+        const refetching = reducer(loaded, actions.getCryptoAssetDetail({ uuid: 'asset-2' }));
+
+        expect(refetching.assetDetail).toBeUndefined();
+        expect(refetching.assetDetailError).toBeUndefined();
+        expect(refetching.assetDetailErrorStatusCode).toBeUndefined();
+        expect(refetching.isFetchingDetail).toBe(true);
+    });
+
+    test('getCryptoAssetDetailSuccess stores the asset for the selectors', () => {
+        const state = reducer(
+            reducer(initialState, actions.getCryptoAssetDetail({ uuid: 'asset-1' })),
+            actions.getCryptoAssetDetailSuccess({ detail }),
+        );
+        const appState = { cryptoAssets: state } as never;
+
+        expect(selectors.selectCryptoAssetDetail(appState)).toEqual(detail);
+        expect(selectors.selectIsFetchingDetail(appState)).toBe(false);
+    });
+
+    test('getCryptoAssetDetailFailure keeps the status code, so the page can tell a missing asset from a failure', () => {
+        const state = reducer(
+            reducer(initialState, actions.getCryptoAssetDetail({ uuid: 'asset-1' })),
+            actions.getCryptoAssetDetailFailure({ error: 'Not found', statusCode: 404 }),
+        );
+        const appState = { cryptoAssets: state } as never;
+
+        expect(selectors.selectCryptoAssetDetailError(appState)).toBe('Not found');
+        expect(selectors.selectCryptoAssetDetailErrorStatusCode(appState)).toBe(404);
+        expect(selectors.selectIsFetchingDetail(appState)).toBe(false);
+    });
+
+    test('clearCryptoAssetDetail forgets the asset and its error', () => {
+        const failed = reducer(initialState, actions.getCryptoAssetDetailFailure({ error: 'boom', statusCode: 500 }));
+
+        const cleared = reducer(reducer(failed, actions.getCryptoAssetDetailSuccess({ detail })), actions.clearCryptoAssetDetail());
+
+        expect(cleared).toEqual(initialState);
     });
 });

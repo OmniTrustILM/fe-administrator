@@ -17,6 +17,8 @@ export type Props = {
     type?: 'submit' | 'reset' | 'button';
     'data-testid'?: string;
     'aria-label'?: string;
+    'aria-expanded'?: boolean;
+    'aria-controls'?: string;
 };
 
 const baseButton =
@@ -65,6 +67,8 @@ function Button({
     type = 'button',
     'data-testid': dataTestId,
     'aria-label': ariaLabel,
+    'aria-expanded': ariaExpanded,
+    'aria-controls': ariaControls,
 }: Readonly<Props>) {
     const buttonElement = (
         <button
@@ -75,6 +79,8 @@ function Button({
             disabled={disabled}
             data-testid={dataTestId}
             aria-label={ariaLabel}
+            aria-expanded={ariaExpanded}
+            aria-controls={ariaControls}
         >
             {children}
         </button>
