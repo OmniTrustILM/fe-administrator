@@ -16,6 +16,7 @@ import { renderOAuth2StateBadges } from 'utils/oauth2Providers';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
+import JwkSetLoadFailureWarning from 'components/_pages/auth-settings/JwkSetLoadFailureWarning';
 
 export default function OAuth2ProviderDetail() {
     const { providerName } = useParams();
@@ -162,6 +163,7 @@ export default function OAuth2ProviderDetail() {
                         <CustomTable headers={headers} data={data} />
                     </Widget>
                     <Widget title="JWK Set Keys" titleSize="large" refreshAction={getFreshData}>
+                        <JwkSetLoadFailureWarning failure={oauth2Provider?.jwkSetLoadFailure} />
                         <JwkSetKeysTable jwkSetKeys={oauth2Provider?.jwkSetKeys} />
                     </Widget>
                 </Container>

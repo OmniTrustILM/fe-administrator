@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { JwkDto } from './';
+import type { JwkDto, JwkSetLoadFailure } from './';
 
 /**
  * @export
@@ -120,4 +120,10 @@ export interface OAuth2ProviderSettingsResponseDto {
      * @memberof OAuth2ProviderSettingsResponseDto
      */
     jwkSetKeys: Array<JwkDto>;
+    /**
+     * Reason the configured JWK Set could not be loaded. Absent when loading succeeded or no explicit JWK Set source is configured.
+     * @type {JwkSetLoadFailure}
+     * @memberof OAuth2ProviderSettingsResponseDto
+     */
+    jwkSetLoadFailure?: JwkSetLoadFailure;
 }

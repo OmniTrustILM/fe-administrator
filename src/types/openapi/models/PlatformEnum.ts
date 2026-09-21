@@ -24,6 +24,7 @@ export enum PlatformEnum {
     FilterFieldSource = 'FilterFieldSource',
     SortDirection = 'SortDirection',
     SettingsSection = 'SettingsSection',
+    JwkSetLoadFailure = 'JwkSetLoadFailure',
     AuthType = 'AuthType',
     HealthStatus = 'HealthStatus',
     ConnectorStatus = 'ConnectorStatus',

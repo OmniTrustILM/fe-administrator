@@ -1,5 +1,6 @@
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import JwkSetKeysTable from 'components/_pages/auth-settings/JwkSetKeysTable';
+import JwkSetLoadFailureWarning from 'components/_pages/auth-settings/JwkSetLoadFailureWarning';
 import OAuth2ProviderForm from 'components/_pages/auth-settings/form';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
@@ -262,7 +263,10 @@ const AuthenticationSettings = () => {
                             <Spinner active={isFetchingProvider} />
                         </div>
                     ) : (
-                        <JwkSetKeysTable jwkSetKeys={oauth2Provider?.jwkSetKeys} />
+                        <>
+                            <JwkSetLoadFailureWarning failure={oauth2Provider?.jwkSetLoadFailure} />
+                            <JwkSetKeysTable jwkSetKeys={oauth2Provider?.jwkSetKeys} />
+                        </>
                     )
                 }
                 toggle={onCloseProviderJwkSetKeys}
