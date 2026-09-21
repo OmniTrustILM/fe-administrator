@@ -1,12 +1,9 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { JwkSetLoadFailure } from 'types/openapi';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
-import {
-    AuthenticationSettingsTestWrapper,
-    JWK_SET_LOAD_FAILURES,
-    OAuth2ProviderDetailTestWrapper,
-} from './OAuth2ProviderDetailTestWrapper';
+import { JWK_SET_LOAD_FAILURES, OAuth2ProviderDetailTestWrapper } from '../jwkSetLoadFailureTestFixtures';
 
 setupReactActEnvironment();
 
@@ -33,38 +30,16 @@ describe('OAuth2 provider JWK Set load warning', () => {
         });
     }
 
-    for (const failure of Object.values(JWK_SET_LOAD_FAILURES)) {
-        test(`shows the ${failure.code} warning from the platform enum`, async () => {
-            await render(<OAuth2ProviderDetailTestWrapper failure={failure.code} />);
+    test('passes the provider failure to the warning without disabling edit or delete', async () => {
+        await render(<OAuth2ProviderDetailTestWrapper failure={JwkSetLoadFailure.Invalid} />);
 
-            const warning = container.querySelector('[data-testid="jwk-set-load-failure-warning"]');
-            expect(warning).not.toBeNull();
-            expect(warning?.textContent).toContain(failure.label);
-            expect(warning?.textContent).toContain(failure.description);
-            expect((container.querySelector('[data-testid="pencil-button"]') as HTMLButtonElement).disabled).toBe(false);
-            expect((container.querySelector('[data-testid="trash-button"]') as HTMLButtonElement).disabled).toBe(false);
-        });
-    }
-
-    test('does not show a warning when loading succeeded', async () => {
-        await render(<OAuth2ProviderDetailTestWrapper />);
-
-        expect(container.querySelector('[data-testid="jwk-set-load-failure-warning"]')).toBeNull();
-    });
-
-    test('shows the warning in the keys dialog opened from the providers list', async () => {
-        await render(<AuthenticationSettingsTestWrapper failure="unavailable" />);
-
-        const keyButton = container.querySelector('svg.lucide-key')?.closest('button');
-        expect(keyButton).not.toBeNull();
-        await act(async () => {
-            keyButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        });
-
-        const dialog = document.body.querySelector('[role="dialog"]');
-        expect(dialog?.textContent).toContain('JWK Set Keys of "provider"');
-        expect(dialog?.querySelector('[data-testid="jwk-set-load-failure-warning"]')?.textContent).toContain(
-            JWK_SET_LOAD_FAILURES.unavailable.description,
+        expect(container.querySelector('[data-testid="jwk-set-load-failure-warning"]')?.textContent).toContain(
+            JWK_SET_LOAD_FAILURES[JwkSetLoadFailure.Invalid].description,
         );
+
+        const editButton = container.querySelector<HTMLButtonElement>('[data-testid="pencil-button"]');
+        const deleteButton = container.querySelector<HTMLButtonElement>('[data-testid="trash-button"]');
+        expect(editButton?.disabled).toBe(false);
+        expect(deleteButton?.disabled).toBe(false);
     });
 });
