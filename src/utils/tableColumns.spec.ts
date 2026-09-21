@@ -221,6 +221,18 @@ describe('renderColumnHeading', () => {
         expect(html).toContain('Cost centre');
     });
 
+    it('separates the badge from the heading with a real space, so the text content is not one word', () => {
+        const html = markup(renderColumnHeading(column()));
+
+        expect(html).toContain('</span> Cost centre');
+    });
+
+    it('announces a caller-supplied source label over the default', () => {
+        const html = markup(renderColumnHeading(column(), () => 'Vlastní atribut'));
+
+        expect(html).toContain('class="sr-only">Vlastní atribut<');
+    });
+
     it('tags the view override rather than the catalogue label, so a renamed column keeps its badge', () => {
         const html = markup(renderColumnHeading(column({ label: 'Cost centre (FY26)' })));
 

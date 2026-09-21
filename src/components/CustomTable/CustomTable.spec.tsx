@@ -1595,6 +1595,25 @@ test.describe('CustomTable · column source', () => {
         await expect(cell.locator('[data-testid="sort-indicator"]')).toBeVisible();
     });
 
+    test('renders the badge in one case whether or not the column is sortable', async ({ mount }) => {
+        const caseOf = async (sortable: boolean) => {
+            const component = await mount(table([{ ...department, sortable }]));
+            const badge = component.getByTestId('source-badge');
+            const transform = await badge.evaluate((node) => getComputedStyle(node).textTransform);
+            await component.unmount();
+            return transform;
+        };
+
+        expect(await caseOf(true)).toBe('none');
+        expect(await caseOf(false)).toBe('none');
+    });
+
+    test('separates the badge from the heading in the cell text, not only in the layout', async ({ mount }) => {
+        const component = await mount(table([department]));
+
+        await expect(component.locator(departmentCell)).toContainText('Custom attribute Department');
+    });
+
     test('keeps a headingHidden column visually blank, badge and all', async ({ mount }) => {
         const component = await mount(table([{ ...department, headingHidden: true }]));
 

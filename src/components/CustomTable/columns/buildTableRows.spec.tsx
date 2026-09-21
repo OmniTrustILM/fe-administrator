@@ -59,14 +59,15 @@ test.describe('buildTableRows', () => {
     test('renders a row from the column definitions it is given', async ({ mount, page }) => {
         await mount(renderTable([commonName, costCentre, environment]));
 
-        await expect(page.getByRole('columnheader')).toHaveText(['Common Name', /Cost centre/, /Environment/]);
+        await expect(page.getByRole('columnheader')).toHaveText(['Common Name', /Cost centre$/, /Environment$/]);
+        await expect(page.getByRole('columnheader').nth(1).getByTestId('source-badge')).toHaveCount(1);
         await expect(page.getByRole('row').nth(1).getByRole('cell')).toHaveText(['api.acme.test', '4820', /production/]);
     });
 
     test('renders the same row in a different column order without touching the row data', async ({ mount, page }) => {
         await mount(renderTable([environment, commonName, costCentre]));
 
-        await expect(page.getByRole('columnheader')).toHaveText([/Environment/, 'Common Name', /Cost centre/]);
+        await expect(page.getByRole('columnheader')).toHaveText([/Environment$/, 'Common Name', /Cost centre$/]);
         await expect(page.getByRole('row').nth(1).getByRole('cell')).toHaveText([/production/, 'api.acme.test', '4820']);
     });
 

@@ -88,13 +88,15 @@ export function getColumnHeading(column: ColumnDefinition): string {
  * picker tags it with, so a custom attribute sharing a property's label is still tellable apart; a
  * property column is the baseline and stays a plain string.
  */
-export function renderColumnHeading(column: ColumnDefinition): ReactNode {
+export function renderColumnHeading(column: ColumnDefinition, getSourceLabel?: (source: FilterFieldSource) => string): ReactNode {
     const heading = getColumnHeading(column);
     if (column.fieldSource === FilterFieldSource.Property) return heading;
 
     return (
         <span className="inline-flex items-center gap-1.5">
-            <SourceBadge source={column.fieldSource} />
+            <SourceBadge source={column.fieldSource} label={getSourceLabel?.(column.fieldSource)} />
+            {/* An explicit space, because the visible gap is layout: without it the cell's text content,
+            and so anything copying or matching on it, reads the badge and the heading as one word. */}{' '}
             {heading}
         </span>
     );

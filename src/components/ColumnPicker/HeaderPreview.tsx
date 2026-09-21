@@ -1,8 +1,10 @@
+import type { FilterFieldSource } from 'types/openapi';
 import type { PickerColumn } from 'types/tableColumns';
 import { getColumnKey, renderColumnHeading } from 'utils/tableColumns';
 
 type Props = Readonly<{
     columns: PickerColumn[];
+    getSourceLabel: (source: FilterFieldSource) => string;
 }>;
 
 /**
@@ -10,7 +12,7 @@ type Props = Readonly<{
  * or a rename can be judged without closing anything. Unavailable columns are left out, because
  * they are what the table will not render either.
  */
-export default function HeaderPreview({ columns }: Props) {
+export default function HeaderPreview({ columns, getSourceLabel }: Props) {
     const rendered = columns.filter((column) => column.available);
 
     return (
@@ -25,7 +27,7 @@ export default function HeaderPreview({ columns }: Props) {
                     <ul className="m-0 flex list-none items-center gap-4 px-3 py-2">
                         {rendered.map((column) => (
                             <li key={getColumnKey(column)} className="text-xs font-medium whitespace-nowrap text-content">
-                                {renderColumnHeading(column)}
+                                {renderColumnHeading(column, getSourceLabel)}
                             </li>
                         ))}
                     </ul>
