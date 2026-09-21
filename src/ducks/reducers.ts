@@ -47,6 +47,7 @@ import { slice as schedulerSlice } from './scheduler';
 import { slice as signingProfilesSlice } from './signing-profiles';
 import { slice as signingRecordsSlice } from './signing-records';
 import { slice as signingRecordsDashboardSlice } from './signing-records-dashboard';
+import { slice as cryptoAssetsDashboardSlice } from './crypto-assets-dashboard';
 import { slice as settingsSlice } from './settings';
 import { slice as raProfileRequestAttributesSlice } from './raProfileRequestAttributes';
 import { slice as dashboardSlice } from './statisticsDashboard';
@@ -115,6 +116,7 @@ export const reducers = combineReducers({
     [signingProfilesSlice.name]: signingProfilesSlice.reducer,
     [signingRecordsSlice.name]: signingRecordsSlice.reducer,
     [signingRecordsDashboardSlice.name]: signingRecordsDashboardSlice.reducer,
+    [cryptoAssetsDashboardSlice.name]: cryptoAssetsDashboardSlice.reducer,
     [profileApprovalSlice.name]: profileApprovalSlice.reducer,
     [approvalSlice.name]: approvalSlice.reducer,
     [notificationsSlice.name]: notificationsSlice.reducer,

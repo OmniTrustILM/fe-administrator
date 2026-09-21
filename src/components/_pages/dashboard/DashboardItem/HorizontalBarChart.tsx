@@ -30,16 +30,37 @@ type YAxisTickProps = Readonly<{
     y?: number;
     payload?: { value?: string };
     maxChars?: number;
+    onActivate?: (label: string) => void;
 }>;
 
-function YAxisTick({ x, y, payload, maxChars = 12 }: YAxisTickProps) {
+function YAxisTick({ x, y, payload, maxChars = 12, onActivate }: YAxisTickProps) {
     const full = payload?.value ?? '';
     const text = full.length > maxChars ? `${full.slice(0, Math.max(1, maxChars - 1))}…` : full;
-    return (
+    const label = (
         <text x={x} y={y} dy={4} textAnchor="end" fontSize={12} fill="currentColor">
             <title>{full}</title>
             {text}
         </text>
+    );
+
+    if (!onActivate) return label;
+
+    return (
+        <g
+            role="button"
+            tabIndex={0}
+            aria-label={`${full}: open the filtered list`}
+            data-testid="horizontal-bar-chart-label"
+            className="cursor-pointer outline-offset-2 focus-visible:outline-2 focus-visible:outline-brand [&:focus-visible>text]:underline"
+            onClick={() => onActivate(full)}
+            onKeyDown={(event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                onActivate(full);
+            }}
+        >
+            {label}
+        </g>
     );
 }
 
@@ -61,10 +82,14 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
     const yAxisWidth = Math.min(180, Math.max(80, longestLabel * 7 + 8));
     const yAxisMaxChars = Math.max(6, Math.floor((yAxisWidth - 8) / 7));
 
+    const openFiltered = (label: string) => {
+        dispatch(filterActions.setCurrentFilters({ entity, currentFilters: onSetFilter(label) }));
+        navigate(redirect);
+    };
+
     const handleBarClick = (index: number) => {
         if (index < 0 || index >= labels.length) return;
-        dispatch(filterActions.setCurrentFilters({ entity, currentFilters: onSetFilter(labels[index]) }));
-        navigate(redirect);
+        openFiltered(labels[index]);
     };
 
     return (
@@ -85,7 +110,7 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
                         type="category"
                         dataKey="label"
                         width={yAxisWidth}
-                        tick={<YAxisTick maxChars={yAxisMaxChars} />}
+                        tick={<YAxisTick maxChars={yAxisMaxChars} onActivate={openFiltered} />}
                         stroke={themeColors.axis}
                         axisLine={false}
                         tickLine={false}

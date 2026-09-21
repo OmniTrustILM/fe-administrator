@@ -808,6 +808,23 @@ function signingRecordsDashboardTestReducer(
     return state ?? signingRecordsDashboardTestInitialState;
 }
 
+type CryptoAssetsDashboardTestState = {
+    isFetching: boolean;
+    statistics?: unknown;
+};
+
+const cryptoAssetsDashboardTestInitialState: CryptoAssetsDashboardTestState = {
+    isFetching: false,
+    statistics: undefined,
+};
+
+function cryptoAssetsDashboardTestReducer(
+    state: CryptoAssetsDashboardTestState | undefined,
+    _action: UnknownAction,
+): CryptoAssetsDashboardTestState {
+    return state ?? cryptoAssetsDashboardTestInitialState;
+}
+
 type RaProfileRequestAttributesTestState = {
     raProfileSet?: any;
     isUpdatingRaProfileSet: boolean;
@@ -1426,6 +1443,7 @@ export const testReducers = combineReducers({
     utilsCertificate: utilsCertificateTestReducer,
     utilsActuator: utilsActuatorTestReducer,
     signingRecordsDashboard: signingRecordsDashboardTestReducer,
+    cryptoAssetsDashboard: cryptoAssetsDashboardTestReducer,
     raprofiles: raProfilesTestReducer,
     authorities: authoritiesTestReducer,
     cryptographicOperations: cryptographicOperationsTestReducer,
@@ -1467,6 +1485,7 @@ export const testInitialState = {
     utilsCertificate: utilsCertificateTestInitialState,
     utilsActuator: utilsActuatorTestInitialState,
     signingRecordsDashboard: signingRecordsDashboardTestInitialState,
+    cryptoAssetsDashboard: cryptoAssetsDashboardTestInitialState,
     raprofiles: raProfilesTestInitialState,
     authorities: authoritiesTestInitialState,
     cryptographicOperations: cryptographicOperationsTestInitialState,
