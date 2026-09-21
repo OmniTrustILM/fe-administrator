@@ -46,13 +46,13 @@ export interface DiscoveryListDto {
      * @type {string}
      * @memberof DiscoveryListDto
      */
-    startTime?: string;
+    startTime?: string | null;
     /**
      * Date and time when Discovery finished
      * @type {string}
      * @memberof DiscoveryListDto
      */
-    endTime?: string;
+    endTime?: string | null;
     /**
      * Number of certificates that are discovered
      * @type {number}

@@ -11,13 +11,18 @@
  * Do not edit the class manually.
  */
 
-import type { AttributeContentType, AttributeType, AttributeVersion } from './';
+import type { AttributeContentType, AttributeType, AttributeVersion, BaseAttributeContentDtoV3 } from './';
 
 /**
  * @export
  * @interface ResponseAttributeV3
  */
 export interface ResponseAttributeV3 {
+    /**
+     * @type {Array<BaseAttributeContentDtoV3>}
+     * @memberof ResponseAttributeV3
+     */
+    content?: Array<BaseAttributeContentDtoV3>;
     /**
      * UUID of the Attribute
      * @type {string}

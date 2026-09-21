@@ -108,4 +108,10 @@ export interface AcmeProfileRequestDto {
      * @memberof AcmeProfileRequestDto
      */
     certificateAssociations?: ProtocolCertificateAssociationsRequestDto;
+    /**
+     * UUIDs of the secrets holding the External Account Binding HMAC keys accepted by this ACME Profile. Each secret\'s UUID is the kid an ACME client binds a new Account with, and its content is the base64url-encoded key. Supplying at least one makes External Account Binding mandatory - the directory meta then advertises externalAccountRequired; an empty list leaves Account registration open.
+     * @type {Array<string>}
+     * @memberof AcmeProfileRequestDto
+     */
+    eabSecretUuids?: Array<string>;
 }

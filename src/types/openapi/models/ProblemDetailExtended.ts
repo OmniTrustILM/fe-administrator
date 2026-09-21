@@ -29,7 +29,7 @@ export interface ProblemDetailExtended {
      * @type {string}
      * @memberof ProblemDetailExtended
      */
-    title?: string;
+    title?: string | null;
     /**
      * HTTP status code (MUST match the actual response code)
      * @type {number}
@@ -41,13 +41,13 @@ export interface ProblemDetailExtended {
      * @type {string}
      * @memberof ProblemDetailExtended
      */
-    detail?: string;
+    detail?: string | null;
     /**
      * URI reference identifying the occurrence (e.g., request path or operation ID).
      * @type {string}
      * @memberof ProblemDetailExtended
      */
-    instance?: string;
+    instance?: string | null;
     /**
      * Generic map of properties that are not known ahead of time
      * @type {{ [key: string]: any; }}

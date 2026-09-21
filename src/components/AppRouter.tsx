@@ -178,12 +178,16 @@ const CbomDetail = lazyWithRetry(() => import('components/_pages/cboms/detail'))
 const CbomVersionsHistory = lazyWithRetry(() => import('components/_pages/cboms/versions'));
 const CbomSyncSkipsList = lazyWithRetry(() => import('components/_pages/cboms/sync-skips'));
 
+const CryptoAssetsList = lazyWithRetry(() => import('components/_pages/crypto-assets/list'));
+
 const RouteFallback = () => <Spinner size="xl" />;
 
 export default function AppRouter() {
     const profile = useSelector(selectors.profile);
 
     const { isProxiesEnabled, isTrustedCertificatesEnabled } = featureFlags;
+
+    const canListCryptoAssets = profile?.permissions.allowedListings.includes(Resource.CryptoAssets) ?? false;
 
     const appRoutes = useMemo(
         () => (
@@ -476,6 +480,8 @@ export default function AppRouter() {
                     <Route path={`/${Resource.Cboms.toLowerCase()}/sync-skips`} element={<CbomSyncSkipsList />} />
                     <Route path={`/${Resource.Cboms.toLowerCase()}/detail/:id`} element={<CbomDetail />} />
                     <Route path={`/${Resource.Cboms.toLowerCase()}/detail/:id/versions/:versionId?`} element={<CbomVersionsHistory />} />
+
+                    {canListCryptoAssets && <Route path={`/${Resource.CryptoAssets.toLowerCase()}`} element={<CryptoAssetsList />} />}
                 </Route>
 
                 {/*
@@ -485,7 +491,7 @@ export default function AppRouter() {
                 <Route path="*" element={<h1>404</h1>} />
             </>
         ),
-        [isProxiesEnabled, isTrustedCertificatesEnabled],
+        [isProxiesEnabled, isTrustedCertificatesEnabled, canListCryptoAssets],
     );
 
     return (

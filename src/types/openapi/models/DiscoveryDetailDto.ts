@@ -57,13 +57,13 @@ export interface DiscoveryDetailDto {
      * @type {string}
      * @memberof DiscoveryDetailDto
      */
-    startTime?: string;
+    startTime?: string | null;
     /**
      * Date and time when Discovery finished
      * @type {string}
      * @memberof DiscoveryDetailDto
      */
-    endTime?: string;
+    endTime?: string | null;
     /**
      * Number of certificates that are discovered
      * @type {number}
@@ -117,7 +117,7 @@ export interface DiscoveryDetailDto {
      * @type {Array<Resource>}
      * @memberof DiscoveryDetailDto
      */
-    resources?: Array<Resource>;
+    resources: Array<Resource>;
     /**
      * @type {DiscoveryProgressDto}
      * @memberof DiscoveryDetailDto

@@ -51,8 +51,8 @@ function BrandLogo({ defaultLight, defaultDark, alt, className, dataTestId }: Re
         <img
             src={isRenderableLogo(uploaded) ? uploaded : platform}
             alt={alt}
-            // The height is fixed by the caller and the width follows the image, so anything between 1:1 and 3:1 keeps
-            // its proportions; object-contain is what stops a wider mark being stretched to fill.
+            // The height is fixed by the caller and the width follows the image, so a mark of any shape keeps its
+            // proportions; object-contain is what stops a wider one being stretched to fill.
             //
             // `invisible` rather than a conditional render: the element has to stay in the tree to reserve its space,
             // and `visibility: hidden` also keeps the logo out of the accessible tree while it is not the final one.

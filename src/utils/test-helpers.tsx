@@ -80,3 +80,8 @@ export function withProviders(
 export async function waitForAsync(timeout = 100) {
     return new Promise((resolve) => setTimeout(resolve, timeout));
 }
+
+/** Mounts inside a plain div, so a spec can assert on (or assert the absence of) the component's own root element. */
+export function inContainer(component: React.ReactElement) {
+    return <div>{component}</div>;
+}
