@@ -1497,4 +1497,43 @@ test.describe('CustomTable', () => {
             await expect(nameCell).toHaveAttribute('aria-sort', 'ascending');
         });
     });
+
+    test.describe('trailing header action', () => {
+        const action = <button type="button">Add column</button>;
+
+        test('renders the action in a header cell of its own, with a matching cell on every row', async ({ mount }) => {
+            const component = await mount(
+                withProviders(<CustomTable headers={mockHeaders} data={mockData} trailingHeaderAction={action} />),
+            );
+
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length + 1);
+            await expect(component.getByRole('button', { name: 'Add column' })).toBeVisible();
+            await expect(component.locator('tbody tr').first().locator('td')).toHaveCount(mockHeaders.length + 1);
+        });
+
+        test('keeps the header and the row aligned when the table also has checkboxes', async ({ mount }) => {
+            const component = await mount(
+                withProviders(<CustomTable headers={mockHeaders} data={mockData} hasCheckboxes trailingHeaderAction={action} />),
+            );
+
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length + 2);
+            await expect(component.locator('tbody tr').first().locator('td')).toHaveCount(mockHeaders.length + 2);
+        });
+
+        test('counts the trailing column in the loading skeleton', async ({ mount }) => {
+            const component = await mount(
+                withProviders(<CustomTable headers={mockHeaders} data={mockData} isLoading trailingHeaderAction={action} />),
+            );
+
+            await expect(component.getByTestId('table-skeleton')).toBeVisible();
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length + 1);
+        });
+
+        test('adds no column at all when the caller passes none', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
+
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length);
+            await expect(component.locator('tbody tr').first().locator('td')).toHaveCount(mockHeaders.length);
+        });
+    });
 });

@@ -64,9 +64,17 @@ type Props = {
     disableSearchControls?: boolean;
     isLoading?: boolean;
     emptyStateDescription?: string;
+    /**
+     * A control rendered in a trailing header cell of its own, after the last data column. Every row
+     * gains a matching empty cell, so it is a column the table owns rather than one of the caller's:
+     * it carries no heading, no sort and no data, and is absent entirely when nothing is passed.
+     */
+    trailingHeaderAction?: React.ReactNode;
 };
 
 const emptyCheckedRows: (string | number)[] = [];
+
+const TRAILING_ACTION_KEY = '__trailing_action__';
 
 // ARIA asks for aria-sort on the sorted header only, so an unsorted column carries no attribute
 // rather than an explicit "none" — otherwise every sortable header announces a sort state at once.
@@ -116,6 +124,7 @@ function CustomTable({
     disableSearchControls = false,
     isLoading = false,
     emptyStateDescription = 'There are no records to display here yet',
+    trailingHeaderAction,
 }: Readonly<Props>) {
     const location = useLocation();
     const [tblData, setTblData] = useState<TableDataRow[]>(data);
@@ -123,6 +132,10 @@ function CustomTable({
     const [totalPages, setTotalPages] = useState(1);
 
     const serverSortEnabled = onSortChanged !== undefined;
+
+    // The rows need to know only that the trailing column exists. Depending on the node itself would
+    // rebuild every row whenever the caller re-created it, which an inline element does every render.
+    const hasTrailingAction = Boolean(trailingHeaderAction);
 
     const [expandedRow, setExpandedRow] = useState<string | number>();
     const internalPaginationHydratedKeyRef = useRef<string | undefined>(undefined);
@@ -611,7 +624,7 @@ function CustomTable({
         const columns: TableHeader[] = [...tblHeaders];
 
         if (hasCheckboxes) columns.unshift({ id: '__checkbox__', content: '', sortable: false, width: '0%' });
-        return columns.map((header) => (
+        const cells = columns.map((header) => (
             <Fragment key={header.id}>
                 <th
                     scope="col"
@@ -684,8 +697,19 @@ function CustomTable({
                 </th>
             </Fragment>
         ));
+
+        if (trailingHeaderAction) {
+            cells.push(
+                <th key={TRAILING_ACTION_KEY} scope="col" className="w-px p-2.5 bg-surface-sunken">
+                    {trailingHeaderAction}
+                </th>,
+            );
+        }
+
+        return cells;
     }, [
         tblHeaders,
+        trailingHeaderAction,
         hasCheckboxes,
         onColumnSortClick,
         hasAllCheckBox,
@@ -751,11 +775,14 @@ function CustomTable({
                                 onDetailClick={handleRowDetailClick}
                             />
                         ))}
+
+                        {hasTrailingAction && <td key={TRAILING_ACTION_KEY} className="p-2.5" />}
                     </tr>
                 </Fragment>
             ));
     }, [
         tblData,
+        hasTrailingAction,
         hasPagination,
         hasDetails,
         pageSize,
@@ -775,7 +802,7 @@ function CustomTable({
         <div data-testid="custom-table">
             {isLoading ? (
                 <TableSkeleton
-                    columnsCount={headers.length}
+                    columnsCount={headers.length + (hasTrailingAction ? 1 : 0)}
                     hasCheckboxes={Boolean(hasCheckboxes)}
                     hasPagination={false}
                     canSearch={Boolean(canSearch)}

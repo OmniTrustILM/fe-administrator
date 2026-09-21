@@ -69,6 +69,13 @@ export type ViewTabsProps = Readonly<{
      * carried-over selection would span rows the user can no longer see.
      */
     onApply: (slice: ViewSlice) => void;
+    /**
+     * Hands the column dialog's open state to the host, so the table's own control reaches the one
+     * dialog rather than a second copy of it. One object rather than two props, because a host that
+     * supplied only the state could open a dialog it could never close. The strip owns the dialog
+     * when this is left out.
+     */
+    columnDialog?: { isOpen: boolean; onOpenChange: (open: boolean) => void };
     /** Named in the column dialog's caption, e.g. "Certificates". */
     resourceLabel?: string;
     getSourceLabel?: (source: FilterFieldSource) => string;
@@ -96,6 +103,7 @@ export default function ViewTabs({
     filters,
     sort,
     onApply,
+    columnDialog,
     resourceLabel,
     getSourceLabel,
     dataTestId = 'view-tabs',
@@ -108,8 +116,11 @@ export default function ViewTabs({
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
 
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
-    const [isPickerOpen, setIsPickerOpen] = useState(false);
+    const [ownPickerOpen, setOwnPickerOpen] = useState(false);
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
+
+    const isPickerOpen = columnDialog?.isOpen ?? ownPickerOpen;
+    const setIsPickerOpen = columnDialog?.onOpenChange ?? setOwnPickerOpen;
 
     const fields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
 
@@ -160,16 +171,25 @@ export default function ViewTabs({
     /**
      * What the column dialog edits.
      *
-     * The stored list, unavailable columns included — handing over only what the table renders would
-     * leave a column the listing cannot display unreachable in the very dialog the notice about it
-     * sends the user to, and it would then be dropped by the next save without ever being shown.
-     * Except when nothing rendered at all: the table is showing the platform set, so that is what the
-     * dialog opens with, and Save produces a usable view rather than an empty one.
+     * What the table is showing, which is the stored view plus anything changed since — the table's
+     * own controls can add a column without saving it, and opening the dialog on the stored list
+     * would quietly put that change back on Save.
+     *
+     * Then the stored columns this listing cannot display, which the table never showed: handing over
+     * only what it renders would leave such a column unreachable in the very dialog the notice about
+     * it sends the user to, and the next save would drop it without ever showing it.
      */
     const pickerColumns = useMemo<ColumnDefinition[]>(() => {
-        if (!resolved) return storedSlice.columns;
-        return resolved.fellBackToStandard ? resolved.renderable : resolved.columns;
-    }, [resolved, storedSlice]);
+        if (!resolved) return columns;
+
+        // Each at the position the view stored it, as a save puts it back: that position is the only
+        // thing left to identify a column by once its field is gone from the catalogue.
+        const merged = [...columns];
+        resolved.columns.forEach(({ available, ...column }, index) => {
+            if (!available) merged.splice(index, 0, column);
+        });
+        return merged;
+    }, [columns, resolved]);
 
     /**
      * The live filters minus the ones a view must not carry, which is what a view is compared against
@@ -308,7 +328,7 @@ export default function ViewTabs({
             // re-applying the stored slice here would silently drop an unsaved filter beside it.
             applyRef.current({ columns: saved, filters, sort });
         },
-        [patchActive, filters, sort],
+        [setIsPickerOpen, patchActive, filters, sort],
     );
 
     const onSaveDrift = useCallback(() => {
@@ -346,7 +366,7 @@ export default function ViewTabs({
             ...(activeView.defaultView ? [] : [{ title: 'Open this view by default', onClick: () => patchActive({ defaultView: true }) }]),
             { title: 'Delete view', color: 'danger' as const, onClick: () => setDialog('delete') },
         ];
-    }, [activeView, activeTab, takenNames, createFromCurrent, patchActive]);
+    }, [activeView, activeTab, takenNames, createFromCurrent, patchActive, setIsPickerOpen]);
 
     // Roving focus: the tab being left becomes `tabIndex={-1}`, so focus has to travel with the
     // selection. Left behind, it sits on an element the strip no longer treats as reachable, and what

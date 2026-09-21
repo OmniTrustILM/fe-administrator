@@ -6,6 +6,7 @@ import { actions as listScopeActions } from 'ducks/list-scopes';
 import type { AppState } from 'ducks';
 
 import type { ApiClients } from 'src/api';
+import AddColumnMenu from 'components/AddColumnMenu';
 import CustomTable, { type SortDirection, type TableDataRow, type TableHeader } from 'components/CustomTable';
 import { buildTableRows, type CellRegistry } from 'components/CustomTable/columns';
 import Dialog from 'components/Dialog';
@@ -13,9 +14,11 @@ import FilterWidget from 'components/FilterWidget';
 import ViewTabs from 'components/ViewTabs';
 import Widget from 'components/Widget';
 import type { ReactNode } from 'react';
+import { selectors as listViewSelectors } from 'ducks/listViews';
 import type { ViewSlice } from 'types/listViews';
 import type { Resource } from 'types/openapi';
-import type { ColumnDefinition } from 'types/tableColumns';
+import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
+import { toCatalogueFields } from 'utils/columnPicker';
 import { type ColumnSort, buildColumnHeaders } from 'utils/tableColumns';
 import {
     buildListRequest,
@@ -23,6 +26,7 @@ import {
     isSameSort,
     toColumnSortFromHeader,
     toDisplayableSort,
+    toggleColumn,
     withCatalogueSortability,
     withDeclaredSortability,
 } from './columnState';
@@ -149,6 +153,7 @@ function PagedList<TRow extends object>({
 
     const [columnSelection, setColumnSelection] = useState<ColumnDefinition[]>(NO_COLUMNS);
     const [sortSelection, setSortSelection] = useState<ColumnSort | undefined>(defaultSort);
+    const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false);
 
     const renderableProperties = useMemo(() => getRenderableProperties(registry), [registry]);
 
@@ -169,12 +174,86 @@ function PagedList<TRow extends object>({
 
     const appliedSort = useMemo(() => toDisplayableSort(sortSelection, appliedColumns), [sortSelection, appliedColumns]);
 
+    const catalogueFields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
+
+    const selectHasLoadedViews = useMemo(
+        () => (columnsResource ? listViewSelectors.hasLoaded(columnsResource) : () => false),
+        [columnsResource],
+    );
+    const isStripReady = useSelector(selectHasLoadedViews) && hasLoadedCatalogue;
+
     const totalItems = useSelector(selectors.totalItems(entity));
     const checkedRows = useSelector(selectors.checkedRows(entity));
     const isFetchingList = useSelector(selectors.isFetchingList(entity));
     const pageNumber = useSelector(selectors.pageNumber(entity));
     const pageSize = useSelector(selectors.pageSize(entity));
     const listedFiltersSnapshot = useSelector(selectors.filtersSnapshot(entity));
+
+    /**
+     * Applies a column set to the table and nowhere else; the summary bar's Save is what stores it.
+     * An ordering the new set cannot paint is dropped, and page 4 of one ordering is not page 4 of
+     * another, so the page goes back to the first.
+     */
+    const applyColumns = useCallback(
+        (next: ColumnDefinition[]) => {
+            if (next === appliedColumns) return;
+
+            setColumnSelection(next);
+            if (!isSameSort(toDisplayableSort(sortSelection, next), appliedSort)) {
+                dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
+            }
+        },
+        [appliedColumns, appliedSort, sortSelection, dispatch, entity, pageSize],
+    );
+
+    const onToggleColumn = useCallback(
+        (field: SourcedCatalogueField) => applyColumns(toggleColumn(appliedColumns, field)),
+        [applyColumns, appliedColumns],
+    );
+
+    /**
+     * The column dialog lives in the view strip, which is what makes it the one dialog rather than a
+     * second copy with its own idea of what the columns are. Focus is the price: the menu that opened
+     * it has unmounted by the time it closes, so the trigger takes focus back itself — but only when
+     * the menu is where it was opened from, or the tab menu's own restore would be overridden.
+     */
+    const addColumnTriggerRef = useRef<HTMLButtonElement | null>(null);
+    const wasColumnDialogOpenedFromMenu = useRef(false);
+
+    const onColumnDialogOpenChange = useCallback((open: boolean) => {
+        setIsColumnDialogOpen(open);
+        if (open || !wasColumnDialogOpenedFromMenu.current) return;
+
+        wasColumnDialogOpenedFromMenu.current = false;
+        requestAnimationFrame(() => addColumnTriggerRef.current?.focus());
+    }, []);
+
+    const columnDialog = useMemo(
+        () => ({ isOpen: isColumnDialogOpen, onOpenChange: onColumnDialogOpenChange }),
+        [isColumnDialogOpen, onColumnDialogOpenChange],
+    );
+
+    const onEditColumns = useCallback(() => {
+        wasColumnDialogOpenedFromMenu.current = true;
+        setIsColumnDialogOpen(true);
+    }, []);
+
+    const addColumnMenu = useMemo(
+        () =>
+            isColumnDriven ? (
+                <AddColumnMenu
+                    fields={catalogueFields}
+                    isCatalogueLoaded={hasLoadedCatalogue}
+                    columns={appliedColumns}
+                    onToggle={onToggleColumn}
+                    // Withheld until the strip is up: it is what mounts the dialog, so the entry would
+                    // otherwise open nothing, and the menu drops the row rather than offer a dead one.
+                    onEditColumns={isStripReady ? onEditColumns : undefined}
+                    triggerRef={addColumnTriggerRef}
+                />
+            ) : undefined,
+        [isColumnDriven, catalogueFields, hasLoadedCatalogue, appliedColumns, onToggleColumn, onEditColumns, isStripReady],
+    );
 
     const currentFiltersSnapshot = useMemo(() => JSON.stringify(currentFilters ?? []), [currentFilters]);
 
@@ -419,7 +498,7 @@ function PagedList<TRow extends object>({
                 hasFilter={Boolean(getAvailableFiltersApi) && Boolean(filterTitle)}
                 filterTitle={filterTitle}
                 buttonsCount={estimatedButtonCount}
-                columnsCount={columnHeaders.length}
+                columnsCount={columnHeaders.length + (isColumnDriven ? 1 : 0)}
                 hasCheckboxes={hasCheckboxes}
                 hasExtraFilter={Boolean(extraFilterComponent)}
             />
@@ -441,6 +520,7 @@ function PagedList<TRow extends object>({
                     filters={currentFilters}
                     sort={appliedSort}
                     onApply={onApplyView}
+                    columnDialog={columnDialog}
                     resourceLabel={resourceLabel}
                 />
             )}
@@ -483,6 +563,7 @@ function PagedList<TRow extends object>({
                     disablePaginationControls={isBusy || isFetchingList}
                     disableSelectionControls={isBusy || isFetchingList}
                     disableSearchControls={isBusy || isFetchingList}
+                    trailingHeaderAction={addColumnMenu}
                 />
             </Widget>
             {onDeleteCallback && (
