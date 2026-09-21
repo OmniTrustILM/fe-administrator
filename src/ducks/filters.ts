@@ -31,6 +31,7 @@ export enum EntityType {
     ACTIONS_SOURCE,
     SIGNING_RECORD,
     CRYPTO_ASSET,
+    CBOM_SYNC_SKIP,
 }
 
 export type Filter = {

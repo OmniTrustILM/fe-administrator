@@ -80,6 +80,15 @@ test.describe('WidgetButtons', () => {
         await expect(container).toHaveClass(/custom-class/);
     });
 
+    test('should name an icon-only button with the aria-label it is given', async ({ mount }) => {
+        const buttons: WidgetButtonProps[] = [
+            { ...defaultButtonProps, id: 'labelled', icon: 'repeat', tooltip: 'Retry on the next sync run', 'aria-label': 'Retry' },
+        ];
+        const component = await renderWidgetButtons(mount, { buttons });
+
+        await expect(component.getByRole('button', { name: 'Retry' })).toBeVisible();
+    });
+
     test('should render different icon types', async ({ mount }) => {
         const buttons: WidgetButtonProps[] = [
             { ...defaultButtonProps, id: 'add' },

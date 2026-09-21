@@ -63,6 +63,7 @@ const seededSettings = {
                 cbomSyncOverlapSeconds: 60,
                 cbomSyncSkippedRetryRuns: 3,
                 cbomSyncMaxIngestDocuments: 50,
+                cbomSyncSkipRetentionDays: 90,
             },
         },
         isFetchingPlatform: false,
@@ -77,6 +78,7 @@ test.describe('UtilsSettingsForm - CBOM sync tunables', () => {
         await expect(page.locator('#cbomSyncOverlapSeconds')).toHaveValue('60');
         await expect(page.locator('#cbomSyncSkippedRetryRuns')).toHaveValue('3');
         await expect(page.locator('#cbomSyncMaxIngestDocuments')).toHaveValue('50');
+        await expect(page.locator('#cbomSyncSkipRetentionDays')).toHaveValue('90');
     });
 
     test('rejects a value above the cap and anything that is not a whole number', async ({ mount, page }) => {
@@ -94,6 +96,12 @@ test.describe('UtilsSettingsForm - CBOM sync tunables', () => {
         await retries.fill('3e');
         await retries.blur();
         await expect(page.getByText('Value must be a positive integer')).toBeVisible();
+
+        const retention = page.locator('#cbomSyncSkipRetentionDays');
+        await retention.click();
+        await retention.fill('0');
+        await retention.blur();
+        await expect(page.getByText('Value must be at least 1')).toBeVisible();
 
         await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
     });
@@ -117,6 +125,7 @@ test.describe('UtilsSettingsForm - CBOM sync tunables', () => {
                 cbomRepositoryUrl: 'https://cbom.example.com',
                 cbomSyncOverlapSeconds: 120,
                 cbomSyncMaxIngestDocuments: 50,
+                cbomSyncSkipRetentionDays: 90,
             },
         });
     });

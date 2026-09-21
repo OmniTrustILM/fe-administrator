@@ -108,6 +108,7 @@ const inventories = [
             'CBOM_TOTAL_ASSETS_COUNT',
             'CBOM_ASSET_SYNC_STATE',
             'CBOM_ASSETS_SYNCED_AT',
+            'CBOM_ASSET_SYNC_ERROR',
         ],
         displayOnly: [],
     },

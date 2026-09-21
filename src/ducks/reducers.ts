@@ -67,6 +67,7 @@ import { slice as oidsSlice } from './oids';
 import { slice as loginSlice } from './login';
 import { slice as cbomSlice } from './cbom';
 import { slice as cryptoAssetsSlice } from './crypto-assets';
+import { slice as cbomSyncSkipsSlice } from './cbom-sync-skips';
 import { slice as secretsSlice } from './secrets';
 import { slice as vaultProfilesSlice } from './vault-profiles';
 import { slice as vaultsSlice } from './vaults';
@@ -138,6 +139,7 @@ export const reducers = combineReducers({
     [loginSlice.name]: loginSlice.reducer,
     [cbomSlice.name]: cbomSlice.reducer,
     [cryptoAssetsSlice.name]: cryptoAssetsSlice.reducer,
+    [cbomSyncSkipsSlice.name]: cbomSyncSkipsSlice.reducer,
     [secretsSlice.name]: secretsSlice.reducer,
     [vaultProfilesSlice.name]: vaultProfilesSlice.reducer,
     [vaultsSlice.name]: vaultsSlice.reducer,

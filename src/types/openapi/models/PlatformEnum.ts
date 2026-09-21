@@ -96,6 +96,7 @@ export enum PlatformEnum {
     TimestampSourceType = 'TimestampSourceType',
     TspAuthenticationMethod = 'TspAuthenticationMethod',
     CbomAssetSyncState = 'CbomAssetSyncState',
+    CbomSyncSkipState = 'CbomSyncSkipState',
     CryptographicAssetType = 'CryptographicAssetType',
     PqcVerdict = 'PqcVerdict',
 }

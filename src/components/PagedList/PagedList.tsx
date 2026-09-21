@@ -330,6 +330,22 @@ function PagedList<TRow extends object>({
         dispatch(actions.setFiltersSnapshot({ entity, filtersSnapshot: currentFiltersSnapshot }));
     }, [currentFiltersSnapshot, listedFiltersSnapshot, dispatch, entity, pageSize]);
 
+    /**
+     * A list that shrank under the current page -- a row the action just taken filtered out of the set, a bulk delete
+     * taking the last page's only row -- leaves the page number past the end. The server answers such a page with
+     * nothing and the pager hides itself once a single page is left, so there would be no way back from it. Settled
+     * totals only: a total read mid-fetch still belongs to the previous request, and a total of zero is a list that is
+     * genuinely empty rather than a page that ran off the end.
+     */
+    useEffect(() => {
+        if (isFetchingList || totalItems === 0) return;
+
+        const lastPage = Math.ceil(totalItems / pageSize);
+        if (effectivePageNumber > lastPage) {
+            dispatch(actions.setPagination({ entity, pageSize, pageNumber: lastPage }));
+        }
+    }, [isFetchingList, totalItems, pageSize, effectivePageNumber, dispatch, entity]);
+
     useEffect(() => {
         getFreshData();
         setHasSentFirstRequest(true);

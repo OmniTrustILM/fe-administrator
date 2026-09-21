@@ -146,7 +146,12 @@ describe('raProfileRequestAttributes epics', () => {
                         // `utils` (core#2249) and `branding`, which the update body does not even have.
                         getPlatformSettings: () =>
                             of({
-                                utils: { cbomSyncOverlapSeconds: 60, cbomSyncSkippedRetryRuns: 3, cbomSyncMaxIngestDocuments: 50 },
+                                utils: {
+                                    cbomSyncOverlapSeconds: 60,
+                                    cbomSyncSkippedRetryRuns: 3,
+                                    cbomSyncMaxIngestDocuments: 50,
+                                    cbomSyncSkipRetentionDays: 90,
+                                },
                                 branding: { platformTitle: 'ILM' },
                                 certificates: {
                                     validation: { enabled: true },

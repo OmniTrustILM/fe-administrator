@@ -176,6 +176,7 @@ const VaultProfileDetail = lazyWithRetry(() => import('./_pages/vault-profiles/d
 const CbomsList = lazyWithRetry(() => import('./_pages/cboms/list'));
 const CbomDetail = lazyWithRetry(() => import('components/_pages/cboms/detail'));
 const CbomVersionsHistory = lazyWithRetry(() => import('components/_pages/cboms/versions'));
+const CbomSyncSkipsList = lazyWithRetry(() => import('components/_pages/cboms/sync-skips'));
 
 const CryptoAssetsList = lazyWithRetry(() => import('components/_pages/crypto-assets/list'));
 
@@ -476,6 +477,7 @@ export default function AppRouter() {
                     )}
 
                     <Route path={`/${Resource.Cboms.toLowerCase()}`} element={<CbomsList />} />
+                    <Route path={`/${Resource.Cboms.toLowerCase()}/sync-skips`} element={<CbomSyncSkipsList />} />
                     <Route path={`/${Resource.Cboms.toLowerCase()}/detail/:id`} element={<CbomDetail />} />
                     <Route path={`/${Resource.Cboms.toLowerCase()}/detail/:id/versions/:versionId?`} element={<CbomVersionsHistory />} />
 

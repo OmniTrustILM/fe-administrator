@@ -114,6 +114,21 @@ test.describe('Button', () => {
         await expect(component.getByText('Hover Me')).toBeVisible();
     });
 
+    test('should show the reason for a disabled button, which cannot host the tooltip trigger itself', async ({ mount, page }) => {
+        const component = await mount(
+            <Button disabled disabledTooltip="A retry is already in flight">
+                Retry
+            </Button>,
+        );
+
+        const button = component.getByText('Retry').locator('..').locator('button').first();
+        await expect(button).toBeDisabled();
+
+        // The button takes no pointer events while disabled, so the wrapper around it is what the pointer reaches.
+        await component.locator('span.inline-flex').hover();
+        await expect(page.getByRole('tooltip')).toHaveText('A retry is already in flight');
+    });
+
     test('should support custom className', async ({ mount }) => {
         const component = await mount(<Button className="custom-class">Custom</Button>);
 
