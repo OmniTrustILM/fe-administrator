@@ -67,6 +67,9 @@ function PagingControl() {
             type="button"
             data-testid="go-to-page-two"
             onClick={() => {
+                // A total with a second page in it. The host steps back onto the last page when the page it is on ran
+                // off the end of the list, so a page 2 the totals do not support would be corrected straight away.
+                dispatch(pagingActions.listSuccess({ entity: EntityType.CERTIFICATE, totalItems: 20 }));
                 dispatch(pagingActions.setPagination({ entity: EntityType.CERTIFICATE, pageNumber: 2, pageSize: 10 }));
                 dispatch(pagingActions.setCheckedRows({ entity: EntityType.CERTIFICATE, checkedRows: ['cert-1'] }));
             }}

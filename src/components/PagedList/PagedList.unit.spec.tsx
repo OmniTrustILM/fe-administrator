@@ -307,6 +307,34 @@ describe('PagedList unit coverage', () => {
         );
     });
 
+    it('steps back onto the last page when the list shrank under the page it is on', async () => {
+        mockState.pagings.pagings[0].paging.totalItems = 10;
+        mockState.pagings.pagings[0].paging.pageNumber = 2;
+
+        await renderPagedList();
+
+        expect(dispatch).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'pagings/setPagination', payload: { entity: EntityType.CBOM, pageSize: 10, pageNumber: 1 } }),
+        );
+    });
+
+    it('leaves the page number alone while the list is in flight, and for a list that is simply empty', async () => {
+        mockState.pagings.pagings[0].paging.totalItems = 10;
+        mockState.pagings.pagings[0].paging.pageNumber = 2;
+        mockState.pagings.pagings[0].paging.isFetchingList = true;
+
+        await renderPagedList();
+
+        expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'pagings/setPagination' }));
+
+        mockState.pagings.pagings[0].paging.isFetchingList = false;
+        mockState.pagings.pagings[0].paging.totalItems = 0;
+
+        await renderPagedList();
+
+        expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'pagings/setPagination' }));
+    });
+
     it('shows delete button disabled when no rows are selected', async () => {
         await renderPagedList({ addHidden: true, onDeleteCallback: vi.fn() });
 
