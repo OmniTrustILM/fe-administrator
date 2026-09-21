@@ -11,8 +11,6 @@ type Props = Readonly<{
     search: string;
     onSearchChange: (search: string) => void;
     onAdd: (field: SourcedCatalogueField) => void;
-    /** True once the selection has reached the cap; add controls go quiet but the list stays browsable. */
-    isAtCap: boolean;
     getSourceLabel: (source: FilterFieldSource) => string;
 }>;
 
@@ -20,7 +18,7 @@ type Props = Readonly<{
  * What could be shown. Splitting this from the selected columns gives search a natural home and
  * keeps ordering, renaming and removal on the other side, where position actually means something.
  */
-export default function AvailableFields({ fields, selected, search, onSearchChange, onAdd, isAtCap, getSourceLabel }: Props) {
+export default function AvailableFields({ fields, selected, search, onSearchChange, onAdd, getSourceLabel }: Props) {
     const groups = groupCatalogueFields(fields, search);
 
     return (
@@ -45,12 +43,6 @@ export default function AvailableFields({ fields, selected, search, onSearchChan
                     className="w-full rounded-md border border-divider bg-surface-raised py-1.5 ps-8 pe-2.5 text-sm text-content placeholder:text-content-hint focus:border-brand focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand"
                 />
             </div>
-
-            {isAtCap && (
-                <p className="mt-2 text-xs text-warning" data-testid="available-fields-cap-hint">
-                    Remove a column before adding another.
-                </p>
-            )}
 
             <div className="mt-2 min-h-0 flex-1 overflow-y-auto" data-testid="available-fields-list">
                 {groups.length === 0 ? (
@@ -87,10 +79,7 @@ export default function AvailableFields({ fields, selected, search, onSearchChan
                                                 <button
                                                     type="button"
                                                     onClick={() => onAdd(field)}
-                                                    disabled={isAtCap}
-                                                    // Kept listed and searchable at the cap: hiding what cannot
-                                                    // currently be added would make the catalogue look broken.
-                                                    className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-medium text-brand hover:bg-brand-subtle disabled:cursor-not-allowed disabled:text-content-subtle disabled:hover:bg-transparent"
+                                                    className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-medium text-brand hover:bg-brand-subtle"
                                                     data-testid={`add-field-${getColumnKey(field)}`}
                                                 >
                                                     <Plus size={12} aria-hidden />

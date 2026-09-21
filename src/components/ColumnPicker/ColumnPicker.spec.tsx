@@ -137,7 +137,7 @@ test.describe('ColumnPicker', () => {
         await page.getByTestId('add-field-custom:environment').click();
 
         await expect(page.getByTestId('selected-columns-list').getByRole('listitem')).toHaveCount(2);
-        await expect(page.getByTestId('column-counter')).toHaveText('2 / 12');
+        await expect(page.getByTestId('column-counter')).toHaveText('2 columns');
     });
 
     test('removes a selected column', async ({ mount, page }) => {

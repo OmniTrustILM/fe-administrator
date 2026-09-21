@@ -2,15 +2,6 @@ import { FilterFieldSource, type SearchFieldDataByGroupDto } from 'types/openapi
 import type { ColumnDefinition, PickerColumn, SourcedCatalogueField } from 'types/tableColumns';
 import { getColumnKey } from './tableColumns';
 
-/**
- * The most columns a view may hold. A readability rule rather than a contract limit: if the API ever
- * enforces a maximum of its own, the picker takes the smaller of the two.
- */
-export const MAX_COLUMNS = 12;
-
-/** Where the counter starts warning, so the cap is visible before it binds. */
-export const COLUMN_COUNT_WARNING_FROM = 10;
-
 /** The order sources are offered in: object properties first, then the attribute sources. */
 const SOURCE_ORDER: readonly FilterFieldSource[] = [
     FilterFieldSource.Property,
@@ -24,8 +15,6 @@ export interface CatalogueFieldGroup {
     source: FilterFieldSource;
     fields: SourcedCatalogueField[];
 }
-
-export type ColumnCounterState = 'ok' | 'warning' | 'full';
 
 /**
  * The fields of a column catalogue, flattened and each stamped with the source it was published
@@ -165,11 +154,4 @@ export function moveColumn<T>(columns: T[], from: number, to: number): T[] {
     const [moved] = reordered.splice(from, 1);
     reordered.splice(target, 0, moved);
     return reordered;
-}
-
-/** How the column counter should read for a given selection size. */
-export function getCounterState(count: number): ColumnCounterState {
-    if (count >= MAX_COLUMNS) return 'full';
-    if (count >= COLUMN_COUNT_WARNING_FROM) return 'warning';
-    return 'ok';
 }

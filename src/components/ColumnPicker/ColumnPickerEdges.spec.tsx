@@ -4,7 +4,7 @@ import { FilterFieldSource, FilterFieldType, type SearchFieldDataByGroupDto } fr
 import type { ColumnDefinition } from 'types/tableColumns';
 import ColumnPicker from './index';
 
-/** Enough fields to reach the cap and still have some left over to prove they stay browsable. */
+/** Enough fields to build a view well past twelve columns and still have some left to add. */
 const PROPERTY_FIELDS = Array.from({ length: 16 }, (_value, index) => ({
     fieldIdentifier: `FIELD_${index}`,
     fieldLabel: `Field ${index}`,
@@ -37,29 +37,54 @@ const picker = (columns: ColumnDefinition[], onSave?: (columns: ColumnDefinition
         />,
     );
 
-test.describe('ColumnPicker · at the cap', () => {
-    test('counts up to the cap and warns before it binds', async ({ mount, page }) => {
-        await mount(picker(columnsOf(10)));
+test.describe('ColumnPicker · a wide selection', () => {
+    test('counts a single column in the singular', async ({ mount, page }) => {
+        await mount(picker(columnsOf(1)));
 
-        await expect(page.getByTestId('column-counter')).toHaveText('10 / 12');
-        await expect(page.getByTestId('column-counter-warning')).toBeVisible();
+        await expect(page.getByTestId('column-counter')).toHaveText('1 column');
     });
 
-    test('does not warn below the threshold', async ({ mount, page }) => {
-        await mount(picker(columnsOf(9)));
-
-        await expect(page.getByTestId('column-counter-warning')).toHaveCount(0);
-    });
-
-    test('stops selection at the cap rather than silently ignoring further additions', async ({ mount, page }) => {
+    test('adds a thirteenth column rather than refusing it', async ({ mount, page }) => {
         await mount(picker(columnsOf(12)));
 
-        await expect(page.getByTestId('column-counter')).toHaveText('12 / 12');
-        await expect(page.getByTestId('add-field-property:FIELD_12')).toBeDisabled();
-        await expect(page.getByTestId('available-fields-cap-hint')).toBeVisible();
+        await page.getByTestId('add-field-property:FIELD_12').click();
+
+        await expect(page.getByTestId('column-counter')).toHaveText('13 columns');
+        await expect(page.getByTestId('selected-columns-list').getByRole('listitem')).toHaveCount(13);
     });
 
-    test('keeps unselected fields listed and searchable at the cap, so the catalogue never looks broken', async ({ mount, page }) => {
+    test('keeps the add controls live well past twelve', async ({ mount, page }) => {
+        await mount(picker(columnsOf(14)));
+
+        await expect(page.getByTestId('add-field-property:FIELD_14')).toBeEnabled();
+
+        await page.getByTestId('add-field-property:FIELD_14').click();
+
+        await expect(page.getByTestId('column-counter')).toHaveText('15 columns');
+    });
+
+    test('saves a view of more than twelve columns', async ({ mount, page }) => {
+        const saved: ColumnDefinition[][] = [];
+        await mount(picker(columnsOf(12), (columns) => saved.push(columns)));
+
+        await page.getByTestId('add-field-property:FIELD_12').click();
+        await page.getByRole('button', { name: 'Save' }).click();
+
+        await expect.poll(() => saved.length).toBe(1);
+        expect(saved[0]).toHaveLength(13);
+    });
+
+    test('says a wide view scrolls, and only once the selection is past twelve', async ({ mount, page }) => {
+        await mount(picker(columnsOf(12)));
+
+        await expect(page.getByTestId('column-width-advisory')).toHaveCount(0);
+
+        await page.getByTestId('add-field-property:FIELD_12').click();
+
+        await expect(page.getByTestId('column-width-advisory')).toContainText('scrolls horizontally');
+    });
+
+    test('keeps unselected fields listed and searchable, so the catalogue never looks broken', async ({ mount, page }) => {
         await mount(picker(columnsOf(12)));
 
         await expect(page.getByTestId('available-field-property:FIELD_15')).toBeVisible();
@@ -67,20 +92,21 @@ test.describe('ColumnPicker · at the cap', () => {
         await expect(page.getByTestId('available-field-property:FIELD_14')).toBeVisible();
     });
 
-    test('lets a column be removed and another added again', async ({ mount, page }) => {
-        await mount(picker(columnsOf(12)));
+    test('renders a stored view of fourteen columns in full', async ({ mount, page }) => {
+        await mount(picker(columnsOf(14)));
+
+        await expect(page.getByTestId('column-counter')).toHaveText('14 columns');
+        await expect(page.getByTestId('selected-columns-list').getByRole('listitem')).toHaveCount(14);
+        await expect(page.getByTestId('column-width-advisory')).toBeVisible();
+    });
+
+    test('still requires one column: removing the last one blocks saving', async ({ mount, page }) => {
+        await mount(picker(columnsOf(1)));
 
         await page.getByTestId('selected-column-property:FIELD_0-remove').click();
 
-        await expect(page.getByTestId('column-counter')).toHaveText('11 / 12');
-        await expect(page.getByTestId('add-field-property:FIELD_12')).toBeEnabled();
-    });
-
-    test('renders a stored view that is already above the cap rather than truncating it', async ({ mount, page }) => {
-        await mount(picker(columnsOf(14)));
-
-        await expect(page.getByTestId('column-counter')).toHaveText('14 / 12');
-        await expect(page.getByTestId('selected-columns-list').getByRole('listitem')).toHaveCount(14);
+        await expect(page.getByTestId('selected-columns-empty')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
     });
 });
 

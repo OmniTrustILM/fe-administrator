@@ -1,8 +1,6 @@
-import cn from 'classnames';
 import { useState } from 'react';
 import type { FilterFieldSource } from 'types/openapi';
 import type { PickerColumn } from 'types/tableColumns';
-import { COLUMN_COUNT_WARNING_FROM, getCounterState, MAX_COLUMNS } from 'utils/columnPicker';
 import { getColumnKey } from 'utils/tableColumns';
 import SelectedColumnRow from './SelectedColumnRow';
 
@@ -16,22 +14,16 @@ type Props = Readonly<{
     onResetToStandard: () => void;
 }>;
 
-const COUNTER_CLASSES = {
-    ok: 'text-content-muted',
-    warning: 'text-warning',
-    full: 'text-danger',
-} as const;
+const WIDE_VIEW_FROM = 13;
 
 /**
- * The selected columns, in display order, with the count against the cap and the reset control.
- * Reordering is available by drag and by the per-row move buttons, because a drag handle alone is
- * not reachable from the keyboard.
+ * The selected columns, in display order, with the count and the reset control. Reordering is
+ * available by drag and by the per-row move buttons, because a drag handle alone is not reachable
+ * from the keyboard.
  */
 export default function SelectedColumns({ columns, getSourceLabel, onRename, onRevert, onRemove, onMove, onResetToStandard }: Props) {
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const [dropIndex, setDropIndex] = useState<number | null>(null);
-
-    const counterState = getCounterState(columns.length);
 
     const finishDrag = () => {
         setDraggingIndex(null);
@@ -55,13 +47,12 @@ export default function SelectedColumns({ columns, getSourceLabel, onRename, onR
                     Columns shown
                 </h3>
                 <span
-                    className={cn('text-xs font-medium', COUNTER_CLASSES[counterState])}
-                    // The count is announced when it changes, so the cap is not something a
-                    // keyboard user discovers only by an add control going quiet.
+                    className="text-xs font-medium text-content-muted"
+                    // The only feedback a screen reader gets when a column is added from the other pane.
                     aria-live="polite"
                     data-testid="column-counter"
                 >
-                    {`${columns.length} / ${MAX_COLUMNS}`}
+                    {`${columns.length} ${columns.length === 1 ? 'column' : 'columns'}`}
                 </span>
             </div>
 
@@ -97,9 +88,9 @@ export default function SelectedColumns({ columns, getSourceLabel, onRename, onR
                 </ul>
             )}
 
-            {counterState === 'warning' && (
-                <p className="mt-2 text-xs text-warning" data-testid="column-counter-warning">
-                    {`A table stays readable up to ${MAX_COLUMNS} columns; you are past ${COLUMN_COUNT_WARNING_FROM - 1}.`}
+            {columns.length >= WIDE_VIEW_FROM && (
+                <p className="mt-2 text-xs text-content-muted" data-testid="column-width-advisory">
+                    A view this wide scrolls horizontally rather than squeezing its columns.
                 </p>
             )}
 
