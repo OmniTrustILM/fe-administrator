@@ -7,6 +7,7 @@ import type { AppState } from 'ducks';
 
 import type { ApiClients } from 'src/api';
 import AddColumnMenu from 'components/AddColumnMenu';
+import ColumnHeaderMenu from 'components/ColumnHeaderMenu';
 import CustomTable, { type SortDirection, type TableDataRow, type TableHeader } from 'components/CustomTable';
 import { buildTableRows, type CellRegistry } from 'components/CustomTable/columns';
 import Dialog from 'components/Dialog';
@@ -18,8 +19,8 @@ import { selectors as listViewSelectors } from 'ducks/listViews';
 import type { ViewSlice } from 'types/listViews';
 import type { Resource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
-import { toCatalogueFields } from 'utils/columnPicker';
-import { type ColumnSort, buildColumnHeaders } from 'utils/tableColumns';
+import { moveColumn, toCatalogueFields } from 'utils/columnPicker';
+import { type ColumnSort, buildColumnHeaders, getColumnHeading, getColumnKey } from 'utils/tableColumns';
 import {
     buildListRequest,
     getRenderableProperties,
@@ -157,19 +158,25 @@ function PagedList<TRow extends object>({
 
     const renderableProperties = useMemo(() => getRenderableProperties(registry), [registry]);
 
-    const sortableStandardColumns = useMemo(
-        () =>
-            hasLoadedCatalogue
-                ? withCatalogueSortability(standardColumns ?? NO_COLUMNS, catalogue)
-                : withDeclaredSortability(standardColumns ?? NO_COLUMNS, defaultSort),
-        [hasLoadedCatalogue, standardColumns, catalogue, defaultSort],
+    /**
+     * Sortability merged in, from the catalogue once it has answered and from the page's own declared
+     * ordering until then. Applied to whatever set is on the table rather than to the standard one
+     * alone: a selection replaces that set, so merging only there would freeze the columns a selection
+     * was taken from at their pre-catalogue flags for the rest of the session.
+     */
+    const withSortability = useCallback(
+        (columns: ColumnDefinition[]) =>
+            hasLoadedCatalogue ? withCatalogueSortability(columns, catalogue) : withDeclaredSortability(columns, defaultSort),
+        [hasLoadedCatalogue, catalogue, defaultSort],
     );
+
+    const sortableStandardColumns = useMemo(() => withSortability(standardColumns ?? NO_COLUMNS), [withSortability, standardColumns]);
 
     // Holds only the deviation and falls back, so a config arriving after the first render cannot
     // leave the table with no columns at all.
     const appliedColumns = useMemo(
-        () => (columnSelection.length > 0 ? columnSelection : sortableStandardColumns),
-        [columnSelection, sortableStandardColumns],
+        () => (columnSelection.length > 0 ? withSortability(columnSelection) : sortableStandardColumns),
+        [withSortability, columnSelection, sortableStandardColumns],
     );
 
     const appliedSort = useMemo(() => toDisplayableSort(sortSelection, appliedColumns), [sortSelection, appliedColumns]);
@@ -299,8 +306,15 @@ function PagedList<TRow extends object>({
      * columns would list a second time for the same request. `listRequestRef` holds the value the
      * snapshot stands for, and `refreshToken` is read for its identity alone: a change to it means
      * the page asked to send this same request again.
+     *
+     * Column order is keyed out of it as well. The server projects a set, so a reorder changes the
+     * request's bytes without changing a row of the answer, and re-listing for one would cost a round
+     * trip and clear the selection the user made before moving the column.
      */
-    const listRequestSnapshot = useMemo(() => JSON.stringify(listRequest), [listRequest]);
+    const listRequestSnapshot = useMemo(() => {
+        const columns = listRequest.columns?.map(getColumnKey).sort();
+        return JSON.stringify({ ...listRequest, columns });
+    }, [listRequest]);
     const listRequestRef = useRef(listRequest);
     listRequestRef.current = listRequest;
 
@@ -382,6 +396,39 @@ function PagedList<TRow extends object>({
             dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
         },
         [appliedColumns, appliedSort, dispatch, entity, pageSize],
+    );
+
+    /**
+     * A reorder changes nothing about the result set, so it neither re-lists nor moves off the page the
+     * user is on — it goes through `applyColumns` for the same reason adding a column does: the table is
+     * the only thing it touches, and the summary bar is what stores it.
+     */
+    const onMoveColumn = useCallback(
+        (from: number, to: number) => applyColumns(moveColumn(appliedColumns, from, to)),
+        [applyColumns, appliedColumns],
+    );
+
+    const columnKeys = useMemo(() => appliedColumns.map(getColumnKey), [appliedColumns]);
+
+    const renderHeaderAction = useCallback(
+        (header: TableHeader) => {
+            const column = appliedColumns.find((candidate) => getColumnKey(candidate) === header.id);
+            if (!column) return undefined;
+
+            return (
+                <ColumnHeaderMenu
+                    columnKey={header.id}
+                    label={getColumnHeading(column)}
+                    columnKeys={columnKeys}
+                    sortable={column.sortable === true}
+                    isSortabilityKnown={hasLoadedCatalogue}
+                    onSort={(direction) => onSortChanged(header.id, direction)}
+                    onMove={onMoveColumn}
+                    dataTestId={`column-header-menu-${header.id}`}
+                />
+            );
+        },
+        [appliedColumns, columnKeys, hasLoadedCatalogue, onSortChanged, onMoveColumn],
     );
 
     const columnHeaders = useMemo(
@@ -560,7 +607,7 @@ function PagedList<TRow extends object>({
                 <CustomTable
                     headers={columnHeaders}
                     data={columnRows}
-                    {...(isColumnDriven ? { onSortChanged, persistSort: false } : {})}
+                    {...(isColumnDriven ? { onSortChanged, persistSort: false, renderHeaderAction } : {})}
                     hasCheckboxes={hasCheckboxes}
                     hasDetails={hasDetails}
                     columnForDetail={columnForDetail}

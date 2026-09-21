@@ -104,8 +104,8 @@ test.describe('PagedList · configurable columns', () => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
 
         await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
-        await expect(page.getByRole('button', { name: 'Common Name' })).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Expires At' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Expires At', exact: true })).toBeVisible();
         await expect(page.getByText('acme.example')).toBeVisible();
         await expect(page.getByText('2028-06-30')).toBeVisible();
     });
@@ -115,7 +115,7 @@ test.describe('PagedList · configurable columns', () => {
 
         const legend = page.getByTestId('cn-legend');
         await expect(legend).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Common Name' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toBeVisible();
         expect(await legend.evaluate((node) => node.closest('button') !== null)).toBe(false);
     });
 
@@ -135,7 +135,7 @@ test.describe('PagedList · configurable columns', () => {
     test('reports a header click as an ordering of the whole result set', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
 
-        await page.getByRole('button', { name: 'Expires At' }).click();
+        await page.getByRole('button', { name: 'Expires At', exact: true }).click();
 
         await expect
             .poll(async () => (await lastRequest(page))?.sort)
@@ -145,7 +145,7 @@ test.describe('PagedList · configurable columns', () => {
     test('turns the ordering around on a second click of the same heading', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
 
-        const heading = page.getByRole('button', { name: 'Expires At' });
+        const heading = page.getByRole('button', { name: 'Expires At', exact: true });
         await heading.click();
         await expect.poll(async () => (await lastRequest(page))?.sort?.direction).toBe(SortDirection.Asc);
 
@@ -163,7 +163,7 @@ test.describe('PagedList · configurable columns', () => {
         await page.getByTestId('go-to-page-two').click();
         await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(2);
 
-        await page.getByRole('button', { name: 'Expires At' }).click();
+        await page.getByRole('button', { name: 'Expires At', exact: true }).click();
 
         await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(1);
         await expect(page.locator('input[type="checkbox"]:checked')).toHaveCount(0);
@@ -179,8 +179,8 @@ test.describe('PagedList · configurable columns', () => {
         ] as unknown as SearchFieldListModel[];
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={withoutExpiry} />);
 
-        await expect(page.getByRole('button', { name: 'Common Name' })).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Expires At' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Expires At', exact: true })).toHaveCount(0);
     });
 
     test('puts the tab strip above the filter widget, because a view contains its filters', async ({ mount, page }) => {
@@ -304,9 +304,9 @@ test.describe('PagedList · configurable columns', () => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={shippedColumns} catalogue={catalogue} />);
 
         await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
-        await expect(page.getByRole('button', { name: 'Common Name' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toBeVisible();
 
-        await page.getByRole('button', { name: 'Expires At' }).click();
+        await page.getByRole('button', { name: 'Expires At', exact: true }).click();
 
         await expect
             .poll(async () => (await lastRequest(page))?.sort)
@@ -321,7 +321,7 @@ test.describe('PagedList · configurable columns', () => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={withUnorderable} catalogue={catalogue} />);
 
         await expect.poll(() => headings(page)).toContain('custom:department|STRING');
-        await expect(page.getByRole('button', { name: 'Department' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Department', exact: true })).toHaveCount(0);
     });
 
     test('keeps a heading the page shipped rather than taking the catalogue label with the sort flag', async ({ mount, page }) => {
@@ -333,7 +333,7 @@ test.describe('PagedList · configurable columns', () => {
         ] as unknown as SearchFieldListModel[];
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={shippedColumns} catalogue={relabelled} />);
 
-        await expect(page.getByRole('button', { name: 'Common Name' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Subject Common Name' })).toHaveCount(0);
     });
 
@@ -411,7 +411,7 @@ test.describe('PagedList · configurable columns', () => {
         );
         await expect(page.getByRole('tab', { name: 'Standard' })).toBeVisible();
 
-        await page.getByRole('button', { name: 'Expires At' }).click();
+        await page.getByRole('button', { name: 'Expires At', exact: true }).click();
         await expect.poll(async () => (await lastRequest(page))?.sort?.fieldIdentifier).toBe('NOT_AFTER');
 
         await page.getByTestId('reset-view-icon').click();

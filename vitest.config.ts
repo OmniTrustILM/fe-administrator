@@ -28,6 +28,7 @@ export default defineConfig({
                 'src/components/PagedList/PagedList.tsx',
                 'src/components/PagedList/columnState.ts',
                 'src/components/AddColumnMenu/sourceColumns.ts',
+                'src/components/ColumnHeaderMenu/columnMoves.ts',
                 // Row building runs in the test body rather than in the browser, so the component
                 // test run never instruments it; its unit tests are what report its coverage.
                 'src/components/CustomTable/columns/buildTableRows.tsx',
