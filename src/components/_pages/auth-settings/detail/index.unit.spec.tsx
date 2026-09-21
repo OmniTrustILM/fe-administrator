@@ -42,4 +42,17 @@ describe('OAuth2 provider JWK Set load warning', () => {
         expect(editButton?.disabled).toBe(false);
         expect(deleteButton?.disabled).toBe(false);
     });
+
+    test('does not show another provider while the route selection changes', async () => {
+        await render(
+            <OAuth2ProviderDetailTestWrapper
+                failure={JwkSetLoadFailure.Unavailable}
+                providerName="provider-b"
+                loadedProviderName="provider-a"
+            />,
+        );
+
+        expect(container.querySelector('[data-testid="jwk-set-load-failure-warning"]')).toBeNull();
+        expect(container.textContent).not.toContain('provider-a');
+    });
 });

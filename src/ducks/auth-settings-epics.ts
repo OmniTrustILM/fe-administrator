@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { of } from 'rxjs';
-import { catchError, filter, mergeMap } from 'rxjs/operators';
+import { catchError, filter, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { slice } from './auth-settings';
 import { actions as alertActions } from './alerts';
@@ -73,7 +73,7 @@ const updateAuthenticationSettings: AppEpic = (action$, state$, deps) => {
 const getOAuth2ProviderSettings: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getOAuth2ProviderSettings.match),
-        mergeMap((action) =>
+        switchMap((action) =>
             deps.apiClients.settings.getOAuth2ProviderSettings({ providerName: action.payload.providerName }).pipe(
                 mergeMap((provider) =>
                     of(

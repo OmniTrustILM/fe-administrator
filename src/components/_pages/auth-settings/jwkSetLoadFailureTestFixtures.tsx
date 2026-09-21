@@ -82,8 +82,8 @@ export function JwkSetLoadFailureWarningTestWrapper({ failure }: FailureProps) {
     );
 }
 
-export function OAuth2ProviderDetailTestWrapper({ failure, providerName = 'provider' }: PageProps) {
-    const store = useTestStore(failure, providerName);
+export function OAuth2ProviderDetailTestWrapper({ failure, providerName = 'provider', loadedProviderName = providerName }: PageProps) {
+    const store = useTestStore(failure, providerName, loadedProviderName);
 
     return (
         <Provider store={store}>
