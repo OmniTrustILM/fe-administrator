@@ -68,6 +68,7 @@ function renderActions(skip: CbomSyncSkipDto, retryingUuid: string | undefined, 
             disabled: retryingUuid !== undefined,
             tooltip: 'Retry on the next sync run',
             disabledTooltip: 'A retry is already in flight',
+            'aria-label': 'Retry skipped document',
             onClick: (e) => {
                 e.stopPropagation();
                 onRetry(skip);

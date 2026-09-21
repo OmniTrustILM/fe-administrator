@@ -55,6 +55,8 @@ describe('cbom sync skip rows', () => {
         const rows = buildCbomSyncSkipRows([writtenOff, retrying], { ...opts, stateEnum: undefined });
 
         expect(renderToStaticMarkup(<>{rows[0].columns}</>)).toContain('retry-skip-1');
+        // The control carries an icon and no text, so the name has to be spelled out.
+        expect(renderToStaticMarkup(<>{rows[0].columns}</>)).toContain('aria-label="Retry skipped document"');
         expect(renderToStaticMarkup(<>{rows[1].columns}</>)).not.toContain('retry-');
         // Neither serial number carries a state word, so these can only come from the state cell.
         expect(renderToStaticMarkup(<>{rows[1].columns}</>)).toContain('retrying');

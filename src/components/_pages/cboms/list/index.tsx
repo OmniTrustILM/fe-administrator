@@ -56,6 +56,7 @@ function CbomsList() {
                 icon: 'cross-circle',
                 disabled: false,
                 tooltip: 'Skipped documents: what the sync could not store',
+                'aria-label': 'Skipped documents',
                 onClick: () => navigate('./sync-skips'),
             },
         ],

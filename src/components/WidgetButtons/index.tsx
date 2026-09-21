@@ -9,6 +9,8 @@ export interface WidgetButtonProps {
     id?: string;
     tooltip?: string;
     disabledTooltip?: string;
+    /** The accessible name. These buttons carry an icon and no text, and a tooltip describes a control, it does not name it. */
+    'aria-label'?: string;
     disabled: boolean;
     custom?: React.ReactNode;
     onClick: (event: React.MouseEvent) => void;
@@ -48,6 +50,7 @@ function WidgetButtons({ buttons, justify = 'center', className }: Readonly<Prop
                         data-testid={`${button.id ?? button.icon}-button`}
                         title={button.tooltip}
                         disabledTooltip={button.disabledTooltip}
+                        aria-label={button['aria-label']}
                         onClick={button.onClick}
                         disabled={button.disabled}
                     >

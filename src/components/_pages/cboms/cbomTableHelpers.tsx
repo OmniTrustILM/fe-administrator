@@ -79,8 +79,6 @@ export function buildCbomCellRegistry({
         'property:CBOM_ASSET_SYNC_STATE': (cbom) => (cbom.assetSyncState ? getEnumLabel(assetSyncStateEnum, cbom.assetSyncState) : null),
         'property:CBOM_ASSETS_SYNCED_AT': (cbom) =>
             cbom.assetSyncedAt ? <span className="whitespace-nowrap">{dateFormatter(cbom.assetSyncedAt)}</span> : null,
-        // Why asset ingest last failed or refused the document, worded for an operator; empty for a record with
-        // nothing to report.
         'property:CBOM_ASSET_SYNC_ERROR': (cbom) => cbom.assetSyncError ?? null,
     };
 }
