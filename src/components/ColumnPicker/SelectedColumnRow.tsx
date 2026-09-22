@@ -2,10 +2,10 @@ import cn from 'classnames';
 import { ChevronDown, ChevronUp, GripVertical, RotateCcw, X } from 'lucide-react';
 import { useState } from 'react';
 import Badge from 'components/Badge';
+import SourceBadge from 'components/SourceBadge';
 import type { FilterFieldSource } from 'types/openapi';
 import type { PickerColumn } from 'types/tableColumns';
 import { getColumnHeading } from 'utils/tableColumns';
-import SourceBadge from './SourceBadge';
 
 type Props = Readonly<{
     column: PickerColumn;

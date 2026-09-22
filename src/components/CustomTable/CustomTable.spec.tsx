@@ -3,6 +3,9 @@ import CustomTable, { type TableHeader, type TableDataRow } from './index';
 import CustomTableWithStore from './CustomTableWithStore';
 import CustomTableSortRefetch from './CustomTableSortRefetch';
 import Toggletip from 'components/Toggletip';
+import { FilterFieldSource } from 'types/openapi';
+import type { ColumnDefinition } from 'types/tableColumns';
+import { buildColumnHeaders } from 'utils/tableColumns';
 import { createMockStore, withProviders } from 'utils/test-helpers';
 
 test.describe('CustomTable', () => {
@@ -1535,5 +1538,93 @@ test.describe('CustomTable', () => {
             await expect(component.locator('thead th')).toHaveCount(mockHeaders.length);
             await expect(component.locator('tbody tr').first().locator('td')).toHaveCount(mockHeaders.length);
         });
+    });
+});
+
+test.describe('CustomTable · column source', () => {
+    const commonName: ColumnDefinition = {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'COMMON_NAME',
+        catalogueLabel: 'Common Name',
+        sortable: true,
+    };
+
+    const department: ColumnDefinition = {
+        fieldSource: FilterFieldSource.Custom,
+        fieldIdentifier: 'department|STRING',
+        catalogueLabel: 'Department',
+        sortable: true,
+    };
+
+    const table = (columns: ColumnDefinition[]) => {
+        const data: TableDataRow[] = [{ id: 'u-1', columns: columns.map((_column, index) => `value ${index}`) }];
+        return withProviders(<CustomTable headers={buildColumnHeaders(columns)} data={data} />);
+    };
+
+    const departmentCell = 'th[data-id="custom:department|STRING"]';
+
+    test('badges an attribute column and leaves a property column untagged', async ({ mount }) => {
+        const component = await mount(table([commonName, department]));
+
+        await expect(component.locator('th[data-id="property:COMMON_NAME"]').getByTestId('source-badge')).toHaveCount(0);
+        await expect(component.locator(departmentCell).getByTestId('source-badge')).toHaveCount(1);
+    });
+
+    test('shows the abbreviation and announces the full source name', async ({ mount }) => {
+        const component = await mount(table([department]));
+        const badge = component.getByTestId('source-badge');
+
+        await expect(badge.locator('[aria-hidden="true"]')).toHaveText('Custom');
+        await expect(badge.locator('.sr-only')).toHaveText('Custom attribute');
+    });
+
+    test('gives a pointer user the full source name on hover, without renaming the sort button', async ({ mount }) => {
+        const component = await mount(table([department]));
+        const cell = component.locator(departmentCell);
+
+        await expect(cell.getByTestId('source-badge')).toHaveAttribute('title', 'Custom attribute');
+        await expect(cell.getByRole('button')).toHaveAccessibleName('Custom attribute Department');
+    });
+
+    test('keeps the badge inside the sort button as inert markup, with the ordering state untouched', async ({ mount }) => {
+        const component = await mount(table([department]));
+        const cell = component.locator(departmentCell);
+
+        expect(await cell.getByTestId('source-badge').evaluate((node) => node.closest('button') !== null)).toBe(true);
+        await expect(cell.locator('button button')).toHaveCount(0);
+        await expect(cell.getByRole('button')).toHaveCount(1);
+
+        const sortButton = cell.getByRole('button', { name: 'Custom attribute Department' });
+        await sortButton.focus();
+        await expect(sortButton).toBeFocused();
+
+        await sortButton.click();
+        await expect(cell).toHaveAttribute('aria-sort', 'ascending');
+        await expect(cell.locator('[data-testid="sort-indicator"]')).toBeVisible();
+    });
+
+    test('renders the badge in one case whether or not the column is sortable', async ({ mount }) => {
+        const caseOf = async (sortable: boolean) => {
+            const component = await mount(table([{ ...department, sortable }]));
+            const badge = component.getByTestId('source-badge');
+            const transform = await badge.evaluate((node) => getComputedStyle(node).textTransform);
+            await component.unmount();
+            return transform;
+        };
+
+        expect(await caseOf(true)).toBe('none');
+        expect(await caseOf(false)).toBe('none');
+    });
+
+    test('separates the badge from the heading in the cell text, not only in the layout', async ({ mount }) => {
+        const component = await mount(table([department]));
+
+        await expect(component.locator(departmentCell)).toContainText('Custom attribute Department');
+    });
+
+    test('keeps a headingHidden column visually blank, badge and all', async ({ mount }) => {
+        const component = await mount(table([{ ...department, headingHidden: true }]));
+
+        expect(await component.getByTestId('source-badge').evaluate((node) => node.closest('.sr-only') !== null)).toBe(true);
     });
 });

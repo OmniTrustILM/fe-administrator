@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
+import type { ReactElement, ReactNode } from 'react';
 import type { ColumnDefinition, ProjectedAttributeValues } from 'types/tableColumns';
 import { AttributeContentType, FilterFieldSource, FilterFieldType } from 'types/openapi';
 import {
@@ -9,8 +11,11 @@ import {
     getColumnSizing,
     getProjectedContent,
     parseColumnKey,
+    renderColumnHeading,
     toRequestColumns,
 } from './tableColumns';
+
+const markup = (heading: ReactNode) => renderToStaticMarkup(heading as ReactElement);
 
 const column = (overrides: Partial<ColumnDefinition> = {}): ColumnDefinition => ({
     fieldSource: FilterFieldSource.Custom,
@@ -125,8 +130,16 @@ describe('buildColumnHeaders', () => {
         expect(buildColumnHeaders(columns).map((header) => header.id)).toEqual(['property:COMMON_NAME', 'custom:costCentre']);
     });
 
-    it('renders the heading a view asks for', () => {
-        expect(buildColumnHeaders(columns).map((header) => header.content)).toEqual(['Common Name', 'Cost centre (FY26)']);
+    it('renders a property heading as the plain string a header text selector matches', () => {
+        expect(buildColumnHeaders(columns)[0].content).toBe('Common Name');
+    });
+
+    it('renders an attribute heading as a node carrying the heading beside its source badge', () => {
+        const content = buildColumnHeaders(columns)[1].content;
+
+        expect(typeof content).not.toBe('string');
+        expect(markup(content)).toContain('Cost centre (FY26)');
+        expect(markup(content)).toContain('Custom');
     });
 
     it('marks a header sortable only when the catalogue says the field is', () => {
@@ -188,6 +201,38 @@ describe('buildColumnHeaders', () => {
 
     it('returns no headers for no columns', () => {
         expect(buildColumnHeaders([])).toEqual([]);
+    });
+});
+
+describe('renderColumnHeading', () => {
+    it('leaves a property heading untagged, because it is the baseline every other source is read against', () => {
+        expect(renderColumnHeading(column({ fieldSource: FilterFieldSource.Property, catalogueLabel: 'Common Name' }))).toBe('Common Name');
+    });
+
+    it.each([
+        [FilterFieldSource.Custom, 'Custom', 'Custom attribute'],
+        [FilterFieldSource.Meta, 'Meta', 'Metadata'],
+        [FilterFieldSource.Data, 'Data', 'Data attribute'],
+    ])('tags a %s heading with its abbreviation and announces the full source name', (source, abbreviation, name) => {
+        const html = markup(renderColumnHeading(column({ fieldSource: source, catalogueLabel: 'Cost centre' })));
+
+        expect(html).toContain(`>${abbreviation}<`);
+        expect(html).toContain(`class="sr-only">${name}<`);
+        expect(html).toContain('Cost centre');
+        expect(html).not.toContain(`${abbreviation}${name}`);
+    });
+
+    it('separates the badge from the heading with a real space, so the text content is not one word', () => {
+        const html = markup(renderColumnHeading(column()));
+
+        expect(html).toContain('</span> Cost centre');
+    });
+
+    it('tags the view override rather than the catalogue label, so a renamed column keeps its badge', () => {
+        const html = markup(renderColumnHeading(column({ label: 'Cost centre (FY26)' })));
+
+        expect(html).toContain('Cost centre (FY26)');
+        expect(html).toContain('Custom attribute');
     });
 });
 

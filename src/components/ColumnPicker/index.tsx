@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Dialog from 'components/Dialog';
+import { DEFAULT_SOURCE_LABELS } from 'components/SourceBadge';
 import type { FilterFieldSource, SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition, PickerColumn, SourcedCatalogueField } from 'types/tableColumns';
 import { isColumnSelected, isSameResolution, moveColumn, resolveColumns, toCatalogueFields, toColumnDefinition } from 'utils/columnPicker';
 import AvailableFields from './AvailableFields';
 import HeaderPreview from './HeaderPreview';
 import SelectedColumns from './SelectedColumns';
-import { DEFAULT_SOURCE_LABELS } from './SourceBadge';
 
 const NO_STANDARD_COLUMNS: ColumnDefinition[] = [];
 

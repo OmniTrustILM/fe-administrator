@@ -220,6 +220,19 @@ test.describe('PagedList · configurable columns', () => {
         await expect(page.getByTestId('current-filters')).toContainText('acme');
     });
 
+    test('tags an attribute column in the header row and leaves the property columns untagged', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[expiryWatch]} />,
+        );
+
+        await expect.poll(() => headings(page)).toEqual(['property:NOT_AFTER', 'custom:department|STRING']);
+
+        const badge = page.locator('thead th[data-id="custom:department|STRING"]').getByTestId('source-badge');
+        await expect(badge.locator('[aria-hidden="true"]')).toHaveText('Custom');
+        await expect(badge.locator('.sr-only')).toHaveText('Custom attribute');
+        await expect(page.locator('thead th[data-id="property:NOT_AFTER"]').getByTestId('source-badge')).toHaveCount(0);
+    });
+
     test('renders an attribute column from the projected values, and the empty state where there are none', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[expiryWatch]} />,
