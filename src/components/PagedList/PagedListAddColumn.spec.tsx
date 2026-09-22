@@ -198,7 +198,7 @@ test.describe('PagedList · add column menu', () => {
     test('stays on the page it is on when a toggle leaves the ordering intact', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} withPagingControl />);
 
-        await page.getByRole('button', { name: 'Expires At' }).click();
+        await page.getByRole('button', { name: 'Expires At', exact: true }).click();
         await expect.poll(async () => (await lastRequest(page))?.sort?.fieldIdentifier).toBe('NOT_AFTER');
 
         await page.getByTestId('go-to-page-two').click();
@@ -216,7 +216,7 @@ test.describe('PagedList · add column menu', () => {
     test('does not bring a dropped ordering back when its column is added again', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
 
-        await page.getByRole('button', { name: 'Expires At' }).click();
+        await page.getByRole('button', { name: 'Expires At', exact: true }).click();
         await expect.poll(async () => (await lastRequest(page))?.sort?.fieldIdentifier).toBe('NOT_AFTER');
 
         await openMenu(page);
@@ -232,7 +232,7 @@ test.describe('PagedList · add column menu', () => {
     test('does not bring one back when the column dialog is what took it away', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
 
-        await page.getByRole('button', { name: 'Expires At' }).click();
+        await page.getByRole('button', { name: 'Expires At', exact: true }).click();
         await expect.poll(async () => (await lastRequest(page))?.sort?.fieldIdentifier).toBe('NOT_AFTER');
 
         await openMenu(page);
