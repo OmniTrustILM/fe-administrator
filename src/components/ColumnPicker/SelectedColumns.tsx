@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FilterFieldSource } from 'types/openapi';
 import type { PickerColumn } from 'types/tableColumns';
-import { getColumnKey } from 'utils/tableColumns';
+import { formatColumnCount, getColumnKey } from 'utils/tableColumns';
 import SelectedColumnRow from './SelectedColumnRow';
 
 type Props = Readonly<{
@@ -14,6 +14,11 @@ type Props = Readonly<{
     onResetToStandard: () => void;
 }>;
 
+/**
+ * Where the width advisory starts: the withdrawn cap of twelve plus one. A deliberate rough proxy
+ * for width, not a measurement — what decides whether the table scrolls is the sum of the
+ * per-column `minWidth` against the viewport, which a count cannot see.
+ */
 const WIDE_VIEW_FROM = 13;
 
 /**
@@ -24,6 +29,9 @@ const WIDE_VIEW_FROM = 13;
 export default function SelectedColumns({ columns, getSourceLabel, onRename, onRevert, onRemove, onMove, onResetToStandard }: Props) {
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const [dropIndex, setDropIndex] = useState<number | null>(null);
+
+    // The advisory is a claim about the table, and the table renders only the available columns.
+    const renderedCount = columns.filter((column) => column.available).length;
 
     const finishDrag = () => {
         setDraggingIndex(null);
@@ -42,18 +50,25 @@ export default function SelectedColumns({ columns, getSourceLabel, onRename, onR
 
     return (
         <section className="flex min-h-0 flex-col" aria-labelledby="selected-columns-heading">
-            <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="mb-2 flex items-baseline justify-between gap-3">
                 <h3 id="selected-columns-heading" className="text-sm font-semibold text-content">
                     Columns shown
                 </h3>
-                <span
-                    className="text-xs font-medium text-content-muted"
-                    // The only feedback a screen reader gets when a column is added from the other pane.
+                <div
+                    className="flex flex-col items-end gap-0.5 text-right text-xs text-content-muted"
+                    // The only feedback a screen reader gets when a column is added from the other pane. The
+                    // advisory sits inside it to be announced too, and above the list so a long selection cannot hide it.
                     aria-live="polite"
-                    data-testid="column-counter"
                 >
-                    {`${columns.length} ${columns.length === 1 ? 'column' : 'columns'}`}
-                </span>
+                    <span className="font-medium" data-testid="column-counter">
+                        {formatColumnCount(columns.length)}
+                    </span>
+                    {renderedCount >= WIDE_VIEW_FROM && (
+                        <span data-testid="column-width-advisory">
+                            A view this wide may scroll horizontally rather than squeeze its columns.
+                        </span>
+                    )}
+                </div>
             </div>
 
             {columns.length === 0 ? (
@@ -86,12 +101,6 @@ export default function SelectedColumns({ columns, getSourceLabel, onRename, onR
                         />
                     ))}
                 </ul>
-            )}
-
-            {columns.length >= WIDE_VIEW_FROM && (
-                <p className="mt-2 text-xs text-content-muted" data-testid="column-width-advisory">
-                    A view this wide scrolls horizontally rather than squeezing its columns.
-                </p>
             )}
 
             <button

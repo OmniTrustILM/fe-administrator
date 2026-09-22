@@ -3,6 +3,7 @@ import type { ColumnDefinition, ProjectedAttributeValues } from 'types/tableColu
 import { AttributeContentType, FilterFieldSource, FilterFieldType } from 'types/openapi';
 import {
     buildColumnHeaders,
+    formatColumnCount,
     getColumnHeading,
     getColumnKey,
     getColumnSizing,
@@ -255,5 +256,16 @@ describe('buildColumnHeaders auxiliary heading content', () => {
 
     it('leaves every header without it when none is given', () => {
         expect(buildColumnHeaders([column()])[0].info).toBeUndefined();
+    });
+});
+
+describe('formatColumnCount', () => {
+    it('reads a single column in the singular', () => {
+        expect(formatColumnCount(1)).toBe('1 column');
+    });
+
+    it('reads any other count in the plural', () => {
+        expect(formatColumnCount(0)).toBe('0 columns');
+        expect(formatColumnCount(13)).toBe('13 columns');
     });
 });

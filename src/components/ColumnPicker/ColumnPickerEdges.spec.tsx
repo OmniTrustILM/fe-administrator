@@ -25,6 +25,13 @@ const columnsOf = (count: number): ColumnDefinition[] =>
         catalogueLabel: field.fieldLabel,
     }));
 
+/** A stored column whose catalogue field is gone, so the picker marks it unavailable. */
+const missingField = (index: number): ColumnDefinition => ({
+    fieldSource: FilterFieldSource.Custom,
+    fieldIdentifier: `gone_${index}`,
+    catalogueLabel: `Gone ${index}`,
+});
+
 const picker = (columns: ColumnDefinition[], onSave?: (columns: ColumnDefinition[]) => void) =>
     withProviders(
         <ColumnPicker
@@ -74,14 +81,30 @@ test.describe('ColumnPicker · a wide selection', () => {
         expect(saved[0]).toHaveLength(13);
     });
 
-    test('says a wide view scrolls, and only once the selection is past twelve', async ({ mount, page }) => {
+    test('says a wide view may scroll, and only once the selection is past twelve', async ({ mount, page }) => {
         await mount(picker(columnsOf(12)));
 
         await expect(page.getByTestId('column-width-advisory')).toHaveCount(0);
 
         await page.getByTestId('add-field-property:FIELD_12').click();
 
-        await expect(page.getByTestId('column-width-advisory')).toContainText('scrolls horizontally');
+        await expect(page.getByTestId('column-width-advisory')).toContainText('may scroll horizontally');
+    });
+
+    test('counts the advisory over what the table renders, not over the draft', async ({ mount, page }) => {
+        await mount(picker([...columnsOf(10), missingField(0), missingField(1), missingField(2)]));
+
+        await expect(page.getByTestId('selected-columns-list').getByRole('listitem')).toHaveCount(13);
+        await expect(page.getByTestId('column-counter')).toHaveText('13 columns');
+        await expect(page.getByTestId('column-width-advisory')).toHaveCount(0);
+    });
+
+    test('announces the advisory by placing it in the counter polite region', async ({ mount, page }) => {
+        await mount(picker(columnsOf(13)));
+
+        const politeRegion = page.locator('[aria-live="polite"]', { has: page.getByTestId('column-counter') });
+
+        await expect(politeRegion.getByTestId('column-width-advisory')).toBeVisible();
     });
 
     test('keeps unselected fields listed and searchable, so the catalogue never looks broken', async ({ mount, page }) => {
