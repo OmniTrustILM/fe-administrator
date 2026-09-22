@@ -406,6 +406,23 @@ describe('DiscoveryDetail', () => {
             expect(container.querySelector('[data-testid="certificate-note-notHandedOver"]')).toBeNull();
         });
 
+        it('says nothing rather than zero when the provider reported no certificate count', async () => {
+            await render(
+                buildState({
+                    ...v2Run,
+                    status: DiscoveryStatus.Completed,
+                    resources: [Resource.Certificates],
+                    itemsDiscovered: 12,
+                    totalCertificatesDiscovered: 8,
+                    connectorTotalCertificatesDiscovered: undefined,
+                }),
+            );
+
+            // Zero here would sit above a note counting four repeats, which is a table arguing with itself.
+            expect(rowText('connectorTotalCertificatesDiscovered')).toContain('—');
+            expect(container.querySelector('[data-testid="certificate-note-repeats"]')?.textContent).toContain('4 repeated');
+        });
+
         it('says what was never handed over when a run ended before its provider finished', async () => {
             await render(
                 buildState({

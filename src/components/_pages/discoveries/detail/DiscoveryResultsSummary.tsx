@@ -68,7 +68,13 @@ export default function DiscoveryResultsSummary({ discovery, headers, className 
                 columns: [
                     'Certificate items reported by the provider',
                     <span key="reported" className="inline-flex flex-col gap-0.5">
-                        <span>{String(discovery.connectorTotalCertificatesDiscovered ?? 0)}</span>
+                        <span>
+                            {discovery.connectorTotalCertificatesDiscovered === undefined ? (
+                                <span title="Not reported by this Discovery Provider">—</span>
+                            ) : (
+                                String(discovery.connectorTotalCertificatesDiscovered)
+                            )}
+                        </span>
                         {notes.map((note) => (
                             <span
                                 key={note.kind}
