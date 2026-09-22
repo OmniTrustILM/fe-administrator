@@ -1595,6 +1595,14 @@ test.describe('CustomTable', () => {
             await expect(component.getByTestId('action-__checkbox__')).toHaveCount(0);
         });
 
+        test('names a column header from its heading alone, not from the action inside it', async ({ mount, page }) => {
+            await mount(<CustomTableHeaderActionWithStore headers={mockHeaders} data={mockData} />);
+
+            await expect(page.getByRole('columnheader', { name: 'Name', exact: true })).toHaveCount(1);
+            await expect(page.getByRole('columnheader', { name: 'Email', exact: true })).toHaveCount(1);
+            await expect(page.getByRole('button', { name: 'Options for name', exact: true })).toBeVisible();
+        });
+
         test('renders no action at all when the caller passes none', async ({ mount }) => {
             const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
 

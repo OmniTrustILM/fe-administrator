@@ -43,6 +43,10 @@ type Props = Readonly<{
     withDeferredConfig?: boolean;
     /** Renders a control that lands the catalogue, so a test can act on the table before it arrives. */
     withCatalogueControl?: boolean;
+    /** Renders a control that fails the catalogue read, which settles it with no fields behind it. */
+    withCatalogueFailureControl?: boolean;
+    /** Renders a control that lands the withheld view list, so a test can act before the strip is up. */
+    withViewsControl?: boolean;
 }>;
 
 const registry: CellRegistry<StubRow> = {
@@ -106,6 +110,39 @@ function CatalogueControl({ catalogue }: Readonly<{ catalogue: SearchFieldListMo
     );
 }
 
+function CatalogueFailureControl() {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="fail-catalogue"
+            onClick={() =>
+                dispatch({
+                    type: 'filters/getAvailableFiltersFailure',
+                    payload: { entity: EntityType.CERTIFICATE, error: 'Catalogue unavailable' },
+                })
+            }
+        >
+            Fail catalogue
+        </button>
+    );
+}
+
+function ViewsControl({ views }: Readonly<{ views: ListViewModel[] }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="land-views"
+            onClick={() => dispatch({ type: 'listViews/listViewsSuccess', payload: { resource: Resource.Certificates, views } })}
+        >
+            Land views
+        </button>
+    );
+}
+
 function DispatchedActions() {
     const dispatched = useSelector((state: { listViews: ListViewsTestState }) => state.listViews.dispatched);
 
@@ -129,6 +166,8 @@ export default function PagedListColumnsWithStore({
     withPagingControl = false,
     withDeferredConfig = false,
     withCatalogueControl = false,
+    withCatalogueFailureControl = false,
+    withViewsControl = false,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
@@ -208,6 +247,10 @@ export default function PagedListColumnsWithStore({
                 />
 
                 {withCatalogueControl && <CatalogueControl catalogue={catalogue} />}
+
+                {withCatalogueFailureControl && <CatalogueFailureControl />}
+
+                {withViewsControl && <ViewsControl views={views} />}
 
                 {withPagingControl && <PagingControl />}
 

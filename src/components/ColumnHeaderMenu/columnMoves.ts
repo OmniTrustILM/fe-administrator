@@ -34,12 +34,3 @@ export function getInsertionSlot(pointerX: number, bounds: readonly ColumnBounds
     const slot = bounds.findIndex((cell) => pointerX < (cell.left + cell.right) / 2);
     return slot === -1 ? bounds.length : slot;
 }
-
-/**
- * The index a drop lands on. The slot means "insert before this column", and the move takes the
- * source out before inserting, which shifts a slot to its right down by one — the horizontal form of
- * the correction the picker's own drop makes.
- */
-export function getDropIndex(from: number, slot: number): number {
-    return from < slot ? slot - 1 : slot;
-}

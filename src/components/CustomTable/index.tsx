@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { jsxInnerText } from 'utils/jsxInnerText';
 import { DEFAULT_ITEMS_PER_PAGE_OPTIONS } from 'utils/pagination';
 import { useDispatch, useSelector } from 'react-redux';
@@ -134,6 +134,8 @@ function CustomTable({
     renderHeaderAction,
 }: Readonly<Props>) {
     const location = useLocation();
+    // Scoped to the instance so two tables on one page cannot claim the same heading id.
+    const headingIdPrefix = useId();
     const [tblData, setTblData] = useState<TableDataRow[]>(data);
     const [tblCheckedRows, setTblCheckedRows] = useState<(string | number)[]>(checkedRows || emptyCheckedRows);
     const [totalPages, setTotalPages] = useState(1);
@@ -640,6 +642,7 @@ function CustomTable({
                         header.sort ? 'text-content' : 'text-content-subtle',
                     )}
                     data-id={header.id}
+                    {...(header.id === '__checkbox__' ? {} : { 'aria-labelledby': `${headingIdPrefix}${header.id}` })}
                     {...(header.sortable && ariaSortValue(header.sort) ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
                     style={{
                         ...(header.width ? { width: header.width } : {}),
@@ -667,8 +670,13 @@ function CustomTable({
                             'justify-end': header.align === 'right',
                         };
                         // Wrapped rather than omitted: the cell is only visually blank, and a sortable
-                        // icon column still needs an accessible name on its button.
-                        const headingContent = header.headingHidden ? <span className="sr-only">{header.content}</span> : header.content;
+                        // icon column still needs an accessible name on its button. The wrapper is also what
+                        // the cell's `aria-labelledby` points at, so the cell is named by the heading alone.
+                        const headingContent = (
+                            <span id={`${headingIdPrefix}${header.id}`} className={header.headingHidden ? 'sr-only' : undefined}>
+                                {header.content}
+                            </span>
+                        );
                         // `info` sits outside the button: a sortable heading is itself a control, and a
                         // toggletip trigger inside it would nest one interactive element in another, which
                         // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
@@ -735,6 +743,7 @@ function CustomTable({
         tblHeaders,
         trailingHeaderAction,
         renderHeaderAction,
+        headingIdPrefix,
         hasCheckboxes,
         onColumnSortClick,
         hasAllCheckBox,

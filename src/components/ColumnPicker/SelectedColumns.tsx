@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FilterFieldSource } from 'types/openapi';
 import type { PickerColumn } from 'types/tableColumns';
+import { getDropIndex } from 'utils/columnPicker';
 import { formatColumnCount, getColumnKey } from 'utils/tableColumns';
 import SelectedColumnRow from './SelectedColumnRow';
 
@@ -39,12 +40,8 @@ export default function SelectedColumns({ columns, getSourceLabel, onRename, onR
     };
 
     const handleDrop = () => {
-        if (draggingIndex !== null && dropIndex !== null) {
-            // The indicator is a top border on the target row, i.e. "land above this row". The move
-            // takes the source out before inserting, which shifts a target below it up by one, so a
-            // downward move has to compensate or the row lands below the highlighted one.
-            onMove(draggingIndex, draggingIndex < dropIndex ? dropIndex - 1 : dropIndex);
-        }
+        // The indicator is a top border on the target row, so the highlighted row is the slot.
+        if (draggingIndex !== null && dropIndex !== null) onMove(draggingIndex, getDropIndex(draggingIndex, dropIndex));
         finishDrag();
     };
 

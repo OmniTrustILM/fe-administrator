@@ -126,6 +126,7 @@ export type FiltersTestState = {
             preservedFilters: unknown[];
             isFetchingFilters: boolean;
             hasLoadedFilters: boolean;
+            hasFailedFilters?: boolean;
         };
     }>;
 };
@@ -157,7 +158,13 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                   };
         const next = {
             entity: payload.entity,
-            filter: { ...filter, availableFilters: payload.availableFilters ?? [], isFetchingFilters: false, hasLoadedFilters: true },
+            filter: {
+                ...filter,
+                availableFilters: payload.availableFilters ?? [],
+                isFetchingFilters: false,
+                hasLoadedFilters: true,
+                hasFailedFilters: false,
+            },
         };
         if (idx >= 0) {
             return {
@@ -175,7 +182,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
             filters: state.filters
                 .slice(0, idx)
                 .concat(
-                    [{ ...f, filter: { ...f.filter, isFetchingFilters: false, hasLoadedFilters: true } }],
+                    [{ ...f, filter: { ...f.filter, isFetchingFilters: false, hasLoadedFilters: true, hasFailedFilters: true } }],
                     state.filters.slice(idx + 1),
                 ),
         };
@@ -1382,6 +1389,12 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
         ...recorded,
         byResource: { ...recorded.byResource, [resource]: { ...entry, ...next } },
     });
+
+    // Landing the view list is mirrored so a test can act on the table while it is still in flight,
+    // which is the window the strip and the header controls are held back through.
+    if (a.type === 'listViews/listViewsSuccess') {
+        return withEntry({ isFetching: false, hasLoaded: true, views: (a.payload as { views?: ListViewDto[] })?.views ?? entry.views });
+    }
 
     // Only the create and delete round trips are mirrored, and only as far as the strip can observe
     // them: a tab has to appear the moment a create is asked for, follow the uuid the API gives it and

@@ -75,6 +75,16 @@ const expiryWatch: ListViewModel = {
     defaultView: true,
 };
 
+/** A stored view whose order differs from the standard one, so applying it is visible. */
+const reorderedView: ListViewModel = {
+    ...expiryWatch,
+    columns: [
+        { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'department|STRING' },
+        { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+        { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER' },
+    ],
+};
+
 const headings = async (page: Page): Promise<string[]> => {
     const ids = await page.locator('thead th[data-id]').evaluateAll((cells) => cells.map((cell) => cell.getAttribute('data-id') ?? ''));
     return ids.filter((id) => id !== '' && id !== '__checkbox__');
@@ -146,7 +156,33 @@ test.describe('PagedList · column header menu', () => {
         }
     });
 
-    test('takes the catalogue on a column moved before it arrived, rather than freezing it unsortable', async ({ mount, page }) => {
+    test('offers no control until the opening view has been applied, which would replace what it did', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                views={[reorderedView]}
+                withheldViews
+                withViewsControl
+            />,
+        );
+        await expect.poll(() => headings(page)).toEqual([COMMON_NAME, NOT_AFTER, DEPARTMENT]);
+
+        await expect(page.locator('[data-testid^="column-header-menu-"]')).toHaveCount(0);
+
+        await page.getByTestId('land-views').click();
+
+        // The view brings its own order, which is what a move made a moment earlier would have lost.
+        await expect.poll(() => headings(page)).toEqual([DEPARTMENT, COMMON_NAME, NOT_AFTER]);
+        await expect(trigger(page, DEPARTMENT)).toBeVisible();
+
+        await openMenu(page, DEPARTMENT);
+        await page.getByTestId(`column-header-menu-${DEPARTMENT}-move-end`).click();
+        await expect.poll(() => headings(page)).toEqual([COMMON_NAME, NOT_AFTER, DEPARTMENT]);
+    });
+
+    test('offers none while the catalogue the sort entries depend on is still in flight', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore
                 rows={rows}
@@ -154,26 +190,26 @@ test.describe('PagedList · column header menu', () => {
                 catalogue={catalogue}
                 withheldCatalogue
                 withCatalogueControl
-                // The strip is held back so it cannot re-apply a view over the move: the two reads are
-                // independent, and the catalogue landing first is what leaves the move standing.
-                withheldViews
             />,
         );
         await expect.poll(() => headings(page)).toHaveLength(3);
 
-        // The table paints a round trip before the catalogue answers, so a move can land on columns
-        // whose sortability is not yet known. The applied set has to keep taking the answer afterwards.
-        await expect(page.getByRole('button', { name: 'Expires At', exact: true })).toHaveCount(0);
-
-        await openMenu(page, NOT_AFTER);
-        await page.getByTestId(`column-header-menu-${NOT_AFTER}-move-start`).click();
-        await expect.poll(() => headings(page)).toEqual([NOT_AFTER, COMMON_NAME, DEPARTMENT]);
+        await expect(page.locator('[data-testid^="column-header-menu-"]')).toHaveCount(0);
 
         await page.getByTestId('land-catalogue').click();
 
-        await expect(page.getByRole('button', { name: 'Expires At', exact: true })).toBeVisible();
+        await expect(trigger(page, NOT_AFTER)).toBeVisible();
         await openMenu(page, NOT_AFTER);
         await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-sort-asc`)).not.toHaveAttribute('aria-disabled', 'true');
+    });
+
+    test('meets the 24px target size, which 4px of gap from the sort button does not excuse', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        const box = await trigger(page, COMMON_NAME).boundingBox();
+        expect(box?.width ?? 0).toBeGreaterThanOrEqual(24);
+        expect(box?.height ?? 0).toBeGreaterThanOrEqual(24);
     });
 
     test('names each control after the column it belongs to', async ({ mount, page }) => {
@@ -252,8 +288,6 @@ test.describe('PagedList · column header menu', () => {
         const menu = page.getByTestId(`column-header-menu-${DEPARTMENT}`);
         const reason = menu.getByTestId(`column-header-menu-${DEPARTMENT}-sort-unavailable`);
 
-        // Radix's own `disabled` would take the entries out of the roving focus, so the reason would be
-        // announced to nobody. They stay focusable and carry the description instead.
         const reasonId = await reason.getAttribute('id');
         expect(reasonId).toBeTruthy();
         await expect(menu).toHaveAttribute('aria-describedby', reasonId ?? '');
@@ -272,8 +306,7 @@ test.describe('PagedList · column header menu', () => {
         await page.keyboard.press('Enter');
         await expect(page.getByTestId(`column-header-menu-${DEPARTMENT}`)).toBeVisible();
 
-        // Radix's own `disabled` drops an entry from the roving focus, so opening would land on Move
-        // left and the sort entries would never be met at all.
+        // See MenuItem: aria-disabled keeps the entry in the roving focus.
         const entry = page.getByTestId(`column-header-menu-${DEPARTMENT}-sort-asc`);
         await expect(entry).toBeFocused();
 
@@ -300,29 +333,26 @@ test.describe('PagedList · column header menu', () => {
         }
     });
 
-    test('says the answer is still coming rather than that the field cannot be ordered', async ({ mount, page }) => {
+    test('says the catalogue could not be read rather than that the field cannot be ordered', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore
                 rows={rows}
-                standardColumns={undeclaredColumns}
+                standardColumns={standardColumns}
                 catalogue={catalogue}
                 withheldCatalogue
-                withCatalogueControl
-                withheldViews
+                withCatalogueFailureControl
             />,
         );
         await expect.poll(() => headings(page)).toHaveLength(3);
 
+        await page.getByTestId('fail-catalogue').click();
+
+        // A failed read settles with no fields behind it, so every column reads unsortable — which is
+        // the state, not an answer about the field.
+        await expect(trigger(page, NOT_AFTER)).toBeVisible();
         await openMenu(page, NOT_AFTER);
-        const reason = page.getByTestId(`column-header-menu-${NOT_AFTER}-sort-unavailable`);
-        await expect(reason).toHaveText('Still loading which fields can be ordered.');
-
-        await page.keyboard.press('Escape');
-        await page.getByTestId('land-catalogue').click();
-
-        await openMenu(page, DEPARTMENT);
-        await expect(page.getByTestId(`column-header-menu-${DEPARTMENT}-sort-unavailable`)).toHaveText(
-            'This field cannot be used for ordering.',
+        await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-sort-unavailable`)).toHaveText(
+            'Could not load which fields can be ordered.',
         );
     });
 

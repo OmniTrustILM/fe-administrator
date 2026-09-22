@@ -5,7 +5,8 @@ import { ArrowDown, ArrowLeftToLine, ArrowRightToLine, ArrowUp, ChevronLeft, Che
 import type React from 'react';
 import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { type ColumnMove, getDropIndex, getInsertionSlot, getMoveTarget } from './columnMoves';
+import { getDropIndex } from 'utils/columnPicker';
+import { type ColumnMove, getInsertionSlot, getMoveTarget } from './columnMoves';
 
 /** How far a pointer may travel before the press counts as picking the column up rather than a click. */
 const DRAG_THRESHOLD_PX = 5;
@@ -13,11 +14,11 @@ const DRAG_THRESHOLD_PX = 5;
 const NOT_SORTABLE_REASON = 'This field cannot be used for ordering.';
 
 /**
- * What the menu says before anything has answered. The catalogue is read a round trip after the table
- * first paints, and a column carries no sort capability until it lands, so stating the permanent
- * reason here would assert an answer nobody has given.
+ * What the menu says when the catalogue read that decides sortability came back empty-handed. A failed
+ * read leaves every column flagged unsortable, which is not an answer, so the permanent reason would
+ * assert something nobody said.
  */
-const SORTABILITY_UNKNOWN_REASON = 'Still loading which fields can be ordered.';
+const SORTABILITY_UNKNOWN_REASON = 'Could not load which fields can be ordered.';
 
 const ICON_CLASS = 'size-4 shrink-0';
 
@@ -80,8 +81,8 @@ type Props = Readonly<{
     columnKeys: readonly string[];
     sortable: boolean;
     /**
-     * Whether anything has answered on sortability yet. Distinguishes "the catalogue says no" from
-     * "the catalogue has not replied", which read identically on the column itself.
+     * Whether the catalogue answered on sortability. Distinguishes "the catalogue says no" from "the
+     * read failed", which read identically on the column itself.
      */
     isSortabilityKnown?: boolean;
     onSort: (direction: SortDirection) => void;
@@ -239,7 +240,9 @@ export default function ColumnHeaderMenu({
                 onPointerUp={onPointerUp}
                 onPointerCancel={endGesture}
                 className={cn(
-                    'inline-flex shrink-0 cursor-pointer touch-none items-center rounded-md p-0.5 text-content-subtle',
+                    // `p-1` around the 16px icon, as on the add-column trigger: 4px of gap is short of the
+                    // spacing exception, so the control has to reach 24px itself.
+                    'inline-flex shrink-0 cursor-pointer touch-none items-center rounded-md p-1 text-content-subtle',
                     'hover:bg-surface-hover hover:text-content',
                     'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand',
                 )}

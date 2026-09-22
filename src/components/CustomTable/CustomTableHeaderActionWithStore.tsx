@@ -28,8 +28,8 @@ export default function CustomTableHeaderActionWithStore({ headers, data, hasChe
                     hasCheckboxes={hasCheckboxes}
                     trailingHeaderAction={withTrailingAction ? <button type="button">Add column</button> : undefined}
                     renderHeaderAction={(header) => (
-                        <button type="button" data-testid={`action-${header.id}`}>
-                            {`Options for ${header.id}`}
+                        <button type="button" aria-label={`Options for ${header.id}`} data-testid={`action-${header.id}`}>
+                            {'\u22ee'}
                         </button>
                     )}
                 />

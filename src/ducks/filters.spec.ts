@@ -147,3 +147,36 @@ describe('hasLoadedFilters', () => {
         expect(selectors.availableFilters(EntityType.CERTIFICATE)(stateFor(refetching))).toEqual(fields);
     });
 });
+
+describe('hasFailedFilters', () => {
+    const stateFor = (filtersState: unknown) => ({ filters: filtersState }) as any;
+    const started = (state: typeof initialState) =>
+        reducer(state, actions.getAvailableFilters({ entity: EntityType.CERTIFICATE, getAvailableFiltersApi: {} as any }));
+
+    test('is false before any read', () => {
+        expect(selectors.hasFailedFilters(EntityType.CERTIFICATE)(stateFor(initialState))).toBe(false);
+    });
+
+    test('separates a failed read from one that answered with no fields', () => {
+        const failed = reducer(started(initialState), actions.getAvailableFiltersFailure({ entity: EntityType.CERTIFICATE, error: 'err' }));
+        const empty = reducer(
+            started(initialState),
+            actions.getAvailableFiltersSuccess({ entity: EntityType.CERTIFICATE, availableFilters: [] }),
+        );
+
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(failed))).toBe(true);
+        expect(selectors.hasLoadedFilters(EntityType.CERTIFICATE)(stateFor(empty))).toBe(true);
+        expect(selectors.hasFailedFilters(EntityType.CERTIFICATE)(stateFor(failed))).toBe(true);
+        expect(selectors.hasFailedFilters(EntityType.CERTIFICATE)(stateFor(empty))).toBe(false);
+    });
+
+    test('is cleared by a read that succeeds after one that failed', () => {
+        const failed = reducer(started(initialState), actions.getAvailableFiltersFailure({ entity: EntityType.CERTIFICATE, error: 'err' }));
+        const recovered = reducer(
+            started(failed),
+            actions.getAvailableFiltersSuccess({ entity: EntityType.CERTIFICATE, availableFilters: [] }),
+        );
+
+        expect(selectors.hasFailedFilters(EntityType.CERTIFICATE)(stateFor(recovered))).toBe(false);
+    });
+});

@@ -136,6 +136,7 @@ function PagedList<TRow extends object>({
     // `hasLoadedFilters` rather than `!isFetchingFilters`, which is also false before the first read.
     const catalogue = useSelector(filterSelectors.availableFilters(entity));
     const hasLoadedCatalogue = useSelector(filterSelectors.hasLoadedFilters(entity));
+    const hasCatalogueFailed = useSelector(filterSelectors.hasFailedFilters(entity));
 
     // Taken apart rather than depended on whole: an unmemoised config would rebuild `getFreshData`
     // every render, and the effect watching it would refetch forever.
@@ -398,11 +399,7 @@ function PagedList<TRow extends object>({
         [appliedColumns, appliedSort, dispatch, entity, pageSize],
     );
 
-    /**
-     * A reorder changes nothing about the result set, so it neither re-lists nor moves off the page the
-     * user is on — it goes through `applyColumns` for the same reason adding a column does: the table is
-     * the only thing it touches, and the summary bar is what stores it.
-     */
+    /** Goes through `applyColumns` like adding a column does; `listRequestSnapshot` keys order out, so a reorder neither re-lists nor leaves the page. */
     const onMoveColumn = useCallback(
         (from: number, to: number) => applyColumns(moveColumn(appliedColumns, from, to)),
         [applyColumns, appliedColumns],
@@ -412,6 +409,11 @@ function PagedList<TRow extends object>({
 
     const renderHeaderAction = useCallback(
         (header: TableHeader) => {
+            // Withheld until the strip is up, as the dialog entry beside it is. The opening view replaces
+            // the columns and the ordering when it lands, so a move or a sort made before then is applied
+            // and then silently undone.
+            if (!isStripReady) return undefined;
+
             const column = appliedColumns.find((candidate) => getColumnKey(candidate) === header.id);
             if (!column) return undefined;
 
@@ -421,14 +423,14 @@ function PagedList<TRow extends object>({
                     label={getColumnHeading(column)}
                     columnKeys={columnKeys}
                     sortable={column.sortable === true}
-                    isSortabilityKnown={hasLoadedCatalogue}
+                    isSortabilityKnown={!hasCatalogueFailed}
                     onSort={(direction) => onSortChanged(header.id, direction)}
                     onMove={onMoveColumn}
                     dataTestId={`column-header-menu-${header.id}`}
                 />
             );
         },
-        [appliedColumns, columnKeys, hasLoadedCatalogue, onSortChanged, onMoveColumn],
+        [isStripReady, appliedColumns, columnKeys, hasCatalogueFailed, onSortChanged, onMoveColumn],
     );
 
     const columnHeaders = useMemo(

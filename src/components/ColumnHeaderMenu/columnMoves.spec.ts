@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { moveColumn } from 'utils/columnPicker';
-import { type ColumnBounds, type ColumnMove, getDropIndex, getInsertionSlot, getMoveTarget } from './columnMoves';
+import { type ColumnBounds, type ColumnMove, getInsertionSlot, getMoveTarget } from './columnMoves';
 
 const columns = ['a', 'b', 'c', 'd'];
 
@@ -77,29 +77,5 @@ describe('getInsertionSlot', () => {
         expect(getInsertionSlot(30, uneven)).toBe(1);
         expect(getInsertionSlot(239, uneven)).toBe(1);
         expect(getInsertionSlot(240, uneven)).toBe(2);
-    });
-});
-
-describe('getDropIndex', () => {
-    it('compensates for the source being taken out before a slot to its right', () => {
-        expect(getDropIndex(0, 3)).toBe(2);
-        expect(getDropIndex(0, 4)).toBe(3);
-    });
-
-    it('leaves a slot to the left of the source alone', () => {
-        expect(getDropIndex(3, 0)).toBe(0);
-        expect(getDropIndex(2, 1)).toBe(1);
-    });
-
-    it('resolves both slots bordering the source to where it already is', () => {
-        expect(getDropIndex(1, 1)).toBe(1);
-        expect(getDropIndex(1, 2)).toBe(1);
-    });
-
-    it('drops a column onto the position the indicator marked', () => {
-        expect(moveColumn(columns, 0, getDropIndex(0, 3))).toEqual(['b', 'c', 'a', 'd']);
-        expect(moveColumn(columns, 0, getDropIndex(0, 4))).toEqual(['b', 'c', 'd', 'a']);
-        expect(moveColumn(columns, 3, getDropIndex(3, 0))).toEqual(['d', 'a', 'b', 'c']);
-        expect(moveColumn(columns, 3, getDropIndex(3, 2))).toEqual(['a', 'b', 'd', 'c']);
     });
 });
