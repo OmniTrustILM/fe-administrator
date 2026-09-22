@@ -31,7 +31,7 @@ const SOURCE_ABBREVIATIONS: Readonly<Record<FilterFieldSource, string>> = {
 
 type Props = Readonly<{
     source: FilterFieldSource;
-    /** The full source name, announced to screen readers in place of the abbreviation. */
+    /** The full source name, announced to screen readers and shown on hover in place of the abbreviation. */
     label?: string;
 }>;
 
@@ -39,7 +39,7 @@ export default function SourceBadge({ source, label = DEFAULT_SOURCE_LABELS[sour
     return (
         // normal-case is load-bearing: a table header row is `uppercase`, and a sortable heading's
         // button resets it while a plain one does not, so inheriting renders the same badge two ways.
-        <Badge color={SOURCE_COLORS[source]} size="small" className="shrink-0 normal-case" dataTestId="source-badge">
+        <Badge color={SOURCE_COLORS[source]} size="small" className="shrink-0 normal-case" title={label} dataTestId="source-badge">
             <span aria-hidden="true">{SOURCE_ABBREVIATIONS[source]}</span> <span className="sr-only">{label}</span>
         </Badge>
     );

@@ -1578,6 +1578,14 @@ test.describe('CustomTable · column source', () => {
         await expect(badge.locator('.sr-only')).toHaveText('Custom attribute');
     });
 
+    test('gives a pointer user the full source name on hover, without renaming the sort button', async ({ mount }) => {
+        const component = await mount(table([department]));
+        const cell = component.locator(departmentCell);
+
+        await expect(cell.getByTestId('source-badge')).toHaveAttribute('title', 'Custom attribute');
+        await expect(cell.getByRole('button')).toHaveAccessibleName('Custom attribute Department');
+    });
+
     test('keeps the badge inside the sort button as inert markup, with the ordering state untouched', async ({ mount }) => {
         const component = await mount(table([department]));
         const cell = component.locator(departmentCell);
