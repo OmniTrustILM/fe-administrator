@@ -1,7 +1,7 @@
 import * as Popover from '@radix-ui/react-popover';
 import cn from 'classnames';
 import { CHECKBOX_INPUT_CLASS } from 'components/Checkbox';
-import { DEFAULT_SOURCE_LABELS } from 'components/ColumnPicker/SourceBadge';
+import { DEFAULT_SOURCE_LABELS } from 'components/SourceBadge';
 import { Plus, Search } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useMemo, useRef, useState } from 'react';
