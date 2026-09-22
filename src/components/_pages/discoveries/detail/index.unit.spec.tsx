@@ -217,6 +217,21 @@ describe('DiscoveryDetail', () => {
         });
     });
 
+    describe('resources', () => {
+        it('says which resources the run targeted', async () => {
+            await render(buildState(v2Run));
+
+            expect(rowText('resources')).toBe('ResourcesCertificatesKeys');
+        });
+
+        it('names certificates for a v1 run, which can target nothing else', async () => {
+            // Core synthesizes the list for a v1 run, so the row is never blank and never says "unknown".
+            await render(buildState(v1Run));
+
+            expect(rowText('resources')).toBe('ResourcesCertificates');
+        });
+    });
+
     describe('lifecycle controls: stoppable × status × permission', () => {
         it('offers stop and cancel while a stoppable run is in progress', async () => {
             await render(buildState(v2Run));
