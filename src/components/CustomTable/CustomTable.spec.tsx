@@ -1596,10 +1596,14 @@ test.describe('CustomTable', () => {
         });
 
         test('names a column header from its heading alone, not from the action inside it', async ({ mount, page }) => {
-            await mount(<CustomTableHeaderActionWithStore headers={mockHeaders} data={mockData} />);
+            // The ACME account list ships this id verbatim, spaces and all.
+            const spacedHeaders: TableHeader[] = [...mockHeaders, { id: 'ACME Profile Name', content: 'ACME Profile Name' }];
+            const spacedData: TableDataRow[] = mockData.map((row) => ({ ...row, columns: [...row.columns, 'acme'] }));
+            await mount(<CustomTableHeaderActionWithStore headers={spacedHeaders} data={spacedData} />);
 
             await expect(page.getByRole('columnheader', { name: 'Name', exact: true })).toHaveCount(1);
             await expect(page.getByRole('columnheader', { name: 'Email', exact: true })).toHaveCount(1);
+            await expect(page.getByRole('columnheader', { name: 'ACME Profile Name', exact: true })).toHaveCount(1);
             await expect(page.getByRole('button', { name: 'Options for name', exact: true })).toBeVisible();
         });
 

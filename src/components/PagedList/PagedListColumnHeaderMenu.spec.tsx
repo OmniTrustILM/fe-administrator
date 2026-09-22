@@ -29,6 +29,21 @@ const catalogue = [
     },
 ] as unknown as SearchFieldListModel[];
 
+/** The same catalogue as a stale read reported it, before the API gained the ordering. */
+const staleCatalogue = [
+    {
+        filterFieldSource: FilterFieldSource.Property,
+        searchFieldData: [
+            field('COMMON_NAME', 'Common Name'),
+            field('NOT_AFTER', 'Expires At', { type: FilterFieldType.Datetime, sortable: false }),
+        ],
+    },
+    {
+        filterFieldSource: FilterFieldSource.Custom,
+        searchFieldData: [field('department|STRING', 'Department', { sortable: false, attributeContentType: AttributeContentType.String })],
+    },
+] as unknown as SearchFieldListModel[];
+
 const property = (identifier: string, catalogueLabel: string): ColumnDefinition => ({
     fieldSource: FilterFieldSource.Property,
     fieldIdentifier: identifier,
@@ -201,6 +216,29 @@ test.describe('PagedList · column header menu', () => {
         await expect(trigger(page, NOT_AFTER)).toBeVisible();
         await openMenu(page, NOT_AFTER);
         await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-sort-asc`)).not.toHaveAttribute('aria-disabled', 'true');
+    });
+
+    test('takes a later catalogue answer on the columns the opening view left on the table', async ({ mount, page }) => {
+        // The duck keeps a resource's catalogue across visits, so a remount opens the strip on the one
+        // already held while the refetch is still out — and what that opening left standing is a selection.
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={undeclaredColumns}
+                catalogue={staleCatalogue}
+                refreshedCatalogue={catalogue}
+                withCatalogueControl
+            />,
+        );
+        await expect.poll(() => headings(page)).toEqual([COMMON_NAME, NOT_AFTER, DEPARTMENT]);
+        await expect(page.getByRole('button', { name: 'Expires At', exact: true })).toHaveCount(0);
+
+        await page.getByTestId('land-catalogue').click();
+
+        await expect(page.getByRole('button', { name: 'Expires At', exact: true })).toBeVisible();
+        await openMenu(page, NOT_AFTER);
+        await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-sort-asc`)).not.toHaveAttribute('aria-disabled', 'true');
+        await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-sort-desc`)).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     test('meets the 24px target size, which 4px of gap from the sort button does not excuse', async ({ mount, page }) => {

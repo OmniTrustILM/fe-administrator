@@ -14,11 +14,10 @@ const DRAG_THRESHOLD_PX = 5;
 const NOT_SORTABLE_REASON = 'This field cannot be used for ordering.';
 
 /**
- * What the menu says when the catalogue read that decides sortability came back empty-handed. A failed
- * read leaves every column flagged unsortable, which is not an answer, so the permanent reason would
- * assert something nobody said.
+ * What the menu says when the catalogue read that decides sortability failed. It leaves every column
+ * flagged unsortable, which is not an answer, so the permanent reason would assert something nobody said.
  */
-const SORTABILITY_UNKNOWN_REASON = 'Could not load which fields can be ordered.';
+const CATALOGUE_FAILED_REASON = 'Could not load which fields can be ordered.';
 
 const ICON_CLASS = 'size-4 shrink-0';
 
@@ -81,10 +80,10 @@ type Props = Readonly<{
     columnKeys: readonly string[];
     sortable: boolean;
     /**
-     * Whether the catalogue answered on sortability. Distinguishes "the catalogue says no" from "the
-     * read failed", which read identically on the column itself.
+     * Whether the catalogue read failed. Distinguishes "the catalogue says no" from "the read failed",
+     * which read identically on the column itself.
      */
-    isSortabilityKnown?: boolean;
+    hasCatalogueFailed?: boolean;
     onSort: (direction: SortDirection) => void;
     onMove: (from: number, to: number) => void;
     dataTestId?: string;
@@ -106,7 +105,7 @@ export default function ColumnHeaderMenu({
     label,
     columnKeys,
     sortable,
-    isSortabilityKnown = true,
+    hasCatalogueFailed = false,
     onSort,
     onMove,
     dataTestId = 'column-header-menu',
@@ -283,7 +282,7 @@ export default function ColumnHeaderMenu({
                             className="px-2 pb-1 text-xs text-content-subtle"
                             data-testid={`${dataTestId}-sort-unavailable`}
                         >
-                            {isSortabilityKnown ? NOT_SORTABLE_REASON : SORTABILITY_UNKNOWN_REASON}
+                            {hasCatalogueFailed ? CATALOGUE_FAILED_REASON : NOT_SORTABLE_REASON}
                         </DropdownMenu.Label>
                     )}
 

@@ -633,102 +633,108 @@ function CustomTable({
         const columns: TableHeader[] = [...tblHeaders];
 
         if (hasCheckboxes) columns.unshift({ id: '__checkbox__', content: '', sortable: false, width: '0%' });
-        const cells = columns.map((header) => (
-            <Fragment key={header.id}>
-                <th
-                    scope="col"
-                    className={cn(
-                        'p-2.5 text-start text-xs font-medium uppercase bg-surface-sunken whitespace-nowrap',
-                        header.sort ? 'text-content' : 'text-content-subtle',
-                    )}
-                    data-id={header.id}
-                    {...(header.id === '__checkbox__' ? {} : { 'aria-labelledby': `${headingIdPrefix}${header.id}` })}
-                    {...(header.sortable && ariaSortValue(header.sort) ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
-                    style={{
-                        ...(header.width ? { width: header.width } : {}),
-                        ...(header.minWidth ? { minWidth: header.minWidth } : {}),
-                        ...(header.maxWidth == null ? {} : { maxWidth: `${header.maxWidth}px` }),
-                        ...(header.align ? { textAlign: header.align } : {}),
-                    }}
-                >
-                    {(() => {
-                        if (header.id === '__checkbox__') {
-                            return hasAllCheckBox && multiSelect ? (
-                                <Checkbox
-                                    checked={checkAllChecked}
-                                    onChange={(value) => onCheckAllCheckboxClick(value)}
-                                    id={`${header.id}__checkbox__`}
-                                    disabled={disableSelectionControls}
-                                />
-                            ) : (
-                                <div>&nbsp;</div>
+        const cells = columns.map((header, index) => {
+            // Keyed by position rather than by `header.id`: an id may carry whitespace — `ACME Profile Name`
+            // is shipped — and `aria-labelledby` is a token list, so such an id would resolve to nothing.
+            const headingId = `${headingIdPrefix}${index}`;
+
+            return (
+                <Fragment key={header.id}>
+                    <th
+                        scope="col"
+                        className={cn(
+                            'p-2.5 text-start text-xs font-medium uppercase bg-surface-sunken whitespace-nowrap',
+                            header.sort ? 'text-content' : 'text-content-subtle',
+                        )}
+                        data-id={header.id}
+                        {...(header.id === '__checkbox__' ? {} : { 'aria-labelledby': headingId })}
+                        {...(header.sortable && ariaSortValue(header.sort) ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
+                        style={{
+                            ...(header.width ? { width: header.width } : {}),
+                            ...(header.minWidth ? { minWidth: header.minWidth } : {}),
+                            ...(header.maxWidth == null ? {} : { maxWidth: `${header.maxWidth}px` }),
+                            ...(header.align ? { textAlign: header.align } : {}),
+                        }}
+                    >
+                        {(() => {
+                            if (header.id === '__checkbox__') {
+                                return hasAllCheckBox && multiSelect ? (
+                                    <Checkbox
+                                        checked={checkAllChecked}
+                                        onChange={(value) => onCheckAllCheckboxClick(value)}
+                                        id={`${header.id}__checkbox__`}
+                                        disabled={disableSelectionControls}
+                                    />
+                                ) : (
+                                    <div>&nbsp;</div>
+                                );
+                            }
+
+                            const alignment = {
+                                'justify-center': header.align === 'center',
+                                'justify-end': header.align === 'right',
+                            };
+                            // Wrapped rather than omitted: the cell is only visually blank, and a sortable
+                            // icon column still needs an accessible name on its button. The wrapper is also what
+                            // the cell's `aria-labelledby` points at, so the cell is named by the heading alone.
+                            const headingContent = (
+                                <span id={headingId} className={header.headingHidden ? 'sr-only' : undefined}>
+                                    {header.content}
+                                </span>
                             );
-                        }
-
-                        const alignment = {
-                            'justify-center': header.align === 'center',
-                            'justify-end': header.align === 'right',
-                        };
-                        // Wrapped rather than omitted: the cell is only visually blank, and a sortable
-                        // icon column still needs an accessible name on its button. The wrapper is also what
-                        // the cell's `aria-labelledby` points at, so the cell is named by the heading alone.
-                        const headingContent = (
-                            <span id={`${headingIdPrefix}${header.id}`} className={header.headingHidden ? 'sr-only' : undefined}>
-                                {header.content}
-                            </span>
-                        );
-                        // `info` sits outside the button: a sortable heading is itself a control, and a
-                        // toggletip trigger inside it would nest one interactive element in another, which
-                        // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
-                        const headingSide = (() => {
-                            if (header.sortable) {
-                                return (
-                                    <span className={cn('flex w-full items-center gap-1', alignment)}>
-                                        <button
-                                            type="button"
-                                            onClick={() => onColumnSortClick(header.id)}
-                                            className={cn(
-                                                'group flex items-center gap-1 cursor-pointer',
-                                                'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 rounded-xs',
-                                                header.info ? undefined : 'w-full',
-                                                alignment,
-                                            )}
-                                        >
-                                            {headingContent}
-                                            {/* An explicit space keeps the cell's text content separated from the next header's,
+                            // `info` sits outside the button: a sortable heading is itself a control, and a
+                            // toggletip trigger inside it would nest one interactive element in another, which
+                            // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
+                            const headingSide = (() => {
+                                if (header.sortable) {
+                                    return (
+                                        <span className={cn('flex w-full items-center gap-1', alignment)}>
+                                            <button
+                                                type="button"
+                                                onClick={() => onColumnSortClick(header.id)}
+                                                className={cn(
+                                                    'group flex items-center gap-1 cursor-pointer',
+                                                    'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 rounded-xs',
+                                                    header.info ? undefined : 'w-full',
+                                                    alignment,
+                                                )}
+                                            >
+                                                {headingContent}
+                                                {/* An explicit space keeps the cell's text content separated from the next header's,
                                             so text-based selectors over the header row keep matching as they did. */}{' '}
-                                            {getSortIcon(header.sort)}
-                                        </button>
-                                        {header.info}
-                                    </span>
-                                );
-                            }
-                            if (header.info) {
-                                return (
-                                    <span className={cn('flex w-full items-center gap-1', alignment)}>
-                                        {headingContent} {header.info}
-                                    </span>
-                                );
-                            }
-                            return headingContent;
-                        })();
+                                                {getSortIcon(header.sort)}
+                                            </button>
+                                            {header.info}
+                                        </span>
+                                    );
+                                }
+                                if (header.info) {
+                                    return (
+                                        <span className={cn('flex w-full items-center gap-1', alignment)}>
+                                            {headingContent} {header.info}
+                                        </span>
+                                    );
+                                }
+                                return headingContent;
+                            })();
 
-                        const action = renderHeaderAction?.(header);
-                        if (!action) return headingSide;
+                            const action = renderHeaderAction?.(header);
+                            if (!action) return headingSide;
 
-                        // The heading is what grows, so the action keeps to the cell's right-hand end
-                        // without an auto margin — which outranks `justify-content` and would pull a
-                        // centred or right-aligned heading to the start of the cell.
-                        return (
-                            <span className="flex w-full items-center gap-1">
-                                <span className={cn('flex w-full min-w-0 items-center', alignment)}>{headingSide}</span>
-                                <span className="flex shrink-0 items-center">{action}</span>
-                            </span>
-                        );
-                    })()}
-                </th>
-            </Fragment>
-        ));
+                            // The heading is what grows, so the action keeps to the cell's right-hand end
+                            // without an auto margin — which outranks `justify-content` and would pull a
+                            // centred or right-aligned heading to the start of the cell.
+                            return (
+                                <span className="flex w-full items-center gap-1">
+                                    <span className={cn('flex w-full min-w-0 items-center', alignment)}>{headingSide}</span>
+                                    <span className="flex shrink-0 items-center">{action}</span>
+                                </span>
+                            );
+                        })()}
+                    </th>
+                </Fragment>
+            );
+        });
 
         if (trailingHeaderAction) {
             cells.push(

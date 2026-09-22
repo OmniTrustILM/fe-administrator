@@ -162,8 +162,9 @@ function PagedList<TRow extends object>({
     /**
      * Sortability merged in, from the catalogue once it has answered and from the page's own declared
      * ordering until then. Applied to whatever set is on the table rather than to the standard one
-     * alone: a selection replaces that set, so merging only there would freeze the columns a selection
-     * was taken from at their pre-catalogue flags for the rest of the session.
+     * alone: a selection replaces that set, and the catalogue can still answer after one was taken —
+     * the duck keeps a resource's fields across visits, so the strip opens on the held answer while
+     * the refetch is out, and merging only into the standard set would freeze that selection on it.
      */
     const withSortability = useCallback(
         (columns: ColumnDefinition[]) =>
@@ -423,7 +424,7 @@ function PagedList<TRow extends object>({
                     label={getColumnHeading(column)}
                     columnKeys={columnKeys}
                     sortable={column.sortable === true}
-                    isSortabilityKnown={!hasCatalogueFailed}
+                    hasCatalogueFailed={hasCatalogueFailed}
                     onSort={(direction) => onSortChanged(header.id, direction)}
                     onMove={onMoveColumn}
                     dataTestId={`column-header-menu-${header.id}`}

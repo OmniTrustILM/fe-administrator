@@ -43,6 +43,8 @@ type Props = Readonly<{
     withDeferredConfig?: boolean;
     /** Renders a control that lands the catalogue, so a test can act on the table before it arrives. */
     withCatalogueControl?: boolean;
+    /** What that control lands instead, as a remount's refetch answers over the one already in the duck. */
+    refreshedCatalogue?: SearchFieldListModel[];
     /** Renders a control that fails the catalogue read, which settles it with no fields behind it. */
     withCatalogueFailureControl?: boolean;
     /** Renders a control that lands the withheld view list, so a test can act before the strip is up. */
@@ -166,6 +168,7 @@ export default function PagedListColumnsWithStore({
     withPagingControl = false,
     withDeferredConfig = false,
     withCatalogueControl = false,
+    refreshedCatalogue,
     withCatalogueFailureControl = false,
     withViewsControl = false,
 }: Props) {
@@ -246,7 +249,7 @@ export default function PagedListColumnsWithStore({
                     refreshToken={refreshToken}
                 />
 
-                {withCatalogueControl && <CatalogueControl catalogue={catalogue} />}
+                {withCatalogueControl && <CatalogueControl catalogue={refreshedCatalogue ?? catalogue} />}
 
                 {withCatalogueFailureControl && <CatalogueFailureControl />}
 
