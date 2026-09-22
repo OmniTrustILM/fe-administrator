@@ -6,6 +6,7 @@ type MockButton = {
     tooltip?: string;
     icon?: string;
     onClick?: () => void;
+    disabled?: boolean;
 };
 
 type MockDialogButton = {
@@ -40,10 +41,33 @@ export const containerMockModule = () => ({
 });
 
 export const widgetMockModule = () => ({
-    default: ({ title, widgetButtons, children }: { title?: string; widgetButtons?: MockButton[]; children?: ReactNode }) => (
+    default: ({
+        title,
+        widgetButtons,
+        refreshAction,
+        children,
+    }: {
+        title?: string;
+        widgetButtons?: MockButton[];
+        refreshAction?: () => void;
+        children?: ReactNode;
+    }) => (
         <div data-testid={`widget-${title || 'root'}`}>
+            {refreshAction ? (
+                <span>
+                    <button type="button" data-testid={`refresh-${title || 'root'}`} onClick={refreshAction}>
+                        refresh
+                    </button>
+                </span>
+            ) : null}
             {(widgetButtons || []).map((button) => (
-                <button type="button" key={button.tooltip ?? button.icon} title={button.tooltip} onClick={button.onClick}>
+                <button
+                    type="button"
+                    key={button.tooltip ?? button.icon}
+                    title={button.tooltip}
+                    onClick={button.onClick}
+                    disabled={button.disabled}
+                >
                     {button.icon}
                 </button>
             ))}

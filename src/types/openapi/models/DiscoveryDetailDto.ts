@@ -11,7 +11,15 @@
  * Do not edit the class manually.
  */
 
-import type { DiscoveryProgressDto, DiscoveryStatus, MetadataResponseDto, Resource, ResponseAttribute, TriggerDto } from './';
+import type {
+    ConnectorInterfaceDto,
+    DiscoveryProgressDto,
+    DiscoveryStatus,
+    MetadataResponseDto,
+    Resource,
+    ResponseAttribute,
+    TriggerDto,
+} from './';
 
 /**
  * @export
@@ -31,11 +39,11 @@ export interface DiscoveryDetailDto {
      */
     name: string;
     /**
-     * Discovery Kind
+     * Discovery Kind. Absent for a run against a v2 Discovery Provider, which has no kinds.
      * @type {string}
      * @memberof DiscoveryDetailDto
      */
-    kind: string;
+    kind?: string;
     /**
      * @type {DiscoveryStatus}
      * @memberof DiscoveryDetailDto
@@ -65,13 +73,13 @@ export interface DiscoveryDetailDto {
      */
     endTime?: string | null;
     /**
-     * Number of certificates that are discovered
+     * How many certificates this discovery found and saved.
      * @type {number}
      * @memberof DiscoveryDetailDto
      */
     totalCertificatesDiscovered?: number;
     /**
-     * Number of certificates that were discovered by connector
+     * How many certificate items the Discovery Provider reported. Counts items, so a certificate found on several hosts counts once per host; totalCertificatesDiscovered counts it once.
      * @type {number}
      * @memberof DiscoveryDetailDto
      */
@@ -88,6 +96,12 @@ export interface DiscoveryDetailDto {
      * @memberof DiscoveryDetailDto
      */
     connectorName: string;
+    /**
+     * The connector interface this run is driven through, and so which generation drives it. Absent for a run against a legacy v1 connector, which declares no connector interface.
+     * @type {ConnectorInterfaceDto}
+     * @memberof DiscoveryDetailDto
+     */
+    connectorInterface?: ConnectorInterfaceDto;
     /**
      * List of Discovery Attributes
      * @type {Array<ResponseAttribute>}
@@ -119,6 +133,7 @@ export interface DiscoveryDetailDto {
      */
     resources: Array<Resource>;
     /**
+     * Progress counters reported by the connector, with an optional per-resource breakdown. Omitted for a v1 run and when the connector reports no progress. The counters inside are independently optional.
      * @type {DiscoveryProgressDto}
      * @memberof DiscoveryDetailDto
      */
@@ -129,6 +144,30 @@ export interface DiscoveryDetailDto {
      * @memberof DiscoveryDetailDto
      */
     runMessageCount: number;
+    /**
+     * How many items this discovery has received from the Discovery Provider, across all resource types. Usually the same as the number the items listing returns, and larger when an item could not be kept — a malformed payload, or one already collected earlier in the run. Whatever the provider has produced but not yet handed over shows in progress, not here. Not set for a discovery run against a v1 Discovery Provider.
+     * @type {number}
+     * @memberof DiscoveryDetailDto
+     */
+    itemsDiscovered?: number;
+    /**
+     * How many of the items collected were not already in the inventory when this run staged them. Counted per item rather than per object, so the same certificate found on two hosts counts twice.
+     * @type {number}
+     * @memberof DiscoveryDetailDto
+     */
+    itemsNewlyDiscovered: number;
+    /**
+     * How many of the newly discovered items are now in the inventory. Counts only items that were imported cleanly; one the platform could not import is counted by itemsFailed instead. itemsNewlyDiscovered less this and itemsFailed is what the run has still to import.
+     * @type {number}
+     * @memberof DiscoveryDetailDto
+     */
+    itemsProcessed: number;
+    /**
+     * How many of the newly discovered items the platform could not import, each for a reason recorded against the item in the items listing. A discovery can finish with a non-zero count here — it ends with a warning rather than a failure.
+     * @type {number}
+     * @memberof DiscoveryDetailDto
+     */
+    itemsFailed: number;
     /**
      * Whether this run can be stopped and later resumed. Always present; false for runs against v1 connectors. This flag says whether the run has the capability; the run status decides which control is currently valid (stop while in progress, resume while stopped). The connector may still refuse a stop at runtime past the point of no return.
      * @type {boolean}

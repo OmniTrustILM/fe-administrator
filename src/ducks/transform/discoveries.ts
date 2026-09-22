@@ -3,6 +3,10 @@ import type {
     DiscoveryCertificateListDto,
     DiscoveryCertificateListModel,
     DiscoveryCertificateModel,
+    DiscoveryItemListDto,
+    DiscoveryItemListModel,
+    DiscoveryMessageListDto,
+    DiscoveryMessageListModel,
     DiscoveryRequestDto,
     DiscoveryRequestModel,
     DiscoveryResponseDetailDto,
@@ -31,6 +35,14 @@ export function transformDiscoveryRequestModelToDto(discovery: DiscoveryRequestM
         ...discovery,
         attributes: discovery.attributes.map(transformAttributeRequestModelToDto),
         customAttributes: discovery.customAttributes?.map(transformAttributeRequestModelToDto),
+        resourceAttributes: discovery.resourceAttributes
+            ? Object.fromEntries(
+                  Object.entries(discovery.resourceAttributes).map(([resource, attributes]) => [
+                      resource,
+                      attributes.map(transformAttributeRequestModelToDto),
+                  ]),
+              )
+            : undefined,
     };
 }
 
@@ -42,5 +54,19 @@ export function transformDiscoveryCertificateListDtoToModel(list: DiscoveryCerti
     return {
         ...list,
         certificates: list.certificates.map(transformDiscoveryCertificateDtoToModel),
+    };
+}
+
+export function transformDiscoveryItemListDtoToModel(list: DiscoveryItemListDto): DiscoveryItemListModel {
+    return {
+        ...list,
+        items: list.items.map((item) => ({ ...item })),
+    };
+}
+
+export function transformDiscoveryMessageListDtoToModel(list: DiscoveryMessageListDto): DiscoveryMessageListModel {
+    return {
+        ...list,
+        items: list.items.map((message) => ({ ...message })),
     };
 }

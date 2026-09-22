@@ -7,6 +7,7 @@ import { FilterFieldSource, FilterFieldType } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import type { ColumnSort } from 'utils/tableColumns';
 import DiscoveryStatus from './DiscoveryStatus';
+import { connectorInterfaceVersion } from './detail/discoveryDetailHelpers';
 
 export interface BuildDiscoveryCellsOpts {
     dateFormatter: (date: string | Date) => string;
@@ -26,7 +27,8 @@ export const DISCOVERY_DEFAULT_SORT: ColumnSort = {
  * `DISCOVERY_DURATION` is not in the filter-field catalogue: it is computed from the start and end times rather than
  * stored, so no `FilterField` resolves it. It is display-only — shown here, absent from the picker, not sortable, and
  * dropped on write by `toStorableColumns`. It keeps a natural identifier so that cataloguing it is the only change
- * needed.
+ * needed. `DISCOVERY_CONNECTOR_INTERFACE` is display-only for the same reason: it is what tells an operator at a glance
+ * which generation a run used, and the list is where runs are compared.
  */
 export const DISCOVERY_COLUMNS: ColumnDefinition[] = [
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'DISCOVERY_NAME', catalogueLabel: 'Name', type: FilterFieldType.String },
@@ -44,6 +46,12 @@ export const DISCOVERY_COLUMNS: ColumnDefinition[] = [
         catalogueLabel: 'Kind',
         label: 'Kinds',
         type: FilterFieldType.String,
+        align: 'center',
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'DISCOVERY_CONNECTOR_INTERFACE',
+        catalogueLabel: 'Interface',
         align: 'center',
     },
     {
@@ -80,7 +88,12 @@ export function buildDiscoveryCellRegistry({
         'property:DISCOVERY_CONNECTOR_NAME': (discovery) => (
             <ConnectorLink uuid={discovery.connectorUuid} name={discovery.connectorName} fallback="Unassigned" />
         ),
-        'property:DISCOVERY_KIND': (discovery) => (discovery.kind ? <Badge color="secondary">{discovery.kind}</Badge> : null),
+        // A v2 run has no kind: its provider registers a DISCOVERY interface rather than a kind-scoped function group.
+        'property:DISCOVERY_KIND': (discovery) =>
+            !discovery.connectorInterface && discovery.kind ? <Badge color="secondary">{discovery.kind}</Badge> : null,
+        'property:DISCOVERY_CONNECTOR_INTERFACE': (discovery) => (
+            <Badge color={discovery.connectorInterface ? 'info' : 'gray'}>{connectorInterfaceVersion(discovery.connectorInterface)}</Badge>
+        ),
         'property:DISCOVERY_START_TIME': (discovery) =>
             discovery.startTime ? <span className="whitespace-nowrap">{dateFormatter(discovery.startTime)}</span> : null,
         'property:DISCOVERY_DURATION': (discovery) => {

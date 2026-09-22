@@ -31,6 +31,19 @@ export default defineConfig({
                 // test run never instruments it; its unit tests are what report its coverage.
                 'src/components/CustomTable/columns/buildTableRows.tsx',
                 'src/components/Widget/index.tsx',
+                // Discovery v2 screens are exercised by their unit specs under happy-dom; report them so Sonar sees the
+                // coverage on new code rather than waiting on a component-test run.
+                'src/components/ProgressBar/index.tsx',
+                'src/components/_pages/discoveries/DiscoveryStatus/index.tsx',
+                'src/components/_pages/discoveries/discoveryTableHelpers.tsx',
+                'src/components/_pages/discoveries/detail/index.tsx',
+                'src/components/_pages/discoveries/detail/discoveryDetailHelpers.ts',
+                'src/components/_pages/discoveries/detail/DiscoveryProgressWidget.tsx',
+                'src/components/_pages/discoveries/detail/DiscoveryResultsSummary.tsx',
+                'src/components/_pages/discoveries/detail/DiscoveryResults.tsx',
+                'src/components/_pages/discoveries/detail/DiscoveryItemsTable.tsx',
+                'src/components/_pages/discoveries/detail/DiscoveryRunMessages.tsx',
+                'src/components/_pages/discoveries/form/index.tsx',
                 // Build hooks with their own unit tests; report them so Sonar sees the coverage.
                 'scripts/set-openapi-contact.mjs',
                 'scripts/patch-openapi-runtime.mjs',
