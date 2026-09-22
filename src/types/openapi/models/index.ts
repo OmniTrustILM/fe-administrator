@@ -351,6 +351,7 @@ export * from './InternalTimestampSourceRequestDto';
 export * from './IssueToLocationRequestDto';
 export * from './JsonSchemaAttributeConstraint';
 export * from './JwkDto';
+export * from './JwkSetLoadFailure';
 export * from './JwtTokenSecretContent';
 export * from './KeyAlgorithm';
 export * from './KeyAssociationDto';

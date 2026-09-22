@@ -16,6 +16,7 @@ import { renderOAuth2StateBadges } from 'utils/oauth2Providers';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
+import JwkSetLoadFailureWarning from 'components/_pages/auth-settings/JwkSetLoadFailureWarning';
 
 export default function OAuth2ProviderDetail() {
     const { providerName } = useParams();
@@ -23,6 +24,7 @@ export default function OAuth2ProviderDetail() {
     const dispatch = useDispatch();
 
     const oauth2Provider = useSelector(selectors.oauth2Provider);
+    const selectedOAuth2Provider = oauth2Provider?.name === providerName ? oauth2Provider : undefined;
     const isFetchingProvider = useSelector(selectors.isFetchingProvider);
     const isUpdatingProvider = useSelector(selectors.isUpdatingProvider);
     const updateProviderSucceeded = useSelector(selectors.updateProviderSucceeded);
@@ -48,10 +50,10 @@ export default function OAuth2ProviderDetail() {
 
     const handleCloseEditDialog = useCallback(() => {
         setIsEditDialogOpen(false);
-        if (!oauth2Provider) {
+        if (!selectedOAuth2Provider) {
             getFreshData();
         }
-    }, [oauth2Provider, getFreshData]);
+    }, [selectedOAuth2Provider, getFreshData]);
 
     useRunOnSuccessfulFinish(isUpdatingProvider, updateProviderSucceeded, () => {
         if (isEditDialogOpen) {
@@ -107,26 +109,26 @@ export default function OAuth2ProviderDetail() {
 
     const data: TableDataRow[] = useMemo(
         () =>
-            oauth2Provider
+            selectedOAuth2Provider
                 ? [
-                      { id: 'name', columns: ['Name', <>{oauth2Provider.name}</>] },
-                      { id: 'scheme', columns: ['Authentication Scheme', renderOAuth2StateBadges(oauth2Provider)] },
-                      { id: 'clientId', columns: ['Client Id', <>{oauth2Provider.clientId}</>] },
-                      { id: 'issuerUrl', columns: ['Issuer Url', <>{oauth2Provider.issuerUrl}</>] },
-                      { id: 'authorizationUrl', columns: ['Authorization Url', <>{oauth2Provider.authorizationUrl}</>] },
-                      { id: 'tokenUrl', columns: ['Token Url', <>{oauth2Provider.tokenUrl}</>] },
-                      { id: 'jwkSetUrl', columns: ['JWK Set Url', <>{oauth2Provider.jwkSetUrl}</>] },
-                      { id: 'logoutUrl', columns: ['Logout Url', <>{oauth2Provider.logoutUrl}</>] },
-                      { id: 'postLogoutUrl', columns: ['Post Logout Url', <>{oauth2Provider.postLogoutUrl}</>] },
-                      { id: 'userInfoUrl', columns: ['User Info Url', <>{oauth2Provider.userInfoUrl}</>] },
-                      { id: 'scope', columns: ['Scope', <>{oauth2Provider.scope?.join(', ')}</>] },
-                      { id: 'audiences', columns: ['Audiences', <>{oauth2Provider.audiences?.join(', ')}</>] },
+                      { id: 'name', columns: ['Name', <>{selectedOAuth2Provider.name}</>] },
+                      { id: 'scheme', columns: ['Authentication Scheme', renderOAuth2StateBadges(selectedOAuth2Provider)] },
+                      { id: 'clientId', columns: ['Client Id', <>{selectedOAuth2Provider.clientId}</>] },
+                      { id: 'issuerUrl', columns: ['Issuer Url', <>{selectedOAuth2Provider.issuerUrl}</>] },
+                      { id: 'authorizationUrl', columns: ['Authorization Url', <>{selectedOAuth2Provider.authorizationUrl}</>] },
+                      { id: 'tokenUrl', columns: ['Token Url', <>{selectedOAuth2Provider.tokenUrl}</>] },
+                      { id: 'jwkSetUrl', columns: ['JWK Set Url', <>{selectedOAuth2Provider.jwkSetUrl}</>] },
+                      { id: 'logoutUrl', columns: ['Logout Url', <>{selectedOAuth2Provider.logoutUrl}</>] },
+                      { id: 'postLogoutUrl', columns: ['Post Logout Url', <>{selectedOAuth2Provider.postLogoutUrl}</>] },
+                      { id: 'userInfoUrl', columns: ['User Info Url', <>{selectedOAuth2Provider.userInfoUrl}</>] },
+                      { id: 'scope', columns: ['Scope', <>{selectedOAuth2Provider.scope?.join(', ')}</>] },
+                      { id: 'audiences', columns: ['Audiences', <>{selectedOAuth2Provider.audiences?.join(', ')}</>] },
                       {
                           id: 'skew',
                           columns: [
                               'Skew',
                               <>
-                                  {oauth2Provider.skew} second{Number(oauth2Provider.skew) > 1 ? 's' : ''}
+                                  {selectedOAuth2Provider.skew} second{Number(selectedOAuth2Provider.skew) > 1 ? 's' : ''}
                               </>,
                           ],
                       },
@@ -135,16 +137,16 @@ export default function OAuth2ProviderDetail() {
                           columns: [
                               'Session Max Inactive Interval',
                               <>
-                                  {oauth2Provider.sessionMaxInactiveInterval} second
-                                  {Number(oauth2Provider.sessionMaxInactiveInterval) > 1 ? 's' : ''}
+                                  {selectedOAuth2Provider.sessionMaxInactiveInterval} second
+                                  {Number(selectedOAuth2Provider.sessionMaxInactiveInterval) > 1 ? 's' : ''}
                               </>,
                           ],
                       },
                   ]
                 : [],
-        [oauth2Provider],
+        [selectedOAuth2Provider],
     );
-    if (isFetchingProvider && !oauth2Provider) {
+    if ((isFetchingProvider && !selectedOAuth2Provider) || (oauth2Provider && !selectedOAuth2Provider)) {
         return <DetailPageSkeleton layout="simple" buttonsCount={1} />;
     }
 
@@ -153,7 +155,7 @@ export default function OAuth2ProviderDetail() {
             <Breadcrumb
                 items={[
                     { label: 'Authentication Settings', href: '/authenticationsettings' },
-                    { label: oauth2Provider?.name || 'Provider Details', href: '' },
+                    { label: selectedOAuth2Provider?.name || 'Provider Details', href: '' },
                 ]}
             />
             <Widget widgetLockName={LockWidgetNameEnum.AuthenticationProviderDetails} busy={isFetchingProvider} noBorder>
@@ -162,7 +164,8 @@ export default function OAuth2ProviderDetail() {
                         <CustomTable headers={headers} data={data} />
                     </Widget>
                     <Widget title="JWK Set Keys" titleSize="large" refreshAction={getFreshData}>
-                        <JwkSetKeysTable jwkSetKeys={oauth2Provider?.jwkSetKeys} />
+                        <JwkSetLoadFailureWarning failure={selectedOAuth2Provider?.jwkSetLoadFailure} />
+                        <JwkSetKeysTable jwkSetKeys={selectedOAuth2Provider?.jwkSetKeys} />
                     </Widget>
                 </Container>
             </Widget>

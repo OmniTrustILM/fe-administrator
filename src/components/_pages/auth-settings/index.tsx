@@ -1,5 +1,6 @@
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import JwkSetKeysTable from 'components/_pages/auth-settings/JwkSetKeysTable';
+import JwkSetLoadFailureWarning from 'components/_pages/auth-settings/JwkSetLoadFailureWarning';
 import OAuth2ProviderForm from 'components/_pages/auth-settings/form';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
@@ -40,6 +41,7 @@ const AuthenticationSettings = () => {
     const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
     const [jwkSetKeysDialog, setJwkSetKeysDialog] = useState(false);
     const [isOAuth2FormDialogOpen, setIsOAuth2FormDialogOpen] = useState(false);
+    const isFetchingSelectedProvider = isFetchingProvider || (oauth2Provider !== undefined && oauth2Provider.name !== selectedProvider);
 
     const getAuthenticationSettings = useCallback(() => {
         dispatch(authSettingsActions.getAuthenticationSettings());
@@ -149,7 +151,9 @@ const AuthenticationSettings = () => {
                               className="py-0 px-1 ml-2"
                               variant="transparent"
                               color="primary"
-                              title="Detail"
+                              title="Show JWK Set keys"
+                              aria-label={`Show JWK Set keys for ${providerName}`}
+                              data-testid={`show-jwk-set-keys-${providerName}`}
                               key="jwkKeyInfo"
                               onClick={() => onShowProviderJwkSetKeys(providerName)}
                           >
@@ -257,12 +261,15 @@ const AuthenticationSettings = () => {
                 isOpen={jwkSetKeysDialog}
                 caption={`JWK Set Keys of "${selectedProvider}"`}
                 body={
-                    isFetchingProvider ? (
+                    isFetchingSelectedProvider ? (
                         <div style={{ height: '100px' }}>
-                            <Spinner active={isFetchingProvider} />
+                            <Spinner active />
                         </div>
                     ) : (
-                        <JwkSetKeysTable jwkSetKeys={oauth2Provider?.jwkSetKeys} />
+                        <>
+                            <JwkSetLoadFailureWarning failure={oauth2Provider?.jwkSetLoadFailure} />
+                            <JwkSetKeysTable jwkSetKeys={oauth2Provider?.jwkSetKeys} />
+                        </>
                     )
                 }
                 toggle={onCloseProviderJwkSetKeys}
