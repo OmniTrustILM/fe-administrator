@@ -7,6 +7,7 @@ import type { AppState } from 'ducks';
 
 import type { ApiClients } from 'src/api';
 import AddColumnMenu from 'components/AddColumnMenu';
+import ColumnHeaderMenu from 'components/ColumnHeaderMenu';
 import CustomTable, { type SortDirection, type TableDataRow, type TableHeader } from 'components/CustomTable';
 import { buildTableRows, type CellRegistry } from 'components/CustomTable/columns';
 import Dialog from 'components/Dialog';
@@ -18,8 +19,8 @@ import { selectors as listViewSelectors } from 'ducks/listViews';
 import type { ViewSlice } from 'types/listViews';
 import type { Resource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
-import { toCatalogueFields } from 'utils/columnPicker';
-import { type ColumnSort, buildColumnHeaders } from 'utils/tableColumns';
+import { moveColumn, toCatalogueFields } from 'utils/columnPicker';
+import { type ColumnSort, buildColumnHeaders, getColumnHeading, getColumnKey } from 'utils/tableColumns';
 import {
     buildListRequest,
     getRenderableProperties,
@@ -135,6 +136,7 @@ function PagedList<TRow extends object>({
     // `hasLoadedFilters` rather than `!isFetchingFilters`, which is also false before the first read.
     const catalogue = useSelector(filterSelectors.availableFilters(entity));
     const hasLoadedCatalogue = useSelector(filterSelectors.hasLoadedFilters(entity));
+    const hasCatalogueFailed = useSelector(filterSelectors.hasFailedFilters(entity));
 
     // Taken apart rather than depended on whole: an unmemoised config would rebuild `getFreshData`
     // every render, and the effect watching it would refetch forever.
@@ -157,19 +159,26 @@ function PagedList<TRow extends object>({
 
     const renderableProperties = useMemo(() => getRenderableProperties(registry), [registry]);
 
-    const sortableStandardColumns = useMemo(
-        () =>
-            hasLoadedCatalogue
-                ? withCatalogueSortability(standardColumns ?? NO_COLUMNS, catalogue)
-                : withDeclaredSortability(standardColumns ?? NO_COLUMNS, defaultSort),
-        [hasLoadedCatalogue, standardColumns, catalogue, defaultSort],
+    /**
+     * Sortability merged in, from the catalogue once it has answered and from the page's own declared
+     * ordering until then. Applied to whatever set is on the table rather than to the standard one
+     * alone: a selection replaces that set, and the catalogue can still answer after one was taken —
+     * the duck keeps a resource's fields across visits, so the strip opens on the held answer while
+     * the refetch is out, and merging only into the standard set would freeze that selection on it.
+     */
+    const withSortability = useCallback(
+        (columns: ColumnDefinition[]) =>
+            hasLoadedCatalogue ? withCatalogueSortability(columns, catalogue) : withDeclaredSortability(columns, defaultSort),
+        [hasLoadedCatalogue, catalogue, defaultSort],
     );
+
+    const sortableStandardColumns = useMemo(() => withSortability(standardColumns ?? NO_COLUMNS), [withSortability, standardColumns]);
 
     // Holds only the deviation and falls back, so a config arriving after the first render cannot
     // leave the table with no columns at all.
     const appliedColumns = useMemo(
-        () => (columnSelection.length > 0 ? columnSelection : sortableStandardColumns),
-        [columnSelection, sortableStandardColumns],
+        () => (columnSelection.length > 0 ? withSortability(columnSelection) : sortableStandardColumns),
+        [withSortability, columnSelection, sortableStandardColumns],
     );
 
     const appliedSort = useMemo(() => toDisplayableSort(sortSelection, appliedColumns), [sortSelection, appliedColumns]);
@@ -299,8 +308,15 @@ function PagedList<TRow extends object>({
      * columns would list a second time for the same request. `listRequestRef` holds the value the
      * snapshot stands for, and `refreshToken` is read for its identity alone: a change to it means
      * the page asked to send this same request again.
+     *
+     * Column order is keyed out of it as well. The server projects a set, so a reorder changes the
+     * request's bytes without changing a row of the answer, and re-listing for one would cost a round
+     * trip and clear the selection the user made before moving the column.
      */
-    const listRequestSnapshot = useMemo(() => JSON.stringify(listRequest), [listRequest]);
+    const listRequestSnapshot = useMemo(() => {
+        const columns = listRequest.columns?.map(getColumnKey).sort();
+        return JSON.stringify({ ...listRequest, columns });
+    }, [listRequest]);
     const listRequestRef = useRef(listRequest);
     listRequestRef.current = listRequest;
 
@@ -382,6 +398,40 @@ function PagedList<TRow extends object>({
             dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
         },
         [appliedColumns, appliedSort, dispatch, entity, pageSize],
+    );
+
+    /** Goes through `applyColumns` like adding a column does; `listRequestSnapshot` keys order out, so a reorder neither re-lists nor leaves the page. */
+    const onMoveColumn = useCallback(
+        (from: number, to: number) => applyColumns(moveColumn(appliedColumns, from, to)),
+        [applyColumns, appliedColumns],
+    );
+
+    const columnKeys = useMemo(() => appliedColumns.map(getColumnKey), [appliedColumns]);
+
+    const renderHeaderAction = useCallback(
+        (header: TableHeader) => {
+            // Withheld until the strip is up, as the dialog entry beside it is. The opening view replaces
+            // the columns and the ordering when it lands, so a move or a sort made before then is applied
+            // and then silently undone.
+            if (!isStripReady) return undefined;
+
+            const column = appliedColumns.find((candidate) => getColumnKey(candidate) === header.id);
+            if (!column) return undefined;
+
+            return (
+                <ColumnHeaderMenu
+                    columnKey={header.id}
+                    label={getColumnHeading(column)}
+                    columnKeys={columnKeys}
+                    sortable={column.sortable === true}
+                    hasCatalogueFailed={hasCatalogueFailed}
+                    onSort={(direction) => onSortChanged(header.id, direction)}
+                    onMove={onMoveColumn}
+                    dataTestId={`column-header-menu-${header.id}`}
+                />
+            );
+        },
+        [isStripReady, appliedColumns, columnKeys, hasCatalogueFailed, onSortChanged, onMoveColumn],
     );
 
     const columnHeaders = useMemo(
@@ -560,7 +610,7 @@ function PagedList<TRow extends object>({
                 <CustomTable
                     headers={columnHeaders}
                     data={columnRows}
-                    {...(isColumnDriven ? { onSortChanged, persistSort: false } : {})}
+                    {...(isColumnDriven ? { onSortChanged, persistSort: false, renderHeaderAction } : {})}
                     hasCheckboxes={hasCheckboxes}
                     hasDetails={hasDetails}
                     columnForDetail={columnForDetail}

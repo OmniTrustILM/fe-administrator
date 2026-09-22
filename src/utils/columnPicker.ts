@@ -155,3 +155,11 @@ export function moveColumn<T>(columns: T[], from: number, to: number): T[] {
     reordered.splice(target, 0, moved);
     return reordered;
 }
+/**
+ * The index a drop lands on, given where the source is and which slot it was released over. A slot
+ * means "insert before this position", and {@link moveColumn} takes the source out before inserting,
+ * which shifts a slot beyond it down by one.
+ */
+export function getDropIndex(from: number, slot: number): number {
+    return from < slot ? slot - 1 : slot;
+}

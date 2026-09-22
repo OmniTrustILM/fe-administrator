@@ -41,6 +41,14 @@ type Props = Readonly<{
     withPagingControl?: boolean;
     /** Supplies the column configuration a tick after mount, as a page still fetching its catalogue does. */
     withDeferredConfig?: boolean;
+    /** Renders a control that lands the catalogue, so a test can act on the table before it arrives. */
+    withCatalogueControl?: boolean;
+    /** What that control lands instead, as a remount's refetch answers over the one already in the duck. */
+    refreshedCatalogue?: SearchFieldListModel[];
+    /** Renders a control that fails the catalogue read, which settles it with no fields behind it. */
+    withCatalogueFailureControl?: boolean;
+    /** Renders a control that lands the withheld view list, so a test can act before the strip is up. */
+    withViewsControl?: boolean;
 }>;
 
 const registry: CellRegistry<StubRow> = {
@@ -81,6 +89,62 @@ function PagingControl() {
     );
 }
 
+/**
+ * Lands the catalogue after mount, which is what a real page does — the filter widget that reads it
+ * only mounts once the first page is in, so the table paints before sortability is known.
+ */
+function CatalogueControl({ catalogue }: Readonly<{ catalogue: SearchFieldListModel[] }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="land-catalogue"
+            onClick={() =>
+                dispatch({
+                    type: 'filters/getAvailableFiltersSuccess',
+                    payload: { entity: EntityType.CERTIFICATE, availableFilters: catalogue },
+                })
+            }
+        >
+            Land catalogue
+        </button>
+    );
+}
+
+function CatalogueFailureControl() {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="fail-catalogue"
+            onClick={() =>
+                dispatch({
+                    type: 'filters/getAvailableFiltersFailure',
+                    payload: { entity: EntityType.CERTIFICATE, error: 'Catalogue unavailable' },
+                })
+            }
+        >
+            Fail catalogue
+        </button>
+    );
+}
+
+function ViewsControl({ views }: Readonly<{ views: ListViewModel[] }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="land-views"
+            onClick={() => dispatch({ type: 'listViews/listViewsSuccess', payload: { resource: Resource.Certificates, views } })}
+        >
+            Land views
+        </button>
+    );
+}
+
 function DispatchedActions() {
     const dispatched = useSelector((state: { listViews: ListViewsTestState }) => state.listViews.dispatched);
 
@@ -103,6 +167,10 @@ export default function PagedListColumnsWithStore({
     withRefreshControl = false,
     withPagingControl = false,
     withDeferredConfig = false,
+    withCatalogueControl = false,
+    refreshedCatalogue,
+    withCatalogueFailureControl = false,
+    withViewsControl = false,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
@@ -180,6 +248,12 @@ export default function PagedListColumnsWithStore({
                     configurableColumns={config}
                     refreshToken={refreshToken}
                 />
+
+                {withCatalogueControl && <CatalogueControl catalogue={refreshedCatalogue ?? catalogue} />}
+
+                {withCatalogueFailureControl && <CatalogueFailureControl />}
+
+                {withViewsControl && <ViewsControl views={views} />}
 
                 {withPagingControl && <PagingControl />}
 

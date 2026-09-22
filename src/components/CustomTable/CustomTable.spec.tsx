@@ -1,5 +1,6 @@
 import { test, expect } from '../../../playwright/ct-test';
 import CustomTable, { type TableHeader, type TableDataRow } from './index';
+import CustomTableHeaderActionWithStore from './CustomTableHeaderActionWithStore';
 import CustomTableWithStore from './CustomTableWithStore';
 import CustomTableSortRefetch from './CustomTableSortRefetch';
 import Toggletip from 'components/Toggletip';
@@ -1537,6 +1538,80 @@ test.describe('CustomTable', () => {
 
             await expect(component.locator('thead th')).toHaveCount(mockHeaders.length);
             await expect(component.locator('tbody tr').first().locator('td')).toHaveCount(mockHeaders.length);
+        });
+    });
+
+    test.describe('per-header action', () => {
+        test('renders one action in every data header cell, sortable or not', async ({ mount }) => {
+            const component = await mount(<CustomTableHeaderActionWithStore headers={mockHeaders} data={mockData} />);
+
+            for (const header of mockHeaders) {
+                const action = component.getByTestId(`action-${header.id}`);
+                await expect(action).toBeVisible();
+                expect(await action.evaluate((node) => node.closest('th')?.getAttribute('data-id'))).toBe(header.id);
+            }
+        });
+
+        test('keeps the action out of the sort button, so neither control nests in the other', async ({ mount }) => {
+            const component = await mount(<CustomTableHeaderActionWithStore headers={mockHeaders} data={mockData} />);
+
+            const action = component.getByTestId('action-name');
+            expect(await action.evaluate((node) => node.parentElement?.closest('button') !== null)).toBe(false);
+            await expect(component.getByRole('button', { name: 'Name', exact: true })).toBeVisible();
+        });
+
+        test('leaves a centred heading centred rather than pulling it to the start of the cell', async ({ mount }) => {
+            const centred: TableHeader[] = [{ id: 'status', content: 'Status', align: 'center', minWidth: '320px' }];
+            const component = await mount(<CustomTableHeaderActionWithStore headers={centred} data={[{ id: 1, columns: ['Active'] }]} />);
+
+            const cell = component.locator('thead th[data-id="status"]');
+            // Measured off the text node itself: the heading is bare text, so no element's box reports
+            // where it actually sits.
+            const headingLeft = await cell.evaluate((th) => {
+                const walker = document.createTreeWalker(th, NodeFilter.SHOW_TEXT);
+                let node = walker.nextNode();
+                while (node && node.textContent?.trim() !== 'Status') node = walker.nextNode();
+                if (!node) return null;
+
+                const range = document.createRange();
+                range.selectNodeContents(node);
+                return range.getBoundingClientRect().left;
+            });
+            const action = await component.getByTestId('action-status').boundingBox();
+            const box = await cell.boundingBox();
+            if (headingLeft === null || !action || !box) throw new Error('No bounding box');
+
+            // Well clear of the cell's own 10px padding, which is where an auto margin would have put it.
+            expect(headingLeft - box.x).toBeGreaterThan(60);
+            expect(action.x).toBeGreaterThan(headingLeft);
+        });
+
+        test('leaves the checkbox and trailing columns without one', async ({ mount }) => {
+            const component = await mount(
+                <CustomTableHeaderActionWithStore headers={mockHeaders} data={mockData} hasCheckboxes withTrailingAction />,
+            );
+
+            await expect(component.locator('[data-testid^="action-"]')).toHaveCount(mockHeaders.length);
+            await expect(component.getByTestId('action-__checkbox__')).toHaveCount(0);
+        });
+
+        test('names a column header from its heading alone, not from the action inside it', async ({ mount, page }) => {
+            // The ACME account list ships this id verbatim, spaces and all.
+            const spacedHeaders: TableHeader[] = [...mockHeaders, { id: 'ACME Profile Name', content: 'ACME Profile Name' }];
+            const spacedData: TableDataRow[] = mockData.map((row) => ({ ...row, columns: [...row.columns, 'acme'] }));
+            await mount(<CustomTableHeaderActionWithStore headers={spacedHeaders} data={spacedData} />);
+
+            await expect(page.getByRole('columnheader', { name: 'Name', exact: true })).toHaveCount(1);
+            await expect(page.getByRole('columnheader', { name: 'Email', exact: true })).toHaveCount(1);
+            await expect(page.getByRole('columnheader', { name: 'ACME Profile Name', exact: true })).toHaveCount(1);
+            await expect(page.getByRole('button', { name: 'Options for name', exact: true })).toBeVisible();
+        });
+
+        test('renders no action at all when the caller passes none', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
+
+            await expect(component.locator('[data-testid^="action-"]')).toHaveCount(0);
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length);
         });
     });
 });

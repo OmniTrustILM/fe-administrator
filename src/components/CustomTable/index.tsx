@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { jsxInnerText } from 'utils/jsxInnerText';
 import { DEFAULT_ITEMS_PER_PAGE_OPTIONS } from 'utils/pagination';
 import { useDispatch, useSelector } from 'react-redux';
@@ -70,6 +70,12 @@ type Props = {
      * it carries no heading, no sort and no data, and is absent entirely when nothing is passed.
      */
     trailingHeaderAction?: React.ReactNode;
+    /**
+     * A control rendered at the right-hand end of each data header cell. It sits beside the heading and
+     * outside the sort button, for the reason `info` does, and the checkbox and trailing columns never
+     * carry one. A table passing nothing renders exactly as before.
+     */
+    renderHeaderAction?: (header: TableHeader) => React.ReactNode;
 };
 
 const emptyCheckedRows: (string | number)[] = [];
@@ -125,8 +131,11 @@ function CustomTable({
     isLoading = false,
     emptyStateDescription = 'There are no records to display here yet',
     trailingHeaderAction,
+    renderHeaderAction,
 }: Readonly<Props>) {
     const location = useLocation();
+    // Scoped to the instance so two tables on one page cannot claim the same heading id.
+    const headingIdPrefix = useId();
     const [tblData, setTblData] = useState<TableDataRow[]>(data);
     const [tblCheckedRows, setTblCheckedRows] = useState<(string | number)[]>(checkedRows || emptyCheckedRows);
     const [totalPages, setTotalPages] = useState(1);
@@ -624,79 +633,108 @@ function CustomTable({
         const columns: TableHeader[] = [...tblHeaders];
 
         if (hasCheckboxes) columns.unshift({ id: '__checkbox__', content: '', sortable: false, width: '0%' });
-        const cells = columns.map((header) => (
-            <Fragment key={header.id}>
-                <th
-                    scope="col"
-                    className={cn(
-                        'p-2.5 text-start text-xs font-medium uppercase bg-surface-sunken whitespace-nowrap',
-                        header.sort ? 'text-content' : 'text-content-subtle',
-                    )}
-                    data-id={header.id}
-                    {...(header.sortable && ariaSortValue(header.sort) ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
-                    style={{
-                        ...(header.width ? { width: header.width } : {}),
-                        ...(header.minWidth ? { minWidth: header.minWidth } : {}),
-                        ...(header.maxWidth == null ? {} : { maxWidth: `${header.maxWidth}px` }),
-                        ...(header.align ? { textAlign: header.align } : {}),
-                    }}
-                >
-                    {(() => {
-                        const checkboxContent =
-                            hasAllCheckBox && multiSelect ? (
-                                <Checkbox
-                                    checked={checkAllChecked}
-                                    onChange={(value) => onCheckAllCheckboxClick(value)}
-                                    id={`${header.id}__checkbox__`}
-                                    disabled={disableSelectionControls}
-                                />
-                            ) : (
-                                <div>&nbsp;</div>
-                            );
-                        const alignment = {
-                            'justify-center': header.align === 'center',
-                            'justify-end': header.align === 'right',
-                        };
-                        // Wrapped rather than omitted: the cell is only visually blank, and a sortable
-                        // icon column still needs an accessible name on its button.
-                        const headingContent = header.headingHidden ? <span className="sr-only">{header.content}</span> : header.content;
-                        // `info` sits outside the button: a sortable heading is itself a control, and a
-                        // toggletip trigger inside it would nest one interactive element in another, which
-                        // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
-                        const sortableContent = (
-                            <span className={cn('flex w-full items-center gap-1', alignment)}>
-                                <button
-                                    type="button"
-                                    onClick={() => onColumnSortClick(header.id)}
-                                    className={cn(
-                                        'group flex items-center gap-1 cursor-pointer',
-                                        'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 rounded-xs',
-                                        header.info ? undefined : 'w-full',
-                                        alignment,
-                                    )}
-                                >
-                                    {headingContent}
-                                    {/* An explicit space keeps the cell's text content separated from the next header's,
-                                    so text-based selectors over the header row keep matching as they did. */}{' '}
-                                    {getSortIcon(header.sort)}
-                                </button>
-                                {header.info}
-                            </span>
-                        );
-                        if (header.id === '__checkbox__') return checkboxContent;
-                        if (header.sortable) return sortableContent;
-                        if (header.info) {
-                            return (
-                                <span className={cn('flex w-full items-center gap-1', alignment)}>
-                                    {headingContent} {header.info}
+        const cells = columns.map((header, index) => {
+            // Keyed by position rather than by `header.id`: an id may carry whitespace — `ACME Profile Name`
+            // is shipped — and `aria-labelledby` is a token list, so such an id would resolve to nothing.
+            const headingId = `${headingIdPrefix}${index}`;
+
+            return (
+                <Fragment key={header.id}>
+                    <th
+                        scope="col"
+                        className={cn(
+                            'p-2.5 text-start text-xs font-medium uppercase bg-surface-sunken whitespace-nowrap',
+                            header.sort ? 'text-content' : 'text-content-subtle',
+                        )}
+                        data-id={header.id}
+                        {...(header.id === '__checkbox__' ? {} : { 'aria-labelledby': headingId })}
+                        {...(header.sortable && ariaSortValue(header.sort) ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
+                        style={{
+                            ...(header.width ? { width: header.width } : {}),
+                            ...(header.minWidth ? { minWidth: header.minWidth } : {}),
+                            ...(header.maxWidth == null ? {} : { maxWidth: `${header.maxWidth}px` }),
+                            ...(header.align ? { textAlign: header.align } : {}),
+                        }}
+                    >
+                        {(() => {
+                            if (header.id === '__checkbox__') {
+                                return hasAllCheckBox && multiSelect ? (
+                                    <Checkbox
+                                        checked={checkAllChecked}
+                                        onChange={(value) => onCheckAllCheckboxClick(value)}
+                                        id={`${header.id}__checkbox__`}
+                                        disabled={disableSelectionControls}
+                                    />
+                                ) : (
+                                    <div>&nbsp;</div>
+                                );
+                            }
+
+                            const alignment = {
+                                'justify-center': header.align === 'center',
+                                'justify-end': header.align === 'right',
+                            };
+                            // Wrapped rather than omitted: the cell is only visually blank, and a sortable
+                            // icon column still needs an accessible name on its button. The wrapper is also what
+                            // the cell's `aria-labelledby` points at, so the cell is named by the heading alone.
+                            const headingContent = (
+                                <span id={headingId} className={header.headingHidden ? 'sr-only' : undefined}>
+                                    {header.content}
                                 </span>
                             );
-                        }
-                        return headingContent;
-                    })()}
-                </th>
-            </Fragment>
-        ));
+                            // `info` sits outside the button: a sortable heading is itself a control, and a
+                            // toggletip trigger inside it would nest one interactive element in another, which
+                            // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
+                            const headingSide = (() => {
+                                if (header.sortable) {
+                                    return (
+                                        <span className={cn('flex w-full items-center gap-1', alignment)}>
+                                            <button
+                                                type="button"
+                                                onClick={() => onColumnSortClick(header.id)}
+                                                className={cn(
+                                                    'group flex items-center gap-1 cursor-pointer',
+                                                    'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 rounded-xs',
+                                                    header.info ? undefined : 'w-full',
+                                                    alignment,
+                                                )}
+                                            >
+                                                {headingContent}
+                                                {/* An explicit space keeps the cell's text content separated from the next header's,
+                                            so text-based selectors over the header row keep matching as they did. */}{' '}
+                                                {getSortIcon(header.sort)}
+                                            </button>
+                                            {header.info}
+                                        </span>
+                                    );
+                                }
+                                if (header.info) {
+                                    return (
+                                        <span className={cn('flex w-full items-center gap-1', alignment)}>
+                                            {headingContent} {header.info}
+                                        </span>
+                                    );
+                                }
+                                return headingContent;
+                            })();
+
+                            const action = renderHeaderAction?.(header);
+                            if (!action) return headingSide;
+
+                            // The heading is what grows, so the action keeps to the cell's right-hand end
+                            // without an auto margin — which outranks `justify-content` and would pull a
+                            // centred or right-aligned heading to the start of the cell.
+                            return (
+                                <span className="flex w-full items-center gap-1">
+                                    <span className={cn('flex w-full min-w-0 items-center', alignment)}>{headingSide}</span>
+                                    <span className="flex shrink-0 items-center">{action}</span>
+                                </span>
+                            );
+                        })()}
+                    </th>
+                </Fragment>
+            );
+        });
 
         if (trailingHeaderAction) {
             cells.push(
@@ -710,6 +748,8 @@ function CustomTable({
     }, [
         tblHeaders,
         trailingHeaderAction,
+        renderHeaderAction,
+        headingIdPrefix,
         hasCheckboxes,
         onColumnSortClick,
         hasAllCheckBox,

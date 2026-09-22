@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AttributeContentType, FilterFieldSource, FilterFieldType, type SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import {
+    getDropIndex,
     groupCatalogueFields,
     isColumnSelected,
     isSameResolution,
@@ -321,5 +322,31 @@ describe('moveColumn', () => {
         const original = [...columns];
         moveColumn(columns, 0, 3);
         expect(columns).toEqual(original);
+    });
+});
+
+describe('getDropIndex', () => {
+    const slots = ['a', 'b', 'c', 'd'];
+
+    it('compensates for the source being taken out before a slot to its right', () => {
+        expect(getDropIndex(0, 3)).toBe(2);
+        expect(getDropIndex(0, 4)).toBe(3);
+    });
+
+    it('leaves a slot to the left of the source alone', () => {
+        expect(getDropIndex(3, 0)).toBe(0);
+        expect(getDropIndex(2, 1)).toBe(1);
+    });
+
+    it('resolves both slots bordering the source to where it already is', () => {
+        expect(getDropIndex(1, 1)).toBe(1);
+        expect(getDropIndex(1, 2)).toBe(1);
+    });
+
+    it('lands a column on the position the slot marked', () => {
+        expect(moveColumn(slots, 0, getDropIndex(0, 3))).toEqual(['b', 'c', 'a', 'd']);
+        expect(moveColumn(slots, 0, getDropIndex(0, 4))).toEqual(['b', 'c', 'd', 'a']);
+        expect(moveColumn(slots, 3, getDropIndex(3, 0))).toEqual(['d', 'a', 'b', 'c']);
+        expect(moveColumn(slots, 3, getDropIndex(3, 2))).toEqual(['a', 'b', 'd', 'c']);
     });
 });
