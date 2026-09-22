@@ -493,6 +493,9 @@ export default function ViewTabs({
                 isOpen={isPickerOpen}
                 onClose={() => setIsPickerOpen(false)}
                 onSave={onColumnsSaved}
+                // Standard has no stored row to write into, so there the dialog only reaches the table
+                // and the summary bar's offer to keep it as a view is what stores anything.
+                saveLabel={activeView ? 'Save' : 'Apply'}
                 catalogue={catalogue}
                 columns={pickerColumns}
                 standardColumns={standardColumns}

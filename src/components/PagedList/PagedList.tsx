@@ -191,15 +191,21 @@ function PagedList<TRow extends object>({
 
     /**
      * Applies a column set to the table and nowhere else; the summary bar's Save is what stores it.
-     * An ordering the new set cannot paint is dropped, and page 4 of one ordering is not page 4 of
-     * another, so the page goes back to the first.
+     *
+     * An ordering the new set cannot paint is dropped rather than merely hidden: kept, it would come
+     * back on its own the moment the column was added again, which is not what taking the column away
+     * asked for. Page 4 of one ordering is not page 4 of another, so a dropped ordering also sends the
+     * listing back to the first page.
      */
     const applyColumns = useCallback(
         (next: ColumnDefinition[]) => {
             if (next === appliedColumns) return;
 
+            const nextSort = toDisplayableSort(sortSelection, next);
+
             setColumnSelection(next);
-            if (!isSameSort(toDisplayableSort(sortSelection, next), appliedSort)) {
+            setSortSelection(nextSort);
+            if (!isSameSort(nextSort, appliedSort)) {
                 dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
             }
         },
@@ -245,9 +251,10 @@ function PagedList<TRow extends object>({
                     fields={catalogueFields}
                     isCatalogueLoaded={hasLoadedCatalogue}
                     columns={appliedColumns}
-                    onToggle={onToggleColumn}
-                    // Withheld until the strip is up: it is what mounts the dialog, so the entry would
-                    // otherwise open nothing, and the menu drops the row rather than offer a dead one.
+                    // Both withheld until the strip is up. It is what mounts the dialog, so the entry
+                    // would otherwise open nothing; and applying the opening view replaces the column
+                    // set wholesale, so a toggle made before that would be wiped without a trace.
+                    onToggle={isStripReady ? onToggleColumn : undefined}
                     onEditColumns={isStripReady ? onEditColumns : undefined}
                     triggerRef={addColumnTriggerRef}
                 />

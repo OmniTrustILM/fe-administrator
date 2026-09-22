@@ -153,6 +153,49 @@ test.describe('AddColumnMenu', () => {
         await expect(page.getByRole('checkbox', { name: /A view must keep at least one column/ })).toBeVisible();
     });
 
+    test('shows the reason the last checkbox is locked where a sighted keyboard user can read it', async ({ mount, page }) => {
+        await mount(<AddColumnMenuHarness fields={fields} columns={[commonName]} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+
+        await expect(page.getByTestId('add-column-menu-hint')).toHaveText('A view must keep at least one column');
+    });
+
+    test('names no such reason while more than one column stands', async ({ mount, page }) => {
+        await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, expiresAt]} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+
+        await expect(page.getByTestId('add-column-menu')).toBeVisible();
+        await expect(page.getByTestId('add-column-menu-hint')).toHaveCount(0);
+    });
+
+    test('locks every checkbox, and says why, while the host cannot keep a change', async ({ mount, page }) => {
+        await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, expiresAt]} canToggle={false} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+
+        await expect(page.getByTestId('add-column-menu-field-custom:costCentre|STRING')).toBeDisabled();
+        await expect(page.getByTestId('add-column-menu-field-property:COMMON_NAME')).toBeDisabled();
+        await expect(page.getByTestId('add-column-menu-hint')).toHaveText('Columns cannot be changed while the page is loading');
+    });
+
+    test('counts the fields in the search placeholder only once the catalogue has arrived', async ({ mount, page }) => {
+        await mount(<AddColumnMenuHarness fields={[]} columns={[commonName, expiresAt]} isCatalogueLoaded={false} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+
+        await expect(page.getByTestId('add-column-menu-search')).toHaveAttribute('placeholder', 'Search fields…');
+    });
+
+    test('counts them once it has', async ({ mount, page }) => {
+        await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, expiresAt]} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+
+        await expect(page.getByTestId('add-column-menu-search')).toHaveAttribute('placeholder', 'Search 4 fields…');
+    });
+
     test('clears the search when it hands over to the dialog', async ({ mount, page }) => {
         await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, expiresAt]} withEditColumns />);
 

@@ -776,7 +776,7 @@ function CustomTable({
                             />
                         ))}
 
-                        {hasTrailingAction && <td key={TRAILING_ACTION_KEY} className="p-2.5" />}
+                        {hasTrailingAction && <td className="p-2.5" />}
                     </tr>
                 </Fragment>
             ));

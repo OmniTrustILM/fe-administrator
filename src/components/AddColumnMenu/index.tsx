@@ -12,6 +12,7 @@ import { getColumnKey } from 'utils/tableColumns';
 import { toMenuColumns } from './sourceColumns';
 
 const LOCKED_AT_LAST_COLUMN = 'A view must keep at least one column';
+const LOCKED_WHILE_LOADING = 'Columns cannot be changed while the page is loading';
 
 function getEmptyState(isPublishing: boolean, isCatalogueLoaded: boolean): string {
     if (isPublishing) return 'No match';
@@ -28,8 +29,12 @@ type Props = Readonly<{
     isCatalogueLoaded?: boolean;
     /** The columns the table is showing, which is what the checkboxes report. */
     columns: ColumnDefinition[];
-    /** Adds the field as the last column, or takes it away when it is already one. */
-    onToggle: (field: SourcedCatalogueField) => void;
+    /**
+     * Adds the field as the last column, or takes it away when it is already one. Left out while the
+     * host cannot yet keep what a toggle produces, which locks every checkbox rather than accept a
+     * change something else is about to overwrite.
+     */
+    onToggle?: (field: SourcedCatalogueField) => void;
     /** Opens the full column dialog, where ordering, renaming and reset live. */
     onEditColumns?: () => void;
     getSourceLabel?: (source: FilterFieldSource) => string;
@@ -75,7 +80,12 @@ export default function AddColumnMenu({
         if (!open) setSearch('');
     }, []);
 
+    const isLocked = onToggle === undefined;
     const isAtLastColumn = columns.length === 1;
+
+    // The rule in force, named once where it can be read: a disabled checkbox is out of the tab
+    // order, so a keyboard user never reaches whatever the control itself might say.
+    const lockNotice = isLocked ? LOCKED_WHILE_LOADING : isAtLastColumn ? LOCKED_AT_LAST_COLUMN : undefined;
 
     return (
         <Popover.Root open={isOpen} onOpenChange={onOpenChange} modal>
@@ -118,7 +128,7 @@ export default function AddColumnMenu({
                             type="search"
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
-                            placeholder={`Search ${fields.length} fields...`}
+                            placeholder={isCatalogueLoaded ? `Search ${fields.length} fields…` : 'Search fields…'}
                             aria-label="Search fields"
                             data-testid={`${dataTestId}-search`}
                             className="w-full rounded-md border border-divider bg-surface-raised py-1.5 ps-8 pe-2.5 text-sm text-content placeholder:text-content-hint focus:border-brand focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand"
@@ -150,7 +160,7 @@ export default function AddColumnMenu({
                                                     const key = getColumnKey(field);
                                                     const isSelected = isColumnSelected(columns, field);
                                                     // The API rejects a view with no columns, so the one left standing holds.
-                                                    const lockReason = isSelected && isAtLastColumn ? LOCKED_AT_LAST_COLUMN : undefined;
+                                                    const lockReason = isLocked || (isSelected && isAtLastColumn) ? lockNotice : undefined;
 
                                                     return (
                                                         <li key={key}>
@@ -167,15 +177,15 @@ export default function AddColumnMenu({
                                                                     type="checkbox"
                                                                     checked={isSelected}
                                                                     disabled={lockReason !== undefined}
-                                                                    onChange={() => onToggle(field)}
+                                                                    onChange={() => onToggle?.(field)}
                                                                     data-testid={`${dataTestId}-field-${key}`}
                                                                     className={cn('shrink-0', CHECKBOX_INPUT_CLASS)}
                                                                 />
                                                                 <span className="min-w-0 flex-1 truncate text-content">
                                                                     {field.fieldLabel}
                                                                 </span>
-                                                                {/* A disabled control is out of the tab order, so its reason
-                                                                    has to be readable from the row rather than on hover. */}
+                                                                {/* The source is what tells two like-named fields apart, so
+                                                                    it belongs in the accessible name of every checkbox. */}
                                                                 <span className="sr-only">
                                                                     {lockReason ? `${label}. ${lockReason}` : label}
                                                                 </span>
@@ -190,6 +200,12 @@ export default function AddColumnMenu({
                             );
                         })}
                     </div>
+
+                    {lockNotice && (
+                        <p className="mt-2 text-xs text-content-muted" data-testid={`${dataTestId}-hint`}>
+                            {lockNotice}
+                        </p>
+                    )}
 
                     {onEditColumns && (
                         <div className="mt-3 flex justify-end border-t border-divider pt-2">

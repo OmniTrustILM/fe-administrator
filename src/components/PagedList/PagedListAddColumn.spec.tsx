@@ -63,6 +63,20 @@ const expiryWatch: ListViewModel = {
     defaultView: true,
 };
 
+const withRetiredColumn: ListViewModel = {
+    uuid: 'view-2',
+    name: 'Retired field',
+    resource: Resource.Certificates,
+    columns: [
+        { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+        // Published by no source, so the table cannot show it and only the dialog can take it away.
+        { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'legacy|STRING' },
+        { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER' },
+    ],
+    filters: [],
+    defaultView: true,
+};
+
 const headings = async (page: Page): Promise<string[]> => {
     const ids = await page.locator('thead th[data-id]').evaluateAll((cells) => cells.map((cell) => cell.getAttribute('data-id') ?? ''));
     return ids.filter((id) => id !== '' && id !== '__checkbox__');
@@ -181,6 +195,40 @@ test.describe('PagedList · add column menu', () => {
         expect(await lastRequest(page)).not.toHaveProperty('sort');
     });
 
+    test('stays on the page it is on when a toggle leaves the ordering intact', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} withPagingControl />);
+
+        await page.getByRole('button', { name: 'Expires At' }).click();
+        await expect.poll(async () => (await lastRequest(page))?.sort?.fieldIdentifier).toBe('NOT_AFTER');
+
+        await page.getByTestId('go-to-page-two').click();
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(2);
+
+        await openMenu(page);
+        await page.getByTestId('add-column-menu-field-custom:department|STRING').check();
+
+        await expect.poll(() => requestColumns(page)).toHaveLength(3);
+        const request = await lastRequest(page);
+        expect(request?.pageNumber).toBe(2);
+        expect(request?.sort?.fieldIdentifier).toBe('NOT_AFTER');
+    });
+
+    test('does not bring a dropped ordering back when its column is added again', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+
+        await page.getByRole('button', { name: 'Expires At' }).click();
+        await expect.poll(async () => (await lastRequest(page))?.sort?.fieldIdentifier).toBe('NOT_AFTER');
+
+        await openMenu(page);
+        await page.getByTestId('add-column-menu-field-property:NOT_AFTER').uncheck();
+        await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME']);
+
+        await page.getByTestId('add-column-menu-field-property:NOT_AFTER').check();
+
+        await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
+        expect(await lastRequest(page)).not.toHaveProperty('sort');
+    });
+
     test('leaves a stored view dirty rather than writing to it', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[expiryWatch]} />,
@@ -212,11 +260,58 @@ test.describe('PagedList · add column menu', () => {
         await expect(picker).toBeVisible();
         await expect(picker.getByTestId('selected-column-custom:department|STRING')).toBeVisible();
 
+        await expect(picker.getByRole('button', { name: 'Apply' })).toBeVisible();
+        await expect(picker.getByRole('button', { name: 'Save' })).toHaveCount(0);
+
         await picker.getByRole('button', { name: 'Move Expires At earlier' }).click();
-        await picker.getByRole('button', { name: 'Save' }).click();
+        await picker.getByRole('button', { name: 'Apply' }).click();
 
         await expect.poll(() => headings(page)).toEqual(['property:NOT_AFTER', 'property:COMMON_NAME', 'custom:department|STRING']);
         expect(await dispatchedTypes(page)).toEqual(['listViews/listViews']);
+    });
+
+    test('offers a real Save in that dialog once a stored view is what it would write into', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[expiryWatch]} />,
+        );
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toBeVisible();
+
+        await openMenu(page);
+        await page.getByTestId('add-column-menu-edit-columns').click();
+
+        const picker = page.getByTestId('view-tabs-picker');
+        await expect(picker.getByRole('button', { name: 'Save' })).toBeVisible();
+
+        await picker.getByRole('button', { name: 'Save' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+    });
+
+    test('opens that dialog on a stored column the table cannot show, at the position the view keeps it', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[withRetiredColumn]} />,
+        );
+        await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
+
+        await openMenu(page);
+        await page.getByTestId('add-column-menu-field-custom:department|STRING').check();
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await page.getByTestId('add-column-menu-edit-columns').click();
+        await expect(page.getByTestId('view-tabs-picker')).toBeVisible();
+
+        await expect
+            .poll(() =>
+                page
+                    .locator('[data-testid="selected-columns-list"] > [data-testid^="selected-column-"]')
+                    .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-testid') ?? '')),
+            )
+            .toEqual([
+                'selected-column-property:COMMON_NAME',
+                'selected-column-custom:legacy|STRING',
+                'selected-column-property:NOT_AFTER',
+                'selected-column-custom:department|STRING',
+            ]);
     });
 
     test('offers no way through to the dialog before the strip that holds it is up', async ({ mount, page }) => {
@@ -234,6 +329,14 @@ test.describe('PagedList · add column menu', () => {
         await expect(page.getByTestId('add-column-menu-field-custom:department|STRING')).toBeVisible();
         await expect(page.getByTestId('view-tabs')).toHaveCount(0);
         await expect(page.getByTestId('add-column-menu-edit-columns')).toHaveCount(0);
+    });
+
+    test('accepts no toggle before the opening view has been applied, which would overwrite it', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} withheldViews />);
+        await openMenu(page);
+
+        await expect(page.getByTestId('add-column-menu-field-custom:department|STRING')).toBeDisabled();
+        await expect(page.getByTestId('add-column-menu-hint')).toBeVisible();
     });
 
     test('hands focus back to the plus control when that dialog closes', async ({ mount, page }) => {
