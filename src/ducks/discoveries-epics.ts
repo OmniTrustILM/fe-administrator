@@ -1,8 +1,10 @@
-import type { AppEpic } from 'ducks';
-import { iif, of } from 'rxjs';
+import type { AppEpic, EpicDependencies } from 'ducks';
+import type { UnknownAction } from '@reduxjs/toolkit';
+import { forkJoin, iif, type Observable, of, throwError } from 'rxjs';
+import { AjaxError } from 'rxjs/ajax';
 import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
-import { FunctionGroupCode, type UuidDto } from '../types/openapi';
+import { ConnectorInterface, FilterConditionOperator, FilterFieldSource, FunctionGroupCode, type UuidDto } from '../types/openapi';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { actions as userInterfaceActions } from './user-interface';
@@ -14,9 +16,11 @@ import { EntityType } from './filters';
 import { actions as pagingActions } from './paging';
 import { transformAttributeDescriptorDtoToModel } from './transform/attributes';
 import { transformSearchRequestModelToDto } from './transform/certificates';
-import { transformConnectorResponseDtoToModel } from './transform/connectors';
+import { transformConnectorDtoV2ToModel, transformConnectorResponseDtoToModel } from './transform/connectors';
 import {
     transformDiscoveryCertificateListDtoToModel,
+    transformDiscoveryItemListDtoToModel,
+    transformDiscoveryMessageListDtoToModel,
     transformDiscoveryRequestModelToDto,
     transformDiscoveryResponseDetailDtoToModel,
     transformDiscoveryResponseDtoToModel,
@@ -70,16 +74,46 @@ const getDiscoveryDetail: AppEpic = (action$, state$, deps) => {
     );
 };
 
-const listDiscoveryProviders: AppEpic = (action$, state, deps) => {
+const NG_CONNECTORS_PAGE_SIZE = 1000;
+
+// A v1 provider registers the DISCOVERY_PROVIDER function group; a v2 provider registers a DISCOVERY interface and no
+// function group at all, so it is only reachable through the interface-filtered listing. Both are offered, the same
+// way the authority form merges its two generations; a connector present in both lists keeps the model that carries
+// its interfaces.
+export const listDiscoveryProviders: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.listDiscoveryProviders.match),
         switchMap(() =>
-            deps.apiClients.connectors.listConnectors({ functionGroup: FunctionGroupCode.DiscoveryProvider }).pipe(
-                map((providers) =>
-                    slice.actions.listDiscoveryProvidersSuccess({
-                        connectors: providers.map(transformConnectorResponseDtoToModel),
-                    }),
-                ),
+            forkJoin({
+                legacy: deps.apiClients.connectors.listConnectors({ functionGroup: FunctionGroupCode.DiscoveryProvider }),
+                ng: deps.apiClients.connectorsV2
+                    .listConnectorsV2({
+                        searchRequestDto: transformSearchRequestModelToDto({
+                            itemsPerPage: NG_CONNECTORS_PAGE_SIZE,
+                            pageNumber: 1,
+                            filters: [
+                                {
+                                    fieldSource: FilterFieldSource.Property,
+                                    fieldIdentifier: 'CONNECTOR_INTERFACE',
+                                    condition: FilterConditionOperator.Equals,
+                                    value: ConnectorInterface.Discovery,
+                                },
+                            ],
+                        }),
+                    })
+                    .pipe(
+                        catchError((err) =>
+                            err instanceof AjaxError && err.status === 404 ? of({ items: [], totalItems: 0 }) : throwError(() => err),
+                        ),
+                    ),
+            }).pipe(
+                map(({ legacy, ng }) => {
+                    const byUuid = new Map(legacy.map((connector) => [connector.uuid, transformConnectorResponseDtoToModel(connector)]));
+                    ng.items.forEach((connector) => {
+                        byUuid.set(connector.uuid, transformConnectorDtoV2ToModel(connector));
+                    });
+                    return slice.actions.listDiscoveryProvidersSuccess({ connectors: Array.from(byUuid.values()) });
+                }),
 
                 catchError((err) =>
                     of(
@@ -105,6 +139,7 @@ const getDiscoveryProviderAttributesDescriptors: AppEpic = (action$, state, deps
                 .pipe(
                     map((attributeDescriptors) =>
                         slice.actions.getDiscoveryProviderAttributesDescriptorsSuccess({
+                            connectorUuid: action.payload.uuid,
                             attributeDescriptor: attributeDescriptors.map(transformAttributeDescriptorDtoToModel),
                         }),
                     ),
@@ -112,12 +147,90 @@ const getDiscoveryProviderAttributesDescriptors: AppEpic = (action$, state, deps
                     catchError((err) =>
                         of(
                             slice.actions.getDiscoveryProviderAttributeDescriptorsFailure({
+                                connectorUuid: action.payload.uuid,
                                 error: extractError(err, 'Failed to get Discovery Provider Attribute list'),
                             }),
                             appRedirectActions.fetchError({ error: err, message: 'Failed to get Discovery Provider Attribute list' }),
                         ),
                     ),
                 ),
+        ),
+    );
+};
+
+// The run-level relay for a v2 connector. It sits under /v1/discoveries but is keyed by the connector, the same split
+// the authority instance endpoints already use.
+export const getDiscoveryInterfaceAttributesDescriptors: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getDiscoveryInterfaceAttributesDescriptors.match),
+        switchMap((action) =>
+            deps.apiClients.discoveries.getDiscoveryAttributes({ connectorUuid: action.payload.connectorUuid }).pipe(
+                map((attributeDescriptors) =>
+                    slice.actions.getDiscoveryProviderAttributesDescriptorsSuccess({
+                        connectorUuid: action.payload.connectorUuid,
+                        attributeDescriptor: attributeDescriptors.map(transformAttributeDescriptorDtoToModel),
+                    }),
+                ),
+
+                catchError((err) =>
+                    of(
+                        slice.actions.getDiscoveryProviderAttributeDescriptorsFailure({
+                            connectorUuid: action.payload.connectorUuid,
+                            error: extractError(err, 'Failed to get Discovery Attribute list'),
+                        }),
+                        appRedirectActions.fetchError({ error: err, message: 'Failed to get Discovery Attribute list' }),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
+// mergeMap rather than switchMap: selecting two resources at once issues two requests, and neither may cancel the other.
+export const getDiscoveryResourceAttributesDescriptors: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getDiscoveryResourceAttributesDescriptors.match),
+        mergeMap((action) =>
+            deps.apiClients.discoveries
+                .getDiscoveryResourceAttributes({ connectorUuid: action.payload.connectorUuid, resource: action.payload.resource })
+                .pipe(
+                    map((attributeDescriptors) =>
+                        slice.actions.getDiscoveryResourceAttributesDescriptorsSuccess({
+                            connectorUuid: action.payload.connectorUuid,
+                            resource: action.payload.resource,
+                            attributeDescriptor: attributeDescriptors.map(transformAttributeDescriptorDtoToModel),
+                        }),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.getDiscoveryResourceAttributesDescriptorsFailure({
+                                connectorUuid: action.payload.connectorUuid,
+                                resource: action.payload.resource,
+                                error: extractError(err, 'Failed to get Discovery Resource Attribute list'),
+                            }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to get Discovery Resource Attribute list' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
+export const listDiscoveryResources: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listDiscoveryResources.match),
+        switchMap((action) =>
+            deps.apiClients.discoveries.listDiscoveryResources({ connectorUuid: action.payload.connectorUuid }).pipe(
+                map((supported) => slice.actions.listDiscoveryResourcesSuccess({ resources: supported.map((entry) => entry.resource) })),
+
+                catchError((err) =>
+                    of(
+                        slice.actions.listDiscoveryResourcesFailure({ error: extractError(err, 'Failed to get discoverable resources') }),
+                        appRedirectActions.fetchError({ error: err, message: 'Failed to get discoverable resources' }),
+                    ),
+                ),
+            ),
         ),
     );
 };
@@ -136,6 +249,40 @@ const getDiscoveryCertificates: AppEpic = (action$, state, deps) => {
                             error: extractError(err, 'Failed to get Discovery Certificates list'),
                         }),
                         appRedirectActions.fetchError({ error: err, message: 'Failed to get Discovery Certificates list' }),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
+const getDiscoveryItems: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getDiscoveryItems.match),
+        switchMap((action) =>
+            deps.apiClients.discoveries.getDiscoveryItems(action.payload).pipe(
+                map((items) => slice.actions.getDiscoveryItemsSuccess(transformDiscoveryItemListDtoToModel(items))),
+                catchError((err) =>
+                    of(
+                        slice.actions.getDiscoveryItemsFailure({ error: extractError(err, 'Failed to get Discovery Items list') }),
+                        appRedirectActions.fetchError({ error: err, message: 'Failed to get Discovery Items list' }),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
+const getDiscoveryMessages: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getDiscoveryMessages.match),
+        switchMap((action) =>
+            deps.apiClients.discoveries.getDiscoveryRunMessages(action.payload).pipe(
+                map((messages) => slice.actions.getDiscoveryMessagesSuccess(transformDiscoveryMessageListDtoToModel(messages))),
+                catchError((err) =>
+                    of(
+                        slice.actions.getDiscoveryMessagesFailure({ error: extractError(err, 'Failed to get Discovery Run Messages') }),
+                        appRedirectActions.fetchError({ error: err, message: 'Failed to get Discovery Run Messages' }),
                     ),
                 ),
             ),
@@ -221,15 +368,95 @@ const bulkDeleteDiscovery: AppEpic = (action$, state$, deps) => {
     );
 };
 
+/**
+ * A refused lifecycle action is a 422 whose body is an array of strings rather than an ErrorMessageDto: the run's state
+ * no longer allows the action, or the provider does not support it. The strings are what the operator should read.
+ */
+export function describeLifecycleRefusal(err: unknown, headline: string): string {
+    const response = (err as { response?: unknown } | undefined)?.response;
+    if (Array.isArray(response) && response.every((entry) => typeof entry === 'string')) {
+        return `${headline}: ${response.join(' ')}`;
+    }
+    return extractError(err as Error, headline);
+}
+
+const lifecycleEpic = (
+    match: (action: unknown) => action is { payload: { uuid: string } },
+    call: (deps: EpicDependencies, uuid: string) => Observable<void>,
+    onSuccess: (uuid: string) => UnknownAction,
+    onFailure: (error: string) => UnknownAction,
+    successMessage: string,
+    headline: string,
+): AppEpic => {
+    return (action$, state$, deps) =>
+        action$.pipe(
+            filter(match),
+            switchMap((action) => {
+                // The action answers 204 with no body, so the detail is re-read for the new state: in place, so the page
+                // stays up, and only while the page still shows this run. A stop that completes after the user has moved
+                // to another run must not drag the first one back onto the screen.
+                const refresh = () =>
+                    state$.value.discoveries.discovery?.uuid === action.payload.uuid
+                        ? [slice.actions.getDiscoveryDetail({ uuid: action.payload.uuid, keepCurrent: true })]
+                        : [];
+                return call(deps, action.payload.uuid).pipe(
+                    mergeMap(() => of(onSuccess(action.payload.uuid), alertActions.success(successMessage), ...refresh())),
+                    // A visible control can still be refused: the provider may pass its point of no return between
+                    // the read that rendered the button and the click. The run has moved on, so the detail is re-read
+                    // here too and the stale button set goes with it.
+                    catchError((err) => {
+                        const message = describeLifecycleRefusal(err, headline);
+                        return of(onFailure(message), alertActions.error(message), ...refresh());
+                    }),
+                );
+            }),
+        );
+};
+
+export const stopDiscovery = lifecycleEpic(
+    slice.actions.stopDiscovery.match,
+    (deps, uuid) => deps.apiClients.discoveries.stopDiscovery({ uuid }),
+    (uuid) => slice.actions.stopDiscoverySuccess({ uuid }),
+    (error) => slice.actions.stopDiscoveryFailure({ error }),
+    'Discovery stop requested.',
+    'Failed to stop discovery',
+);
+
+export const resumeDiscovery = lifecycleEpic(
+    slice.actions.resumeDiscovery.match,
+    (deps, uuid) => deps.apiClients.discoveries.resumeDiscovery({ uuid }),
+    (uuid) => slice.actions.resumeDiscoverySuccess({ uuid }),
+    (error) => slice.actions.resumeDiscoveryFailure({ error }),
+    'Discovery resumed.',
+    'Failed to resume discovery',
+);
+
+export const cancelDiscovery = lifecycleEpic(
+    slice.actions.cancelDiscovery.match,
+    (deps, uuid) => deps.apiClients.discoveries.cancelDiscovery({ uuid }),
+    (uuid) => slice.actions.cancelDiscoverySuccess({ uuid }),
+    (error) => slice.actions.cancelDiscoveryFailure({ error }),
+    'Discovery cancelled.',
+    'Failed to cancel discovery',
+);
+
 const epics = [
     listDiscoveries,
     getDiscoveryDetail,
     listDiscoveryProviders,
     getDiscoveryProviderAttributesDescriptors,
+    getDiscoveryInterfaceAttributesDescriptors,
+    getDiscoveryResourceAttributesDescriptors,
+    listDiscoveryResources,
     getDiscoveryCertificates,
+    getDiscoveryItems,
+    getDiscoveryMessages,
     createDiscovery,
     deleteDiscovery,
     bulkDeleteDiscovery,
+    stopDiscovery,
+    resumeDiscovery,
+    cancelDiscovery,
 ];
 
 export default epics;

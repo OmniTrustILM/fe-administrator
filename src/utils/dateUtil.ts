@@ -65,7 +65,7 @@ export const getStrongFromCronExpression = (cronExpression: string | undefined) 
     return undefined;
 };
 
-export const formatTimeAgo = (input: DateInput) => {
+export const formatTimeAgo = (input: DateInput, now: number = Date.now()) => {
     const date = input instanceof Date ? input : new Date(input);
     const formatter = new Intl.RelativeTimeFormat('en');
     const ranges = {
@@ -77,7 +77,7 @@ export const formatTimeAgo = (input: DateInput) => {
         minutes: 60,
         seconds: 1,
     };
-    const secondsElapsed = (date.getTime() - Date.now()) / 1000;
+    const secondsElapsed = (date.getTime() - now) / 1000;
     for (const key in ranges) {
         const keyTyped = key as keyof typeof ranges;
         if (ranges[keyTyped] < Math.abs(secondsElapsed)) {
