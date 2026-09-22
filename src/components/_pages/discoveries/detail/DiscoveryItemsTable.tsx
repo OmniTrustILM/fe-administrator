@@ -13,9 +13,11 @@ import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import type { DiscoveryItemModel } from 'types/discoveries';
-import { PlatformEnum, type Resource } from 'types/openapi';
+import { PlatformEnum, Resource } from 'types/openapi';
+import { useCopyToClipboard } from 'utils/common-hooks';
 import { dateFormatter } from 'utils/dateUtil';
 import { inventoryPath } from './discoveryDetailHelpers';
+import { KEY_HEADERS, keyCells } from './discoveryKeyColumns';
 
 type Props = Readonly<{
     discoveryUuid: string;
@@ -30,14 +32,27 @@ const TABS: ReadonlyArray<{ tabKey: string; title: string; newlyDiscovered?: boo
     { tabKey: 'existing', title: 'Existing', newlyDiscovered: false },
 ];
 
-const HEADERS: TableHeader[] = [
+const IDENTITY_HEADERS: TableHeader[] = [
     { id: 'sequence', content: '#', align: 'right', width: '5%' },
     { id: 'uniqueRef', content: 'Reference' },
+];
+
+const OUTCOME_HEADERS: TableHeader[] = [
     { id: 'discoveredAt', content: 'Discovered' },
     { id: 'state', content: 'State', align: 'center' },
     { id: 'inventory', content: 'In inventory' },
     { id: 'details', content: 'Details', headingHidden: true, width: '5%' },
 ];
+
+/**
+ * What the item is, then what became of it, with the resource's own columns in between. Only keys have a domain
+ * view today; every other resource renders the two generic halves alone, as it did before keys had one.
+ */
+function headersFor(resource: Resource): TableHeader[] {
+    return resource === Resource.Keys
+        ? [...IDENTITY_HEADERS, ...KEY_HEADERS, ...OUTCOME_HEADERS]
+        : [...IDENTITY_HEADERS, ...OUTCOME_HEADERS];
+}
 
 /**
  * The state column is driven by `processed` and `processedError` only. `inventoryUuid` is not a success signal: for a
@@ -72,6 +87,10 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
     const discoveryItems = useSelector(selectors.discoveryItems);
     const isFetchingDiscoveryItems = useSelector(selectors.isFetchingDiscoveryItems);
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
+    const keyTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyType));
+    const keyAlgorithmEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyAlgorithm));
+    const keyFormatEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyFormat));
+    const copyToClipboard = useCopyToClipboard();
 
     const { pathname } = useLocation();
     const [searchParams] = useSearchParams();
@@ -95,6 +114,12 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
         [dispatch, discoveryUuid, resource, newlyDiscovered],
     );
 
+    const copyPublicKey = useCallback(
+        (publicKey: string) =>
+            copyToClipboard(publicKey, 'Public key was copied to clipboard', 'Failed to copy the public key to clipboard'),
+        [copyToClipboard],
+    );
+
     const rows: TableDataRow[] = useMemo(
         () =>
             discoveryItems?.items.map((item) => {
@@ -108,6 +133,9 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
                         <span key="ref" className="break-all">
                             {item.uniqueRef}
                         </span>,
+                        ...(resource === Resource.Keys
+                            ? keyCells(item, { type: keyTypeEnum, algorithm: keyAlgorithmEnum, format: keyFormatEnum }, copyPublicKey)
+                            : []),
                         <span key="discoveredAt" className="whitespace-nowrap">
                             {item.discoveredAt ? dateFormatter(item.discoveredAt) : ''}
                         </span>,
@@ -136,7 +164,7 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
                     ],
                 };
             }) ?? [],
-        [discoveryItems],
+        [discoveryItems, resource, keyTypeEnum, keyAlgorithmEnum, keyFormatEnum, copyPublicKey],
     );
 
     const pagedTable = (
@@ -145,7 +173,7 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
             // onReloadData in a ref and only re-fetches on [pageSize, pageNumber].
             key={`${resource}:${activeTab.tabKey}`}
             stateKey={`${pathname}:${resource}:${activeTab.tabKey}`}
-            headers={HEADERS}
+            headers={headersFor(resource)}
             data={rows}
             totalItems={discoveryItems?.totalItems}
             onReloadData={onReloadData}

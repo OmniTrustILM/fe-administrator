@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 
 import DiscoveryItemsTable, { itemStateBadge } from './DiscoveryItemsTable';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { KeyAlgorithm, KeyFormat, KeyType, PlatformEnum, Resource } from 'types/openapi';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
 
@@ -58,6 +58,9 @@ vi.mock('components/CustomTable/PagedCustomTable', () => ({
 }));
 
 vi.mock('components/JsonViewer', () => ({ default: ({ value }: any) => <pre data-testid="json">{value}</pre> }));
+
+const copyToClipboard = vi.fn();
+vi.mock('utils/common-hooks', () => ({ useCopyToClipboard: () => copyToClipboard }));
 vi.mock('components/Button', () => ({
     default: ({ children, onClick, title, 'data-testid': testId }: any) => (
         <button type="button" onClick={onClick} title={title} data-testid={testId}>
@@ -90,6 +93,9 @@ function buildState(items: unknown[]) {
                     [Resource.Certificates]: { label: 'Certificates' },
                     [Resource.Keys]: { label: 'Keys' },
                 },
+                [PlatformEnum.KeyType]: { [KeyType.Public]: { label: 'Public key' } },
+                [PlatformEnum.KeyAlgorithm]: { [KeyAlgorithm.Rsa]: { label: 'RSA' } },
+                [PlatformEnum.KeyFormat]: { [KeyFormat.SubjectPublicKeyInfo]: { label: 'SPKI' } },
             },
         },
     };
@@ -200,6 +206,51 @@ describe('DiscoveryItemsTable', () => {
             container.querySelector<HTMLButtonElement>('[data-testid="show-item-item-1"]')?.click();
         });
         expect(container.querySelector('[data-testid="json"]')?.textContent).toContain('"payload": null');
+    });
+
+    it('gives a keys run the key domain and leaves the certificates run as it was', async () => {
+        const key = item({
+            uuid: 'key-1',
+            resource: Resource.Keys,
+            uniqueRef: 'key-ref-1',
+            payload: {
+                resource: Resource.Keys,
+                type: KeyType.Public,
+                algorithm: KeyAlgorithm.Rsa,
+                length: 2048,
+                fingerprint: 'e3b0c44298fc1c14',
+                publicKeyFormat: KeyFormat.SubjectPublicKeyInfo,
+                publicKey: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A',
+            },
+        });
+        await render(buildState([key]), Resource.Keys);
+
+        expect(container.querySelector('[data-testid="header-keyFingerprint"]')?.textContent).toBe('Fingerprint');
+        const row = container.querySelector('[data-testid="row-key-1"]');
+        expect(row?.querySelector('[data-testid="key-algorithm"]')?.textContent).toBe('RSA');
+        expect(row?.querySelector('[data-testid="key-fingerprint"]')?.textContent).toBe('e3b0c44298fc1c14');
+
+        await render(buildState([item()]));
+        expect(container.querySelector('[data-testid="header-keyFingerprint"]')).toBeNull();
+        expect(container.querySelector('[data-testid="key-algorithm"]')).toBeNull();
+    });
+
+    it('copies a key blob nobody would read from the column itself', async () => {
+        const publicKey = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A';
+        await render(buildState([item({ payload: { resource: Resource.Keys, type: KeyType.Public, publicKey } })]), Resource.Keys);
+
+        await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="copy-public-key-item-1"]')?.click());
+
+        expect(copyToClipboard).toHaveBeenCalledWith(publicKey, expect.any(String), expect.any(String));
+    });
+
+    it('lists a key whose payload could not be decoded with its domain columns empty', async () => {
+        await render(buildState([item({ resource: Resource.Keys, payload: undefined })]), Resource.Keys);
+
+        const row = container.querySelector('[data-testid="row-item-1"]');
+        expect(row).not.toBeNull();
+        expect(row?.querySelector('[data-testid="key-algorithm"]')?.textContent).toBe('');
+        expect(row?.querySelector('[data-testid="key-public"]')?.textContent).toBe('');
     });
 
     it('reloads the page it was asked for, filtered by the tab in the URL', async () => {
