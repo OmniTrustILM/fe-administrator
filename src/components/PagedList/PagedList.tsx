@@ -11,7 +11,7 @@ import CustomTable, { type SortDirection, type TableDataRow, type TableHeader } 
 import { buildTableRows, type CellRegistry } from 'components/CustomTable/columns';
 import Dialog from 'components/Dialog';
 import FilterWidget from 'components/FilterWidget';
-import ViewTabs from 'components/ViewTabs';
+import ViewTabs, { isViewStripReady } from 'components/ViewTabs';
 import Widget from 'components/Widget';
 import type { ReactNode } from 'react';
 import { selectors as listViewSelectors } from 'ducks/listViews';
@@ -180,7 +180,8 @@ function PagedList<TRow extends object>({
         () => (columnsResource ? listViewSelectors.hasLoaded(columnsResource) : () => false),
         [columnsResource],
     );
-    const isStripReady = useSelector(selectHasLoadedViews) && hasLoadedCatalogue;
+    const hasLoadedViews = useSelector(selectHasLoadedViews);
+    const isStripReady = isViewStripReady(hasLoadedViews, hasLoadedCatalogue);
 
     const totalItems = useSelector(selectors.totalItems(entity));
     const checkedRows = useSelector(selectors.checkedRows(entity));
@@ -346,6 +347,9 @@ function PagedList<TRow extends object>({
      * Applies a view's columns, filters and ordering together. The first application leaves filters
      * already in the duck alone: the strip opens its pinned view after a deep link has put its own
      * filters there, and would replace them a moment after they were asked for.
+     *
+     * The ordering is put through the same sieve as `applyColumns`: this is the path the column
+     * dialog comes back on, and it hands back the ordering the table was listing under before it.
      */
     const hasAppliedView = useRef(false);
     const onApplyView = useCallback(
@@ -354,7 +358,7 @@ function PagedList<TRow extends object>({
 
             hasAppliedView.current = true;
             setColumnSelection(slice.columns);
-            setSortSelection(slice.sort);
+            setSortSelection(toDisplayableSort(slice.sort, slice.columns));
 
             if (!isInitialApplication || currentFilters.length === 0) {
                 dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));

@@ -229,6 +229,30 @@ test.describe('PagedList · add column menu', () => {
         expect(await lastRequest(page)).not.toHaveProperty('sort');
     });
 
+    test('does not bring one back when the column dialog is what took it away', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+
+        await page.getByRole('button', { name: 'Expires At' }).click();
+        await expect.poll(async () => (await lastRequest(page))?.sort?.fieldIdentifier).toBe('NOT_AFTER');
+
+        await openMenu(page);
+        await page.getByTestId('add-column-menu-edit-columns').click();
+
+        const picker = page.getByTestId('view-tabs-picker');
+        await expect(picker).toBeVisible();
+        await picker.getByTestId('selected-column-property:NOT_AFTER-remove').click();
+        await picker.getByRole('button', { name: 'Apply' }).click();
+
+        await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME']);
+        expect(await lastRequest(page)).not.toHaveProperty('sort');
+
+        await openMenu(page);
+        await page.getByTestId('add-column-menu-field-property:NOT_AFTER').check();
+
+        await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
+        expect(await lastRequest(page)).not.toHaveProperty('sort');
+    });
+
     test('leaves a stored view dirty rather than writing to it', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[expiryWatch]} />,

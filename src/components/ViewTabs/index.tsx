@@ -85,6 +85,17 @@ export type ViewTabsProps = Readonly<{
 type PendingDialog = 'rename' | 'create' | 'delete';
 
 /**
+ * Whether the strip is up, given a settled view list and a settled catalogue. The column dialog is
+ * mounted by the strip, so a host offering its own way into that dialog has to ask the same question
+ * — a host that loosened its own copy would leave the entry opening nothing, and silently.
+ *
+ * Why the strip waits for both is written down on `isReady` below.
+ */
+export function isViewStripReady(hasLoadedViews: boolean, isCatalogueLoaded: boolean): boolean {
+    return hasLoadedViews && isCatalogueLoaded;
+}
+
+/**
  * The saved-view tab strip: one tab per view, above the filter widget because filters are part of
  * each view.
  *
@@ -138,7 +149,7 @@ export default function ViewTabs({
      * displayable fields at all, and gating on those would hide the strip for good — Standard needs
      * none of them.
      */
-    const isReady = hasLoaded && (isCatalogueLoaded ?? catalogue.length > 0);
+    const isReady = isViewStripReady(hasLoaded, isCatalogueLoaded ?? catalogue.length > 0);
 
     const activeView = useMemo(() => views.find((view) => view.uuid === activeId), [views, activeId]);
     const tabs = useMemo(() => toTabs(views), [views]);
