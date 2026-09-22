@@ -13,8 +13,8 @@ export interface ColumnSizing {
 /**
  * Sizing per content type. Every column gets a `maxWidth`, because that is the only thing that makes
  * the row cell apply `overflow: hidden` and an ellipsis, and so the switch that turns the one-line
- * row rule on. The `minWidth` is what makes a twelve-column table degrade by scrolling rather than
- * by squeezing every column into illegibility.
+ * row rule on. The `minWidth` is what makes a wide table degrade by scrolling rather than by
+ * squeezing every column into illegibility.
  */
 const SIZING_BY_CONTENT_TYPE: Readonly<Record<AttributeContentType, ColumnSizing>> = {
     [AttributeContentType.Boolean]: { minWidth: '90px', maxWidth: 120 },
@@ -174,4 +174,9 @@ export function buildColumnHeaders(columns: ColumnDefinition[], options: BuildCo
             maxWidth: sizing.maxWidth,
         };
     });
+}
+
+/** A column count, as the picker and the view summary both label it. */
+export function formatColumnCount(count: number): string {
+    return `${count} ${count === 1 ? 'column' : 'columns'}`;
 }

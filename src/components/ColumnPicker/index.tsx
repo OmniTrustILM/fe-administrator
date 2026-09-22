@@ -2,15 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Dialog from 'components/Dialog';
 import type { FilterFieldSource, SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition, PickerColumn, SourcedCatalogueField } from 'types/tableColumns';
-import {
-    MAX_COLUMNS,
-    isColumnSelected,
-    isSameResolution,
-    moveColumn,
-    resolveColumns,
-    toCatalogueFields,
-    toColumnDefinition,
-} from 'utils/columnPicker';
+import { isColumnSelected, isSameResolution, moveColumn, resolveColumns, toCatalogueFields, toColumnDefinition } from 'utils/columnPicker';
 import AvailableFields from './AvailableFields';
 import HeaderPreview from './HeaderPreview';
 import SelectedColumns from './SelectedColumns';
@@ -93,9 +85,7 @@ export default function ColumnPicker({
 
     const handleAdd = useCallback((field: SourcedCatalogueField) => {
         setDraft((current) => {
-            // Selection stops at the cap rather than silently ignoring further additions, and a
-            // field already shown is never added twice.
-            if (current.length >= MAX_COLUMNS || isColumnSelected(current, field)) return current;
+            if (isColumnSelected(current, field)) return current;
             return [...current, { ...toColumnDefinition(field), available: true }];
         });
     }, []);
@@ -148,8 +138,6 @@ export default function ColumnPicker({
         onSave(savableColumns);
     }, [savableColumns, onSave]);
 
-    const isAtCap = draft.length >= MAX_COLUMNS;
-
     return (
         <Dialog
             isOpen={isOpen}
@@ -173,7 +161,6 @@ export default function ColumnPicker({
                             search={search}
                             onSearchChange={setSearch}
                             onAdd={handleAdd}
-                            isAtCap={isAtCap}
                             getSourceLabel={resolveSourceLabel}
                         />
                         <SelectedColumns

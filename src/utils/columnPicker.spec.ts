@@ -2,9 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { AttributeContentType, FilterFieldSource, FilterFieldType, type SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import {
-    COLUMN_COUNT_WARNING_FROM,
-    MAX_COLUMNS,
-    getCounterState,
     groupCatalogueFields,
     isColumnSelected,
     isSameResolution,
@@ -324,28 +321,5 @@ describe('moveColumn', () => {
         const original = [...columns];
         moveColumn(columns, 0, 3);
         expect(columns).toEqual(original);
-    });
-});
-
-describe('getCounterState', () => {
-    it('is unremarkable below the warning threshold', () => {
-        expect(getCounterState(COLUMN_COUNT_WARNING_FROM - 1)).toBe('ok');
-    });
-
-    it('warns from the threshold, so the limit is visible before it binds', () => {
-        expect(getCounterState(COLUMN_COUNT_WARNING_FROM)).toBe('warning');
-        expect(getCounterState(MAX_COLUMNS - 1)).toBe('warning');
-    });
-
-    it('reports the cap once it is reached', () => {
-        expect(getCounterState(MAX_COLUMNS)).toBe('full');
-    });
-
-    it('treats an over-full set as full, so a stored view above the cap still renders', () => {
-        expect(getCounterState(MAX_COLUMNS + 4)).toBe('full');
-    });
-
-    it('warns before it blocks', () => {
-        expect(COLUMN_COUNT_WARNING_FROM).toBeLessThan(MAX_COLUMNS);
     });
 });
