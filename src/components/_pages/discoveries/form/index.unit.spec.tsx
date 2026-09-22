@@ -14,6 +14,7 @@ vi.mock('react-redux', async () => await import('../../test-utils/reactReduxMock
 // A click on a mocked select picks the value registered for its id; the multi-select picks the resources listed.
 let multiSelection: { value: string; label: string }[] = [{ value: Resource.Certificates, label: 'Certificates' }];
 let interfaceChoice = 'iface-2';
+let providerChoice = 'conn-1';
 
 vi.mock('components/Select', () => ({
     default: ({ id, onChange, isMulti }: any) => (
@@ -26,7 +27,9 @@ vi.mock('components/Select', () => ({
                     return;
                 }
                 onChange(
-                    { discoveryProviderSelect: 'conn-1', storeKindSelect: 'IP-HostName', interfaceSelect: interfaceChoice }[id as string],
+                    { discoveryProviderSelect: providerChoice, storeKindSelect: 'IP-HostName', interfaceSelect: interfaceChoice }[
+                        id as string
+                    ],
                 );
             }}
         >
@@ -112,6 +115,14 @@ const singleInterfaceProvider = {
     interfaces: [{ uuid: 'iface-1', code: ConnectorInterface.Discovery, version: 'v2' }],
 };
 
+// A second v2 provider, so the dropdown can be moved away from the first one and back.
+const otherProvider = {
+    uuid: 'conn-2',
+    name: 'another v2 scanner',
+    functionGroups: [],
+    interfaces: [{ uuid: 'iface-9', code: ConnectorInterface.Discovery, version: 'v2' }],
+};
+
 const multiInterfaceProvider = {
     ...singleInterfaceProvider,
     name: 'v2 scanner with two interfaces',
@@ -167,6 +178,7 @@ describe('DiscoveryForm', () => {
         useDispatchMock.mockReturnValue(dispatch);
         multiSelection = [{ value: Resource.Certificates, label: 'Certificates' }];
         interfaceChoice = 'iface-2';
+        providerChoice = 'conn-1';
     });
 
     afterEach(async () => {
@@ -441,6 +453,36 @@ describe('DiscoveryForm', () => {
             expect(resourceEditor()?.getAttribute('data-deleted')).toBe('no');
             expect(dispatched('discoveries/clearDiscoveryResourceAttributeDescriptors').length).toBeGreaterThan(0);
             expect(dispatched('discoveries/getDiscoveryResourceAttributesDescriptors').length).toBeGreaterThan(1);
+        });
+
+        it('asks a provider for its attributes again when it is picked again', async () => {
+            await render(buildState({ discoveryProviders: [singleInterfaceProvider, otherProvider], descriptors }));
+
+            await click('select-discoveryProviderSelect');
+            // The same provider again: picking one empties its run-level definitions, so the form has to ask for
+            // them again. Otherwise the tab renders empty and the run is created with none of them.
+            await click('select-discoveryProviderSelect');
+
+            expect(dispatched('discoveries/getDiscoveryInterfaceAttributesDescriptors').map((a) => a.payload.connectorUuid)).toEqual([
+                'conn-1',
+                'conn-1',
+            ]);
+        });
+
+        it('asks each provider for its own attributes as the choice moves between them', async () => {
+            await render(buildState({ discoveryProviders: [singleInterfaceProvider, otherProvider], descriptors }));
+
+            await click('select-discoveryProviderSelect');
+            providerChoice = 'conn-2';
+            await click('select-discoveryProviderSelect');
+            providerChoice = 'conn-1';
+            await click('select-discoveryProviderSelect');
+
+            expect(dispatched('discoveries/getDiscoveryInterfaceAttributesDescriptors').map((a) => a.payload.connectorUuid)).toEqual([
+                'conn-1',
+                'conn-2',
+                'conn-1',
+            ]);
         });
 
         it('offers the certificate triggers only when certificates are targeted', async () => {

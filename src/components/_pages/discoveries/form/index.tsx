@@ -201,6 +201,8 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
         [unregister],
     );
 
+    const previousInterfaceRef = useRef<string | undefined>(undefined);
+
     const onDiscoveryProviderChange = useCallback(
         (providerUuid: string | undefined) => {
             dispatch(discoveryActions.clearDiscoveryProviderAttributeDescriptors());
@@ -211,6 +213,11 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
             setResourceGroupCallbackAttributes({});
             setValue('interfaceUuid', undefined);
             setValue('resources', []);
+            // What the effect below remembers is "these definitions are already loaded for that interface", and
+            // picking a provider is what makes that untrue: the dispatch above empties them. Left standing, the
+            // same interface coming back reads as no change, nothing is re-fetched, and the run is created with
+            // none of the provider's run-level attributes.
+            previousInterfaceRef.current = undefined;
 
             if (!providerUuid || !discoveryProviders) return;
             const provider = discoveryProviders.find((p) => p.uuid === providerUuid);
@@ -245,7 +252,6 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
     // Everything on screen belongs to the interface that published it, so a switch takes all of it with it: the
     // editors' values and deletion markers, the per-resource definitions, and the callback descriptors derived from
     // them. What the newly selected interface publishes is then asked for again.
-    const previousInterfaceRef = useRef<string | undefined>(undefined);
     useEffect(() => {
         if (!isV2Provider || !discoveryProvider || !watchedInterfaceUuid) return;
         // Only a change of interface clears anything: a resource change is the next effect's work, and re-running
