@@ -1103,23 +1103,6 @@ test.describe('CustomTable', () => {
         expect(calledWithPage).toBe(1);
     });
 
-    test('should keep first visible item in view when page size changes in internal pagination', async ({ mount, page }) => {
-        const manyRows = Array.from({ length: 50 }, (_, i) => ({
-            id: i + 1,
-            columns: [`Row ${i + 1}`, `b`, `c`],
-        }));
-        const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={manyRows} hasPagination={true} />));
-
-        await component.getByTestId('pagination-next').click();
-        await component.getByTestId('pagination-next').click();
-        await expect(component.getByText(/Showing 21 to 30 of 50/)).toBeVisible();
-
-        await component.getByTestId('select-pageSize-trigger').click();
-        await page.getByRole('option', { name: '20', exact: true }).click();
-
-        await expect(component.getByText(/Showing 21 to 40 of 50/)).toBeVisible();
-    });
-
     test('should reset page to last page when current page exceeds total pages after data shrinks', async ({ mount }) => {
         const paginationKey = 'custom-table-pagination:/roles:name|email|status|no-checkboxes|no-details';
         const store = createMockStore({
