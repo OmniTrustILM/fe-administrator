@@ -29,6 +29,8 @@ type Props = Readonly<{
     /** The ordering the page declares as its own, as the connector and discovery inventories do. */
     defaultSort?: ColumnSort;
     withheldCatalogue?: boolean;
+    /** Preloads the view list as still in flight, which is the other half of what the strip waits for. */
+    withheldViews?: boolean;
     /** Filters already in the duck when the host mounts, as a deep link leaves them. */
     initialFilters?: SearchFilterModel[];
     withRefreshControl?: boolean;
@@ -96,6 +98,7 @@ export default function PagedListColumnsWithStore({
     views = [],
     defaultSort,
     withheldCatalogue = false,
+    withheldViews = false,
     initialFilters = [],
     withRefreshControl = false,
     withPagingControl = false,
@@ -104,7 +107,9 @@ export default function PagedListColumnsWithStore({
     const [store] = useState(() =>
         createMockStore({
             listViews: {
-                byResource: { [Resource.Certificates]: { views, isFetching: false, hasLoaded: true, isMutating: false } },
+                byResource: {
+                    [Resource.Certificates]: { views, isFetching: withheldViews, hasLoaded: !withheldViews, isMutating: false },
+                },
                 dispatched: [],
             },
             filters: {

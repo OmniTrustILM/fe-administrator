@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { SearchFieldListModel } from 'types/certificate';
 import { FilterFieldSource, SortDirection } from 'types/openapi';
-import type { ColumnDefinition } from 'types/tableColumns';
+import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import {
     buildListRequest,
     getRenderableProperties,
     isSameSort,
     toColumnSortFromHeader,
     toDisplayableSort,
+    toggleColumn,
     withCatalogueSortability,
     withDeclaredSortability,
 } from './columnState';
@@ -282,5 +283,52 @@ describe('withDeclaredSortability', () => {
 
     it('keeps the declared ordering displayable, so the first listing request carries it', () => {
         expect(toDisplayableSort(sort, withDeclaredSortability(standard, sort))).toEqual(sort);
+    });
+});
+
+describe('toggleColumn', () => {
+    const costCentre = {
+        fieldSource: FilterFieldSource.Custom,
+        fieldIdentifier: 'costCentre|STRING',
+        fieldLabel: 'Cost centre',
+        sortable: true,
+    } as SourcedCatalogueField;
+
+    const commonName = {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'COMMON_NAME',
+        fieldLabel: 'Common Name',
+        sortable: true,
+    } as SourcedCatalogueField;
+
+    it('appends a field the table is not showing as the last column', () => {
+        const next = toggleColumn(columns, costCentre);
+
+        expect(next).toHaveLength(columns.length + 1);
+        expect(next.at(-1)).toEqual({
+            fieldSource: FilterFieldSource.Custom,
+            fieldIdentifier: 'costCentre|STRING',
+            catalogueLabel: 'Cost centre',
+            sortable: true,
+            type: undefined,
+            attributeContentType: undefined,
+            multiValue: undefined,
+        });
+    });
+
+    it('takes away a field the table is already showing', () => {
+        expect(toggleColumn(columns, commonName).map((column) => column.fieldIdentifier)).toEqual(['CK_ASSOCIATIONS', 'department|STRING']);
+    });
+
+    it('keeps the last column standing, because the API rejects a view with none', () => {
+        const only = [columns[0]];
+
+        expect(toggleColumn(only, commonName)).toBe(only);
+    });
+
+    it('tells a field of one source from the same identifier under another', () => {
+        const customCommonName = { ...commonName, fieldSource: FilterFieldSource.Custom } as SourcedCatalogueField;
+
+        expect(toggleColumn(columns, customCommonName)).toHaveLength(columns.length + 1);
     });
 });

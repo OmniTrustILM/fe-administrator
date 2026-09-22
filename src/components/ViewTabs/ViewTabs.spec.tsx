@@ -549,6 +549,31 @@ test.describe('ViewTabs', () => {
         expect(slice.columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
     });
 
+    test('opens the dialog after that fallback on the standard columns with the unshowable ones alongside', async ({ mount, page }) => {
+        // The fallback is what the table shows; the dialog is the only place the notice's columns are reachable.
+        const stale = expiryWatch({
+            defaultView: true,
+            columns: [stored('retired', FilterFieldSource.Custom), stored('gone', FilterFieldSource.Custom)],
+        });
+        await mount(strip({ views: [stale] }));
+
+        await page.getByTestId('view-tabs-notice-review').click();
+        await expect(page.getByTestId('view-tabs-picker')).toBeVisible();
+
+        await expect
+            .poll(() =>
+                page
+                    .locator('[data-testid="selected-columns-list"] > [data-testid^="selected-column-"]')
+                    .evaluateAll((items) => items.map((item) => item.getAttribute('data-testid') ?? '')),
+            )
+            .toEqual([
+                'selected-column-custom:retired',
+                'selected-column-custom:gone',
+                'selected-column-property:COMMON_NAME',
+                'selected-column-property:SERIAL_NUMBER',
+            ]);
+    });
+
     test('falls back for a view that arrives carrying no columns at all', async ({ mount, page }) => {
         // What the API returns once every field the view was built on has been deleted: it resolves the
         // stored identifiers on read and omits the ones it cannot offer. Rendering that literally would

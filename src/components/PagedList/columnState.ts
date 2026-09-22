@@ -1,7 +1,8 @@
 import type { CellRegistry } from 'components/CustomTable/columns';
 import type { SortDirection } from 'components/CustomTable/types';
 import type { SearchFieldListModel, SearchRequestModel } from 'types/certificate';
-import type { ColumnDefinition } from 'types/tableColumns';
+import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
+import { toColumnDefinition } from 'utils/columnPicker';
 import { toStoredSort } from 'utils/listViews';
 import { type ColumnSort, getColumnKey, getSortKey, parseColumnKey, toRequestColumns } from 'utils/tableColumns';
 
@@ -28,6 +29,18 @@ export function toColumnSortFromHeader(
 export function isSameSort(a: ColumnSort | undefined, b: ColumnSort | undefined): boolean {
     if (!a || !b) return a === b;
     return getSortKey(a) === getSortKey(b) && a.direction === b.direction;
+}
+
+/**
+ * The displayed columns with a catalogue field added at the end, or taken away when it is already
+ * one. The last column standing is kept: the API rejects a view with none, and the same array comes
+ * back so a refused removal cannot re-list the page.
+ */
+export function toggleColumn(columns: ColumnDefinition[], field: SourcedCatalogueField): ColumnDefinition[] {
+    const key = getColumnKey(field);
+    if (!columns.some((column) => getColumnKey(column) === key)) return [...columns, toColumnDefinition(field)];
+    if (columns.length === 1) return columns;
+    return columns.filter((column) => getColumnKey(column) !== key);
 }
 
 export function getRenderableProperties<TRow>(registry: CellRegistry<TRow> | undefined): ReadonlySet<string> {

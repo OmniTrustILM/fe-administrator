@@ -16,6 +16,11 @@ export type ColumnPickerProps = Readonly<{
     onClose: () => void;
     /** Receives the arranged columns. Unavailable ones are already dropped. */
     onSave: (columns: ColumnDefinition[]) => void;
+    /**
+     * The confirming button's label. The host names what its own `onSave` does: a dialog opened where
+     * there is no view to write into must not promise a save it will not perform.
+     */
+    saveLabel?: string;
     /** The column catalogue for the resource, i.e. `GET /v1/{resource}/search`. */
     catalogue: SearchFieldDataByGroupDto[];
     /** The columns the view currently holds. */
@@ -41,6 +46,7 @@ export default function ColumnPicker({
     isOpen,
     onClose,
     onSave,
+    saveLabel = 'Save',
     catalogue,
     columns,
     standardColumns = NO_STANDARD_COLUMNS,
@@ -181,7 +187,7 @@ export default function ColumnPicker({
                 // The API rejects an empty column set, so this is the one place the dialog blocks
                 // outright rather than warning. Counted over what would be sent, not over the draft:
                 // a draft of nothing but unavailable rows resolves to an empty request.
-                { key: 'save', color: 'primary', body: 'Save', onClick: handleSave, disabled: savableColumns.length === 0 },
+                { key: 'save', color: 'primary', body: saveLabel, onClick: handleSave, disabled: savableColumns.length === 0 },
             ]}
         />
     );
