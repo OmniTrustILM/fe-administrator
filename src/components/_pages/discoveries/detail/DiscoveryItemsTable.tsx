@@ -13,11 +13,12 @@ import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import type { DiscoveryItemModel } from 'types/discoveries';
+import type { DiscoveredKeyDto } from 'types/openapi';
 import { PlatformEnum, Resource } from 'types/openapi';
 import { useCopyToClipboard } from 'utils/common-hooks';
 import { dateFormatter } from 'utils/dateUtil';
 import { inventoryPath } from './discoveryDetailHelpers';
-import { KEY_HEADERS, keyCells } from './discoveryKeyColumns';
+import { KEY_HEADERS, PUBLIC_KEY_HEADER, PublicKeyDetails, keyCells, publicKeyCell } from './discoveryKeyColumns';
 
 type Props = Readonly<{
     discoveryUuid: string;
@@ -32,7 +33,10 @@ const TABS: ReadonlyArray<{ tabKey: string; title: string; newlyDiscovered?: boo
     { tabKey: 'existing', title: 'Existing', newlyDiscovered: false },
 ];
 
-const IDENTITY_HEADERS: TableHeader[] = [
+const NAME_HEADER: TableHeader = { id: 'inventory', content: 'Name' };
+
+/** What the platform staged rather than what it holds; a key row says the same things in its own columns instead. */
+const STAGING_HEADERS: TableHeader[] = [
     { id: 'sequence', content: '#', align: 'right', width: '5%' },
     { id: 'uniqueRef', content: 'Reference' },
 ];
@@ -40,18 +44,19 @@ const IDENTITY_HEADERS: TableHeader[] = [
 const OUTCOME_HEADERS: TableHeader[] = [
     { id: 'discoveredAt', content: 'Discovered' },
     { id: 'state', content: 'State', align: 'center' },
-    { id: 'inventory', content: 'In inventory' },
-    { id: 'details', content: 'Details', headingHidden: true, width: '5%' },
 ];
 
+const DETAILS_HEADER: TableHeader = { id: 'details', content: 'Details', headingHidden: true, width: '5%' };
+
 /**
- * What the item is, then what became of it, with the resource's own columns in between. Only keys have a domain
- * view today; every other resource renders the two generic halves alone, as it did before keys had one.
+ * The object first, the way every other table in the platform leads with a name, then what the run made of it. A
+ * keys run trades the staging pair for the key's own columns: neither the run position nor the provider's reference
+ * identifies a key, and the dialog behind the details button carries both.
  */
 function headersFor(resource: Resource): TableHeader[] {
     return resource === Resource.Keys
-        ? [...IDENTITY_HEADERS, ...KEY_HEADERS, ...OUTCOME_HEADERS]
-        : [...IDENTITY_HEADERS, ...OUTCOME_HEADERS];
+        ? [NAME_HEADER, ...KEY_HEADERS, ...OUTCOME_HEADERS, PUBLIC_KEY_HEADER, DETAILS_HEADER]
+        : [NAME_HEADER, ...STAGING_HEADERS, ...OUTCOME_HEADERS, DETAILS_HEADER];
 }
 
 /**
@@ -98,6 +103,7 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
     const newlyDiscovered = activeTab.newlyDiscovered;
 
     const [inspected, setInspected] = useState<DiscoveryItemModel>();
+    const [openedKey, setOpenedKey] = useState<DiscoveredKeyDto>();
 
     const onReloadData = useCallback(
         (pageSize: number, pageNumber: number) => {
@@ -123,34 +129,33 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
     const rows: TableDataRow[] = useMemo(
         () =>
             discoveryItems?.items.map((item) => {
-                const path = item.inventoryUuid ? inventoryPath(item.resource, item.inventoryUuid) : undefined;
+                const isKey = resource === Resource.Keys;
+                const path = item.inventory ? inventoryPath(item.resource, item.inventory.uuid) : undefined;
                 return {
                     id: item.uuid,
                     columns: [
-                        <span key="sequence" className="tabular-nums">
-                            {item.sequence}
-                        </span>,
-                        <span key="ref" className="break-all">
-                            {item.uniqueRef}
-                        </span>,
-                        ...(resource === Resource.Keys
-                            ? keyCells(item, { type: keyTypeEnum, algorithm: keyAlgorithmEnum, format: keyFormatEnum }, copyPublicKey)
-                            : []),
+                        path ? (
+                            <Link key="inventory" to={path}>
+                                {item.inventory?.name}
+                            </Link>
+                        ) : (
+                            (item.inventory?.name ?? '')
+                        ),
+                        ...(isKey
+                            ? keyCells(item, { type: keyTypeEnum, algorithm: keyAlgorithmEnum, format: keyFormatEnum })
+                            : [
+                                  <span key="sequence" className="tabular-nums">
+                                      {item.sequence}
+                                  </span>,
+                                  <span key="ref" className="break-all">
+                                      {item.uniqueRef}
+                                  </span>,
+                              ]),
                         <span key="discoveredAt" className="whitespace-nowrap">
                             {item.discoveredAt ? dateFormatter(item.discoveredAt) : ''}
                         </span>,
                         itemStateBadge(item),
-                        item.inventoryUuid ? (
-                            path ? (
-                                <Link key="inventory" to={path}>
-                                    {item.inventoryUuid}
-                                </Link>
-                            ) : (
-                                item.inventoryUuid
-                            )
-                        ) : (
-                            ''
-                        ),
+                        ...(isKey ? [publicKeyCell(item, setOpenedKey)] : []),
                         <Button
                             key="details"
                             variant="transparent"
@@ -164,7 +169,7 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
                     ],
                 };
             }) ?? [],
-        [discoveryItems, resource, keyTypeEnum, keyAlgorithmEnum, keyFormatEnum, copyPublicKey],
+        [discoveryItems, resource, keyTypeEnum, keyAlgorithmEnum, keyFormatEnum],
     );
 
     const pagedTable = (
@@ -191,7 +196,7 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
             <Dialog
                 isOpen={inspected !== undefined}
                 size="xl"
-                caption={inspected ? `Item ${inspected.uniqueRef}` : ''}
+                caption={inspected ? `Item #${inspected.sequence} — ${inspected.uniqueRef}` : ''}
                 body={
                     inspected ? (
                         <div className="flex flex-col gap-3">
@@ -209,6 +214,22 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
                 }
                 toggle={() => setInspected(undefined)}
                 buttons={[{ color: 'primary', onClick: () => setInspected(undefined), body: 'Close' }]}
+            />
+            <Dialog
+                isOpen={openedKey !== undefined}
+                size="lg"
+                caption="Public key"
+                body={
+                    openedKey ? (
+                        <PublicKeyDetails
+                            discoveredKey={openedKey}
+                            enums={{ type: keyTypeEnum, algorithm: keyAlgorithmEnum, format: keyFormatEnum }}
+                            onCopy={copyPublicKey}
+                        />
+                    ) : null
+                }
+                toggle={() => setOpenedKey(undefined)}
+                buttons={[{ color: 'primary', onClick: () => setOpenedKey(undefined), body: 'Close' }]}
             />
         </Widget>
     );

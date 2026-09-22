@@ -1,7 +1,7 @@
 import Button from 'components/Button';
 import type { TableHeader } from 'components/CustomTable';
 import { getEnumLabel } from 'ducks/enums';
-import { Copy } from 'lucide-react';
+import { Copy, Eye } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { DiscoveryItemModel } from 'types/discoveries';
 import type { EnumItemModel } from 'types/enums';
@@ -11,9 +11,6 @@ type PlatformEnumMap = { [key: string]: EnumItemModel } | undefined;
 
 /** The three enums a key row names by label; the platform's own words, never the wire code. */
 export type KeyColumnEnums = Readonly<{ type: PlatformEnumMap; algorithm: PlatformEnumMap; format: PlatformEnumMap }>;
-
-/** How much of a key blob a column shows before the copy button takes over. */
-const PUBLIC_KEY_PREVIEW_LENGTH = 16;
 
 /**
  * The key domain, in the words the inventory keys list already uses for the same values, so the two tables read
@@ -26,8 +23,10 @@ export const KEY_HEADERS: TableHeader[] = [
     { id: 'keyLength', content: 'Size', align: 'right' },
     { id: 'keyFormat', content: 'Format' },
     { id: 'keyFingerprint', content: 'Fingerprint', width: '20%' },
-    { id: 'keyPublic', content: 'Public key' },
 ];
+
+/** Not part of KEY_HEADERS: it is an action rather than a value, and it sits with the row's other actions. */
+export const PUBLIC_KEY_HEADER: TableHeader = { id: 'keyPublic', content: 'Public key', align: 'center', width: '5%' };
 
 /**
  * The key payload of a staged item, or nothing. `resource` is the discriminator the contract puts on every payload,
@@ -38,19 +37,12 @@ export function discoveredKey(item: Pick<DiscoveryItemModel, 'payload'>): Discov
     return item.payload?.resource === Resource.Keys ? (item.payload as DiscoveredKeyDto) : undefined;
 }
 
-export function publicKeyPreview(publicKey: string): string {
-    return publicKey.length > PUBLIC_KEY_PREVIEW_LENGTH ? `${publicKey.slice(0, PUBLIC_KEY_PREVIEW_LENGTH)}…` : publicKey;
-}
-
 /**
  * One cell per header in `KEY_HEADERS`. A PRIVATE_KEY, SECRET_KEY or SPLIT_KEY report omits both `publicKey` and
- * `publicKeyFormat` by contract — discovery never carries private key material — so those cells are empty by design.
+ * `publicKeyFormat` by contract — discovery never carries private key material — so the format cell is empty by
+ * design, and {@link publicKeyCell} offers nothing to open.
  */
-export function keyCells(
-    item: Pick<DiscoveryItemModel, 'uuid' | 'payload'>,
-    enums: KeyColumnEnums,
-    onCopyPublicKey: (publicKey: string) => void,
-): ReactNode[] {
+export function keyCells(item: Pick<DiscoveryItemModel, 'uuid' | 'payload'>, enums: KeyColumnEnums): ReactNode[] {
     const key = discoveredKey(item);
     const label = (platformEnum: PlatformEnumMap, code: string | undefined) => (code ? getEnumLabel(platformEnum, code) : '');
 
@@ -70,24 +62,68 @@ export function keyCells(
         <span key="keyFingerprint" data-testid="key-fingerprint" className="break-all">
             {key?.fingerprint ?? ''}
         </span>,
-        <span key="keyPublic" data-testid="key-public" className="whitespace-nowrap">
-            {key?.publicKey ? (
-                <>
-                    <span className="font-mono">{publicKeyPreview(key.publicKey)}</span>
+    ];
+}
+
+/**
+ * The action that opens the key, for the column {@link PUBLIC_KEY_HEADER} heads. Absent for a key whose material is
+ * never reported: there is nothing to open, and a disabled control would suggest otherwise.
+ */
+export function publicKeyCell(
+    item: Pick<DiscoveryItemModel, 'uuid' | 'payload'>,
+    onShowPublicKey: (discoveredKey: DiscoveredKeyDto) => void,
+): ReactNode {
+    const key = discoveredKey(item);
+    if (!key?.publicKey) {
+        return '';
+    }
+    return (
+        <Button
+            key="keyPublic"
+            variant="transparent"
+            color="primary"
+            title="Show public key"
+            className="p-1"
+            onClick={() => onShowPublicKey(key)}
+            data-testid={`show-public-key-${item.uuid}`}
+        >
+            <Eye size={16} />
+        </Button>
+    );
+}
+
+/**
+ * The key itself, for the dialog the column's action opens. A base64 blob is unreadable in fragments, so nothing
+ * here abbreviates it, and the copy action hands over exactly what was reported.
+ */
+export function PublicKeyDetails({
+    discoveredKey: key,
+    enums,
+    onCopy,
+}: Readonly<{ discoveredKey: DiscoveredKeyDto; enums: KeyColumnEnums; onCopy: (publicKey: string) => void }>) {
+    return (
+        <div className="flex flex-col gap-3">
+            <div className="text-sm">
+                <span className="text-muted">Format: </span>
+                <span data-testid="public-key-format">{key.publicKeyFormat ? getEnumLabel(enums.format, key.publicKeyFormat) : ''}</span>
+            </div>
+            <div className="flex items-start gap-2">
+                <span data-testid="public-key-value" className="font-mono text-sm break-all">
+                    {key.publicKey}
+                </span>
+                {key.publicKey ? (
                     <Button
                         variant="transparent"
                         color="primary"
                         title="Copy public key"
-                        className="p-1"
-                        onClick={() => onCopyPublicKey(key.publicKey as string)}
-                        data-testid={`copy-public-key-${item.uuid}`}
+                        className="p-1 shrink-0"
+                        onClick={() => onCopy(key.publicKey as string)}
+                        data-testid="copy-public-key"
                     >
                         <Copy size={16} />
                     </Button>
-                </>
-            ) : (
-                ''
-            )}
-        </span>,
-    ];
+                ) : null}
+            </div>
+        </div>
+    );
 }

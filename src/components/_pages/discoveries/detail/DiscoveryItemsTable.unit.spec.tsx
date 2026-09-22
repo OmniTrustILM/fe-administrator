@@ -69,6 +69,8 @@ vi.mock('components/Button', () => ({
     ),
 }));
 
+const inventoryOf = (uuid: string, name: string) => ({ uuid, name });
+
 const item = (over: Record<string, unknown> = {}) => ({
     uuid: 'item-1',
     resource: Resource.Certificates,
@@ -159,17 +161,23 @@ describe('DiscoveryItemsTable', () => {
         });
     }
 
-    it('lists each staged item with its reference, state and a link to the inventory object it became', async () => {
-        await render(buildState([item({ processed: true, inventoryUuid: 'cert-9' })]));
+    it('leads with the name of the inventory object it became, linked to it', async () => {
+        await render(buildState([item({ processed: true, inventory: inventoryOf('cert-9', 'CN=web.example.com') })]));
 
-        const row = container.querySelector('[data-testid="row-item-1"]');
-        expect(row?.textContent).toContain('sha256:abc');
-        expect(row?.querySelector('[data-testid="item-state-imported"]')).not.toBeNull();
-        expect(row?.querySelector('a')?.getAttribute('href')).toBe('../../certificates/detail/cert-9');
+        expect(container.querySelector('[data-testid="header-inventory"]')?.textContent).toBe('Name');
+        const link = container.querySelector('[data-testid="row-item-1"] a');
+        expect(link?.textContent).toBe('CN=web.example.com');
+        expect(link?.getAttribute('href')).toBe('../../certificates/detail/cert-9');
+    });
+
+    it('says nothing in the name column for an item that became nothing', async () => {
+        await render(buildState([item({ processed: false })]));
+
+        expect(container.querySelector('[data-testid="row-item-1"] a')).toBeNull();
     });
 
     it('shows an inventory link on a waiting certificate, because the object can exist from an earlier run', async () => {
-        await render(buildState([item({ processed: false, inventoryUuid: 'cert-9' })]));
+        await render(buildState([item({ processed: false, inventory: inventoryOf('cert-9', 'CN=web.example.com') })]));
 
         const row = container.querySelector('[data-testid="row-item-1"]');
         expect(row?.querySelector('[data-testid="item-state-waiting"]')).not.toBeNull();
@@ -194,18 +202,32 @@ describe('DiscoveryItemsTable', () => {
         expect(dialog?.querySelector('[data-testid="json"]')?.textContent).toContain('"fingerprint": "abc"');
     });
 
-    it('lists an item whose payload could not be decoded, without a link it cannot build', async () => {
-        // Core lists the item either way so the run's counts hold, and both payload and resource go missing with it.
-        await render(buildState([item({ payload: undefined, resource: undefined, inventoryUuid: 'inv-9', processed: true })]));
+    it('still links an item whose payload could not be decoded, because the resource is stored beside it', async () => {
+        // Core lists the item either way so the run's counts hold. The resource is held on the staged row rather
+        // than read off the payload, so the row still knows where the object it became lives.
+        await render(buildState([item({ payload: undefined, processed: true, inventory: inventoryOf('inv-9', 'CN=orphan') })]));
 
         const row = container.querySelector('[data-testid="row-item-1"]');
-        expect(row?.textContent).toContain('inv-9');
-        expect(row?.querySelector('a')).toBeNull();
+        expect(row?.querySelector('a')?.getAttribute('href')).toBe('../../certificates/detail/inv-9');
+        expect(row?.textContent).toContain('CN=orphan');
 
         await act(async () => {
             container.querySelector<HTMLButtonElement>('[data-testid="show-item-item-1"]')?.click();
         });
         expect(container.querySelector('[data-testid="json"]')?.textContent).toContain('"payload": null');
+    });
+
+    it('keeps the run position and the provider reference out of the key row, in the dialog that opens it', async () => {
+        const key = item({ uuid: 'key-1', resource: Resource.Keys, sequence: 12, uniqueRef: '10.0.0.7:443#0' });
+        await render(buildState([key]), Resource.Keys);
+
+        // Six key columns is already a wide row; neither value identifies the key, and the caption carries both.
+        expect(container.querySelector('[data-testid="header-sequence"]')).toBeNull();
+        expect(container.querySelector('[data-testid="header-uniqueRef"]')).toBeNull();
+
+        await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="show-item-key-1"]')?.click());
+        expect(container.querySelector('[data-testid="dialog"]')?.textContent).toContain('#12');
+        expect(container.querySelector('[data-testid="dialog"]')?.textContent).toContain('10.0.0.7:443#0');
     });
 
     it('gives a keys run the key domain and leaves the certificates run as it was', async () => {
@@ -235,12 +257,14 @@ describe('DiscoveryItemsTable', () => {
         expect(container.querySelector('[data-testid="key-algorithm"]')).toBeNull();
     });
 
-    it('copies a key blob nobody would read from the column itself', async () => {
+    it('opens a key blob nobody would read in a column, and copies it whole', async () => {
         const publicKey = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A';
         await render(buildState([item({ payload: { resource: Resource.Keys, type: KeyType.Public, publicKey } })]), Resource.Keys);
 
-        await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="copy-public-key-item-1"]')?.click());
+        await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="show-public-key-item-1"]')?.click());
+        expect(container.querySelector('[data-testid="public-key-value"]')?.textContent).toBe(publicKey);
 
+        await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="copy-public-key"]')?.click());
         expect(copyToClipboard).toHaveBeenCalledWith(publicKey, expect.any(String), expect.any(String));
     });
 
@@ -250,7 +274,7 @@ describe('DiscoveryItemsTable', () => {
         const row = container.querySelector('[data-testid="row-item-1"]');
         expect(row).not.toBeNull();
         expect(row?.querySelector('[data-testid="key-algorithm"]')?.textContent).toBe('');
-        expect(row?.querySelector('[data-testid="key-public"]')?.textContent).toBe('');
+        expect(row?.querySelector('[data-testid="show-public-key-item-1"]')).toBeNull();
     });
 
     it('reloads the page it was asked for, filtered by the tab in the URL', async () => {
