@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { TriggerHistoryObjectTriggerSummaryDto } from './';
+import type { ResourceObjectDto, TriggerHistoryObjectTriggerSummaryDto } from './';
 
 /**
  * @export
@@ -30,6 +30,12 @@ export interface TriggerHistoryObjectSummaryDto {
      * @memberof TriggerHistoryObjectSummaryDto
      */
     referenceObjectUuid?: string;
+    /**
+     * The object whose page shows the evaluated object, when that object has no page of its own - the host object of a comment, for instance. Absent when the evaluated object is navigable itself.
+     * @type {ResourceObjectDto}
+     * @memberof TriggerHistoryObjectSummaryDto
+     */
+    hostObject?: ResourceObjectDto;
     /**
      * Was matched at least by one trigger.
      * @type {boolean}

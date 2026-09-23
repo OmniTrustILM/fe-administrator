@@ -43,9 +43,9 @@ export interface VaultInstanceDto {
      */
     connector: NameAndUuidDto;
     /**
-     * Connector Interface associated with this Vault instance
+     * The connector interface this vault instance is associated with. Sent as an explicit null once the interface has been removed from its connector; the key is always present.
      * @type {ConnectorInterfaceDto}
      * @memberof VaultInstanceDto
      */
-    connectorInterface: ConnectorInterfaceDto;
+    connectorInterface?: ConnectorInterfaceDto;
 }

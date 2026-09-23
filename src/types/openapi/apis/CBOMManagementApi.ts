@@ -41,15 +41,15 @@ export interface GetCbomDetailRequest {
     uuid: string;
 }
 
+export interface ListCbomSyncSkipsRequest {
+    searchRequestDto: SearchRequestDto;
+}
+
 export interface ListCbomVersionsRequest {
     uuid: string;
 }
 
 export interface ListCbomsRequest {
-    searchRequestDto: SearchRequestDto;
-}
-
-export interface ListCbomSyncSkipsRequest {
     searchRequestDto: SearchRequestDto;
 }
 
@@ -109,75 +109,6 @@ export class CBOMManagementApi extends BaseAPI {
     }
 
     /**
-     * The fields the list of entries the sync could not store may be filtered by, each with the conditions it accepts and whether the list may also be ordered by it. The ordering keys that take no filter (last attempt, first failure, attempts) are named on the list operation and are not part of this catalogue. The rows have a fixed shape, so no field is offered as a column: `displayable` is never set.
-     * Get the searchable fields of the entries the sync could not store
-     */
-    getCbomSyncSkipSearchableFields(): Observable<Array<SearchFieldDataByGroupDto>>;
-    getCbomSyncSkipSearchableFields(opts?: OperationOpts): Observable<AjaxResponse<Array<SearchFieldDataByGroupDto>>>;
-    getCbomSyncSkipSearchableFields(
-        opts?: OperationOpts,
-    ): Observable<Array<SearchFieldDataByGroupDto> | AjaxResponse<Array<SearchFieldDataByGroupDto>>> {
-        return this.request<Array<SearchFieldDataByGroupDto>>(
-            {
-                url: '/v1/cboms/syncSkips/search',
-                method: 'GET',
-            },
-            opts?.responseOpts,
-        );
-    }
-
-    /**
-     * The documents the header sync found in the CBOM Repository listing but could not turn into a CBOM record: the document could not be read, or storing its header failed. Later sync runs retry an entry until its retry budget (the platform setting `cbomSyncSkippedRetryRuns`) is spent; it is then kept as permanently skipped until the retention (`cbomSyncSkipRetentionDays`) after its last attempt runs out. Each row carries the reason of the last failure, worded for an operator.  By default the list is ordered newest failure first: last attempt descending, then UUID ascending. `sort` reorders it and names its field by source `property` and identifier `CBOM_SYNC_SKIP_LAST_ATTEMPT_AT`, `CBOM_SYNC_SKIP_FIRST_SKIPPED_AT`, `CBOM_SYNC_SKIP_ATTEMPTS` or `CBOM_SYNC_SKIP_SERIAL_NUMBER`. `filters` may use `CBOM_SYNC_SKIP_STATE` (equals, not equals) and `CBOM_SYNC_SKIP_SERIAL_NUMBER` (equals, not equals, contains, not contains, starts with), both of source `property`, as the searchable-fields operation of this list publishes them. The rows have a fixed shape: no field is offered as a column, and `columns` is accepted and ignored.
-     * List the CBOM Repository entries the sync could not store
-     */
-    listCbomSyncSkips({ searchRequestDto }: ListCbomSyncSkipsRequest): Observable<PaginationResponseDtoCbomSyncSkipDto>;
-    listCbomSyncSkips(
-        { searchRequestDto }: ListCbomSyncSkipsRequest,
-        opts?: OperationOpts,
-    ): Observable<AjaxResponse<PaginationResponseDtoCbomSyncSkipDto>>;
-    listCbomSyncSkips(
-        { searchRequestDto }: ListCbomSyncSkipsRequest,
-        opts?: OperationOpts,
-    ): Observable<PaginationResponseDtoCbomSyncSkipDto | AjaxResponse<PaginationResponseDtoCbomSyncSkipDto>> {
-        throwIfNullOrUndefined(searchRequestDto, 'searchRequestDto', 'listCbomSyncSkips');
-
-        const headers: HttpHeaders = {
-            'Content-Type': 'application/json',
-        };
-
-        return this.request<PaginationResponseDtoCbomSyncSkipDto>(
-            {
-                url: '/v1/cboms/syncSkips',
-                method: 'POST',
-                headers,
-                body: searchRequestDto,
-            },
-            opts?.responseOpts,
-        );
-    }
-
-    /**
-     * Puts a permanently skipped entry back to retrying with a full budget: `state` becomes `retrying` and `attempts` becomes 0, while `reason`, `firstSkippedAt` and `lastAttemptAt` keep the values of the last attempt until the next sync run tries the entry. An entry that is still retrying is left as it is. Answers with the row as it now stands.
-     * Ask the sync to try a permanently skipped entry again
-     */
-    retryCbomSyncSkip({ uuid }: RetryCbomSyncSkipRequest): Observable<CbomSyncSkipDto>;
-    retryCbomSyncSkip({ uuid }: RetryCbomSyncSkipRequest, opts?: OperationOpts): Observable<AjaxResponse<CbomSyncSkipDto>>;
-    retryCbomSyncSkip(
-        { uuid }: RetryCbomSyncSkipRequest,
-        opts?: OperationOpts,
-    ): Observable<CbomSyncSkipDto | AjaxResponse<CbomSyncSkipDto>> {
-        throwIfNullOrUndefined(uuid, 'uuid', 'retryCbomSyncSkip');
-
-        return this.request<CbomSyncSkipDto>(
-            {
-                url: '/v1/cboms/syncSkips/{uuid}/retry'.replace('{uuid}', encodeURI(uuid)),
-                method: 'POST',
-            },
-            opts?.responseOpts,
-        );
-    }
-
-    /**
      * CBOM detail
      */
     getCbomDetail({ uuid }: GetCbomDetailRequest): Observable<CbomDetailDto>;
@@ -207,6 +138,54 @@ export class CBOMManagementApi extends BaseAPI {
             {
                 url: '/v1/cboms/search',
                 method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * The fields the list of entries the sync could not store may be filtered or ordered by. Each carries the conditions it accepts and, where the list may be ordered by it, `sortable`; a field that is an ordering key only carries `sortable` with an empty list of conditions, so every identifier `sort` accepts can be read from here rather than from prose. The rows have a fixed shape, so no field is offered as a column: `displayable` is never set.
+     * Get the searchable fields of the entries the sync could not store
+     */
+    getCbomSyncSkipSearchableFields(): Observable<Array<SearchFieldDataByGroupDto>>;
+    getCbomSyncSkipSearchableFields(opts?: OperationOpts): Observable<AjaxResponse<Array<SearchFieldDataByGroupDto>>>;
+    getCbomSyncSkipSearchableFields(
+        opts?: OperationOpts,
+    ): Observable<Array<SearchFieldDataByGroupDto> | AjaxResponse<Array<SearchFieldDataByGroupDto>>> {
+        return this.request<Array<SearchFieldDataByGroupDto>>(
+            {
+                url: '/v1/cboms/syncSkips/search',
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * The documents the header sync found in the CBOM Repository listing but could not turn into a CBOM record: the document could not be read, or storing its header failed. Later sync runs retry an entry until its retry budget (the platform setting `cbomSyncSkippedRetryRuns`) is spent; it is then kept as permanently skipped until the retention (`cbomSyncSkipRetentionDays`) after its last attempt runs out. Each row carries the reason of the last failure, worded for an operator. An entry leaves the list on the run that manages to store its document, or finds the document gone from the repository; nothing else removes one but the retention and an operator deleting the CBOM.  By default the list is ordered newest failure first: last attempt descending, then UUID ascending. `sort` reorders it and names its field by source `property` and identifier `CBOM_SYNC_SKIP_LAST_ATTEMPT_AT`, `CBOM_SYNC_SKIP_FIRST_SKIPPED_AT`, `CBOM_SYNC_SKIP_ATTEMPTS` or `CBOM_SYNC_SKIP_SERIAL_NUMBER`. `filters` may use `CBOM_SYNC_SKIP_STATE` (equals, not equals) and `CBOM_SYNC_SKIP_SERIAL_NUMBER` (equals, not equals, contains, not contains, starts with), both of source `property`. The searchable-fields operation of this list publishes all of them, the three that are ordering keys only among them. The rows have a fixed shape: no field is offered as a column, and `columns` is accepted and ignored.
+     * List the CBOM Repository entries the sync could not store
+     */
+    listCbomSyncSkips({ searchRequestDto }: ListCbomSyncSkipsRequest): Observable<PaginationResponseDtoCbomSyncSkipDto>;
+    listCbomSyncSkips(
+        { searchRequestDto }: ListCbomSyncSkipsRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<PaginationResponseDtoCbomSyncSkipDto>>;
+    listCbomSyncSkips(
+        { searchRequestDto }: ListCbomSyncSkipsRequest,
+        opts?: OperationOpts,
+    ): Observable<PaginationResponseDtoCbomSyncSkipDto | AjaxResponse<PaginationResponseDtoCbomSyncSkipDto>> {
+        throwIfNullOrUndefined(searchRequestDto, 'searchRequestDto', 'listCbomSyncSkips');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<PaginationResponseDtoCbomSyncSkipDto>(
+            {
+                url: '/v1/cboms/syncSkips',
+                method: 'POST',
+                headers,
+                body: searchRequestDto,
             },
             opts?.responseOpts,
         );
@@ -251,6 +230,27 @@ export class CBOMManagementApi extends BaseAPI {
                 method: 'POST',
                 headers,
                 body: searchRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Puts a permanently skipped entry back to retrying with a full budget: `state` becomes `retrying` and `attempts` becomes 0, while `reason`, `firstSkippedAt` and `lastAttemptAt` keep the values of the last attempt until the next sync run tries the entry. An entry that is still retrying is left as it is. Answers with the row as it now stands.  The retry does not make the entry permanent: if the document still cannot be stored, the new budget is spent like the first one and the entry is written off again, and the retention then runs from that last attempt.
+     * Ask the sync to try a permanently skipped entry again
+     */
+    retryCbomSyncSkip({ uuid }: RetryCbomSyncSkipRequest): Observable<CbomSyncSkipDto>;
+    retryCbomSyncSkip({ uuid }: RetryCbomSyncSkipRequest, opts?: OperationOpts): Observable<AjaxResponse<CbomSyncSkipDto>>;
+    retryCbomSyncSkip(
+        { uuid }: RetryCbomSyncSkipRequest,
+        opts?: OperationOpts,
+    ): Observable<CbomSyncSkipDto | AjaxResponse<CbomSyncSkipDto>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'retryCbomSyncSkip');
+
+        return this.request<CbomSyncSkipDto>(
+            {
+                url: '/v1/cboms/syncSkips/{uuid}/retry'.replace('{uuid}', encodeURI(uuid)),
+                method: 'POST',
             },
             opts?.responseOpts,
         );

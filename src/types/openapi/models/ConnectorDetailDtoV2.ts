@@ -64,7 +64,7 @@ export interface ConnectorDetailDtoV2 {
      */
     functionGroups: Array<FunctionGroupDto>;
     /**
-     * List of connector interfaces implemented by the Connector
+     * A connector interface implemented by the Connector
      * @type {Array<ConnectorInterfaceDto>}
      * @memberof ConnectorDetailDtoV2
      */

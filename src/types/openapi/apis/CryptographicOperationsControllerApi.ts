@@ -55,8 +55,34 @@ export interface ListCipherAttributesRequest {
     algorithm: KeyAlgorithm;
 }
 
+export interface ListDecryptAttributesRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
+    uuid: string;
+    keyItemUuid: string;
+}
+
+export interface ListEncryptAttributesRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
+    uuid: string;
+    keyItemUuid: string;
+}
+
 export interface ListRandomAttributesRequest {
     tokenInstanceUuid: string;
+}
+
+export interface ListRandomAttributesWithTokenProfileRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
+}
+
+export interface ListSignAttributesRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
+    uuid: string;
+    keyItemUuid: string;
 }
 
 export interface ListSignatureAttributesRequest {
@@ -67,8 +93,21 @@ export interface ListSignatureAttributesRequest {
     algorithm: KeyAlgorithm;
 }
 
+export interface ListVerifyAttributesRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
+    uuid: string;
+    keyItemUuid: string;
+}
+
 export interface RandomDataRequest {
     tokenInstanceUuid: string;
+    randomDataRequestDto: RandomDataRequestDto;
+}
+
+export interface RandomDataWithTokenProfileRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
     randomDataRequestDto: RandomDataRequestDto;
 }
 
@@ -179,6 +218,7 @@ export class CryptographicOperationsControllerApi extends BaseAPI {
     }
 
     /**
+     * Legacy attribute discovery for v1 providers only. Use listEncryptAttributes or listDecryptAttributes instead. Not supported for v2 providers.
      * List of cipher Attributes
      */
     listCipherAttributes({
@@ -217,6 +257,79 @@ export class CryptographicOperationsControllerApi extends BaseAPI {
     }
 
     /**
+     * Returns the decryption attribute schema for the specified token, profile and key item.
+     * List decryption attributes
+     */
+    listDecryptAttributes({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+        uuid,
+        keyItemUuid,
+    }: ListDecryptAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    listDecryptAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListDecryptAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    listDecryptAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListDecryptAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'listDecryptAttributes');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'listDecryptAttributes');
+        throwIfNullOrUndefined(uuid, 'uuid', 'listDecryptAttributes');
+        throwIfNullOrUndefined(keyItemUuid, 'keyItemUuid', 'listDecryptAttributes');
+
+        return this.request<Array<BaseAttributeDto>>(
+            {
+                url: '/v1/operations/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/keys/{uuid}/items/{keyItemUuid}/decrypt/attributes'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid))
+                    .replace('{uuid}', encodeURI(uuid))
+                    .replace('{keyItemUuid}', encodeURI(keyItemUuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Returns the encryption attribute schema for the specified token, profile and key item.
+     * List encryption attributes
+     */
+    listEncryptAttributes({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+        uuid,
+        keyItemUuid,
+    }: ListEncryptAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    listEncryptAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListEncryptAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    listEncryptAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListEncryptAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'listEncryptAttributes');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'listEncryptAttributes');
+        throwIfNullOrUndefined(uuid, 'uuid', 'listEncryptAttributes');
+        throwIfNullOrUndefined(keyItemUuid, 'keyItemUuid', 'listEncryptAttributes');
+
+        return this.request<Array<BaseAttributeDto>>(
+            {
+                url: '/v1/operations/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/keys/{uuid}/items/{keyItemUuid}/encrypt/attributes'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid))
+                    .replace('{uuid}', encodeURI(uuid))
+                    .replace('{keyItemUuid}', encodeURI(keyItemUuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Serves v1 tokens. A v2 token scopes random-data generation by token profile and must use listRandomAttributesWithTokenProfile instead.
      * List of random generator Attributes
      */
     listRandomAttributes({ tokenInstanceUuid }: ListRandomAttributesRequest): Observable<Array<BaseAttributeDto>>;
@@ -243,6 +356,73 @@ export class CryptographicOperationsControllerApi extends BaseAPI {
     }
 
     /**
+     * A cryptography provider v2 token requires this form, because its contract scopes random-data generation by token profile. A v1 token is served here too, so a client needs no version detection; the token profile is then ignored.
+     * List of random generator Attributes for a token profile
+     */
+    listRandomAttributesWithTokenProfile({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+    }: ListRandomAttributesWithTokenProfileRequest): Observable<Array<BaseAttributeDto>>;
+    listRandomAttributesWithTokenProfile(
+        { tokenInstanceUuid, tokenProfileUuid }: ListRandomAttributesWithTokenProfileRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    listRandomAttributesWithTokenProfile(
+        { tokenInstanceUuid, tokenProfileUuid }: ListRandomAttributesWithTokenProfileRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'listRandomAttributesWithTokenProfile');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'listRandomAttributesWithTokenProfile');
+
+        return this.request<Array<BaseAttributeDto>>(
+            {
+                url: '/v1/operations/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/random/attributes'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Returns the signing attribute schema for the specified token, profile and key item.
+     * List signing attributes
+     */
+    listSignAttributes({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+        uuid,
+        keyItemUuid,
+    }: ListSignAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    listSignAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListSignAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    listSignAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListSignAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'listSignAttributes');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'listSignAttributes');
+        throwIfNullOrUndefined(uuid, 'uuid', 'listSignAttributes');
+        throwIfNullOrUndefined(keyItemUuid, 'keyItemUuid', 'listSignAttributes');
+
+        return this.request<Array<BaseAttributeDto>>(
+            {
+                url: '/v1/operations/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/keys/{uuid}/items/{keyItemUuid}/sign/attributes'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid))
+                    .replace('{uuid}', encodeURI(uuid))
+                    .replace('{keyItemUuid}', encodeURI(keyItemUuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Legacy attribute discovery for v1 providers only. Use listSignAttributes or listVerifyAttributes instead. Not supported for v2 providers.
      * List of signature Attributes
      */
     listSignatureAttributes({
@@ -281,6 +461,43 @@ export class CryptographicOperationsControllerApi extends BaseAPI {
     }
 
     /**
+     * Returns the verification attribute schema for the specified token, profile and key item.
+     * List verification attributes
+     */
+    listVerifyAttributes({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+        uuid,
+        keyItemUuid,
+    }: ListVerifyAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    listVerifyAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListVerifyAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    listVerifyAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListVerifyAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'listVerifyAttributes');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'listVerifyAttributes');
+        throwIfNullOrUndefined(uuid, 'uuid', 'listVerifyAttributes');
+        throwIfNullOrUndefined(keyItemUuid, 'keyItemUuid', 'listVerifyAttributes');
+
+        return this.request<Array<BaseAttributeDto>>(
+            {
+                url: '/v1/operations/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/keys/{uuid}/items/{keyItemUuid}/verify/attributes'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid))
+                    .replace('{uuid}', encodeURI(uuid))
+                    .replace('{keyItemUuid}', encodeURI(keyItemUuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Serves v1 tokens. A v2 token scopes random-data generation by token profile and must use randomDataWithTokenProfile instead.
      * Generate random data
      */
     randomData({ tokenInstanceUuid, randomDataRequestDto }: RandomDataRequest): Observable<RandomDataResponseDto>;
@@ -302,6 +519,44 @@ export class CryptographicOperationsControllerApi extends BaseAPI {
         return this.request<RandomDataResponseDto>(
             {
                 url: '/v1/operations/tokens/{tokenInstanceUuid}/random'.replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid)),
+                method: 'POST',
+                headers,
+                body: randomDataRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * A cryptography provider v2 token requires this form, because its contract scopes random-data generation by token profile. A v1 token is served here too, so a client needs no version detection; the token profile is then ignored.
+     * Generate random data with a token profile
+     */
+    randomDataWithTokenProfile({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+        randomDataRequestDto,
+    }: RandomDataWithTokenProfileRequest): Observable<RandomDataResponseDto>;
+    randomDataWithTokenProfile(
+        { tokenInstanceUuid, tokenProfileUuid, randomDataRequestDto }: RandomDataWithTokenProfileRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<RandomDataResponseDto>>;
+    randomDataWithTokenProfile(
+        { tokenInstanceUuid, tokenProfileUuid, randomDataRequestDto }: RandomDataWithTokenProfileRequest,
+        opts?: OperationOpts,
+    ): Observable<RandomDataResponseDto | AjaxResponse<RandomDataResponseDto>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'randomDataWithTokenProfile');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'randomDataWithTokenProfile');
+        throwIfNullOrUndefined(randomDataRequestDto, 'randomDataRequestDto', 'randomDataWithTokenProfile');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<RandomDataResponseDto>(
+            {
+                url: '/v1/operations/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/random'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid)),
                 method: 'POST',
                 headers,
                 body: randomDataRequestDto,

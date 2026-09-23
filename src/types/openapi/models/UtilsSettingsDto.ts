@@ -52,4 +52,28 @@ export interface UtilsSettingsDto {
      * @memberof UtilsSettingsDto
      */
     cbomSyncSkipRetentionDays?: number;
+    /**
+     * How many entries one page of the CBOM Repository listing carries, sent as the search `limit`. Pages are followed through the `Link rel=\"next\"` header, so this bounds one request rather than one run
+     * @type {number}
+     * @memberof UtilsSettingsDto
+     */
+    cbomSyncPageSize?: number;
+    /**
+     * Whether a sync run ingests cryptographic assets at all. Off covers both discovery paths -- the ingest of a document the run has just stored and the catch-up over the documents that still owe one -- and leaves each CBOM exactly as it was found, so turning it back on resumes rather than repairs
+     * @type {boolean}
+     * @memberof UtilsSettingsDto
+     */
+    cbomSyncAssetIngestEnabled?: boolean;
+    /**
+     * How many cryptographic assets one ingest transaction writes before committing, and the page size the withdrawal of a CBOM\'s assets walks. It bounds how long one transaction holds its locks, not how much work a run does
+     * @type {number}
+     * @memberof UtilsSettingsDto
+     */
+    cbomSyncAssetBatchSize?: number;
+    /**
+     * How long a CBOM whose asset ingest is in progress or has failed is left alone before a run offers it again, in seconds. Measured from the start of the attempt, so it has to exceed the longest single document the deployment expects to ingest. 0 offers it to the very next run
+     * @type {number}
+     * @memberof UtilsSettingsDto
+     */
+    cbomSyncIngestRetryAfterSeconds?: number;
 }

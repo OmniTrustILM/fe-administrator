@@ -19,13 +19,13 @@ import type { KeyCompromiseReason } from './';
  */
 export interface CompromiseKeyRequestDto {
     /**
-     * Usages for the Key
+     * Reason for marking the key items as compromised
      * @type {KeyCompromiseReason}
      * @memberof CompromiseKeyRequestDto
      */
     reason: KeyCompromiseReason;
     /**
-     * List of UUIDs of the key Items. If not provided, the usage will be updated to all the itemsin the key
+     * UUIDs of the key items to mark as compromised. If omitted or empty, all items in the key are marked as compromised.
      * @type {Array<string>}
      * @memberof CompromiseKeyRequestDto
      */
