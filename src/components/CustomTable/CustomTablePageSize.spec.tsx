@@ -18,14 +18,14 @@ test.describe('CustomTable page size options', () => {
 
         await component.getByTestId('select-pageSize-trigger').click();
 
-        await expect(page.getByRole('option')).toHaveText(['10', '25', '50', '100']);
+        await expect(page.getByTestId('select-pageSize-content').getByRole('option')).toHaveText(['10', '25', '50', '100']);
     });
 
     test('pages the table by the size the operator picks', async ({ mount, page }) => {
         const component = await mount(withProviders(<CustomTable headers={headers} data={rows} hasPagination={true} />));
 
         await component.getByTestId('select-pageSize-trigger').click();
-        await page.getByRole('option', { name: '25', exact: true }).click();
+        await page.getByTestId('select-pageSize-content').getByRole('option', { name: '25', exact: true }).click();
 
         await expect(component.getByText(/Showing 1 to 25 of 30/)).toBeVisible();
     });
@@ -43,7 +43,7 @@ test.describe('CustomTable page size options', () => {
         await expect(component.getByText(/Showing 31 to 40 of 50/)).toBeVisible();
 
         await component.getByTestId('select-pageSize-trigger').click();
-        await page.getByRole('option', { name: '25', exact: true }).click();
+        await page.getByTestId('select-pageSize-content').getByRole('option', { name: '25', exact: true }).click();
 
         await expect(component.getByText(/Showing 26 to 50 of 50/)).toBeVisible();
     });
