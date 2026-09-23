@@ -365,7 +365,7 @@ describe('DiscoveryDetail', () => {
             const bar = container.querySelector('[data-testid="import-progress-bar"] [role="progressbar"]');
             expect(bar?.getAttribute('aria-valuenow')).toBe('5');
             expect(bar?.getAttribute('aria-valuemax')).toBe('7');
-            expect(container.querySelector('[data-testid="import-progress"]')?.textContent).toContain('1 waiting, 1 failed');
+            expect(container.querySelector('[data-testid="import-progress"]')?.textContent).toContain('1 waiting, 1 not imported');
         });
 
         it('says one target failed without a plural', async () => {

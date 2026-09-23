@@ -108,8 +108,10 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
                             }
                             caption={
                                 <span>
-                                    {nothingToImport ? 'Nothing to import' : `${remaining} waiting${failed ? `, ${failed} failed` : ''}`} —
-                                    counted on every read
+                                    {nothingToImport
+                                        ? 'Nothing to import'
+                                        : `${remaining} waiting${failed ? `, ${failed} not imported` : ''}`}{' '}
+                                    — counted on every read
                                 </span>
                             }
                         />

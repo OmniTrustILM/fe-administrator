@@ -103,7 +103,7 @@ export function PublicKeyDetails({
     return (
         <div className="flex flex-col gap-3">
             <div className="text-sm">
-                <span className="text-muted">Format: </span>
+                <span className="text-content-muted">Format: </span>
                 <span data-testid="public-key-format">{key.publicKeyFormat ? getEnumLabel(enums.format, key.publicKeyFormat) : ''}</span>
             </div>
             <div className="flex items-start gap-2">
