@@ -63,12 +63,15 @@ function headersFor(resource: Resource): TableHeader[] {
  * The state column is driven by `processed` and `processedError` only. `inventory` is not a success signal: for a
  * certificate it is present as soon as one with the same content exists anywhere, including from an earlier run, so it
  * can be set while the item is still waiting. It is a link and nothing more.
+ *
+ * A recorded reason is not always a failure: a key Core lists but does not add to the inventory carries one too. So the
+ * badge says what happened to the item rather than calling it a failure, and the reason itself says why.
  */
 export function itemStateBadge(item: Pick<DiscoveryItemModel, 'processed' | 'processedError'>) {
     if (item.processedError) {
         return (
-            <Badge color="danger" title={item.processedError} dataTestId="item-state-failed">
-                Failed
+            <Badge color="warning" title={item.processedError} dataTestId="item-state-not-imported">
+                Not imported
             </Badge>
         );
     }
@@ -204,7 +207,7 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
                     inspected ? (
                         <div className="flex flex-col gap-3">
                             {inspected.processedError ? (
-                                <div role="alert" className="rounded-lg border border-danger bg-danger-surface p-3 text-sm text-danger">
+                                <div role="alert" className="rounded-lg border border-warning bg-warning-surface p-3 text-sm text-warning">
                                     {inspected.processedError}
                                 </div>
                             ) : null}

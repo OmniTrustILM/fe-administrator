@@ -203,7 +203,7 @@ describe('DiscoveryDetail', () => {
             expect(rowText('itemsDiscovered')).toContain('—');
             expect(rowText('itemsNewlyDiscovered')).toBe('New to the inventory0');
             expect(rowText('itemsProcessed')).toBe('Imported0');
-            expect(rowText('itemsFailed')).toBe('Failed to import0');
+            expect(rowText('itemsFailed')).toBe('Not imported0');
             expect(rowText('totalCertificatesDiscovered')).toBe('Distinct certificates saved4');
             expect(rowText('connectorTotalCertificatesDiscovered')).toContain('4');
             expect(container.querySelector('[data-testid^="certificate-note-"]')).toBeNull();

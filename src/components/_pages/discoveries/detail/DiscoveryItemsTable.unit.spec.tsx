@@ -125,8 +125,10 @@ describe('itemStateBadge', () => {
     };
 
     it('lets a recorded reason win, even over a processed flag and an inventory object', async () => {
-        expect(await badge({ processed: true, processedError: 'unparseable' })).toBe('item-state-failed');
-        expect(await badge({ processed: false, processedError: 'never attempted: run cancelled' })).toBe('item-state-failed');
+        expect(await badge({ processed: true, processedError: 'unparseable' })).toBe('item-state-not-imported');
+        expect(await badge({ processed: false, processedError: 'never attempted: run cancelled' })).toBe('item-state-not-imported');
+        // Not "Failed": a key listed without being onboarded carries a reason and nothing went wrong with it.
+        expect(container.querySelector('[data-testid="item-state-not-imported"]')?.textContent).toBe('Not imported');
     });
 
     it('reads processed as imported and everything else as waiting, whatever inventory says', async () => {

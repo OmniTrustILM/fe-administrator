@@ -41,9 +41,11 @@ export default function DiscoveryResultsSummary({ discovery, headers, className 
             {
                 id: 'itemsFailed',
                 columns: [
-                    'Failed to import',
+                    // The same rows the item listing marks "Not imported": each carries a reason, and not every
+                    // reason is a failure.
+                    'Not imported',
                     failed > 0 ? (
-                        <Badge key="itemsFailed" color="danger" dataTestId="items-failed">
+                        <Badge key="itemsFailed" color="warning" dataTestId="items-failed">
                             {failed}
                         </Badge>
                     ) : (
