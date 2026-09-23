@@ -38,10 +38,7 @@ export const renderConditionItems = (
             return getInputStringFromIso8601String(String(v)) || String(v);
         }
 
-        if (
-            field?.attributeContentType === AttributeContentType.Date ||
-            (field?.type === FilterFieldType.Date && field?.attributeContentType !== AttributeContentType.Datetime)
-        ) {
+        if (field?.attributeContentType === AttributeContentType.Date) {
             return getFormattedDate(v as string);
         }
 
