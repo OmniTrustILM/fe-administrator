@@ -73,10 +73,14 @@ export function renameColumn(columns: ColumnDefinition[], key: string, label: st
  * to read from.
  */
 export function toProjectedKeys(columns: readonly Pick<ColumnDefinition, 'fieldSource' | 'fieldIdentifier'>[] | undefined): string[] {
-    return (columns ?? [])
-        .filter((column) => column.fieldSource !== FilterFieldSource.Property)
-        .map(getColumnKey)
-        .sort();
+    return (
+        (columns ?? [])
+            .filter((column) => column.fieldSource !== FilterFieldSource.Property)
+            .map(getColumnKey)
+            // Sorted only so that reordering the same set reads as the same set; which order it settles on
+            // does not matter, so long as it is the same one every time.
+            .sort((a, b) => a.localeCompare(b))
+    );
 }
 
 export function getRenderableProperties<TRow>(registry: CellRegistry<TRow> | undefined): ReadonlySet<string> {
