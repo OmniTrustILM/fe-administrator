@@ -161,6 +161,21 @@ test.describe('PagedList · add column menu', () => {
         expect(await requestCount(page)).toBe(before);
     });
 
+    test('lists again when the column taken away is the one the table is ordered by', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+
+        await page.getByRole('button', { name: 'Expires At', exact: true }).click();
+        await expect.poll(async () => (await lastRequest(page))?.sort?.fieldIdentifier).toBe('NOT_AFTER');
+        const before = await requestCount(page);
+
+        await openMenu(page);
+        await page.getByTestId('add-column-menu-field-property:NOT_AFTER').uncheck();
+
+        // The ordering goes with the column, and a different ordering is a different page of rows.
+        await expect.poll(() => requestCount(page)).toBe(before + 1);
+        expect(await lastRequest(page)).not.toHaveProperty('sort');
+    });
+
     test('lists again for an attribute column, whose values only the server can project', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
         await openMenu(page);

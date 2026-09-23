@@ -172,7 +172,12 @@ export default function AddColumnMenu({
                     </div>
 
                     {shown.length > 0 && (
-                        <fieldset className="mt-3 border-b border-divider pb-2" data-testid={`${dataTestId}-shown`}>
+                        <fieldset
+                            // Capped and scrollable: a wide view puts enough columns here to push the
+                            // catalogue below the popover's own height, and this is the half that can give.
+                            className="mt-3 flex max-h-[40%] min-h-0 shrink flex-col overflow-y-auto border-b border-divider pb-2"
+                            data-testid={`${dataTestId}-shown`}
+                        >
                             <legend className="mb-1 text-xs font-semibold tracking-wide text-content-muted uppercase">
                                 Shown on the table
                             </legend>

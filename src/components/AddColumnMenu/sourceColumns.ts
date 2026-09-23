@@ -1,7 +1,7 @@
 import { FilterFieldSource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { groupCatalogueFields, matchesFieldSearch } from 'utils/columnPicker';
-import { getColumnKey } from 'utils/tableColumns';
+import { getColumnHeading, getColumnKey } from 'utils/tableColumns';
 
 /** The order the menu lays the sources out in, left to right. */
 export const MENU_SOURCE_ORDER: readonly FilterFieldSource[] = [
@@ -45,9 +45,18 @@ export interface MenuContents {
 export function toMenuContents(fields: SourcedCatalogueField[], columns: ColumnDefinition[], search: string): MenuContents {
     const byKey = new Map(fields.map((field) => [getColumnKey(field), field]));
 
-    const onTable = columns
-        .map((column) => byKey.get(getColumnKey(column)))
-        .filter((field): field is SourcedCatalogueField => field !== undefined);
+    // Built from the columns themselves, enriched from the catalogue where it publishes a match. A
+    // platform column the catalogue does not carry — the keys inventory ships one — is still on the
+    // table, and this section is the only place it can be taken off again.
+    const onTable = columns.map(
+        (column) =>
+            byKey.get(getColumnKey(column)) ??
+            ({
+                fieldSource: column.fieldSource,
+                fieldIdentifier: column.fieldIdentifier,
+                fieldLabel: getColumnHeading(column),
+            } as SourcedCatalogueField),
+    );
 
     // Taken out of the source columns whether or not the search keeps them in the shown section, or a
     // search that hides a column from the top would put it back among the fields on offer.

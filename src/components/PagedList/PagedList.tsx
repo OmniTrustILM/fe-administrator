@@ -318,7 +318,8 @@ function PagedList<TRow extends object>({
 
     const getFreshData = useCallback(() => {
         // What this request asks to be projected is what the rows will carry, so a column dropped since
-        // the last fetch stops counting as available and asks for a new one if it comes back.
+        // the last fetch stops counting as available and asks for a new one if it comes back. A request
+        // that fails leaves no rows, and the effect below takes the claim back.
         projectedKeys.current = toProjectedKeys(listRequestRef.current.columns);
         onListCallback(listRequestRef.current);
         onCheckedRowsChanged([]);
@@ -493,6 +494,11 @@ function PagedList<TRow extends object>({
      */
     const lastAnsweredRows = useRef(columnsRows);
     if (!isFetchingList) lastAnsweredRows.current = columnsRows;
+
+    // No rows carry no projected values, however the request ended. Without this a failed listing would
+    // leave the cache claiming its attributes had arrived, and taking such a column away and putting it
+    // back would suppress the one request able to fetch them.
+    if (!isFetchingList && (columnsRows?.length ?? 0) === 0) projectedKeys.current = [];
     const heldRows = isFetchingList && (columnsRows?.length ?? 0) === 0 ? lastAnsweredRows.current : columnsRows;
 
     const columnRows = useMemo(

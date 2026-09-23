@@ -94,9 +94,21 @@ describe('toMenuContents', () => {
         expect(sources[3].fields.map((entry) => entry.fieldIdentifier)).toEqual(['COMMON_NAME']);
     });
 
-    it('skips a displayed column the catalogue no longer publishes', () => {
-        const columns = [{ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired|STRING', catalogueLabel: 'Retired' }];
+    it('lists a displayed column the catalogue does not publish, since nowhere else can take it off', () => {
+        const columns = [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS', catalogueLabel: 'Associations' }];
 
-        expect(toMenuContents(fields, columns, '').shown).toEqual([]);
+        const { shown, sources } = toMenuContents(fields, columns, '');
+
+        expect(shown.map((entry) => entry.fieldIdentifier)).toEqual(['CK_ASSOCIATIONS']);
+        expect(shown[0].fieldLabel).toBe('Associations');
+        expect(sources[3].fields.map((entry) => entry.fieldIdentifier)).toEqual(['COMMON_NAME', 'NOT_AFTER']);
+    });
+
+    it('names such a column by the heading the view gives it, not by the catalogue it is absent from', () => {
+        const columns = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS', catalogueLabel: 'Associations', label: 'Certs' },
+        ];
+
+        expect(toMenuContents(fields, columns, '').shown[0].fieldLabel).toBe('Certs');
     });
 });
