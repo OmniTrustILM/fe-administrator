@@ -25,7 +25,7 @@ export interface DiscoveryItemDto {
      */
     uuid: string;
     /**
-     * The object in inventory this item became, named as the object itself names it. For a certificate, present as soon as one with the same content exists — including from an earlier run, so it may be present while processed is false. For every other resource it is what the item became: absent until processed, and absent permanently if processing failed. Its resource is the item's own, which every item carries.
+     * The inventory object this item became. For a certificate, present as soon as one with the same content exists, including from an earlier run, so it may be present while processed is false. For other resources, absent until processed and permanently absent if processing failed. Its resource is the item\'s resource.
      * @type {NameAndUuidDto}
      * @memberof DiscoveryItemDto
      */

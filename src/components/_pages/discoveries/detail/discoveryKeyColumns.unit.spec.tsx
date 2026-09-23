@@ -119,8 +119,6 @@ describe('publicKeyCell', () => {
     });
 
     it('offers the key for reading rather than showing a fragment of it in a column', async () => {
-        // Half a base64 blob is unreadable either way, so the column holds an action and the value lives in a
-        // dialog - the same shape the platform uses for a secret's content.
         await act(async () => root.render(<div>{publicKeyCell(keyItem() as any, show)}</div>));
 
         const eye = container.querySelector<HTMLButtonElement>('[data-testid="show-public-key-item-1"]');

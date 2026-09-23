@@ -209,8 +209,7 @@ describe('DiscoveryItemsTable', () => {
     });
 
     it('still links an item whose payload could not be decoded, because the resource is stored beside it', async () => {
-        // Core lists the item either way so the run's counts hold. The resource is held on the staged row rather
-        // than read off the payload, so the row still knows where the object it became lives.
+        // Core lists the item either way so the run's counts hold.
         await render(buildState([item({ payload: undefined, processed: true, inventory: inventoryOf('inv-9', 'CN=orphan') })]));
 
         const row = container.querySelector('[data-testid="row-item-1"]');

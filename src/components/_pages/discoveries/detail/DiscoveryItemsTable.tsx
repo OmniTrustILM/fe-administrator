@@ -49,9 +49,8 @@ const OUTCOME_HEADERS: TableHeader[] = [
 const DETAILS_HEADER: TableHeader = { id: 'details', content: 'Details', headingHidden: true, width: '5%' };
 
 /**
- * The object first, the way every other table in the platform leads with a name, then what the run made of it. A
- * keys run trades the staging pair for the key's own columns: neither the run position nor the provider's reference
- * identifies a key, and the dialog behind the details button carries both.
+ * Leads with the object, as every platform table does, then what the run made of it. A keys run swaps the run position
+ * and provider reference for the key's own columns; the details dialog carries both.
  */
 function headersFor(resource: Resource): TableHeader[] {
     return resource === Resource.Keys
@@ -64,8 +63,8 @@ function headersFor(resource: Resource): TableHeader[] {
  * certificate it is present as soon as one with the same content exists anywhere, including from an earlier run, so it
  * can be set while the item is still waiting. It is a link and nothing more.
  *
- * A recorded reason is not always a failure: a key Core lists but does not add to the inventory carries one too. So the
- * badge says what happened to the item rather than calling it a failure, and the reason itself says why.
+ * A reason is not always a failure (a key listed but not onboarded carries one), so the badge says Not imported and the
+ * reason says why.
  */
 export function itemStateBadge(item: Pick<DiscoveryItemModel, 'processed' | 'processedError'>) {
     if (item.processedError) {

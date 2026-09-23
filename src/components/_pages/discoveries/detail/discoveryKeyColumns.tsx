@@ -13,9 +13,8 @@ type PlatformEnumMap = { [key: string]: EnumItemModel } | undefined;
 export type KeyColumnEnums = Readonly<{ type: PlatformEnumMap; algorithm: PlatformEnumMap; format: PlatformEnumMap }>;
 
 /**
- * The key domain, in the words the inventory keys list already uses for the same values, so the two tables read
- * alike. Fingerprint gets the width: it is what correlates a key across runs, connectors and certificates, and so
- * the column an operator reads by eye.
+ * Headings match the inventory keys list. Fingerprint gets the width: it correlates a key across runs, connectors and
+ * certificates.
  */
 export const KEY_HEADERS: TableHeader[] = [
     { id: 'keyType', content: 'Type' },
@@ -29,18 +28,16 @@ export const KEY_HEADERS: TableHeader[] = [
 export const PUBLIC_KEY_HEADER: TableHeader = { id: 'keyPublic', content: 'Public key', align: 'center', width: '5%' };
 
 /**
- * The key payload of a staged item, or nothing. `resource` is the discriminator the contract puts on every payload,
- * and an item whose stored payload could no longer be decoded carries none at all — both cases leave the key
- * columns empty rather than the row unlisted.
+ * The item's key payload, or undefined when the payload is not a key or could not be decoded; the key columns then
+ * stay empty.
  */
 export function discoveredKey(item: Pick<DiscoveryItemModel, 'payload'>): DiscoveredKeyDto | undefined {
     return item.payload?.resource === Resource.Keys ? (item.payload as DiscoveredKeyDto) : undefined;
 }
 
 /**
- * One cell per header in `KEY_HEADERS`. A PRIVATE_KEY, SECRET_KEY or SPLIT_KEY report omits both `publicKey` and
- * `publicKeyFormat` by contract — discovery never carries private key material — so the format cell is empty by
- * design, and {@link publicKeyCell} offers nothing to open.
+ * One cell per `KEY_HEADERS` entry. A private, secret or split key reports no public part by contract, so its format
+ * cell stays empty and {@link publicKeyCell} offers nothing to open.
  */
 export function keyCells(item: Pick<DiscoveryItemModel, 'uuid' | 'payload'>, enums: KeyColumnEnums): ReactNode[] {
     const key = discoveredKey(item);
