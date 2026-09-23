@@ -16,7 +16,7 @@ import SimpleBar from 'components/SimpleBar';
 import cn from 'classnames';
 import { useLocation } from 'react-router';
 import { ArrowDown, ArrowDownUp, ArrowUp, TableProperties } from 'lucide-react';
-import TableSkeleton from './TableSkeleton';
+import TableSkeleton, { TableSkeletonRows } from './TableSkeleton';
 
 export type { SortDirection, TableDataRow, TableHeader } from './types';
 
@@ -76,11 +76,18 @@ type Props = {
      * carry one. A table passing nothing renders exactly as before.
      */
     renderHeaderAction?: (header: TableHeader) => React.ReactNode;
+    /**
+     * A control rendered at the left-hand end of each data header cell, on the far side of the heading
+     * from `renderHeaderAction`. The two are kept apart so a press lands on one control or the other
+     * without aim. The checkbox and trailing columns never carry one.
+     */
+    renderHeaderLead?: (header: TableHeader) => React.ReactNode;
 };
 
 const emptyCheckedRows: (string | number)[] = [];
 
 const TRAILING_ACTION_KEY = '__trailing_action__';
+const TRAILING_ACTION_CELL = 'sticky right-0 z-10 w-px p-2.5 border-l border-divider';
 
 // ARIA asks for aria-sort on the sorted header only, so an unsorted column carries no attribute
 // rather than an explicit "none" — otherwise every sortable header announces a sort state at once.
@@ -132,6 +139,7 @@ function CustomTable({
     emptyStateDescription = 'There are no records to display here yet',
     trailingHeaderAction,
     renderHeaderAction,
+    renderHeaderLead,
 }: Readonly<Props>) {
     const location = useLocation();
     // Scoped to the instance so two tables on one page cannot claim the same heading id.
@@ -645,6 +653,7 @@ function CustomTable({
                         className={cn(
                             'p-2.5 text-start text-xs font-medium uppercase bg-surface-sunken whitespace-nowrap',
                             header.sort ? 'text-content' : 'text-content-subtle',
+                            index > 0 && 'relative before:absolute before:inset-y-1.5 before:left-0 before:w-px before:bg-divider',
                         )}
                         data-id={header.id}
                         {...(header.id === '__checkbox__' ? {} : { 'aria-labelledby': headingId })}
@@ -677,11 +686,7 @@ function CustomTable({
                             // Wrapped rather than omitted: the cell is only visually blank, and a sortable
                             // icon column still needs an accessible name on its button. The wrapper is also what
                             // the cell's `aria-labelledby` points at, so the cell is named by the heading alone.
-                            const headingContent = (
-                                <span id={headingId} className={header.headingHidden ? 'sr-only' : undefined}>
-                                    {header.content}
-                                </span>
-                            );
+                            const headingContent = <span id={headingId}>{header.content}</span>;
                             // `info` sits outside the button: a sortable heading is itself a control, and a
                             // toggletip trigger inside it would nest one interactive element in another, which
                             // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
@@ -719,15 +724,17 @@ function CustomTable({
                             })();
 
                             const action = renderHeaderAction?.(header);
-                            if (!action) return headingSide;
+                            const lead = renderHeaderLead?.(header);
+                            if (!action && !lead) return headingSide;
 
-                            // The heading is what grows, so the action keeps to the cell's right-hand end
+                            // The heading is what grows, so each control keeps to its own end of the cell
                             // without an auto margin — which outranks `justify-content` and would pull a
                             // centred or right-aligned heading to the start of the cell.
                             return (
                                 <span className="flex w-full items-center gap-1">
+                                    {lead && <span className="flex shrink-0 items-center">{lead}</span>}
                                     <span className={cn('flex w-full min-w-0 items-center', alignment)}>{headingSide}</span>
-                                    <span className="flex shrink-0 items-center">{action}</span>
+                                    {action && <span className="flex shrink-0 items-center">{action}</span>}
                                 </span>
                             );
                         })()}
@@ -738,7 +745,7 @@ function CustomTable({
 
         if (trailingHeaderAction) {
             cells.push(
-                <th key={TRAILING_ACTION_KEY} scope="col" className="w-px p-2.5 bg-surface-sunken">
+                <th key={TRAILING_ACTION_KEY} scope="col" className={cn(TRAILING_ACTION_CELL, 'bg-surface-sunken')}>
                     {trailingHeaderAction}
                 </th>,
             );
@@ -749,6 +756,7 @@ function CustomTable({
         tblHeaders,
         trailingHeaderAction,
         renderHeaderAction,
+        renderHeaderLead,
         headingIdPrefix,
         hasCheckboxes,
         onColumnSortClick,
@@ -787,7 +795,7 @@ function CustomTable({
                                   },
                               }
                             : {})}
-                        className={row.options?.rowClassName}
+                        className={cn(row.options?.rowBackground, row.options?.rowClassName)}
                         style={getRowStyle(row)}
                         data-id={row.id}
                     >
@@ -816,7 +824,11 @@ function CustomTable({
                             />
                         ))}
 
-                        {hasTrailingAction && <td className="p-2.5" />}
+                        {/* Opaque, because it is pinned over the cells that scroll beneath it, and painted
+                            the row's own fill so a highlighted row keeps its colour through the column. */}
+                        {hasTrailingAction && (
+                            <td className={cn(TRAILING_ACTION_CELL, row.options?.rowBackground ?? 'bg-surface-raised')} />
+                        )}
                     </tr>
                 </Fragment>
             ));
@@ -838,15 +850,22 @@ function CustomTable({
         disableSelectionControls,
     ]);
 
+    // Once the headings are known the skeleton is confined to the body, so the header row — and the
+    // add-column menu that lives in it — stays mounted across a refetch rather than being torn down
+    // and rebuilt, which would close the menu under the user mid-change.
+    const skeletonRowCount = paginationData ? paginationData.pageSize : pageSize;
+    const isAwaitingHeadings = isLoading && tblHeaders.length === 0;
+
     return (
         <div data-testid="custom-table">
-            {isLoading ? (
+            {isAwaitingHeadings ? (
+                // No `columnsCount`: this branch is reached only while `headers` is empty, so counting them
+                // would ask for a skeleton of no columns. Its own default is the shape to fall back to.
                 <TableSkeleton
-                    columnsCount={headers.length + (hasTrailingAction ? 1 : 0)}
                     hasCheckboxes={Boolean(hasCheckboxes)}
                     hasPagination={false}
                     canSearch={Boolean(canSearch)}
-                    rowCount={paginationData ? paginationData.pageSize : pageSize}
+                    rowCount={skeletonRowCount}
                 />
             ) : (
                 <>
@@ -869,22 +888,39 @@ function CustomTable({
                     {(hasHeader || body?.length > 0 || !data.length) && (
                         <div className="py-2">
                             <SimpleBar forceVisible="x">
-                                <div className={cn('rounded-md', { 'border border-divider': hasHeader })}>
-                                    <div className="min-w-full inline-block align-middle">
-                                        <div className="overflow-hidden">
-                                            <table className="min-w-full divide-y divide-divider bg-surface-raised">
-                                                {hasHeader && (
-                                                    <thead className="bg-surface-sunken">
-                                                        <tr>{header}</tr>
-                                                    </thead>
+                                {/* Sized to the table, not to the scrollport: a block-level box here would be only as
+                                    wide as the visible area, so its top, bottom and right borders would stop short the
+                                    moment the table is scrolled sideways. */}
+                                <div
+                                    className={cn('inline-block min-w-full align-middle rounded-md', {
+                                        'border border-divider': hasHeader,
+                                    })}
+                                >
+                                    {/* `clip` rather than `hidden`, which would become a scroll container and anchor the
+                                        sticky trailing cell to the full table width instead of to the visible edge. */}
+                                    <div className="overflow-clip">
+                                        <table className="min-w-full divide-y divide-divider bg-surface-raised">
+                                            {hasHeader && (
+                                                <thead className="bg-surface-sunken">
+                                                    <tr>{header}</tr>
+                                                </thead>
+                                            )}
+                                            <tbody className="divide-y divide-divider">
+                                                {isLoading ? (
+                                                    <TableSkeletonRows
+                                                        columnsCount={tblHeaders.length + (hasTrailingAction ? 1 : 0)}
+                                                        hasCheckboxes={Boolean(hasCheckboxes)}
+                                                        rowCount={skeletonRowCount}
+                                                    />
+                                                ) : (
+                                                    body
                                                 )}
-                                                <tbody className="divide-y divide-divider">{body}</tbody>
-                                            </table>
-                                        </div>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </SimpleBar>
-                            {body.length === 0 && (
+                            {!isLoading && body.length === 0 && (
                                 <div className="flex flex-col items-center justify-center gap-3 py-8">
                                     <div className="flex items-center justify-center w-14 h-14 rounded-full bg-surface-sunken">
                                         <TableProperties size={28} strokeWidth={1.5} className="text-content-subtle" />

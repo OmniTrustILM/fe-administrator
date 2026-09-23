@@ -153,7 +153,6 @@ function CryptographicKeyList() {
             getRowId: (item: CryptographicKeyResponseModel) => item.uuid,
             registry,
             headerInfo,
-            resourceLabel: 'Keys',
         }),
         [cryptographicKeys, registry, headerInfo],
     );

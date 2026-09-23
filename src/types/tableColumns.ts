@@ -30,11 +30,6 @@ export interface ColumnDefinition {
     sortable?: boolean;
     multiValue?: boolean;
     align?: 'left' | 'center' | 'right';
-    /**
-     * Renders the heading for screen readers only, leaving the header cell visually blank. The heading
-     * still has to exist: the column is pickable and sortable, so it needs a name in both places.
-     */
-    headingHidden?: boolean;
 }
 
 /**
@@ -46,7 +41,7 @@ export interface SourcedCatalogueField extends SearchFieldDataDto {
 }
 
 /**
- * A column in the picker's selected list. `available: false` marks a stored column whose field the
+ * A stored column resolved against the catalogue. `available: false` marks one whose field the
  * catalogue no longer publishes — a deleted custom attribute, or a renamed metadata identifier.
  */
 export interface PickerColumn extends ColumnDefinition {

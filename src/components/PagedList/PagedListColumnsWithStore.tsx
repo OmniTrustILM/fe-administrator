@@ -18,6 +18,7 @@ export type StubRow = {
     uuid: string;
     commonName: string;
     notAfter: string;
+    serialNumber?: string;
     attributeValues?: Record<string, Record<string, unknown[]>>;
 };
 
@@ -49,12 +50,32 @@ type Props = Readonly<{
     withCatalogueFailureControl?: boolean;
     /** Renders a control that lands the withheld view list, so a test can act before the strip is up. */
     withViewsControl?: boolean;
+    /** Renders a control that blanks the rows and puts a list request in flight, as a listing duck does. */
+    withListInFlightControl?: boolean;
 }>;
 
 const registry: CellRegistry<StubRow> = {
     'property:COMMON_NAME': (row) => row.commonName,
     'property:NOT_AFTER': (row) => row.notAfter,
+    'property:SERIAL_NUMBER': (row) => row.serialNumber,
 };
+
+function ListInFlightControl({ onBlank }: Readonly<{ onBlank: () => void }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="start-list-fetch"
+            onClick={() => {
+                onBlank();
+                dispatch({ type: 'pagings/list', payload: EntityType.CERTIFICATE });
+            }}
+        >
+            Start fetch
+        </button>
+    );
+}
 
 function ListRequests({ requests }: Readonly<{ requests: SearchRequestModel[] }>) {
     return <div data-testid="list-requests">{JSON.stringify(requests)}</div>;
@@ -171,6 +192,7 @@ export default function PagedListColumnsWithStore({
     refreshedCatalogue,
     withCatalogueFailureControl = false,
     withViewsControl = false,
+    withListInFlightControl = false,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
@@ -205,6 +227,7 @@ export default function PagedListColumnsWithStore({
         }),
     );
 
+    const [answeredRows, setAnsweredRows] = useState(rows);
     const [requests, setRequests] = useState<SearchRequestModel[]>([]);
     const [refreshToken, setRefreshToken] = useState(0);
 
@@ -224,15 +247,14 @@ export default function PagedListColumnsWithStore({
                 ? {
                       resource: Resource.Certificates,
                       standardColumns,
-                      rows,
+                      rows: answeredRows,
                       getRowId: (row: StubRow) => row.uuid,
                       registry,
                       headerInfo: { [`${FilterFieldSource.Property}:COMMON_NAME`]: <span data-testid="cn-legend">legend</span> },
-                      resourceLabel: 'Certificates',
                       defaultSort,
                   }
                 : undefined,
-        [configReady, standardColumns, rows, defaultSort],
+        [configReady, standardColumns, answeredRows, defaultSort],
     );
 
     return (
@@ -254,6 +276,8 @@ export default function PagedListColumnsWithStore({
                 {withCatalogueFailureControl && <CatalogueFailureControl />}
 
                 {withViewsControl && <ViewsControl views={views} />}
+
+                {withListInFlightControl && <ListInFlightControl onBlank={() => setAnsweredRows([])} />}
 
                 {withPagingControl && <PagingControl />}
 

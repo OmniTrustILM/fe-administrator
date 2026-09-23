@@ -46,22 +46,26 @@ export function toCatalogueFields(
     );
 }
 
+/** Whether a field answers the search term, by its label or by the identifier a view records it under. */
+export function matchesFieldSearch(field: SourcedCatalogueField, search: string): boolean {
+    const term = search.trim().toLowerCase();
+    return (
+        term === '' ||
+        field.fieldLabel.toLowerCase().includes(term) ||
+        // The identifier is searchable too, so a stored column can be found by what a view recorded.
+        field.fieldIdentifier.toLowerCase().includes(term)
+    );
+}
+
 /**
  * Catalogue fields grouped by source and narrowed by the search term. A group left with no matches
  * is dropped rather than rendered as an empty heading — a resource with no custom attributes should
  * not appear to have an empty custom section.
  */
 export function groupCatalogueFields(fields: SourcedCatalogueField[], search: string): CatalogueFieldGroup[] {
-    const term = search.trim().toLowerCase();
-    const matches = (field: SourcedCatalogueField) =>
-        term === '' ||
-        field.fieldLabel.toLowerCase().includes(term) ||
-        // The identifier is searchable too, so a stored column can be found by what a view recorded.
-        field.fieldIdentifier.toLowerCase().includes(term);
-
     return SOURCE_ORDER.map((source) => ({
         source,
-        fields: fields.filter((field) => field.fieldSource === source && matches(field)),
+        fields: fields.filter((field) => field.fieldSource === source && matchesFieldSearch(field, search)),
     })).filter((group) => group.fields.length > 0);
 }
 
@@ -79,18 +83,12 @@ export function toColumnDefinition(field: SourcedCatalogueField): ColumnDefiniti
     };
 }
 
-/** Whether a catalogue field is already among the selected columns. */
-export function isColumnSelected(selected: ColumnDefinition[], field: SourcedCatalogueField): boolean {
-    const key = getColumnKey(field);
-    return selected.some((column) => getColumnKey(column) === key);
-}
-
 /**
  * Stored columns resolved against the live catalogue.
  *
  * A resolved column is refreshed from the catalogue, so a field relabelled since the view was saved
- * carries its new label through, while the view's own label override and anything the catalogue does
- * not carry — alignment — survive.
+ * carries its new label through, while the view's own heading override survives and the page's own
+ * display choices — alignment — are taken back from the column it ships.
  *
  * A column the catalogue does not publish is only unavailable if the platform does not define it
  * either. A platform default column can be absent from the filter-field catalogue and still be
@@ -116,27 +114,17 @@ export function resolveColumns(
             return { ...standard, ...(column.label ? { label: column.label } : {}), available: true };
         }
 
+        // Alignment is the page's choice, not the catalogue's and not the view's: a centred icon column
+        // stays centred whether it is opened from Standard or from a stored view, which is why it is
+        // taken from the shipped column rather than from anything storage carries.
+        const align = standardByKey.get(key)?.align ?? column.align;
+
         return {
             ...toColumnDefinition(field),
-            ...(column.align ? { align: column.align } : {}),
+            ...(align ? { align } : {}),
             ...(column.label ? { label: column.label } : {}),
             available: true,
         };
-    });
-}
-
-/**
- * Whether two resolutions are the same column list. Lets a re-resolution be dropped rather than
- * replacing state with an equal value, which is what keeps an unstable catalogue reference from
- * re-rendering forever.
- */
-export function isSameResolution(a: readonly PickerColumn[], b: readonly PickerColumn[]): boolean {
-    if (a.length !== b.length) return false;
-
-    return a.every((column, index) => {
-        const other = b[index];
-        const keys = new Set([...Object.keys(column), ...Object.keys(other)]) as Set<keyof PickerColumn>;
-        return [...keys].every((key) => column[key] === other[key]);
     });
 }
 

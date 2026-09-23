@@ -60,6 +60,12 @@ const department: ColumnDefinition = {
 
 const standardColumns = [property('COMMON_NAME', 'Common Name'), property('NOT_AFTER', 'Expires At'), department];
 
+/** As the CBOM inventory ships them: a heading the page chose, which is not what the catalogue calls the field. */
+const abbreviatedColumns: ColumnDefinition[] = [
+    { ...property('COMMON_NAME', 'Common Name'), label: 'Host' },
+    property('NOT_AFTER', 'Expires At'),
+];
+
 /** As a page actually ships them: a static column set cannot know what the API can order by. */
 const undeclaredColumns: ColumnDefinition[] = standardColumns.map(({ sortable: _sortable, ...column }) => column);
 
@@ -135,6 +141,8 @@ const contrastOf = (foreground: string, background: string): number => {
 
 const trigger = (page: Page, columnKey: string) => page.getByTestId(`column-header-menu-${columnKey}-trigger`);
 
+const grip = (page: Page, columnKey: string) => page.getByTestId(`column-drag-handle-${columnKey}-trigger`);
+
 const openMenu = async (page: Page, columnKey: string) => {
     await trigger(page, columnKey).click();
     await expect(page.getByTestId(`column-header-menu-${columnKey}`)).toBeVisible();
@@ -146,16 +154,16 @@ const centreOf = async (page: Page, selector: string) => {
     return { x: box.x + box.width / 2, y: box.y + box.height / 2, box };
 };
 
-/** Picks a column up by its control and releases it over the named edge of another column's header. */
+/** Picks a column up by its grip and releases it over the named edge of another column's header. */
 const dragColumn = async (page: Page, fromKey: string, toKey: string, edge: 'before' | 'after') => {
-    const start = await centreOf(page, `[data-testid="column-header-menu-${fromKey}-trigger"]`);
+    const start = await centreOf(page, `[data-testid="column-drag-handle-${fromKey}-trigger"]`);
     const target = await centreOf(page, `thead th[data-id="${toKey}"]`);
     const dropX = edge === 'before' ? target.box.x + 2 : target.box.x + target.box.width - 2;
 
     await page.mouse.move(start.x, start.y);
     await page.mouse.down();
     await page.mouse.move(dropX, target.y, { steps: 8 });
-    await expect(page.getByTestId(`column-header-menu-${fromKey}-drop-indicator`)).toBeVisible();
+    await expect(page.getByTestId(`column-drag-handle-${fromKey}-drop-indicator`)).toBeVisible();
     await page.mouse.up();
 };
 
@@ -245,9 +253,11 @@ test.describe('PagedList · column header menu', () => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
         await expect.poll(() => headings(page)).toHaveLength(3);
 
-        const box = await trigger(page, COMMON_NAME).boundingBox();
-        expect(box?.width ?? 0).toBeGreaterThanOrEqual(24);
-        expect(box?.height ?? 0).toBeGreaterThanOrEqual(24);
+        for (const control of [trigger(page, COMMON_NAME), grip(page, COMMON_NAME)]) {
+            const box = await control.boundingBox();
+            expect(box?.width ?? 0).toBeGreaterThanOrEqual(24);
+            expect(box?.height ?? 0).toBeGreaterThanOrEqual(24);
+        }
     });
 
     test('names each control after the column it belongs to', async ({ mount, page }) => {
@@ -257,7 +267,7 @@ test.describe('PagedList · column header menu', () => {
         await expect(page.getByRole('button', { name: 'Column options for Department' })).toBeVisible();
     });
 
-    test('offers both sort directions and all four moves', async ({ mount, page }) => {
+    test('offers both sort directions, all four moves and the heading entries', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
         await expect.poll(() => headings(page)).toHaveLength(3);
 
@@ -271,6 +281,9 @@ test.describe('PagedList · column header menu', () => {
             'Move right',
             'Move to the start',
             'Move to the end',
+            'Rename…',
+            'Reset heading',
+            'Remove column',
         ]);
     });
 
@@ -408,6 +421,112 @@ test.describe('PagedList · column header menu', () => {
         await expect(page.getByTestId(`column-header-menu-${COMMON_NAME}`)).toHaveCount(0);
     });
 
+    test('takes a column off the table from its own menu', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+        await expect.poll(() => headings(page)).toEqual([COMMON_NAME, NOT_AFTER, DEPARTMENT]);
+
+        await openMenu(page, NOT_AFTER);
+        await page.getByTestId(`column-header-menu-${NOT_AFTER}-remove`).click();
+
+        await expect.poll(() => headings(page)).toEqual([COMMON_NAME, DEPARTMENT]);
+    });
+
+    test('will not remove the last column standing, and says why', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore rows={rows} standardColumns={[property('COMMON_NAME', 'Common Name')]} catalogue={catalogue} />,
+        );
+        await expect.poll(() => headings(page)).toEqual([COMMON_NAME]);
+
+        await openMenu(page, COMMON_NAME);
+
+        await expect(page.getByTestId(`column-header-menu-${COMMON_NAME}-remove`)).toHaveAttribute('aria-disabled', 'true');
+        await expect(page.getByTestId(`column-header-menu-${COMMON_NAME}-remove-unavailable`)).toBeVisible();
+    });
+
+    test('resets a heading to the one the page ships, not to what the catalogue calls the field', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={abbreviatedColumns} catalogue={catalogue} />);
+        await expect(page.getByRole('button', { name: 'Host', exact: true })).toBeVisible();
+
+        // The shipped heading is not a rename, so there is nothing for Reset to undo yet.
+        await openMenu(page, COMMON_NAME);
+        await expect(page.getByTestId(`column-header-menu-${COMMON_NAME}-reset-heading`)).toHaveAttribute('aria-disabled', 'true');
+
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename`).click();
+        const field = page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`);
+        await field.click();
+        await field.fill('Machine');
+        await page.getByRole('button', { name: 'Rename', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Machine', exact: true })).toBeVisible();
+
+        await openMenu(page, COMMON_NAME);
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-reset-heading`).click();
+
+        await expect(page.getByRole('button', { name: 'Host', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toHaveCount(0);
+    });
+
+    test('falls back to the shipped heading when the rename field is emptied', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={abbreviatedColumns} catalogue={catalogue} />);
+        await expect(page.getByRole('button', { name: 'Host', exact: true })).toBeVisible();
+
+        await openMenu(page, COMMON_NAME);
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename`).click();
+        const field = page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`);
+        await field.click();
+        await field.fill('');
+        await page.getByRole('button', { name: 'Rename', exact: true }).click();
+
+        await expect(page.getByRole('button', { name: 'Host', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toHaveCount(0);
+    });
+
+    test('renames a column heading from the menu, and resets it back to the catalogue name', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await openMenu(page, COMMON_NAME);
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename`).click();
+
+        const field = page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`);
+        await field.click();
+        await field.fill('Host');
+        await page.getByRole('button', { name: 'Rename', exact: true }).click();
+
+        await expect(page.getByRole('button', { name: 'Host', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toHaveCount(0);
+
+        await openMenu(page, COMMON_NAME);
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-reset-heading`).click();
+
+        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toBeVisible();
+    });
+
+    test('offers no reset until the heading actually carries an override', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await openMenu(page, COMMON_NAME);
+
+        await expect(page.getByTestId(`column-header-menu-${COMMON_NAME}-reset-heading`)).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    test('renames without listing again, because a heading is not something the server answers', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+        await expect.poll(() => headings(page)).toHaveLength(3);
+        const before = await requestCount(page);
+
+        await openMenu(page, COMMON_NAME);
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename`).click();
+
+        const field = page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`);
+        await field.click();
+        await field.fill('Host');
+        await page.getByRole('button', { name: 'Rename', exact: true }).click();
+
+        await expect(page.getByRole('button', { name: 'Host', exact: true })).toBeVisible();
+        expect(await requestCount(page)).toBe(before);
+    });
+
     test('shifts a column one position either way', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
         await expect.poll(() => headings(page)).toHaveLength(3);
@@ -452,17 +571,45 @@ test.describe('PagedList · column header menu', () => {
         await expect(last.getByTestId(`column-header-menu-${DEPARTMENT}-move-left`)).not.toHaveAttribute('aria-disabled', 'true');
     });
 
-    test('opens the menu on a press that stays within the threshold', async ({ mount, page }) => {
+    test('gives every column a grip of its own, separate from the menu control', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+
+        await expect.poll(() => headings(page)).toEqual([COMMON_NAME, NOT_AFTER, DEPARTMENT]);
+
+        for (const key of [COMMON_NAME, NOT_AFTER, DEPARTMENT]) {
+            await expect(grip(page, key)).toBeVisible();
+            expect(await grip(page, key).evaluate((node) => node.closest('th')?.getAttribute('data-id'))).toBe(key);
+        }
+    });
+
+    test('moves nothing and opens no menu when a press on the grip stays within the threshold', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
         await expect.poll(() => headings(page)).toHaveLength(3);
 
-        const start = await centreOf(page, `[data-testid="column-header-menu-${COMMON_NAME}-trigger"]`);
+        const start = await centreOf(page, `[data-testid="column-drag-handle-${COMMON_NAME}-trigger"]`);
         await page.mouse.move(start.x, start.y);
         await page.mouse.down();
         await page.mouse.move(start.x + 2, start.y + 1);
         await page.mouse.up();
 
+        await expect(page.getByTestId(`column-header-menu-${COMMON_NAME}`)).toHaveCount(0);
+        expect(await headings(page)).toEqual([COMMON_NAME, NOT_AFTER, DEPARTMENT]);
+    });
+
+    test('opens the menu on a plain press of the three-dot control, which never drags', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        const start = await centreOf(page, `[data-testid="column-header-menu-${COMMON_NAME}-trigger"]`);
+        const target = await centreOf(page, `thead th[data-id="${DEPARTMENT}"]`);
+
+        await page.mouse.move(start.x, start.y);
+        await page.mouse.down();
+        await page.mouse.move(target.box.x + target.box.width - 2, target.y, { steps: 8 });
+        await page.mouse.up();
+
         await expect(page.getByTestId(`column-header-menu-${COMMON_NAME}`)).toBeVisible();
+        await expect(page.getByTestId(`column-drag-handle-${COMMON_NAME}-drop-indicator`)).toHaveCount(0);
         expect(await headings(page)).toEqual([COMMON_NAME, NOT_AFTER, DEPARTMENT]);
     });
 
@@ -517,16 +664,16 @@ test.describe('PagedList · column header menu', () => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
         await expect.poll(() => headings(page)).toHaveLength(3);
 
-        const start = await centreOf(page, `[data-testid="column-header-menu-${COMMON_NAME}-trigger"]`);
+        const start = await centreOf(page, `[data-testid="column-drag-handle-${COMMON_NAME}-trigger"]`);
         const target = await centreOf(page, `thead th[data-id="${DEPARTMENT}"]`);
 
         await page.mouse.move(start.x, start.y);
         await page.mouse.down();
         await page.mouse.move(target.box.x + target.box.width - 2, target.y, { steps: 8 });
-        await expect(page.getByTestId(`column-header-menu-${COMMON_NAME}-drop-indicator`)).toBeVisible();
+        await expect(page.getByTestId(`column-drag-handle-${COMMON_NAME}-drop-indicator`)).toBeVisible();
 
         await page.keyboard.press('Escape');
-        await expect(page.getByTestId(`column-header-menu-${COMMON_NAME}-drop-indicator`)).toHaveCount(0);
+        await expect(page.getByTestId(`column-drag-handle-${COMMON_NAME}-drop-indicator`)).toHaveCount(0);
         await page.mouse.up();
 
         expect(await headings(page)).toEqual([COMMON_NAME, NOT_AFTER, DEPARTMENT]);

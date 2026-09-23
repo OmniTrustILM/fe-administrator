@@ -10,7 +10,8 @@ type Props = Readonly<{
     storedCount: number;
     /** Whether nothing could be rendered, so the table fell back to the platform column set. */
     fellBackToStandard: boolean;
-    onReview?: () => void;
+    /** Drops the columns this table cannot show from the stored view, which is the only cure for them. */
+    onRemove?: () => void;
     dataTestId: string;
 }>;
 
@@ -25,12 +26,13 @@ const list = (columns: PickerColumn[]): string => {
  *
  * Silently skipping it is the tempting option and the wrong one: a heading vanishes with no
  * explanation, and the user's next move is to hunt for a field that is not there. Nothing is deleted
- * server-side either — the stored view keeps the column until someone saves over it.
+ * server-side either — the stored view keeps the column until someone saves over it, which is what
+ * the offer here does: the column has no header of its own, so this is the only place it is reachable.
  *
  * A fallback can reach this with nothing to name, so the two are worded separately. Which cases
  * arrive, and why, is written down beside `resolveView`.
  */
-export default function UnresolvedColumnsNotice({ unavailable, storedCount, fellBackToStandard, onReview, dataTestId }: Props) {
+export default function UnresolvedColumnsNotice({ unavailable, storedCount, fellBackToStandard, onRemove, dataTestId }: Props) {
     if (unavailable.length === 0 && !fellBackToStandard) return null;
 
     const named = unavailable.length > 0 ? list(unavailable) : undefined;
@@ -48,9 +50,9 @@ export default function UnresolvedColumnsNotice({ unavailable, storedCount, fell
         >
             <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden="true" />
             <span>{message}</span>
-            {onReview && (
-                <Button variant="transparent" color="secondary" onClick={onReview} data-testid={`${dataTestId}-review`}>
-                    Review columns
+            {onRemove && (
+                <Button variant="transparent" color="secondary" onClick={onRemove} data-testid={`${dataTestId}-remove`}>
+                    Remove from view
                 </Button>
             )}
         </output>

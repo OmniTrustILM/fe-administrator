@@ -138,7 +138,7 @@ function CbomsList() {
     );
 
     const rowOptions = useCallback(
-        (cbom: CbomDto) => (cbom.uuid === highlightedCbomUuid ? { rowClassName: 'bg-success-surface' } : undefined),
+        (cbom: CbomDto) => (cbom.uuid === highlightedCbomUuid ? { rowBackground: 'bg-success-surface' } : undefined),
         [highlightedCbomUuid],
     );
 
@@ -150,7 +150,6 @@ function CbomsList() {
             getRowId: (cbom: CbomDto) => cbom.uuid,
             registry,
             rowOptions,
-            resourceLabel: 'CBOMs',
         }),
         [cboms, registry, rowOptions],
     );

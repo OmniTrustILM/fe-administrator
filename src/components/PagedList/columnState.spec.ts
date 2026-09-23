@@ -8,6 +8,8 @@ import {
     isSameSort,
     toColumnSortFromHeader,
     toDisplayableSort,
+    renameColumn,
+    toProjectedKeys,
     toggleColumn,
     withCatalogueSortability,
     withDeclaredSortability,
@@ -217,7 +219,6 @@ describe('withCatalogueSortability', () => {
                 fieldIdentifier: 'COMMON_NAME',
                 catalogueLabel: 'Common Name',
                 align: 'center',
-                headingHidden: true,
             },
         ];
 
@@ -301,11 +302,11 @@ describe('toggleColumn', () => {
         sortable: true,
     } as SourcedCatalogueField;
 
-    it('appends a field the table is not showing as the last column', () => {
+    it('puts a field the table is not showing first', () => {
         const next = toggleColumn(columns, costCentre);
 
         expect(next).toHaveLength(columns.length + 1);
-        expect(next.at(-1)).toEqual({
+        expect(next.at(0)).toEqual({
             fieldSource: FilterFieldSource.Custom,
             fieldIdentifier: 'costCentre|STRING',
             catalogueLabel: 'Cost centre',
@@ -330,5 +331,64 @@ describe('toggleColumn', () => {
         const customCommonName = { ...commonName, fieldSource: FilterFieldSource.Custom } as SourcedCatalogueField;
 
         expect(toggleColumn(columns, customCommonName)).toHaveLength(columns.length + 1);
+    });
+});
+
+describe('renameColumn', () => {
+    const columns = [
+        { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name' },
+        { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'department|STRING', catalogueLabel: 'Department' },
+    ];
+
+    it('overrides the heading of the named column alone', () => {
+        const next = renameColumn(columns, 'property:COMMON_NAME', 'Host');
+
+        expect(next[0]).toMatchObject({ fieldIdentifier: 'COMMON_NAME', label: 'Host' });
+        expect(next[1]).not.toHaveProperty('label');
+    });
+
+    it('trims what it is given', () => {
+        expect(renameColumn(columns, 'property:COMMON_NAME', '  Host  ')[0]).toMatchObject({ label: 'Host' });
+    });
+
+    it('clears the override when given nothing', () => {
+        const overridden = renameColumn(columns, 'property:COMMON_NAME', 'Host');
+
+        expect(renameColumn(overridden, 'property:COMMON_NAME', undefined)[0]).not.toHaveProperty('label');
+    });
+
+    it('clears it for an empty heading rather than storing one', () => {
+        const overridden = renameColumn(columns, 'property:COMMON_NAME', 'Host');
+
+        expect(renameColumn(overridden, 'property:COMMON_NAME', '   ')[0]).not.toHaveProperty('label');
+    });
+
+    it('stores no override for the name the catalogue already publishes, so a relabel carries through', () => {
+        expect(renameColumn(columns, 'property:COMMON_NAME', 'Common Name')[0]).not.toHaveProperty('label');
+    });
+});
+
+describe('toProjectedKeys', () => {
+    it('keeps the attribute columns and drops the properties, because only attributes are projected', () => {
+        const columns = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'department|STRING' },
+            { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'discoverySource|STRING' },
+        ];
+
+        expect(toProjectedKeys(columns)).toEqual(['custom:department|STRING', 'meta:discoverySource|STRING']);
+    });
+
+    it('sorts them, so a reorder does not read as a new set to fetch', () => {
+        const columns = [
+            { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'b' },
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'a' },
+        ];
+
+        expect(toProjectedKeys(columns)).toEqual(toProjectedKeys([...columns].reverse()));
+    });
+
+    it('answers for a request that names no columns at all', () => {
+        expect(toProjectedKeys(undefined)).toEqual([]);
     });
 });

@@ -218,7 +218,6 @@ test.describe('ViewTabs', () => {
         await expect(page.getByRole('menuitem', { name: 'Duplicate' })).toBeVisible();
         await expect(page.getByRole('menuitem', { name: 'Rename…' })).toHaveCount(0);
         await expect(page.getByRole('menuitem', { name: 'Delete view' })).toHaveCount(0);
-        await expect(page.getByRole('menuitem', { name: 'Edit columns…' })).toHaveCount(0);
     });
 
     test('offers the full menu on a stored view', async ({ mount, page }) => {
@@ -227,7 +226,6 @@ test.describe('ViewTabs', () => {
         await page.getByTestId('view-tabs-tab-view-1').click();
         await openTabMenu(page, 'Expiry watch');
 
-        await expect(page.getByRole('menuitem', { name: 'Edit columns…' })).toBeVisible();
         await expect(page.getByRole('menuitem', { name: 'Rename…' })).toBeVisible();
         await expect(page.getByRole('menuitem', { name: 'Duplicate' })).toBeVisible();
         await expect(page.getByRole('menuitem', { name: 'Open this view by default' })).toBeVisible();
@@ -468,10 +466,7 @@ test.describe('ViewTabs', () => {
         expect(slice.sort).toBeUndefined();
     });
 
-    test('names a stored column this listing cannot display, and keeps it reachable in the picker', async ({ mount, page }) => {
-        // Reachable because the catalogue the API validates a view against carries no notion of
-        // `displayable`: a column the listing cannot render can be stored by any client and comes back
-        // intact, unlike a deleted field, which the API omits on read.
+    test('names a stored column this listing cannot display', async ({ mount, page }) => {
         const stale = expiryWatch({
             defaultView: true,
             columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
@@ -480,40 +475,38 @@ test.describe('ViewTabs', () => {
 
         await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
         await expect(page.getByTestId('view-tabs-notice')).toContainText('showing 1 of its 2 columns');
-
-        // Nothing is dropped server-side, so the notice's offer is to open the picker over the stored
-        // list rather than to repair it silently.
-        await page.getByTestId('view-tabs-notice-review').click();
-
-        await expect(page.getByTestId('view-tabs-picker')).toBeVisible();
-        await expect(page.getByTestId('selected-column-custom:retired')).toContainText('Unavailable');
     });
 
-    test('keeps the live filters and ordering when the columns are edited from the menu', async ({ mount, page }) => {
-        await mount(strip({ views: [expiryWatch({ defaultView: true })] }));
+    test('takes a column it cannot show out of the view, which has no header to remove it from', async ({ mount, page }) => {
+        const stale = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+        });
+        await mount(strip({ views: [stale] }));
+        await expect(page.getByTestId('view-tabs-notice')).toBeVisible();
 
-        await openTabMenu(page, 'Expiry watch');
-        await page.getByRole('menuitem', { name: 'Edit columns…' }).click();
-
-        await page.getByTestId('add-field-property:SERIAL_NUMBER').click();
-        await page.getByTestId('view-tabs-picker').getByRole('button', { name: 'Save' }).click();
-
-        const slice = await appliedSlice(page);
-        expect(slice.columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'NOT_AFTER', 'SERIAL_NUMBER']);
-        expect(slice.filters).toEqual([stateFilter]);
-        expect(slice.sort).toEqual({ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', direction: 'asc' });
+        await page.getByTestId('view-tabs-notice-remove').click();
 
         await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
         const action = await lastDispatched(page, 'listViews/updateView');
-        expect(action?.payload).toMatchObject({
-            view: {
-                columns: [
-                    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
-                    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', label: 'Expires' },
-                    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'SERIAL_NUMBER' },
-                ],
-            },
+        expect(action?.payload).toMatchObject({ view: { columns: [{ fieldIdentifier: 'COMMON_NAME' }] } });
+    });
+
+    test('offers no removal when nothing resolved, where the table is showing the platform set instead', async ({ mount, page }) => {
+        const stale = expiryWatch({
+            defaultView: true,
+            columns: [stored('retired', FilterFieldSource.Custom), stored('gone', FilterFieldSource.Custom)],
         });
+        await mount(strip({ views: [stale] }));
+
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('showing the standard columns');
+        await expect(page.getByTestId('view-tabs-notice-remove')).toHaveCount(0);
+    });
+
+    test('offers no such removal on Standard, which stores nothing to remove from', async ({ mount, page }) => {
+        await mount(strip());
+
+        await expect(page.getByTestId('view-tabs-notice-remove')).toHaveCount(0);
     });
 
     test('shows the new tab before the API has answered, then follows the uuid it is given', async ({ mount, page }) => {
@@ -549,31 +542,6 @@ test.describe('ViewTabs', () => {
         expect(slice.columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
     });
 
-    test('opens the dialog after that fallback on the standard columns with the unshowable ones alongside', async ({ mount, page }) => {
-        // The fallback is what the table shows; the dialog is the only place the notice's columns are reachable.
-        const stale = expiryWatch({
-            defaultView: true,
-            columns: [stored('retired', FilterFieldSource.Custom), stored('gone', FilterFieldSource.Custom)],
-        });
-        await mount(strip({ views: [stale] }));
-
-        await page.getByTestId('view-tabs-notice-review').click();
-        await expect(page.getByTestId('view-tabs-picker')).toBeVisible();
-
-        await expect
-            .poll(() =>
-                page
-                    .locator('[data-testid="selected-columns-list"] > [data-testid^="selected-column-"]')
-                    .evaluateAll((items) => items.map((item) => item.getAttribute('data-testid') ?? '')),
-            )
-            .toEqual([
-                'selected-column-custom:retired',
-                'selected-column-custom:gone',
-                'selected-column-property:COMMON_NAME',
-                'selected-column-property:SERIAL_NUMBER',
-            ]);
-    });
-
     test('falls back for a view that arrives carrying no columns at all', async ({ mount, page }) => {
         // What the API returns once every field the view was built on has been deleted: it resolves the
         // stored identifiers on read and omits the ones it cannot offer. Rendering that literally would
@@ -583,13 +551,6 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-notice')).toContainText('so it is showing the standard columns.');
 
         expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
-
-        // The dialog opens on what the table is showing, so Save writes a usable view rather than an
-        // empty one.
-        await page.getByTestId('view-tabs-notice-review').click();
-
-        await expect(page.getByTestId('selected-column-property:COMMON_NAME')).toBeVisible();
-        await expect(page.getByTestId('selected-column-property:SERIAL_NUMBER')).toBeVisible();
     });
 
     test('names the ordering even when the column it orders by is not displayed', async ({ mount, page }) => {
@@ -784,43 +745,5 @@ test.describe('ViewTabs', () => {
 
         await expect(page.getByTestId('view-tabs-new')).toBeDisabled();
         await expect(page.getByRole('button', { name: 'Actions for Standard' })).toBeDisabled();
-    });
-
-    test('keeps a property field the page cannot render out of the column dialog', async ({ mount, page }) => {
-        await mount(
-            strip({
-                views: [expiryWatch({ defaultView: true })],
-                renderableProperties: ['property:COMMON_NAME', 'property:NOT_AFTER'],
-            }),
-        );
-
-        await openTabMenu(page, 'Expiry watch');
-        await page.getByRole('menuitem', { name: 'Edit columns…' }).click();
-
-        await expect(page.getByTestId('view-tabs-picker')).toBeVisible();
-        await expect(page.getByTestId('add-field-property:SERIAL_NUMBER')).toHaveCount(0);
-    });
-
-    test('still offers a property field the page can render', async ({ mount, page }) => {
-        await mount(
-            strip({
-                views: [expiryWatch({ defaultView: true })],
-                renderableProperties: ['property:COMMON_NAME', 'property:NOT_AFTER', 'property:SERIAL_NUMBER'],
-            }),
-        );
-
-        await openTabMenu(page, 'Expiry watch');
-        await page.getByRole('menuitem', { name: 'Edit columns…' }).click();
-
-        await expect(page.getByTestId('add-field-property:SERIAL_NUMBER')).toBeVisible();
-    });
-
-    test('leaves an attribute field offered whatever the gate says', async ({ mount, page }) => {
-        await mount(strip({ views: [expiryWatch({ defaultView: true })], renderableProperties: [] }));
-
-        await openTabMenu(page, 'Expiry watch');
-        await page.getByRole('menuitem', { name: 'Edit columns…' }).click();
-
-        await expect(page.getByTestId('add-field-custom:environment')).toBeVisible();
     });
 });
