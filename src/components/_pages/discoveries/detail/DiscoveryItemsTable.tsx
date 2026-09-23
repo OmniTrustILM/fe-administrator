@@ -60,7 +60,7 @@ function headersFor(resource: Resource): TableHeader[] {
 }
 
 /**
- * The state column is driven by `processed` and `processedError` only. `inventoryUuid` is not a success signal: for a
+ * The state column is driven by `processed` and `processedError` only. `inventory` is not a success signal: for a
  * certificate it is present as soon as one with the same content exists anywhere, including from an earlier run, so it
  * can be set while the item is still waiting. It is a link and nothing more.
  */
@@ -126,6 +126,8 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
         [copyToClipboard],
     );
 
+    const headers = useMemo(() => headersFor(resource), [resource]);
+
     const rows: TableDataRow[] = useMemo(
         () =>
             discoveryItems?.items.map((item) => {
@@ -160,6 +162,7 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
                             key="details"
                             variant="transparent"
                             title="Show item"
+                            aria-label="Show item"
                             className="p-1"
                             onClick={() => setInspected(item)}
                             data-testid={`show-item-${item.uuid}`}
@@ -178,7 +181,7 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
             // onReloadData in a ref and only re-fetches on [pageSize, pageNumber].
             key={`${resource}:${activeTab.tabKey}`}
             stateKey={`${pathname}:${resource}:${activeTab.tabKey}`}
-            headers={headersFor(resource)}
+            headers={headers}
             data={rows}
             totalItems={discoveryItems?.totalItems}
             onReloadData={onReloadData}

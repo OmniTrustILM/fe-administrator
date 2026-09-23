@@ -62,8 +62,9 @@ vi.mock('components/JsonViewer', () => ({ default: ({ value }: any) => <pre data
 const copyToClipboard = vi.fn();
 vi.mock('utils/common-hooks', () => ({ useCopyToClipboard: () => copyToClipboard }));
 vi.mock('components/Button', () => ({
-    default: ({ children, onClick, title, 'data-testid': testId }: any) => (
-        <button type="button" onClick={onClick} title={title} data-testid={testId}>
+    // Mirrors the real Button: `title` feeds its tooltip and never reaches the element, so only aria-label names it.
+    default: ({ children, onClick, 'aria-label': ariaLabel, 'data-testid': testId }: any) => (
+        <button type="button" onClick={onClick} aria-label={ariaLabel} data-testid={testId}>
             {children}
         </button>
     ),
@@ -128,7 +129,7 @@ describe('itemStateBadge', () => {
         expect(await badge({ processed: false, processedError: 'never attempted: run cancelled' })).toBe('item-state-failed');
     });
 
-    it('reads processed as imported and everything else as waiting, whatever inventoryUuid says', async () => {
+    it('reads processed as imported and everything else as waiting, whatever inventory says', async () => {
         expect(await badge({ processed: true })).toBe('item-state-imported');
         expect(await badge({ processed: false })).toBe('item-state-waiting');
     });
@@ -173,7 +174,9 @@ describe('DiscoveryItemsTable', () => {
     it('says nothing in the name column for an item that became nothing', async () => {
         await render(buildState([item({ processed: false })]));
 
-        expect(container.querySelector('[data-testid="row-item-1"] a')).toBeNull();
+        const row = container.querySelector('[data-testid="row-item-1"]');
+        expect(row?.querySelector('a')).toBeNull();
+        expect(row?.firstElementChild?.textContent).toBe('');
     });
 
     it('shows an inventory link on a waiting certificate, because the object can exist from an earlier run', async () => {
@@ -185,9 +188,10 @@ describe('DiscoveryItemsTable', () => {
     });
 
     it('names the details column for assistive technology even though it is visually hidden', async () => {
-        await render(buildState([]));
+        await render(buildState([item()]));
 
         expect(container.querySelector('[data-testid="header-details"]')?.textContent).toBe('Details');
+        expect(container.querySelector('[data-testid="show-item-item-1"]')?.getAttribute('aria-label')).toBe('Show item');
     });
 
     it('opens the item with its recorded reason first and its payload beneath', async () => {
@@ -221,7 +225,7 @@ describe('DiscoveryItemsTable', () => {
         const key = item({ uuid: 'key-1', resource: Resource.Keys, sequence: 12, uniqueRef: '10.0.0.7:443#0' });
         await render(buildState([key]), Resource.Keys);
 
-        // Six key columns is already a wide row; neither value identifies the key, and the caption carries both.
+        // Neither value identifies the key; the dialog caption carries both.
         expect(container.querySelector('[data-testid="header-sequence"]')).toBeNull();
         expect(container.querySelector('[data-testid="header-uniqueRef"]')).toBeNull();
 
@@ -230,7 +234,7 @@ describe('DiscoveryItemsTable', () => {
         expect(container.querySelector('[data-testid="dialog"]')?.textContent).toContain('10.0.0.7:443#0');
     });
 
-    it('gives a keys run the key domain and leaves the certificates run as it was', async () => {
+    it('shows the key columns for a keys run and the staging columns for any other', async () => {
         const key = item({
             uuid: 'key-1',
             resource: Resource.Keys,
@@ -253,8 +257,15 @@ describe('DiscoveryItemsTable', () => {
         expect(row?.querySelector('[data-testid="key-fingerprint"]')?.textContent).toBe('e3b0c44298fc1c14');
 
         await render(buildState([item()]));
-        expect(container.querySelector('[data-testid="header-keyFingerprint"]')).toBeNull();
         expect(container.querySelector('[data-testid="key-algorithm"]')).toBeNull();
+        expect(Array.from(container.querySelectorAll('[data-testid^="header-"]'), (header) => header.getAttribute('data-testid'))).toEqual([
+            'header-inventory',
+            'header-sequence',
+            'header-uniqueRef',
+            'header-discoveredAt',
+            'header-state',
+            'header-details',
+        ]);
     });
 
     it('opens a key blob nobody would read in a column, and copies it whole', async () => {

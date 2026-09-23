@@ -9,8 +9,9 @@ import { KEY_HEADERS, PublicKeyDetails, discoveredKey, keyCells, publicKeyCell }
 setupReactActEnvironment();
 
 vi.mock('components/Button', () => ({
-    default: ({ children, onClick, title, 'data-testid': testId }: any) => (
-        <button type="button" onClick={onClick} title={title} data-testid={testId}>
+    // Mirrors the real Button: `title` feeds its tooltip and never reaches the element, so only aria-label names it.
+    default: ({ children, onClick, 'aria-label': ariaLabel, 'data-testid': testId }: any) => (
+        <button type="button" onClick={onClick} aria-label={ariaLabel} data-testid={testId}>
             {children}
         </button>
     ),
@@ -52,13 +53,11 @@ describe('discoveredKey', () => {
 describe('keyCells', () => {
     let container: HTMLDivElement;
     let root: Root;
-    const show = vi.fn();
 
     beforeEach(() => {
         container = document.createElement('div');
         document.body.appendChild(container);
         root = createRoot(container);
-        show.mockReset();
     });
 
     afterEach(async () => {
@@ -67,7 +66,7 @@ describe('keyCells', () => {
     });
 
     const render = async (item: any) => {
-        const cells = keyCells(item, enums, show);
+        const cells = keyCells(item, enums);
         expect(cells).toHaveLength(KEY_HEADERS.length);
         await act(async () => root.render(<div>{cells}</div>));
     };
@@ -93,10 +92,11 @@ describe('keyCells', () => {
     it('still fills the row for an item whose payload could not be decoded', async () => {
         await render({ uuid: 'item-1', payload: undefined });
 
-        for (const header of KEY_HEADERS) {
-            expect(container.querySelector(`[data-testid="key-${header.id.replace('key', '').toLowerCase()}"]`)?.textContent ?? '').toBe(
-                '',
-            );
+        // Each cell has to be there and be empty: a missing one would read as empty too, and the row would lose a column.
+        for (const testId of ['key-type', 'key-algorithm', 'key-length', 'key-format', 'key-fingerprint']) {
+            const cell = container.querySelector(`[data-testid="${testId}"]`);
+            expect(cell, testId).not.toBeNull();
+            expect(cell?.textContent, testId).toBe('');
         }
     });
 });
@@ -123,7 +123,9 @@ describe('publicKeyCell', () => {
         // dialog - the same shape the platform uses for a secret's content.
         await act(async () => root.render(<div>{publicKeyCell(keyItem() as any, show)}</div>));
 
-        await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="show-public-key-item-1"]')?.click());
+        const eye = container.querySelector<HTMLButtonElement>('[data-testid="show-public-key-item-1"]');
+        expect(eye?.getAttribute('aria-label')).toBe('Show public key');
+        await act(async () => eye?.click());
 
         expect(show).toHaveBeenCalledWith(expect.objectContaining({ publicKey: PUBLIC_KEY }));
     });
@@ -159,7 +161,9 @@ describe('PublicKeyDetails', () => {
         expect(container.querySelector('[data-testid="public-key-format"]')?.textContent).toBe('SPKI');
         expect(container.querySelector('[data-testid="public-key-value"]')?.textContent).toBe(PUBLIC_KEY);
 
-        await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="copy-public-key"]')?.click());
+        const copyButton = container.querySelector<HTMLButtonElement>('[data-testid="copy-public-key"]');
+        expect(copyButton?.getAttribute('aria-label')).toBe('Copy public key');
+        await act(async () => copyButton?.click());
         expect(copy).toHaveBeenCalledWith(PUBLIC_KEY);
     });
 });

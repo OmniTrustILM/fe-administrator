@@ -83,6 +83,7 @@ export function publicKeyCell(
             variant="transparent"
             color="primary"
             title="Show public key"
+            aria-label="Show public key"
             className="p-1"
             onClick={() => onShowPublicKey(key)}
             data-testid={`show-public-key-${item.uuid}`}
@@ -101,6 +102,7 @@ export function PublicKeyDetails({
     enums,
     onCopy,
 }: Readonly<{ discoveredKey: DiscoveredKeyDto; enums: KeyColumnEnums; onCopy: (publicKey: string) => void }>) {
+    const { publicKey } = key;
     return (
         <div className="flex flex-col gap-3">
             <div className="text-sm">
@@ -109,15 +111,16 @@ export function PublicKeyDetails({
             </div>
             <div className="flex items-start gap-2">
                 <span data-testid="public-key-value" className="font-mono text-sm break-all">
-                    {key.publicKey}
+                    {publicKey}
                 </span>
-                {key.publicKey ? (
+                {publicKey ? (
                     <Button
                         variant="transparent"
                         color="primary"
                         title="Copy public key"
+                        aria-label="Copy public key"
                         className="p-1 shrink-0"
-                        onClick={() => onCopy(key.publicKey as string)}
+                        onClick={() => onCopy(publicKey)}
                         data-testid="copy-public-key"
                     >
                         <Copy size={16} />
