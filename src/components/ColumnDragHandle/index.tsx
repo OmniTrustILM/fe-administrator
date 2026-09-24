@@ -40,8 +40,7 @@ type Props = Readonly<{
  * pointer, with an indicator on the header row showing where it would land.
  *
  * It carries no menu of its own. A grip that also opened one could not tell a press from a drag until
- * the pointer had already moved, which is the ambiguity the separate three-dot control removes. The
- * same moves are reachable from that menu, because a drag is unavailable without a pointer.
+ * the pointer had already moved, which is the ambiguity the separate three-dot control removes.
  */
 export default function ColumnDragHandle({ columnKey, label, columnKeys, onMove, dataTestId = 'column-drag-handle' }: Props) {
     const index = columnKeys.indexOf(columnKey);

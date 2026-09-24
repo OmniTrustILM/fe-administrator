@@ -16,10 +16,7 @@ type RowsProps = {
     rowCount?: number;
 };
 
-/**
- * The skeleton as table rows alone, for a table whose real header is already on screen. Keeping that
- * header mounted is what lets a control living in it — the add-column menu — survive a refetch.
- */
+/** The skeleton as table rows alone, for a table whose real header is already on screen. */
 export function TableSkeletonRows({ columnsCount = 4, hasCheckboxes = true, rowCount = 10 }: Readonly<RowsProps>) {
     const columns = Array.from({ length: columnsCount }, (_, i) => i);
     const rows = Array.from({ length: rowCount }, (_, i) => i);

@@ -294,11 +294,8 @@ function PagedList<TRow extends object>({
 
     /**
      * The attribute columns the rows on screen were fetched with, and the ones the table wants now.
-     *
-     * Columns are keyed out of the request snapshot entirely and compared as these two instead, because
-     * most column changes need no new data at all: a property column renders from the listing entry, a
-     * removal renders from what is already there, and a reorder changes only the request's bytes. Only
-     * an attribute column the current rows were never projected has nowhere to read from.
+     * Columns are keyed out of the request snapshot and compared as these two instead; which column
+     * changes need a request, and why, is written at {@link toProjectedKeys}.
      */
     const projectedKeys = useRef<string[]>([]);
     const wantedProjection = useMemo(() => toProjectedKeys(listRequest.columns).join(PROJECTION_SEPARATOR), [listRequest.columns]);
