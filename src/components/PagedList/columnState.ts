@@ -1,7 +1,9 @@
 import type { CellRegistry } from 'components/CustomTable/columns';
 import type { SortDirection } from 'components/CustomTable/types';
 import type { SearchFieldListModel, SearchRequestModel } from 'types/certificate';
-import type { ColumnDefinition } from 'types/tableColumns';
+import { FilterFieldSource } from 'types/openapi';
+import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
+import { toColumnDefinition } from 'utils/columnPicker';
 import { toStoredSort } from 'utils/listViews';
 import { type ColumnSort, getColumnKey, getSortKey, parseColumnKey, toRequestColumns } from 'utils/tableColumns';
 
@@ -28,6 +30,68 @@ export function toColumnSortFromHeader(
 export function isSameSort(a: ColumnSort | undefined, b: ColumnSort | undefined): boolean {
     if (!a || !b) return a === b;
     return getSortKey(a) === getSortKey(b) && a.direction === b.direction;
+}
+
+/**
+ * The displayed columns with a catalogue field added at the front, or taken away when it is already
+ * one. Added at the front because a column set wide enough to need the menu is wide enough to scroll,
+ * and a new column appended to the end lands where the user cannot see it. The last column standing
+ * is kept: the API rejects a view with none, and the same array comes back so a refused removal
+ * cannot re-list the page.
+ *
+ * A column the page ships comes back as the page ships it. Built from the catalogue field alone it
+ * would lose the display choices the catalogue knows nothing about — the centring on an icon column,
+ * the heading a page abbreviates — so removing and re-adding one would quietly redecorate it.
+ */
+export function toggleColumn(
+    columns: ColumnDefinition[],
+    field: SourcedCatalogueField,
+    shipped: readonly ColumnDefinition[] = [],
+): ColumnDefinition[] {
+    const key = getColumnKey(field);
+    if (!columns.some((column) => getColumnKey(column) === key)) {
+        const asShipped = shipped.find((column) => getColumnKey(column) === key);
+        return [asShipped ?? toColumnDefinition(field), ...columns];
+    }
+    if (columns.length === 1) return columns;
+    return columns.filter((column) => getColumnKey(column) !== key);
+}
+
+/**
+ * The column list with one column's heading overridden, or the override taken away by `undefined`.
+ *
+ * An empty heading, or one equal to what the catalogue publishes, is not an override: it is cleared
+ * instead, so a field relabelled upstream carries through rather than being frozen at the name it had
+ * when someone typed it back.
+ */
+export function renameColumn(columns: ColumnDefinition[], key: string, label: string | undefined): ColumnDefinition[] {
+    return columns.map((column) => {
+        if (getColumnKey(column) !== key) return column;
+
+        const trimmed = label?.trim();
+        const { label: _previous, ...rest } = column;
+        return trimmed && trimmed !== column.catalogueLabel ? { ...rest, label: trimmed } : rest;
+    });
+}
+
+/**
+ * The attribute-sourced columns of a set, keyed and sorted.
+ *
+ * These are the only columns whose presence changes what a listing answers. A property column renders
+ * from the listing entry itself, which carries every property whether or not the request named it, so
+ * adding or removing one needs no round trip. An attribute column renders from values the server
+ * projects for the columns it was asked for, so one the current rows were not fetched with has nowhere
+ * to read from.
+ */
+export function toProjectedKeys(columns: readonly Pick<ColumnDefinition, 'fieldSource' | 'fieldIdentifier'>[] | undefined): string[] {
+    return (
+        (columns ?? [])
+            .filter((column) => column.fieldSource !== FilterFieldSource.Property)
+            .map(getColumnKey)
+            // Sorted only so that reordering the same set reads as the same set; which order it settles on
+            // does not matter, so long as it is the same one every time.
+            .sort((a, b) => a.localeCompare(b))
+    );
 }
 
 export function getRenderableProperties<TRow>(registry: CellRegistry<TRow> | undefined): ReadonlySet<string> {

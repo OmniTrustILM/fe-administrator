@@ -328,6 +328,7 @@ export default function CbomDetail() {
             { id: 'spec-version', columns: ['Spec version', toCellValue(detail?.specVersion)] },
             { id: 'source', columns: ['Source', toCellValue(detail?.source)] },
             { id: 'total-assets', columns: ['Total assets', toCellValue(detail?.totalAssets)] },
+            { id: 'asset-sync-error', columns: ['Asset sync error', toCellValue(detail?.assetSyncError)] },
         ],
         [detail],
     );

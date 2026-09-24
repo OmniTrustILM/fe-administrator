@@ -95,8 +95,8 @@ test.describe('AppearanceSettings', () => {
     });
 
     /**
-     * Behind a toggletip rather than a hover tooltip: the description is the only place saying which theme a colour
-     * reaches, so it has to be reachable without a pointer.
+     * Behind a toggletip rather than a hover tooltip: for the colours that reach both themes the description is the
+     * only place saying so, so it has to be reachable without a pointer.
      */
     test('should say what a colour drives and which theme it reaches', async ({ mount, page }) => {
         await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
@@ -105,6 +105,35 @@ test.describe('AppearanceSettings', () => {
 
         await expect(page.getByTestId('color-help-primaryColor-content')).toContainText(
             'Buttons, links, active states and the page header. Applies to both the light and the dark theme.',
+        );
+    });
+
+    /**
+     * The scope belongs on the label rather than only in the toggletip: an operator who expects Background to behave as
+     * Primary does has no reason to open the toggletip and ask.
+     */
+    test('should name the light-theme-only scope in the label of the colours that carry it', async ({ mount, page }) => {
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+
+        await expect(page.getByTestId('label-backgroundColor')).toHaveText('Background (light theme only)');
+        await expect(page.getByTestId('label-textColor')).toHaveText('Text (light theme only)');
+        await expect(page.getByTestId('label-primaryColor')).toHaveText('Primary');
+        await expect(page.getByTestId('label-secondaryColor')).toHaveText('Secondary');
+    });
+
+    test('should announce the scope as part of the field name', async ({ mount, page }) => {
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+
+        await expect(page.getByTestId('color-hex-backgroundColor')).toHaveAccessibleName('Background (light theme only)');
+    });
+
+    test('should explain in the toggletip why a light-theme-only colour stops there', async ({ mount, page }) => {
+        await mount(<AppearanceSettingsTestWrapper preloadedState={unbranded} />);
+
+        await page.getByTestId('color-help-backgroundColor').click();
+
+        await expect(page.getByTestId('color-help-backgroundColor-content')).toContainText(
+            'The dark theme keeps its own surfaces, so this color does not reach it.',
         );
     });
 

@@ -74,5 +74,6 @@ export function buildCbomCellRegistry({
         'property:CBOM_ASSET_SYNC_STATE': (cbom) => (cbom.assetSyncState ? getEnumLabel(assetSyncStateEnum, cbom.assetSyncState) : null),
         'property:CBOM_ASSETS_SYNCED_AT': (cbom) =>
             cbom.assetSyncedAt ? <span className="whitespace-nowrap">{dateFormatter(cbom.assetSyncedAt)}</span> : null,
+        'property:CBOM_ASSET_SYNC_ERROR': (cbom) => cbom.assetSyncError ?? null,
     };
 }

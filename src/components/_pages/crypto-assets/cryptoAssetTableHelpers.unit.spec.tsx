@@ -1,6 +1,7 @@
 import { getEnumDescription, getEnumLabel } from 'ducks/enums';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { MemoryRouter } from 'react-router';
 import type { CryptographicAssetDto } from 'types/openapi';
 import { CryptographicAssetType, PqcVerdict } from 'types/openapi';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
@@ -88,17 +89,19 @@ describe('buildCryptoAssetRows', () => {
         const [row] = build(assets);
         await act(async () => {
             root.render(
-                <table>
-                    <tbody>
-                        <tr>
-                            {row.columns.map((cell, index) => (
-                                <td key={CRYPTO_ASSET_HEADERS[index].id} data-testid={`cell-${CRYPTO_ASSET_HEADERS[index].id}`}>
-                                    {cell}
-                                </td>
-                            ))}
-                        </tr>
-                    </tbody>
-                </table>,
+                <MemoryRouter initialEntries={['/cryptoassets']}>
+                    <table>
+                        <tbody>
+                            <tr>
+                                {row.columns.map((cell, index) => (
+                                    <td key={CRYPTO_ASSET_HEADERS[index].id} data-testid={`cell-${CRYPTO_ASSET_HEADERS[index].id}`}>
+                                        {cell}
+                                    </td>
+                                ))}
+                            </tr>
+                        </tbody>
+                    </table>
+                </MemoryRouter>,
             );
         });
         return row;
@@ -113,11 +116,13 @@ describe('buildCryptoAssetRows', () => {
         expect(row.columns).toHaveLength(CRYPTO_ASSET_HEADERS.length);
     });
 
-    test('the name renders as plain text until the detail route exists', async () => {
+    test('the name links to the asset detail page', async () => {
         await renderRow([asset()]);
 
-        expect(cell('name').textContent).toBe('RSA-2048');
-        expect(cell('name').querySelector('a')).toBeNull();
+        const link = cell('name').querySelector('a');
+
+        expect(link?.textContent).toBe('RSA-2048');
+        expect(link?.getAttribute('href')).toBe('/cryptoassets/detail/asset-1');
     });
 
     test('a long name is clipped to one line, with the full value left to the cell tooltip', async () => {
@@ -160,7 +165,11 @@ describe('buildCryptoAssetRows', () => {
             getEnumDescription,
         });
         await act(async () => {
-            root.render(<div>{row.columns}</div>);
+            root.render(
+                <MemoryRouter>
+                    <div>{row.columns}</div>
+                </MemoryRouter>,
+            );
         });
 
         expect(container.textContent).toContain(CryptographicAssetType.Algorithm);

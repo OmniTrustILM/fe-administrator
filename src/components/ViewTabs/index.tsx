@@ -1,4 +1,3 @@
-import ColumnPicker from 'components/ColumnPicker';
 import Dialog from 'components/Dialog';
 import Dropdown, { type DropdownItem } from 'components/Dropdown';
 import SimpleBar from 'components/SimpleBar';
@@ -8,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { SearchFilterModel } from 'types/certificate';
 import type { ListViewModel, ViewSlice } from 'types/listViews';
-import type { FilterFieldSource, Resource, SearchFieldDataByGroupDto } from 'types/openapi';
+import type { Resource, SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import { toCatalogueFields } from 'utils/columnPicker';
 import {
@@ -69,13 +68,21 @@ export type ViewTabsProps = Readonly<{
      * carried-over selection would span rows the user can no longer see.
      */
     onApply: (slice: ViewSlice) => void;
-    /** Named in the column dialog's caption, e.g. "Certificates". */
-    resourceLabel?: string;
-    getSourceLabel?: (source: FilterFieldSource) => string;
     dataTestId?: string;
 }>;
 
 type PendingDialog = 'rename' | 'create' | 'delete';
+
+/**
+ * Whether the strip is up, given a settled view list and a settled catalogue. A host withholding its
+ * own column controls has to ask the same question, or a change made before the opening view lands is
+ * applied and then silently undone.
+ *
+ * Why the strip waits for both is written down on `isReady` below.
+ */
+export function isViewStripReady(hasLoadedViews: boolean, isCatalogueLoaded: boolean): boolean {
+    return hasLoadedViews && isCatalogueLoaded;
+}
 
 /**
  * The saved-view tab strip: one tab per view, above the filter widget because filters are part of
@@ -96,8 +103,6 @@ export default function ViewTabs({
     filters,
     sort,
     onApply,
-    resourceLabel,
-    getSourceLabel,
     dataTestId = 'view-tabs',
 }: ViewTabsProps) {
     const dispatch = useDispatch();
@@ -108,7 +113,6 @@ export default function ViewTabs({
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
 
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
-    const [isPickerOpen, setIsPickerOpen] = useState(false);
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
 
     const fields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
@@ -127,7 +131,7 @@ export default function ViewTabs({
      * displayable fields at all, and gating on those would hide the strip for good — Standard needs
      * none of them.
      */
-    const isReady = hasLoaded && (isCatalogueLoaded ?? catalogue.length > 0);
+    const isReady = isViewStripReady(hasLoaded, isCatalogueLoaded ?? catalogue.length > 0);
 
     const activeView = useMemo(() => views.find((view) => view.uuid === activeId), [views, activeId]);
     const tabs = useMemo(() => toTabs(views), [views]);
@@ -154,22 +158,8 @@ export default function ViewTabs({
         return { ...slice, filters: toStorableFilters(slice.filters, catalogue) };
     }, [activeView, fields, standardColumns, standardSort, catalogue]);
 
-    /** The stored columns this table cannot render, which the notice names and the picker can remove. */
+    /** The stored columns this table cannot render, which the notice names. */
     const unavailable = useMemo(() => resolved?.columns.filter((column) => !column.available) ?? [], [resolved]);
-
-    /**
-     * What the column dialog edits.
-     *
-     * The stored list, unavailable columns included — handing over only what the table renders would
-     * leave a column the listing cannot display unreachable in the very dialog the notice about it
-     * sends the user to, and it would then be dropped by the next save without ever being shown.
-     * Except when nothing rendered at all: the table is showing the platform set, so that is what the
-     * dialog opens with, and Save produces a usable view rather than an empty one.
-     */
-    const pickerColumns = useMemo<ColumnDefinition[]>(() => {
-        if (!resolved) return storedSlice.columns;
-        return resolved.fellBackToStandard ? resolved.renderable : resolved.columns;
-    }, [resolved, storedSlice]);
 
     /**
      * The live filters minus the ones a view must not carry, which is what a view is compared against
@@ -300,17 +290,6 @@ export default function ViewTabs({
         apply(remaining.find((view) => view.uuid === fallback));
     }, [dispatch, resource, activeView, views, apply]);
 
-    const onColumnsSaved = useCallback(
-        (saved: ColumnDefinition[]) => {
-            setIsPickerOpen(false);
-            patchActive({ columns: toStoredColumns(saved) });
-            // The live filters and ordering are kept: the dialog edits the columns of the view, and
-            // re-applying the stored slice here would silently drop an unsaved filter beside it.
-            applyRef.current({ columns: saved, filters, sort });
-        },
-        [patchActive, filters, sort],
-    );
-
     const onSaveDrift = useCallback(() => {
         if (!activeView) {
             // Standard has nothing to save into, so the offer is to keep the change as a new view.
@@ -319,7 +298,7 @@ export default function ViewTabs({
         }
 
         // The stored columns this table cannot render go back in: the user never saw them, so saving a
-        // filter or an ordering is not the moment to drop them. The picker is where they are removed.
+        // filter or an ordering is not the moment to drop them.
         patchActive({
             columns: toStoredColumnsKeepingUnavailable(columns, resolved?.columns ?? []),
             filters: storableFilters,
@@ -340,7 +319,6 @@ export default function ViewTabs({
         if (!activeView) return [duplicate];
 
         return [
-            { title: 'Edit columns…', onClick: () => setIsPickerOpen(true) },
             { title: 'Rename…', onClick: () => setDialog('rename') },
             duplicate,
             ...(activeView.defaultView ? [] : [{ title: 'Open this view by default', onClick: () => patchActive({ defaultView: true }) }]),
@@ -453,7 +431,16 @@ export default function ViewTabs({
                     unavailable={unavailable}
                     storedCount={resolved.columns.length}
                     fellBackToStandard={resolved.fellBackToStandard}
-                    onReview={() => setIsPickerOpen(true)}
+                    // Written from the stored side, not from the table: the table is showing the platform
+                    // fallback when nothing resolved, and carries unsaved changes besides, so saving it
+                    // here would overwrite the view with columns the user never chose. Withheld entirely
+                    // on a fallback, where nothing resolved and there is no column list left to write.
+                    onRemove={
+                        activeView && !resolved.fellBackToStandard
+                            ? () => patchActive({ columns: toStoredColumns(resolved.columns.filter((column) => column.available)) })
+                            : undefined
+                    }
+                    isBusy={isMutating}
                     dataTestId={`${dataTestId}-notice`}
                 />
             )}
@@ -467,19 +454,6 @@ export default function ViewTabs({
                 onRevert={() => apply(activeView)}
                 onSave={onSaveDrift}
                 dataTestId={`${dataTestId}-summary`}
-            />
-
-            <ColumnPicker
-                isOpen={isPickerOpen}
-                onClose={() => setIsPickerOpen(false)}
-                onSave={onColumnsSaved}
-                catalogue={catalogue}
-                columns={pickerColumns}
-                standardColumns={standardColumns}
-                renderableProperties={renderableProperties}
-                resourceLabel={resourceLabel}
-                getSourceLabel={getSourceLabel}
-                dataTestId={`${dataTestId}-picker`}
             />
 
             <NameViewDialog

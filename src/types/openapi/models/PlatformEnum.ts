@@ -24,6 +24,7 @@ export enum PlatformEnum {
     FilterFieldSource = 'FilterFieldSource',
     SortDirection = 'SortDirection',
     SettingsSection = 'SettingsSection',
+    JwkSetLoadFailure = 'JwkSetLoadFailure',
     AuthType = 'AuthType',
     HealthStatus = 'HealthStatus',
     ConnectorStatus = 'ConnectorStatus',
@@ -96,6 +97,7 @@ export enum PlatformEnum {
     TimestampSourceType = 'TimestampSourceType',
     TspAuthenticationMethod = 'TspAuthenticationMethod',
     CbomAssetSyncState = 'CbomAssetSyncState',
+    CbomSyncSkipState = 'CbomSyncSkipState',
     CryptographicAssetType = 'CryptographicAssetType',
     PqcVerdict = 'PqcVerdict',
 }

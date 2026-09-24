@@ -1,18 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AttributeContentType, FilterFieldSource, FilterFieldType, type SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
-import {
-    COLUMN_COUNT_WARNING_FROM,
-    MAX_COLUMNS,
-    getCounterState,
-    groupCatalogueFields,
-    isColumnSelected,
-    isSameResolution,
-    moveColumn,
-    resolveColumns,
-    toCatalogueFields,
-    toColumnDefinition,
-} from './columnPicker';
+import { getDropIndex, groupCatalogueFields, moveColumn, resolveColumns, toCatalogueFields, toColumnDefinition } from './columnPicker';
 
 const field = (overrides: Partial<SourcedCatalogueField> = {}): SourcedCatalogueField =>
     ({
@@ -176,20 +165,6 @@ describe('toColumnDefinition', () => {
     });
 });
 
-describe('isColumnSelected', () => {
-    const selected: ColumnDefinition[] = [
-        { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'costCentre', catalogueLabel: 'Cost centre' },
-    ];
-
-    it('matches on source and identifier together', () => {
-        expect(isColumnSelected(selected, field({ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'costCentre' }))).toBe(true);
-    });
-
-    it('does not match the same identifier under a different source', () => {
-        expect(isColumnSelected(selected, field({ fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'costCentre' }))).toBe(false);
-    });
-});
-
 describe('resolveColumns', () => {
     const fields = [field(), field({ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'costCentre', fieldLabel: 'Cost centre' })];
 
@@ -198,6 +173,17 @@ describe('resolveColumns', () => {
         { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'gone', catalogueLabel: 'Gone', label: 'Was renamed' },
         { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'costCentre', catalogueLabel: 'Cost centre' },
     ];
+
+    it('takes alignment back from the column the page ships, so a stored view centres what Standard centres', () => {
+        const shipped: ColumnDefinition[] = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name', align: 'center' },
+        ];
+        const storedWithoutAlign: ColumnDefinition[] = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name' },
+        ];
+
+        expect(resolveColumns(storedWithoutAlign, fields, shipped)[0]).toMatchObject({ align: 'center' });
+    });
 
     it('keeps every stored column, in its stored position', () => {
         expect(resolveColumns(stored, fields).map((column) => column.fieldIdentifier)).toEqual(['COMMON_NAME', 'gone', 'costCentre']);
@@ -265,29 +251,6 @@ describe('resolveColumns', () => {
     });
 });
 
-describe('isSameResolution', () => {
-    const resolved = () =>
-        resolveColumns([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'x' }], [field()]);
-
-    it('reports two separately built but equal resolutions as the same', () => {
-        expect(isSameResolution(resolved(), resolved())).toBe(true);
-    });
-
-    it('reports a different length as different', () => {
-        expect(isSameResolution(resolved(), [])).toBe(false);
-    });
-
-    it('reports a changed property as different', () => {
-        const changed = resolved().map((column) => ({ ...column, catalogueLabel: 'Renamed' }));
-        expect(isSameResolution(resolved(), changed)).toBe(false);
-    });
-
-    it('reports an added property as different', () => {
-        const changed = resolved().map((column) => ({ ...column, label: 'Override' }));
-        expect(isSameResolution(resolved(), changed)).toBe(false);
-    });
-});
-
 describe('moveColumn', () => {
     const columns = ['a', 'b', 'c', 'd'].map((id) => ({
         fieldSource: FilterFieldSource.Property,
@@ -327,25 +290,28 @@ describe('moveColumn', () => {
     });
 });
 
-describe('getCounterState', () => {
-    it('is unremarkable below the warning threshold', () => {
-        expect(getCounterState(COLUMN_COUNT_WARNING_FROM - 1)).toBe('ok');
+describe('getDropIndex', () => {
+    const slots = ['a', 'b', 'c', 'd'];
+
+    it('compensates for the source being taken out before a slot to its right', () => {
+        expect(getDropIndex(0, 3)).toBe(2);
+        expect(getDropIndex(0, 4)).toBe(3);
     });
 
-    it('warns from the threshold, so the limit is visible before it binds', () => {
-        expect(getCounterState(COLUMN_COUNT_WARNING_FROM)).toBe('warning');
-        expect(getCounterState(MAX_COLUMNS - 1)).toBe('warning');
+    it('leaves a slot to the left of the source alone', () => {
+        expect(getDropIndex(3, 0)).toBe(0);
+        expect(getDropIndex(2, 1)).toBe(1);
     });
 
-    it('reports the cap once it is reached', () => {
-        expect(getCounterState(MAX_COLUMNS)).toBe('full');
+    it('resolves both slots bordering the source to where it already is', () => {
+        expect(getDropIndex(1, 1)).toBe(1);
+        expect(getDropIndex(1, 2)).toBe(1);
     });
 
-    it('treats an over-full set as full, so a stored view above the cap still renders', () => {
-        expect(getCounterState(MAX_COLUMNS + 4)).toBe('full');
-    });
-
-    it('warns before it blocks', () => {
-        expect(COLUMN_COUNT_WARNING_FROM).toBeLessThan(MAX_COLUMNS);
+    it('lands a column on the position the slot marked', () => {
+        expect(moveColumn(slots, 0, getDropIndex(0, 3))).toEqual(['b', 'c', 'a', 'd']);
+        expect(moveColumn(slots, 0, getDropIndex(0, 4))).toEqual(['b', 'c', 'd', 'a']);
+        expect(moveColumn(slots, 3, getDropIndex(3, 0))).toEqual(['d', 'a', 'b', 'c']);
+        expect(moveColumn(slots, 3, getDropIndex(3, 2))).toEqual(['a', 'b', 'd', 'c']);
     });
 });

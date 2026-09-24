@@ -187,7 +187,6 @@ export default function ConnectorList() {
             getRowId: (connector: ConnectorResponseModel) => connector.uuid,
             registry,
             defaultSort: CONNECTOR_DEFAULT_SORT,
-            resourceLabel: 'Connectors',
         }),
         [connectors, registry, standardColumns],
     );

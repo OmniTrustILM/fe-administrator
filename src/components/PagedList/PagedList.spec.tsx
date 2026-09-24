@@ -104,6 +104,20 @@ test.describe('PagedList', () => {
         await expect(component.getByText('Third row')).toBeVisible();
     });
 
+    test('renders no add-column control when the page is not column driven', async ({ mount, page }) => {
+        const component = await mount(renderPagedList({ hasCheckboxes: false }));
+
+        await expect(component.locator('thead th')).toHaveCount(headers.length);
+        await expect(page.getByTestId('add-column-menu-trigger')).toHaveCount(0);
+    });
+
+    test('renders no column header menu when the page is not column driven', async ({ mount, page }) => {
+        const component = await mount(renderPagedList({ hasCheckboxes: false }));
+
+        await expect(component.getByRole('button', { name: 'Name', exact: true })).toBeVisible();
+        await expect(page.locator('[data-testid^="column-header-menu-"]')).toHaveCount(0);
+    });
+
     test('mounts with busy state', async ({ mount, page }) => {
         const component = await mount(renderPagedList({ isBusy: true }));
 

@@ -48,6 +48,7 @@ import schedulerEpics from './scheduler-epics';
 import signingProfilesEpics from './signing-profiles-epics';
 import signingRecordsEpics from './signing-records-epics';
 import signingRecordsDashboardEpics from './signing-records-dashboard-epics';
+import cryptoAssetsDashboardEpics from './crypto-assets-dashboard-epics';
 import settingsEpics from './settings-epics';
 import raProfileRequestAttributesEpics from './raProfileRequestAttributes-epics';
 import startupEpics from './startup-epics';
@@ -63,6 +64,7 @@ import utilsCertificateRequestEpics from './utilsCertificateRequest-epics';
 import utilsOidEpics from './utilsOid-epics';
 import cbomEpics from './cbom-epics';
 import cryptoAssetsEpics from './crypto-assets-epics';
+import cbomSyncSkipsEpics from './cbom-sync-skips-epics';
 import loginEpics from './login-epics';
 import secretsEpics from './secrets-epics';
 import vaultProfilesEpics from './vault-profiles-epics';
@@ -118,6 +120,7 @@ export const epics = combineEpics(
     ...signingProfilesEpics,
     ...signingRecordsEpics,
     ...signingRecordsDashboardEpics,
+    ...cryptoAssetsDashboardEpics,
     ...profileApprovalEpics,
     ...approvalsEpic,
     ...notificationsEpics,
@@ -137,6 +140,7 @@ export const epics = combineEpics(
     ...oidsEpics,
     ...cbomEpics,
     ...cryptoAssetsEpics,
+    ...cbomSyncSkipsEpics,
     ...loginEpics,
     ...secretsEpics,
     ...vaultProfilesEpics,

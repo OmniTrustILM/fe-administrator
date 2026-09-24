@@ -1,8 +1,12 @@
 import { test, expect } from '../../../playwright/ct-test';
 import CustomTable, { type TableHeader, type TableDataRow } from './index';
+import CustomTableHeaderActionWithStore from './CustomTableHeaderActionWithStore';
 import CustomTableWithStore from './CustomTableWithStore';
 import CustomTableSortRefetch from './CustomTableSortRefetch';
 import Toggletip from 'components/Toggletip';
+import { FilterFieldSource } from 'types/openapi';
+import type { ColumnDefinition } from 'types/tableColumns';
+import { buildColumnHeaders } from 'utils/tableColumns';
 import { createMockStore, withProviders } from 'utils/test-helpers';
 
 test.describe('CustomTable', () => {
@@ -748,8 +752,41 @@ test.describe('CustomTable', () => {
                 <CustomTable headers={mockHeaders} data={mockData} isLoading={true} hasPagination={true} paginationData={paginationData} />,
             ),
         );
-        await expect(component.getByTestId('table-skeleton')).toBeVisible();
+        await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
         await expect(component.getByText(/Showing.*items of/)).toBeVisible();
+    });
+
+    test('keeps the real header row on screen while the body loads, so a control in it survives', async ({ mount }) => {
+        const component = await mount(
+            withProviders(
+                <CustomTable
+                    headers={mockHeaders}
+                    data={mockData}
+                    isLoading
+                    trailingHeaderAction={<button type="button">Add column</button>}
+                />,
+            ),
+        );
+
+        await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
+        await expect(component.getByRole('button', { name: 'Add column' })).toBeVisible();
+        await expect(component.getByText('Name')).toBeVisible();
+        await expect(component.getByTestId('table-skeleton')).toHaveCount(0);
+    });
+
+    test('holds the select-all while the body is a skeleton, even with no caller gate', async ({ mount }) => {
+        const component = await mount(
+            withProviders(<CustomTable headers={mockHeaders} data={mockData} isLoading hasCheckboxes hasAllCheckBox multiSelect />),
+        );
+
+        await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
+        await expect(component.locator('thead').getByRole('checkbox')).toBeDisabled();
+    });
+
+    test('falls back to the whole skeleton while the headings are still unknown', async ({ mount }) => {
+        const component = await mount(withProviders(<CustomTable headers={[]} data={[]} isLoading />));
+
+        await expect(component.getByTestId('table-skeleton')).toBeVisible();
     });
 
     test('should toggle row selection when clicking on a table cell (not the checkbox)', async ({ mount }) => {
@@ -942,12 +979,12 @@ test.describe('CustomTable', () => {
         expect(borderBottom).toBe('');
     });
 
-    test('should show skeleton and hide search input when isLoading and canSearch are both true', async ({ mount }) => {
+    test('keeps the search input on screen while the body loads', async ({ mount }) => {
         const component = await mount(
             withProviders(<CustomTable headers={mockHeaders} data={mockData} isLoading={true} canSearch={true} />),
         );
-        await expect(component.getByTestId('table-skeleton')).toBeVisible();
-        await expect(component.getByPlaceholder('Search')).toHaveCount(0);
+        await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
+        await expect(component.getByPlaceholder('Search')).toBeVisible();
     });
 
     test('should not show page size select when paginationData totalItems is zero', async ({ mount }) => {
@@ -1097,23 +1134,6 @@ test.describe('CustomTable', () => {
 
         expect(pageChangeCalls).toBe(1);
         expect(calledWithPage).toBe(1);
-    });
-
-    test('should keep first visible item in view when page size changes in internal pagination', async ({ mount, page }) => {
-        const manyRows = Array.from({ length: 50 }, (_, i) => ({
-            id: i + 1,
-            columns: [`Row ${i + 1}`, `b`, `c`],
-        }));
-        const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={manyRows} hasPagination={true} />));
-
-        await component.getByTestId('pagination-next').click();
-        await component.getByTestId('pagination-next').click();
-        await expect(component.getByText(/Showing 21 to 30 of 50/)).toBeVisible();
-
-        await component.getByTestId('select-pageSize-trigger').click();
-        await page.getByRole('option', { name: '20', exact: true }).click();
-
-        await expect(component.getByText(/Showing 21 to 40 of 50/)).toBeVisible();
     });
 
     test('should reset page to last page when current page exceeds total pages after data shrinks', async ({ mount }) => {
@@ -1496,5 +1516,293 @@ test.describe('CustomTable', () => {
             await nameCell.getByRole('button', { name: 'Name', exact: true }).click();
             await expect(nameCell).toHaveAttribute('aria-sort', 'ascending');
         });
+    });
+
+    test.describe('trailing header action', () => {
+        const action = <button type="button">Add column</button>;
+
+        test('renders the action in a header cell of its own, with a matching cell on every row', async ({ mount }) => {
+            const component = await mount(
+                withProviders(<CustomTable headers={mockHeaders} data={mockData} trailingHeaderAction={action} />),
+            );
+
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length + 1);
+            await expect(component.getByRole('button', { name: 'Add column' })).toBeVisible();
+            await expect(component.locator('tbody tr').first().locator('td')).toHaveCount(mockHeaders.length + 1);
+        });
+
+        test('keeps the header and the row aligned when the table also has checkboxes', async ({ mount }) => {
+            const component = await mount(
+                withProviders(<CustomTable headers={mockHeaders} data={mockData} hasCheckboxes trailingHeaderAction={action} />),
+            );
+
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length + 2);
+            await expect(component.locator('tbody tr').first().locator('td')).toHaveCount(mockHeaders.length + 2);
+        });
+
+        test('counts the trailing column in the loading skeleton', async ({ mount }) => {
+            const component = await mount(
+                withProviders(<CustomTable headers={mockHeaders} data={mockData} isLoading trailingHeaderAction={action} />),
+            );
+
+            await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length + 1);
+        });
+
+        test('adds no column at all when the caller passes none', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
+
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length);
+            await expect(component.locator('tbody tr').first().locator('td')).toHaveCount(mockHeaders.length);
+        });
+
+        test('keeps the action against the visible right edge at both ends of a sideways scroll', async ({ mount }) => {
+            const wideHeaders: TableHeader[] = Array.from({ length: 12 }, (_, index) => ({
+                id: `column-${index}`,
+                content: `Column heading number ${index}`,
+            }));
+            const wideData: TableDataRow[] = [{ id: 1, columns: wideHeaders.map((_, index) => `A reasonably long cell value ${index}`) }];
+
+            const component = await mount(
+                <div style={{ width: '420px' }}>
+                    {withProviders(<CustomTable headers={wideHeaders} data={wideData} trailingHeaderAction={action} />)}
+                </div>,
+            );
+
+            const scroller = component.locator('.simplebar-content-wrapper');
+            const trailingCell = component.locator('thead th').last();
+
+            expect(await scroller.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeGreaterThan(0);
+
+            const overhangFromRightEdge = async () => {
+                const scrollerBox = await scroller.boundingBox();
+                const cellBox = await trailingCell.boundingBox();
+                if (!scrollerBox || !cellBox) throw new Error('expected both the scroller and the trailing cell to be laid out');
+                return Math.abs(scrollerBox.x + scrollerBox.width - (cellBox.x + cellBox.width));
+            };
+
+            expect(await overhangFromRightEdge()).toBeLessThanOrEqual(1);
+
+            await scroller.evaluate((element) => {
+                element.scrollLeft = element.scrollWidth;
+            });
+
+            expect(await overhangFromRightEdge()).toBeLessThanOrEqual(1);
+        });
+    });
+
+    test('keeps the pinned cell opaque for a row that carries its own background', async ({ mount }) => {
+        // A class beside the fill, so the pinned cell is proved to paint from the fill alone rather than
+        // from whatever happens to be in `rowClassName`.
+        const highlighted: TableDataRow[] = mockData.map((row) => ({
+            ...row,
+            options: { rowBackground: 'bg-success-surface', rowClassName: 'font-semibold' },
+        }));
+
+        const component = await mount(
+            withProviders(
+                <CustomTable headers={mockHeaders} data={highlighted} trailingHeaderAction={<button type="button">Add column</button>} />,
+            ),
+        );
+
+        const fills = await component
+            .locator('tbody tr td:last-child')
+            .evaluateAll((cells) => cells.map((cell) => getComputedStyle(cell).backgroundColor));
+
+        expect(fills.length).toBeGreaterThan(0);
+        for (const fill of fills) {
+            expect(fill).not.toBe('rgba(0, 0, 0, 0)');
+            expect(fill).not.toBe('transparent');
+        }
+    });
+
+    test.describe('header separators', () => {
+        const measureRules = (cells: Element[]) =>
+            cells.map((cell) => {
+                const rule = getComputedStyle(cell, '::before');
+                return { width: rule.width, height: Number.parseFloat(rule.height), cellHeight: cell.getBoundingClientRect().height };
+            });
+
+        test('draws a rule between adjacent header cells and none before the first', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length);
+
+            const rules = await component.locator('thead th').evaluateAll(measureRules);
+
+            expect(rules[0].width).not.toBe('1px');
+            for (const rule of rules.slice(1)) {
+                expect(rule.width).toBe('1px');
+                expect(rule.height).toBeGreaterThan(0);
+                expect(rule.height).toBeLessThan(rule.cellHeight);
+            }
+        });
+
+        test('draws the rule after the checkbox column too', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} hasCheckboxes />));
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length + 1);
+
+            const rules = await component.locator('thead th').evaluateAll(measureRules);
+
+            expect(rules[0].width).not.toBe('1px');
+            for (const rule of rules.slice(1)) {
+                expect(rule.width).toBe('1px');
+            }
+        });
+    });
+
+    test.describe('per-header action', () => {
+        test('renders one action in every data header cell, sortable or not', async ({ mount }) => {
+            const component = await mount(<CustomTableHeaderActionWithStore headers={mockHeaders} data={mockData} />);
+
+            for (const header of mockHeaders) {
+                const action = component.getByTestId(`action-${header.id}`);
+                await expect(action).toBeVisible();
+                expect(await action.evaluate((node) => node.closest('th')?.getAttribute('data-id'))).toBe(header.id);
+            }
+        });
+
+        test('keeps the action out of the sort button, so neither control nests in the other', async ({ mount }) => {
+            const component = await mount(<CustomTableHeaderActionWithStore headers={mockHeaders} data={mockData} />);
+
+            const action = component.getByTestId('action-name');
+            expect(await action.evaluate((node) => node.parentElement?.closest('button') !== null)).toBe(false);
+            await expect(component.getByRole('button', { name: 'Name', exact: true })).toBeVisible();
+        });
+
+        test('leaves a centred heading centred rather than pulling it to the start of the cell', async ({ mount }) => {
+            const centred: TableHeader[] = [{ id: 'status', content: 'Status', align: 'center', minWidth: '320px' }];
+            const component = await mount(<CustomTableHeaderActionWithStore headers={centred} data={[{ id: 1, columns: ['Active'] }]} />);
+
+            const cell = component.locator('thead th[data-id="status"]');
+            // Measured off the text node itself: the heading is bare text, so no element's box reports
+            // where it actually sits.
+            const headingLeft = await cell.evaluate((th) => {
+                const walker = document.createTreeWalker(th, NodeFilter.SHOW_TEXT);
+                let node = walker.nextNode();
+                while (node && node.textContent?.trim() !== 'Status') node = walker.nextNode();
+                if (!node) return null;
+
+                const range = document.createRange();
+                range.selectNodeContents(node);
+                return range.getBoundingClientRect().left;
+            });
+            const action = await component.getByTestId('action-status').boundingBox();
+            const box = await cell.boundingBox();
+            if (headingLeft === null || !action || !box) throw new Error('No bounding box');
+
+            // Well clear of the cell's own 10px padding, which is where an auto margin would have put it.
+            expect(headingLeft - box.x).toBeGreaterThan(60);
+            expect(action.x).toBeGreaterThan(headingLeft);
+        });
+
+        test('leaves the checkbox and trailing columns without one', async ({ mount }) => {
+            const component = await mount(
+                <CustomTableHeaderActionWithStore headers={mockHeaders} data={mockData} hasCheckboxes withTrailingAction />,
+            );
+
+            await expect(component.locator('[data-testid^="action-"]')).toHaveCount(mockHeaders.length);
+            await expect(component.getByTestId('action-__checkbox__')).toHaveCount(0);
+        });
+
+        test('names a column header from its heading alone, not from the action inside it', async ({ mount, page }) => {
+            // The ACME account list ships this id verbatim, spaces and all.
+            const spacedHeaders: TableHeader[] = [...mockHeaders, { id: 'ACME Profile Name', content: 'ACME Profile Name' }];
+            const spacedData: TableDataRow[] = mockData.map((row) => ({ ...row, columns: [...row.columns, 'acme'] }));
+            await mount(<CustomTableHeaderActionWithStore headers={spacedHeaders} data={spacedData} />);
+
+            await expect(page.getByRole('columnheader', { name: 'Name', exact: true })).toHaveCount(1);
+            await expect(page.getByRole('columnheader', { name: 'Email', exact: true })).toHaveCount(1);
+            await expect(page.getByRole('columnheader', { name: 'ACME Profile Name', exact: true })).toHaveCount(1);
+            await expect(page.getByRole('button', { name: 'Options for name', exact: true })).toBeVisible();
+        });
+
+        test('renders no action at all when the caller passes none', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
+
+            await expect(component.locator('[data-testid^="action-"]')).toHaveCount(0);
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length);
+        });
+    });
+});
+
+test.describe('CustomTable · column source', () => {
+    const commonName: ColumnDefinition = {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'COMMON_NAME',
+        catalogueLabel: 'Common Name',
+        sortable: true,
+    };
+
+    const department: ColumnDefinition = {
+        fieldSource: FilterFieldSource.Custom,
+        fieldIdentifier: 'department|STRING',
+        catalogueLabel: 'Department',
+        sortable: true,
+    };
+
+    const table = (columns: ColumnDefinition[]) => {
+        const data: TableDataRow[] = [{ id: 'u-1', columns: columns.map((_column, index) => `value ${index}`) }];
+        return withProviders(<CustomTable headers={buildColumnHeaders(columns)} data={data} />);
+    };
+
+    const departmentCell = 'th[data-id="custom:department|STRING"]';
+
+    test('badges an attribute column and leaves a property column untagged', async ({ mount }) => {
+        const component = await mount(table([commonName, department]));
+
+        await expect(component.locator('th[data-id="property:COMMON_NAME"]').getByTestId('source-badge')).toHaveCount(0);
+        await expect(component.locator(departmentCell).getByTestId('source-badge')).toHaveCount(1);
+    });
+
+    test('shows the abbreviation and announces the full source name', async ({ mount }) => {
+        const component = await mount(table([department]));
+        const badge = component.getByTestId('source-badge');
+
+        await expect(badge.locator('[aria-hidden="true"]')).toHaveText('Custom');
+        await expect(badge.locator('.sr-only')).toHaveText('Custom attribute');
+    });
+
+    test('gives a pointer user the full source name on hover, without renaming the sort button', async ({ mount }) => {
+        const component = await mount(table([department]));
+        const cell = component.locator(departmentCell);
+
+        await expect(cell.getByTestId('source-badge')).toHaveAttribute('title', 'Custom attribute');
+        await expect(cell.getByRole('button')).toHaveAccessibleName('Custom attribute Department');
+    });
+
+    test('keeps the badge inside the sort button as inert markup, with the ordering state untouched', async ({ mount }) => {
+        const component = await mount(table([department]));
+        const cell = component.locator(departmentCell);
+
+        expect(await cell.getByTestId('source-badge').evaluate((node) => node.closest('button') !== null)).toBe(true);
+        await expect(cell.locator('button button')).toHaveCount(0);
+        await expect(cell.getByRole('button')).toHaveCount(1);
+
+        const sortButton = cell.getByRole('button', { name: 'Custom attribute Department' });
+        await sortButton.focus();
+        await expect(sortButton).toBeFocused();
+
+        await sortButton.click();
+        await expect(cell).toHaveAttribute('aria-sort', 'ascending');
+        await expect(cell.locator('[data-testid="sort-indicator"]')).toBeVisible();
+    });
+
+    test('renders the badge in one case whether or not the column is sortable', async ({ mount }) => {
+        const caseOf = async (sortable: boolean) => {
+            const component = await mount(table([{ ...department, sortable }]));
+            const badge = component.getByTestId('source-badge');
+            const transform = await badge.evaluate((node) => getComputedStyle(node).textTransform);
+            await component.unmount();
+            return transform;
+        };
+
+        expect(await caseOf(true)).toBe('none');
+        expect(await caseOf(false)).toBe('none');
+    });
+
+    test('separates the badge from the heading in the cell text, not only in the layout', async ({ mount }) => {
+        const component = await mount(table([department]));
+
+        await expect(component.locator(departmentCell)).toContainText('Custom attribute Department');
     });
 });

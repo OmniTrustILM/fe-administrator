@@ -69,6 +69,7 @@ export enum Operation {
     CmpConfirm = 'cmpConfirm',
     Upload = 'upload',
     Sync = 'sync',
+    Retry = 'retry',
     Compromise = 'compromise',
     Destroy = 'destroy',
     ListKeyUsages = 'listKeyUsages',

@@ -126,6 +126,7 @@ export type FiltersTestState = {
             preservedFilters: unknown[];
             isFetchingFilters: boolean;
             hasLoadedFilters: boolean;
+            hasFailedFilters?: boolean;
         };
     }>;
 };
@@ -157,7 +158,13 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                   };
         const next = {
             entity: payload.entity,
-            filter: { ...filter, availableFilters: payload.availableFilters ?? [], isFetchingFilters: false, hasLoadedFilters: true },
+            filter: {
+                ...filter,
+                availableFilters: payload.availableFilters ?? [],
+                isFetchingFilters: false,
+                hasLoadedFilters: true,
+                hasFailedFilters: false,
+            },
         };
         if (idx >= 0) {
             return {
@@ -175,7 +182,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
             filters: state.filters
                 .slice(0, idx)
                 .concat(
-                    [{ ...f, filter: { ...f.filter, isFetchingFilters: false, hasLoadedFilters: true } }],
+                    [{ ...f, filter: { ...f.filter, isFetchingFilters: false, hasLoadedFilters: true, hasFailedFilters: true } }],
                     state.filters.slice(idx + 1),
                 ),
         };
@@ -483,6 +490,24 @@ function secretsTestReducer(state: SecretsTestState | undefined, _action: Unknow
     return state ?? secretsTestInitialState;
 }
 
+export type CryptoAssetsTestState = {
+    assetsData?: unknown;
+    assetDetail?: unknown;
+    assetDetailError?: string;
+    assetDetailErrorStatusCode?: number;
+    isFetchingList: boolean;
+    isFetchingDetail: boolean;
+};
+
+const cryptoAssetsTestInitialState: CryptoAssetsTestState = {
+    isFetchingList: false,
+    isFetchingDetail: false,
+};
+
+function cryptoAssetsTestReducer(state: CryptoAssetsTestState | undefined, _action: UnknownAction): CryptoAssetsTestState {
+    return state ?? cryptoAssetsTestInitialState;
+}
+
 export type VaultProfilesTestState = {
     vaultProfiles: unknown[];
 };
@@ -788,6 +813,23 @@ function signingRecordsDashboardTestReducer(
     _action: UnknownAction,
 ): SigningRecordsDashboardTestState {
     return state ?? signingRecordsDashboardTestInitialState;
+}
+
+type CryptoAssetsDashboardTestState = {
+    isFetching: boolean;
+    statistics?: unknown;
+};
+
+const cryptoAssetsDashboardTestInitialState: CryptoAssetsDashboardTestState = {
+    isFetching: false,
+    statistics: undefined,
+};
+
+function cryptoAssetsDashboardTestReducer(
+    state: CryptoAssetsDashboardTestState | undefined,
+    _action: UnknownAction,
+): CryptoAssetsDashboardTestState {
+    return state ?? cryptoAssetsDashboardTestInitialState;
 }
 
 type RaProfileRequestAttributesTestState = {
@@ -1348,6 +1390,12 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
         byResource: { ...recorded.byResource, [resource]: { ...entry, ...next } },
     });
 
+    // Landing the view list is mirrored so a test can act on the table while it is still in flight,
+    // which is the window the strip and the header controls are held back through.
+    if (a.type === 'listViews/listViewsSuccess') {
+        return withEntry({ isFetching: false, hasLoaded: true, views: (a.payload as { views?: ListViewDto[] })?.views ?? entry.views });
+    }
+
     // Only the create and delete round trips are mirrored, and only as far as the strip can observe
     // them: a tab has to appear the moment a create is asked for, follow the uuid the API gives it and
     // disappear again if the create fails, and a deleted tab has to come back if the delete fails.
@@ -1398,6 +1446,7 @@ export const testReducers = combineReducers({
     auth: authTestReducer,
     customAttributes: customAttributesTestReducer,
     connectors: connectorsTestReducer,
+    cryptoAssets: cryptoAssetsTestReducer,
     secrets: secretsTestReducer,
     vaultProfiles: vaultProfilesTestReducer,
     tablePagination: tablePaginationTestReducer,
@@ -1407,6 +1456,7 @@ export const testReducers = combineReducers({
     utilsCertificate: utilsCertificateTestReducer,
     utilsActuator: utilsActuatorTestReducer,
     signingRecordsDashboard: signingRecordsDashboardTestReducer,
+    cryptoAssetsDashboard: cryptoAssetsDashboardTestReducer,
     raprofiles: raProfilesTestReducer,
     authorities: authoritiesTestReducer,
     cryptographicOperations: cryptographicOperationsTestReducer,
@@ -1438,6 +1488,7 @@ export const testInitialState = {
     auth: authTestInitialState,
     customAttributes: customAttributesTestInitialState,
     connectors: connectorsTestInitialState,
+    cryptoAssets: cryptoAssetsTestInitialState,
     secrets: secretsTestInitialState,
     vaultProfiles: vaultProfilesTestInitialState,
     tablePagination: tablePaginationTestInitialState,
@@ -1447,6 +1498,7 @@ export const testInitialState = {
     utilsCertificate: utilsCertificateTestInitialState,
     utilsActuator: utilsActuatorTestInitialState,
     signingRecordsDashboard: signingRecordsDashboardTestInitialState,
+    cryptoAssetsDashboard: cryptoAssetsDashboardTestInitialState,
     raprofiles: raProfilesTestInitialState,
     authorities: authoritiesTestInitialState,
     cryptographicOperations: cryptographicOperationsTestInitialState,

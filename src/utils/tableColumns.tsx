@@ -1,4 +1,5 @@
 import type { SortDirection, TableHeader } from 'components/CustomTable/types';
+import SourceBadge from 'components/SourceBadge';
 import type { ReactNode } from 'react';
 import type { BaseAttributeContentModel } from 'types/attributes';
 import { AttributeContentType, FilterFieldSource, FilterFieldType, type SearchColumnRequestDto } from 'types/openapi';
@@ -13,8 +14,8 @@ export interface ColumnSizing {
 /**
  * Sizing per content type. Every column gets a `maxWidth`, because that is the only thing that makes
  * the row cell apply `overflow: hidden` and an ellipsis, and so the switch that turns the one-line
- * row rule on. The `minWidth` is what makes a twelve-column table degrade by scrolling rather than
- * by squeezing every column into illegibility.
+ * row rule on. The `minWidth` is what makes a wide table degrade by scrolling rather than by
+ * squeezing every column into illegibility.
  */
 const SIZING_BY_CONTENT_TYPE: Readonly<Record<AttributeContentType, ColumnSizing>> = {
     [AttributeContentType.Boolean]: { minWidth: '90px', maxWidth: 120 },
@@ -80,6 +81,28 @@ export interface BuildColumnHeadersOptions {
  */
 export function getColumnHeading(column: ColumnDefinition): string {
     return column.label ? column.label : column.catalogueLabel;
+}
+
+/**
+ * The heading as a table header renders it. An attribute column carries the source badge the
+ * add-column menu tags it with, so a custom attribute sharing a property's label is still tellable
+ * apart; a property column is the baseline and stays a plain string.
+ *
+ * The badge takes the built-in source names rather than a resolver, so a header announces the same
+ * source the add-column menu does.
+ */
+export function renderColumnHeading(column: ColumnDefinition): ReactNode {
+    const heading = getColumnHeading(column);
+    if (column.fieldSource === FilterFieldSource.Property) return heading;
+
+    return (
+        <span className="inline-flex items-center gap-1.5">
+            <SourceBadge source={column.fieldSource} />
+            {/* An explicit space, because the visible gap is layout: without it the cell's text content,
+            and so anything copying or matching on it, reads the badge and the heading as one word. */}{' '}
+            {heading}
+        </span>
+    );
 }
 
 /**
@@ -164,9 +187,8 @@ export function buildColumnHeaders(columns: ColumnDefinition[], options: BuildCo
         const info = options.info?.[key];
         return {
             id: key,
-            content: getColumnHeading(column),
+            content: renderColumnHeading(column),
             ...(info ? { info } : {}),
-            ...(column.headingHidden ? { headingHidden: true } : {}),
             sortable: column.sortable === true,
             sort: isSorted ? options.sort?.direction : undefined,
             align: getColumnAlign(column),
@@ -174,4 +196,9 @@ export function buildColumnHeaders(columns: ColumnDefinition[], options: BuildCo
             maxWidth: sizing.maxWidth,
         };
     });
+}
+
+/** A column count, as the view summary labels it. */
+export function formatColumnCount(count: number): string {
+    return `${count} ${count === 1 ? 'column' : 'columns'}`;
 }

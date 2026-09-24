@@ -1,6 +1,6 @@
 import { test, expect } from '../../../playwright/ct-test';
 import FilterWidgetTestWrapper from './FilterWidgetTestWrapper';
-import { FilterConditionOperator, FilterFieldSource } from 'types/openapi';
+import { FilterConditionOperator, FilterFieldSource, FilterFieldType } from 'types/openapi';
 
 async function chooseSelectOption(page: import('@playwright/test').Page, triggerTestId: string, optionLabel: string) {
     await page.getByTestId(triggerTestId).click();
@@ -295,5 +295,39 @@ test.describe('FilterWidget', () => {
         await expect(page.getByText("'Expires'")).toBeVisible();
         await expect(page.getByText("'Severity'")).toBeVisible();
         await expect(page.getByText("'Owners'")).toBeVisible();
+    });
+
+    test('leaves out a field the catalogue publishes for ordering alone, which no filter can use', async ({ mount, page }) => {
+        await mount(
+            <FilterWidgetTestWrapper
+                availableFilters={[
+                    {
+                        filterFieldSource: FilterFieldSource.Property,
+                        searchFieldData: [
+                            {
+                                fieldIdentifier: 'SERIAL_NUMBER',
+                                fieldLabel: 'Serial Number',
+                                type: FilterFieldType.String,
+                                conditions: [FilterConditionOperator.Equals],
+                                sortable: true,
+                            },
+                            {
+                                fieldIdentifier: 'LAST_ATTEMPT_AT',
+                                fieldLabel: 'Last Attempt',
+                                type: FilterFieldType.Datetime,
+                                conditions: [],
+                                sortable: true,
+                            },
+                        ],
+                    },
+                ]}
+            />,
+        );
+
+        await chooseSelectOption(page, 'select-group-trigger', 'Property');
+        await page.getByTestId('select-field-trigger').click();
+
+        await expect(page.getByRole('option', { name: 'Serial Number', exact: true })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'Last Attempt', exact: true })).toHaveCount(0);
     });
 });

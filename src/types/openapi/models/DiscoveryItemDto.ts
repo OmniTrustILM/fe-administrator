@@ -25,7 +25,7 @@ export interface DiscoveryItemDto {
      */
     uuid: string;
     /**
-     * UUID of the object this item became in inventory. Absent until the item is processed, and absent permanently if its processing failed.
+     * UUID of this item\'s object in inventory. For a certificate, present as soon as one with the same content exists — including from an earlier run, so it may be present while processed is false. For every other resource it is what the item became: absent until processed, and absent permanently if processing failed.
      * @type {string}
      * @memberof DiscoveryItemDto
      */
@@ -49,11 +49,11 @@ export interface DiscoveryItemDto {
      */
     discoveredAt?: string;
     /**
-     * Resource-specific data the Discovery Provider reported, discriminated by resource
+     * Resource-specific data the Discovery Provider reported, discriminated by resource. Absent when the stored payload could no longer be decoded; the item is still listed, so the run\'s counts hold
      * @type {DiscoveredItemPayload}
      * @memberof DiscoveryItemDto
      */
-    payload: DiscoveredItemPayload;
+    payload?: DiscoveredItemPayload;
     /**
      * True when the object was not already in the inventory at the time this run staged it, false when the run rediscovered something the inventory already held.
      * @type {boolean}
@@ -82,5 +82,5 @@ export interface DiscoveryItemDto {
      * @type {Resource}
      * @memberof DiscoveryItemDto
      */
-    readonly resource: Resource;
+    readonly resource?: Resource;
 }

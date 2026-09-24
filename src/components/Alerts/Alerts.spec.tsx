@@ -345,6 +345,53 @@ test.describe('Alerts', () => {
         await expect(page.getByTestId('alerts-announcer')).toHaveText('Imported as <cert-alias>');
     });
 
+    const unbrokenMessage = [
+        'Failed to get Attributes to create key (502):',
+        '{"timestamp":1786536853470,"code":501,"status":"NOT_SUPPORTED","message":[{"error":"Secret keys are not supported.","type":"NotSupportedException"}]}',
+        'connector name=Software-Cryptography-Provider, uuid=0e5a4b9d-1a9b-4d3f-9f8a-2c3d4e5f6a7b',
+    ].join('\n');
+
+    test('should keep a message without breakable spaces inside the stack', async ({ mount, page }) => {
+        const messages = [createAlertMessage({ id: 70, message: unbrokenMessage, color: 'danger' })];
+        await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 71 } }} />);
+
+        const widths = await page.getByTestId('alerts-scroll-area').evaluate((stack) => {
+            const card = stack.querySelector('[data-testid="alert-70"]') as HTMLElement;
+            const message = stack.querySelector('[data-testid="alert-message-70"]') as HTMLElement;
+            return { stack: stack.clientWidth, card: card.offsetWidth, message: message.scrollWidth, messageBox: message.clientWidth };
+        });
+
+        expect(widths.card).toBeLessThanOrEqual(widths.stack);
+        expect(widths.message).toBeLessThanOrEqual(widths.messageBox);
+    });
+
+    test('should keep the dismiss button reachable for a message without breakable spaces', async ({ mount, page }) => {
+        const messages = [createAlertMessage({ id: 71, message: unbrokenMessage, color: 'danger' })];
+        await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 72 } }} />);
+
+        const alert = page.getByTestId('alert-71');
+        const dismiss = alert.getByRole('button', { name: 'Dismiss' });
+        await expect(dismiss).toBeInViewport();
+
+        await dismiss.click();
+        await expect(alert).not.toBeAttached();
+    });
+
+    test('should scroll an expanded message that is taller than the toast', async ({ mount, page }) => {
+        const messages = [createAlertMessage({ id: 72, message: `${longMessage} ${longMessage} ${longMessage}`, color: 'danger' })];
+        await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 73 } }} />);
+
+        await page.getByRole('button', { name: 'Show more' }).click();
+
+        const scrolled = await page.getByTestId('alert-72').evaluate((element) => {
+            const content = element.querySelector('[data-testid="alert-message-72"]') as HTMLElement;
+            content.scrollTop = content.scrollHeight;
+            return { scrollTop: content.scrollTop, overflows: content.scrollHeight > content.clientHeight };
+        });
+        expect(scrolled.overflows).toBe(true);
+        expect(scrolled.scrollTop).toBeGreaterThan(0);
+    });
+
     test('should clip horizontal overflow so the entry animation cannot flash a scrollbar', async ({ mount, page }) => {
         const messages = [createAlertMessage({ id: 50, message: 'Slide in', color: 'success' })];
         await mount(<AlertsWithStore preloadedState={{ [alertsSlice.name]: { messages, msgId: 51 } }} />);

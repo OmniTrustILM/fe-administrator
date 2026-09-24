@@ -18,6 +18,7 @@ export type StubRow = {
     uuid: string;
     commonName: string;
     notAfter: string;
+    serialNumber?: string;
     attributeValues?: Record<string, Record<string, unknown[]>>;
 };
 
@@ -29,6 +30,8 @@ type Props = Readonly<{
     /** The ordering the page declares as its own, as the connector and discovery inventories do. */
     defaultSort?: ColumnSort;
     withheldCatalogue?: boolean;
+    /** Preloads the view list as still in flight, which is the other half of what the strip waits for. */
+    withheldViews?: boolean;
     /** Filters already in the duck when the host mounts, as a deep link leaves them. */
     initialFilters?: SearchFilterModel[];
     withRefreshControl?: boolean;
@@ -39,12 +42,40 @@ type Props = Readonly<{
     withPagingControl?: boolean;
     /** Supplies the column configuration a tick after mount, as a page still fetching its catalogue does. */
     withDeferredConfig?: boolean;
+    /** Renders a control that lands the catalogue, so a test can act on the table before it arrives. */
+    withCatalogueControl?: boolean;
+    /** What that control lands instead, as a remount's refetch answers over the one already in the duck. */
+    refreshedCatalogue?: SearchFieldListModel[];
+    /** Renders a control that fails the catalogue read, which settles it with no fields behind it. */
+    withCatalogueFailureControl?: boolean;
+    /** Renders a control that lands the withheld view list, so a test can act before the strip is up. */
+    withViewsControl?: boolean;
+    /** Renders a control that blanks the rows and puts a list request in flight, as a listing duck does. */
+    withListInFlightControl?: boolean;
 }>;
 
 const registry: CellRegistry<StubRow> = {
     'property:COMMON_NAME': (row) => row.commonName,
     'property:NOT_AFTER': (row) => row.notAfter,
+    'property:SERIAL_NUMBER': (row) => row.serialNumber,
 };
+
+function ListInFlightControl({ onBlank }: Readonly<{ onBlank: () => void }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="start-list-fetch"
+            onClick={() => {
+                onBlank();
+                dispatch({ type: 'pagings/list', payload: EntityType.CERTIFICATE });
+            }}
+        >
+            Start fetch
+        </button>
+    );
+}
 
 function ListRequests({ requests }: Readonly<{ requests: SearchRequestModel[] }>) {
     return <div data-testid="list-requests">{JSON.stringify(requests)}</div>;
@@ -67,11 +98,70 @@ function PagingControl() {
             type="button"
             data-testid="go-to-page-two"
             onClick={() => {
+                // A total with a second page in it. The host steps back onto the last page when the page it is on ran
+                // off the end of the list, so a page 2 the totals do not support would be corrected straight away.
+                dispatch(pagingActions.listSuccess({ entity: EntityType.CERTIFICATE, totalItems: 20 }));
                 dispatch(pagingActions.setPagination({ entity: EntityType.CERTIFICATE, pageNumber: 2, pageSize: 10 }));
                 dispatch(pagingActions.setCheckedRows({ entity: EntityType.CERTIFICATE, checkedRows: ['cert-1'] }));
             }}
         >
             Page 2
+        </button>
+    );
+}
+
+/**
+ * Lands the catalogue after mount, which is what a real page does — the filter widget that reads it
+ * only mounts once the first page is in, so the table paints before sortability is known.
+ */
+function CatalogueControl({ catalogue }: Readonly<{ catalogue: SearchFieldListModel[] }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="land-catalogue"
+            onClick={() =>
+                dispatch({
+                    type: 'filters/getAvailableFiltersSuccess',
+                    payload: { entity: EntityType.CERTIFICATE, availableFilters: catalogue },
+                })
+            }
+        >
+            Land catalogue
+        </button>
+    );
+}
+
+function CatalogueFailureControl() {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="fail-catalogue"
+            onClick={() =>
+                dispatch({
+                    type: 'filters/getAvailableFiltersFailure',
+                    payload: { entity: EntityType.CERTIFICATE, error: 'Catalogue unavailable' },
+                })
+            }
+        >
+            Fail catalogue
+        </button>
+    );
+}
+
+function ViewsControl({ views }: Readonly<{ views: ListViewModel[] }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="land-views"
+            onClick={() => dispatch({ type: 'listViews/listViewsSuccess', payload: { resource: Resource.Certificates, views } })}
+        >
+            Land views
         </button>
     );
 }
@@ -93,15 +183,23 @@ export default function PagedListColumnsWithStore({
     views = [],
     defaultSort,
     withheldCatalogue = false,
+    withheldViews = false,
     initialFilters = [],
     withRefreshControl = false,
     withPagingControl = false,
     withDeferredConfig = false,
+    withCatalogueControl = false,
+    refreshedCatalogue,
+    withCatalogueFailureControl = false,
+    withViewsControl = false,
+    withListInFlightControl = false,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
             listViews: {
-                byResource: { [Resource.Certificates]: { views, isFetching: false, hasLoaded: true, isMutating: false } },
+                byResource: {
+                    [Resource.Certificates]: { views, isFetching: withheldViews, hasLoaded: !withheldViews, isMutating: false },
+                },
                 dispatched: [],
             },
             filters: {
@@ -129,6 +227,7 @@ export default function PagedListColumnsWithStore({
         }),
     );
 
+    const [answeredRows, setAnsweredRows] = useState(rows);
     const [requests, setRequests] = useState<SearchRequestModel[]>([]);
     const [refreshToken, setRefreshToken] = useState(0);
 
@@ -148,15 +247,14 @@ export default function PagedListColumnsWithStore({
                 ? {
                       resource: Resource.Certificates,
                       standardColumns,
-                      rows,
+                      rows: answeredRows,
                       getRowId: (row: StubRow) => row.uuid,
                       registry,
                       headerInfo: { [`${FilterFieldSource.Property}:COMMON_NAME`]: <span data-testid="cn-legend">legend</span> },
-                      resourceLabel: 'Certificates',
                       defaultSort,
                   }
                 : undefined,
-        [configReady, standardColumns, rows, defaultSort],
+        [configReady, standardColumns, answeredRows, defaultSort],
     );
 
     return (
@@ -172,6 +270,14 @@ export default function PagedListColumnsWithStore({
                     configurableColumns={config}
                     refreshToken={refreshToken}
                 />
+
+                {withCatalogueControl && <CatalogueControl catalogue={refreshedCatalogue ?? catalogue} />}
+
+                {withCatalogueFailureControl && <CatalogueFailureControl />}
+
+                {withViewsControl && <ViewsControl views={views} />}
+
+                {withListInFlightControl && <ListInFlightControl onBlank={() => setAnsweredRows([])} />}
 
                 {withPagingControl && <PagingControl />}
 

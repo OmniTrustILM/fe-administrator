@@ -44,4 +44,7 @@ export type IconName =
     | 'check-circle'
     | 'unplug'
     | 'repeat'
-    | 'eye';
+    | 'eye'
+    | 'pause'
+    | 'play'
+    | 'cancel';

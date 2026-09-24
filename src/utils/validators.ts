@@ -78,6 +78,14 @@ export const validateCustomIp = (value: string) => {
     return !value || IP_REGEX.test(value) ? undefined : 'Value must be a valid ip address';
 };
 
+/** A numeric floor; leaves non-numbers to the pattern validator composed before it. `'0'` is a value, not empty. */
+export const validateMinimum = (min: number) => (value: unknown) => {
+    const validationInput = getValueFromObject(value);
+    if (validationInput === undefined || validationInput === null || validationInput === '') return undefined;
+    const number = Number(validationInput);
+    return Number.isNaN(number) || number >= min ? undefined : `Value must be at least ${min}`;
+};
+
 /** A numeric ceiling; leaves non-numbers to the pattern validator composed before it. */
 export const validateMaximum = (max: number) => (value: unknown) => {
     const validationInput = getValueFromObject(value);

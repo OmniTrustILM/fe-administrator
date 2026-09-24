@@ -14,32 +14,45 @@
 import type { DiscoveryResourceProgressDto } from './';
 
 /**
- * Run-level progress of a discovery run: the run-wide counters, plus an optional per-resource breakdown.
+ * How far a discovery has got: how much of the provider\'s work is done, and optionally how many items it has found per resource type.
  * @export
  * @interface DiscoveryProgressDto
  */
 export interface DiscoveryProgressDto {
     /**
-     * Number of items processed so far; omitted when the connector cannot report it
+     * How many targets the provider has attempted so far, including ones that failed. A target is one unit of the provider\'s work — one address and port, one inventory entry, one keystore alias — and can yield many items or none. Omitted if the provider cannot count its work.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */
-    processed?: number;
+    targetsProcessed?: number;
     /**
-     * Estimated total number of items for the run; omitted when the connector cannot produce an estimate
+     * How many targets this discovery will attempt in total — exact if the provider knows, an estimate otherwise, and it may change as the run goes on. Use it with targetsProcessed to show progress. Omitted when the provider cannot know the total; there is then no percentage to show, and clients must not guess one.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */
-    totalEstimate?: number;
+    targetsTotal?: number;
     /**
-     * Connector-defined free-text phase label (e.g. \"scanning\", \"enumerating\"); omitted when the connector has no phase concept
+     * How many targets could not be examined — an unreachable host, a refused connection, a target that answered nothing usable. Included in targetsProcessed, not added to it, so a mostly dark range still reaches its total. Failures here do not make the discovery itself fail.
+     * @type {number}
+     * @memberof DiscoveryProgressDto
+     */
+    targetsFailed?: number;
+    /**
+     * Free-text label for what the provider is doing (e.g. \"scanning\", \"enumerating\"); omitted if it has none
      * @type {string}
      * @memberof DiscoveryProgressDto
      */
     phase?: string;
     /**
+     * How many items were found, broken down by resource type. Present only if the provider reports the breakdown.
      * @type {{ [key: string]: DiscoveryResourceProgressDto; }}
      * @memberof DiscoveryProgressDto
      */
     byResource?: { [key: string]: DiscoveryResourceProgressDto };
+    /**
+     * When the platform recorded this report. A discovery is polled on a backoff that settles at several minutes, so counters can be older than the response carrying them; this says how much older. Set by the platform — a value sent by a Discovery Provider is ignored.
+     * @type {string}
+     * @memberof DiscoveryProgressDto
+     */
+    readonly updatedAt?: string;
 }

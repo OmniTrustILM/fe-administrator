@@ -12,25 +12,25 @@
  */
 
 /**
- * Progress counters. Used for a whole run and, keyed by resource code inside byResource (e.g. \"certificates\", \"keys\"), for one resource type at a time. Every field is optional.
+ * How many items of one resource type have been found, keyed by resource code inside byResource (e.g. \"certificates\", \"keys\"). Every field is optional, but a provider with nothing to report MUST leave the whole object out rather than send an empty one — a client keeping the last progress it was sent cannot tell an empty report from a missing one.
  * @export
  * @interface DiscoveryResourceProgressDto
  */
 export interface DiscoveryResourceProgressDto {
     /**
-     * Number of items processed so far; omitted when the connector cannot report it
+     * How many items of this resource type the provider has found so far; omitted if it cannot count them
      * @type {number}
      * @memberof DiscoveryResourceProgressDto
      */
-    processed?: number;
+    produced?: number;
     /**
-     * Estimated total number of items for the run; omitted when the connector cannot produce an estimate
+     * Estimated total number of items of this resource type for the whole discovery; omitted if the provider cannot estimate
      * @type {number}
      * @memberof DiscoveryResourceProgressDto
      */
     totalEstimate?: number;
     /**
-     * Connector-defined free-text phase label (e.g. \"scanning\", \"enumerating\"); omitted when the connector has no phase concept
+     * Free-text label for what the provider is doing with this resource type; omitted if it has none
      * @type {string}
      * @memberof DiscoveryResourceProgressDto
      */

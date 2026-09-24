@@ -17,6 +17,8 @@ export type Props = {
     type?: 'submit' | 'reset' | 'button';
     'data-testid'?: string;
     'aria-label'?: string;
+    'aria-expanded'?: boolean;
+    'aria-controls'?: string;
 };
 
 const baseButton =
@@ -65,6 +67,8 @@ function Button({
     type = 'button',
     'data-testid': dataTestId,
     'aria-label': ariaLabel,
+    'aria-expanded': ariaExpanded,
+    'aria-controls': ariaControls,
 }: Readonly<Props>) {
     const buttonElement = (
         <button
@@ -75,6 +79,8 @@ function Button({
             disabled={disabled}
             data-testid={dataTestId}
             aria-label={ariaLabel}
+            aria-expanded={ariaExpanded}
+            aria-controls={ariaControls}
         >
             {children}
         </button>
@@ -82,6 +88,17 @@ function Button({
 
     const tooltipContent = disabled && disabledTooltip ? disabledTooltip : title;
     if (tooltipContent) {
+        // `Tooltip` hands its Radix trigger to the child it is given. Merged onto a disabled button that trigger can
+        // never fire: `disabled:pointer-events-none` swallows the hover and the disabled attribute takes the button
+        // out of the focus order, so the reason for the disabled state would be unreachable. A wrapper is the trigger
+        // instead, and it does receive the hover -- the pointer passes through the button onto it.
+        if (disabled && disabledTooltip) {
+            return (
+                <Tooltip content={tooltipContent}>
+                    <span className="inline-flex">{buttonElement}</span>
+                </Tooltip>
+            );
+        }
         return <Tooltip content={tooltipContent}>{buttonElement}</Tooltip>;
     }
 

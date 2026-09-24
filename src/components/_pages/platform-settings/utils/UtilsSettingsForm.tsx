@@ -7,7 +7,7 @@ import { actions, selectors } from 'ducks/settings';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { getFieldErrorMessage } from 'utils/validators-helper';
-import { composeValidators, validateMaximum, validatePositiveInteger } from 'utils/validators';
+import { composeValidators, validateMaximum, validateMinimum, validatePositiveInteger } from 'utils/validators';
 import { useDispatch, useSelector } from 'react-redux';
 import type { SettingsPlatformModel } from 'types/settings';
 import {
@@ -62,6 +62,7 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
     const cbomSyncOverlapSeconds = platformSettings?.utils?.cbomSyncOverlapSeconds;
     const cbomSyncSkippedRetryRuns = platformSettings?.utils?.cbomSyncSkippedRetryRuns;
     const cbomSyncMaxIngestDocuments = platformSettings?.utils?.cbomSyncMaxIngestDocuments;
+    const cbomSyncSkipRetentionDays = platformSettings?.utils?.cbomSyncSkipRetentionDays;
 
     // Keyed on the values, not the utils object: every fetch builds a new object, and a reset on identity alone would
     // wipe an edit in progress whenever a refetch lands with the same content.
@@ -72,8 +73,16 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
             cbomSyncOverlapSeconds: integerText(cbomSyncOverlapSeconds),
             cbomSyncSkippedRetryRuns: integerText(cbomSyncSkippedRetryRuns),
             cbomSyncMaxIngestDocuments: integerText(cbomSyncMaxIngestDocuments),
+            cbomSyncSkipRetentionDays: integerText(cbomSyncSkipRetentionDays),
         }),
-        [utilsServiceUrl, cbomRepositoryUrl, cbomSyncOverlapSeconds, cbomSyncSkippedRetryRuns, cbomSyncMaxIngestDocuments],
+        [
+            utilsServiceUrl,
+            cbomRepositoryUrl,
+            cbomSyncOverlapSeconds,
+            cbomSyncSkippedRetryRuns,
+            cbomSyncMaxIngestDocuments,
+            cbomSyncSkipRetentionDays,
+        ],
     );
 
     const methods = useForm<FormValues>({
@@ -253,7 +262,13 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
                         key={tunable.name}
                         name={tunable.name}
                         control={control}
-                        rules={{ validate: composeValidators(validatePositiveInteger(), validateMaximum(tunable.max)) }}
+                        rules={{
+                            validate: composeValidators(
+                                validatePositiveInteger(),
+                                validateMinimum(tunable.min),
+                                validateMaximum(tunable.max),
+                            ),
+                        }}
                         render={({ field, fieldState }) => (
                             <div>
                                 <TextInput

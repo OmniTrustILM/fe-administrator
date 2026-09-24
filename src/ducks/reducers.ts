@@ -47,6 +47,7 @@ import { slice as schedulerSlice } from './scheduler';
 import { slice as signingProfilesSlice } from './signing-profiles';
 import { slice as signingRecordsSlice } from './signing-records';
 import { slice as signingRecordsDashboardSlice } from './signing-records-dashboard';
+import { slice as cryptoAssetsDashboardSlice } from './crypto-assets-dashboard';
 import { slice as settingsSlice } from './settings';
 import { slice as raProfileRequestAttributesSlice } from './raProfileRequestAttributes';
 import { slice as dashboardSlice } from './statisticsDashboard';
@@ -67,6 +68,7 @@ import { slice as oidsSlice } from './oids';
 import { slice as loginSlice } from './login';
 import { slice as cbomSlice } from './cbom';
 import { slice as cryptoAssetsSlice } from './crypto-assets';
+import { slice as cbomSyncSkipsSlice } from './cbom-sync-skips';
 import { slice as secretsSlice } from './secrets';
 import { slice as vaultProfilesSlice } from './vault-profiles';
 import { slice as vaultsSlice } from './vaults';
@@ -114,6 +116,7 @@ export const reducers = combineReducers({
     [signingProfilesSlice.name]: signingProfilesSlice.reducer,
     [signingRecordsSlice.name]: signingRecordsSlice.reducer,
     [signingRecordsDashboardSlice.name]: signingRecordsDashboardSlice.reducer,
+    [cryptoAssetsDashboardSlice.name]: cryptoAssetsDashboardSlice.reducer,
     [profileApprovalSlice.name]: profileApprovalSlice.reducer,
     [approvalSlice.name]: approvalSlice.reducer,
     [notificationsSlice.name]: notificationsSlice.reducer,
@@ -138,6 +141,7 @@ export const reducers = combineReducers({
     [loginSlice.name]: loginSlice.reducer,
     [cbomSlice.name]: cbomSlice.reducer,
     [cryptoAssetsSlice.name]: cryptoAssetsSlice.reducer,
+    [cbomSyncSkipsSlice.name]: cbomSyncSkipsSlice.reducer,
     [secretsSlice.name]: secretsSlice.reducer,
     [vaultProfilesSlice.name]: vaultProfilesSlice.reducer,
     [vaultsSlice.name]: vaultsSlice.reducer,

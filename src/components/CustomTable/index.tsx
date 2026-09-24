@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { jsxInnerText } from 'utils/jsxInnerText';
 import { DEFAULT_ITEMS_PER_PAGE_OPTIONS } from 'utils/pagination';
 import { useDispatch, useSelector } from 'react-redux';
@@ -16,7 +16,7 @@ import SimpleBar from 'components/SimpleBar';
 import cn from 'classnames';
 import { useLocation } from 'react-router';
 import { ArrowDown, ArrowDownUp, ArrowUp, TableProperties } from 'lucide-react';
-import TableSkeleton from './TableSkeleton';
+import TableSkeleton, { TableSkeletonRows } from './TableSkeleton';
 
 export type { SortDirection, TableDataRow, TableHeader } from './types';
 
@@ -64,9 +64,30 @@ type Props = {
     disableSearchControls?: boolean;
     isLoading?: boolean;
     emptyStateDescription?: string;
+    /**
+     * A control rendered in a trailing header cell of its own, after the last data column. Every row
+     * gains a matching empty cell, so it is a column the table owns rather than one of the caller's:
+     * it carries no heading, no sort and no data, and is absent entirely when nothing is passed.
+     */
+    trailingHeaderAction?: React.ReactNode;
+    /**
+     * A control rendered at the right-hand end of each data header cell. It sits beside the heading and
+     * outside the sort button, for the reason `info` does, and the checkbox and trailing columns never
+     * carry one. A table passing nothing renders exactly as before.
+     */
+    renderHeaderAction?: (header: TableHeader) => React.ReactNode;
+    /**
+     * A control rendered at the left-hand end of each data header cell, on the far side of the heading
+     * from `renderHeaderAction`. The two are kept apart so a press lands on one control or the other
+     * without aim. The checkbox and trailing columns never carry one.
+     */
+    renderHeaderLead?: (header: TableHeader) => React.ReactNode;
 };
 
 const emptyCheckedRows: (string | number)[] = [];
+
+const TRAILING_ACTION_KEY = '__trailing_action__';
+const TRAILING_ACTION_CELL = 'sticky right-0 z-10 w-px p-2.5 border-l border-divider';
 
 // ARIA asks for aria-sort on the sorted header only, so an unsorted column carries no attribute
 // rather than an explicit "none" — otherwise every sortable header announces a sort state at once.
@@ -112,22 +133,36 @@ function CustomTable({
     paginationStateKey,
     paginationPersistKey,
     disablePaginationControls = false,
-    disableSelectionControls = false,
+    disableSelectionControls: callerDisablesSelection = false,
     disableSearchControls = false,
     isLoading = false,
     emptyStateDescription = 'There are no records to display here yet',
+    trailingHeaderAction,
+    renderHeaderAction,
+    renderHeaderLead,
 }: Readonly<Props>) {
     const location = useLocation();
+    // Scoped to the instance so two tables on one page cannot claim the same heading id.
+    const headingIdPrefix = useId();
     const [tblData, setTblData] = useState<TableDataRow[]>(data);
     const [tblCheckedRows, setTblCheckedRows] = useState<(string | number)[]>(checkedRows || emptyCheckedRows);
     const [totalPages, setTotalPages] = useState(1);
 
     const serverSortEnabled = onSortChanged !== undefined;
 
+    // The rows need to know only that the trailing column exists. Depending on the node itself would
+    // rebuild every row whenever the caller re-created it, which an inline element does every render.
+    const hasTrailingAction = Boolean(trailingHeaderAction);
+
     const [expandedRow, setExpandedRow] = useState<string | number>();
     const internalPaginationHydratedKeyRef = useRef<string | undefined>(undefined);
 
     const internalPaginationEnabled = hasPagination && !paginationData && !onPageChanged && !onPageSizeChanged;
+    // The header row survives a load, so its select-all no longer goes away with the body. It has to be
+    // held here rather than by each caller: a table whose rows are a skeleton has nothing to select, and
+    // twelve pages pass `isLoading` without disabling selection because the whole table used to vanish.
+    const disableSelectionControls = callerDisablesSelection || isLoading;
+
     const tableSignature = useMemo(() => {
         if (paginationStateKey) {
             return paginationStateKey;
@@ -611,81 +646,123 @@ function CustomTable({
         const columns: TableHeader[] = [...tblHeaders];
 
         if (hasCheckboxes) columns.unshift({ id: '__checkbox__', content: '', sortable: false, width: '0%' });
-        return columns.map((header) => (
-            <Fragment key={header.id}>
-                <th
-                    scope="col"
-                    className={cn(
-                        'p-2.5 text-start text-xs font-medium uppercase bg-surface-sunken whitespace-nowrap',
-                        header.sort ? 'text-content' : 'text-content-subtle',
-                    )}
-                    data-id={header.id}
-                    {...(header.sortable && ariaSortValue(header.sort) ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
-                    style={{
-                        ...(header.width ? { width: header.width } : {}),
-                        ...(header.minWidth ? { minWidth: header.minWidth } : {}),
-                        ...(header.maxWidth == null ? {} : { maxWidth: `${header.maxWidth}px` }),
-                        ...(header.align ? { textAlign: header.align } : {}),
-                    }}
-                >
-                    {(() => {
-                        const checkboxContent =
-                            hasAllCheckBox && multiSelect ? (
-                                <Checkbox
-                                    checked={checkAllChecked}
-                                    onChange={(value) => onCheckAllCheckboxClick(value)}
-                                    id={`${header.id}__checkbox__`}
-                                    disabled={disableSelectionControls}
-                                />
-                            ) : (
-                                <div>&nbsp;</div>
-                            );
-                        const alignment = {
-                            'justify-center': header.align === 'center',
-                            'justify-end': header.align === 'right',
-                        };
-                        // Wrapped rather than omitted: the cell is only visually blank, and a sortable
-                        // icon column still needs an accessible name on its button.
-                        const headingContent = header.headingHidden ? <span className="sr-only">{header.content}</span> : header.content;
-                        // `info` sits outside the button: a sortable heading is itself a control, and a
-                        // toggletip trigger inside it would nest one interactive element in another, which
-                        // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
-                        const sortableContent = (
-                            <span className={cn('flex w-full items-center gap-1', alignment)}>
-                                <button
-                                    type="button"
-                                    onClick={() => onColumnSortClick(header.id)}
-                                    className={cn(
-                                        'group flex items-center gap-1 cursor-pointer',
-                                        'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 rounded-xs',
-                                        header.info ? undefined : 'w-full',
-                                        alignment,
-                                    )}
-                                >
-                                    {headingContent}
-                                    {/* An explicit space keeps the cell's text content separated from the next header's,
-                                    so text-based selectors over the header row keep matching as they did. */}{' '}
-                                    {getSortIcon(header.sort)}
-                                </button>
-                                {header.info}
-                            </span>
-                        );
-                        if (header.id === '__checkbox__') return checkboxContent;
-                        if (header.sortable) return sortableContent;
-                        if (header.info) {
+        const cells = columns.map((header, index) => {
+            // Keyed by position rather than by `header.id`: an id may carry whitespace — `ACME Profile Name`
+            // is shipped — and `aria-labelledby` is a token list, so such an id would resolve to nothing.
+            const headingId = `${headingIdPrefix}${index}`;
+
+            return (
+                <Fragment key={header.id}>
+                    <th
+                        scope="col"
+                        className={cn(
+                            'p-2.5 text-start text-xs font-medium uppercase bg-surface-sunken whitespace-nowrap',
+                            header.sort ? 'text-content' : 'text-content-subtle',
+                            index > 0 && 'relative before:absolute before:inset-y-1.5 before:left-0 before:w-px before:bg-divider',
+                        )}
+                        data-id={header.id}
+                        {...(header.id === '__checkbox__' ? {} : { 'aria-labelledby': headingId })}
+                        {...(header.sortable && ariaSortValue(header.sort) ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
+                        style={{
+                            ...(header.width ? { width: header.width } : {}),
+                            ...(header.minWidth ? { minWidth: header.minWidth } : {}),
+                            ...(header.maxWidth == null ? {} : { maxWidth: `${header.maxWidth}px` }),
+                            ...(header.align ? { textAlign: header.align } : {}),
+                        }}
+                    >
+                        {(() => {
+                            if (header.id === '__checkbox__') {
+                                return hasAllCheckBox && multiSelect ? (
+                                    <Checkbox
+                                        checked={checkAllChecked}
+                                        onChange={(value) => onCheckAllCheckboxClick(value)}
+                                        id={`${header.id}__checkbox__`}
+                                        disabled={disableSelectionControls}
+                                    />
+                                ) : (
+                                    <div>&nbsp;</div>
+                                );
+                            }
+
+                            const alignment = {
+                                'justify-center': header.align === 'center',
+                                'justify-end': header.align === 'right',
+                            };
+                            // Wrapped rather than omitted: the cell is only visually blank, and a sortable
+                            // icon column still needs an accessible name on its button. The wrapper is also what
+                            // the cell's `aria-labelledby` points at, so the cell is named by the heading alone.
+                            const headingContent = <span id={headingId}>{header.content}</span>;
+                            // `info` sits outside the button: a sortable heading is itself a control, and a
+                            // toggletip trigger inside it would nest one interactive element in another, which
+                            // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
+                            const headingSide = (() => {
+                                if (header.sortable) {
+                                    return (
+                                        <span className={cn('flex w-full items-center gap-1', alignment)}>
+                                            <button
+                                                type="button"
+                                                onClick={() => onColumnSortClick(header.id)}
+                                                className={cn(
+                                                    'group flex items-center gap-1 cursor-pointer',
+                                                    'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 rounded-xs',
+                                                    header.info ? undefined : 'w-full',
+                                                    alignment,
+                                                )}
+                                            >
+                                                {headingContent}
+                                                {/* An explicit space keeps the cell's text content separated from the next header's,
+                                            so text-based selectors over the header row keep matching as they did. */}{' '}
+                                                {getSortIcon(header.sort)}
+                                            </button>
+                                            {header.info}
+                                        </span>
+                                    );
+                                }
+                                if (header.info) {
+                                    return (
+                                        <span className={cn('flex w-full items-center gap-1', alignment)}>
+                                            {headingContent} {header.info}
+                                        </span>
+                                    );
+                                }
+                                return headingContent;
+                            })();
+
+                            const action = renderHeaderAction?.(header);
+                            const lead = renderHeaderLead?.(header);
+                            if (!action && !lead) return headingSide;
+
+                            // The heading is what grows, so each control keeps to its own end of the cell
+                            // without an auto margin — which outranks `justify-content` and would pull a
+                            // centred or right-aligned heading to the start of the cell.
                             return (
-                                <span className={cn('flex w-full items-center gap-1', alignment)}>
-                                    {headingContent} {header.info}
+                                <span className="flex w-full items-center gap-1">
+                                    {lead && <span className="flex shrink-0 items-center">{lead}</span>}
+                                    <span className={cn('flex w-full min-w-0 items-center', alignment)}>{headingSide}</span>
+                                    {action && <span className="flex shrink-0 items-center">{action}</span>}
                                 </span>
                             );
-                        }
-                        return headingContent;
-                    })()}
-                </th>
-            </Fragment>
-        ));
+                        })()}
+                    </th>
+                </Fragment>
+            );
+        });
+
+        if (trailingHeaderAction) {
+            cells.push(
+                <th key={TRAILING_ACTION_KEY} scope="col" className={cn(TRAILING_ACTION_CELL, 'bg-surface-sunken')}>
+                    {trailingHeaderAction}
+                </th>,
+            );
+        }
+
+        return cells;
     }, [
         tblHeaders,
+        trailingHeaderAction,
+        renderHeaderAction,
+        renderHeaderLead,
+        headingIdPrefix,
         hasCheckboxes,
         onColumnSortClick,
         hasAllCheckBox,
@@ -723,7 +800,7 @@ function CustomTable({
                                   },
                               }
                             : {})}
-                        className={row.options?.rowClassName}
+                        className={cn(row.options?.rowBackground, row.options?.rowClassName)}
                         style={getRowStyle(row)}
                         data-id={row.id}
                     >
@@ -751,11 +828,18 @@ function CustomTable({
                                 onDetailClick={handleRowDetailClick}
                             />
                         ))}
+
+                        {/* Opaque, because it is pinned over the cells that scroll beneath it, and painted
+                            the row's own fill so a highlighted row keeps its colour through the column. */}
+                        {hasTrailingAction && (
+                            <td className={cn(TRAILING_ACTION_CELL, row.options?.rowBackground ?? 'bg-surface-raised')} />
+                        )}
                     </tr>
                 </Fragment>
             ));
     }, [
         tblData,
+        hasTrailingAction,
         hasPagination,
         hasDetails,
         pageSize,
@@ -771,15 +855,22 @@ function CustomTable({
         disableSelectionControls,
     ]);
 
+    // Once the headings are known the skeleton is confined to the body, so the header row — and the
+    // add-column menu that lives in it — stays mounted across a refetch rather than being torn down
+    // and rebuilt, which would close the menu under the user mid-change.
+    const skeletonRowCount = paginationData ? paginationData.pageSize : pageSize;
+    const isAwaitingHeadings = isLoading && tblHeaders.length === 0;
+
     return (
         <div data-testid="custom-table">
-            {isLoading ? (
+            {isAwaitingHeadings ? (
+                // No `columnsCount`: this branch is reached only while `headers` is empty, so counting them
+                // would ask for a skeleton of no columns. Its own default is the shape to fall back to.
                 <TableSkeleton
-                    columnsCount={headers.length}
                     hasCheckboxes={Boolean(hasCheckboxes)}
                     hasPagination={false}
                     canSearch={Boolean(canSearch)}
-                    rowCount={paginationData ? paginationData.pageSize : pageSize}
+                    rowCount={skeletonRowCount}
                 />
             ) : (
                 <>
@@ -802,22 +893,39 @@ function CustomTable({
                     {(hasHeader || body?.length > 0 || !data.length) && (
                         <div className="py-2">
                             <SimpleBar forceVisible="x">
-                                <div className={cn('rounded-md', { 'border border-divider': hasHeader })}>
-                                    <div className="min-w-full inline-block align-middle">
-                                        <div className="overflow-hidden">
-                                            <table className="min-w-full divide-y divide-divider bg-surface-raised">
-                                                {hasHeader && (
-                                                    <thead className="bg-surface-sunken">
-                                                        <tr>{header}</tr>
-                                                    </thead>
+                                {/* Sized to the table, not to the scrollport: a block-level box here would be only as
+                                    wide as the visible area, so its top, bottom and right borders would stop short the
+                                    moment the table is scrolled sideways. */}
+                                <div
+                                    className={cn('inline-block min-w-full align-middle rounded-md', {
+                                        'border border-divider': hasHeader,
+                                    })}
+                                >
+                                    {/* `clip` rather than `hidden`, which would become a scroll container and anchor the
+                                        sticky trailing cell to the full table width instead of to the visible edge. */}
+                                    <div className="overflow-clip">
+                                        <table className="min-w-full divide-y divide-divider bg-surface-raised">
+                                            {hasHeader && (
+                                                <thead className="bg-surface-sunken">
+                                                    <tr>{header}</tr>
+                                                </thead>
+                                            )}
+                                            <tbody className="divide-y divide-divider">
+                                                {isLoading ? (
+                                                    <TableSkeletonRows
+                                                        columnsCount={tblHeaders.length + (hasTrailingAction ? 1 : 0)}
+                                                        hasCheckboxes={Boolean(hasCheckboxes)}
+                                                        rowCount={skeletonRowCount}
+                                                    />
+                                                ) : (
+                                                    body
                                                 )}
-                                                <tbody className="divide-y divide-divider">{body}</tbody>
-                                            </table>
-                                        </div>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </SimpleBar>
-                            {body.length === 0 && (
+                            {!isLoading && body.length === 0 && (
                                 <div className="flex flex-col items-center justify-center gap-3 py-8">
                                     <div className="flex items-center justify-center w-14 h-14 rounded-full bg-surface-sunken">
                                         <TableProperties size={28} strokeWidth={1.5} className="text-content-subtle" />

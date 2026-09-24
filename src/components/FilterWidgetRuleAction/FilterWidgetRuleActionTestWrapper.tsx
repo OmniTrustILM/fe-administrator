@@ -68,6 +68,7 @@ export function FilterWidgetRuleActionTestWrapper({
                     preservedFilters: [],
                     isFetchingFilters: false,
                     hasLoadedFilters: true,
+                    hasFailedFilters: false,
                 },
             },
         ];
@@ -80,6 +81,7 @@ export function FilterWidgetRuleActionTestWrapper({
                     preservedFilters: [],
                     isFetchingFilters: false,
                     hasLoadedFilters: true,
+                    hasFailedFilters: false,
                 },
             });
         }

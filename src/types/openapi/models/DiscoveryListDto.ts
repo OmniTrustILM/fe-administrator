@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { BaseAttributeContentDtoV3, DiscoveryStatus } from './';
+import type { BaseAttributeContentDtoV3, ConnectorInterfaceDto, DiscoveryStatus } from './';
 
 /**
  * @export
@@ -31,11 +31,11 @@ export interface DiscoveryListDto {
      */
     name: string;
     /**
-     * Discovery Kind
+     * Discovery Kind. Absent for a run against a v2 Discovery Provider, which has no kinds.
      * @type {string}
      * @memberof DiscoveryListDto
      */
-    kind: string;
+    kind?: string;
     /**
      * @type {DiscoveryStatus}
      * @memberof DiscoveryListDto
@@ -71,6 +71,12 @@ export interface DiscoveryListDto {
      * @memberof DiscoveryListDto
      */
     connectorName: string;
+    /**
+     * The connector interface this run is driven through, and so which generation drives it. Absent for a run against a legacy v1 connector, which declares no connector interface.
+     * @type {ConnectorInterfaceDto}
+     * @memberof DiscoveryListDto
+     */
+    connectorInterface?: ConnectorInterfaceDto;
     /**
      * Values of the attribute-sourced fields requested as columns, keyed by field source and then by field identifier. Present only when the listing request asked for attribute-sourced columns; a field the object has no value for is absent rather than empty, and a multi-valued attribute arrives in its stored item_order.
      * @type {{ [key: string]: { [key: string]: Array<BaseAttributeContentDtoV3>; }; }}

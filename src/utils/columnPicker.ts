@@ -2,15 +2,6 @@ import { FilterFieldSource, type SearchFieldDataByGroupDto } from 'types/openapi
 import type { ColumnDefinition, PickerColumn, SourcedCatalogueField } from 'types/tableColumns';
 import { getColumnKey } from './tableColumns';
 
-/**
- * The most columns a view may hold. A readability rule rather than a contract limit: if the API ever
- * enforces a maximum of its own, the picker takes the smaller of the two.
- */
-export const MAX_COLUMNS = 12;
-
-/** Where the counter starts warning, so the cap is visible before it binds. */
-export const COLUMN_COUNT_WARNING_FROM = 10;
-
 /** The order sources are offered in: object properties first, then the attribute sources. */
 const SOURCE_ORDER: readonly FilterFieldSource[] = [
     FilterFieldSource.Property,
@@ -24,8 +15,6 @@ export interface CatalogueFieldGroup {
     source: FilterFieldSource;
     fields: SourcedCatalogueField[];
 }
-
-export type ColumnCounterState = 'ok' | 'warning' | 'full';
 
 /**
  * The fields of a column catalogue, flattened and each stamped with the source it was published
@@ -57,22 +46,26 @@ export function toCatalogueFields(
     );
 }
 
+/** Whether a field answers the search term, by its label or by the identifier a view records it under. */
+export function matchesFieldSearch(field: SourcedCatalogueField, search: string): boolean {
+    const term = search.trim().toLowerCase();
+    return (
+        term === '' ||
+        field.fieldLabel.toLowerCase().includes(term) ||
+        // The identifier is searchable too, so a stored column can be found by what a view recorded.
+        field.fieldIdentifier.toLowerCase().includes(term)
+    );
+}
+
 /**
  * Catalogue fields grouped by source and narrowed by the search term. A group left with no matches
  * is dropped rather than rendered as an empty heading — a resource with no custom attributes should
  * not appear to have an empty custom section.
  */
 export function groupCatalogueFields(fields: SourcedCatalogueField[], search: string): CatalogueFieldGroup[] {
-    const term = search.trim().toLowerCase();
-    const matches = (field: SourcedCatalogueField) =>
-        term === '' ||
-        field.fieldLabel.toLowerCase().includes(term) ||
-        // The identifier is searchable too, so a stored column can be found by what a view recorded.
-        field.fieldIdentifier.toLowerCase().includes(term);
-
     return SOURCE_ORDER.map((source) => ({
         source,
-        fields: fields.filter((field) => field.fieldSource === source && matches(field)),
+        fields: fields.filter((field) => field.fieldSource === source && matchesFieldSearch(field, search)),
     })).filter((group) => group.fields.length > 0);
 }
 
@@ -90,18 +83,12 @@ export function toColumnDefinition(field: SourcedCatalogueField): ColumnDefiniti
     };
 }
 
-/** Whether a catalogue field is already among the selected columns. */
-export function isColumnSelected(selected: ColumnDefinition[], field: SourcedCatalogueField): boolean {
-    const key = getColumnKey(field);
-    return selected.some((column) => getColumnKey(column) === key);
-}
-
 /**
  * Stored columns resolved against the live catalogue.
  *
  * A resolved column is refreshed from the catalogue, so a field relabelled since the view was saved
- * carries its new label through, while the view's own label override and anything the catalogue does
- * not carry — alignment — survive.
+ * carries its new label through, while the view's own heading override survives and the page's own
+ * display choices — alignment — are taken back from the column it ships.
  *
  * A column the catalogue does not publish is only unavailable if the platform does not define it
  * either. A platform default column can be absent from the filter-field catalogue and still be
@@ -127,27 +114,18 @@ export function resolveColumns(
             return { ...standard, ...(column.label ? { label: column.label } : {}), available: true };
         }
 
+        // Alignment is the page's choice, not the catalogue's: a centred icon column stays centred whether
+        // it is opened from Standard or from a stored view. The shipped column wins, and what was handed
+        // in stands behind it for a caller that passes no shipped set — `toStoredColumns` writes no
+        // alignment, so through `resolveView` that fallback never fires.
+        const align = standardByKey.get(key)?.align ?? column.align;
+
         return {
             ...toColumnDefinition(field),
-            ...(column.align ? { align: column.align } : {}),
+            ...(align ? { align } : {}),
             ...(column.label ? { label: column.label } : {}),
             available: true,
         };
-    });
-}
-
-/**
- * Whether two resolutions are the same column list. Lets a re-resolution be dropped rather than
- * replacing state with an equal value, which is what keeps an unstable catalogue reference from
- * re-rendering forever.
- */
-export function isSameResolution(a: readonly PickerColumn[], b: readonly PickerColumn[]): boolean {
-    if (a.length !== b.length) return false;
-
-    return a.every((column, index) => {
-        const other = b[index];
-        const keys = new Set([...Object.keys(column), ...Object.keys(other)]) as Set<keyof PickerColumn>;
-        return [...keys].every((key) => column[key] === other[key]);
     });
 }
 
@@ -166,10 +144,11 @@ export function moveColumn<T>(columns: T[], from: number, to: number): T[] {
     reordered.splice(target, 0, moved);
     return reordered;
 }
-
-/** How the column counter should read for a given selection size. */
-export function getCounterState(count: number): ColumnCounterState {
-    if (count >= MAX_COLUMNS) return 'full';
-    if (count >= COLUMN_COUNT_WARNING_FROM) return 'warning';
-    return 'ok';
+/**
+ * The index a drop lands on, given where the source is and which slot it was released over. A slot
+ * means "insert before this position", and {@link moveColumn} takes the source out before inserting,
+ * which shifts a slot beyond it down by one.
+ */
+export function getDropIndex(from: number, slot: number): number {
+    return from < slot ? slot - 1 : slot;
 }

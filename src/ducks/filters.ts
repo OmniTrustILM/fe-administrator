@@ -31,6 +31,7 @@ export enum EntityType {
     ACTIONS_SOURCE,
     SIGNING_RECORD,
     CRYPTO_ASSET,
+    CBOM_SYNC_SKIP,
 }
 
 export type Filter = {
@@ -48,6 +49,12 @@ type FilterObject = {
      * `false` both before the first read and after it, so it cannot tell the two apart.
      */
     hasLoadedFilters: boolean;
+    /**
+     * Whether the last settled read failed. A failure settles `hasLoadedFilters` with no fields behind
+     * it, which reads exactly like a catalogue that published none, so anything asserting what the
+     * catalogue says has to ask this too.
+     */
+    hasFailedFilters: boolean;
 };
 
 export type State = {
@@ -60,6 +67,7 @@ const EMPTY_FILTER: FilterObject = {
     preservedFilters: [],
     isFetchingFilters: false,
     hasLoadedFilters: false,
+    hasFailedFilters: false,
 };
 
 export const initialState: State = {
@@ -113,6 +121,7 @@ export const slice = createSlice({
                 filter.availableFilters = action.payload.availableFilters;
                 filter.isFetchingFilters = false;
                 filter.hasLoadedFilters = true;
+                filter.hasFailedFilters = false;
             });
         },
 
@@ -120,6 +129,7 @@ export const slice = createSlice({
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.isFetchingFilters = false;
                 filter.hasLoadedFilters = true;
+                filter.hasFailedFilters = true;
             });
         },
     },
@@ -137,6 +147,8 @@ const isFetchingFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).isFetchingFilters);
 const hasLoadedFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).hasLoadedFilters);
+const hasFailedFilters = (entity: EntityType) =>
+    createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).hasFailedFilters);
 
 export const selectors = {
     state,
@@ -146,6 +158,7 @@ export const selectors = {
     preservedFilters,
     isFetchingFilters,
     hasLoadedFilters,
+    hasFailedFilters,
 };
 
 export const actions = slice.actions;

@@ -37,7 +37,7 @@ const inventories = [
             'DISCOVERY_CONNECTOR_NAME',
             'DISCOVERY_KIND',
         ],
-        displayOnly: ['DISCOVERY_DURATION'],
+        displayOnly: ['DISCOVERY_CONNECTOR_INTERFACE', 'DISCOVERY_DURATION'],
     },
     {
         name: 'connectors',
@@ -108,6 +108,7 @@ const inventories = [
             'CBOM_TOTAL_ASSETS_COUNT',
             'CBOM_ASSET_SYNC_STATE',
             'CBOM_ASSETS_SYNCED_AT',
+            'CBOM_ASSET_SYNC_ERROR',
         ],
         displayOnly: [],
     },
@@ -203,6 +204,10 @@ describe('cells whose value can be absent', () => {
         return render(discovery as DiscoveryResponseModel, DISCOVERY_COLUMNS, discoveryRegistry, 'DISCOVERY_DURATION');
     }
 
+    function discoveryInterface(discovery: Partial<DiscoveryResponseModel>) {
+        return render(discovery as DiscoveryResponseModel, DISCOVERY_COLUMNS, discoveryRegistry, 'DISCOVERY_CONNECTOR_INTERFACE');
+    }
+
     it('reaches the empty state for a connector carrying no version', () => {
         expect(connectorVersion({ uuid: 'connector-1' })).toContain('No value');
     });
@@ -213,6 +218,27 @@ describe('cells whose value can be absent', () => {
 
     it('reaches the empty state for a discovery that has not started', () => {
         expect(discoveryDuration({ uuid: 'discovery-1' })).toContain('No value');
+    });
+
+    it('shows the interface version a run was driven by, v1 for a legacy run', () => {
+        expect(discoveryInterface({ uuid: 'discovery-1' })).toContain('v1');
+        expect(
+            discoveryInterface({ uuid: 'discovery-1', connectorInterface: { uuid: 'iface-1', code: 'discovery' as any, version: 'v2' } }),
+        ).toContain('v2');
+    });
+
+    it('shows a kind for a legacy run only, since a v2 provider has none', () => {
+        const kind = (discovery: Partial<DiscoveryResponseModel>) =>
+            render(discovery as DiscoveryResponseModel, DISCOVERY_COLUMNS, discoveryRegistry, 'DISCOVERY_KIND');
+
+        expect(kind({ uuid: 'discovery-1', kind: 'IP-HostName' })).toContain('IP-HostName');
+        expect(
+            kind({
+                uuid: 'discovery-1',
+                kind: 'IP-HostName',
+                connectorInterface: { uuid: 'iface-1', code: 'discovery' as any, version: 'v2' },
+            }),
+        ).not.toContain('IP-HostName');
     });
 
     it('shows the duration a started discovery has run for', () => {

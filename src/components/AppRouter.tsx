@@ -16,6 +16,7 @@ const AuditLogs = lazyWithRetry(() => import('./_pages/auditLogs'));
 const CertificatesDashboard = lazyWithRetry(() => import('./_pages/dashboard/CertificatesDashboard'));
 const SecretsDashboard = lazyWithRetry(() => import('./_pages/dashboard/SecretsDashboard'));
 const SigningRecordsDashboard = lazyWithRetry(() => import('./_pages/dashboard/SigningRecordsDashboard'));
+const CryptoAssetsDashboard = lazyWithRetry(() => import('./_pages/dashboard/CryptoAssetsDashboard'));
 const AuthenticationSettings = lazyWithRetry(() => import('./_pages/auth-settings'));
 const OAuth2ProviderDetail = lazyWithRetry(() => import('./_pages/auth-settings/detail'));
 
@@ -176,8 +177,10 @@ const VaultProfileDetail = lazyWithRetry(() => import('./_pages/vault-profiles/d
 const CbomsList = lazyWithRetry(() => import('./_pages/cboms/list'));
 const CbomDetail = lazyWithRetry(() => import('components/_pages/cboms/detail'));
 const CbomVersionsHistory = lazyWithRetry(() => import('components/_pages/cboms/versions'));
+const CbomSyncSkipsList = lazyWithRetry(() => import('components/_pages/cboms/sync-skips'));
 
 const CryptoAssetsList = lazyWithRetry(() => import('components/_pages/crypto-assets/list'));
+const CryptoAssetDetail = lazyWithRetry(() => import('components/_pages/crypto-assets/detail'));
 
 const RouteFallback = () => <Spinner size="xl" />;
 
@@ -202,6 +205,7 @@ export default function AppRouter() {
                     <Route path={`/${Resource.Dashboard.toLowerCase()}/certificates`} element={<CertificatesDashboard />} />
                     <Route path={`/${Resource.Dashboard.toLowerCase()}/secrets`} element={<SecretsDashboard />} />
                     <Route path={`/${Resource.Dashboard.toLowerCase()}/signing-records`} element={<SigningRecordsDashboard />} />
+                    <Route path={`/${Resource.Dashboard.toLowerCase()}/crypto-assets`} element={<CryptoAssetsDashboard />} />
 
                     <Route path={`/${Resource.Users.toLowerCase()}`} element={<UsersList />} />
                     <Route path={`/${Resource.Users.toLowerCase()}/list`} element={<Navigate to={`/${Resource.Users.toLowerCase()}`} />} />
@@ -476,10 +480,16 @@ export default function AppRouter() {
                     )}
 
                     <Route path={`/${Resource.Cboms.toLowerCase()}`} element={<CbomsList />} />
+                    <Route path={`/${Resource.Cboms.toLowerCase()}/sync-skips`} element={<CbomSyncSkipsList />} />
                     <Route path={`/${Resource.Cboms.toLowerCase()}/detail/:id`} element={<CbomDetail />} />
                     <Route path={`/${Resource.Cboms.toLowerCase()}/detail/:id/versions/:versionId?`} element={<CbomVersionsHistory />} />
 
-                    {canListCryptoAssets && <Route path={`/${Resource.CryptoAssets.toLowerCase()}`} element={<CryptoAssetsList />} />}
+                    {canListCryptoAssets && (
+                        <>
+                            <Route path={`/${Resource.CryptoAssets.toLowerCase()}`} element={<CryptoAssetsList />} />
+                            <Route path={`/${Resource.CryptoAssets.toLowerCase()}/detail/:id`} element={<CryptoAssetDetail />} />
+                        </>
+                    )}
                 </Route>
 
                 {/*
