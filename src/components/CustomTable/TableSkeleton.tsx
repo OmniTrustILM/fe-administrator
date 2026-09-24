@@ -10,6 +10,37 @@ function getCellWidth(row: number, col: number): number {
 
 const headerWidths = [96, 64, 80, 56];
 
+type RowsProps = {
+    columnsCount?: number;
+    hasCheckboxes?: boolean;
+    rowCount?: number;
+};
+
+/** The skeleton as table rows alone, for a table whose real header is already on screen. */
+export function TableSkeletonRows({ columnsCount = 4, hasCheckboxes = true, rowCount = 10 }: Readonly<RowsProps>) {
+    const columns = Array.from({ length: columnsCount }, (_, i) => i);
+    const rows = Array.from({ length: rowCount }, (_, i) => i);
+
+    return (
+        <>
+            {rows.map((row) => (
+                <tr key={row} data-testid="table-skeleton-row" className="animate-pulse">
+                    {hasCheckboxes && (
+                        <td className="p-3">
+                            <div className={`${barClass} h-4 w-4`} />
+                        </td>
+                    )}
+                    {columns.map((col) => (
+                        <td key={col} className="p-3">
+                            <div className={`${barClass} h-3`} style={{ width: `${getCellWidth(row, col)}px` }} />
+                        </td>
+                    ))}
+                </tr>
+            ))}
+        </>
+    );
+}
+
 type Props = {
     columnsCount?: number;
     hasCheckboxes?: boolean;
@@ -26,7 +57,6 @@ function TableSkeleton({
     rowCount = 10,
 }: Readonly<Props>) {
     const columns = Array.from({ length: columnsCount }, (_, i) => i);
-    const rows = Array.from({ length: rowCount }, (_, i) => i);
 
     return (
         <div className="animate-pulse" data-testid="table-skeleton">
@@ -59,20 +89,7 @@ function TableSkeleton({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-divider">
-                                    {rows.map((row) => (
-                                        <tr key={row} data-testid="table-skeleton-row">
-                                            {hasCheckboxes && (
-                                                <td className="p-3">
-                                                    <div className={`${barClass} h-4 w-4`} />
-                                                </td>
-                                            )}
-                                            {columns.map((col) => (
-                                                <td key={col} className="p-3">
-                                                    <div className={`${barClass} h-3`} style={{ width: `${getCellWidth(row, col)}px` }} />
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
+                                    <TableSkeletonRows columnsCount={columnsCount} hasCheckboxes={hasCheckboxes} rowCount={rowCount} />
                                 </tbody>
                             </table>
                         </div>

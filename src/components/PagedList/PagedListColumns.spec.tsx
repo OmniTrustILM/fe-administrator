@@ -243,17 +243,43 @@ test.describe('PagedList · configurable columns', () => {
         await expect(page.getByTestId('empty-cell')).toHaveCount(1);
     });
 
+    test('never sends the same request twice for a view carrying both an ordering and an attribute column', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[expiryWatch]} />,
+        );
+        await expect.poll(() => headings(page)).toEqual(['property:NOT_AFTER', 'custom:department|STRING']);
+
+        const sent = (await listRequests(page)).map((request) => JSON.stringify(request));
+
+        expect(new Set(sent).size).toBe(sent.length);
+    });
+
+    test('keeps the answered rows on screen while the next answer is out', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} withListInFlightControl />,
+        );
+        await expect(page.getByText('acme.example')).toBeVisible();
+
+        await page.getByTestId('start-list-fetch').click();
+
+        await expect(page.getByText('acme.example')).toBeVisible();
+        await expect(page.getByTestId('table-skeleton-row')).toHaveCount(0);
+    });
+
     test('does not offer a property column the page registers no renderer for', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[expiryWatch]} />,
         );
 
-        await page.getByRole('button', { name: 'Actions for Expiry watch' }).click();
-        await page.getByRole('menuitem', { name: 'Edit columns…' }).click();
+        await page.getByTestId('add-column-menu-trigger').click();
 
-        await expect(page.getByTestId('add-field-custom:department|STRING')).toHaveCount(0);
-        await expect(page.getByTestId('add-field-property:COMMON_NAME')).toBeVisible();
-        await expect(page.getByTestId('add-field-property:SUBJECT_ALTERNATIVE_NAMES')).toHaveCount(0);
+        const shown = page.getByTestId('add-column-menu-shown');
+        const custom = page.getByTestId('add-column-menu-source-custom');
+
+        await expect(shown.getByTestId('add-column-menu-field-custom:department|STRING')).toBeVisible();
+        await expect(custom.getByTestId('add-column-menu-field-custom:department|STRING')).toHaveCount(0);
+        await expect(page.getByTestId('add-column-menu-field-property:COMMON_NAME')).toBeVisible();
+        await expect(page.getByTestId('add-column-menu-field-property:SUBJECT_ALTERNATIVE_NAMES')).toHaveCount(0);
     });
 
     test('drops an ordering whose column the applied view does not display', async ({ mount, page }) => {

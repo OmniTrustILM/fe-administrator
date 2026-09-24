@@ -1,16 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AttributeContentType, FilterFieldSource, FilterFieldType, type SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
-import {
-    getDropIndex,
-    groupCatalogueFields,
-    isColumnSelected,
-    isSameResolution,
-    moveColumn,
-    resolveColumns,
-    toCatalogueFields,
-    toColumnDefinition,
-} from './columnPicker';
+import { getDropIndex, groupCatalogueFields, moveColumn, resolveColumns, toCatalogueFields, toColumnDefinition } from './columnPicker';
 
 const field = (overrides: Partial<SourcedCatalogueField> = {}): SourcedCatalogueField =>
     ({
@@ -174,20 +165,6 @@ describe('toColumnDefinition', () => {
     });
 });
 
-describe('isColumnSelected', () => {
-    const selected: ColumnDefinition[] = [
-        { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'costCentre', catalogueLabel: 'Cost centre' },
-    ];
-
-    it('matches on source and identifier together', () => {
-        expect(isColumnSelected(selected, field({ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'costCentre' }))).toBe(true);
-    });
-
-    it('does not match the same identifier under a different source', () => {
-        expect(isColumnSelected(selected, field({ fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'costCentre' }))).toBe(false);
-    });
-});
-
 describe('resolveColumns', () => {
     const fields = [field(), field({ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'costCentre', fieldLabel: 'Cost centre' })];
 
@@ -196,6 +173,17 @@ describe('resolveColumns', () => {
         { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'gone', catalogueLabel: 'Gone', label: 'Was renamed' },
         { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'costCentre', catalogueLabel: 'Cost centre' },
     ];
+
+    it('takes alignment back from the column the page ships, so a stored view centres what Standard centres', () => {
+        const shipped: ColumnDefinition[] = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name', align: 'center' },
+        ];
+        const storedWithoutAlign: ColumnDefinition[] = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'Common Name' },
+        ];
+
+        expect(resolveColumns(storedWithoutAlign, fields, shipped)[0]).toMatchObject({ align: 'center' });
+    });
 
     it('keeps every stored column, in its stored position', () => {
         expect(resolveColumns(stored, fields).map((column) => column.fieldIdentifier)).toEqual(['COMMON_NAME', 'gone', 'costCentre']);
@@ -260,29 +248,6 @@ describe('resolveColumns', () => {
         const aligned = [{ ...stored[0], align: 'center' as const }];
 
         expect(resolveColumns(aligned, fields)[0]).toMatchObject({ align: 'center', catalogueLabel: 'Common Name' });
-    });
-});
-
-describe('isSameResolution', () => {
-    const resolved = () =>
-        resolveColumns([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', catalogueLabel: 'x' }], [field()]);
-
-    it('reports two separately built but equal resolutions as the same', () => {
-        expect(isSameResolution(resolved(), resolved())).toBe(true);
-    });
-
-    it('reports a different length as different', () => {
-        expect(isSameResolution(resolved(), [])).toBe(false);
-    });
-
-    it('reports a changed property as different', () => {
-        const changed = resolved().map((column) => ({ ...column, catalogueLabel: 'Renamed' }));
-        expect(isSameResolution(resolved(), changed)).toBe(false);
-    });
-
-    it('reports an added property as different', () => {
-        const changed = resolved().map((column) => ({ ...column, label: 'Override' }));
-        expect(isSameResolution(resolved(), changed)).toBe(false);
     });
 });
 

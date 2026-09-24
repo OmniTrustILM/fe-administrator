@@ -55,7 +55,7 @@ test.describe('PagedCustomTable', () => {
                 <PagedCustomTable headers={mockHeaders} data={mockData} totalItems={2} onReloadData={() => {}} isLoading={true} />,
             ),
         );
-        await expect(component.getByTestId('table-skeleton')).toBeVisible();
+        await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
     });
 
     test('should hide skeleton when isLoading is false', async ({ mount, page }) => {

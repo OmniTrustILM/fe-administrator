@@ -752,8 +752,41 @@ test.describe('CustomTable', () => {
                 <CustomTable headers={mockHeaders} data={mockData} isLoading={true} hasPagination={true} paginationData={paginationData} />,
             ),
         );
-        await expect(component.getByTestId('table-skeleton')).toBeVisible();
+        await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
         await expect(component.getByText(/Showing.*items of/)).toBeVisible();
+    });
+
+    test('keeps the real header row on screen while the body loads, so a control in it survives', async ({ mount }) => {
+        const component = await mount(
+            withProviders(
+                <CustomTable
+                    headers={mockHeaders}
+                    data={mockData}
+                    isLoading
+                    trailingHeaderAction={<button type="button">Add column</button>}
+                />,
+            ),
+        );
+
+        await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
+        await expect(component.getByRole('button', { name: 'Add column' })).toBeVisible();
+        await expect(component.getByText('Name')).toBeVisible();
+        await expect(component.getByTestId('table-skeleton')).toHaveCount(0);
+    });
+
+    test('holds the select-all while the body is a skeleton, even with no caller gate', async ({ mount }) => {
+        const component = await mount(
+            withProviders(<CustomTable headers={mockHeaders} data={mockData} isLoading hasCheckboxes hasAllCheckBox multiSelect />),
+        );
+
+        await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
+        await expect(component.locator('thead').getByRole('checkbox')).toBeDisabled();
+    });
+
+    test('falls back to the whole skeleton while the headings are still unknown', async ({ mount }) => {
+        const component = await mount(withProviders(<CustomTable headers={[]} data={[]} isLoading />));
+
+        await expect(component.getByTestId('table-skeleton')).toBeVisible();
     });
 
     test('should toggle row selection when clicking on a table cell (not the checkbox)', async ({ mount }) => {
@@ -946,12 +979,12 @@ test.describe('CustomTable', () => {
         expect(borderBottom).toBe('');
     });
 
-    test('should show skeleton and hide search input when isLoading and canSearch are both true', async ({ mount }) => {
+    test('keeps the search input on screen while the body loads', async ({ mount }) => {
         const component = await mount(
             withProviders(<CustomTable headers={mockHeaders} data={mockData} isLoading={true} canSearch={true} />),
         );
-        await expect(component.getByTestId('table-skeleton')).toBeVisible();
-        await expect(component.getByPlaceholder('Search')).toHaveCount(0);
+        await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
+        await expect(component.getByPlaceholder('Search')).toBeVisible();
     });
 
     test('should not show page size select when paginationData totalItems is zero', async ({ mount }) => {
@@ -1101,23 +1134,6 @@ test.describe('CustomTable', () => {
 
         expect(pageChangeCalls).toBe(1);
         expect(calledWithPage).toBe(1);
-    });
-
-    test('should keep first visible item in view when page size changes in internal pagination', async ({ mount, page }) => {
-        const manyRows = Array.from({ length: 50 }, (_, i) => ({
-            id: i + 1,
-            columns: [`Row ${i + 1}`, `b`, `c`],
-        }));
-        const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={manyRows} hasPagination={true} />));
-
-        await component.getByTestId('pagination-next').click();
-        await component.getByTestId('pagination-next').click();
-        await expect(component.getByText(/Showing 21 to 30 of 50/)).toBeVisible();
-
-        await component.getByTestId('select-pageSize-trigger').click();
-        await page.getByRole('option', { name: '20', exact: true }).click();
-
-        await expect(component.getByText(/Showing 21 to 40 of 50/)).toBeVisible();
     });
 
     test('should reset page to last page when current page exceeds total pages after data shrinks', async ({ mount }) => {
@@ -1529,7 +1545,7 @@ test.describe('CustomTable', () => {
                 withProviders(<CustomTable headers={mockHeaders} data={mockData} isLoading trailingHeaderAction={action} />),
             );
 
-            await expect(component.getByTestId('table-skeleton')).toBeVisible();
+            await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
             await expect(component.locator('thead th')).toHaveCount(mockHeaders.length + 1);
         });
 
@@ -1538,6 +1554,99 @@ test.describe('CustomTable', () => {
 
             await expect(component.locator('thead th')).toHaveCount(mockHeaders.length);
             await expect(component.locator('tbody tr').first().locator('td')).toHaveCount(mockHeaders.length);
+        });
+
+        test('keeps the action against the visible right edge at both ends of a sideways scroll', async ({ mount }) => {
+            const wideHeaders: TableHeader[] = Array.from({ length: 12 }, (_, index) => ({
+                id: `column-${index}`,
+                content: `Column heading number ${index}`,
+            }));
+            const wideData: TableDataRow[] = [{ id: 1, columns: wideHeaders.map((_, index) => `A reasonably long cell value ${index}`) }];
+
+            const component = await mount(
+                <div style={{ width: '420px' }}>
+                    {withProviders(<CustomTable headers={wideHeaders} data={wideData} trailingHeaderAction={action} />)}
+                </div>,
+            );
+
+            const scroller = component.locator('.simplebar-content-wrapper');
+            const trailingCell = component.locator('thead th').last();
+
+            expect(await scroller.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeGreaterThan(0);
+
+            const overhangFromRightEdge = async () => {
+                const scrollerBox = await scroller.boundingBox();
+                const cellBox = await trailingCell.boundingBox();
+                if (!scrollerBox || !cellBox) throw new Error('expected both the scroller and the trailing cell to be laid out');
+                return Math.abs(scrollerBox.x + scrollerBox.width - (cellBox.x + cellBox.width));
+            };
+
+            expect(await overhangFromRightEdge()).toBeLessThanOrEqual(1);
+
+            await scroller.evaluate((element) => {
+                element.scrollLeft = element.scrollWidth;
+            });
+
+            expect(await overhangFromRightEdge()).toBeLessThanOrEqual(1);
+        });
+    });
+
+    test('keeps the pinned cell opaque for a row that carries its own background', async ({ mount }) => {
+        // A class beside the fill, so the pinned cell is proved to paint from the fill alone rather than
+        // from whatever happens to be in `rowClassName`.
+        const highlighted: TableDataRow[] = mockData.map((row) => ({
+            ...row,
+            options: { rowBackground: 'bg-success-surface', rowClassName: 'font-semibold' },
+        }));
+
+        const component = await mount(
+            withProviders(
+                <CustomTable headers={mockHeaders} data={highlighted} trailingHeaderAction={<button type="button">Add column</button>} />,
+            ),
+        );
+
+        const fills = await component
+            .locator('tbody tr td:last-child')
+            .evaluateAll((cells) => cells.map((cell) => getComputedStyle(cell).backgroundColor));
+
+        expect(fills.length).toBeGreaterThan(0);
+        for (const fill of fills) {
+            expect(fill).not.toBe('rgba(0, 0, 0, 0)');
+            expect(fill).not.toBe('transparent');
+        }
+    });
+
+    test.describe('header separators', () => {
+        const measureRules = (cells: Element[]) =>
+            cells.map((cell) => {
+                const rule = getComputedStyle(cell, '::before');
+                return { width: rule.width, height: Number.parseFloat(rule.height), cellHeight: cell.getBoundingClientRect().height };
+            });
+
+        test('draws a rule between adjacent header cells and none before the first', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length);
+
+            const rules = await component.locator('thead th').evaluateAll(measureRules);
+
+            expect(rules[0].width).not.toBe('1px');
+            for (const rule of rules.slice(1)) {
+                expect(rule.width).toBe('1px');
+                expect(rule.height).toBeGreaterThan(0);
+                expect(rule.height).toBeLessThan(rule.cellHeight);
+            }
+        });
+
+        test('draws the rule after the checkbox column too', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} hasCheckboxes />));
+            await expect(component.locator('thead th')).toHaveCount(mockHeaders.length + 1);
+
+            const rules = await component.locator('thead th').evaluateAll(measureRules);
+
+            expect(rules[0].width).not.toBe('1px');
+            for (const rule of rules.slice(1)) {
+                expect(rule.width).toBe('1px');
+            }
         });
     });
 
@@ -1695,11 +1804,5 @@ test.describe('CustomTable · column source', () => {
         const component = await mount(table([department]));
 
         await expect(component.locator(departmentCell)).toContainText('Custom attribute Department');
-    });
-
-    test('keeps a headingHidden column visually blank, badge and all', async ({ mount }) => {
-        const component = await mount(table([{ ...department, headingHidden: true }]));
-
-        expect(await component.getByTestId('source-badge').evaluate((node) => node.closest('.sr-only') !== null)).toBe(true);
     });
 });

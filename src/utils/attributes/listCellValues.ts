@@ -75,7 +75,7 @@ function toLabel(contentType: AttributeContentType, item: BaseAttributeContentMo
             // Never the raw object: it is unbounded, and a column has one line.
             return item.reference;
         case AttributeContentType.Secret:
-            // Unreachable through the picker — the catalogue marks secrets displayable=false — but
+            // Unreachable through the add-column menu — the catalogue marks secrets displayable=false — but
             // masked rather than rendered, so no path can put one on screen.
             return '*****';
         case AttributeContentType.Codeblock:
