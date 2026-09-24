@@ -41,7 +41,7 @@ export default function DiscoveryResultsSummary({ discovery, headers, className 
             {
                 id: 'itemsFailed',
                 columns: [
-                    // The same rows the item listing marks "Not imported": each carries a reason, and not every
+                    // The New tab's rows the item listing marks "Not imported": each carries a reason, and not every
                     // reason is a failure.
                     'Not imported',
                     failed > 0 ? (
