@@ -189,7 +189,7 @@ describe('DiscoveryItemsTable', () => {
         expect(row?.querySelector('a')).not.toBeNull();
     });
 
-    it('names the details column for assistive technology even though it is visually hidden', async () => {
+    it('names the details column and the action that opens an item', async () => {
         await render(buildState([item()]));
 
         expect(container.querySelector('[data-testid="header-details"]')?.textContent).toBe('Details');
@@ -267,6 +267,31 @@ describe('DiscoveryItemsTable', () => {
             'header-state',
             'header-details',
         ]);
+    });
+
+    it('lines every key cell up under its own header, public part or not', async () => {
+        const privateKey = item({
+            uuid: 'key-2',
+            resource: Resource.Keys,
+            payload: { resource: Resource.Keys, type: KeyType.Private, algorithm: KeyAlgorithm.Rsa },
+        });
+        await render(buildState([privateKey]), Resource.Keys);
+
+        const headers = Array.from(container.querySelectorAll('[data-testid^="header-"]'), (header) => header.getAttribute('data-testid'));
+        expect(headers).toEqual([
+            'header-inventory',
+            'header-keyType',
+            'header-keyAlgorithm',
+            'header-keyLength',
+            'header-keyFormat',
+            'header-keyFingerprint',
+            'header-discoveredAt',
+            'header-state',
+            'header-keyPublic',
+            'header-details',
+        ]);
+        // The table places cells under headers by position, so one missing cell shifts every column after it.
+        expect(container.querySelector('[data-testid="row-key-2"]')?.children).toHaveLength(headers.length);
     });
 
     it('opens a key blob nobody would read in a column, and copies it whole', async () => {
