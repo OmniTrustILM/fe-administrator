@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 import { lastValueFrom, type Observable, of, throwError } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
 import { toArray } from 'rxjs/operators';
@@ -7,6 +7,7 @@ import { LockTypeEnum } from 'types/user-interface';
 import { actions as alertActions } from './alerts';
 import { initialState, panelKey, refreshPanel, REPLIES_PAGE_SIZE, slice, type State, THREADS_PAGE_SIZE } from './comments';
 import epics from './comments-epics';
+import { COMMENT_SORT_STORAGE_KEY } from 'utils/comment-sort';
 
 const resource = Resource.Certificates;
 const objectUuid = 'obj-1';
@@ -21,6 +22,7 @@ enum EpicIndex {
     UnresolveComment = 4,
     DeleteComment = 5,
     RefreshPanel = 6,
+    ChangeSortDirection = 7,
 }
 
 /** Same shape the sibling epic specs use: an `AjaxError` cannot be constructed without a real XHR. */
@@ -90,7 +92,7 @@ const run = (index: number, action: unknown, deps: unknown, state: unknown = sta
     lastValueFrom((epics[index] as unknown as Epic)(of(action), state, deps).pipe(toArray()));
 
 describe('listThreads epic', () => {
-    test('lists the page oldest-first by default and applies the default page size', async () => {
+    test('lists the page newest-first by default and applies the default page size', async () => {
         const result = page([comment('r1')]);
         const { deps, calls } = createDeps({ listComments: () => of(result) });
 
@@ -101,10 +103,23 @@ describe('listThreads epic', () => {
             objectUuid,
             pageNumber: 2,
             itemsPerPage: THREADS_PAGE_SIZE,
-            sortDirection: SortDirection.Asc,
+            sortDirection: SortDirection.Desc,
             anchorUuid: undefined,
         });
-        expect(emitted).toEqual([slice.actions.listThreadsSuccess({ key, page: result, sortDirection: SortDirection.Asc })]);
+        expect(emitted).toEqual([slice.actions.listThreadsSuccess({ key, page: result, sortDirection: SortDirection.Desc })]);
+    });
+
+    test('a list that is not loaded yet is read in the direction the user picked', async () => {
+        const { deps, calls } = createDeps();
+
+        await run(
+            EpicIndex.ListThreads,
+            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1 }),
+            deps,
+            stateWith({ sortDirection: SortDirection.Asc }),
+        );
+
+        expect(calls[0].args).toMatchObject({ sortDirection: SortDirection.Asc });
     });
 
     test('the requested direction reaches the API and is reported back with the page', async () => {
@@ -124,11 +139,12 @@ describe('listThreads epic', () => {
     test('a request that names no direction keeps the one the list holds, so a refresh never flips the order', async () => {
         const { deps, calls } = createDeps();
         const state = stateWith({
+            sortDirection: SortDirection.Desc,
             threads: {
                 [key]: {
                     ...page([comment('r1')]),
                     firstPage: 1,
-                    sortDirection: SortDirection.Desc,
+                    sortDirection: SortDirection.Asc,
                     isFetching: true,
                     isPosting: false,
                     postSucceeded: false,
@@ -138,7 +154,7 @@ describe('listThreads epic', () => {
 
         await run(EpicIndex.ListThreads, slice.actions.listThreads({ resource, objectUuid, pageNumber: 2 }), deps, state);
 
-        expect(calls[0].args).toMatchObject({ pageNumber: 2, sortDirection: SortDirection.Desc });
+        expect(calls[0].args).toMatchObject({ pageNumber: 2, sortDirection: SortDirection.Asc });
     });
 
     test('an anchor travels with the direction and comes back with the page', async () => {
@@ -208,14 +224,48 @@ describe('listThreads epic', () => {
 });
 
 describe('listReplies epic', () => {
-    test('lists replies of the root', async () => {
+    test('lists replies of the root in the user direction, newest-first by default', async () => {
         const result = page([comment('c1')]);
         const { deps, calls } = createDeps({ listReplies: () => of(result) });
 
         const emitted = await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }), deps);
 
-        expect(calls[0].args).toEqual({ uuid: 'r1', pageNumber: 1, itemsPerPage: REPLIES_PAGE_SIZE, anchorUuid: undefined });
-        expect(emitted).toEqual([slice.actions.listRepliesSuccess({ rootUuid: 'r1', page: result })]);
+        expect(calls[0].args).toEqual({
+            uuid: 'r1',
+            pageNumber: 1,
+            itemsPerPage: REPLIES_PAGE_SIZE,
+            sortDirection: SortDirection.Desc,
+            anchorUuid: undefined,
+        });
+        expect(emitted).toEqual([slice.actions.listRepliesSuccess({ rootUuid: 'r1', page: result, sortDirection: SortDirection.Desc })]);
+    });
+
+    test('a requested direction wins, and a request that names none keeps the one the thread holds', async () => {
+        const { deps, calls } = createDeps();
+        const state = stateWith({
+            sortDirection: SortDirection.Desc,
+            replies: {
+                r1: {
+                    ...page([comment('c1')]),
+                    firstPage: 1,
+                    sortDirection: SortDirection.Asc,
+                    isFetching: true,
+                    isPosting: false,
+                    postSucceeded: false,
+                },
+            },
+        });
+
+        await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 2 }), deps, state);
+        await run(
+            EpicIndex.ListReplies,
+            slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, sortDirection: SortDirection.Desc }),
+            deps,
+            state,
+        );
+
+        expect(calls[0].args).toMatchObject({ pageNumber: 2, sortDirection: SortDirection.Asc });
+        expect(calls[1].args).toMatchObject({ pageNumber: 1, sortDirection: SortDirection.Desc });
     });
 
     test('an anchored reply reaches the API and comes back with the page', async () => {
@@ -228,8 +278,10 @@ describe('listReplies epic', () => {
             deps,
         );
 
-        expect(calls[0].args).toMatchObject({ uuid: 'r1', pageNumber: 1, anchorUuid: 'c41' });
-        expect(emitted).toEqual([slice.actions.listRepliesSuccess({ rootUuid: 'r1', page: result, anchorUuid: 'c41' })]);
+        expect(calls[0].args).toMatchObject({ uuid: 'r1', pageNumber: 1, sortDirection: SortDirection.Desc, anchorUuid: 'c41' });
+        expect(emitted).toEqual([
+            slice.actions.listRepliesSuccess({ rootUuid: 'r1', page: result, sortDirection: SortDirection.Desc, anchorUuid: 'c41' }),
+        ]);
     });
 
     test('a thread that is gone under an anchored reply is the stale anchor, reported without an alert', async () => {
@@ -299,6 +351,39 @@ describe('refreshPanel epic', () => {
         const emitted = await run(EpicIndex.RefreshPanel, refreshPanel({ resource, objectUuid }), createDeps().deps);
 
         expect(emitted).toEqual([slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: THREADS_PAGE_SIZE })]);
+    });
+});
+
+describe('changeSortDirection epic', () => {
+    afterEach(() => localStorage.clear());
+
+    const loaded = (comments: CommentDto[], sortDirection: SortDirection) => ({
+        ...page(comments),
+        firstPage: 1,
+        sortDirection,
+        isFetching: false,
+        isPosting: false,
+        postSucceeded: false,
+    });
+
+    test('stores the choice and re-reads the roots and every opened thread from their first page', async () => {
+        const state = stateWith({
+            threads: { [key]: loaded([comment('r1'), comment('r2')], SortDirection.Desc) },
+            replies: { r1: loaded([comment('c1')], SortDirection.Desc), other: loaded([comment('c9')], SortDirection.Desc) },
+        });
+
+        const emitted = await run(
+            EpicIndex.ChangeSortDirection,
+            slice.actions.changeSortDirection({ resource, objectUuid, sortDirection: SortDirection.Asc }),
+            createDeps().deps,
+            state,
+        );
+
+        expect(localStorage.getItem(COMMENT_SORT_STORAGE_KEY)).toBe(SortDirection.Asc);
+        expect(emitted).toEqual([
+            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, sortDirection: SortDirection.Asc }),
+            slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, sortDirection: SortDirection.Asc }),
+        ]);
     });
 });
 

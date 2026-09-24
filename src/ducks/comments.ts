@@ -1,7 +1,8 @@
 import { createAction, createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { AppState } from 'ducks';
-import { type CommentDto, type CommentResponseDto, type Resource, SortDirection } from 'types/openapi';
+import type { CommentDto, CommentResponseDto, Resource, SortDirection } from 'types/openapi';
 import type { WidgetLockErrorModel } from 'types/user-interface';
+import { readStoredCommentSort } from 'utils/comment-sort';
 
 /**
  * One panel per (resource, object). Everything is keyed so that two panels on one page, or the same panel across a
@@ -38,6 +39,7 @@ export type ThreadsState = PagedComments & {
 };
 
 export type RepliesState = PagedComments & {
+    sortDirection: SortDirection;
     isFetching: boolean;
     isPosting: boolean;
     postingDenied?: string;
@@ -49,12 +51,15 @@ export type State = {
     replies: Record<string, RepliesState>;
     /** Comment UUIDs with a resolve, unresolve or delete in flight. */
     busy: Record<string, boolean>;
+    /** The user's choice; a list that is not loaded yet starts in it. */
+    sortDirection: SortDirection;
 };
 
 export const initialState: State = {
     threads: {},
     replies: {},
     busy: {},
+    sortDirection: readStoredCommentSort(),
 };
 
 const emptyPage = (itemsPerPage: number): PagedComments => ({
@@ -69,7 +74,7 @@ const emptyPage = (itemsPerPage: number): PagedComments => ({
 const threadsOf = (state: State, key: string): ThreadsState => {
     state.threads[key] ??= {
         ...emptyPage(THREADS_PAGE_SIZE),
-        sortDirection: SortDirection.Asc,
+        sortDirection: state.sortDirection,
         isFetching: false,
         isPosting: false,
         postSucceeded: false,
@@ -78,7 +83,13 @@ const threadsOf = (state: State, key: string): ThreadsState => {
 };
 
 const repliesOf = (state: State, rootUuid: string): RepliesState => {
-    state.replies[rootUuid] ??= { ...emptyPage(REPLIES_PAGE_SIZE), isFetching: false, isPosting: false, postSucceeded: false };
+    state.replies[rootUuid] ??= {
+        ...emptyPage(REPLIES_PAGE_SIZE),
+        sortDirection: state.sortDirection,
+        isFetching: false,
+        isPosting: false,
+        postSucceeded: false,
+    };
     return state.replies[rootUuid];
 };
 
@@ -118,10 +129,17 @@ export type ListThreadsPayload = ObjectRef & {
     sortDirection?: SortDirection;
     anchorUuid?: string;
 };
-/** Replies are always read oldest-first; `anchorUuid` is a reply, whose page is read in place of `pageNumber`. */
-export type ListRepliesPayload = { rootUuid: string; pageNumber: number; itemsPerPage?: number; anchorUuid?: string };
+/** `anchorUuid` is a reply, whose page is read in place of `pageNumber`. */
+export type ListRepliesPayload = {
+    rootUuid: string;
+    pageNumber: number;
+    itemsPerPage?: number;
+    sortDirection?: SortDirection;
+    anchorUuid?: string;
+};
 export type ThreadsPagePayload = { key: string; page: CommentResponseDto; sortDirection: SortDirection; anchorUuid?: string };
-export type RepliesPagePayload = { rootUuid: string; page: CommentResponseDto; anchorUuid?: string };
+export type RepliesPagePayload = { rootUuid: string; page: CommentResponseDto; sortDirection: SortDirection; anchorUuid?: string };
+export type ChangeSortDirectionPayload = ObjectRef & { sortDirection: SortDirection };
 export type CreateCommentPayload = ObjectRef & { body: string; parentUuid?: string };
 /** The object is carried along so the epic can refresh the right list after the write commits. */
 export type CommentRefPayload = ObjectRef & { uuid: string; parentUuid?: string };
@@ -133,6 +151,10 @@ export const slice = createSlice({
 
     reducers: {
         resetState: () => initialState,
+
+        changeSortDirection: (state, action: PayloadAction<ChangeSortDirectionPayload>) => {
+            state.sortDirection = action.payload.sortDirection;
+        },
 
         clearPanel: (state, action: PayloadAction<ObjectRef>) => {
             const key = panelKey(action.payload.resource, action.payload.objectUuid);
@@ -175,8 +197,10 @@ export const slice = createSlice({
 
         listRepliesSuccess: (state, action: PayloadAction<RepliesPagePayload>) => {
             const replies = repliesOf(state, action.payload.rootUuid);
-            const { page, anchorUuid } = action.payload;
-            applyPage(replies, page, page.pageNumber > 1 && anchorUuid === undefined, anchorUuid);
+            const { page, sortDirection, anchorUuid } = action.payload;
+            const append = page.pageNumber > 1 && anchorUuid === undefined && sortDirection === replies.sortDirection;
+            applyPage(replies, page, append, anchorUuid);
+            replies.sortDirection = sortDirection;
             replies.isFetching = false;
         },
 
@@ -261,12 +285,14 @@ const state = (reduxStore: AppState): State => reduxStore?.[slice.name] ?? initi
 const threads = (key: string) => createSelector(state, (s) => s.threads[key]);
 const replies = (rootUuid: string) => createSelector(state, (s) => s.replies[rootUuid]);
 const busy = createSelector(state, (s) => s.busy);
+const sortDirection = createSelector(state, (s) => s.sortDirection);
 
 export const selectors = {
     state,
     threads,
     replies,
     busy,
+    sortDirection,
 };
 
 /**
