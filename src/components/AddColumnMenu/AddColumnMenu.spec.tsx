@@ -26,6 +26,19 @@ const expiresAt = column(FilterFieldSource.Property, 'NOT_AFTER', 'Expires At');
 const appliedColumns = async (page: Page): Promise<string[]> =>
     JSON.parse((await page.getByTestId('applied-columns').textContent()) ?? '[]') as string[];
 
+const manyFields = Array.from({ length: 80 }, (_, i) => {
+    const sources = [FilterFieldSource.Property, FilterFieldSource.Meta, FilterFieldSource.Custom, FilterFieldSource.Data];
+    return field(sources[i % sources.length], `FIELD_${i}`, `Field ${i}`);
+});
+
+/** Puts the trigger low on the page, so the menu opens short of height, as it does below a table header. */
+const lowerTheTrigger = async (page: Page) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addStyleTag({ content: '#root { padding-top: 380px; }' });
+};
+
+const shownColumns = (count: number) => manyFields.slice(0, count).map((f) => column(f.fieldSource, f.fieldIdentifier, f.fieldLabel));
+
 test.describe('AddColumnMenu', () => {
     test('opens the catalogue as four source columns, an unpublished source included', async ({ mount, page }) => {
         await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, expiresAt]} />);
@@ -109,6 +122,37 @@ test.describe('AddColumnMenu', () => {
         // It has moved into the shown section and been remounted there; focus has to have gone with it.
         await expect.poll(() => appliedColumns(page)).toContain('custom:costCentre|STRING');
         await expect(page.getByTestId('add-column-menu-field-custom:costCentre|STRING')).toBeFocused();
+    });
+
+    test('scrolls the shown section once it outgrows half the menu, rather than spilling over the catalogue', async ({ mount, page }) => {
+        await lowerTheTrigger(page);
+        await mount(<AddColumnMenuHarness fields={manyFields} columns={shownColumns(40)} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+        const shown = page.getByTestId('add-column-menu-shown');
+        const lastShown = shown.getByRole('listitem').last();
+        await lastShown.scrollIntoViewIfNeeded();
+
+        const menuBox = await page.getByTestId('add-column-menu').boundingBox();
+        const shownBox = await shown.boundingBox();
+        const rowBox = await lastShown.boundingBox();
+        const catalogueBox = await page.getByTestId('add-column-menu-source-property').boundingBox();
+        if (!menuBox || !shownBox || !rowBox || !catalogueBox) throw new Error('menu did not lay out');
+
+        expect(shownBox.height).toBeLessThanOrEqual(menuBox.height / 2);
+        expect(rowBox.y + rowBox.height).toBeLessThanOrEqual(shownBox.y + shownBox.height);
+        expect(shownBox.y + shownBox.height).toBeLessThanOrEqual(catalogueBox.y);
+    });
+
+    test('shows every selected column without scrolling while they fit in half the menu', async ({ mount, page }) => {
+        await lowerTheTrigger(page);
+        await mount(<AddColumnMenuHarness fields={manyFields} columns={shownColumns(14)} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+        const shown = page.getByTestId('add-column-menu-shown');
+        await expect(shown).toBeVisible();
+
+        expect(await shown.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
     });
 
     test('puts the platform column set back from the reset entry', async ({ mount, page }) => {

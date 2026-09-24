@@ -775,4 +775,57 @@ test.describe('PagedList · column header menu', () => {
 
         await expect.poll(() => headings(page)).toEqual([DEPARTMENT, COMMON_NAME, NOT_AFTER]);
     });
+
+    test.describe('a heading wider than its column', () => {
+        const flag = (identifier: string, catalogueLabel: string): ColumnDefinition => ({
+            ...property(identifier, catalogueLabel),
+            type: FilterFieldType.Boolean,
+            align: 'center',
+        });
+        const flagCatalogue = (columns: ColumnDefinition[]) =>
+            [
+                {
+                    filterFieldSource: FilterFieldSource.Property,
+                    searchFieldData: columns.map((column) => field(column.fieldIdentifier, column.catalogueLabel, { type: column.type })),
+                },
+            ] as unknown as SearchFieldListModel[];
+
+        // Enough neighbours that the table has no spare width to hand the column beyond its own cap.
+        const crowdedColumns = (first: ColumnDefinition) => [
+            first,
+            ...Array.from({ length: 10 }, (_, i) => property(`FIELD_${i}`, `Neighbouring field ${i}`)),
+        ];
+
+        const controlIsOnTop = (page: Page, testId: string) =>
+            page.getByTestId(testId).evaluate((control) => {
+                const box = control.getBoundingClientRect();
+                return control.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+            });
+
+        for (const [name, label] of [
+            ['a shipped heading', 'Has private key'],
+            ['a heading too long for any column', 'A connector supplied metadata field with a very long name'],
+        ] as const) {
+            test(`keeps the grip and the menu reachable under ${name}`, async ({ mount, page }) => {
+                const columns = crowdedColumns(flag('PRIVATE_KEY', label));
+                await mount(<PagedListColumnsWithStore rows={rows} standardColumns={columns} catalogue={flagCatalogue(columns)} />);
+
+                const key = 'property:PRIVATE_KEY';
+                await expect(page.getByTestId(`column-drag-handle-${key}-trigger`)).toBeVisible();
+
+                expect(await controlIsOnTop(page, `column-drag-handle-${key}-trigger`)).toBe(true);
+                expect(await controlIsOnTop(page, `column-header-menu-${key}-trigger`)).toBe(true);
+            });
+        }
+
+        test('reads a shipped heading in full beside the controls', async ({ mount, page }) => {
+            const columns = crowdedColumns(flag('PRIVATE_KEY', 'Has private key'));
+            await mount(<PagedListColumnsWithStore rows={rows} standardColumns={columns} catalogue={flagCatalogue(columns)} />);
+
+            const heading = page.locator('th[data-id="property:PRIVATE_KEY"] span[id]');
+            await expect(heading).toHaveText('Has private key');
+
+            expect(await heading.evaluate((span) => span.scrollWidth <= span.clientWidth)).toBe(true);
+        });
+    });
 });
