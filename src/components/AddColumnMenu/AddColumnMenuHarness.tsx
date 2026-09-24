@@ -10,16 +10,16 @@ type Props = Readonly<{
     isCatalogueLoaded?: boolean;
     /** False mounts the menu as its host leaves it while the page is still settling. */
     canToggle?: boolean;
-    withEditColumns?: boolean;
+    /** The platform column set the reset entry goes back to; absent withholds the entry. */
+    standardColumns?: ColumnDefinition[];
 }>;
 
 /**
  * Drives {@link AddColumnMenu} from the browser side, as its host does. A test cannot re-render it
  * from the Node body: the menu is a portal, and `component.update()` would unmount it mid-assertion.
  */
-export default function AddColumnMenuHarness({ fields, columns, isCatalogueLoaded, canToggle = true, withEditColumns = false }: Props) {
+export default function AddColumnMenuHarness({ fields, columns, isCatalogueLoaded, canToggle = true, standardColumns }: Props) {
     const [applied, setApplied] = useState(columns);
-    const [editCount, setEditCount] = useState(0);
 
     return (
         <div>
@@ -28,10 +28,9 @@ export default function AddColumnMenuHarness({ fields, columns, isCatalogueLoade
                 isCatalogueLoaded={isCatalogueLoaded}
                 columns={applied}
                 onToggle={canToggle ? (field) => setApplied((current) => toggleColumn(current, field)) : undefined}
-                onEditColumns={withEditColumns ? () => setEditCount((count) => count + 1) : undefined}
+                onReset={canToggle && standardColumns ? () => setApplied(standardColumns) : undefined}
             />
             <div data-testid="applied-columns">{JSON.stringify(applied.map(getColumnKey))}</div>
-            <div data-testid="edit-columns-count">{editCount}</div>
         </div>
     );
 }

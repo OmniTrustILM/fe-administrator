@@ -14,7 +14,7 @@ export const DEFAULT_SOURCE_LABELS: Readonly<Record<FilterFieldSource, string>> 
 };
 
 /** One colour per source, so a field's origin is readable at a glance down a long list. */
-const SOURCE_COLORS: Readonly<Record<FilterFieldSource, BadgeColor>> = {
+export const SOURCE_COLORS: Readonly<Record<FilterFieldSource, BadgeColor>> = {
     [FilterFieldSource.Property]: 'secondary',
     [FilterFieldSource.Custom]: 'info',
     [FilterFieldSource.Meta]: 'success',

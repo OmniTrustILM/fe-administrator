@@ -29,7 +29,7 @@ export interface ViewSlice {
 
 /** A stored view resolved against the live column catalogue. See `resolveView` for the rules. */
 export interface ResolvedView {
-    /** Every stored column in its stored order, available or not. What the picker edits. */
+    /** Every stored column in its stored order, available or not. */
     columns: PickerColumn[];
     /** The columns the table renders: the available ones, or the platform set when none resolved. */
     renderable: ColumnDefinition[];

@@ -137,9 +137,6 @@ export const CERTIFICATE_COLUMNS: ColumnDefinition[] = [
         catalogueLabel: 'Has private key',
         type: FilterFieldType.Boolean,
         align: 'center',
-        // One percent wide and carrying only an icon: the label names it in the picker and to a screen
-        // reader, but would not fit in the visible header row.
-        headingHidden: true,
     },
     {
         fieldSource: FilterFieldSource.Property,

@@ -12,8 +12,6 @@ export interface TableHeader {
      */
     info?: React.ReactNode;
     align?: 'left' | 'center' | 'right';
-    /** Renders the heading for screen readers only, leaving the header cell visually blank. */
-    headingHidden?: boolean;
     sortable?: boolean;
     sort?: SortDirection;
     sortType?: 'string' | 'numeric' | 'date';
@@ -29,6 +27,13 @@ export interface TableDataRow {
     detailTitle?: string;
     options?: {
         useAccentBottomBorder?: boolean;
+        /** Anything about the row that is not its fill — weight, emphasis. The fill is `rowBackground`. */
         rowClassName?: string;
+        /**
+         * The row's fill, as its own field rather than one more class in `rowClassName`: the pinned
+         * trailing cell has to paint the same colour to stay opaque over the columns scrolling beneath
+         * it, and it cannot tell a background class from any other.
+         */
+        rowBackground?: string;
     };
 }

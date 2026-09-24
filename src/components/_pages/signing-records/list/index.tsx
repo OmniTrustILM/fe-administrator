@@ -61,7 +61,6 @@ function SigningRecordsList() {
             getRowId: (record: SigningRecordListDto) => record.uuid,
             registry,
             headerInfo,
-            resourceLabel: 'Signing Records',
         }),
         [signingRecords, registry, headerInfo],
     );

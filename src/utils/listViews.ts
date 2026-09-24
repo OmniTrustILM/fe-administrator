@@ -230,7 +230,7 @@ export function toStorableColumns(
 
 /**
  * A stored view's columns resolved against the live catalogue. The authoritative statement of how a
- * stored view is read; everything downstream — {@link ResolvedView}, the notice, the picker — states
+ * stored view is read; everything downstream — {@link ResolvedView}, the notice, the table — states
  * only what it does with the result.
  *
  * A view names `(fieldSource, fieldIdentifier)` pairs, and two different things can go wrong with
@@ -272,7 +272,7 @@ export function resolveView(
     };
 }
 
-/** A resolved column without the picker's availability marker, which the table has no use for. */
+/** A resolved column without the availability marker, which the table has no use for. */
 function toDefinition({ available, ...definition }: PickerColumn): ColumnDefinition {
     return definition;
 }
@@ -336,7 +336,7 @@ export function isSliceDirty(stored: ViewSlice, current: ViewSlice): boolean {
  * cannot render put back at the positions they were stored at.
  *
  * Saving an ordering or a filter must not drop a column the listing cannot display. The table never
- * showed it, so the user was never offered the choice — the column picker is the one place such a
+ * showed it, so the user was never offered the choice — the notice that names it is the one place such a
  * column is removed, because it is the one place it is shown.
  *
  * A column may be unrenderable because the catalogue marks it undisplayable, or because the page has

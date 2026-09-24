@@ -46,7 +46,7 @@ const OUTCOME_HEADERS: TableHeader[] = [
     { id: 'state', content: 'State', align: 'center' },
 ];
 
-const DETAILS_HEADER: TableHeader = { id: 'details', content: 'Details', headingHidden: true, width: '5%' };
+const DETAILS_HEADER: TableHeader = { id: 'details', content: 'Details', width: '5%' };
 
 /**
  * Leads with the object, as every platform table does, then what the run made of it. A keys run swaps the run position

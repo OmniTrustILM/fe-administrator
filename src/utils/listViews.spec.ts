@@ -283,7 +283,7 @@ describe('resolveView', () => {
         expect(resolved.renderable[0].catalogueLabel).toBe('Status');
     });
 
-    it('drops the availability marker the picker adds from the renderable columns', () => {
+    it('drops the availability marker from the renderable columns', () => {
         const resolved = resolveView([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }], [commonName], []);
 
         expect(resolved.renderable[0]).not.toHaveProperty('available');

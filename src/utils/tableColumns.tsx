@@ -84,13 +84,12 @@ export function getColumnHeading(column: ColumnDefinition): string {
 }
 
 /**
- * The heading as a table header renders it. An attribute column carries the source badge the column
- * picker tags it with, so a custom attribute sharing a property's label is still tellable apart; a
- * property column is the baseline and stays a plain string.
+ * The heading as a table header renders it. An attribute column carries the source badge the
+ * add-column menu tags it with, so a custom attribute sharing a property's label is still tellable
+ * apart; a property column is the baseline and stays a plain string.
  *
- * The badge takes the built-in source names rather than a resolver: the picker's header preview
- * renders through here too, and it is a preview of the table, so it has to announce what the table
- * announces rather than what the surrounding dialog does.
+ * The badge takes the built-in source names rather than a resolver, so a header announces the same
+ * source the add-column menu does.
  */
 export function renderColumnHeading(column: ColumnDefinition): ReactNode {
     const heading = getColumnHeading(column);
@@ -190,7 +189,6 @@ export function buildColumnHeaders(columns: ColumnDefinition[], options: BuildCo
             id: key,
             content: renderColumnHeading(column),
             ...(info ? { info } : {}),
-            ...(column.headingHidden ? { headingHidden: true } : {}),
             sortable: column.sortable === true,
             sort: isSorted ? options.sort?.direction : undefined,
             align: getColumnAlign(column),
@@ -200,7 +198,7 @@ export function buildColumnHeaders(columns: ColumnDefinition[], options: BuildCo
     });
 }
 
-/** A column count, as the picker and the view summary both label it. */
+/** A column count, as the view summary labels it. */
 export function formatColumnCount(count: number): string {
     return `${count} ${count === 1 ? 'column' : 'columns'}`;
 }
