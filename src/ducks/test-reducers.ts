@@ -727,6 +727,7 @@ export type CertificatesTestState = {
     isRegistering: boolean;
     issueValidationErrors?: string[];
     issueErrorMessage?: string;
+    issueWarnings?: { certificateUuid: string; messages: string[] };
     revocationAttributes: AttributeDescriptorModel[];
     isFetchingRevocationAttributes: boolean;
 };
@@ -744,6 +745,7 @@ const certificatesTestInitialState: CertificatesTestState = {
     isRegistering: false,
     issueValidationErrors: undefined,
     issueErrorMessage: undefined,
+    issueWarnings: undefined,
     revocationAttributes: [],
     isFetchingRevocationAttributes: false,
 };

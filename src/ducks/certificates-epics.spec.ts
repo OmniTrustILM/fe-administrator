@@ -274,6 +274,25 @@ describe('certificates epics', () => {
         expect(emitted[1].type).toBe(appRedirectActions.redirect.type);
     });
 
+    test('issueCertificate with an empty warning list still redirects', async () => {
+        const emitted = await runEpic(ISSUE_EPIC_INDEX, issueAction, {
+            issueCertificate: () => of({ uuid: 'cert-1', certificateData: '', requestAttributeWarnings: [] }),
+        });
+
+        expect(emitted).toHaveLength(2);
+        expect(emitted[1].type).toBe(appRedirectActions.redirect.type);
+    });
+
+    test('issueCertificate with lenient warnings emits Success carrying them and stays on the form', async () => {
+        const emitted = await runEpic(ISSUE_EPIC_INDEX, issueAction, {
+            issueCertificate: () => of({ uuid: 'cert-1', certificateData: '', requestAttributeWarnings: ['w1', 'w2'] }),
+        });
+
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0].type).toBe(certificatesActions.issueCertificateSuccess.type);
+        expect((emitted[0] as any).payload).toMatchObject({ uuid: 'cert-1', requestAttributeWarnings: ['w1', 'w2'] });
+    });
+
     test('issueCertificate 422 failure carries the validation-error list and suppresses the generic fetch error', async () => {
         const emitted = await runEpic(ISSUE_EPIC_INDEX, issueAction, {
             issueCertificate: () => throwError(() => ({ status: 422, response: ['e1', 'e2'] })),
