@@ -35,6 +35,7 @@ import {
     deleteTooltip,
     type DiscoveryLifecycleAction,
     isTerminalRun,
+    resultResources,
     visibleLifecycleActions,
 } from './discoveryDetailHelpers';
 import ObjectEventHistoryWidget from 'components/_pages/notifications/events-settings/ObjectEventHistoryWidget';
@@ -210,6 +211,19 @@ export default function DiscoveryDetail() {
                             ]
                           : []),
                       {
+                          id: 'resources',
+                          columns: [
+                              'Resources',
+                              <span key="resources" className="inline-flex flex-wrap gap-1">
+                                  {resultResources(discovery.resources).map((resource) => (
+                                      <Badge key={resource} color="gray">
+                                          {getEnumLabel(resourceEnum, resource)}
+                                      </Badge>
+                                  ))}
+                              </span>,
+                          ],
+                      },
+                      {
                           id: 'providerStatus',
                           columns: [
                               'Discovery Provider Status',
@@ -251,7 +265,7 @@ export default function DiscoveryDetail() {
                       },
                   ]
                 : [],
-        [discovery],
+        [discovery, resourceEnum],
     );
 
     // Neutral unless the log is known to hold an error; the log is fetched only on its own tab, never with the detail.
