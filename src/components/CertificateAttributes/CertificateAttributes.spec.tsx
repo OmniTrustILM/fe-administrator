@@ -34,9 +34,10 @@ test.describe('CertificateAttributes', () => {
         await expect(page.locator('tbody tr')).toHaveCount(5);
     });
 
-    test('isLoading=true renders table-skeleton', async ({ mount, page }) => {
+    test('isLoading=true renders skeleton rows under the real headings', async ({ mount, page }) => {
         const store = createMockStore();
         await mount(withProviders(<CertificateAttributes isLoading={true} />, { store }));
-        await expect(page.getByTestId('table-skeleton')).toHaveCount(1);
+        await expect(page.getByTestId('table-skeleton-row').first()).toBeVisible();
+        await expect(page.getByRole('columnheader', { name: 'Attribute' })).toBeVisible();
     });
 });

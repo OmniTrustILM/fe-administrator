@@ -87,7 +87,6 @@ export default function ViewTabsWithStore({
                     filters={slice.filters}
                     sort={slice.sort}
                     onApply={setSlice}
-                    resourceLabel="Certificates"
                 />
 
                 <div data-testid="applied-slice">{JSON.stringify(slice)}</div>

@@ -273,7 +273,6 @@ export default function CertificateList({
                       getRowId: (certificate: CertificateListResponseModel) => certificate.uuid,
                       registry,
                       headerInfo,
-                      resourceLabel: 'Certificates',
                   },
         [selectCertsOnly, certificates, registry, headerInfo],
     );

@@ -36,7 +36,7 @@ const HEADERS: TableHeader[] = [
     { id: 'discoveredAt', content: 'Discovered' },
     { id: 'state', content: 'State', align: 'center' },
     { id: 'inventory', content: 'In inventory' },
-    { id: 'details', content: 'Details', headingHidden: true, width: '5%' },
+    { id: 'details', content: 'Details', width: '5%' },
 ];
 
 /**
