@@ -73,6 +73,20 @@ describe('dateUtil', () => {
         test('should return original string for invalid date', () => {
             expect(getFormattedDate('invalid')).toBe('invalid');
         });
+
+        test('should keep a date-only value on its calendar day in any time zone', () => {
+            const original = process.env.TZ;
+
+            try {
+                for (const zone of ['UTC', 'America/Los_Angeles', 'Pacific/Kiritimati']) {
+                    process.env.TZ = zone;
+                    expect(getFormattedDate('2026-09-01')).toBe('2026-09-01');
+                }
+            } finally {
+                if (original === undefined) delete process.env.TZ;
+                else process.env.TZ = original;
+            }
+        });
     });
 
     describe('getFormattedDateTime', () => {
