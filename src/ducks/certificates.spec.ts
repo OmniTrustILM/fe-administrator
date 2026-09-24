@@ -190,14 +190,15 @@ describe('certificates slice', () => {
         ).toBeUndefined();
     });
 
-    test('issueCertificate and clearIssueErrors reset warnings', () => {
+    test('issueCertificate and clearIssueWarnings reset warnings, clearIssueErrors does not', () => {
         const withWarnings = { ...initialState, issueWarnings: { certificateUuid: 'cert-1', messages: ['w1'] } };
 
         expect(
             reducer(withWarnings, actions.issueCertificate({ authorityUuid: 'auth-1', raProfileUuid: 'ra-1', signRequest: {} as any }))
                 .issueWarnings,
         ).toBeUndefined();
-        expect(reducer(withWarnings, actions.clearIssueErrors()).issueWarnings).toBeUndefined();
+        expect(reducer(withWarnings, actions.clearIssueWarnings()).issueWarnings).toBeUndefined();
+        expect(reducer(withWarnings, actions.clearIssueErrors()).issueWarnings).toEqual(withWarnings.issueWarnings);
     });
 
     test('revokeCertificate / success / failure update isRevoking and remove from list', () => {

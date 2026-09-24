@@ -282,6 +282,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         dispatch(utilsCertificateRequestActions.reset());
         dispatch(utilsActuatorActions.health());
         dispatch(certificateActions.clearIssueErrors());
+        // Edits do not clear an accepted request, so a stale result cannot survive into the next visit.
+        dispatch(certificateActions.clearIssueWarnings());
         // Request attributes are resolved per RA profile; start from a clean slate so descriptors left in
         // the shared store by a prior visit (or the Complete/Rekey dialogs) don't render before selection.
         dispatch(certificateActions.clearCsrAttributes());

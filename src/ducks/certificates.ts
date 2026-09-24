@@ -392,6 +392,9 @@ export const slice = createSlice({
         clearIssueErrors: (state) => {
             state.issueValidationErrors = undefined;
             state.issueErrorMessage = undefined;
+        },
+
+        clearIssueWarnings: (state) => {
             state.issueWarnings = undefined;
         },
 

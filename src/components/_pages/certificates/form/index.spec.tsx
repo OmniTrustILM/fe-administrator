@@ -701,6 +701,23 @@ test.describe('CertificateForm', () => {
             ).toHaveLength(0);
         });
 
+        test('editing the form after acceptance keeps the result and does not bring Create back', async ({ mount, page }) => {
+            await mount(
+                <CertificateFormTestWrapper
+                    preloadedState={{
+                        ...issuedWithWarnings,
+                        raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                    }}
+                />,
+            );
+            await page.getByTestId('select-raProfile-trigger').click();
+            await page.getByRole('option', { name: 'RA One' }).click();
+
+            await expect(page.getByTestId('compliance-errors-panel')).toBeVisible();
+            await expect(page.getByRole('button', { name: 'Open certificate' })).toBeVisible();
+            await expect(page.getByRole('button', { name: 'Create' })).toHaveCount(0);
+        });
+
         test('Close leaves the form without blocking', async ({ mount, page }) => {
             let closed = false;
             await mount(
