@@ -157,9 +157,15 @@ export const slice = createSlice({
         },
 
         clearPanel: (state, action: PayloadAction<ObjectRef>) => {
-            const key = panelKey(action.payload.resource, action.payload.objectUuid);
-            const roots = state.threads[key]?.comments ?? [];
-            for (const root of roots) delete state.replies[root.uuid];
+            const { resource, objectUuid } = action.payload;
+            const key = panelKey(resource, objectUuid);
+            const roots = new Set((state.threads[key]?.comments ?? []).map((root) => root.uuid));
+            // A thread opened from a page the roots list has since replaced is known only through its replies.
+            for (const [rootUuid, replies] of Object.entries(state.replies)) {
+                const reply = replies.comments[0];
+                const ours = roots.has(rootUuid) || (reply?.resource === resource && reply.objectUuid === objectUuid);
+                if (ours) delete state.replies[rootUuid];
+            }
             delete state.threads[key];
         },
 

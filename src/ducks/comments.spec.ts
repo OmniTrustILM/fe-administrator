@@ -198,7 +198,7 @@ describe('comments slice: threads', () => {
         expect(state.threads[otherKey].lock).toEqual(lock);
     });
 
-    test('clearPanel drops the panel and the replies of its roots', () => {
+    test('clearPanel drops the panel and the replies of its threads, and leaves other objects alone', () => {
         let state = withThreads([comment('r1')]);
         state = reducer(
             state,
@@ -206,12 +206,30 @@ describe('comments slice: threads', () => {
         );
         state = reducer(
             state,
-            actions.listRepliesSuccess({ rootUuid: 'other-root', sortDirection: SortDirection.Desc, page: page([comment('c2')]) }),
+            actions.listRepliesSuccess({
+                rootUuid: 'other-root',
+                sortDirection: SortDirection.Desc,
+                page: page([comment('c2', { objectUuid: 'obj-2' })]),
+            }),
         );
         state = reducer(state, actions.clearPanel({ resource, objectUuid }));
         expect(state.threads[key]).toBeUndefined();
         expect(state.replies.r1).toBeUndefined();
         expect(state.replies['other-root']).toBeDefined();
+    });
+
+    test('clearPanel drops the replies of a thread whose root the list no longer holds', () => {
+        let state = withThreads([comment('r1')]);
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({ rootUuid: 'r1', sortDirection: SortDirection.Asc, page: page([comment('c1')]) }),
+        );
+        // The other direction replaces the roots with a page that does not hold r1; the thread's replies stay behind.
+        state = reducer(state, actions.listThreadsSuccess({ key, page: page([comment('r9')]), sortDirection: SortDirection.Desc }));
+        expect(state.replies.r1).toBeDefined();
+
+        state = reducer(state, actions.clearPanel({ resource, objectUuid }));
+        expect(state.replies.r1).toBeUndefined();
     });
 });
 
