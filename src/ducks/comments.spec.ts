@@ -340,11 +340,26 @@ describe('comments slice: replies', () => {
 });
 
 describe('comments slice: sort direction', () => {
-    test('changing it sets the user direction and leaves the loaded lists for the re-read to replace', () => {
+    test('changing it sets the user direction and leaves the lists the epic re-reads in place', () => {
         const loaded = withThreads([comment('r1')]);
         const state = reducer(loaded, actions.changeSortDirection({ resource, objectUuid, sortDirection: SortDirection.Asc }));
         expect(state.sortDirection).toBe(SortDirection.Asc);
         expect(state.threads[key]).toEqual(loaded.threads[key]);
+    });
+
+    test('changing it drops the replies of a thread the roots list no longer holds, and nothing else', () => {
+        const replies = (rootUuid: string, reply: CommentDto) =>
+            actions.listRepliesSuccess({ rootUuid, sortDirection: SortDirection.Asc, page: page([reply]) });
+        let state = withThreads([comment('r1')]);
+        state = reducer(state, replies('r1', comment('c1')));
+        // r2 was opened from a page the list has since replaced; its replies would otherwise be shown again as loaded.
+        state = reducer(state, replies('r2', comment('c2')));
+        state = reducer(state, replies('other', comment('c3', { objectUuid: 'obj-2' })));
+
+        state = reducer(state, actions.changeSortDirection({ resource, objectUuid, sortDirection: SortDirection.Desc }));
+        expect(state.replies.r1).toBeDefined();
+        expect(state.replies.r2).toBeUndefined();
+        expect(state.replies.other).toBeDefined();
     });
 
     test('it outlives the panel, so the next panel starts in it', () => {

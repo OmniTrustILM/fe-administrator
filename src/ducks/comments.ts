@@ -82,6 +82,14 @@ const threadsOf = (state: State, key: string): ThreadsState => {
     return state.threads[key];
 };
 
+const rootsOf = (state: State, key: string): Set<string> => new Set((state.threads[key]?.comments ?? []).map((root) => root.uuid));
+
+/** A reply carries its host object, so a thread is known to belong here even when the roots list no longer holds its root. */
+const belongsTo = (replies: RepliesState, resource: Resource, objectUuid: string): boolean => {
+    const reply = replies.comments[0];
+    return reply?.resource === resource && reply.objectUuid === objectUuid;
+};
+
 const repliesOf = (state: State, rootUuid: string): RepliesState => {
     state.replies[rootUuid] ??= {
         ...emptyPage(REPLIES_PAGE_SIZE),
@@ -152,19 +160,22 @@ export const slice = createSlice({
     reducers: {
         resetState: () => initialState,
 
+        /** The epic re-reads the threads the roots list holds; one it no longer holds is dropped, so expanding it reads afresh. */
         changeSortDirection: (state, action: PayloadAction<ChangeSortDirectionPayload>) => {
-            state.sortDirection = action.payload.sortDirection;
+            const { resource, objectUuid, sortDirection } = action.payload;
+            state.sortDirection = sortDirection;
+            const roots = rootsOf(state, panelKey(resource, objectUuid));
+            for (const [rootUuid, replies] of Object.entries(state.replies)) {
+                if (!roots.has(rootUuid) && belongsTo(replies, resource, objectUuid)) delete state.replies[rootUuid];
+            }
         },
 
         clearPanel: (state, action: PayloadAction<ObjectRef>) => {
             const { resource, objectUuid } = action.payload;
             const key = panelKey(resource, objectUuid);
-            const roots = new Set((state.threads[key]?.comments ?? []).map((root) => root.uuid));
-            // A thread opened from a page the roots list has since replaced is known only through its replies.
+            const roots = rootsOf(state, key);
             for (const [rootUuid, replies] of Object.entries(state.replies)) {
-                const reply = replies.comments[0];
-                const ours = roots.has(rootUuid) || (reply?.resource === resource && reply.objectUuid === objectUuid);
-                if (ours) delete state.replies[rootUuid];
+                if (roots.has(rootUuid) || belongsTo(replies, resource, objectUuid)) delete state.replies[rootUuid];
             }
             delete state.threads[key];
         },
