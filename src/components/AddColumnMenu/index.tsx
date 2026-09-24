@@ -195,31 +195,34 @@ export default function AddColumnMenu({
                     </div>
 
                     {shown.length > 0 && (
-                        <fieldset
-                            // Capped and scrollable: a wide view puts enough columns here to push the
-                            // catalogue below the popover's own height, and this is the half that can give.
-                            className="mt-3 flex max-h-[40%] min-h-0 shrink flex-col overflow-y-auto border-b border-divider pb-2"
+                        // Kept whole up to half the menu, then scrolled. The cap is taken from the height Radix
+                        // reports, since the menu has only a max height for a percentage to resolve against. The
+                        // scroller is a div because Chromium neither shrinks nor clips a fieldset as a flex item.
+                        <div
+                            className="mt-3 max-h-[calc(var(--radix-popover-content-available-height)/2)] shrink-0 overflow-y-auto border-b border-divider pb-2"
                             data-testid={`${dataTestId}-shown`}
                         >
-                            <legend className="mb-1 text-xs font-semibold tracking-wide text-content-muted uppercase">
-                                Shown on the table
-                            </legend>
-                            <ul className="m-0 flex list-none flex-wrap p-0">
-                                {shown.map((field) => (
-                                    <FieldRow
-                                        key={getColumnKey(field)}
-                                        field={field}
-                                        isSelected
-                                        sourceLabel={DEFAULT_SOURCE_LABELS[field.fieldSource]}
-                                        lockReason={isLocked || isAtLastColumn ? lockNotice : undefined}
-                                        withSourceBadge
-                                        itemClassName="min-w-0 basis-full sm:basis-1/4"
-                                        onToggle={onToggleField}
-                                        dataTestId={dataTestId}
-                                    />
-                                ))}
-                            </ul>
-                        </fieldset>
+                            <fieldset className="min-w-0">
+                                <legend className="mb-1 text-xs font-semibold tracking-wide text-content-muted uppercase">
+                                    Shown on the table
+                                </legend>
+                                <ul className="m-0 flex list-none flex-wrap p-0">
+                                    {shown.map((field) => (
+                                        <FieldRow
+                                            key={getColumnKey(field)}
+                                            field={field}
+                                            isSelected
+                                            sourceLabel={DEFAULT_SOURCE_LABELS[field.fieldSource]}
+                                            lockReason={isLocked || isAtLastColumn ? lockNotice : undefined}
+                                            withSourceBadge
+                                            itemClassName="min-w-0 basis-full sm:basis-1/4"
+                                            onToggle={onToggleField}
+                                            dataTestId={dataTestId}
+                                        />
+                                    ))}
+                                </ul>
+                            </fieldset>
+                        </div>
                     )}
 
                     <div className="mt-3 grid min-h-0 flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
