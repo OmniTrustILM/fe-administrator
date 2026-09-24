@@ -453,7 +453,6 @@ test.describe('PagedList · column header menu', () => {
 
         await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename`).click();
         const field = page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`);
-        await field.click();
         await field.fill('Machine');
         await page.getByRole('button', { name: 'Rename', exact: true }).click();
         await expect(page.getByRole('button', { name: 'Machine', exact: true })).toBeVisible();
@@ -472,12 +471,27 @@ test.describe('PagedList · column header menu', () => {
         await openMenu(page, COMMON_NAME);
         await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename`).click();
         const field = page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`);
-        await field.click();
         await field.fill('');
         await page.getByRole('button', { name: 'Rename', exact: true }).click();
 
         await expect(page.getByRole('button', { name: 'Host', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toHaveCount(0);
+    });
+
+    test('opens the rename dialog with the field focused, and commits on Enter', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await openMenu(page, COMMON_NAME);
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename`).click();
+
+        const field = page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`);
+        await expect(field).toBeFocused();
+
+        await field.fill('Host');
+        await field.press('Enter');
+
+        await expect(page.getByRole('button', { name: 'Host', exact: true })).toBeVisible();
     });
 
     test('renames a column heading from the menu, and resets it back to the catalogue name', async ({ mount, page }) => {
@@ -488,7 +502,6 @@ test.describe('PagedList · column header menu', () => {
         await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename`).click();
 
         const field = page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`);
-        await field.click();
         await field.fill('Host');
         await page.getByRole('button', { name: 'Rename', exact: true }).click();
 
@@ -519,7 +532,6 @@ test.describe('PagedList · column header menu', () => {
         await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename`).click();
 
         const field = page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`);
-        await field.click();
         await field.fill('Host');
         await page.getByRole('button', { name: 'Rename', exact: true }).click();
 

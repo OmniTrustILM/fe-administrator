@@ -12,6 +12,8 @@ type Props = Readonly<{
     fellBackToStandard: boolean;
     /** Drops the columns this table cannot show from the stored view, which is the only cure for them. */
     onRemove?: () => void;
+    /** Whether a view write is already out. A second one would be built from the first one's optimistic state. */
+    isBusy?: boolean;
     dataTestId: string;
 }>;
 
@@ -32,7 +34,14 @@ const list = (columns: PickerColumn[]): string => {
  * A fallback can reach this with nothing to name, so the two are worded separately. Which cases
  * arrive, and why, is written down beside `resolveView`.
  */
-export default function UnresolvedColumnsNotice({ unavailable, storedCount, fellBackToStandard, onRemove, dataTestId }: Props) {
+export default function UnresolvedColumnsNotice({
+    unavailable,
+    storedCount,
+    fellBackToStandard,
+    onRemove,
+    isBusy = false,
+    dataTestId,
+}: Props) {
     if (unavailable.length === 0 && !fellBackToStandard) return null;
 
     const named = unavailable.length > 0 ? list(unavailable) : undefined;
@@ -51,7 +60,7 @@ export default function UnresolvedColumnsNotice({ unavailable, storedCount, fell
             <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden="true" />
             <span>{message}</span>
             {onRemove && (
-                <Button variant="transparent" color="secondary" onClick={onRemove} data-testid={`${dataTestId}-remove`}>
+                <Button variant="transparent" color="secondary" onClick={onRemove} disabled={isBusy} data-testid={`${dataTestId}-remove`}>
                     Remove from view
                 </Button>
             )}

@@ -38,10 +38,21 @@ export function isSameSort(a: ColumnSort | undefined, b: ColumnSort | undefined)
  * and a new column appended to the end lands where the user cannot see it. The last column standing
  * is kept: the API rejects a view with none, and the same array comes back so a refused removal
  * cannot re-list the page.
+ *
+ * A column the page ships comes back as the page ships it. Built from the catalogue field alone it
+ * would lose the display choices the catalogue knows nothing about — the centring on an icon column,
+ * the heading a page abbreviates — so removing and re-adding one would quietly redecorate it.
  */
-export function toggleColumn(columns: ColumnDefinition[], field: SourcedCatalogueField): ColumnDefinition[] {
+export function toggleColumn(
+    columns: ColumnDefinition[],
+    field: SourcedCatalogueField,
+    shipped: readonly ColumnDefinition[] = [],
+): ColumnDefinition[] {
     const key = getColumnKey(field);
-    if (!columns.some((column) => getColumnKey(column) === key)) return [toColumnDefinition(field), ...columns];
+    if (!columns.some((column) => getColumnKey(column) === key)) {
+        const asShipped = shipped.find((column) => getColumnKey(column) === key);
+        return [asShipped ?? toColumnDefinition(field), ...columns];
+    }
     if (columns.length === 1) return columns;
     return columns.filter((column) => getColumnKey(column) !== key);
 }

@@ -233,13 +233,18 @@ function PagedList<TRow extends object>({
     );
 
     const onRemoveColumn = useCallback(
-        (key: string) => applyColumns(appliedColumns.filter((column) => getColumnKey(column) !== key)),
+        (key: string) => {
+            // An empty selection reads as "back to Standard", so the last column standing holds here as
+            // it does in the menu, rather than resetting the table to a set nobody asked for.
+            if (appliedColumns.length === 1) return;
+            applyColumns(appliedColumns.filter((column) => getColumnKey(column) !== key));
+        },
         [applyColumns, appliedColumns],
     );
 
     const onToggleColumn = useCallback(
-        (field: SourcedCatalogueField) => applyColumns(toggleColumn(appliedColumns, field)),
-        [applyColumns, appliedColumns],
+        (field: SourcedCatalogueField) => applyColumns(toggleColumn(appliedColumns, field, sortableStandardColumns)),
+        [applyColumns, appliedColumns, sortableStandardColumns],
     );
 
     const addColumnMenu = useMemo(
@@ -492,13 +497,16 @@ function PagedList<TRow extends object>({
      * the table: a newly added attribute column reads empty until its values arrive, under the busy
      * overlay that says so.
      */
+    const wasFetchingList = useRef(false);
     const lastAnsweredRows = useRef(columnsRows);
     if (!isFetchingList) lastAnsweredRows.current = columnsRows;
 
-    // No rows carry no projected values, however the request ended. Without this a failed listing would
-    // leave the cache claiming its attributes had arrived, and taking such a column away and putting it
-    // back would suppress the one request able to fetch them.
-    if (!isFetchingList && (columnsRows?.length ?? 0) === 0) projectedKeys.current = [];
+    // A request that ended with nothing projected nothing, so the cache gives its claim back — otherwise
+    // a failed listing would leave it insisting the attributes it asked for had arrived, and taking such
+    // a column away and putting it back would suppress the one request able to fetch them. Only on the
+    // way out of a fetch: a page that is simply empty needs no request when its projection shrinks.
+    if (wasFetchingList.current && !isFetchingList && (columnsRows?.length ?? 0) === 0) projectedKeys.current = [];
+    wasFetchingList.current = isFetchingList;
     const heldRows = isFetchingList && (columnsRows?.length ?? 0) === 0 ? lastAnsweredRows.current : columnsRows;
 
     const columnRows = useMemo(

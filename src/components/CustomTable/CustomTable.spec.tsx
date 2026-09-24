@@ -774,6 +774,15 @@ test.describe('CustomTable', () => {
         await expect(component.getByTestId('table-skeleton')).toHaveCount(0);
     });
 
+    test('holds the select-all while the body is a skeleton, even with no caller gate', async ({ mount }) => {
+        const component = await mount(
+            withProviders(<CustomTable headers={mockHeaders} data={mockData} isLoading hasCheckboxes hasAllCheckBox multiSelect />),
+        );
+
+        await expect(component.getByTestId('table-skeleton-row').first()).toBeVisible();
+        await expect(component.locator('thead').getByRole('checkbox')).toBeDisabled();
+    });
+
     test('falls back to the whole skeleton while the headings are still unknown', async ({ mount }) => {
         const component = await mount(withProviders(<CustomTable headers={[]} data={[]} isLoading />));
 

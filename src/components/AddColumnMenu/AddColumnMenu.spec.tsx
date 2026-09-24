@@ -98,6 +98,19 @@ test.describe('AddColumnMenu', () => {
         ).toHaveCount(0);
     });
 
+    test('keeps focus on the field a toggle moves between the two lists', async ({ mount, page }) => {
+        await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, expiresAt]} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+        const field = page.getByTestId('add-column-menu-field-custom:costCentre|STRING');
+        await field.focus();
+        await field.press(' ');
+
+        // It has moved into the shown section and been remounted there; focus has to have gone with it.
+        await expect.poll(() => appliedColumns(page)).toContain('custom:costCentre|STRING');
+        await expect(page.getByTestId('add-column-menu-field-custom:costCentre|STRING')).toBeFocused();
+    });
+
     test('puts the platform column set back from the reset entry', async ({ mount, page }) => {
         await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, expiresAt]} standardColumns={[commonName]} />);
 

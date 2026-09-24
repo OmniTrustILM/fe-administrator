@@ -243,7 +243,7 @@ test.describe('PagedList · configurable columns', () => {
         await expect(page.getByTestId('empty-cell')).toHaveCount(1);
     });
 
-    test('lists a view that carries both an ordering and an attribute column exactly once', async ({ mount, page }) => {
+    test('never sends the same request twice for a view carrying both an ordering and an attribute column', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[expiryWatch]} />,
         );

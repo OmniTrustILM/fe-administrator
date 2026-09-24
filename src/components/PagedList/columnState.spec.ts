@@ -317,6 +317,20 @@ describe('toggleColumn', () => {
         });
     });
 
+    it('brings a shipped column back as the page ships it, not as the catalogue describes it', () => {
+        const shipped = [
+            {
+                fieldSource: FilterFieldSource.Custom,
+                fieldIdentifier: 'costCentre|STRING',
+                catalogueLabel: 'Cost centre',
+                label: 'CC',
+                align: 'center' as const,
+            },
+        ];
+
+        expect(toggleColumn(columns, costCentre, shipped)[0]).toMatchObject({ label: 'CC', align: 'center' });
+    });
+
     it('takes away a field the table is already showing', () => {
         expect(toggleColumn(columns, commonName).map((column) => column.fieldIdentifier)).toEqual(['CK_ASSOCIATIONS', 'department|STRING']);
     });

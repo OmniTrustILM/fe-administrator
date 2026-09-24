@@ -15,7 +15,7 @@ import {
     Pencil,
     RotateCcw,
 } from 'lucide-react';
-import { type ReactNode, useCallback, useId, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useId, useState } from 'react';
 import { type ColumnMove, getMoveTarget } from './columnMoves';
 
 const NOT_SORTABLE_REASON = 'This field cannot be used for ordering.';
@@ -129,6 +129,24 @@ export default function ColumnHeaderMenu({
     const lastColumnId = useId();
     const [isOpen, setIsOpen] = useState(false);
     const [renaming, setRenaming] = useState<string | undefined>(undefined);
+    const isRenaming = renaming !== undefined;
+
+    const commitRename = useCallback(() => {
+        // An emptied field is the same request Reset heading makes: the heading the page ships, which
+        // is not always what the catalogue calls the field.
+        onRename?.(renaming?.trim() ? renaming : defaultHeading);
+        setRenaming(undefined);
+    }, [onRename, renaming, defaultHeading]);
+
+    // The dialog opens focused on its own container, so without this the operator has to click into the
+    // field before typing. Deferred a frame, because the dialog's own focus handling runs first.
+    useEffect(() => {
+        if (!isRenaming) return;
+        const frame = requestAnimationFrame(() =>
+            document.querySelector<HTMLInputElement>(`[data-testid="${dataTestId}-rename-field"]`)?.focus(),
+        );
+        return () => cancelAnimationFrame(frame);
+    }, [isRenaming, dataTestId]);
     const hasOverride = defaultHeading !== undefined && label !== defaultHeading;
 
     const move = useCallback(
@@ -283,25 +301,29 @@ export default function ColumnHeaderMenu({
                     size="sm"
                     dataTestId={`${dataTestId}-rename-dialog`}
                     body={
-                        <TextInput
-                            id={`${dataTestId}-rename-input`}
-                            label="Heading"
-                            value={renaming ?? ''}
-                            onChange={setRenaming}
-                            placeholder={defaultHeading}
-                            dataTestId={`${dataTestId}-rename-field`}
-                        />
+                        // A form so Enter commits the rename: one field and no submit button is the shape
+                        // browsers submit implicitly, which is what the operator expects after typing.
+                        <form
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                commitRename();
+                            }}
+                        >
+                            <TextInput
+                                id={`${dataTestId}-rename-input`}
+                                label="Heading"
+                                value={renaming ?? ''}
+                                onChange={setRenaming}
+                                placeholder={defaultHeading}
+                                dataTestId={`${dataTestId}-rename-field`}
+                            />
+                        </form>
                     }
                     buttons={[
                         { color: 'secondary', variant: 'outline', onClick: () => setRenaming(undefined), body: 'Cancel' },
                         {
                             color: 'primary',
-                            onClick: () => {
-                                // An emptied field is the same request Reset heading makes: the heading the
-                                // page ships, which is not always what the catalogue calls the field.
-                                onRename(renaming?.trim() ? renaming : defaultHeading);
-                                setRenaming(undefined);
-                            },
+                            onClick: commitRename,
                             body: 'Rename',
                         },
                     ]}

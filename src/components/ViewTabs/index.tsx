@@ -440,6 +440,7 @@ export default function ViewTabs({
                             ? () => patchActive({ columns: toStoredColumns(resolved.columns.filter((column) => column.available)) })
                             : undefined
                     }
+                    isBusy={isMutating}
                     dataTestId={`${dataTestId}-notice`}
                 />
             )}

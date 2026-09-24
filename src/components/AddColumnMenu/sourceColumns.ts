@@ -23,8 +23,8 @@ export interface MenuSourceColumn {
 
 export interface MenuContents {
     /**
-     * The columns the table is showing, as catalogue fields, in display order. A column whose field
-     * the catalogue no longer publishes is absent: there is nothing to render a checkbox from.
+     * The columns the table is showing, as catalogue fields, in display order. A column the catalogue
+     * does not publish is built from the column itself, so it can still be taken off here.
      */
     shown: SourcedCatalogueField[];
     sources: MenuSourceColumn[];
@@ -48,15 +48,16 @@ export function toMenuContents(fields: SourcedCatalogueField[], columns: ColumnD
     // Built from the columns themselves, enriched from the catalogue where it publishes a match. A
     // platform column the catalogue does not carry — the keys inventory ships one — is still on the
     // table, and this section is the only place it can be taken off again.
-    const onTable = columns.map(
-        (column) =>
-            byKey.get(getColumnKey(column)) ??
-            ({
-                fieldSource: column.fieldSource,
-                fieldIdentifier: column.fieldIdentifier,
-                fieldLabel: getColumnHeading(column),
-            } as SourcedCatalogueField),
-    );
+    const onTable = columns.map((column) => {
+        const published = byKey.get(getColumnKey(column));
+        // Headed the way the table heads it, published or not: listing a renamed column under its
+        // catalogue name makes the section disagree with the header, and puts it out of reach of a
+        // search for the name the operator gave it.
+        return {
+            ...(published ?? { fieldSource: column.fieldSource, fieldIdentifier: column.fieldIdentifier }),
+            fieldLabel: getColumnHeading(column),
+        } as SourcedCatalogueField;
+    });
 
     // Taken out of the source columns whether or not the search keeps them in the shown section, or a
     // search that hides a column from the top would put it back among the fields on offer.

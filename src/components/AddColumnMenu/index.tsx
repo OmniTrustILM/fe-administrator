@@ -4,7 +4,7 @@ import Badge from 'components/Badge';
 import { CHECKBOX_INPUT_CLASS } from 'components/Checkbox';
 import SourceBadge, { DEFAULT_SOURCE_LABELS, SOURCE_COLORS } from 'components/SourceBadge';
 import { Plus, RotateCcw, Search } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { getColumnKey } from 'utils/tableColumns';
 import { type MenuSourceColumn, toMenuContents } from './sourceColumns';
@@ -99,6 +99,29 @@ export default function AddColumnMenu({
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
 
+    // A toggle moves the field between the shown section and its source column, which are different
+    // lists — so React unmounts the checkbox under the pointer and mounts a new one elsewhere, and the
+    // popover's focus scope drops focus on the container. Followed by hand, or a keyboard user tabs
+    // back from the top after every tick.
+    const toggledKey = useRef<string | undefined>(undefined);
+
+    const onToggleField = useCallback(
+        (field: SourcedCatalogueField) => {
+            toggledKey.current = getColumnKey(field);
+            onToggle?.(field);
+        },
+        [onToggle],
+    );
+
+    useLayoutEffect(() => {
+        const key = toggledKey.current;
+        if (key === undefined) return;
+        toggledKey.current = undefined;
+        document.querySelector<HTMLInputElement>(`[data-testid="${dataTestId}-field-${CSS.escape(key)}"]`)?.focus();
+        // Keyed on the applied columns: that is what the toggle changes, and so what moves the checkbox
+        // between the two lists. Keyed on anything stable, this would only ever run on mount.
+    }, [dataTestId, columns]);
+
     const { shown, sources } = useMemo(() => toMenuContents(fields, columns, search), [fields, columns, search]);
 
     const onOpenChange = useCallback((open: boolean) => {
@@ -191,7 +214,7 @@ export default function AddColumnMenu({
                                         lockReason={isLocked || isAtLastColumn ? lockNotice : undefined}
                                         withSourceBadge
                                         itemClassName="min-w-0 basis-full sm:basis-1/4"
-                                        onToggle={onToggle}
+                                        onToggle={onToggleField}
                                         dataTestId={dataTestId}
                                     />
                                 ))}
@@ -233,7 +256,7 @@ export default function AddColumnMenu({
                                                         isSelected={false}
                                                         sourceLabel={label}
                                                         lockReason={isLocked ? lockNotice : undefined}
-                                                        onToggle={onToggle}
+                                                        onToggle={onToggleField}
                                                         dataTestId={dataTestId}
                                                     />
                                                 ))}

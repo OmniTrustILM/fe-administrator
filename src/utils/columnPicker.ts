@@ -114,9 +114,10 @@ export function resolveColumns(
             return { ...standard, ...(column.label ? { label: column.label } : {}), available: true };
         }
 
-        // Alignment is the page's choice, not the catalogue's and not the view's: a centred icon column
-        // stays centred whether it is opened from Standard or from a stored view, which is why it is
-        // taken from the shipped column rather than from anything storage carries.
+        // Alignment is the page's choice, not the catalogue's: a centred icon column stays centred whether
+        // it is opened from Standard or from a stored view. The shipped column wins, and what was handed
+        // in stands behind it for a caller that passes no shipped set — `toStoredColumns` writes no
+        // alignment, so through `resolveView` that fallback never fires.
         const align = standardByKey.get(key)?.align ?? column.align;
 
         return {

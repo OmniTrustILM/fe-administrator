@@ -133,7 +133,7 @@ function CustomTable({
     paginationStateKey,
     paginationPersistKey,
     disablePaginationControls = false,
-    disableSelectionControls = false,
+    disableSelectionControls: callerDisablesSelection = false,
     disableSearchControls = false,
     isLoading = false,
     emptyStateDescription = 'There are no records to display here yet',
@@ -158,6 +158,11 @@ function CustomTable({
     const internalPaginationHydratedKeyRef = useRef<string | undefined>(undefined);
 
     const internalPaginationEnabled = hasPagination && !paginationData && !onPageChanged && !onPageSizeChanged;
+    // The header row survives a load, so its select-all no longer goes away with the body. It has to be
+    // held here rather than by each caller: a table whose rows are a skeleton has nothing to select, and
+    // twelve pages pass `isLoading` without disabling selection because the whole table used to vanish.
+    const disableSelectionControls = callerDisablesSelection || isLoading;
+
     const tableSignature = useMemo(() => {
         if (paginationStateKey) {
             return paginationStateKey;

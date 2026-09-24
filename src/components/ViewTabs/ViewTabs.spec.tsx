@@ -492,6 +492,17 @@ test.describe('ViewTabs', () => {
         expect(action?.payload).toMatchObject({ view: { columns: [{ fieldIdentifier: 'COMMON_NAME' }] } });
     });
 
+    test('refuses the notice removal while another view write is still out', async ({ mount, page }) => {
+        const stale = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+        });
+        await mount(strip({ views: [stale], isMutating: true }));
+
+        await expect(page.getByTestId('view-tabs-notice')).toBeVisible();
+        await expect(page.getByTestId('view-tabs-notice-remove')).toBeDisabled();
+    });
+
     test('offers no removal when nothing resolved, where the table is showing the platform set instead', async ({ mount, page }) => {
         const stale = expiryWatch({
             defaultView: true,
