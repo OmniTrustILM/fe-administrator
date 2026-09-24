@@ -5,7 +5,12 @@ import EvaluationDetailsDialog from 'components/_pages/notifications/events-sett
 import { Check, Info, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import type { EventHistoryDto, TriggerHistoryObjectSummaryDto, TriggerHistoryObjectTriggerSummaryDto } from 'types/openapi';
+import {
+    type EventHistoryDto,
+    Resource,
+    type TriggerHistoryObjectSummaryDto,
+    type TriggerHistoryObjectTriggerSummaryDto,
+} from 'types/openapi';
 import { dateFormatter } from 'utils/dateUtil';
 
 type Props = {
@@ -25,6 +30,25 @@ const allConditionsMatched = (trigger: TriggerHistoryObjectTriggerSummaryDto) =>
 const allActionsPerformed = (trigger: TriggerHistoryObjectTriggerSummaryDto) =>
     allConditionsMatched(trigger) && !trigger.records.some((r) => r.execution);
 
+function renderObjectCell(obj: TriggerHistoryObjectSummaryDto, objectLabel: string, resource: Resource | undefined) {
+    if (obj.hostObject) {
+        return (
+            <span key="object">
+                <Link to={`/${obj.hostObject.resource.toLowerCase()}/detail/${obj.hostObject.objectUuid}`}>{objectLabel}</Link>
+                <span className="text-content-subtle"> ({obj.hostObject.name})</span>
+            </span>
+        );
+    }
+    if (objectLabel && resource && resource !== Resource.Comments) {
+        return (
+            <Link key="object" to={`/${resource.toLowerCase()}/detail/${objectLabel}`}>
+                {objectLabel}
+            </Link>
+        );
+    }
+    return objectLabel;
+}
+
 export default function EventFiringDetailsDialog({ isOpen, onClose, entry }: Readonly<Props>) {
     const [selectedDetails, setSelectedDetails] = useState<SelectedDetails | undefined>(undefined);
 
@@ -43,21 +67,13 @@ export default function EventFiringDetailsDialog({ isOpen, onClose, entry }: Rea
 
     const data: TableDataRow[] = useMemo(() => {
         const objects: TriggerHistoryObjectSummaryDto[] = entry?.objectHistories.items ?? [];
-        const resourcePath = entry?.resource?.toLowerCase();
         return objects.flatMap((obj, objIdx) => {
             const objectLabel = obj.objectUuid ?? obj.referenceObjectUuid ?? '';
-            const objectLink =
-                objectLabel && resourcePath ? (
-                    <Link key="object" to={`/${resourcePath}/detail/${objectLabel}`}>
-                        {objectLabel}
-                    </Link>
-                ) : (
-                    objectLabel
-                );
+            const objectCell = renderObjectCell(obj, objectLabel, entry?.resource);
             return obj.triggers.map((trigger, trIdx) => ({
                 id: `${objectLabel || objIdx}-${trigger.triggerUuid}-${trIdx}`,
                 columns: [
-                    objectLink,
+                    objectCell,
                     <Link key="trigger" to={`/triggers/detail/${trigger.triggerUuid}`}>
                         {trigger.triggerName}
                     </Link>,
