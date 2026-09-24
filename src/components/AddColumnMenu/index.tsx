@@ -202,7 +202,7 @@ export default function AddColumnMenu({
                             className="mt-3 max-h-[calc(var(--radix-popover-content-available-height)/2)] shrink-0 overflow-y-auto border-b border-divider pb-2"
                             data-testid={`${dataTestId}-shown`}
                         >
-                            <fieldset>
+                            <fieldset className="min-w-0">
                                 <legend className="mb-1 text-xs font-semibold tracking-wide text-content-muted uppercase">
                                     Shown on the table
                                 </legend>

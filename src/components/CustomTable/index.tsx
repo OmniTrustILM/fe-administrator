@@ -654,9 +654,9 @@ function CustomTable({
             // Keyed by position rather than by `header.id`: an id may carry whitespace — `ACME Profile Name`
             // is shipped — and `aria-labelledby` is a token list, so such an id would resolve to nothing.
             const headingId = `${headingIdPrefix}${index}`;
-            const isChrome = header.id === '__checkbox__';
-            const action = isChrome ? undefined : renderHeaderAction?.(header);
-            const lead = isChrome ? undefined : renderHeaderLead?.(header);
+            const isCheckboxColumn = header.id === '__checkbox__';
+            const action = isCheckboxColumn ? undefined : renderHeaderAction?.(header);
+            const lead = isCheckboxColumn ? undefined : renderHeaderLead?.(header);
             const maxWidth = header.maxWidth == null ? undefined : header.maxWidth + (action || lead ? HEADER_CONTROLS_WIDTH : 0);
 
             return (
@@ -669,7 +669,7 @@ function CustomTable({
                             index > 0 && 'relative before:absolute before:inset-y-1.5 before:left-0 before:w-px before:bg-divider',
                         )}
                         data-id={header.id}
-                        {...(header.id === '__checkbox__' ? {} : { 'aria-labelledby': headingId })}
+                        {...(isCheckboxColumn ? {} : { 'aria-labelledby': headingId })}
                         {...(header.sortable && ariaSortValue(header.sort) ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
                         style={{
                             ...(header.width ? { width: header.width } : {}),
@@ -679,7 +679,7 @@ function CustomTable({
                         }}
                     >
                         {(() => {
-                            if (header.id === '__checkbox__') {
+                            if (isCheckboxColumn) {
                                 return hasAllCheckBox && multiSelect ? (
                                     <Checkbox
                                         checked={checkAllChecked}

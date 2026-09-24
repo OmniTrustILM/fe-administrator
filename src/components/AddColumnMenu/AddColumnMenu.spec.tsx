@@ -155,6 +155,23 @@ test.describe('AddColumnMenu', () => {
         expect(await shown.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
     });
 
+    test('truncates a long selected label on a narrow screen rather than scrolling the section sideways', async ({ mount, page }) => {
+        await page.setViewportSize({ width: 375, height: 700 });
+        const longLabel = field(FilterFieldSource.Custom, 'owner|STRING', 'An organisation-wide ownership attribute with a very long name');
+        await mount(
+            <AddColumnMenuHarness
+                fields={[...fields, longLabel]}
+                columns={[commonName, column(FilterFieldSource.Custom, 'owner|STRING', longLabel.fieldLabel)]}
+            />,
+        );
+
+        await page.getByTestId('add-column-menu-trigger').click();
+        const shown = page.getByTestId('add-column-menu-shown');
+        await expect(shown).toBeVisible();
+
+        expect(await shown.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    });
+
     test('puts the platform column set back from the reset entry', async ({ mount, page }) => {
         await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, expiresAt]} standardColumns={[commonName]} />);
 

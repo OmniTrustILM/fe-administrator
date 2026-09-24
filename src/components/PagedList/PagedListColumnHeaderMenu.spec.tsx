@@ -777,18 +777,34 @@ test.describe('PagedList · column header menu', () => {
     });
 
     test.describe('a heading wider than its column', () => {
-        const flag = (identifier: string, catalogueLabel: string): ColumnDefinition => ({
-            ...property(identifier, catalogueLabel),
+        const LONG_LABEL = 'A connector supplied metadata field with a very long name';
+
+        const propertyFlag = (catalogueLabel: string): ColumnDefinition => ({
+            ...property('PRIVATE_KEY', catalogueLabel),
             type: FilterFieldType.Boolean,
             align: 'center',
         });
-        const flagCatalogue = (columns: ColumnDefinition[]) =>
-            [
-                {
-                    filterFieldSource: FilterFieldSource.Property,
-                    searchFieldData: columns.map((column) => field(column.fieldIdentifier, column.catalogueLabel, { type: column.type })),
-                },
-            ] as unknown as SearchFieldListModel[];
+        const customFlag = (catalogueLabel: string): ColumnDefinition => ({
+            fieldSource: FilterFieldSource.Custom,
+            fieldIdentifier: 'hasKey|BOOLEAN',
+            catalogueLabel,
+            attributeContentType: AttributeContentType.Boolean,
+            sortable: true,
+            align: 'center',
+        });
+
+        const catalogueFor = (columns: ColumnDefinition[]) =>
+            [FilterFieldSource.Property, FilterFieldSource.Custom].map((source) => ({
+                filterFieldSource: source,
+                searchFieldData: columns
+                    .filter((column) => column.fieldSource === source)
+                    .map((column) =>
+                        field(column.fieldIdentifier, column.catalogueLabel, {
+                            type: column.type ?? FilterFieldType.Boolean,
+                            attributeContentType: column.attributeContentType,
+                        }),
+                    ),
+            })) as unknown as SearchFieldListModel[];
 
         // Enough neighbours that the table has no spare width to hand the column beyond its own cap.
         const crowdedColumns = (first: ColumnDefinition) => [
@@ -796,21 +812,26 @@ test.describe('PagedList · column header menu', () => {
             ...Array.from({ length: 10 }, (_, i) => property(`FIELD_${i}`, `Neighbouring field ${i}`)),
         ];
 
+        const crowdedList = (first: ColumnDefinition) => {
+            const columns = crowdedColumns(first);
+            return <PagedListColumnsWithStore rows={rows} standardColumns={columns} catalogue={catalogueFor(columns)} />;
+        };
+
         const controlIsOnTop = (page: Page, testId: string) =>
             page.getByTestId(testId).evaluate((control) => {
                 const box = control.getBoundingClientRect();
                 return control.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
             });
 
-        for (const [name, label] of [
-            ['a shipped heading', 'Has private key'],
-            ['a heading too long for any column', 'A connector supplied metadata field with a very long name'],
+        for (const [name, column] of [
+            ['a shipped heading', propertyFlag('Has private key')],
+            ['a heading too long for any column', propertyFlag(LONG_LABEL)],
+            ['an attribute heading too long for any column', customFlag(LONG_LABEL)],
         ] as const) {
             test(`keeps the grip and the menu reachable under ${name}`, async ({ mount, page }) => {
-                const columns = crowdedColumns(flag('PRIVATE_KEY', label));
-                await mount(<PagedListColumnsWithStore rows={rows} standardColumns={columns} catalogue={flagCatalogue(columns)} />);
+                await mount(crowdedList(column));
 
-                const key = 'property:PRIVATE_KEY';
+                const key = `${column.fieldSource}:${column.fieldIdentifier}`;
                 await expect(page.getByTestId(`column-drag-handle-${key}-trigger`)).toBeVisible();
 
                 expect(await controlIsOnTop(page, `column-drag-handle-${key}-trigger`)).toBe(true);
@@ -819,13 +840,29 @@ test.describe('PagedList · column header menu', () => {
         }
 
         test('reads a shipped heading in full beside the controls', async ({ mount, page }) => {
-            const columns = crowdedColumns(flag('PRIVATE_KEY', 'Has private key'));
-            await mount(<PagedListColumnsWithStore rows={rows} standardColumns={columns} catalogue={flagCatalogue(columns)} />);
+            await mount(crowdedList(propertyFlag('Has private key')));
 
             const heading = page.locator('th[data-id="property:PRIVATE_KEY"] span[id]');
             await expect(heading).toHaveText('Has private key');
 
             expect(await heading.evaluate((span) => span.scrollWidth <= span.clientWidth)).toBe(true);
+        });
+
+        test('ends a cut attribute heading in an ellipsis, so it does not read as complete', async ({ mount, page }) => {
+            await mount(crowdedList(customFlag(LONG_LABEL)));
+
+            const heading = page.locator('th[data-id="custom:hasKey|BOOLEAN"] span[id]');
+            await expect(heading).toContainText(LONG_LABEL);
+
+            const holder = await heading.evaluate((span, label) => {
+                const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
+                let node = walker.nextNode();
+                while (node && node.textContent !== label) node = walker.nextNode();
+                const element = node?.parentElement;
+                if (!element) return undefined;
+                return { textOverflow: getComputedStyle(element).textOverflow, isCut: element.scrollWidth > element.clientWidth };
+            }, LONG_LABEL);
+            expect(holder).toEqual({ textOverflow: 'ellipsis', isCut: true });
         });
     });
 });

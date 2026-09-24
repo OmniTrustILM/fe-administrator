@@ -96,11 +96,13 @@ export function renderColumnHeading(column: ColumnDefinition): ReactNode {
     if (column.fieldSource === FilterFieldSource.Property) return heading;
 
     return (
-        <span className="inline-flex items-center gap-1.5">
+        // Capped to the cell, with the text carrying its own ellipsis: an inline-flex box is atomic, and a line
+        // clips an atomic box without one, so a cut heading would read as complete.
+        <span className="inline-flex max-w-full items-center gap-1.5">
             <SourceBadge source={column.fieldSource} />
             {/* An explicit space, because the visible gap is layout: without it the cell's text content,
             and so anything copying or matching on it, reads the badge and the heading as one word. */}{' '}
-            {heading}
+            <span className="min-w-0 truncate">{heading}</span>
         </span>
     );
 }
