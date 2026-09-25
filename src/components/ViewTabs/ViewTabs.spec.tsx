@@ -403,6 +403,30 @@ test.describe('ViewTabs', () => {
         await expect(confirm).toBeEnabled();
     });
 
+    test('refuses the name of the Standard tab for a new view, though Standard is not a stored view', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-new').click();
+        await page.getByTestId('view-tabs-create-input').click();
+        await page.getByTestId('view-tabs-create-input').fill('Standard');
+
+        await expect(page.getByTestId('view-tabs-create')).toContainText('A view of this name already exists.');
+        await expect(page.getByTestId('view-tabs-create').getByRole('button', { name: 'Create view' })).toBeDisabled();
+    });
+
+    test('refuses to rename a view to the name of the Standard tab', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Rename…' }).click();
+        await page.getByTestId('view-tabs-rename-input').click();
+        await page.getByTestId('view-tabs-rename-input').fill('Standard');
+
+        await expect(page.getByTestId('view-tabs-rename')).toContainText('A view of this name already exists.');
+        await expect(page.getByTestId('view-tabs-rename').getByRole('button', { name: 'Rename' })).toBeDisabled();
+    });
+
     test('duplicates the active tab under a name that is free', async ({ mount, page }) => {
         await mount(strip({ views: [expiryWatch(), audit({ name: 'Expiry watch (copy)' })] }));
 
