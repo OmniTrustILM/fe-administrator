@@ -510,7 +510,7 @@ test.describe('CommentPanel', () => {
         });
     });
 
-    test('switching direction re-reads the first page the other way round and replaces what was loaded', async ({ mount, page }) => {
+    test('switching direction asks for the other one, and the page read that way replaces what was loaded', async ({ mount, page }) => {
         await mount(
             <CommentPanelWithStore
                 comments={{
@@ -546,8 +546,8 @@ test.describe('CommentPanel', () => {
         await sort.click();
 
         expect((await dispatched(page)).at(-1)).toEqual({
-            type: 'comments/listThreads',
-            payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1, sortDirection: 'desc' },
+            type: 'comments/changeSortDirection',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', sortDirection: 'desc' },
         });
 
         // The reversed page lands on a list that already holds r2 and r3: they must not appear twice.
@@ -558,9 +558,9 @@ test.describe('CommentPanel', () => {
         await expect(page.getByTestId('comment-panel-obj-1-load-more')).toHaveText('Load more (1 remaining)');
 
         await sort.click();
-        expect((await dispatched(page)).at(-1)).toMatchObject({
-            type: 'comments/listThreads',
-            payload: { pageNumber: 1, sortDirection: 'asc' },
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/changeSortDirection',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', sortDirection: 'asc' },
         });
     });
 
@@ -651,6 +651,26 @@ test.describe('CommentPanel', () => {
             type: 'comments/listReplies',
             payload: { rootUuid: 'r1', pageNumber: 1, itemsPerPage: 60 },
         });
+    });
+
+    test('in a newest-first list, the roots and replies before an anchored page are the newer ones', async ({ mount, page }) => {
+        const anchored = { pageNumber: 3, firstPage: 3, sortDirection: 'desc' };
+        await mount(
+            <CommentPanelWithStore
+                comments={{
+                    threads: {
+                        [KEY]: threadsPage([comment('r1', 'root', { replyCount: 41 })], { ...anchored, totalItems: 21, totalPages: 3 }),
+                    },
+                    replies: {
+                        r1: threadsPage([comment('c1', 'the reply')], { ...anchored, itemsPerPage: 20, totalItems: 41, totalPages: 3 }),
+                    },
+                }}
+            />,
+        );
+
+        await expect(page.getByTestId('comment-panel-obj-1-load-earlier')).toHaveText('Show newer comments (20)');
+        await page.getByTestId('thread-r1-toggle-replies').click();
+        await expect(page.getByTestId('thread-r1-load-earlier')).toHaveText('Show newer replies (40)');
     });
 
     test('following a notification about another comment on the object already open re-anchors the panel', async ({ mount, page }) => {

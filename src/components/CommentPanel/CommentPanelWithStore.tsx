@@ -71,7 +71,7 @@ export default function CommentPanelWithStore({
     deliver = [],
     navigateTo = [],
 }: CommentPanelWithStoreProps) {
-    const store = createMockStore({ comments: { threads: {}, replies: {}, busy: {}, dispatched: [], ...comments } });
+    const store = createMockStore({ comments: { threads: {}, replies: {}, busy: {}, sortDirection: 'desc', dispatched: [], ...comments } });
 
     return (
         <Provider store={store}>

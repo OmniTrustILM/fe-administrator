@@ -22,8 +22,8 @@ type PendingDelete = { comment: CommentDto; parentUuid?: string };
  * Comment threads on one object. The same component serves every commentable resource: the pair (resource, objectUuid)
  * is the whole binding, and nothing here branches on which resource it is.
  *
- * Thread roots are listed in the direction the user picks; replies always read oldest-first, because a thread reads
- * naturally in the order it was written even when the newest threads are on top.
+ * Thread roots and the replies inside a thread share one direction, newest-first until the user picks otherwise. The
+ * choice belongs to the user rather than to the object, so it carries over to every panel and outlives this one.
  */
 export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) {
     const dispatch = useDispatch();
@@ -31,6 +31,7 @@ export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) 
     const threadsSelector = useMemo(() => selectors.threads(key), [key]);
     const threads = useSelector(threadsSelector);
     const busy = useSelector(selectors.busy);
+    const preferredDirection = useSelector(selectors.sortDirection);
 
     const [pendingDelete, setPendingDelete] = useState<PendingDelete | undefined>(undefined);
 
@@ -59,17 +60,16 @@ export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) 
         if (anchor?.replyUuid) dispatch(actions.listReplies({ rootUuid: anchor.rootUuid, pageNumber: 1, anchorUuid: anchor.replyUuid }));
     }, [dispatch, resource, objectUuid, anchor]);
 
-    const sortDirection = threads?.sortDirection ?? SortDirection.Asc;
+    const sortDirection = threads?.sortDirection ?? preferredDirection;
     const newestFirst = sortDirection === SortDirection.Desc;
 
     // Re-reads the roots loaded so far as one first page, plus the replies of every thread that was opened, so a
     // refresh never collapses the list and picks up replies posted elsewhere.
     const reload = useCallback(() => dispatch(actions.refreshPanel({ resource, objectUuid })), [dispatch, resource, objectUuid]);
 
-    // The other direction is a different list, read from its own first page.
     const onToggleDirection = useCallback(() => {
         const next = newestFirst ? SortDirection.Asc : SortDirection.Desc;
-        dispatch(actions.listThreads({ resource, objectUuid, pageNumber: 1, sortDirection: next }));
+        dispatch(actions.changeSortDirection({ resource, objectUuid, sortDirection: next }));
     }, [dispatch, resource, objectUuid, newestFirst]);
 
     // An anchored load lands on the page holding the thread, so there may be roots before the list as well as after.
@@ -181,7 +181,7 @@ export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) 
                                 disabled={threads?.isFetching}
                                 data-testid={`comment-panel-${objectUuid}-load-earlier`}
                             >
-                                Show earlier comments ({earlier})
+                                Show {newestFirst ? 'newer' : 'earlier'} comments ({earlier})
                             </Button>
                         )}
 
