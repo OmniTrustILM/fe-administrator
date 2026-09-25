@@ -108,7 +108,7 @@ describe('CryptoAssetsList', () => {
         expect(row?.textContent).toContain((3412).toLocaleString());
     });
 
-    // PagedList keys its listing effect on this object, so a fresh one each render would refetch without end.
+    // A registry rebuilt on every render churns PagedList's derived column state.
     it('keeps the column configuration identical across a re-render with unchanged state', async () => {
         await render();
         const first = lastProps().configurableColumns;
@@ -117,6 +117,7 @@ describe('CryptoAssetsList', () => {
 
         expect(pagedListProps.mock.calls.length).toBeGreaterThan(1);
         expect(lastProps().configurableColumns).toBe(first);
+        expect(lastProps().configurableColumns.registry).toBe(first.registry);
     });
 
     it('hands PagedList the new rows when the listing changes', async () => {
