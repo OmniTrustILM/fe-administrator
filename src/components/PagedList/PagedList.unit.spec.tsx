@@ -542,6 +542,20 @@ describe('PagedList unit coverage', () => {
         expect(container.querySelector('[data-testid="filter-widget"]')).toBeTruthy();
     });
 
+    it('lists again with the same request each time the refresh token moves', async () => {
+        const onListCallback = vi.fn();
+
+        await renderPagedList({ onListCallback, refreshToken: 0 });
+        await renderPagedList({ onListCallback, refreshToken: 0 });
+        expect(onListCallback).toHaveBeenCalledTimes(1);
+
+        await renderPagedList({ onListCallback, refreshToken: 1 });
+        await renderPagedList({ onListCallback, refreshToken: 2 });
+
+        expect(onListCallback).toHaveBeenCalledTimes(3);
+        expect(onListCallback.mock.calls[2][0]).toEqual(onListCallback.mock.calls[0][0]);
+    });
+
     it('does not list again when the filter catalogue is re-read', async () => {
         const onListCallback = vi.fn();
         const filter = mockState.filters.filters[0].filter;

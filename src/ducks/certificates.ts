@@ -877,6 +877,11 @@ export const slice = createSlice({
 
         bulkDeleteSuccess: (state, action: PayloadAction<{ response: CertificateBulkDeleteResponseModel }>) => {
             state.isBulkDeleting = false;
+            state.listRefreshToken += 1;
+        },
+
+        requestListRefresh: (state) => {
+            state.listRefreshToken += 1;
         },
 
         bulkDeleteFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {

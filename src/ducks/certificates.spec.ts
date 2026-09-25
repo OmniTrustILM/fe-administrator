@@ -26,6 +26,8 @@ describe('certificates slice', () => {
         ['bulkDeleteGroupSuccess', () => actions.bulkDeleteGroupSuccess({ uuids: ['c1'] })],
         ['uploadCertificateSuccess', () => actions.uploadCertificateSuccess()],
         ['bulkUpdateRaProfileSuccess', () => actions.bulkUpdateRaProfileSuccess({ uuids: ['c1'] })],
+        ['bulkDeleteSuccess', () => actions.bulkDeleteSuccess({ response: {} as any })],
+        ['requestListRefresh', () => actions.requestListRefresh()],
     ])('%s bumps listRefreshToken so the page refetches through the host', (_name, action) => {
         const next = reducer(initialState, action());
 

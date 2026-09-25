@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
-import { merge, of, race } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, take, takeUntil } from 'rxjs/operators';
+import { merge, of, race, timer } from 'rxjs';
+import { catchError, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { actions as alertActions } from './alerts';
@@ -1094,17 +1094,42 @@ const bulkDeleteOwner: AppEpic = (action$, state, deps) => {
     );
 };
 
+const BULK_DELETE_REREAD_BASE_DELAY_MS = 1000;
+const BULK_DELETE_MAX_REREADS = 5;
+
 const bulkDelete: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.bulkDelete.match),
-        switchMap((action) =>
-            deps.apiClients.certificates
+        switchMap((action) => {
+            const deletedUuids = action.payload.uuids ?? [];
+
+            // Core deletes in the background after answering, so the read the success triggers can still
+            // list the certificates. Each listing that does is followed by another read, backing off.
+            const rereadUntilRemoved$ = action$.pipe(
+                filter(slice.actions.listCertificatesSuccess.match),
+                takeWhile((listAction) => listAction.payload.some((certificate) => deletedUuids.includes(certificate.uuid))),
+                take(BULK_DELETE_MAX_REREADS),
+                switchMap((_, attempt) =>
+                    timer(BULK_DELETE_REREAD_BASE_DELAY_MS * 2 ** attempt).pipe(map(() => slice.actions.requestListRefresh())),
+                ),
+                takeUntil(
+                    action$.pipe(
+                        filter(pagingActions.listFailure.match),
+                        filter((listFailureAction) => listFailureAction.payload === EntityType.CERTIFICATE),
+                    ),
+                ),
+            );
+
+            return deps.apiClients.certificates
                 .bulkDeleteCertificate({ removeCertificateDto: transformCertificateBulkDeleteRequestModelToDto(action.payload) })
                 .pipe(
                     mergeMap((result) =>
-                        of(
-                            slice.actions.bulkDeleteSuccess({ response: transformCertificateBulkDeleteResponseDtoToModel(result) }),
-                            alertActions.success('Delete operation for selected certificates initiated.'),
+                        merge(
+                            of(
+                                slice.actions.bulkDeleteSuccess({ response: transformCertificateBulkDeleteResponseDtoToModel(result) }),
+                                alertActions.success('Delete operation for selected certificates initiated.'),
+                            ),
+                            rereadUntilRemoved$,
                         ),
                     ),
 
@@ -1114,8 +1139,8 @@ const bulkDelete: AppEpic = (action$, state, deps) => {
                             appRedirectActions.fetchError({ error: err, message: 'Failed to bulk delete certificates' }),
                         ),
                     ),
-                ),
-        ),
+                );
+        }),
     );
 };
 

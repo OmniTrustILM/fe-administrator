@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { UnknownAction } from '@reduxjs/toolkit';
 import { firstValueFrom, of, Subject, throwError, type Observable } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
@@ -15,6 +15,7 @@ vi.mock('./transform/certificates', () => ({
     transformCertificateRevokeRequestModelToDto: (req: unknown) => req,
     transformSearchRequestModelToDto: (req: unknown) => req,
     transformCertificateBulkDeleteRequestModelToDto: (req: unknown) => req,
+    transformCertificateBulkDeleteResponseDtoToModel: (res: unknown) => res,
     transformCertificateBulkObjectModelToDto: (req: unknown) => req,
     transformCertificateRenewRequestModelToDto: (req: unknown) => req,
     transformCertificateRekeyRequestModelToDto: (req: unknown) => req,
@@ -37,6 +38,8 @@ vi.mock('./transform/certificates', () => ({
 import { actions as certificatesActions } from './certificates';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
+import { EntityType } from './filters';
+import { actions as pagingActions } from './paging';
 import certificatesEpics from './certificates-epics';
 
 // Resolve epics by function name rather than by position — inserting an epic anywhere in the array
@@ -57,6 +60,7 @@ const MANUALLY_ISSUE_EPIC_INDEX = findEpicIndex('manuallyIssueCertificate');
 const MANUALLY_CONFIRM_REVOKE_EPIC_INDEX = findEpicIndex('manuallyConfirmRevoke');
 const CANCEL_PENDING_EPIC_INDEX = findEpicIndex('cancelPendingCertificateOperation');
 const BULK_UPDATE_RA_PROFILE_EPIC_INDEX = findEpicIndex('bulkUpdateRaProfile');
+const BULK_DELETE_EPIC_INDEX = findEpicIndex('bulkDelete');
 const UPLOAD_EPIC_INDEX = findEpicIndex('uploadCertificate');
 const GET_REGISTER_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getRegisterAttributes');
 const GET_CSR_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getCsrAttributes');
@@ -923,6 +927,124 @@ describe('certificates epics', () => {
 
             expect(emitted).toEqual([]);
             subscription.unsubscribe();
+        });
+    });
+
+    describe('bulkDelete re-reads the list until the deleted certificates are gone', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        function startBulkDelete(uuids: string[], bulkDeleteCertificate: () => Observable<unknown> = () => of({ status: 'SUCCESS' })) {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const action$ = new Subject<UnknownAction>();
+            const deps = { apiClients: { certificates: { bulkDeleteCertificate } } };
+            const emitted: UnknownAction[] = [];
+            let completed = false;
+            const subscription = epics[BULK_DELETE_EPIC_INDEX](action$, of({}) as any, deps as any).subscribe({
+                next: (action) => emitted.push(action),
+                complete: () => {
+                    completed = true;
+                },
+            });
+
+            action$.next(certificatesActions.bulkDelete({ uuids, filters: [] }));
+
+            return {
+                emitted,
+                isCompleted: () => completed,
+                listed: (listedUuids: string[]) =>
+                    action$.next(certificatesActions.listCertificatesSuccess(listedUuids.map((uuid) => ({ uuid })) as any)),
+                next: (action: UnknownAction) => action$.next(action),
+                complete: () => action$.complete(),
+                unsubscribe: () => subscription.unsubscribe(),
+            };
+        }
+
+        const refreshes = (emitted: UnknownAction[]) =>
+            emitted.filter((action) => action.type === certificatesActions.requestListRefresh.type).length;
+
+        test('reports the initiated deletion through the success action', () => {
+            const run = startBulkDelete(['c1', 'c2']);
+
+            expect(run.emitted.map((action) => action.type)).toEqual([
+                certificatesActions.bulkDeleteSuccess.type,
+                alertActions.success.type,
+            ]);
+            run.unsubscribe();
+        });
+
+        test('asks for another read while a listing still shows a deleted certificate', async () => {
+            const run = startBulkDelete(['c1', 'c2']);
+
+            run.listed(['c1', 'c2', 'c3']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(refreshes(run.emitted)).toBe(1);
+            run.unsubscribe();
+        });
+
+        test('keeps asking on each listing that still shows a deleted certificate', async () => {
+            const run = startBulkDelete(['c1', 'c2']);
+
+            run.listed(['c1', 'c2']);
+            await vi.advanceTimersByTimeAsync(60_000);
+            run.listed(['c2']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(refreshes(run.emitted)).toBe(2);
+            run.unsubscribe();
+        });
+
+        test('stops once a listing no longer shows any deleted certificate', async () => {
+            const run = startBulkDelete(['c1', 'c2']);
+
+            run.listed(['c3']);
+            run.listed(['c1']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(refreshes(run.emitted)).toBe(0);
+            run.complete();
+            expect(run.isCompleted()).toBe(true);
+        });
+
+        test('gives up after a bounded number of reads', async () => {
+            const run = startBulkDelete(['c1']);
+
+            for (let read = 0; read < 20; read++) {
+                run.listed(['c1']);
+                await vi.advanceTimersByTimeAsync(60_000);
+            }
+
+            expect(refreshes(run.emitted)).toBeLessThan(20);
+            expect(refreshes(run.emitted)).toBeGreaterThan(1);
+            run.unsubscribe();
+        });
+
+        test('stops when the listing fails', async () => {
+            const run = startBulkDelete(['c1']);
+
+            run.listed(['c1']);
+            run.next(pagingActions.listFailure(EntityType.CERTIFICATE));
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(refreshes(run.emitted)).toBe(0);
+            run.unsubscribe();
+        });
+
+        test('asks for nothing further when the delete request fails', async () => {
+            const run = startBulkDelete(['c1'], () => throwError(() => new Error('boom')));
+
+            run.listed(['c1']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(run.emitted[0].type).toBe(certificatesActions.bulkDeleteFailure.type);
+            expect(refreshes(run.emitted)).toBe(0);
+            run.unsubscribe();
         });
     });
 });
