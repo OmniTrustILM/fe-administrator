@@ -365,20 +365,43 @@ test.describe('ViewTabs', () => {
         });
     });
 
-    test('creates a view from the current slice through the new-view tab', async ({ mount, page }) => {
+    test('starts a new view from the Standard columns rather than the active view', async ({ mount, page }) => {
         await mount(strip());
 
+        await page.getByTestId('view-tabs-tab-view-1').click();
         await page.getByTestId('view-tabs-new').click();
 
-        await expect(page.getByTestId('view-tabs-create-input')).toHaveValue('Standard (copy)');
+        await expect(page.getByTestId('view-tabs-create-input')).toHaveValue('New view');
 
-        await page.getByTestId('view-tabs-create-input').click();
-        await page.getByTestId('view-tabs-create-input').fill('Everything');
         await page.getByTestId('view-tabs-create').getByRole('button', { name: 'Create view' }).click();
 
         await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
-        const action = await lastDispatched(page, 'listViews/createView');
-        expect(action?.payload).toMatchObject({ view: { name: 'Everything' } });
+        const view = (await lastDispatched(page, 'listViews/createView'))?.payload?.view as Record<string, unknown>;
+        expect(view).toMatchObject({
+            name: 'New view',
+            columns: [
+                { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+                { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'SERIAL_NUMBER' },
+            ],
+            filters: [],
+            defaultView: false,
+        });
+        expect(view.sort).toBeUndefined();
+
+        const applied = await appliedSlice(page);
+        expect(applied.columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
+        expect(applied.filters).toEqual([]);
+        expect(applied.sort).toBeUndefined();
+        await expect(page.getByTestId('view-tabs-tab-pending-view')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-pending-view-dirty')).toHaveCount(0);
+    });
+
+    test('numbers the offered new-view name once it is taken', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch(), audit({ name: 'New view' })] }));
+
+        await page.getByTestId('view-tabs-new').click();
+
+        await expect(page.getByTestId('view-tabs-create-input')).toHaveValue('New view 2');
     });
 
     test('refuses a name that is empty or already taken', async ({ mount, page }) => {
@@ -412,7 +435,15 @@ test.describe('ViewTabs', () => {
 
         await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
         const action = await lastDispatched(page, 'listViews/createView');
-        expect(action?.payload).toMatchObject({ view: { name: 'Expiry watch (copy) 2' } });
+        expect(action?.payload).toMatchObject({
+            view: {
+                name: 'Expiry watch (copy) 2',
+                columns: [stored('COMMON_NAME'), stored('NOT_AFTER', FilterFieldSource.Property, 'Expires')],
+                filters: [stateFilter],
+                sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', direction: SortDirection.Asc },
+            },
+        });
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
     });
 
     test('renames a view by sending the whole stored row back', async ({ mount, page }) => {
@@ -602,8 +633,27 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
     });
 
-    test('puts the tab back when a create fails, without dropping what it was saving', async ({ mount, page }) => {
+    test('puts the tab back when a create from the current slice fails, without dropping what it was saving', async ({ mount, page }) => {
         await mount(strip({ driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' } }));
+
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+        await page.getByTestId('view-tabs-create').getByRole('button', { name: 'Create view' }).click();
+
+        await expect(page.getByTestId('view-tabs-tab-pending-view')).toHaveAttribute('aria-selected', 'true');
+
+        await page.getByTestId('simulate-create-failure').click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).sort).toEqual({
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'COMMON_NAME',
+            direction: 'desc',
+        });
+    });
+
+    test('puts the tab and its rows back when a new view fails to create', async ({ mount, page }) => {
+        await mount(strip());
 
         await page.getByTestId('view-tabs-tab-view-1').click();
         await page.getByTestId('view-tabs-new').click();

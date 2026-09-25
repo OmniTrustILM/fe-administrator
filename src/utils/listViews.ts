@@ -108,8 +108,16 @@ export function splitTabs(tabs: readonly ViewTab[], activeId: string, cap: numbe
  * numeric suffix is appended rather than stacking `(copy) (copy)`, which reads as an accident.
  */
 export function duplicateName(name: string, existing: readonly string[]): string {
+    return uniqueName(`${name} (copy)`, existing);
+}
+
+/** The neutral name a new view is offered under, free among the existing names. */
+export function newViewName(existing: readonly string[]): string {
+    return uniqueName('New view', existing);
+}
+
+function uniqueName(base: string, existing: readonly string[]): string {
     const taken = new Set(existing);
-    const base = `${name} (copy)`;
     if (!taken.has(base)) return base;
 
     for (let suffix = 2; ; suffix++) {

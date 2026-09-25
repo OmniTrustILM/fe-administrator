@@ -14,6 +14,7 @@ import {
     STANDARD_VIEW_ID,
     duplicateName,
     isSliceDirty,
+    newViewName,
     resolveInitialViewId,
     resolveView,
     splitTabs,
@@ -71,7 +72,7 @@ export type ViewTabsProps = Readonly<{
     dataTestId?: string;
 }>;
 
-type PendingDialog = 'rename' | 'create' | 'delete';
+type PendingDialog = 'rename' | 'create' | 'new' | 'delete';
 
 /**
  * Whether the strip is up, given a settled view list and a settled catalogue. A host withholding its
@@ -212,8 +213,9 @@ export default function ViewTabs({
     }, [resource, isReady, views, fields, standardColumns, standardSort]);
 
     // The tab the strip was on when a create started, so a create that fails has somewhere to go back
-    // to instead of leaving the strip pointing at a row the rollback has taken away.
-    const tabBeforeCreate = useRef(STANDARD_VIEW_ID);
+    // to instead of leaving the strip pointing at a row the rollback has taken away. A new view has
+    // replaced the table's slice with Standard's, so its failure puts that tab's slice back as well.
+    const tabBeforeCreate = useRef({ id: STANDARD_VIEW_ID, reapply: false });
 
     // A created view arrives with the uuid the API gave it, replacing the optimistic row the strip
     // has been showing, and the tab under the cursor has to follow it rather than vanish. A failed
@@ -227,19 +229,35 @@ export default function ViewTabs({
         }
 
         if (!views.some((view) => view.uuid === PENDING_VIEW_UUID)) {
-            // The slice is deliberately not re-applied: the columns, filters and ordering the create
-            // was trying to keep are still on the table, and a failure is not a reason to drop them.
-            setActiveId(views.some((view) => view.uuid === tabBeforeCreate.current) ? tabBeforeCreate.current : STANDARD_VIEW_ID);
+            // A create from the current slice is deliberately not re-applied: the columns, filters and
+            // ordering it was trying to keep are still on the table, and a failure is not a reason to
+            // drop them.
+            const { id, reapply } = tabBeforeCreate.current;
+            const fallback = views.find((view) => view.uuid === id);
+            setActiveId(fallback?.uuid ?? STANDARD_VIEW_ID);
+            if (reapply) apply(fallback);
         }
-    }, [activeId, createdUuid, views]);
+    }, [activeId, createdUuid, views, apply]);
 
-    const createFromCurrent = useCallback(
-        (name: string) => {
-            tabBeforeCreate.current = activeId;
-            dispatch(listViewActions.createView({ resource, view: toCreateRequest(name, resource, currentSlice, catalogue) }));
+    const create = useCallback(
+        (name: string, slice: ViewSlice, reapply: boolean) => {
+            tabBeforeCreate.current = { id: activeId, reapply };
+            dispatch(listViewActions.createView({ resource, view: toCreateRequest(name, resource, slice, catalogue) }));
             setActiveId(PENDING_VIEW_UUID);
         },
-        [dispatch, resource, currentSlice, activeId, catalogue],
+        [dispatch, resource, activeId, catalogue],
+    );
+
+    const createFromCurrent = useCallback((name: string) => create(name, currentSlice, false), [create, currentSlice]);
+
+    // Unsorted on purpose: Standard's ordering is the page's default, not a choice the new view has made.
+    const createFromStandard = useCallback(
+        (name: string) => {
+            const slice = toStandardSlice(standardColumns);
+            create(name, slice, true);
+            applyRef.current(slice);
+        },
+        [create, standardColumns],
     );
 
     const patchActive = useCallback(
@@ -414,7 +432,7 @@ export default function ViewTabs({
 
                     <button
                         type="button"
-                        onClick={() => setDialog('create')}
+                        onClick={() => setDialog('new')}
                         disabled={isMutating}
                         aria-label="New view"
                         title="New view"
@@ -457,16 +475,17 @@ export default function ViewTabs({
             />
 
             <NameViewDialog
-                isOpen={dialog === 'create'}
+                isOpen={dialog === 'create' || dialog === 'new'}
                 caption="New view"
                 confirmLabel="Create view"
-                initialName={duplicateName(activeTab.name, takenNames)}
+                initialName={dialog === 'new' ? newViewName(takenNames) : duplicateName(activeTab.name, takenNames)}
                 takenNames={takenNames}
                 isBusy={isMutating}
                 onClose={() => setDialog(undefined)}
                 onSubmit={(name) => {
                     setDialog(undefined);
-                    createFromCurrent(name);
+                    if (dialog === 'new') createFromStandard(name);
+                    else createFromCurrent(name);
                 }}
                 dataTestId={`${dataTestId}-create`}
             />

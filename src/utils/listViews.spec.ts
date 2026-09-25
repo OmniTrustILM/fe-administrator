@@ -16,6 +16,7 @@ import {
     STANDARD_VIEW_NAME,
     duplicateName,
     isSliceDirty,
+    newViewName,
     resolveInitialViewId,
     resolveView,
     splitTabs,
@@ -178,6 +179,17 @@ describe('duplicateName', () => {
     it('numbers the copy rather than stacking suffixes, because names are unique per resource', () => {
         expect(duplicateName('Expiry watch', ['Expiry watch (copy)'])).toBe('Expiry watch (copy) 2');
         expect(duplicateName('Expiry watch', ['Expiry watch (copy)', 'Expiry watch (copy) 2'])).toBe('Expiry watch (copy) 3');
+    });
+});
+
+describe('newViewName', () => {
+    it('offers a neutral name that owes nothing to any existing view', () => {
+        expect(newViewName(['Expiry watch', STANDARD_VIEW_NAME])).toBe('New view');
+    });
+
+    it('numbers the name once it is taken, because names are unique per resource', () => {
+        expect(newViewName(['New view'])).toBe('New view 2');
+        expect(newViewName(['New view', 'New view 2'])).toBe('New view 3');
     });
 });
 
