@@ -20,67 +20,34 @@ import {
 const getSignatureAttributesDescriptors: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.listSignatureAttributeDescriptors.match),
-        switchMap((action) =>
-            deps.apiClients.cryptographicOperations
-                .listSignatureAttributes({
-                    tokenInstanceUuid: action.payload.tokenInstanceUuid,
-                    keyItemUuid: action.payload.keyItemUuid,
-                    tokenProfileUuid: action.payload.tokenProfileUuid,
-                    algorithm: action.payload.algorithm,
-                    uuid: action.payload.uuid,
-                })
-                .pipe(
-                    map((descriptors) =>
-                        slice.actions.listSignatureAttributeDescriptorsSuccess({
-                            uuid: action.payload.uuid,
-                            attributeDescriptors: descriptors.map(transformAttributeDescriptorDtoToModel),
-                            store: action.payload.store,
-                        }),
-                    ),
+        switchMap((action) => {
+            const client = deps.apiClients.cryptographicOperations;
+            const key = {
+                tokenInstanceUuid: action.payload.tokenInstanceUuid,
+                keyItemUuid: action.payload.keyItemUuid,
+                tokenProfileUuid: action.payload.tokenProfileUuid,
+                uuid: action.payload.uuid,
+            };
+            const attributes$ = action.payload.operation === 'sign' ? client.listSignAttributes(key) : client.listVerifyAttributes(key);
+            return attributes$.pipe(
+                map((descriptors) =>
+                    slice.actions.listSignatureAttributeDescriptorsSuccess({
+                        uuid: action.payload.uuid,
+                        attributeDescriptors: descriptors.map(transformAttributeDescriptorDtoToModel),
+                        store: action.payload.store,
+                    }),
+                ),
 
-                    catchError((err) =>
-                        of(
-                            slice.actions.listSignatureAttributesFailure({
-                                error: extractError(err, 'Failed to get Signature Attribute Descriptor list'),
-                            }),
-                            appRedirectActions.fetchError({ error: err, message: 'Failed to get Signature Attribute Descriptor list' }),
-                        ),
+                catchError((err) =>
+                    of(
+                        slice.actions.listSignatureAttributesFailure({
+                            error: extractError(err, 'Failed to get Signature Attribute Descriptor list'),
+                        }),
+                        appRedirectActions.fetchError({ error: err, message: 'Failed to get Signature Attribute Descriptor list' }),
                     ),
                 ),
-        ),
-    );
-};
-
-const getCipherAttributesDescriptors: AppEpic = (action$, state, deps) => {
-    return action$.pipe(
-        filter(slice.actions.listCipherAttributeDescriptors.match),
-        switchMap((action) =>
-            deps.apiClients.cryptographicOperations
-                .listCipherAttributes({
-                    tokenInstanceUuid: action.payload.tokenInstanceUuid,
-                    keyItemUuid: action.payload.keyItemUuid,
-                    tokenProfileUuid: action.payload.tokenProfileUuid,
-                    algorithm: action.payload.algorithm,
-                    uuid: action.payload.uuid,
-                })
-                .pipe(
-                    map((descriptors) =>
-                        slice.actions.listCipherAttributeDescriptorsSuccess({
-                            uuid: action.payload.uuid,
-                            attributeDescriptors: descriptors.map(transformAttributeDescriptorDtoToModel),
-                        }),
-                    ),
-
-                    catchError((err) =>
-                        of(
-                            slice.actions.listCipherAttributesFailure({
-                                error: extractError(err, 'Failed to get Cipher Attribute Descriptor list'),
-                            }),
-                            appRedirectActions.fetchError({ error: err, message: 'Failed to get Cipher Attribute Descriptor list' }),
-                        ),
-                    ),
-                ),
-        ),
+            );
+        }),
     );
 };
 
@@ -209,13 +176,6 @@ const generateRandomData: AppEpic = (action$, state$, deps) => {
     );
 };
 
-const epics = [
-    getSignatureAttributesDescriptors,
-    getCipherAttributesDescriptors,
-    getRandomAttributesDescriptors,
-    signData,
-    verifyData,
-    generateRandomData,
-];
+const epics = [getSignatureAttributesDescriptors, getRandomAttributesDescriptors, signData, verifyData, generateRandomData];
 
 export default epics;
