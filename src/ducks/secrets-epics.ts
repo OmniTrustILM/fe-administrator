@@ -1,9 +1,9 @@
 import type { AppEpic } from 'ducks';
-import { type Observable, of } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, takeUntil } from 'rxjs/operators';
+import { EMPTY, type Observable, of } from 'rxjs';
+import { catchError, expand, filter, map, mergeMap, reduce, switchMap, takeUntil } from 'rxjs/operators';
 
 import type { AttributeDescriptorDto, AttributeDescriptorModel } from 'types/attributes';
-import type { SecretType, VaultProfileManagementApi } from 'types/openapi';
+import type { SecretDto, SecretType, VaultProfileManagementApi } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { extractError } from 'utils/net';
 
@@ -45,17 +45,22 @@ const listSecrets: AppEpic = (action$, state$, deps) => {
     );
 };
 
-// A lookup for pickers: a failure is reported to the caller, not raised as a toast or a list widget lock.
+// A lookup for pickers: a failure is reported to the caller, not raised as a toast or a list widget lock. Every page is
+// read, since a secret left off the list could not be picked and a reference to it would read as not available.
 const listSecretOptions: AppEpic = (action$, state$, deps) => {
+    const readPage = (pageNumber: number) =>
+        deps.apiClients.secrets
+            .listSecrets({ searchRequestDto: { itemsPerPage: SECRET_OPTIONS_PAGE_SIZE, pageNumber, filters: [] } })
+            .pipe(map((response) => ({ pageNumber, response })));
     return action$.pipe(
         filter(slice.actions.listSecretOptions.match),
         switchMap(() =>
-            deps.apiClients.secrets
-                .listSecrets({ searchRequestDto: { itemsPerPage: SECRET_OPTIONS_PAGE_SIZE, pageNumber: 1, filters: [] } })
-                .pipe(
-                    map((response) => slice.actions.listSecretOptionsSuccess({ secrets: response.items })),
-                    catchError((err) => of(slice.actions.listSecretOptionsFailure({ error: extractError(err, 'Failed to list secrets') }))),
-                ),
+            readPage(1).pipe(
+                expand(({ pageNumber, response }) => (pageNumber < response.totalPages ? readPage(pageNumber + 1) : EMPTY)),
+                reduce((secrets: SecretDto[], { response }) => [...secrets, ...response.items], []),
+                map((secrets) => slice.actions.listSecretOptionsSuccess({ secrets })),
+                catchError((err) => of(slice.actions.listSecretOptionsFailure({ error: extractError(err, 'Failed to list secrets') }))),
+            ),
         ),
     );
 };

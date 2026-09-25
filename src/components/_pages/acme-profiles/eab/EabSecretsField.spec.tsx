@@ -64,6 +64,7 @@ test.describe('EabSecretsField', () => {
         await page.getByRole('option', { name: /Generic key/ }).click();
 
         await expect.poll(() => selected).toEqual(['s-2']);
+        expect(selected).toEqual(['s-2']);
     });
 
     test('shows the selected secrets by name, or by uuid when the secret is not listed', async ({ mount, page }) => {

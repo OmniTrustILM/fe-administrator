@@ -40,7 +40,7 @@ export function newPreauthorizedIdentifier(): AcmePreauthorizedIdentifierDto {
 }
 
 function isAscii(value: string): boolean {
-    return [...value].every((char) => char.charCodeAt(0) <= 0x7f);
+    return [...value].every((char) => (char.codePointAt(0) ?? 0) <= 0x7f);
 }
 
 export function isDnsName(value: string): boolean {

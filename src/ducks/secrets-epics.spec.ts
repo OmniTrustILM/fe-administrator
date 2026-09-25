@@ -146,6 +146,47 @@ describe('secrets epics', () => {
         expect(emitted).toEqual([secretsActions.listSecretOptionsSuccess({ secrets: [{ uuid: 's-1' }] as any })]);
     });
 
+    test('listSecretOptions reads every page and reports them as one list', async () => {
+        const requested: number[] = [];
+        const emitted = await runEpic(
+            SecretsEpicIndex.ListSecretOptions,
+            secretsActions.listSecretOptions(),
+            {
+                secrets: {
+                    listSecrets: ({ searchRequestDto }: any) => {
+                        requested.push(searchRequestDto.pageNumber);
+                        return of({ items: [{ uuid: `s-${searchRequestDto.pageNumber}` }], totalPages: 3 });
+                    },
+                } as any,
+            },
+            5,
+        );
+
+        expect(requested).toEqual([1, 2, 3]);
+        expect(emitted).toEqual([
+            secretsActions.listSecretOptionsSuccess({ secrets: [{ uuid: 's-1' }, { uuid: 's-2' }, { uuid: 's-3' }] as any }),
+        ]);
+    });
+
+    test('listSecretOptions reports a failed later page as a failure, not a partial list', async () => {
+        const emitted = await runEpic(
+            SecretsEpicIndex.ListSecretOptions,
+            secretsActions.listSecretOptions(),
+            {
+                secrets: {
+                    listSecrets: ({ searchRequestDto }: any) =>
+                        searchRequestDto.pageNumber === 1
+                            ? of({ items: [{ uuid: 's-1' }], totalPages: 2 })
+                            : throwError(() => new Error('page 2 failed')),
+                } as any,
+            },
+            5,
+        );
+
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0].type).toBe(secretsActions.listSecretOptionsFailure.type);
+    });
+
     test('listSecretOptions failure carries the reason without a toast, widget lock or paging change', async () => {
         const emitted = await runEpic(
             SecretsEpicIndex.ListSecretOptions,

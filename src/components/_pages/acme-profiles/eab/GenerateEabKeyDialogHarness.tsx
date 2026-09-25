@@ -10,7 +10,7 @@ type Props = Readonly<{
 
 export default function GenerateEabKeyDialogHarness({ generatedKey = 'generated-key', fail = false }: Props) {
     const [isOpen, setIsOpen] = useState(false);
-    const [, setTick] = useState(0);
+    const [renders, setRenders] = useState(0);
     const store = useMemo(() => createMockStore(), []);
     const generations = useRef(0);
     const generateKey = () => {
@@ -24,7 +24,7 @@ export default function GenerateEabKeyDialogHarness({ generatedKey = 'generated-
                 Open
             </button>
             <span data-testid="state">{isOpen ? 'open' : 'closed'}</span>
-            <button type="button" data-testid="rerender" onClick={() => setTick((tick) => tick + 1)}>
+            <button type="button" data-testid="rerender" data-renders={renders} onClick={() => setRenders((count) => count + 1)}>
                 Rerender
             </button>
             <GenerateEabKeyDialog isOpen={isOpen} onClose={() => setIsOpen(false)} generateKey={generateKey} />

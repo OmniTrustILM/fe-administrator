@@ -70,5 +70,6 @@ test.describe('EabSecretsWidget', () => {
         await page.getByRole('button', { name: 'Generate key' }).click();
 
         await expect.poll(() => asked).toBe(true);
+        expect(asked).toBe(true);
     });
 });

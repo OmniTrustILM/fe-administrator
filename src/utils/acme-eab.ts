@@ -4,10 +4,10 @@ import { type SecretDto, SecretState, SecretType } from 'types/openapi';
 export const EAB_SECRET_TYPES: readonly SecretType[] = [SecretType.SecretKey, SecretType.Generic];
 
 // Core refuses to read a secret in these states, so a binding could never verify against one.
-const UNREADABLE_SECRET_STATES: readonly SecretState[] = [SecretState.Failed, SecretState.PendingApproval, SecretState.Rejected];
+const UNREADABLE_SECRET_STATES: ReadonlySet<SecretState> = new Set([SecretState.Failed, SecretState.PendingApproval, SecretState.Rejected]);
 
 export function isEabSecret(secret: Pick<SecretDto, 'type' | 'enabled' | 'state'>): boolean {
-    return secret.enabled && EAB_SECRET_TYPES.includes(secret.type) && !UNREADABLE_SECRET_STATES.includes(secret.state);
+    return secret.enabled && EAB_SECRET_TYPES.includes(secret.type) && !UNREADABLE_SECRET_STATES.has(secret.state);
 }
 
 export function sameUuidSet(a: readonly string[] | undefined, b: readonly string[] | undefined): boolean {

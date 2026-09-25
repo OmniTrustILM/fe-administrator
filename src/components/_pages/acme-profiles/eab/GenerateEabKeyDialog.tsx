@@ -65,9 +65,9 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, generateKey = de
                             <div className="rounded-lg border border-divider bg-surface-sunken p-3 font-mono" data-testid="eab-key">
                                 <CopyUrlCell label="key">{key}</CopyUrlCell>
                             </div>
-                            <p className="text-sm text-warning" role="status" data-testid="eab-key-notice">
+                            <output className="block text-sm text-warning" data-testid="eab-key-notice">
                                 {EAB_KEY_NOTICE}
-                            </p>
+                            </output>
                         </>
                     ) : null}
                 </div>
