@@ -10,6 +10,7 @@ import { durationFormatter } from 'utils/dateUtil';
 import { toCreateRequest, toStandardSlice } from 'utils/listViews';
 import { buildCbomCellRegistry, CBOM_COLUMNS } from './cboms/cbomTableHelpers';
 import { buildConnectorCellRegistry, buildConnectorColumns } from './connectors/connectorTableHelpers';
+import { buildCryptoAssetCellRegistry, CRYPTO_ASSET_COLUMNS } from './crypto-assets/cryptoAssetTableHelpers';
 import { buildDiscoveryCellRegistry, DISCOVERY_COLUMNS } from './discoveries/discoveryTableHelpers';
 import { buildSecretCellRegistry, SECRET_COLUMNS } from './secrets/secretTableHelpers';
 import { buildSigningRecordCellRegistry, SIGNING_RECORD_COLUMNS } from './signing-records/signingRecordTableHelpers';
@@ -111,6 +112,19 @@ const inventories = [
             'CBOM_ASSET_SYNC_ERROR',
         ],
         displayOnly: [],
+    },
+    {
+        name: 'crypto assets',
+        resource: Resource.CryptoAssets,
+        columns: CRYPTO_ASSET_COLUMNS,
+        registry: buildCryptoAssetCellRegistry({
+            typeEnum: undefined,
+            pqcVerdictEnum: undefined,
+            getEnumLabel: noop,
+            getEnumDescription: () => undefined,
+        }),
+        catalogued: ['CBOM_ASSET_NAME', 'CBOM_ASSET_TYPE', 'CBOM_ASSET_PQC_VERDICT', 'CBOM_ASSET_SOURCE_COUNT'],
+        displayOnly: ['CBOM_ASSET_OCCURRENCE_COUNT'],
     },
     {
         name: 'signing records',
