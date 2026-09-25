@@ -59,6 +59,7 @@ export default function CertificateList({
 
     const certificates = useSelector(selectors.certificates);
     const listRefreshToken = useSelector(selectors.listRefreshToken);
+    const listBackgroundRefreshToken = useSelector(selectors.listBackgroundRefreshToken);
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.CERTIFICATE));
     const users = useSelector(userSelectors.users);
 
@@ -329,6 +330,7 @@ export default function CertificateList({
                 entity={EntityType.CERTIFICATE}
                 onListCallback={onListCallback}
                 refreshToken={listRefreshToken}
+                backgroundRefreshToken={listBackgroundRefreshToken}
                 onDeleteCallback={(uuids, filters) => dispatch(actions.bulkDelete({ uuids, filters }))}
                 getAvailableFiltersApi={useCallback(
                     (apiClients: ApiClients) => apiClients.certificates.getCertificateSearchableFields(),
