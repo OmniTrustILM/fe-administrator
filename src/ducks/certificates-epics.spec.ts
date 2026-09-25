@@ -1174,7 +1174,7 @@ describe('certificates epics', () => {
             run.unsubscribe();
         });
 
-        test('keeps re-reading while slow listings stretch the back-off past the re-read window', async () => {
+        test('keeps re-reading while each listing arrives within the idle timeout, however long the back-off runs', async () => {
             const run = startBulkDelete(['c1']);
 
             for (let read = 0; read < 4; read++) {
@@ -1198,7 +1198,7 @@ describe('certificates epics', () => {
             run.unsubscribe();
         });
 
-        test('ignores listings once the re-read window has passed', async () => {
+        test('stops watching once no listing has arrived for the idle timeout', async () => {
             const run = startBulkDelete(['c1']);
 
             await vi.advanceTimersByTimeAsync(90_000);
