@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { EMPTY, merge, of, race, timer } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile } from 'rxjs/operators';
+import { catchError, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile, timeout } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { actions as alertActions } from './alerts';
@@ -1096,8 +1096,8 @@ const bulkDeleteOwner: AppEpic = (action$, state, deps) => {
 
 const BULK_DELETE_REREAD_BASE_DELAY_MS = 1000;
 const BULK_DELETE_MAX_REREADS = 5;
-// Outlasts the whole back-off, so the read limit ends a slow deletion and this only disarms an idle listener.
-const BULK_DELETE_REREAD_WINDOW_MS = 90_000;
+// Resets on every listing and outlasts the longest back-off step, so it only disarms a listener nothing answers.
+const BULK_DELETE_REREAD_IDLE_MS = 90_000;
 
 const bulkDelete: AppEpic = (action$, state, deps) => {
     return action$.pipe(
@@ -1122,6 +1122,7 @@ const bulkDelete: AppEpic = (action$, state, deps) => {
             // Core deletes in the background after answering, so the read the success triggers can still
             // list the certificates. Each listing that does is followed by another read, backing off.
             const rereadUntilRemoved$ = listings$.pipe(
+                timeout({ each: BULK_DELETE_REREAD_IDLE_MS, with: () => EMPTY }),
                 takeWhile(stillListsDeleted, true),
                 switchMap((listAction, attempt) =>
                     merge(
@@ -1139,7 +1140,6 @@ const bulkDelete: AppEpic = (action$, state, deps) => {
                         filter((listFailureAction) => listFailureAction.payload === EntityType.CERTIFICATE),
                     ),
                 ),
-                takeUntil(timer(BULK_DELETE_REREAD_WINDOW_MS)),
             );
 
             return deps.apiClients.certificates

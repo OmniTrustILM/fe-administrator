@@ -1044,6 +1044,30 @@ describe('certificates epics', () => {
             run.unsubscribe();
         });
 
+        test('keeps re-reading while slow listings stretch the back-off past the re-read window', async () => {
+            const run = startBulkDelete(['c1']);
+
+            for (let read = 0; read < 4; read++) {
+                run.listed(['c1']);
+                await vi.advanceTimersByTimeAsync(1000 * 2 ** read + 30_000);
+            }
+
+            expect(refreshes(run.emitted)).toBe(4);
+            run.unsubscribe();
+        });
+
+        test('stops when the listing a re-read asked for never arrives', async () => {
+            const run = startBulkDelete(['c1']);
+
+            run.listed(['c1']);
+            await vi.advanceTimersByTimeAsync(1000 + 90_000);
+            run.listed(['c1']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(refreshes(run.emitted)).toBe(1);
+            run.unsubscribe();
+        });
+
         test('ignores listings once the re-read window has passed', async () => {
             const run = startBulkDelete(['c1']);
 
