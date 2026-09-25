@@ -20,7 +20,7 @@ export default function EabSecretsField({ value, onChange, secrets, listError, d
             secrets.filter(isEabSecret).map((secret) => ({
                 value: secret.uuid,
                 label: secret.name,
-                description: `${getEnumLabel(secretTypeEnum, secret.type)} · ${secret.sourceVaultProfile.name}`,
+                description: [getEnumLabel(secretTypeEnum, secret.type), secret.sourceVaultProfile?.name].filter(Boolean).join(' · '),
             })),
         [secrets, secretTypeEnum],
     );
@@ -38,7 +38,7 @@ export default function EabSecretsField({ value, onChange, secrets, listError, d
                 value={selected}
                 onChange={(next) => onChange((next ?? []).map((option) => String(option.value)))}
                 placeholder="Select secrets holding accepted HMAC keys"
-                disabled={disabled}
+                isDisabled={disabled}
                 showOptionDescriptionInDropdown
             />
             {listError ? (

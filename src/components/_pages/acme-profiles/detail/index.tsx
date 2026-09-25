@@ -26,6 +26,7 @@ import CommentPanel from 'components/CommentPanel';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import EabSecretsWidget from 'components/_pages/acme-profiles/eab/EabSecretsWidget';
 import GenerateEabKeyDialog from 'components/_pages/acme-profiles/eab/GenerateEabKeyDialog';
+import PreauthorizedIdentifiersWidget from 'components/_pages/acme-profiles/identifiers/PreauthorizedIdentifiersWidget';
 
 export default function AdministratorDetail() {
     const dispatch = useDispatch();
@@ -44,6 +45,7 @@ export default function AdministratorDetail() {
     const deleteErrorMessage = useSelector(selectors.deleteErrorMessage);
     const secrets = useSelector(secretsSelectors.secretOptions);
     const isFetchingSecrets = useSelector(secretsSelectors.isFetchingSecretOptions);
+    const secretsListError = useSelector(secretsSelectors.secretOptionsError);
 
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
@@ -371,13 +373,22 @@ export default function AdministratorDetail() {
                             attributes={acmeProfile.customAttributes}
                         />
                     )}
-                    <EabSecretsWidget
-                        secretUuids={eabSecretUuids}
-                        secrets={secrets}
-                        isLoading={isFetchingSecrets}
-                        onGenerateKey={() => setIsKeyDialogOpen(true)}
-                    />
+                    {acmeProfile && (
+                        <EabSecretsWidget
+                            secretUuids={eabSecretUuids}
+                            secrets={secrets}
+                            isLoading={isFetchingSecrets}
+                            listError={secretsListError}
+                            onGenerateKey={() => setIsKeyDialogOpen(true)}
+                        />
+                    )}
                     <GenerateEabKeyDialog isOpen={isKeyDialogOpen} onClose={() => setIsKeyDialogOpen(false)} />
+                    {acmeProfile && (
+                        <PreauthorizedIdentifiersWidget
+                            identifiers={acmeProfile.preauthorizedIdentifiers ?? []}
+                            mode={acmeProfile.identifierAuthorizationMode}
+                        />
+                    )}
                     <Widget title={raProfileText} titleSize="large">
                         {raProfileDetailData.length > 0 && (
                             <>

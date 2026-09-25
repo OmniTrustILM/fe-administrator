@@ -42,6 +42,10 @@ import { deepEqual } from 'utils/deep-equal';
 import { sameUuidSet } from 'utils/acme-eab';
 import EabSecretsField from 'components/_pages/acme-profiles/eab/EabSecretsField';
 import GenerateEabKeyDialog from 'components/_pages/acme-profiles/eab/GenerateEabKeyDialog';
+import PreauthorizedIdentifiersFields, {
+    type IdentifierPolicyFormValues,
+} from 'components/_pages/acme-profiles/identifiers/PreauthorizedIdentifiersFields';
+import { policyFormValues, policyRequestFields } from 'utils/acme-identifier-policy';
 
 type AcmeProfileFormProps = {
     acmeProfileId?: string;
@@ -67,7 +71,8 @@ type FormValues = {
     owner: string;
     groups: { value: string; label: string }[];
     deletedAttributes: string[];
-} & Record<`__attributes__${string}`, unknown>;
+} & IdentifierPolicyFormValues &
+    Record<`__attributes__${string}`, unknown>;
 
 export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: Readonly<AcmeProfileFormProps>) {
     const dispatch = useDispatch();
@@ -212,6 +217,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     ? optionsForRaProfiles.find((ra) => ra.value === acmeProfile.raProfile?.uuid)?.value || ''
                     : '',
             eabSecretUuids: getValue(acmeProfile?.eabSecretUuids, []),
+            ...policyFormValues(editMode ? acmeProfile : undefined),
             owner: editMode ? buildOwner(userOptions, acmeProfile?.certificateAssociations?.ownerUuid)?.value || '' : '',
             groups: editMode ? buildGroups(groupOptions, acmeProfile?.certificateAssociations?.groupUuids) : [],
             deletedAttributes: [],
@@ -281,6 +287,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             if (editMode ? !sameUuidSet(values.eabSecretUuids, acmeProfile?.eabSecretUuids) : values.eabSecretUuids.length > 0) {
                 request.eabSecretUuids = values.eabSecretUuids;
             }
+            Object.assign(request, policyRequestFields(values, editMode ? acmeProfile : undefined));
             if (editMode) {
                 dispatch(acmeProfileActions.updateAcmeProfile({ uuid: id!, updateAcmeRequest: request }));
             } else {
@@ -288,7 +295,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             }
         },
         [
-            acmeProfile?.eabSecretUuids,
+            acmeProfile,
             dispatch,
             editMode,
             id,
@@ -397,6 +404,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     requireContact: acmeProfile.requireContact || false,
                     raProfile: optionsForRaProfiles.find((ra) => ra.value === acmeProfile.raProfile?.uuid)?.value || '',
                     eabSecretUuids: acmeProfile.eabSecretUuids ?? [],
+                    ...policyFormValues(acmeProfile),
                     owner: buildOwner(userOptions, acmeProfile.certificateAssociations?.ownerUuid)?.value || '',
                     groups: buildGroups(groupOptions, acmeProfile.certificateAssociations?.groupUuids) || [],
                     deletedAttributes: [],
@@ -425,6 +433,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     requireContact: false,
                     raProfile: '',
                     eabSecretUuids: [],
+                    ...policyFormValues(undefined),
                     owner: '',
                     groups: [],
                     deletedAttributes: [],
@@ -771,6 +780,10 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                                 </Button>
                                 <GenerateEabKeyDialog isOpen={isKeyDialogOpen} onClose={() => setIsKeyDialogOpen(false)} />
                             </div>
+                        </Widget>
+
+                        <Widget title="Pre-authorized identifiers" noBorder>
+                            <PreauthorizedIdentifiersFields disabled={isBusy} />
                         </Widget>
 
                         <CertificateAssociationsFormWidget

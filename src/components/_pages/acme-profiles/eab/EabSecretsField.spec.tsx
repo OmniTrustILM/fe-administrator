@@ -36,6 +36,16 @@ test.describe('EabSecretsField', () => {
         await expect(page.getByRole('option', { name: /Rejected key/ })).toHaveCount(0);
     });
 
+    test('a secret without a vault profile is still offered', async ({ mount, page }) => {
+        await mount(
+            withProviders(<EabSecretsField value={[]} onChange={() => {}} secrets={[secret({ sourceVaultProfile: undefined })]} />),
+        );
+
+        await page.getByTestId('eabSecrets-trigger').click();
+
+        await expect(page.getByRole('option', { name: /EAB key one/ })).toBeVisible();
+    });
+
     test('reports the selected uuids', async ({ mount, page }) => {
         let selected: string[] = [];
         await mount(
@@ -61,6 +71,12 @@ test.describe('EabSecretsField', () => {
 
         await expect(page.getByTestId('eabSecrets')).toContainText('EAB key one');
         await expect(page.getByTestId('eabSecrets')).toContainText('missing-uuid');
+    });
+
+    test('a disabled field cannot be opened', async ({ mount, page }) => {
+        await mount(withProviders(<EabSecretsField value={[]} onChange={() => {}} secrets={secrets} disabled />));
+
+        await expect(page.getByTestId('eabSecrets-trigger')).toBeDisabled();
     });
 
     test('explains what the list does', async ({ mount, page }) => {

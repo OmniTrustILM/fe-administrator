@@ -34,6 +34,24 @@ test.describe('EabSecretsWidget', () => {
         await expect(page.getByText('Not available to you')).toHaveCount(0);
     });
 
+    test('a failed secret listing is reported, not passed off as a permission problem', async ({ mount, page }) => {
+        await mount(
+            withProviders(
+                <EabSecretsWidget
+                    secretUuids={['s-2']}
+                    secrets={[]}
+                    isLoading={false}
+                    listError="Failed to list secrets (500)"
+                    onGenerateKey={() => {}}
+                />,
+            ),
+        );
+
+        await expect(page.getByTestId('eab-list-error')).toContainText('Failed to list secrets');
+        await expect(page.getByText('Secrets could not be listed')).toBeVisible();
+        await expect(page.getByText('Not available to you')).toHaveCount(0);
+    });
+
     test('the key button asks for a key', async ({ mount, page }) => {
         let asked = false;
         await mount(

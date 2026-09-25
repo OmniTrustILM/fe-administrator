@@ -10,6 +10,7 @@ type Props = Readonly<{
     secretUuids: string[];
     secrets: SecretDto[];
     isLoading: boolean;
+    listError?: string;
     onGenerateKey: () => void;
 }>;
 
@@ -18,7 +19,12 @@ const headers: TableHeader[] = [
     { id: 'kid', content: 'Key identifier (kid)' },
 ];
 
-function secretCell(uuid: string, secret: SecretDto | undefined, isLoading: boolean) {
+function unresolvedLabel(isLoading: boolean, listError: string | undefined): string {
+    if (isLoading) return 'Loading…';
+    return listError ? 'Secrets could not be listed' : 'Not available to you';
+}
+
+function secretCell(uuid: string, secret: SecretDto | undefined, isLoading: boolean, listError: string | undefined) {
     if (secret) {
         return (
             <Link key="secret" to={`../../secrets/detail/${uuid}`}>
@@ -28,12 +34,12 @@ function secretCell(uuid: string, secret: SecretDto | undefined, isLoading: bool
     }
     return (
         <span key="secret" className="text-content-subtle">
-            {isLoading ? 'Loading…' : 'Not available to you'}
+            {unresolvedLabel(isLoading, listError)}
         </span>
     );
 }
 
-export default function EabSecretsWidget({ secretUuids, secrets, isLoading, onGenerateKey }: Props) {
+export default function EabSecretsWidget({ secretUuids, secrets, isLoading, listError, onGenerateKey }: Props) {
     const required = secretUuids.length > 0;
 
     const rows: TableDataRow[] = useMemo(
@@ -45,13 +51,14 @@ export default function EabSecretsWidget({ secretUuids, secrets, isLoading, onGe
                         uuid,
                         secrets.find((candidate) => candidate.uuid === uuid),
                         isLoading,
+                        listError,
                     ),
                     <CopyUrlCell key="kid" label="kid">
                         {uuid}
                     </CopyUrlCell>,
                 ],
             })),
-        [secretUuids, secrets, isLoading],
+        [secretUuids, secrets, isLoading, listError],
     );
 
     return (
@@ -79,6 +86,11 @@ export default function EabSecretsWidget({ secretUuids, secrets, isLoading, onGe
                     </>
                 )}
             </p>
+            {required && listError ? (
+                <p className="mb-2 text-sm text-danger" role="alert" data-testid="eab-list-error">
+                    {listError}
+                </p>
+            ) : null}
             {required ? <CustomTable headers={headers} data={rows} /> : null}
         </Widget>
     );
