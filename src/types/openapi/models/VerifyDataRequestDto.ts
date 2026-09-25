@@ -31,7 +31,7 @@ export interface VerifyDataRequestDto {
      */
     data: Array<SignatureRequestData>;
     /**
-     * Signatures to verify
+     * Signatures to verify, paired with the data by position; an identifier sent on both lists must therefore be in the same order
      * @type {Array<SignatureRequestData>}
      * @memberof VerifyDataRequestDto
      */

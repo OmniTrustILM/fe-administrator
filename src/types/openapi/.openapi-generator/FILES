@@ -69,6 +69,10 @@ models/AccountStatus.ts
 models/AcmeAccountListResponseDto.ts
 models/AcmeAccountResponseDto.ts
 models/AcmeEabKeyDto.ts
+models/AcmeIdentifierAuthorizationMode.ts
+models/AcmeIdentifierMatchType.ts
+models/AcmeIdentifierType.ts
+models/AcmePreauthorizedIdentifierDto.ts
 models/AcmeProfileDto.ts
 models/AcmeProfileEditRequestDto.ts
 models/AcmeProfileListDto.ts
@@ -150,6 +154,8 @@ models/CancelPendingCertificateRequestDto.ts
 models/CbomAssetSyncState.ts
 models/CbomDetailDto.ts
 models/CbomDto.ts
+models/CbomSyncSkipDto.ts
+models/CbomSyncSkipState.ts
 models/CbomUploadRequestDto.ts
 models/CertificateChainDownloadResponseDto.ts
 models/CertificateChainResponseDto.ts
@@ -416,6 +422,7 @@ models/InternalTimestampSourceRequestDto.ts
 models/IssueToLocationRequestDto.ts
 models/JsonSchemaAttributeConstraint.ts
 models/JwkDto.ts
+models/JwkSetLoadFailure.ts
 models/JwtTokenSecretContent.ts
 models/KeyAlgorithm.ts
 models/KeyAssociationDto.ts
@@ -489,6 +496,7 @@ models/OperationResult.ts
 models/OperationSupport.ts
 models/PaginationRequestDto.ts
 models/PaginationResponseDtoCbomDto.ts
+models/PaginationResponseDtoCbomSyncSkipDto.ts
 models/PaginationResponseDtoConnectorDtoV2.ts
 models/PaginationResponseDtoCryptographicAssetDto.ts
 models/PaginationResponseDtoDiscoveryItemDto.ts

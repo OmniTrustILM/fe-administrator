@@ -106,6 +106,7 @@ export enum Operation {
     UpdateObjectPermissions = 'updateObjectPermissions',
     Schedule = 'schedule',
     ListAttributes = 'listAttributes',
+    ListResources = 'listResources',
     ValidateAttributes = 'validateAttributes',
     AttributeCallback = 'attributeCallback',
     UpdateAttributeResources = 'updateAttributeResources',

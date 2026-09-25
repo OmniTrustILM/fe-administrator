@@ -36,7 +36,11 @@ export function buildCryptoAssetRows(
         columns: [
             <span key="name" className="flex min-w-0 items-center gap-2">
                 <span className="min-w-0">
-                    <TruncatedCell value={asset.name} to={`/cryptoassets/detail/${asset.uuid}`} dataTestId="crypto-asset-name" />
+                    <TruncatedCell
+                        value={asset.name ?? asset.uuid}
+                        to={`/cryptoassets/detail/${asset.uuid}`}
+                        dataTestId="crypto-asset-name"
+                    />
                 </span>
                 {asset.quarantined && (
                     <Badge className="shrink-0" color="warning" title={QUARANTINE_TOOLTIP} dataTestId="crypto-asset-quarantined-badge">

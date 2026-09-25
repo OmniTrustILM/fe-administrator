@@ -55,7 +55,7 @@ export interface AuthorityInstanceDto {
      */
     connector: NameAndUuidDto;
     /**
-     * Connector Interface this Authority instance is bound to; null for legacy v1 connectors, which are identified by kind instead
+     * The connector interface this authority instance is bound to. Sent as an explicit null for a legacy v1 connector, which is identified by kind instead; the key is always present.
      * @type {ConnectorInterfaceDto}
      * @memberof AuthorityInstanceDto
      */

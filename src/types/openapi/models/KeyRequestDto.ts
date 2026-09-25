@@ -29,7 +29,7 @@ export interface KeyRequestDto {
      * @type {string}
      * @memberof KeyRequestDto
      */
-    description: string;
+    description?: string;
     /**
      * UUIDs of the groups to associate with key
      * @type {Array<string>}

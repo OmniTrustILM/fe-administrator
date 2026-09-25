@@ -19,7 +19,7 @@ import type { KeyCompromiseReason } from './';
  */
 export interface BulkCompromiseKeyItemRequestDto {
     /**
-     * Usages for the Key
+     * Reason for marking the key items as compromised
      * @type {KeyCompromiseReason}
      * @memberof BulkCompromiseKeyItemRequestDto
      */

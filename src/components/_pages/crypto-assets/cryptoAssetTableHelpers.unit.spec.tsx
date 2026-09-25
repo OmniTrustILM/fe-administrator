@@ -125,6 +125,15 @@ describe('buildCryptoAssetRows', () => {
         expect(link?.getAttribute('href')).toBe('/cryptoassets/detail/asset-1');
     });
 
+    test('a nameless asset shows its uuid, still linked to the detail page', async () => {
+        await renderRow([asset({ name: undefined })]);
+
+        const link = cell('name').querySelector('a');
+
+        expect(link?.textContent).toBe('asset-1');
+        expect(link?.getAttribute('href')).toBe('/cryptoassets/detail/asset-1');
+    });
+
     test('a long name is clipped to one line, with the full value left to the cell tooltip', async () => {
         await renderRow([asset({ name: 'A'.repeat(300) })]);
 
