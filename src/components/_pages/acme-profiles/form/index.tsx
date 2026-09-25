@@ -8,6 +8,7 @@ import { actions as acmeProfileActions, selectors as acmeProfileSelectors } from
 import { actions as connectorActions } from 'ducks/connectors';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { actions as raProfileActions, selectors as raProfileSelectors } from 'ducks/ra-profiles';
+import { actions as secretsActions, selectors as secretsSelectors } from 'ducks/secrets';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
@@ -38,6 +39,9 @@ import useAttributeEditor, { buildGroups, buildOwner } from 'utils/widget';
 import CertificateAssociationsFormWidget from 'components/CertificateAssociationsFormWidget/CertificateAssociationsFormWidget';
 import { collectFormAttributes, transformAttributes, mapProfileAttribute } from 'utils/attributes/attributes';
 import { deepEqual } from 'utils/deep-equal';
+import { sameUuidSet } from 'utils/acme-eab';
+import EabSecretsField from 'components/_pages/acme-profiles/eab/EabSecretsField';
+import GenerateEabKeyDialog from 'components/_pages/acme-profiles/eab/GenerateEabKeyDialog';
 
 type AcmeProfileFormProps = {
     acmeProfileId?: string;
@@ -59,6 +63,7 @@ type FormValues = {
     requireTermsOfService: boolean;
     requireContact: boolean;
     raProfile: string;
+    eabSecretUuids: string[];
     owner: string;
     groups: { value: string; label: string }[];
     deletedAttributes: string[];
@@ -90,6 +95,10 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     const isFetchingIssuanceAttributes = useSelector(raProfileSelectors.isFetchingIssuanceAttributes);
     const isFetchingRevocationAttributes = useSelector(raProfileSelectors.isFetchingRevocationAttributes);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
+    const secrets = useSelector(secretsSelectors.secretOptions);
+    const isFetchingSecrets = useSelector(secretsSelectors.isFetchingSecretOptions);
+    const secretsListError = useSelector(secretsSelectors.secretOptionsError);
+    const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
 
     const [issueGroupAttributesCallbackAttributes, setIssueGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
     const [revokeGroupAttributesCallbackAttributes, setRevokeGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
@@ -132,6 +141,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
 
     useEffect(() => {
         dispatch(raProfileActions.listRaProfiles());
+        dispatch(secretsActions.listSecretOptions());
     }, [dispatch]);
 
     useEffect(() => {
@@ -201,6 +211,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                 editMode && acmeProfile?.raProfile
                     ? optionsForRaProfiles.find((ra) => ra.value === acmeProfile.raProfile?.uuid)?.value || ''
                     : '',
+            eabSecretUuids: getValue(acmeProfile?.eabSecretUuids, []),
             owner: editMode ? buildOwner(userOptions, acmeProfile?.certificateAssociations?.ownerUuid)?.value || '' : '',
             groups: editMode ? buildGroups(groupOptions, acmeProfile?.certificateAssociations?.groupUuids) : [],
             deletedAttributes: [],
@@ -266,6 +277,10 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             if (values.raProfile) {
                 request.raProfileUuid = values.raProfile;
             }
+            // Omitting the list keeps what the profile has; it is sent only when the operator changed it.
+            if (editMode ? !sameUuidSet(values.eabSecretUuids, acmeProfile?.eabSecretUuids) : values.eabSecretUuids.length > 0) {
+                request.eabSecretUuids = values.eabSecretUuids;
+            }
             if (editMode) {
                 dispatch(acmeProfileActions.updateAcmeProfile({ uuid: id!, updateAcmeRequest: request }));
             } else {
@@ -273,6 +288,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             }
         },
         [
+            acmeProfile?.eabSecretUuids,
             dispatch,
             editMode,
             id,
@@ -380,6 +396,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     requireTermsOfService: acmeProfile.requireTermsOfService || false,
                     requireContact: acmeProfile.requireContact || false,
                     raProfile: optionsForRaProfiles.find((ra) => ra.value === acmeProfile.raProfile?.uuid)?.value || '',
+                    eabSecretUuids: acmeProfile.eabSecretUuids ?? [],
                     owner: buildOwner(userOptions, acmeProfile.certificateAssociations?.ownerUuid)?.value || '',
                     groups: buildGroups(groupOptions, acmeProfile.certificateAssociations?.groupUuids) || [],
                     deletedAttributes: [],
@@ -407,6 +424,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     requireTermsOfService: false,
                     requireContact: false,
                     raProfile: '',
+                    eabSecretUuids: [],
                     owner: '',
                     groups: [],
                     deletedAttributes: [],
@@ -725,6 +743,33 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                                         },
                                     ]}
                                 />
+                            </div>
+                        </Widget>
+
+                        <Widget title="External Account Binding" noBorder busy={isFetchingSecrets}>
+                            <div className="space-y-3">
+                                <Controller
+                                    name="eabSecretUuids"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <EabSecretsField
+                                            value={field.value ?? []}
+                                            onChange={field.onChange}
+                                            secrets={secrets}
+                                            listError={secretsListError}
+                                            disabled={isBusy}
+                                        />
+                                    )}
+                                />
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => setIsKeyDialogOpen(true)}
+                                    data-testid="generate-eab-key"
+                                >
+                                    Generate key
+                                </Button>
+                                <GenerateEabKeyDialog isOpen={isKeyDialogOpen} onClose={() => setIsKeyDialogOpen(false)} />
                             </div>
                         </Widget>
 

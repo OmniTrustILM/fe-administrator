@@ -46,6 +46,26 @@ describe('secrets slice', () => {
         expect(next.isFetchingList).toBe(false);
     });
 
+    test('listSecretOptions / success / failure keep the picker list apart from the paged list', () => {
+        const withList = { ...initialState, secrets: [{ uuid: 'paged' }] as any };
+
+        let next = reducer(withList, actions.listSecretOptions());
+        expect(next.isFetchingSecretOptions).toBe(true);
+        expect(next.secrets).toEqual(withList.secrets);
+
+        next = reducer(next, actions.listSecretOptionsSuccess({ secrets: [{ uuid: 's-1' }] as any }));
+        expect(next.isFetchingSecretOptions).toBe(false);
+        expect(next.secretOptions).toEqual([{ uuid: 's-1' }]);
+        expect(next.secrets).toEqual(withList.secrets);
+
+        next = reducer(next, actions.listSecretOptionsFailure({ error: 'Failed to list secrets (403)' }));
+        expect(next.secretOptions).toEqual([]);
+        expect(next.secretOptionsError).toBe('Failed to list secrets (403)');
+
+        next = reducer(next, actions.listSecretOptions());
+        expect(next.secretOptionsError).toBeUndefined();
+    });
+
     test('getSecretDetail / success / failure update detail and flags', () => {
         let next = reducer({ ...initialState, secret: { uuid: 'old' } as any }, actions.getSecretDetail({ uuid: 's-1' }));
         expect(next.secret).toBeUndefined();

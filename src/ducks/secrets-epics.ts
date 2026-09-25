@@ -11,7 +11,7 @@ import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { EntityType } from './filters';
 import { actions as pagingActions } from './paging';
-import { slice } from './secrets';
+import { SECRET_OPTIONS_PAGE_SIZE, slice } from './secrets';
 import { actions as userInterfaceActions } from './user-interface';
 import { transformSearchRequestModelToDto } from './transform/certificates';
 import { transformAttributeDescriptorDtoToModel } from './transform/attributes';
@@ -42,6 +42,21 @@ const listSecrets: AppEpic = (action$, state$, deps) => {
                 ),
             );
         }),
+    );
+};
+
+// A lookup for pickers: a failure is reported to the caller, not raised as a toast or a list widget lock.
+const listSecretOptions: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listSecretOptions.match),
+        switchMap(() =>
+            deps.apiClients.secrets
+                .listSecrets({ searchRequestDto: { itemsPerPage: SECRET_OPTIONS_PAGE_SIZE, pageNumber: 1, filters: [] } })
+                .pipe(
+                    map((response) => slice.actions.listSecretOptionsSuccess({ secrets: response.items })),
+                    catchError((err) => of(slice.actions.listSecretOptionsFailure({ error: extractError(err, 'Failed to list secrets') }))),
+                ),
+        ),
     );
 };
 
@@ -410,6 +425,7 @@ const epics = [
     addSyncVaultProfile,
     removeSyncVaultProfile,
     getSyncVaultProfileAttributes,
+    listSecretOptions,
 ];
 
 export default epics;
