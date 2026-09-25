@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import type { ListViewModel } from 'types/listViews';
 import { FilterFieldSource, Resource } from 'types/openapi';
+import { STANDARD_VIEW_ID, resolveInitialViewId } from 'utils/listViews';
 import { PENDING_VIEW_UUID, actions, initialState, selectors, slice } from './listViews';
 import type { State } from './listViews';
 
@@ -253,6 +254,16 @@ describe('editing a view', () => {
         );
 
         expect(certificates(settled).views.map((v) => v.defaultView)).toEqual([false, true]);
+    });
+
+    test('unpinning the pinned view leaves no view pinned, so Standard opens on load', () => {
+        const optimistic = reduce(
+            listed([view('a', 'One', { defaultView: true }), view('b', 'Two')]),
+            actions.updateView({ resource: Resource.Certificates, uuid: 'a', view: { ...rename, name: 'One', defaultView: false } }),
+        );
+
+        expect(certificates(optimistic).views.map((v) => v.defaultView)).toEqual([false, false]);
+        expect(resolveInitialViewId(certificates(optimistic).views)).toBe(STANDARD_VIEW_ID);
     });
 });
 

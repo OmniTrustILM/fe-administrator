@@ -322,7 +322,9 @@ export default function ViewTabs({
         return [
             { title: 'Rename…', onClick: () => setDialog('rename') },
             duplicate,
-            ...(activeView.defaultView ? [] : [{ title: 'Open this view by default', onClick: () => patchActive({ defaultView: true }) }]),
+            activeView.defaultView
+                ? { title: 'Stop opening this view by default', onClick: () => patchActive({ defaultView: false }) }
+                : { title: 'Open this view by default', onClick: () => patchActive({ defaultView: true }) },
             { title: 'Delete view', color: 'danger' as const, onClick: () => setDialog('delete') },
         ];
     }, [activeView, activeTab, takenNames, createFromCurrent, patchActive]);
