@@ -58,7 +58,7 @@ export default function SignVerifyData({ tokenUuid, tokenProfileUuid, keyUuid, k
     const { isValid, isSubmitting } = useFormState({ control });
 
     const onSubmit = useCallback(() => {
-        if (!tokenUuid) return;
+        if (!tokenUuid || isFetchingAttributes) return;
 
         const formValues = watch();
         const attribs: AttributeRequestModel[] =
@@ -98,6 +98,7 @@ export default function SignVerifyData({ tokenUuid, tokenProfileUuid, keyUuid, k
     }, [
         dispatch,
         attributes,
+        isFetchingAttributes,
         onClose,
         tokenUuid,
         groupAttributesCallbackAttributes,
@@ -160,7 +161,13 @@ export default function SignVerifyData({ tokenUuid, tokenProfileUuid, keyUuid, k
                         <Button
                             type="submit"
                             color="primary"
-                            disabled={(action === 'verify' ? !signatureContent : false) || !fileContent || isSubmitting || !isValid}
+                            disabled={
+                                isFetchingAttributes ||
+                                (action === 'verify' && !signatureContent) ||
+                                !fileContent ||
+                                isSubmitting ||
+                                !isValid
+                            }
                         >
                             {action === 'sign' ? 'Sign' : 'Verify'}
                         </Button>

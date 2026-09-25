@@ -267,6 +267,30 @@ test.describe('CryptographicKeyDetail signature attributes', () => {
             });
     });
 
+    test('Sign stays disabled while signature attributes load', async ({ mount, page }) => {
+        const tokenProfile = aTokenProfile([KeyUsage.Sign]);
+        const cryptographicKey = aSynchronizedKey().withTokenProfile(tokenProfile.uuid).withUsages([KeyUsage.Sign]).build();
+        const dispatched: UnknownAction[] = [];
+        await mount(
+            <CryptographicKeyDetailWithStore
+                cryptographicKey={cryptographicKey}
+                tokenProfile={tokenProfile}
+                onAction={(action) => dispatched.push(action)}
+            />,
+        );
+
+        await page.getByTestId('sign-button').click();
+        await expect.poll(() => dispatched.some(cryptographicOperationActions.listSignatureAttributeDescriptors.match)).toBe(true);
+        const dialog = page.getByRole('dialog', { name: 'Sign Data' });
+        const data = dialog.getByRole('textbox', { name: 'File content' });
+        await data.fill('sample data');
+        await data.press('Tab');
+        await expect(dialog.getByRole('button', { name: 'Sign', exact: true })).toBeDisabled();
+        await dialog.locator('form').evaluate((form) => (form as HTMLFormElement).requestSubmit());
+        await expect(dialog).toBeVisible();
+        expect(dispatched.some(cryptographicOperationActions.signData.match)).toBe(false);
+    });
+
     for (const operation of ['sign', 'verify'] as const) {
         test(`${operation} dialog requests its operation schema`, async ({ mount, page }) => {
             const tokenProfile = aTokenProfile([KeyUsage.Sign, KeyUsage.Verify]);
@@ -284,6 +308,7 @@ test.describe('CryptographicKeyDetail signature attributes', () => {
             );
 
             await page.getByTestId(`${operation}-button`).click();
+            await expect(page.getByRole('dialog', { name: operation === 'sign' ? 'Sign Data' : 'Verify Signature' })).toBeVisible();
 
             await expect
                 .poll(() => dispatched.find(cryptographicOperationActions.listSignatureAttributeDescriptors.match))
