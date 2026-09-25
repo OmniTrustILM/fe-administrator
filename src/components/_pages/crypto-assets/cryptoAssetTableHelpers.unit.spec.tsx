@@ -133,7 +133,7 @@ describe('buildCryptoAssetCellRegistry', () => {
     test('a nameless asset shows its uuid, still linked to the detail page', async () => {
         await renderRow([asset({ name: undefined })]);
 
-        const link = cell('name').querySelector('a');
+        const link = cell('CBOM_ASSET_NAME').querySelector('a');
 
         expect(link?.textContent).toBe('asset-1');
         expect(link?.getAttribute('href')).toBe('/cryptoassets/detail/asset-1');
