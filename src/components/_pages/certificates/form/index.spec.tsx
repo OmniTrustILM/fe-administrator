@@ -679,41 +679,57 @@ test.describe('CertificateForm', () => {
             await expect(page.getByTestId('current-location')).toHaveText('/certificates/detail/cert-1');
         });
 
-        test('Enter in a field no longer submits once the request was accepted', async ({ mount, page }) => {
-            const dispatched: { type: string }[] = [];
-            await mount(
-                <CertificateFormTestWrapper
-                    preloadedState={{
-                        ...issuedWithWarnings,
-                        raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
-                    }}
-                    onAction={(a) => dispatched.push(a)}
-                />,
-            );
-            await fillRegisterBasics(page);
-            await page.getByTestId('authorizationSecret').press('Enter');
+        // The test store applies no actions, so these tests assert on what the form dispatches, not on what it renders.
+        const secondRaProfile = { ...selectableRaProfile, uuid: 'ra-2', name: 'RA Two' };
+        const acceptedWithProfiles = {
+            ...issuedWithWarnings,
+            raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile, secondRaProfile] },
+        };
+        const resubmitsOrClears = (a: { type: string }) =>
+            a.type === 'certificates/issueCertificate' ||
+            a.type === 'certificates/registerCertificate' ||
+            a.type === 'certificates/clearIssueWarnings';
+        const csrAttributeFetches = (dispatched: { type: string }[]) =>
+            dispatched.filter((a) => a.type === 'certificates/getCsrAttributes').length;
 
-            await page.waitForTimeout(300);
-            expect(
-                dispatched.filter(
-                    (a) => a.type.startsWith('certificates/issueCertificate') || a.type === 'certificates/registerCertificate',
-                ),
-            ).toHaveLength(0);
+        // Opening the form clears a previous result once; only what follows it is the form reacting to edits.
+        async function mountAccepted(mount: any, onAction: (a: { type: string }) => void, seen: { type: string }[]) {
+            await mount(<CertificateFormTestWrapper preloadedState={acceptedWithProfiles} onAction={onAction} />);
+            await expect.poll(() => seen.some((a) => a.type === 'certificates/clearIssueWarnings')).toBe(true);
+            seen.length = 0;
+        }
+
+        async function pickRaProfile(page: import('@playwright/test').Page, name: string) {
+            await page.getByTestId('select-raProfile-trigger').click();
+            await page.getByRole('option', { name }).click();
+        }
+
+        test('the accepted form cannot be submitted again', async ({ mount, page }) => {
+            const dispatched: { type: string }[] = [];
+            await mountAccepted(mount, (a) => dispatched.push(a), dispatched);
+            await fillRegisterBasics(page);
+            // With Create gone Enter cannot submit either, so the submit is requested directly.
+            await page.locator('form').evaluate((form: HTMLFormElement) => form.requestSubmit());
+
+            // A later profile switch dispatches in order after the submit, so once it arrives the submit has too.
+            await pickRaProfile(page, 'RA Two');
+            await expect.poll(() => csrAttributeFetches(dispatched)).toBe(2);
+
+            expect(dispatched.filter(resubmitsOrClears)).toEqual([]);
         });
 
         test('editing the form after acceptance keeps the result and does not bring Create back', async ({ mount, page }) => {
-            await mount(
-                <CertificateFormTestWrapper
-                    preloadedState={{
-                        ...issuedWithWarnings,
-                        raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
-                    }}
-                />,
-            );
-            await page.getByTestId('select-raProfile-trigger').click();
-            await page.getByRole('option', { name: 'RA One' }).click();
+            const dispatched: { type: string }[] = [];
+            await mountAccepted(mount, (a) => dispatched.push(a), dispatched);
 
-            await expect(page.getByTestId('compliance-errors-panel')).toBeVisible();
+            await pickRaProfile(page, 'RA One');
+            await pickRaProfile(page, 'RA Two');
+            await page.getByTestId('keySource-trigger').click();
+            await page.getByRole('option', { name: 'External', exact: true }).click();
+            await expect.poll(() => csrAttributeFetches(dispatched)).toBe(2);
+
+            expect(dispatched.filter((a) => a.type === 'certificates/clearIssueErrors').length).toBeGreaterThan(0);
+            expect(dispatched.filter(resubmitsOrClears)).toEqual([]);
             await expect(page.getByRole('button', { name: 'Open certificate' })).toBeVisible();
             await expect(page.getByRole('button', { name: 'Create' })).toHaveCount(0);
         });
@@ -732,6 +748,7 @@ test.describe('CertificateForm', () => {
             await page.getByRole('button', { name: 'Close', exact: true }).click();
 
             await expect.poll(() => closed).toBe(true);
+            expect(closed).toBe(true);
         });
 
         test('a strict rejection shows the error panel and keeps Create', async ({ mount, page }) => {
