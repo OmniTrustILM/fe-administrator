@@ -209,6 +209,11 @@ describe('duplicateName', () => {
         expect(second).toHaveLength(MAX_VIEW_NAME_LENGTH);
         expect(second.endsWith(' (copy) 2')).toBe(true);
     });
+
+    it('does not split a character that straddles the cut', () => {
+        const name = duplicateName(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)}\u{1F600}`, []);
+        expect(name).toBe(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)} (copy)`);
+    });
 });
 
 describe('sort conversion', () => {

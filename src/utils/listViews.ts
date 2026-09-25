@@ -119,9 +119,15 @@ export function duplicateName(name: string, existing: readonly string[]): string
     const taken = new Set(existing);
     for (let suffix = 1; ; suffix++) {
         const ending = suffix === 1 ? ' (copy)' : ` (copy) ${suffix}`;
-        const candidate = `${stem.slice(0, MAX_VIEW_NAME_LENGTH - ending.length).trimEnd()}${ending}`;
+        const candidate = `${truncate(stem, MAX_VIEW_NAME_LENGTH - ending.length)}${ending}`;
         if (!taken.has(candidate)) return candidate;
     }
+}
+
+// Core counts UTF-16 code units, so the cut is by unit, backed off a unit rather than split a surrogate pair.
+function truncate(text: string, length: number): string {
+    const cut = text.slice(0, length);
+    return (/[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut).trimEnd();
 }
 
 /** A stored sort as the table expresses one. */
