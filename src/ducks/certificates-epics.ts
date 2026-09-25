@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { EMPTY, merge, of, race, timer } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile, timeout } from 'rxjs/operators';
+import { catchError, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile, tap, timeout } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { actions as alertActions } from './alerts';
@@ -1102,13 +1102,19 @@ const BULK_DELETE_STILL_LISTED_MESSAGE =
 const BULK_DELETE_REREAD_IDLE_MS = 90_000;
 
 const bulkDelete: AppEpic = (action$, state, deps) => {
+    // Core runs each bulk delete on its own, so a later delete's watch also waits for the earlier ones.
+    const pendingUuids = new Set<string>();
+
     return action$.pipe(
         filter(slice.actions.bulkDelete.match),
         switchMap((action) => {
-            const deletedUuids = action.payload.uuids ?? [];
+            const addedUuids = (action.payload.uuids ?? []).filter((uuid) => !pendingUuids.has(uuid));
+            for (const uuid of addedUuids) pendingUuids.add(uuid);
+            const forgetPending = () => pendingUuids.clear();
+
             const listings$ = action$.pipe(filter(slice.actions.listCertificatesSuccess.match));
             const stillListsDeleted = (listAction: ReturnType<typeof slice.actions.listCertificatesSuccess>) =>
-                listAction.payload.some((certificate) => deletedUuids.includes(certificate.uuid));
+                listAction.payload.some((certificate) => pendingUuids.has(certificate.uuid));
 
             // A background read keeps the selection, so a checked certificate it no longer lists is unticked here.
             const pruneSelection$ = (listAction: ReturnType<typeof slice.actions.listCertificatesSuccess>) => {
@@ -1124,24 +1130,33 @@ const bulkDelete: AppEpic = (action$, state, deps) => {
             // Core deletes in the background after answering, so the read the success triggers can still
             // list the certificates. Each listing that does is followed by another read, backing off.
             const rereadUntilRemoved$ = listings$.pipe(
-                timeout({ each: BULK_DELETE_REREAD_IDLE_MS, with: () => EMPTY }),
+                timeout({
+                    each: BULK_DELETE_REREAD_IDLE_MS,
+                    with: () => {
+                        forgetPending();
+                        return EMPTY;
+                    },
+                }),
                 takeWhile((listAction, attempt) => stillListsDeleted(listAction) && attempt < BULK_DELETE_MAX_REREADS, true),
                 switchMap((listAction, attempt) => {
                     if (!stillListsDeleted(listAction)) {
+                        forgetPending();
                         return pruneSelection$(listAction);
                     }
-                    const nextStep$ =
-                        attempt < BULK_DELETE_MAX_REREADS
-                            ? timer(BULK_DELETE_REREAD_BASE_DELAY_MS * 2 ** attempt).pipe(
-                                  map(() => slice.actions.refreshListInBackground()),
-                              )
-                            : of(alertActions.info(BULK_DELETE_STILL_LISTED_MESSAGE));
-                    return merge(pruneSelection$(listAction), nextStep$);
+                    if (attempt >= BULK_DELETE_MAX_REREADS) {
+                        forgetPending();
+                        return merge(pruneSelection$(listAction), of(alertActions.info(BULK_DELETE_STILL_LISTED_MESSAGE)));
+                    }
+                    return merge(
+                        pruneSelection$(listAction),
+                        timer(BULK_DELETE_REREAD_BASE_DELAY_MS * 2 ** attempt).pipe(map(() => slice.actions.refreshListInBackground())),
+                    );
                 }),
                 takeUntil(
                     action$.pipe(
                         filter(pagingActions.listFailure.match),
                         filter((listFailureAction) => listFailureAction.payload === EntityType.CERTIFICATE),
+                        tap(forgetPending),
                     ),
                 ),
             );
@@ -1159,12 +1174,17 @@ const bulkDelete: AppEpic = (action$, state, deps) => {
                         ),
                     ),
 
-                    catchError((err) =>
-                        of(
-                            slice.actions.bulkDeleteFailure({ error: extractError(err, 'Failed to bulk delete certificates') }),
-                            appRedirectActions.fetchError({ error: err, message: 'Failed to bulk delete certificates' }),
-                        ),
-                    ),
+                    catchError((err) => {
+                        for (const uuid of addedUuids) pendingUuids.delete(uuid);
+
+                        return merge(
+                            of(
+                                slice.actions.bulkDeleteFailure({ error: extractError(err, 'Failed to bulk delete certificates') }),
+                                appRedirectActions.fetchError({ error: err, message: 'Failed to bulk delete certificates' }),
+                            ),
+                            pendingUuids.size > 0 ? merge(rereadUntilRemoved$, of(slice.actions.refreshListInBackground())) : EMPTY,
+                        );
+                    }),
                 );
         }),
     );

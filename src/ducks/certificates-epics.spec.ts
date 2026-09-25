@@ -1089,6 +1089,91 @@ describe('certificates epics', () => {
             run.unsubscribe();
         });
 
+        test('keeps watching the first delete after a second one starts', async () => {
+            const run = startBulkDelete(['a1']);
+
+            run.next(certificatesActions.bulkDelete({ uuids: ['b1'], filters: [] }));
+            run.listed(['a1']);
+            await vi.advanceTimersByTimeAsync(1000);
+
+            expect(refreshes(run.emitted)).toBe(1);
+            run.unsubscribe();
+        });
+
+        test('re-reads for the first delete when a second delete request fails', async () => {
+            let calls = 0;
+            const run = startBulkDelete(['a1'], () => (calls++ === 0 ? of({ status: 'SUCCESS' }) : throwError(() => new Error('boom'))));
+
+            run.next(certificatesActions.bulkDelete({ uuids: ['b1'], filters: [] }));
+            expect(refreshes(run.emitted)).toBe(1);
+
+            run.listed(['a1']);
+            await vi.advanceTimersByTimeAsync(1000);
+            expect(refreshes(run.emitted)).toBe(2);
+            run.unsubscribe();
+        });
+
+        test('does not watch the certificates of a delete request that failed', async () => {
+            let calls = 0;
+            const run = startBulkDelete(['a1'], () => (calls++ === 0 ? of({ status: 'SUCCESS' }) : throwError(() => new Error('boom'))));
+
+            run.next(certificatesActions.bulkDelete({ uuids: ['b1'], filters: [] }));
+            const afterFailure = refreshes(run.emitted);
+            run.listed(['b1']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(refreshes(run.emitted)).toBe(afterFailure);
+            run.unsubscribe();
+        });
+
+        test('forgets certificates once a listing no longer shows them', async () => {
+            const run = startBulkDelete(['a1']);
+
+            run.listed(['c3']);
+            run.next(certificatesActions.bulkDelete({ uuids: ['b1'], filters: [] }));
+            run.listed(['a1']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(refreshes(run.emitted)).toBe(0);
+            run.unsubscribe();
+        });
+
+        test('forgets certificates the watch gave up on', async () => {
+            const run = startBulkDelete(['a1']);
+
+            await exhaustReads(run, 'a1');
+            run.next(certificatesActions.bulkDelete({ uuids: ['b1'], filters: [] }));
+            run.listed(['a1']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(refreshes(run.emitted)).toBe(5);
+            run.unsubscribe();
+        });
+
+        test('forgets pending certificates when the listing fails', async () => {
+            const run = startBulkDelete(['a1']);
+
+            run.next(pagingActions.listFailure(EntityType.CERTIFICATE));
+            run.next(certificatesActions.bulkDelete({ uuids: ['b1'], filters: [] }));
+            run.listed(['a1']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(refreshes(run.emitted)).toBe(0);
+            run.unsubscribe();
+        });
+
+        test('forgets pending certificates when no listing arrives', async () => {
+            const run = startBulkDelete(['a1']);
+
+            await vi.advanceTimersByTimeAsync(90_000);
+            run.next(certificatesActions.bulkDelete({ uuids: ['b1'], filters: [] }));
+            run.listed(['a1']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(refreshes(run.emitted)).toBe(0);
+            run.unsubscribe();
+        });
+
         test('keeps re-reading while slow listings stretch the back-off past the re-read window', async () => {
             const run = startBulkDelete(['c1']);
 
