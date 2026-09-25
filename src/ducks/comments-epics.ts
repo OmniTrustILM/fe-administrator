@@ -3,13 +3,15 @@ import type { UnknownAction } from 'redux';
 import { type Observable, of } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
 import { catchError, filter, groupBy, map, mergeMap, switchMap } from 'rxjs/operators';
-import { type Resource, SortDirection } from 'types/openapi';
+import type { Resource, SortDirection } from 'types/openapi';
 import { LockTypeEnum, type WidgetLockErrorModel } from 'types/user-interface';
+import { DEFAULT_COMMENT_SORT, storeCommentSort } from 'utils/comment-sort';
 import { extractError, getLockWidgetObject } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import {
     type CommentRefPayload,
     loadedWindow,
+    type PagedComments,
     panelKey,
     refreshPanel as refreshPanelAction,
     REPLIES_PAGE_SIZE,
@@ -34,6 +36,13 @@ const toLock = (err: unknown): WidgetLockErrorModel => (err instanceof AjaxError
 
 const deniedMessage = (err: unknown, fallback: string) =>
     err instanceof AjaxError && typeof err.response?.message === 'string' ? err.response.message : fallback;
+
+/**
+ * A request that names no direction keeps the one its list holds, so a refresh never flips the order. An empty list
+ * shows no order to keep, and its direction may predate the user's latest choice.
+ */
+const directionFor = (state: AppState, requested?: SortDirection, list?: PagedComments & { sortDirection: SortDirection }): SortDirection =>
+    requested ?? (list?.comments.length ? list.sortDirection : undefined) ?? state.comments?.sortDirection ?? DEFAULT_COMMENT_SORT;
 
 /**
  * Thread roots are loaded incrementally, so a refresh re-reads everything shown so far as one first page. `extra`
@@ -62,15 +71,35 @@ const refreshAfterChange = (state: AppState, resource: Resource, objectUuid: str
 ];
 
 /** A thread whose replies were never opened has nothing to refresh; one that was opened is re-read even if collapsed since. */
+const openedThreads = (state: AppState, resource: Resource, objectUuid: string): string[] => {
+    const roots = state.comments?.threads[panelKey(resource, objectUuid)]?.comments ?? [];
+    return roots.filter((root) => state.comments?.replies[root.uuid] !== undefined).map((root) => root.uuid);
+};
+
 const refreshPanel: AppEpic = (action$, state$) => {
     return action$.pipe(
         filter(refreshPanelAction.match),
         mergeMap((action) => {
             const { resource, objectUuid } = action.payload;
             const state = state$.value;
-            const roots = state.comments?.threads[panelKey(resource, objectUuid)]?.comments ?? [];
-            const opened = roots.filter((root) => state.comments?.replies[root.uuid] !== undefined);
-            return of(refreshThreads(state, resource, objectUuid), ...opened.map((root) => refreshReplies(state, root.uuid)));
+            const opened = openedThreads(state, resource, objectUuid);
+            return of(refreshThreads(state, resource, objectUuid), ...opened.map((rootUuid) => refreshReplies(state, rootUuid)));
+        }),
+    );
+};
+
+/** Every opened thread is re-read too: expanding reuses loaded replies, so one kept in the old order would show it again. */
+const changeSortDirection: AppEpic = (action$, state$) => {
+    return action$.pipe(
+        filter(slice.actions.changeSortDirection.match),
+        mergeMap((action) => {
+            const { resource, objectUuid, sortDirection } = action.payload;
+            storeCommentSort(sortDirection);
+            const opened = openedThreads(state$.value, resource, objectUuid);
+            return of(
+                slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, sortDirection }),
+                ...opened.map((rootUuid) => slice.actions.listReplies({ rootUuid, pageNumber: 1, sortDirection })),
+            );
         }),
     );
 };
@@ -86,9 +115,7 @@ const listThreads: AppEpic = (action$, state$, deps) => {
                 switchMap((action) => {
                     const { resource, objectUuid, pageNumber, itemsPerPage = THREADS_PAGE_SIZE, anchorUuid } = action.payload;
                     const key = panelKey(resource, objectUuid);
-                    // A request that names no direction keeps the one the list holds, so a refresh never flips the order.
-                    const sortDirection =
-                        action.payload.sortDirection ?? state$.value.comments?.threads[key]?.sortDirection ?? SortDirection.Asc;
+                    const sortDirection = directionFor(state$.value, action.payload.sortDirection, state$.value.comments?.threads[key]);
                     return deps.apiClients.comments
                         .listComments({ resource, objectUuid, pageNumber, itemsPerPage, sortDirection, anchorUuid })
                         .pipe(
@@ -120,19 +147,26 @@ const listReplies: AppEpic = (action$, state$, deps) => {
             thread$.pipe(
                 switchMap((action) => {
                     const { rootUuid, pageNumber, itemsPerPage = REPLIES_PAGE_SIZE, anchorUuid } = action.payload;
-                    return deps.apiClients.comments.listReplies({ uuid: rootUuid, pageNumber, itemsPerPage, anchorUuid }).pipe(
-                        map((page) => slice.actions.listRepliesSuccess({ rootUuid, page, anchorUuid })),
-                        // A thread that is gone answers 404; when a reply was anchored on it, that is the stale anchor
-                        // the panel reports itself, not a failure to alert about.
-                        catchError((err) =>
-                            anchorUuid !== undefined && isNotFound(err)
-                                ? of(slice.actions.listRepliesFailure({ rootUuid, missingAnchor: anchorUuid }))
-                                : of(
-                                      slice.actions.listRepliesFailure({ rootUuid }),
-                                      alertActions.error(extractError(err, 'Failed to list replies')),
-                                  ),
-                        ),
+                    const sortDirection = directionFor(
+                        state$.value,
+                        action.payload.sortDirection,
+                        state$.value.comments?.replies[rootUuid],
                     );
+                    return deps.apiClients.comments
+                        .listReplies({ uuid: rootUuid, pageNumber, itemsPerPage, sortDirection, anchorUuid })
+                        .pipe(
+                            map((page) => slice.actions.listRepliesSuccess({ rootUuid, page, sortDirection, anchorUuid })),
+                            // A thread that is gone answers 404; when a reply was anchored on it, that is the stale anchor
+                            // the panel reports itself, not a failure to alert about.
+                            catchError((err) =>
+                                anchorUuid !== undefined && isNotFound(err)
+                                    ? of(slice.actions.listRepliesFailure({ rootUuid, missingAnchor: anchorUuid }))
+                                    : of(
+                                          slice.actions.listRepliesFailure({ rootUuid }),
+                                          alertActions.error(extractError(err, 'Failed to list replies')),
+                                      ),
+                            ),
+                        );
                 }),
             ),
         ),
@@ -236,6 +270,6 @@ const deleteComment: AppEpic = (action$, state$, deps) => {
     );
 };
 
-const epics = [listThreads, listReplies, createComment, resolveComment, unresolveComment, deleteComment, refreshPanel];
+const epics = [listThreads, listReplies, createComment, resolveComment, unresolveComment, deleteComment, refreshPanel, changeSortDirection];
 
 export default epics;

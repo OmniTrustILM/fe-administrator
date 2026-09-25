@@ -647,4 +647,141 @@ test.describe('CertificateForm', () => {
         expect(action?.payload.registerRequest.ownerUuid).toBeUndefined();
         expect(action?.payload.registerRequest.groupUuids).toBeUndefined();
     });
+
+    test.describe('issuance outcome', () => {
+        const issuedWithWarnings = {
+            certificates: {
+                ...testInitialState.certificates,
+                issueWarnings: { certificateUuid: 'cert-1', messages: ["Subject RDN 'O' is not allowed by the request-attribute set"] },
+            },
+        };
+
+        test('a lenient issuance with warnings shows them as accepted, with Open certificate in place of Create', async ({
+            mount,
+            page,
+        }) => {
+            await mount(<CertificateFormTestWrapper preloadedState={issuedWithWarnings} />);
+
+            const panel = page.getByTestId('compliance-errors-panel');
+            await expect(panel).toHaveAttribute('data-severity', 'warning');
+            await expect(panel).toHaveAttribute('role', 'status');
+            await expect(panel.getByText('Certificate request accepted with warnings')).toBeVisible();
+            await expect(panel.getByText("Subject RDN 'O' is not allowed by the request-attribute set")).toBeVisible();
+            await expect(page.getByRole('button', { name: 'Create' })).toHaveCount(0);
+            await expect(page.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
+        });
+
+        test('Open certificate goes to the issued certificate', async ({ mount, page }) => {
+            await mount(<CertificateFormTestWrapper preloadedState={issuedWithWarnings} />);
+
+            await page.getByRole('button', { name: 'Open certificate' }).click();
+
+            await expect(page.getByTestId('current-location')).toHaveText('/certificates/detail/cert-1');
+        });
+
+        // The test store applies no actions, so these tests assert on what the form dispatches, not on what it renders.
+        const secondRaProfile = { ...selectableRaProfile, uuid: 'ra-2', name: 'RA Two' };
+        const acceptedWithProfiles = {
+            ...issuedWithWarnings,
+            raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile, secondRaProfile] },
+        };
+        const resubmitsOrClears = (a: { type: string }) =>
+            a.type === 'certificates/issueCertificate' ||
+            a.type === 'certificates/registerCertificate' ||
+            a.type === 'certificates/clearIssueWarnings';
+        const csrAttributeFetches = (dispatched: { type: string }[]) =>
+            dispatched.filter((a) => a.type === 'certificates/getCsrAttributes').length;
+
+        // Opening the form clears a previous result once; only what follows it is the form reacting to edits.
+        async function mountAccepted(mount: any, onAction: (a: { type: string }) => void, seen: { type: string }[]) {
+            await mount(<CertificateFormTestWrapper preloadedState={acceptedWithProfiles} onAction={onAction} />);
+            await expect.poll(() => seen.some((a) => a.type === 'certificates/clearIssueWarnings')).toBe(true);
+            seen.length = 0;
+        }
+
+        async function pickRaProfile(page: import('@playwright/test').Page, name: string) {
+            await page.getByTestId('select-raProfile-trigger').click();
+            await page.getByRole('option', { name }).click();
+        }
+
+        test('the accepted form cannot be submitted again', async ({ mount, page }) => {
+            const dispatched: { type: string }[] = [];
+            await mountAccepted(mount, (a) => dispatched.push(a), dispatched);
+            await fillRegisterBasics(page);
+            // With Create gone Enter cannot submit either, so the submit is requested directly.
+            await page.locator('form').evaluate((form: HTMLFormElement) => form.requestSubmit());
+
+            // A later profile switch dispatches in order after the submit, so once it arrives the submit has too.
+            await pickRaProfile(page, 'RA Two');
+            await expect.poll(() => csrAttributeFetches(dispatched)).toBe(2);
+
+            expect(dispatched.filter(resubmitsOrClears)).toEqual([]);
+        });
+
+        test('editing the form after acceptance keeps the result and does not bring Create back', async ({ mount, page }) => {
+            const dispatched: { type: string }[] = [];
+            await mountAccepted(mount, (a) => dispatched.push(a), dispatched);
+
+            await pickRaProfile(page, 'RA One');
+            await pickRaProfile(page, 'RA Two');
+            await page.getByTestId('keySource-trigger').click();
+            await page.getByRole('option', { name: 'External', exact: true }).click();
+            await expect.poll(() => csrAttributeFetches(dispatched)).toBe(2);
+
+            expect(dispatched.filter((a) => a.type === 'certificates/clearIssueErrors').length).toBeGreaterThan(0);
+            expect(dispatched.filter(resubmitsOrClears)).toEqual([]);
+            await expect(page.getByRole('button', { name: 'Open certificate' })).toBeVisible();
+            await expect(page.getByRole('button', { name: 'Create' })).toHaveCount(0);
+        });
+
+        test('Close leaves the form without blocking', async ({ mount, page }) => {
+            let closed = false;
+            await mount(
+                <CertificateFormTestWrapper
+                    preloadedState={issuedWithWarnings}
+                    onCancel={() => {
+                        closed = true;
+                    }}
+                />,
+            );
+
+            await page.getByRole('button', { name: 'Close', exact: true }).click();
+
+            await expect.poll(() => closed).toBe(true);
+            expect(closed).toBe(true);
+        });
+
+        test('a strict rejection shows the error panel and keeps Create', async ({ mount, page }) => {
+            await mount(
+                <CertificateFormTestWrapper
+                    preloadedState={{
+                        raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+                        certificates: { ...testInitialState.certificates, issueValidationErrors: ['Subject CN is required'] },
+                    }}
+                />,
+            );
+            await page.getByTestId('select-raProfile-trigger').click();
+            await page.getByRole('option', { name: 'RA One' }).click();
+
+            const panel = page.getByTestId('compliance-errors-panel');
+            await expect(panel).toHaveAttribute('data-severity', 'error');
+            await expect(panel).toHaveAttribute('role', 'alert');
+            await expect(panel.getByText('Subject CN is required')).toBeVisible();
+            await expect(page.getByRole('button', { name: 'Create' })).toBeVisible();
+            await expect(page.getByRole('button', { name: 'Open certificate' })).toHaveCount(0);
+        });
+
+        test('neither warnings nor errors leaves the panel hidden', async ({ mount, page }) => {
+            await mount(
+                <CertificateFormTestWrapper
+                    preloadedState={{ raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] } }}
+                />,
+            );
+            await page.getByTestId('select-raProfile-trigger').click();
+            await page.getByRole('option', { name: 'RA One' }).click();
+
+            await expect(page.getByTestId('compliance-errors-panel')).toHaveCount(0);
+            await expect(page.getByRole('button', { name: 'Create' })).toBeVisible();
+        });
+    });
 });

@@ -35,7 +35,7 @@ export interface EditKeyRequestDto {
      * @type {string}
      * @memberof EditKeyRequestDto
      */
-    description: string;
+    description?: string;
     /**
      * Key Owner UUID
      * @type {string}

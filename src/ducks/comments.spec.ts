@@ -104,7 +104,10 @@ describe('comments slice: threads', () => {
         expect(state.threads[key].comments.map((c) => c.uuid)).toEqual(['r9']);
     });
 
-    test('the list holds the direction it was loaded in, oldest-first until told otherwise', () => {
+    test('a list starts in the user direction, newest-first by default, then holds the direction it was loaded in', () => {
+        expect(initialState.sortDirection).toBe(SortDirection.Desc);
+        const listing = reducer(initialState, actions.listThreads({ resource, objectUuid, pageNumber: 1 }));
+        expect(listing.threads[key].sortDirection).toBe(SortDirection.Desc);
         expect(withThreads([comment('r1')]).threads[key].sortDirection).toBe(SortDirection.Asc);
         const state = reducer(
             initialState,
@@ -195,14 +198,38 @@ describe('comments slice: threads', () => {
         expect(state.threads[otherKey].lock).toEqual(lock);
     });
 
-    test('clearPanel drops the panel and the replies of its roots', () => {
+    test('clearPanel drops the panel and the replies of its threads, and leaves other objects alone', () => {
         let state = withThreads([comment('r1')]);
-        state = reducer(state, actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c1')]) }));
-        state = reducer(state, actions.listRepliesSuccess({ rootUuid: 'other-root', page: page([comment('c2')]) }));
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({ rootUuid: 'r1', sortDirection: SortDirection.Desc, page: page([comment('c1')]) }),
+        );
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({
+                rootUuid: 'other-root',
+                sortDirection: SortDirection.Desc,
+                page: page([comment('c2', { objectUuid: 'obj-2' })]),
+            }),
+        );
         state = reducer(state, actions.clearPanel({ resource, objectUuid }));
         expect(state.threads[key]).toBeUndefined();
         expect(state.replies.r1).toBeUndefined();
         expect(state.replies['other-root']).toBeDefined();
+    });
+
+    test('clearPanel drops the replies of a thread whose root the list no longer holds', () => {
+        let state = withThreads([comment('r1')]);
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({ rootUuid: 'r1', sortDirection: SortDirection.Asc, page: page([comment('c1')]) }),
+        );
+        // The other direction replaces the roots with a page that does not hold r1; the thread's replies stay behind.
+        state = reducer(state, actions.listThreadsSuccess({ key, page: page([comment('r9')]), sortDirection: SortDirection.Desc }));
+        expect(state.replies.r1).toBeDefined();
+
+        state = reducer(state, actions.clearPanel({ resource, objectUuid }));
+        expect(state.replies.r1).toBeUndefined();
     });
 });
 
@@ -210,35 +237,54 @@ describe('comments slice: replies', () => {
     test('listReplies then listRepliesSuccess populates the thread', () => {
         let state = reducer(initialState, actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }));
         expect(state.replies.r1).toMatchObject({ isFetching: true, itemsPerPage: REPLIES_PAGE_SIZE });
-        state = reducer(state, actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c1')], { itemsPerPage: 20 }) }));
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({
+                rootUuid: 'r1',
+                sortDirection: SortDirection.Desc,
+                page: page([comment('c1')], { itemsPerPage: 20 }),
+            }),
+        );
         expect(state.replies.r1).toMatchObject({ isFetching: false, comments: [expect.objectContaining({ uuid: 'c1' })] });
     });
 
     test('a later page of replies is appended after the ones already shown, without duplicates', () => {
         let state = reducer(
             initialState,
-            actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c1'), comment('c2')], { totalItems: 3, totalPages: 2 }) }),
+            actions.listRepliesSuccess({
+                rootUuid: 'r1',
+                sortDirection: SortDirection.Desc,
+                page: page([comment('c1'), comment('c2')], { totalItems: 3, totalPages: 2 }),
+            }),
         );
         state = reducer(
             state,
             actions.listRepliesSuccess({
                 rootUuid: 'r1',
+                sortDirection: SortDirection.Desc,
                 page: page([comment('c2'), comment('c3')], { pageNumber: 2, totalItems: 3, totalPages: 2 }),
             }),
         );
         expect(state.replies.r1.comments.map((c) => c.uuid)).toEqual(['c1', 'c2', 'c3']);
         expect(state.replies.r1.pageNumber).toBe(2);
 
-        state = reducer(state, actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c9')]) }));
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({ rootUuid: 'r1', sortDirection: SortDirection.Desc, page: page([comment('c9')]) }),
+        );
         expect(state.replies.r1.comments.map((c) => c.uuid)).toEqual(['c9']);
     });
 
     test('an anchored page of replies replaces the thread and reports an absent anchor', () => {
-        let state = reducer(initialState, actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c1')]) }));
+        let state = reducer(
+            initialState,
+            actions.listRepliesSuccess({ rootUuid: 'r1', sortDirection: SortDirection.Desc, page: page([comment('c1')]) }),
+        );
         state = reducer(
             state,
             actions.listRepliesSuccess({
                 rootUuid: 'r1',
+                sortDirection: SortDirection.Desc,
                 page: page([comment('c41')], { pageNumber: 3, totalItems: 41, totalPages: 3 }),
                 anchorUuid: 'c41',
             }),
@@ -246,10 +292,41 @@ describe('comments slice: replies', () => {
         expect(state.replies.r1.comments.map((c) => c.uuid)).toEqual(['c41']);
         expect(state.replies.r1).toMatchObject({ pageNumber: 3, firstPage: 3, missingAnchor: undefined });
 
-        state = reducer(state, actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c1')]), anchorUuid: 'gone' }));
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({
+                rootUuid: 'r1',
+                sortDirection: SortDirection.Desc,
+                page: page([comment('c1')]),
+                anchorUuid: 'gone',
+            }),
+        );
         expect(state.replies.r1.missingAnchor).toBe('gone');
         state = reducer(state, actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }));
         expect(state.replies.r1.missingAnchor).toBeUndefined();
+    });
+
+    test('replies start in the user direction and a page read the other way round replaces the thread', () => {
+        let state = reducer(initialState, actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }));
+        expect(state.replies.r1.sortDirection).toBe(SortDirection.Desc);
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({
+                rootUuid: 'r1',
+                sortDirection: SortDirection.Desc,
+                page: page([comment('c2'), comment('c1')], { totalItems: 4, totalPages: 2 }),
+            }),
+        );
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({
+                rootUuid: 'r1',
+                sortDirection: SortDirection.Asc,
+                page: page([comment('c3'), comment('c4')], { pageNumber: 2, totalItems: 4, totalPages: 2 }),
+            }),
+        );
+        expect(state.replies.r1.comments.map((c) => c.uuid)).toEqual(['c3', 'c4']);
+        expect(state.replies.r1).toMatchObject({ sortDirection: SortDirection.Asc, firstPage: 2 });
     });
 
     test('listRepliesFailure stops fetching, and a thread that is gone reads as a missing anchor', () => {
@@ -259,6 +336,41 @@ describe('comments slice: replies', () => {
             missingAnchor: undefined,
         });
         expect(reducer(fetching, actions.listRepliesFailure({ rootUuid: 'r1', missingAnchor: 'c1' })).replies.r1.missingAnchor).toBe('c1');
+    });
+});
+
+describe('comments slice: sort direction', () => {
+    test('changing it sets the user direction and leaves the lists the epic re-reads in place', () => {
+        const loaded = withThreads([comment('r1')]);
+        const state = reducer(loaded, actions.changeSortDirection({ resource, objectUuid, sortDirection: SortDirection.Asc }));
+        expect(state.sortDirection).toBe(SortDirection.Asc);
+        expect(state.threads[key]).toEqual(loaded.threads[key]);
+    });
+
+    test('changing it drops the replies of a thread the roots list no longer holds, and nothing else', () => {
+        const replies = (rootUuid: string, reply: CommentDto) =>
+            actions.listRepliesSuccess({ rootUuid, sortDirection: SortDirection.Asc, page: page([reply]) });
+        let state = withThreads([comment('r1')]);
+        state = reducer(state, replies('r1', comment('c1')));
+        // r2 was opened from a page the list has since replaced; its replies would otherwise be shown again as loaded.
+        state = reducer(state, replies('r2', comment('c2')));
+        state = reducer(state, replies('other', comment('c3', { objectUuid: 'obj-2' })));
+
+        state = reducer(state, actions.changeSortDirection({ resource, objectUuid, sortDirection: SortDirection.Desc }));
+        expect(state.replies.r1).toBeDefined();
+        expect(state.replies.r2).toBeUndefined();
+        expect(state.replies.other).toBeDefined();
+    });
+
+    test('it outlives the panel, so the next panel starts in it', () => {
+        let state = reducer(
+            withThreads([comment('r1')]),
+            actions.changeSortDirection({ resource, objectUuid, sortDirection: SortDirection.Asc }),
+        );
+        state = reducer(state, actions.clearPanel({ resource, objectUuid }));
+        expect(state.sortDirection).toBe(SortDirection.Asc);
+        state = reducer(state, actions.listThreads({ resource, objectUuid: 'obj-2', pageNumber: 1 }));
+        expect(state.threads[panelKey(resource, 'obj-2')].sortDirection).toBe(SortDirection.Asc);
     });
 });
 
@@ -314,7 +426,10 @@ describe('comments slice: resolve, unresolve, delete', () => {
     });
 
     test('deleting a root drops its cached replies; deleting a reply keeps them', () => {
-        let state = reducer(initialState, actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c1')]) }));
+        let state = reducer(
+            initialState,
+            actions.listRepliesSuccess({ rootUuid: 'r1', sortDirection: SortDirection.Desc, page: page([comment('c1')]) }),
+        );
         expect(reducer(state, actions.deleteCommentSuccess({ uuid: 'r1' })).replies.r1).toBeUndefined();
         state = reducer(state, actions.deleteCommentSuccess({ uuid: 'c1', parentUuid: 'r1' }));
         expect(state.replies.r1).toBeDefined();
@@ -328,12 +443,16 @@ describe('comments slice: resolve, unresolve, delete', () => {
 describe('comments selectors', () => {
     test('read the panel, the thread and the busy map', () => {
         let state = withThreads([comment('r1')]);
-        state = reducer(state, actions.listRepliesSuccess({ rootUuid: 'r1', page: page([comment('c1')]) }));
+        state = reducer(
+            state,
+            actions.listRepliesSuccess({ rootUuid: 'r1', sortDirection: SortDirection.Desc, page: page([comment('c1')]) }),
+        );
         state = reducer(state, actions.resolveComment({ uuid: 'r1', resource, objectUuid }));
         const root = { comments: state } as unknown as Parameters<typeof selectors.state>[0];
         expect(selectors.threads(key)(root)?.comments).toHaveLength(1);
         expect(selectors.replies('r1')(root)?.comments).toHaveLength(1);
         expect(selectors.busy(root)).toEqual({ r1: true });
+        expect(selectors.sortDirection(root)).toBe(SortDirection.Desc);
         expect(selectors.state({} as Parameters<typeof selectors.state>[0])).toEqual(initialState);
     });
 });

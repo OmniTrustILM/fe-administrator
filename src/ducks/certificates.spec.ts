@@ -173,6 +173,34 @@ describe('certificates slice', () => {
         expect(next.issueValidationErrors).toBeUndefined();
     });
 
+    test('issueCertificateSuccess keeps request-attribute warnings with the issued certificate uuid', () => {
+        const next = reducer(
+            { ...initialState, isIssuing: true },
+            actions.issueCertificateSuccess({ uuid: 'cert-1', requestAttributeWarnings: ['w1', 'w2'] }),
+        );
+        expect(next.issueWarnings).toEqual({ certificateUuid: 'cert-1', messages: ['w1', 'w2'] });
+    });
+
+    test('issueCertificateSuccess without warnings, or with an empty list, leaves none', () => {
+        const stale = { ...initialState, issueWarnings: { certificateUuid: 'old', messages: ['stale'] } };
+
+        expect(reducer(stale, actions.issueCertificateSuccess({ uuid: 'cert-1' })).issueWarnings).toBeUndefined();
+        expect(
+            reducer(stale, actions.issueCertificateSuccess({ uuid: 'cert-1', requestAttributeWarnings: [] })).issueWarnings,
+        ).toBeUndefined();
+    });
+
+    test('issueCertificate and clearIssueWarnings reset warnings, clearIssueErrors does not', () => {
+        const withWarnings = { ...initialState, issueWarnings: { certificateUuid: 'cert-1', messages: ['w1'] } };
+
+        expect(
+            reducer(withWarnings, actions.issueCertificate({ authorityUuid: 'auth-1', raProfileUuid: 'ra-1', signRequest: {} as any }))
+                .issueWarnings,
+        ).toBeUndefined();
+        expect(reducer(withWarnings, actions.clearIssueWarnings()).issueWarnings).toBeUndefined();
+        expect(reducer(withWarnings, actions.clearIssueErrors()).issueWarnings).toEqual(withWarnings.issueWarnings);
+    });
+
     test('revokeCertificate / success / failure update isRevoking and remove from list', () => {
         let next = reducer(
             initialState,

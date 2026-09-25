@@ -4,7 +4,7 @@ import { actions, loadedBefore, loadedWindow, remainingAfter, selectors } from '
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { CommentDto, Resource } from 'types/openapi';
+import { type CommentDto, type Resource, SortDirection } from 'types/openapi';
 import CommentComposer from './CommentComposer';
 import CommentItem from './CommentItem';
 
@@ -58,6 +58,7 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
 
     // An anchored load lands on the page holding the reply, so there may be replies before the list as well as after.
     const earlier = replies ? loadedBefore(replies) : 0;
+    const newestFirst = replies?.sortDirection === SortDirection.Desc;
     const remaining = replies ? remainingAfter(replies) : 0;
 
     // Everything up to the page shown is re-read as one first page, the same window a refresh uses.
@@ -121,7 +122,7 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
                                     disabled={replies?.isFetching}
                                     data-testid={`thread-${uuid}-load-earlier`}
                                 >
-                                    Show earlier replies ({earlier})
+                                    Show {newestFirst ? 'newer' : 'earlier'} replies ({earlier})
                                 </Button>
                             )}
                             {replies?.comments.map((reply) => (

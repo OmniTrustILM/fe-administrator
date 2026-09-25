@@ -14,6 +14,7 @@
 import type { ConnectorInterface, FeatureFlag } from './';
 
 /**
+ * An interface a connector implements: its code, its version, and the features it supports. The version decides which generation of the provider contract Core speaks to that connector.
  * @export
  * @interface ConnectorInterfaceDto
  */

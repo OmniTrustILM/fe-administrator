@@ -11,7 +11,13 @@
  * Do not edit the class manually.
  */
 
-import type { ProtocolCertificateAssociationsDto, ResponseAttribute, SimplifiedRaProfileDto } from './';
+import type {
+    AcmeIdentifierAuthorizationMode,
+    AcmePreauthorizedIdentifierDto,
+    ProtocolCertificateAssociationsDto,
+    ResponseAttribute,
+    SimplifiedRaProfileDto,
+} from './';
 
 /**
  * @export
@@ -144,4 +150,16 @@ export interface AcmeProfileDto {
      * @memberof AcmeProfileDto
      */
     eabSecretUuids?: Array<string>;
+    /**
+     * Identifiers an account may obtain from this profile without proving control of them.
+     * @type {Array<AcmePreauthorizedIdentifierDto>}
+     * @memberof AcmeProfileDto
+     */
+    preauthorizedIdentifiers?: Array<AcmePreauthorizedIdentifierDto>;
+    /**
+     * What happens to an ordered identifier the pre-authorization policy does not cover.
+     * @type {AcmeIdentifierAuthorizationMode}
+     * @memberof AcmeProfileDto
+     */
+    identifierAuthorizationMode?: AcmeIdentifierAuthorizationMode;
 }

@@ -43,11 +43,11 @@ export interface CryptographicAssetSourceDto {
      */
     occurrenceCount: number;
     /**
-     * Tool or scan that produced the source CBOM (e.g.: CBOM-Lens)
+     * Tool or scan that produced the source CBOM (e.g.: CBOM-Lens); absent when the document\'s metadata component carries no name
      * @type {string}
      * @memberof CryptographicAssetSourceDto
      */
-    source: string;
+    source?: string;
     /**
      * Cryptographic properties of the component as this source declared them. Keys follow the source document\'s CycloneDX version and are always source-derived — the platform adds no keys of its own. Values classified as secret material are stored and served as the redaction envelope {\"redacted\": true, \"length\": n} with no digest, and a value whose classification is absent is treated as secret.
      * @type {{ [key: string]: any; }}

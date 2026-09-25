@@ -727,6 +727,7 @@ export type CertificatesTestState = {
     isRegistering: boolean;
     issueValidationErrors?: string[];
     issueErrorMessage?: string;
+    issueWarnings?: { certificateUuid: string; messages: string[] };
     revocationAttributes: AttributeDescriptorModel[];
     isFetchingRevocationAttributes: boolean;
 };
@@ -744,6 +745,7 @@ const certificatesTestInitialState: CertificatesTestState = {
     isRegistering: false,
     issueValidationErrors: undefined,
     issueErrorMessage: undefined,
+    issueWarnings: undefined,
     revocationAttributes: [],
     isFetchingRevocationAttributes: false,
 };
@@ -1247,12 +1249,14 @@ export type CommentsTestPage = {
     isPosting: boolean;
     postingDenied?: string;
     postSucceeded?: boolean;
+    sortDirection?: string;
 };
 
 export type CommentsTestState = {
-    threads: Record<string, CommentsTestPage & { sortDirection?: string; lock?: unknown }>;
+    threads: Record<string, CommentsTestPage & { lock?: unknown }>;
     replies: Record<string, CommentsTestPage>;
     busy: Record<string, boolean>;
+    sortDirection?: string;
     /** Every `comments/*` action the panel dispatched, so a test can assert the request without an epic. */
     dispatched: Array<{ type: string; payload?: unknown }>;
 };
@@ -1261,6 +1265,7 @@ const commentsTestInitialState: CommentsTestState = {
     threads: {},
     replies: {},
     busy: {},
+    sortDirection: 'desc',
     dispatched: [],
 };
 
@@ -1294,9 +1299,8 @@ function withPage(state: CommentsTestState, payload: CommentsPagePayload): Comme
     const { page, anchorUuid } = payload;
     const isThreads = payload.rootUuid === undefined;
     const id = payload.rootUuid ?? payload.key ?? '';
-    const target: CommentsTestPage & { sortDirection?: string } =
-        (isThreads ? state.threads[id] : state.replies[id]) ?? emptyCommentsTestPage;
-    const sameOrder = !isThreads || payload.sortDirection === (target.sortDirection ?? 'asc');
+    const target = (isThreads ? state.threads[id] : state.replies[id]) ?? emptyCommentsTestPage;
+    const sameOrder = payload.sortDirection === (target.sortDirection ?? state.sortDirection);
     const append = page.pageNumber > 1 && anchorUuid === undefined && sameOrder;
     const loaded = append ? target.comments : [];
     const seen = new Set(loaded.map((comment) => comment.uuid));
@@ -1308,7 +1312,7 @@ function withPage(state: CommentsTestState, payload: CommentsPagePayload): Comme
         firstPage: append ? target.firstPage : page.pageNumber,
         missingAnchor: anchorShown ? undefined : anchorUuid,
         isFetching: false,
-        ...(isThreads ? { sortDirection: payload.sortDirection } : {}),
+        sortDirection: payload.sortDirection,
     };
     return isThreads ? { ...state, threads: { ...state.threads, [id]: next } } : { ...state, replies: { ...state.replies, [id]: next } };
 }
@@ -1333,6 +1337,9 @@ function commentsTestReducer(state: CommentsTestState | undefined, action: Unkno
     const payload = (action.payload ?? {}) as CommentsPostPayload;
     if (action.type === 'comments/createComment') return withPostState(recorded, payload, { isPosting: true, postSucceeded: false });
     if (action.type === 'comments/createCommentSuccess') return withPostState(recorded, payload, { isPosting: false, postSucceeded: true });
+    if (action.type === 'comments/changeSortDirection') {
+        return { ...recorded, sortDirection: (action.payload as { sortDirection: string }).sortDirection };
+    }
     if (action.type === 'comments/listThreadsSuccess' || action.type === 'comments/listRepliesSuccess') {
         return withPage(recorded, action.payload as CommentsPagePayload);
     }

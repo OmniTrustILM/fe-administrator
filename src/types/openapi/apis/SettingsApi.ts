@@ -353,6 +353,7 @@ export class SettingsApi extends BaseAPI {
     }
 
     /**
+     * **Request semantics:** a section left out of the body (`utils`, `certificates`) is left untouched. A `utils` that is present is stored as sent, so it carries the full desired state of that section: a field left out is cleared, or returns to the platform default where it has one. Inside `certificates`, each group (`validation`, `requestAttributes`, `registration`) behaves the same way as a section: one left out is untouched, one that is present is stored as sent.
      * Update platform settings
      */
     updatePlatformSettings({ platformSettingsUpdateDto }: UpdatePlatformSettingsRequest): Observable<void>;

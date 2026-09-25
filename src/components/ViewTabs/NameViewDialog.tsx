@@ -8,7 +8,7 @@ type Props = Readonly<{
     confirmLabel: string;
     /** The name the field opens with: the current one when renaming, a suggestion when creating. */
     initialName: string;
-    /** Names already taken for this resource, which the API rejects a duplicate of. */
+    /** Names a view may not take: those of the stored views, and of the Standard tab. */
     takenNames: readonly string[];
     isBusy: boolean;
     onClose: () => void;

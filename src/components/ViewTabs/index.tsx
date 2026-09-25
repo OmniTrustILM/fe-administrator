@@ -12,6 +12,7 @@ import type { ColumnDefinition } from 'types/tableColumns';
 import { toCatalogueFields } from 'utils/columnPicker';
 import {
     STANDARD_VIEW_ID,
+    STANDARD_VIEW_NAME,
     duplicateName,
     isSliceDirty,
     resolveInitialViewId,
@@ -306,7 +307,7 @@ export default function ViewTabs({
         });
     }, [activeView, patchActive, columns, resolved, storableFilters, sort]);
 
-    const takenNames = useMemo(() => views.map((view) => view.name), [views]);
+    const takenNames = useMemo(() => [STANDARD_VIEW_NAME, ...views.map((view) => view.name)], [views]);
 
     const menuItems = useMemo<DropdownItem[]>(() => {
         const duplicate: DropdownItem = {
@@ -321,7 +322,9 @@ export default function ViewTabs({
         return [
             { title: 'Rename…', onClick: () => setDialog('rename') },
             duplicate,
-            ...(activeView.defaultView ? [] : [{ title: 'Open this view by default', onClick: () => patchActive({ defaultView: true }) }]),
+            activeView.defaultView
+                ? { title: 'Stop opening this view by default', onClick: () => patchActive({ defaultView: false }) }
+                : { title: 'Open this view by default', onClick: () => patchActive({ defaultView: true }) },
             { title: 'Delete view', color: 'danger' as const, onClick: () => setDialog('delete') },
         ];
     }, [activeView, activeTab, takenNames, createFromCurrent, patchActive]);
