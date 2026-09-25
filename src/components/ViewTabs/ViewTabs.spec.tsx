@@ -652,10 +652,18 @@ test.describe('ViewTabs', () => {
         });
     });
 
-    test('puts the tab and its rows back when a new view fails to create', async ({ mount, page }) => {
-        await mount(strip());
+    test('puts the tab and its unsaved rows back when a new view fails to create', async ({ mount, page }) => {
+        const nameFilter: SearchFilterModel = {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'COMMON_NAME',
+            condition: FilterConditionOperator.Contains,
+            value: 'example',
+        };
+        await mount(strip({ driftFilter: nameFilter }));
 
         await page.getByTestId('view-tabs-tab-view-1').click();
+        await page.getByTestId('drift-filter').click();
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
         await page.getByTestId('view-tabs-new').click();
         await page.getByTestId('view-tabs-create-input').click();
         await page.getByTestId('view-tabs-create-input').fill('Everything');
@@ -669,7 +677,8 @@ test.describe('ViewTabs', () => {
         // started from rather than leave every tab unselected.
         await expect(page.getByTestId('view-tabs-tab-pending-view')).toHaveCount(0);
         await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
-        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+        expect((await appliedSlice(page)).filters).toEqual([nameFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
     });
 
     test('opens on a catalogue that loaded carrying nothing the listing can show', async ({ mount, page }) => {

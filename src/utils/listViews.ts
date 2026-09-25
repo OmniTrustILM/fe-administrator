@@ -111,7 +111,6 @@ export function duplicateName(name: string, existing: readonly string[]): string
     return uniqueName(`${name} (copy)`, existing);
 }
 
-/** The neutral name a new view is offered under, free among the existing names. */
 export function newViewName(existing: readonly string[]): string {
     return uniqueName('New view', existing);
 }

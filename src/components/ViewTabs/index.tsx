@@ -214,8 +214,8 @@ export default function ViewTabs({
 
     // The tab the strip was on when a create started, so a create that fails has somewhere to go back
     // to instead of leaving the strip pointing at a row the rollback has taken away. A new view has
-    // replaced the table's slice with Standard's, so its failure puts that tab's slice back as well.
-    const tabBeforeCreate = useRef({ id: STANDARD_VIEW_ID, reapply: false });
+    // replaced the table's slice with Standard's, so it also holds the slice its failure puts back.
+    const tabBeforeCreate = useRef<{ id: string; restore?: ViewSlice }>({ id: STANDARD_VIEW_ID });
 
     // A created view arrives with the uuid the API gave it, replacing the optimistic row the strip
     // has been showing, and the tab under the cursor has to follow it rather than vanish. A failed
@@ -232,32 +232,31 @@ export default function ViewTabs({
             // A create from the current slice is deliberately not re-applied: the columns, filters and
             // ordering it was trying to keep are still on the table, and a failure is not a reason to
             // drop them.
-            const { id, reapply } = tabBeforeCreate.current;
-            const fallback = views.find((view) => view.uuid === id);
-            setActiveId(fallback?.uuid ?? STANDARD_VIEW_ID);
-            if (reapply) apply(fallback);
+            const { id, restore } = tabBeforeCreate.current;
+            setActiveId(views.some((view) => view.uuid === id) ? id : STANDARD_VIEW_ID);
+            if (restore) applyRef.current(restore);
         }
-    }, [activeId, createdUuid, views, apply]);
+    }, [activeId, createdUuid, views]);
 
     const create = useCallback(
-        (name: string, slice: ViewSlice, reapply: boolean) => {
-            tabBeforeCreate.current = { id: activeId, reapply };
+        (name: string, slice: ViewSlice, restore?: ViewSlice) => {
+            tabBeforeCreate.current = { id: activeId, restore };
             dispatch(listViewActions.createView({ resource, view: toCreateRequest(name, resource, slice, catalogue) }));
             setActiveId(PENDING_VIEW_UUID);
         },
         [dispatch, resource, activeId, catalogue],
     );
 
-    const createFromCurrent = useCallback((name: string) => create(name, currentSlice, false), [create, currentSlice]);
+    const createFromCurrent = useCallback((name: string) => create(name, currentSlice), [create, currentSlice]);
 
     // Unsorted on purpose: Standard's ordering is the page's default, not a choice the new view has made.
     const createFromStandard = useCallback(
         (name: string) => {
             const slice = toStandardSlice(standardColumns);
-            create(name, slice, true);
+            create(name, slice, { columns, filters, sort });
             applyRef.current(slice);
         },
-        [create, standardColumns],
+        [create, standardColumns, columns, filters, sort],
     );
 
     const patchActive = useCallback(
