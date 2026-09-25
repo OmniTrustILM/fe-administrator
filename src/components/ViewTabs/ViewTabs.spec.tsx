@@ -164,6 +164,17 @@ const openTabMenu = async (page: Page, name: string) => {
     await page.getByRole('button', { name: `Actions for ${name}` }).click();
 };
 
+/** Expiry watch, then enough views to push the last two past the strip's cap. */
+const overflowing = (overrides: Record<string, Partial<ListViewModel>> = {}): ListViewModel[] => [
+    expiryWatch(overrides['view-1']),
+    ...[2, 3, 4, 5, 6].map((index) => audit({ uuid: `view-${index}`, name: `View ${index}`, ...overrides[`view-${index}`] })),
+];
+
+const openOverflowActions = async (page: Page, name: string) => {
+    await page.getByRole('button', { name: 'More saved views' }).click();
+    await page.getByRole('menuitem', { name: `Actions for ${name}` }).click();
+};
+
 test.describe('ViewTabs', () => {
     test('puts Standard first and pins it while no stored view opens by default', async ({ mount, page }) => {
         await mount(strip({ views: [expiryWatch(), audit()] }));
@@ -317,12 +328,89 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-strip').getByRole('tab')).toHaveText(['Standard', 'View 1', 'View 2', 'View 3', 'View 4']);
 
         await page.getByRole('button', { name: 'More saved views' }).click();
-        await page.getByRole('menuitem', { name: 'View 6' }).click();
+        await page.getByRole('menuitem', { name: 'View 6', exact: true }).click();
 
         // The selected tab is pulled onto the strip, displacing the last visible one — a tab picked
         // from the overflow has to be the one the strip shows as active.
         await expect(page.getByTestId('view-tabs-tab-view-6')).toHaveAttribute('aria-selected', 'true');
         await expect(page.getByTestId('view-tabs-tab-view-4')).toHaveCount(0);
+    });
+
+    test('counts every saved view in the overflow menu', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing() }));
+
+        await page.getByRole('button', { name: 'More saved views' }).click();
+
+        await expect(page.getByTestId('view-tabs-overflow-count')).toHaveText('6 saved views');
+    });
+
+    test('deletes a view from the overflow without applying it', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing() }));
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await openOverflowActions(page, 'View 6');
+        await page.getByRole('menuitem', { name: 'Delete view' }).click();
+        await expect(page.getByTestId('view-tabs-delete')).toContainText('"View 6"');
+        await page.getByTestId('view-tabs-delete').getByRole('button', { name: 'Delete' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/deleteView');
+        expect((await lastDispatched(page, 'listViews/deleteView'))?.payload).toMatchObject({ uuid: 'view-6' });
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+    });
+
+    test('renames a view from the overflow without applying it', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing() }));
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await openOverflowActions(page, 'View 6');
+        await page.getByRole('menuitem', { name: 'Rename…' }).click();
+        await expect(page.getByTestId('view-tabs-rename-input')).toHaveValue('View 6');
+        await page.getByTestId('view-tabs-rename-input').click();
+        await page.getByTestId('view-tabs-rename-input').fill('Retired');
+        await page.getByTestId('view-tabs-rename').getByRole('button', { name: 'Rename' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        expect((await lastDispatched(page, 'listViews/updateView'))?.payload).toMatchObject({
+            uuid: 'view-6',
+            view: { name: 'Retired', columns: [stored('environment', FilterFieldSource.Custom)] },
+        });
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+    });
+
+    test('pins a view from the overflow', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing() }));
+
+        await openOverflowActions(page, 'View 6');
+        await page.getByRole('menuitem', { name: 'Open this view by default' }).click();
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        expect((await lastDispatched(page, 'listViews/updateView'))?.payload).toMatchObject({
+            uuid: 'view-6',
+            view: { defaultView: true },
+        });
+    });
+
+    test('offers to unpin a pinned view held in the overflow', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing({ 'view-6': { defaultView: true } }) }));
+        await page.getByTestId('view-tabs-tab-standard').click();
+
+        await openOverflowActions(page, 'View 6');
+        await page.getByRole('menuitem', { name: 'Stop opening this view by default' }).click();
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        expect((await lastDispatched(page, 'listViews/updateView'))?.payload).toMatchObject({
+            uuid: 'view-6',
+            view: { defaultView: false },
+        });
+    });
+
+    test('holds the overflow actions while a mutation is in flight, but not the views themselves', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing(), isMutating: true }));
+
+        await page.getByRole('button', { name: 'More saved views' }).click();
+
+        await expect(page.getByRole('menuitem', { name: 'Actions for View 6' })).toHaveAttribute('aria-disabled', 'true');
+        await expect(page.getByRole('menuitem', { name: 'View 6', exact: true })).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     test('marks the tab and offers to save once the ordering drifts from the view', async ({ mount, page }) => {
