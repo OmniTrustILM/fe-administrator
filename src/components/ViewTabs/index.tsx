@@ -12,6 +12,7 @@ import type { ColumnDefinition } from 'types/tableColumns';
 import { toCatalogueFields } from 'utils/columnPicker';
 import {
     STANDARD_VIEW_ID,
+    STANDARD_VIEW_NAME,
     duplicateName,
     isSliceDirty,
     resolveInitialViewId,
@@ -306,7 +307,7 @@ export default function ViewTabs({
         });
     }, [activeView, patchActive, columns, resolved, storableFilters, sort]);
 
-    const takenNames = useMemo(() => views.map((view) => view.name), [views]);
+    const takenNames = useMemo(() => [STANDARD_VIEW_NAME, ...views.map((view) => view.name)], [views]);
 
     const menuItems = useMemo<DropdownItem[]>(() => {
         const duplicate: DropdownItem = {
