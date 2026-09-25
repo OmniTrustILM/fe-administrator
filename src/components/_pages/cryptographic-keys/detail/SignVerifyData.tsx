@@ -3,11 +3,10 @@ import Spinner from 'components/Spinner';
 
 import { actions, selectors } from 'ducks/cryptographic-operations';
 import { useCallback, useEffect, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AttributeDescriptorModel, AttributeRequestModel } from 'types/attributes';
 import Button from 'components/Button';
-import type { KeyAlgorithm } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import FileUpload from '../../../Input/FileUpload/FileUpload';
 import TabLayout from '../../../Layout/TabLayout';
@@ -19,13 +18,12 @@ type Props = Readonly<{
     tokenProfileUuid?: string;
     keyUuid?: string;
     keyItemUuid?: string;
-    algorithm?: KeyAlgorithm;
     visible: boolean;
     action: 'sign' | 'verify';
     onClose: () => void;
 }>;
 
-export default function SignVerifyData({ tokenUuid, tokenProfileUuid, keyUuid, keyItemUuid, algorithm, visible, action, onClose }: Props) {
+export default function SignVerifyData({ tokenUuid, tokenProfileUuid, keyUuid, keyItemUuid, visible, action, onClose }: Props) {
     const dispatch = useDispatch();
 
     const isFetchingAttributes = useSelector(selectors.isFetchingSignatureAttributes);
@@ -37,42 +35,35 @@ export default function SignVerifyData({ tokenUuid, tokenProfileUuid, keyUuid, k
     const [fileContent, setFileContent] = useState<string>('');
     const [signatureContent, setSignatureContent] = useState<string>('');
 
-    useEffect(
-        () => {
-            if (!visible) return;
-            if (!tokenUuid) return;
-            if (!tokenProfileUuid) return;
-            if (!keyUuid) return;
-            if (!keyItemUuid) return;
-            if (!algorithm) return;
-            dispatch(
-                actions.listSignatureAttributeDescriptors({
-                    tokenInstanceUuid: tokenUuid,
-                    tokenProfileUuid: tokenProfileUuid,
-                    uuid: keyUuid,
-                    keyItemUuid: keyItemUuid,
-                    algorithm: algorithm,
-                }),
-            );
-        },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [visible, tokenUuid, dispatch],
-    );
+    useEffect(() => {
+        if (!visible || !tokenUuid || !tokenProfileUuid || !keyUuid || !keyItemUuid) return;
+        dispatch(actions.clearSignatureAttributeDescriptors(undefined));
+        dispatch(
+            actions.listSignatureAttributeDescriptors({
+                tokenInstanceUuid: tokenUuid,
+                tokenProfileUuid,
+                uuid: keyUuid,
+                keyItemUuid,
+                operation: action,
+            }),
+        );
+    }, [visible, tokenUuid, tokenProfileUuid, keyUuid, keyItemUuid, action, dispatch]);
 
     const methods = useForm({
-        mode: 'onTouched',
+        mode: 'onChange',
         defaultValues: {},
     });
 
-    const { handleSubmit, formState, watch } = methods;
+    const { handleSubmit, control, watch } = methods;
+    const { isValid, isSubmitting } = useFormState({ control });
 
     const onSubmit = useCallback(() => {
         if (!tokenUuid) return;
 
-        const allValues = watch();
+        const formValues = watch();
         const attribs: AttributeRequestModel[] =
             attributes && attributes.length > 0
-                ? collectFormAttributes('attributes', [...(attributes ?? []), ...groupAttributesCallbackAttributes], allValues) || []
+                ? collectFormAttributes('attributes', [...(attributes ?? []), ...groupAttributesCallbackAttributes], formValues) || []
                 : [];
         if (action === 'sign') {
             dispatch(
@@ -169,12 +160,7 @@ export default function SignVerifyData({ tokenUuid, tokenProfileUuid, keyUuid, k
                         <Button
                             type="submit"
                             color="primary"
-                            disabled={
-                                (action === 'verify' ? !signatureContent : false) ||
-                                !fileContent ||
-                                formState.isSubmitting ||
-                                !formState.isValid
-                            }
+                            disabled={(action === 'verify' ? !signatureContent : false) || !fileContent || isSubmitting || !isValid}
                         >
                             {action === 'sign' ? 'Sign' : 'Verify'}
                         </Button>
