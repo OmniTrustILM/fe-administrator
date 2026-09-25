@@ -196,12 +196,18 @@ const issueCertificate: AppEpic = (action$, state, deps) => {
                     clientCertificateIssueRequestDto: transformCertificateSignRequestModelToDto(action.payload.signRequest),
                 })
                 .pipe(
-                    mergeMap((operation) =>
-                        of(
-                            slice.actions.issueCertificateSuccess({ uuid: operation.uuid, certificateData: operation.certificateData }),
-                            appRedirectActions.redirect({ url: `../certificates/detail/${operation.uuid}` }),
-                        ),
-                    ),
+                    mergeMap((operation) => {
+                        const success = slice.actions.issueCertificateSuccess({
+                            uuid: operation.uuid,
+                            certificateData: operation.certificateData,
+                            requestAttributeWarnings: operation.requestAttributeWarnings,
+                        });
+                        // The form stays open to show lenient-validation warnings and links to the certificate itself.
+                        if (operation.requestAttributeWarnings?.length) {
+                            return of(success);
+                        }
+                        return of(success, appRedirectActions.redirect({ url: `../certificates/detail/${operation.uuid}` }));
+                    }),
 
                     catchError((err) => {
                         const error = extractError(err, 'Failed to issue certificate');

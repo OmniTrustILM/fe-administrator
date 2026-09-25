@@ -201,6 +201,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     // treat either as busy so widgets/Cancel/Create disable and duplicate submits are prevented.
     const issuingCertificate = isIssuing || isRegistering;
     const issueValidationErrors = useSelector(certificateSelectors.issueValidationErrors);
+    const issueWarnings = useSelector(certificateSelectors.issueWarnings);
     const parsedCertificateRequest = useSelector(utilsCertificateRequestSelectors.parsedCertificateRequest);
     const parseError = useSelector(utilsCertificateRequestSelectors.parseError);
     const health = useSelector(utilsActuatorSelectors.health);
@@ -281,6 +282,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         dispatch(utilsCertificateRequestActions.reset());
         dispatch(utilsActuatorActions.health());
         dispatch(certificateActions.clearIssueErrors());
+        // Edits do not clear an accepted request, so a stale result cannot survive into the next visit.
+        dispatch(certificateActions.clearIssueWarnings());
         // Request attributes are resolved per RA profile; start from a clean slate so descriptors left in
         // the shared store by a prior visit (or the Complete/Rekey dialogs) don't render before selection.
         dispatch(certificateActions.clearCsrAttributes());
@@ -558,12 +561,13 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const submitHandler = useCallback(
         (event: React.SyntheticEvent<HTMLFormElement>) => {
             event.preventDefault();
-            if (isFetchingRequestAttributes) {
+            // Enter in a field would still submit once the request was accepted and Create is gone.
+            if (isFetchingRequestAttributes || issueWarnings) {
                 return;
             }
             handleSubmit(onSubmit)(event);
         },
-        [handleSubmit, isFetchingRequestAttributes, onSubmit],
+        [handleSubmit, isFetchingRequestAttributes, issueWarnings, onSubmit],
     );
 
     return (
@@ -940,7 +944,17 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                 Attribute-level messages are shown at their field instead; only the rest land here. */}
                             {selectedRaProfile && unattributedValidationErrors?.length ? (
                                 <div className="mt-4">
-                                    <ComplianceErrorsPanel errors={unattributedValidationErrors} />
+                                    <ComplianceErrorsPanel messages={unattributedValidationErrors} />
+                                </div>
+                            ) : null}
+                            {issueWarnings ? (
+                                <div className="mt-4">
+                                    <ComplianceErrorsPanel
+                                        messages={issueWarnings.messages}
+                                        severity="warning"
+                                        title="Certificate request accepted with warnings"
+                                        description="The request was accepted and passed to the authority. Lenient validation let the CSR through, but it does not comply with the RA Profile's request attributes:"
+                                    />
                                 </div>
                             ) : null}
                         </Widget>
@@ -950,17 +964,27 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                 <Button
                                     variant="outline"
                                     onClick={onCancel || (() => navigate(-1))}
-                                    disabled={issuingCertificate}
+                                    disabled={!issueWarnings && issuingCertificate}
                                     type="button"
                                 >
-                                    Cancel
+                                    {issueWarnings ? 'Close' : 'Cancel'}
                                 </Button>
-                                <ProgressButton
-                                    title="Create"
-                                    inProgressTitle="Creating"
-                                    inProgress={issuingCertificate}
-                                    disabled={!formState.isValid || isFetchingRequestAttributes}
-                                />
+                                {issueWarnings ? (
+                                    <Button
+                                        color="primary"
+                                        onClick={() => navigate(`/certificates/detail/${issueWarnings.certificateUuid}`)}
+                                        type="button"
+                                    >
+                                        Open certificate
+                                    </Button>
+                                ) : (
+                                    <ProgressButton
+                                        title="Create"
+                                        inProgressTitle="Creating"
+                                        inProgress={issuingCertificate}
+                                        disabled={!formState.isValid || isFetchingRequestAttributes}
+                                    />
+                                )}
                             </div>
                         </Container>
                     </div>

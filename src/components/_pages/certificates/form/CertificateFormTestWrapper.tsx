@@ -1,7 +1,7 @@
 import { configureStore, type Middleware } from '@reduxjs/toolkit';
 import { useMemo } from 'react';
 import { Provider } from 'react-redux';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useLocation } from 'react-router';
 
 import { testInitialState, testReducers } from 'ducks/test-reducers';
 
@@ -20,6 +20,15 @@ export type CertificateFormTestWrapperProps = Readonly<{
  * throws. Building the store inside the mounted component (as done here) avoids that entirely.
  * See RequestValidationDialogBodyTestWrapper.tsx for the established precedent.
  */
+function LocationProbe() {
+    const { pathname } = useLocation();
+    return (
+        <span data-testid="current-location" hidden>
+            {pathname}
+        </span>
+    );
+}
+
 export function CertificateFormTestWrapper({ onCancel, preloadedState, onAction }: CertificateFormTestWrapperProps) {
     const store = useMemo(() => {
         const onActionMiddleware: Middleware = () => (next) => (action) => {
@@ -37,6 +46,7 @@ export function CertificateFormTestWrapper({ onCancel, preloadedState, onAction 
         <Provider store={store}>
             <MemoryRouter>
                 <CertificateForm onCancel={onCancel} />
+                <LocationProbe />
             </MemoryRouter>
         </Provider>
     );

@@ -80,6 +80,11 @@ function pickListFieldsFromDetail(
     };
 }
 
+export type IssueWarnings = {
+    certificateUuid: string;
+    messages: string[];
+};
+
 export type State = {
     deleteErrorMessage: string;
 
@@ -114,6 +119,7 @@ export type State = {
     isIssuing: boolean;
     issueValidationErrors?: string[];
     issueErrorMessage?: string;
+    issueWarnings?: IssueWarnings;
     isRegistering: boolean;
     isRevoking: boolean;
     isRenewing: boolean;
@@ -350,6 +356,7 @@ export const slice = createSlice({
             state.isIssuing = true;
             state.issueValidationErrors = undefined;
             state.issueErrorMessage = undefined;
+            state.issueWarnings = undefined;
         },
 
         issueCertificateNew: (
@@ -368,9 +375,12 @@ export const slice = createSlice({
             action: PayloadAction<{
                 uuid: string;
                 certificateData?: string;
+                requestAttributeWarnings?: string[];
             }>,
         ) => {
             state.isIssuing = false;
+            const warnings = action.payload.requestAttributeWarnings ?? [];
+            state.issueWarnings = warnings.length > 0 ? { certificateUuid: action.payload.uuid, messages: warnings } : undefined;
         },
 
         issueCertificateFailure: (state, action: PayloadAction<{ error: string | undefined; validationErrors?: string[] }>) => {
@@ -382,6 +392,10 @@ export const slice = createSlice({
         clearIssueErrors: (state) => {
             state.issueValidationErrors = undefined;
             state.issueErrorMessage = undefined;
+        },
+
+        clearIssueWarnings: (state) => {
+            state.issueWarnings = undefined;
         },
 
         registerCertificate: (
@@ -1157,6 +1171,7 @@ const isFetchingLocations = createSelector(state, (state) => state.isFetchingLoc
 const isIssuing = createSelector(state, (state) => state.isIssuing);
 const issueValidationErrors = createSelector(state, (state) => state.issueValidationErrors);
 const issueErrorMessage = createSelector(state, (state) => state.issueErrorMessage);
+const issueWarnings = createSelector(state, (state) => state.issueWarnings);
 const isRegistering = createSelector(state, (state) => state.isRegistering);
 const isRevoking = createSelector(state, (state) => state.isRevoking);
 const isRenewing = createSelector(state, (state) => state.isRenewing);
@@ -1231,6 +1246,7 @@ export const selectors = {
     isIssuing,
     issueValidationErrors,
     issueErrorMessage,
+    issueWarnings,
     isRegistering,
     isRevoking,
     isRenewing,
