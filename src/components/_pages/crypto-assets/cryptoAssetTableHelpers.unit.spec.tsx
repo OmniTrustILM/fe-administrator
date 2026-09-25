@@ -64,7 +64,7 @@ describe('CRYPTO_ASSET_COLUMNS', () => {
 
     // A producer can name an asset with a whole certificate subject; without the cap that one row widens the table.
     test('the name column caps its width, which is what turns the one-line clipping on', () => {
-        expect(header('CBOM_ASSET_NAME')?.maxWidth).toBeGreaterThan(0);
+        expect(header('CBOM_ASSET_NAME')?.maxWidth).toBe(320);
     });
 
     test('the two counts are right-aligned so their digits line up', () => {
