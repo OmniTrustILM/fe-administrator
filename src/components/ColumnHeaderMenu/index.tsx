@@ -1,15 +1,22 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import cn from 'classnames';
 import type { SortDirection } from 'components/CustomTable/types';
-import { ArrowDown, ArrowLeftToLine, ArrowRightToLine, ArrowUp, ChevronLeft, ChevronRight, EllipsisVertical } from 'lucide-react';
-import type React from 'react';
-import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { getDropIndex } from 'utils/columnPicker';
-import { type ColumnMove, getInsertionSlot, getMoveTarget } from './columnMoves';
-
-/** How far a pointer may travel before the press counts as picking the column up rather than a click. */
-const DRAG_THRESHOLD_PX = 5;
+import Dialog from 'components/Dialog';
+import TextInput from 'components/TextInput';
+import {
+    ArrowDown,
+    ArrowLeftToLine,
+    ArrowRightToLine,
+    ArrowUp,
+    ChevronLeft,
+    ChevronRight,
+    EllipsisVertical,
+    EyeOff,
+    Pencil,
+    RotateCcw,
+} from 'lucide-react';
+import { type ReactNode, useCallback, useEffect, useId, useState } from 'react';
+import { type ColumnMove, getMoveTarget } from './columnMoves';
 
 const NOT_SORTABLE_REASON = 'This field cannot be used for ordering.';
 
@@ -19,22 +26,9 @@ const NOT_SORTABLE_REASON = 'This field cannot be used for ordering.';
  */
 const CATALOGUE_FAILED_REASON = 'Could not load which fields can be ordered.';
 
+const LAST_COLUMN_REASON = 'A view must keep at least one column.';
+
 const ICON_CLASS = 'size-4 shrink-0';
-
-type Gesture = {
-    pointerId: number;
-    startX: number;
-    startY: number;
-    /** The header cells, measured once the threshold is crossed. Absent means the press is still a click. */
-    cells?: HTMLElement[];
-    slot?: number;
-};
-
-type DropIndicator = {
-    left: number;
-    top: number;
-    height: number;
-};
 
 type ItemProps = Readonly<{
     icon: ReactNode;
@@ -76,7 +70,7 @@ type Props = Readonly<{
     columnKey: string;
     /** The column's heading, which is what names the control and the menu. */
     label: string;
-    /** Every displayed column key in display order: the control's own position, and where a drag can land. */
+    /** Every displayed column key in display order: the column's own position, and how far a move can send it. */
     columnKeys: readonly string[];
     sortable: boolean;
     /**
@@ -86,16 +80,30 @@ type Props = Readonly<{
     hasCatalogueFailed?: boolean;
     onSort: (direction: SortDirection) => void;
     onMove: (from: number, to: number) => void;
+    /**
+     * Overrides the column's heading, or clears the override when given nothing. Left out where the
+     * host cannot keep one.
+     */
+    onRename?: (label: string | undefined) => void;
+    /**
+     * The heading the column carries with no rename of its own — the one the page ships, which is not
+     * always what the catalogue calls the field. Resetting goes back to this.
+     */
+    defaultHeading?: string;
+    /** Takes the column off the table. Left out where there is nothing to remove it from. */
+    onRemove?: () => void;
+    /** Whether this is the last column standing, which the API will not let a view drop to. */
+    isLastColumn?: boolean;
     dataTestId?: string;
 }>;
 
 /**
  * The three-dot control at the end of a column-driven header cell. It offers the two sort directions
- * explicitly, and four move entries; pressing and dragging it picks the column up instead, with a
- * drop indicator on the header row.
+ * explicitly, four move entries, and the heading and removal entries; the grip at the other end of the
+ * cell is what drags the column.
  *
- * The move entries are not a fallback for the drag. A drag handle is unreachable without a pointer,
- * and dragging across a horizontally scrolled table is imprecise work, so both reach the same move.
+ * The move entries are not a fallback for that drag. A grip is unreachable without a pointer, and
+ * dragging across a horizontally scrolled table is imprecise work, so both reach the same move.
  *
  * Like the add-column menu beside it, this applies to the table and stores nothing: what it changes
  * leaves the active view dirty for the summary bar's Save to decide.
@@ -108,113 +116,38 @@ export default function ColumnHeaderMenu({
     hasCatalogueFailed = false,
     onSort,
     onMove,
+    onRename,
+    defaultHeading,
+    onRemove,
+    isLastColumn = false,
     dataTestId = 'column-header-menu',
 }: Props) {
     const index = columnKeys.indexOf(columnKey);
     const total = columnKeys.length;
 
     const reasonId = useId();
-    const triggerRef = useRef<HTMLButtonElement | null>(null);
-    const gesture = useRef<Gesture | null>(null);
+    const lastColumnId = useId();
     const [isOpen, setIsOpen] = useState(false);
-    const [indicator, setIndicator] = useState<DropIndicator | null>(null);
-    const isDragging = indicator !== null;
+    const [renaming, setRenaming] = useState<string | undefined>(undefined);
+    const isRenaming = renaming !== undefined;
 
-    const collectCells = useCallback((): HTMLElement[] | undefined => {
-        const table = triggerRef.current?.closest('table');
-        if (!table) return undefined;
+    const commitRename = useCallback(() => {
+        // An emptied field is the same request Reset heading makes: the heading the page ships, which
+        // is not always what the catalogue calls the field.
+        onRename?.(renaming?.trim() ? renaming : defaultHeading);
+        setRenaming(undefined);
+    }, [onRename, renaming, defaultHeading]);
 
-        const byKey = new Map<string, HTMLElement>();
-        for (const cell of table.querySelectorAll<HTMLElement>('thead th[data-id]')) {
-            if (cell.dataset.id) byKey.set(cell.dataset.id, cell);
-        }
-
-        const cells: HTMLElement[] = [];
-        for (const key of columnKeys) {
-            const cell = byKey.get(key);
-            if (!cell) return undefined;
-            cells.push(cell);
-        }
-        return cells.length > 0 ? cells : undefined;
-    }, [columnKeys]);
-
-    const endGesture = useCallback(() => {
-        gesture.current = null;
-        setIndicator(null);
-    }, []);
-
-    // Escape abandons a drag in progress. Dropping the gesture also silences the pointerup that
-    // follows, so the column stays where it was and no menu opens in its place.
+    // The dialog opens focused on its own container, so without this the operator has to click into the
+    // field before typing. Deferred a frame, because the dialog's own focus handling runs first.
     useEffect(() => {
-        if (!isDragging) return;
-
-        const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key !== 'Escape') return;
-            event.preventDefault();
-            endGesture();
-        };
-
-        document.addEventListener('keydown', onKeyDown);
-        return () => document.removeEventListener('keydown', onKeyDown);
-    }, [isDragging, endGesture]);
-
-    const onPointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-        // ctrl+left is the secondary click on macOS, so it belongs to the context menu, not to a drag.
-        if (event.button !== 0 || event.ctrlKey) return;
-
-        // Radix opens on pointerdown, which is before a press can be told apart from a drag. Taking the
-        // default away leaves the menu to pointerup, and takes focus with it, so focus is set by hand.
-        event.preventDefault();
-        triggerRef.current?.focus();
-
-        gesture.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY };
-        event.currentTarget.setPointerCapture(event.pointerId);
-    }, []);
-
-    const onPointerMove = useCallback(
-        (event: React.PointerEvent<HTMLButtonElement>) => {
-            const current = gesture.current;
-            if (!current || current.pointerId !== event.pointerId) return;
-
-            if (!current.cells) {
-                if (Math.hypot(event.clientX - current.startX, event.clientY - current.startY) < DRAG_THRESHOLD_PX) return;
-
-                const cells = collectCells();
-                if (!cells) return;
-                current.cells = cells;
-            }
-
-            // Re-measured every move rather than cached, so the indicator follows a table scrolled mid-drag.
-            const rects = current.cells.map((cell) => cell.getBoundingClientRect());
-            const slot = getInsertionSlot(event.clientX, rects);
-            current.slot = slot;
-
-            setIndicator({
-                left: slot < rects.length ? rects[slot].left : rects[rects.length - 1].right,
-                top: rects[0].top,
-                height: rects[0].height,
-            });
-        },
-        [collectCells],
-    );
-
-    const onPointerUp = useCallback(
-        (event: React.PointerEvent<HTMLButtonElement>) => {
-            const current = gesture.current;
-            if (!current || current.pointerId !== event.pointerId) return;
-
-            endGesture();
-
-            if (!current.cells || current.slot === undefined) {
-                setIsOpen(true);
-                return;
-            }
-
-            const to = getDropIndex(index, current.slot);
-            if (to !== index) onMove(index, to);
-        },
-        [endGesture, index, onMove],
-    );
+        if (!isRenaming) return;
+        const frame = requestAnimationFrame(() =>
+            document.querySelector<HTMLInputElement>(`[data-testid="${dataTestId}-rename-field"]`)?.focus(),
+        );
+        return () => cancelAnimationFrame(frame);
+    }, [isRenaming, dataTestId]);
+    const hasOverride = defaultHeading !== undefined && label !== defaultHeading;
 
     const move = useCallback(
         (kind: ColumnMove) => {
@@ -229,19 +162,15 @@ export default function ColumnHeaderMenu({
     return (
         <DropdownMenu.Root open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenu.Trigger
-                ref={triggerRef}
                 type="button"
                 aria-label={`Column options for ${label}`}
                 title={`Column options for ${label}`}
                 data-testid={`${dataTestId}-trigger`}
-                onPointerDown={onPointerDown}
-                onPointerMove={onPointerMove}
-                onPointerUp={onPointerUp}
-                onPointerCancel={endGesture}
                 className={cn(
-                    // `p-1` around the 16px icon, as on the add-column trigger: 4px of gap is short of the
-                    // spacing exception, so the control has to reach 24px itself.
-                    'inline-flex shrink-0 cursor-pointer touch-none items-center rounded-md p-1 text-content-subtle',
+                    // 4px of gap from the heading is short of the spacing exception, so the control has to
+                    // clear the 24px target size on its own; `p-1` puts it exactly on it, which firefox then
+                    // measures a fraction under.
+                    'inline-flex shrink-0 cursor-pointer items-center rounded-md p-1.5 text-content-subtle',
                     'hover:bg-surface-hover hover:text-content',
                     'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand',
                 )}
@@ -316,19 +245,90 @@ export default function ColumnHeaderMenu({
                         dataTestId={`${dataTestId}-move-end`}
                         onSelect={() => move('end')}
                     />
+
+                    {onRename && (
+                        <>
+                            <DropdownMenu.Separator className="my-1 h-px bg-divider" />
+
+                            <MenuItem
+                                icon={<Pencil className={ICON_CLASS} aria-hidden="true" />}
+                                label="Rename…"
+                                disabled={false}
+                                dataTestId={`${dataTestId}-rename`}
+                                onSelect={() => setRenaming(label)}
+                            />
+                            <MenuItem
+                                icon={<RotateCcw className={ICON_CLASS} aria-hidden="true" />}
+                                label="Reset heading"
+                                disabled={!hasOverride}
+                                dataTestId={`${dataTestId}-reset-heading`}
+                                onSelect={() => onRename(defaultHeading)}
+                            />
+                        </>
+                    )}
+
+                    {onRemove && (
+                        <>
+                            <DropdownMenu.Separator className="my-1 h-px bg-divider" />
+
+                            <MenuItem
+                                icon={<EyeOff className={ICON_CLASS} aria-hidden="true" />}
+                                label="Remove column"
+                                disabled={isLastColumn}
+                                describedBy={isLastColumn ? lastColumnId : undefined}
+                                dataTestId={`${dataTestId}-remove`}
+                                onSelect={onRemove}
+                            />
+                            {isLastColumn && (
+                                <DropdownMenu.Label
+                                    id={lastColumnId}
+                                    className="px-2 pb-1 text-xs text-content-subtle"
+                                    data-testid={`${dataTestId}-remove-unavailable`}
+                                >
+                                    {LAST_COLUMN_REASON}
+                                </DropdownMenu.Label>
+                            )}
+                        </>
+                    )}
                 </DropdownMenu.Content>
             </DropdownMenu.Portal>
 
-            {indicator &&
-                createPortal(
-                    <div
-                        aria-hidden="true"
-                        data-testid={`${dataTestId}-drop-indicator`}
-                        className="pointer-events-none fixed z-[200] w-0.5 rounded-full bg-brand-solid"
-                        style={{ left: indicator.left - 1, top: indicator.top, height: indicator.height }}
-                    />,
-                    document.body,
-                )}
+            {onRename && (
+                <Dialog
+                    isOpen={renaming !== undefined}
+                    toggle={() => setRenaming(undefined)}
+                    caption="Rename column"
+                    size="sm"
+                    dataTestId={`${dataTestId}-rename-dialog`}
+                    body={
+                        // A form so Enter commits the rename: one field and no submit button is the shape
+                        // browsers submit implicitly, which is what the operator expects after typing.
+                        <form
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                commitRename();
+                            }}
+                        >
+                            <TextInput
+                                id={`${dataTestId}-rename-input`}
+                                label="Heading"
+                                value={renaming ?? ''}
+                                onChange={setRenaming}
+                                placeholder={defaultHeading}
+                                dataTestId={`${dataTestId}-rename-field`}
+                            />
+                        </form>
+                    }
+                    buttons={[
+                        { color: 'secondary', variant: 'outline', onClick: () => setRenaming(undefined), body: 'Cancel' },
+                        {
+                            color: 'primary',
+                            onClick: commitRename,
+                            body: 'Rename',
+                        },
+                    ]}
+                />
+            )}
         </DropdownMenu.Root>
     );
 }

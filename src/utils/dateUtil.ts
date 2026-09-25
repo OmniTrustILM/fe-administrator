@@ -107,8 +107,11 @@ export function getFormattedDateTime(dateString: string): string {
     return formattedDateTime;
 }
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
 export function getFormattedDate(dateString: string): string {
-    if (Number.isNaN(Date.parse(dateString))) {
+    // A date-only value parses as UTC midnight, so reading it back with local getters lands on the previous day west of UTC.
+    if (DATE_ONLY.test(dateString) || Number.isNaN(Date.parse(dateString))) {
         return dateString;
     }
 

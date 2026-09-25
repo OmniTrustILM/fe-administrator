@@ -203,7 +203,7 @@ describe('DiscoveryDetail', () => {
             expect(rowText('itemsDiscovered')).toContain('—');
             expect(rowText('itemsNewlyDiscovered')).toBe('New to the inventory0');
             expect(rowText('itemsProcessed')).toBe('Imported0');
-            expect(rowText('itemsFailed')).toBe('Failed to import0');
+            expect(rowText('itemsFailed')).toBe('Not imported0');
             expect(rowText('totalCertificatesDiscovered')).toBe('Distinct certificates saved4');
             expect(rowText('connectorTotalCertificatesDiscovered')).toContain('4');
             expect(container.querySelector('[data-testid^="certificate-note-"]')).toBeNull();
@@ -214,6 +214,21 @@ describe('DiscoveryDetail', () => {
 
             expect(container.querySelector('[data-testid="row-totalCertificatesDownloaded"]')).toBeNull();
             expect(container.textContent).not.toContain('Total Certificates Downloaded');
+        });
+    });
+
+    describe('resources', () => {
+        it('says which resources the run targeted', async () => {
+            await render(buildState(v2Run));
+
+            expect(rowText('resources')).toBe('ResourcesCertificatesKeys');
+        });
+
+        it('names certificates for a v1 run, which can target nothing else', async () => {
+            // Core synthesizes the list for a v1 run, so the row is never blank and never says "unknown".
+            await render(buildState(v1Run));
+
+            expect(rowText('resources')).toBe('ResourcesCertificates');
         });
     });
 
@@ -350,7 +365,7 @@ describe('DiscoveryDetail', () => {
             const bar = container.querySelector('[data-testid="import-progress-bar"] [role="progressbar"]');
             expect(bar?.getAttribute('aria-valuenow')).toBe('5');
             expect(bar?.getAttribute('aria-valuemax')).toBe('7');
-            expect(container.querySelector('[data-testid="import-progress"]')?.textContent).toContain('1 waiting, 1 failed');
+            expect(container.querySelector('[data-testid="import-progress"]')?.textContent).toContain('1 waiting, 1 not imported');
         });
 
         it('says one target failed without a plural', async () => {

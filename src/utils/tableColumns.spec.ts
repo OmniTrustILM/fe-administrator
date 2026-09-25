@@ -223,9 +223,10 @@ describe('renderColumnHeading', () => {
     });
 
     it('separates the badge from the heading with a real space, so the text content is not one word', () => {
-        const html = markup(renderColumnHeading(column()));
+        const host = document.createElement('div');
+        host.innerHTML = markup(renderColumnHeading(column()));
 
-        expect(html).toContain('</span> Cost centre');
+        expect(host.textContent).toContain('Custom attribute Cost centre');
     });
 
     it('tags the view override rather than the catalogue label, so a renamed column keeps its badge', () => {

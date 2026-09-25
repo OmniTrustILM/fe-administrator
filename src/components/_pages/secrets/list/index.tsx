@@ -80,7 +80,6 @@ export default function SecretsList() {
             getRowId: (secret: SecretDto) => secret.uuid,
             registry,
             headerInfo,
-            resourceLabel: 'Secrets',
         }),
         [secrets, registry, headerInfo],
     );

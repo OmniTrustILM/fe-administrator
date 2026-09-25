@@ -39,7 +39,6 @@ function DiscoveryList() {
             getRowId: (discovery: DiscoveryResponseModel) => discovery.uuid,
             registry,
             defaultSort: DISCOVERY_DEFAULT_SORT,
-            resourceLabel: 'Discoveries',
         }),
         [discoveries, registry],
     );
