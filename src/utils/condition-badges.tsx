@@ -2,8 +2,9 @@ import { getEnumLabel } from 'ducks/enums';
 import Badge from 'components/Badge';
 import type { SearchFieldListModel, SearchFieldModel } from 'types/certificate';
 import type { EnumItemDto } from 'types/enums';
-import { AttributeContentType, type ConditionItemDto, FilterFieldType } from 'types/openapi';
-import { getFormattedDate, getFormattedDateTime } from 'utils/dateUtil';
+import { AttributeContentType, type ConditionItemDto, type FilterConditionOperator, FilterFieldType } from 'types/openapi';
+import { checkIfFieldOperatorIsInterval, checkIfFieldTypeIsDate, getFormattedDate, getFormattedDateTime } from 'utils/dateUtil';
+import { getInputStringFromIso8601String } from 'utils/duration';
 
 type RenderVariant = 'badge' | 'small';
 
@@ -26,17 +27,22 @@ export const renderConditionItems = (
         v: unknown,
         field: SearchFieldModel | undefined,
         platformEnums: Record<string, Record<string, { label: string }>>,
+        operator: FilterConditionOperator,
     ): string => {
         if (field?.platformEnum) {
             const key = String(v);
             return platformEnums[field.platformEnum][key]?.label ?? key;
         }
 
+        if (checkIfFieldTypeIsDate(field?.type) && checkIfFieldOperatorIsInterval(operator)) {
+            return getInputStringFromIso8601String(String(v)) || String(v);
+        }
+
         if (field?.attributeContentType === AttributeContentType.Date) {
             return getFormattedDate(v as string);
         }
 
-        if (field?.attributeContentType === AttributeContentType.Datetime) {
+        if (field?.attributeContentType === AttributeContentType.Datetime || field?.type === FilterFieldType.Datetime) {
             return getFormattedDateTime(v as string);
         }
 
@@ -62,11 +68,11 @@ export const renderConditionItems = (
         }
 
         if (Array.isArray(condition.value)) {
-            return condition.value.map((v) => `'${formatSingleValue(v, field, platformEnums)}'`).join(' OR ');
+            return condition.value.map((v) => `'${formatSingleValue(v, field, platformEnums, condition.operator)}'`).join(' OR ');
         }
 
         if (condition.value) {
-            return `'${formatSingleValue(condition.value, field, platformEnums)}'`;
+            return `'${formatSingleValue(condition.value, field, platformEnums, condition.operator)}'`;
         }
         return '';
     };

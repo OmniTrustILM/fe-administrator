@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { DiscoveredItemPayload, MetadataAttribute, Resource } from './';
+import type { DiscoveredItemPayload, MetadataAttribute, NameAndUuidDto, Resource } from './';
 
 /**
  * @export
@@ -25,11 +25,11 @@ export interface DiscoveryItemDto {
      */
     uuid: string;
     /**
-     * UUID of this item\'s object in inventory. For a certificate, present as soon as one with the same content exists — including from an earlier run, so it may be present while processed is false. For every other resource it is what the item became: absent until processed, and absent permanently if processing failed.
-     * @type {string}
+     * The inventory object this item became. For a certificate, present as soon as one with the same content exists, including from an earlier run, so it may be present while processed is false. For other resources, absent until processed and permanently absent if processing failed. Its resource is the item\'s resource.
+     * @type {NameAndUuidDto}
      * @memberof DiscoveryItemDto
      */
-    inventoryUuid?: string;
+    inventory?: NameAndUuidDto;
     /**
      * Position of this item in the run. For runs against a v2 Discovery Provider this is the provider\'s run-wide sequence; for runs against a v1 provider, which never numbered its items, Core synthesizes it from staging order.
      * @type {number}
@@ -49,6 +49,11 @@ export interface DiscoveryItemDto {
      */
     discoveredAt?: string;
     /**
+     * @type {Resource}
+     * @memberof DiscoveryItemDto
+     */
+    resource: Resource;
+    /**
      * Resource-specific data the Discovery Provider reported, discriminated by resource. Absent when the stored payload could no longer be decoded; the item is still listed, so the run\'s counts hold
      * @type {DiscoveredItemPayload}
      * @memberof DiscoveryItemDto
@@ -61,7 +66,7 @@ export interface DiscoveryItemDto {
      */
     newlyDiscovered: boolean;
     /**
-     * Indicator whether processing of the staged item has been attempted; processedError and inventoryUuid convey the outcome.
+     * Indicator whether processing of the staged item has been attempted; processedError and inventory convey the outcome.
      * @type {boolean}
      * @memberof DiscoveryItemDto
      */
@@ -78,9 +83,4 @@ export interface DiscoveryItemDto {
      * @memberof DiscoveryItemDto
      */
     meta?: Array<MetadataAttribute>;
-    /**
-     * @type {Resource}
-     * @memberof DiscoveryItemDto
-     */
-    readonly resource?: Resource;
 }
