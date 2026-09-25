@@ -1044,6 +1044,51 @@ describe('certificates epics', () => {
             run.unsubscribe();
         });
 
+        const stillListedAlert = alertActions.info(
+            'Some certificates selected for deletion are still listed. Refresh the list later to see whether the deletion has finished.',
+        );
+
+        async function exhaustReads(run: ReturnType<typeof startBulkDelete>, uuid: string) {
+            for (let read = 0; read <= 5; read++) {
+                run.listed([uuid]);
+                await vi.advanceTimersByTimeAsync(1000 * 2 ** read);
+            }
+        }
+
+        test('tells the user when the last read still lists a deleted certificate', async () => {
+            const run = startBulkDelete(['c1']);
+
+            await exhaustReads(run, 'c1');
+
+            expect(run.emitted.filter((action) => action.type === alertActions.info.type)).toEqual([stillListedAlert]);
+            run.unsubscribe();
+        });
+
+        test('ends the watch once it has told the user', async () => {
+            const run = startBulkDelete(['c1']);
+
+            await exhaustReads(run, 'c1');
+            run.listed(['c1']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(run.emitted.filter((action) => action.type === alertActions.info.type)).toHaveLength(1);
+            run.complete();
+            expect(run.isCompleted()).toBe(true);
+        });
+
+        test('stays quiet when the last read no longer lists a deleted certificate', async () => {
+            const run = startBulkDelete(['c1']);
+
+            for (let read = 0; read < 5; read++) {
+                run.listed(['c1']);
+                await vi.advanceTimersByTimeAsync(1000 * 2 ** read);
+            }
+            run.listed(['c3']);
+
+            expect(run.emitted.map((action) => action.type)).not.toContain(alertActions.info.type);
+            run.unsubscribe();
+        });
+
         test('keeps re-reading while slow listings stretch the back-off past the re-read window', async () => {
             const run = startBulkDelete(['c1']);
 

@@ -1096,6 +1096,8 @@ const bulkDeleteOwner: AppEpic = (action$, state, deps) => {
 
 const BULK_DELETE_REREAD_BASE_DELAY_MS = 1000;
 const BULK_DELETE_MAX_REREADS = 5;
+const BULK_DELETE_STILL_LISTED_MESSAGE =
+    'Some certificates selected for deletion are still listed. Refresh the list later to see whether the deletion has finished.';
 // Resets on every listing and outlasts the longest back-off step, so it only disarms a listener nothing answers.
 const BULK_DELETE_REREAD_IDLE_MS = 90_000;
 
@@ -1123,17 +1125,19 @@ const bulkDelete: AppEpic = (action$, state, deps) => {
             // list the certificates. Each listing that does is followed by another read, backing off.
             const rereadUntilRemoved$ = listings$.pipe(
                 timeout({ each: BULK_DELETE_REREAD_IDLE_MS, with: () => EMPTY }),
-                takeWhile(stillListsDeleted, true),
-                switchMap((listAction, attempt) =>
-                    merge(
-                        pruneSelection$(listAction),
-                        stillListsDeleted(listAction) && attempt < BULK_DELETE_MAX_REREADS
+                takeWhile((listAction, attempt) => stillListsDeleted(listAction) && attempt < BULK_DELETE_MAX_REREADS, true),
+                switchMap((listAction, attempt) => {
+                    if (!stillListsDeleted(listAction)) {
+                        return pruneSelection$(listAction);
+                    }
+                    const nextStep$ =
+                        attempt < BULK_DELETE_MAX_REREADS
                             ? timer(BULK_DELETE_REREAD_BASE_DELAY_MS * 2 ** attempt).pipe(
                                   map(() => slice.actions.refreshListInBackground()),
                               )
-                            : EMPTY,
-                    ),
-                ),
+                            : of(alertActions.info(BULK_DELETE_STILL_LISTED_MESSAGE));
+                    return merge(pruneSelection$(listAction), nextStep$);
+                }),
                 takeUntil(
                     action$.pipe(
                         filter(pagingActions.listFailure.match),
