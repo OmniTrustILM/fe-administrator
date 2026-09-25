@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
-import { merge, of, race, timer } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile } from 'rxjs/operators';
+import { EMPTY, merge, of, race, timer } from 'rxjs';
+import { catchError, filter, map, mergeMap, switchMap, take, takeUntil } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { actions as alertActions } from './alerts';
@@ -1096,28 +1096,35 @@ const bulkDeleteOwner: AppEpic = (action$, state, deps) => {
 
 const BULK_DELETE_REREAD_BASE_DELAY_MS = 1000;
 const BULK_DELETE_MAX_REREADS = 5;
+// Outlasts the whole back-off, so the read limit ends a slow deletion and this only disarms an idle listener.
+const BULK_DELETE_REREAD_WINDOW_MS = 90_000;
 
 const bulkDelete: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.bulkDelete.match),
         switchMap((action) => {
             const deletedUuids = action.payload.uuids ?? [];
+            const listings$ = action$.pipe(filter(slice.actions.listCertificatesSuccess.match));
+            const stillListsDeleted = (listAction: ReturnType<typeof slice.actions.listCertificatesSuccess>) =>
+                listAction.payload.some((certificate) => deletedUuids.includes(certificate.uuid));
 
             // Core deletes in the background after answering, so the read the success triggers can still
             // list the certificates. Each listing that does is followed by another read, backing off.
-            const rereadUntilRemoved$ = action$.pipe(
-                filter(slice.actions.listCertificatesSuccess.match),
-                takeWhile((listAction) => listAction.payload.some((certificate) => deletedUuids.includes(certificate.uuid))),
-                take(BULK_DELETE_MAX_REREADS),
-                switchMap((_, attempt) =>
-                    timer(BULK_DELETE_REREAD_BASE_DELAY_MS * 2 ** attempt).pipe(map(() => slice.actions.requestListRefresh())),
+            const rereadUntilRemoved$ = listings$.pipe(
+                switchMap((listAction, attempt) =>
+                    stillListsDeleted(listAction)
+                        ? timer(BULK_DELETE_REREAD_BASE_DELAY_MS * 2 ** attempt).pipe(map(() => slice.actions.refreshListInBackground()))
+                        : EMPTY,
                 ),
+                take(BULK_DELETE_MAX_REREADS),
+                takeUntil(listings$.pipe(filter((listAction) => !stillListsDeleted(listAction)))),
                 takeUntil(
                     action$.pipe(
                         filter(pagingActions.listFailure.match),
                         filter((listFailureAction) => listFailureAction.payload === EntityType.CERTIFICATE),
                     ),
                 ),
+                takeUntil(timer(BULK_DELETE_REREAD_WINDOW_MS)),
             );
 
             return deps.apiClients.certificates

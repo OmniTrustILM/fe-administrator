@@ -133,6 +133,8 @@ export type State = {
 
     /** Bumped whenever a mutation needs the listing re-read; the page forwards it as `refreshToken`. */
     listRefreshToken: number;
+    /** Bumped for a re-read the user did not ask for; the page forwards it as `backgroundRefreshToken`. */
+    listBackgroundRefreshToken: number;
 
     isBulkUpdatingGroup: boolean;
     isBulkUpdatingRaProfile: boolean;
@@ -201,6 +203,7 @@ export const initialState: State = {
     isUpdatingTrustedStatus: false,
 
     listRefreshToken: 0,
+    listBackgroundRefreshToken: 0,
 
     isBulkUpdatingGroup: false,
     isBulkUpdatingRaProfile: false,
@@ -880,8 +883,8 @@ export const slice = createSlice({
             state.listRefreshToken += 1;
         },
 
-        requestListRefresh: (state) => {
-            state.listRefreshToken += 1;
+        refreshListInBackground: (state) => {
+            state.listBackgroundRefreshToken += 1;
         },
 
         bulkDeleteFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -1141,6 +1144,7 @@ const deleteErrorMessage = createSelector(state, (state) => state.deleteErrorMes
 
 const certificates = createSelector(state, (state) => state.certificates);
 const listRefreshToken = createSelector(state, (state) => state.listRefreshToken);
+const listBackgroundRefreshToken = createSelector(state, (state) => state.listBackgroundRefreshToken);
 const certificateChain = createSelector(state, (state) => state.certificateChain);
 
 const certificateDetail = createSelector(state, (state) => state.certificateDetail);
@@ -1214,6 +1218,7 @@ export const selectors = {
     deleteErrorMessage,
     certificates,
     listRefreshToken,
+    listBackgroundRefreshToken,
     certificateDetail,
     certificateRelations,
     isFetchingRelations,

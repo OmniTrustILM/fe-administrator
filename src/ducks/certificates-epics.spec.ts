@@ -966,7 +966,7 @@ describe('certificates epics', () => {
         }
 
         const refreshes = (emitted: UnknownAction[]) =>
-            emitted.filter((action) => action.type === certificatesActions.requestListRefresh.type).length;
+            emitted.filter((action) => action.type === certificatesActions.refreshListInBackground.type).length;
 
         test('reports the initiated deletion through the success action', () => {
             const run = startBulkDelete(['c1', 'c2']);
@@ -978,24 +978,28 @@ describe('certificates epics', () => {
             run.unsubscribe();
         });
 
-        test('asks for another read while a listing still shows a deleted certificate', async () => {
+        test('asks for another read a second after a listing still shows a deleted certificate', async () => {
             const run = startBulkDelete(['c1', 'c2']);
 
             run.listed(['c1', 'c2', 'c3']);
-            await vi.advanceTimersByTimeAsync(60_000);
+            await vi.advanceTimersByTimeAsync(999);
+            expect(refreshes(run.emitted)).toBe(0);
 
+            await vi.advanceTimersByTimeAsync(1);
             expect(refreshes(run.emitted)).toBe(1);
             run.unsubscribe();
         });
 
-        test('keeps asking on each listing that still shows a deleted certificate', async () => {
+        test('doubles the wait before each further read', async () => {
             const run = startBulkDelete(['c1', 'c2']);
 
             run.listed(['c1', 'c2']);
-            await vi.advanceTimersByTimeAsync(60_000);
+            await vi.advanceTimersByTimeAsync(1000);
             run.listed(['c2']);
-            await vi.advanceTimersByTimeAsync(60_000);
+            await vi.advanceTimersByTimeAsync(1999);
+            expect(refreshes(run.emitted)).toBe(1);
 
+            await vi.advanceTimersByTimeAsync(1);
             expect(refreshes(run.emitted)).toBe(2);
             run.unsubscribe();
         });
@@ -1012,16 +1016,37 @@ describe('certificates epics', () => {
             expect(run.isCompleted()).toBe(true);
         });
 
-        test('gives up after a bounded number of reads', async () => {
+        test('drops the pending read when a clean listing arrives before it', async () => {
             const run = startBulkDelete(['c1']);
 
-            for (let read = 0; read < 20; read++) {
+            run.listed(['c1']);
+            run.listed(['c3']);
+            await vi.advanceTimersByTimeAsync(60_000);
+
+            expect(refreshes(run.emitted)).toBe(0);
+            run.unsubscribe();
+        });
+
+        test('reads at most five more times', async () => {
+            const run = startBulkDelete(['c1']);
+
+            for (let read = 0; read < 8; read++) {
                 run.listed(['c1']);
-                await vi.advanceTimersByTimeAsync(60_000);
+                await vi.advanceTimersByTimeAsync(1000 * 2 ** read);
             }
 
-            expect(refreshes(run.emitted)).toBeLessThan(20);
-            expect(refreshes(run.emitted)).toBeGreaterThan(1);
+            expect(refreshes(run.emitted)).toBe(5);
+            run.unsubscribe();
+        });
+
+        test('ignores listings once the re-read window has passed', async () => {
+            const run = startBulkDelete(['c1']);
+
+            await vi.advanceTimersByTimeAsync(90_000);
+            run.listed(['c1']);
+            await vi.advanceTimersByTimeAsync(90_000);
+
+            expect(refreshes(run.emitted)).toBe(0);
             run.unsubscribe();
         });
 

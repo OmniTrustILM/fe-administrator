@@ -27,11 +27,17 @@ describe('certificates slice', () => {
         ['uploadCertificateSuccess', () => actions.uploadCertificateSuccess()],
         ['bulkUpdateRaProfileSuccess', () => actions.bulkUpdateRaProfileSuccess({ uuids: ['c1'] })],
         ['bulkDeleteSuccess', () => actions.bulkDeleteSuccess({ response: {} as any })],
-        ['requestListRefresh', () => actions.requestListRefresh()],
     ])('%s bumps listRefreshToken so the page refetches through the host', (_name, action) => {
         const next = reducer(initialState, action());
 
         expect(next.listRefreshToken).toBe(initialState.listRefreshToken + 1);
+    });
+
+    test('refreshListInBackground bumps only the background token, so the page keeps its selection', () => {
+        const next = reducer(initialState, actions.refreshListInBackground());
+
+        expect(next.listBackgroundRefreshToken).toBe(initialState.listBackgroundRefreshToken + 1);
+        expect(next.listRefreshToken).toBe(initialState.listRefreshToken);
     });
 
     test('a mutation that reports no success leaves listRefreshToken alone', () => {
