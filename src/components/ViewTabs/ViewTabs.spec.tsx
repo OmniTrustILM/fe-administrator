@@ -232,13 +232,45 @@ test.describe('ViewTabs', () => {
         await expect(page.getByRole('menuitem', { name: 'Delete view' })).toBeVisible();
     });
 
-    test('drops the pin action from the menu of the view that is already pinned', async ({ mount, page }) => {
+    test('offers to unpin the view that is already pinned in place of pinning it', async ({ mount, page }) => {
         await mount(strip({ views: [expiryWatch({ defaultView: true })] }));
 
         await openTabMenu(page, 'Expiry watch');
 
         await expect(page.getByRole('menuitem', { name: 'Rename…' })).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: 'Stop opening this view by default' })).toBeVisible();
         await expect(page.getByRole('menuitem', { name: 'Open this view by default' })).toHaveCount(0);
+    });
+
+    test('offers no unpin action on a view that is not pinned', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await openTabMenu(page, 'Expiry watch');
+
+        await expect(page.getByRole('menuitem', { name: 'Open this view by default' })).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: 'Stop opening this view by default' })).toHaveCount(0);
+    });
+
+    test('unpins a view from its menu and leaves the rest of the view untouched', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true })] }));
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Stop opening this view by default' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toEqual({
+            resource: Resource.Certificates,
+            uuid: 'view-1',
+            view: {
+                name: 'Expiry watch',
+                columns: [stored('COMMON_NAME'), stored('NOT_AFTER', FilterFieldSource.Property, 'Expires')],
+                filters: [stateFilter],
+                sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', direction: SortDirection.Asc },
+                defaultView: false,
+            },
+        });
     });
 
     test('pins a view from its menu', async ({ mount, page }) => {
