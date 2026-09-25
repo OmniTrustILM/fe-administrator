@@ -268,6 +268,27 @@ describe('listReplies epic', () => {
         expect(calls[1].args).toMatchObject({ pageNumber: 1, sortDirection: SortDirection.Desc });
     });
 
+    test('a thread that holds no replies has no order to keep, so it is read in the user direction', async () => {
+        const { deps, calls } = createDeps();
+        const state = stateWith({
+            sortDirection: SortDirection.Desc,
+            replies: {
+                r1: {
+                    ...page([]),
+                    firstPage: 1,
+                    sortDirection: SortDirection.Asc,
+                    isFetching: true,
+                    isPosting: false,
+                    postSucceeded: false,
+                },
+            },
+        });
+
+        await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }), deps, state);
+
+        expect(calls[0].args).toMatchObject({ pageNumber: 1, sortDirection: SortDirection.Desc });
+    });
+
     test('an anchored reply reaches the API and comes back with the page', async () => {
         const result = page([comment('c41')], { pageNumber: 3, totalItems: 41, totalPages: 3 });
         const { deps, calls } = createDeps({ listReplies: () => of(result) });
@@ -319,6 +340,7 @@ describe('refreshPanel epic', () => {
     const loaded = (comments: CommentDto[], overrides: Partial<CommentResponseDto> = {}) => ({
         ...page(comments, overrides),
         firstPage: 1,
+        sortDirection: SortDirection.Desc,
         isFetching: false,
         isPosting: false,
         postSucceeded: false,

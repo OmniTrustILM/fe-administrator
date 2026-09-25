@@ -11,6 +11,7 @@ import { actions as alertActions } from './alerts';
 import {
     type CommentRefPayload,
     loadedWindow,
+    type PagedComments,
     panelKey,
     refreshPanel as refreshPanelAction,
     REPLIES_PAGE_SIZE,
@@ -36,9 +37,12 @@ const toLock = (err: unknown): WidgetLockErrorModel => (err instanceof AjaxError
 const deniedMessage = (err: unknown, fallback: string) =>
     err instanceof AjaxError && typeof err.response?.message === 'string' ? err.response.message : fallback;
 
-/** A request that names no direction keeps the one its list holds, so a refresh never flips the order. */
-const directionFor = (state: AppState, requested?: SortDirection, list?: { sortDirection: SortDirection }): SortDirection =>
-    requested ?? list?.sortDirection ?? state.comments?.sortDirection ?? DEFAULT_COMMENT_SORT;
+/**
+ * A request that names no direction keeps the one its list holds, so a refresh never flips the order. An empty list
+ * shows no order to keep, and its direction may predate the user's latest choice.
+ */
+const directionFor = (state: AppState, requested?: SortDirection, list?: PagedComments & { sortDirection: SortDirection }): SortDirection =>
+    requested ?? (list?.comments.length ? list.sortDirection : undefined) ?? state.comments?.sortDirection ?? DEFAULT_COMMENT_SORT;
 
 /**
  * Thread roots are loaded incrementally, so a refresh re-reads everything shown so far as one first page. `extra`
