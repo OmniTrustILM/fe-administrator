@@ -27,9 +27,11 @@ import {
     toTabs,
     toUpdateRequest,
     toViewSlice,
+    type ViewTab as ViewTabModel,
 } from 'utils/listViews';
 import type { ColumnSort } from 'utils/tableColumns';
 import NameViewDialog from './NameViewDialog';
+import OverflowViewsMenu from './OverflowViewsMenu';
 import UnresolvedColumnsNotice from './UnresolvedColumnsNotice';
 import ViewSummaryBar from './ViewSummaryBar';
 import ViewTab from './ViewTab';
@@ -115,6 +117,7 @@ export default function ViewTabs({
 
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
+    const [targetId, setTargetId] = useState<string | undefined>(undefined);
 
     const fields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
 
@@ -243,13 +246,27 @@ export default function ViewTabs({
         [dispatch, resource, currentSlice, activeId, catalogue],
     );
 
+    const patchView = useCallback(
+        (view: ListViewModel, patch: Parameters<typeof toUpdateRequest>[2]) => {
+            dispatch(listViewActions.updateView({ resource, uuid: view.uuid, view: toUpdateRequest(view, catalogue, patch) }));
+        },
+        [dispatch, resource, catalogue],
+    );
+
     const patchActive = useCallback(
         (patch: Parameters<typeof toUpdateRequest>[2]) => {
-            if (!activeView) return;
-            dispatch(listViewActions.updateView({ resource, uuid: activeView.uuid, view: toUpdateRequest(activeView, catalogue, patch) }));
+            if (activeView) patchView(activeView, patch);
         },
-        [dispatch, resource, activeView, catalogue],
+        [patchView, activeView],
     );
+
+    // The view the rename and delete dialogs act on: the active one from its tab, any other from the overflow.
+    const targetView = useMemo(() => views.find((view) => view.uuid === targetId), [views, targetId]);
+
+    const openDialogFor = useCallback((kind: PendingDialog, uuid: string) => {
+        setTargetId(uuid);
+        setDialog(kind);
+    }, []);
 
     // The view a delete took off the strip, and the tab the strip moved to instead. A delete is
     // optimistic, so a failure puts the row back — and the tab under the cursor has to go back with
@@ -278,18 +295,21 @@ export default function ViewTabs({
     }, [views, activeId, isMutating, fields, standardColumns]);
 
     const onDelete = useCallback(() => {
-        if (!activeView) return;
+        if (!targetView) return;
 
-        dispatch(listViewActions.deleteView({ resource, uuid: activeView.uuid }));
+        dispatch(listViewActions.deleteView({ resource, uuid: targetView.uuid }));
         setDialog(undefined);
 
+        // A view deleted from the overflow was never applied, so the table has nothing to leave.
+        if (targetView.uuid !== activeId) return;
+
         // Never to an empty table: the pinned view if one survives, otherwise Standard.
-        const remaining = views.filter((view) => view.uuid !== activeView.uuid);
+        const remaining = views.filter((view) => view.uuid !== targetView.uuid);
         const fallback = resolveInitialViewId(remaining);
-        pendingDelete.current = { uuid: activeView.uuid, fallbackId: fallback };
+        pendingDelete.current = { uuid: targetView.uuid, fallbackId: fallback };
         setActiveId(fallback);
         apply(remaining.find((view) => view.uuid === fallback));
-    }, [dispatch, resource, activeView, views, apply]);
+    }, [dispatch, resource, targetView, activeId, views, apply]);
 
     const onSaveDrift = useCallback(() => {
         if (!activeView) {
@@ -309,6 +329,17 @@ export default function ViewTabs({
 
     const takenNames = useMemo(() => [STANDARD_VIEW_NAME, ...views.map((view) => view.name)], [views]);
 
+    const viewActions = useCallback(
+        (view: ListViewModel) => ({
+            rename: { title: 'Rename…', onClick: () => openDialogFor('rename', view.uuid) },
+            pin: view.defaultView
+                ? { title: 'Stop opening this view by default', onClick: () => patchView(view, { defaultView: false }) }
+                : { title: 'Open this view by default', onClick: () => patchView(view, { defaultView: true }) },
+            remove: { title: 'Delete view', color: 'danger' as const, onClick: () => openDialogFor('delete', view.uuid) },
+        }),
+        [openDialogFor, patchView],
+    );
+
     const menuItems = useMemo<DropdownItem[]>(() => {
         const duplicate: DropdownItem = {
             title: 'Duplicate',
@@ -319,15 +350,20 @@ export default function ViewTabs({
         // because Standard has no stored row to rename, pin, edit or delete.
         if (!activeView) return [duplicate];
 
-        return [
-            { title: 'Rename…', onClick: () => setDialog('rename') },
-            duplicate,
-            activeView.defaultView
-                ? { title: 'Stop opening this view by default', onClick: () => patchActive({ defaultView: false }) }
-                : { title: 'Open this view by default', onClick: () => patchActive({ defaultView: true }) },
-            { title: 'Delete view', color: 'danger' as const, onClick: () => setDialog('delete') },
-        ];
-    }, [activeView, activeTab, takenNames, createFromCurrent, patchActive]);
+        const { rename, pin, remove } = viewActions(activeView);
+        return [rename, duplicate, pin, remove];
+    }, [activeView, activeTab, takenNames, createFromCurrent, viewActions]);
+
+    const overflowActions = useCallback(
+        (tab: ViewTabModel): DropdownItem[] => {
+            const view = views.find((each) => each.uuid === tab.id);
+            if (!view) return [];
+
+            const { rename, pin, remove } = viewActions(view);
+            return [rename, pin, remove];
+        },
+        [views, viewActions],
+    );
 
     // Roving focus: the tab being left becomes `tabIndex={-1}`, so focus has to travel with the
     // selection. Left behind, it sits on an element the strip no longer treats as reachable, and what
@@ -406,12 +442,13 @@ export default function ViewTabs({
                     ))}
 
                     {overflow.length > 0 && (
-                        <Dropdown
-                            btnStyle="transparent"
-                            ariaLabel="More saved views"
-                            title={`${overflow.length} more`}
-                            menuClassName="max-h-80 overflow-y-auto"
-                            items={overflow.map((tab) => ({ title: tab.name, onClick: () => select(tab.id) }))}
+                        <OverflowViewsMenu
+                            tabs={overflow}
+                            viewCount={views.length}
+                            onSelect={select}
+                            actionsFor={overflowActions}
+                            isBusy={isMutating}
+                            dataTestId={`${dataTestId}-overflow`}
                         />
                     )}
 
@@ -475,26 +512,26 @@ export default function ViewTabs({
             />
 
             <NameViewDialog
-                isOpen={dialog === 'rename'}
+                isOpen={dialog === 'rename' && targetView !== undefined}
                 caption="Rename view"
                 confirmLabel="Rename"
-                initialName={activeTab.name}
+                initialName={targetView?.name ?? ''}
                 takenNames={takenNames}
                 isBusy={isMutating}
                 onClose={() => setDialog(undefined)}
                 onSubmit={(name) => {
                     setDialog(undefined);
-                    patchActive({ name });
+                    if (targetView) patchView(targetView, { name });
                 }}
                 dataTestId={`${dataTestId}-rename`}
             />
 
             <Dialog
-                isOpen={dialog === 'delete'}
+                isOpen={dialog === 'delete' && targetView !== undefined}
                 toggle={() => setDialog(undefined)}
                 caption="Delete view"
                 icon="delete"
-                body={`You are about to delete the view "${activeTab.name}". Is this what you want to do?`}
+                body={`You are about to delete the view "${targetView?.name}". Is this what you want to do?`}
                 dataTestId={`${dataTestId}-delete`}
                 buttons={[
                     { color: 'secondary', variant: 'outline', onClick: () => setDialog(undefined), body: 'Cancel' },
