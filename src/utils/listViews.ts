@@ -101,21 +101,33 @@ export function splitTabs(tabs: readonly ViewTab[], activeId: string, cap: numbe
     };
 }
 
+/** The longest name Core stores for a view. */
+export const MAX_VIEW_NAME_LENGTH = 255;
+
+const COPY_SUFFIXES = /(?: \(copy\)(?: \d+)?)+$/;
+
 /**
  * The name a duplicate is auto-named with, so duplicating never interrupts with a dialog.
  *
  * Names are unique per user and resource, so `<name> (copy)` alone would fail the second time. A
- * numeric suffix is appended rather than stacking `(copy) (copy)`, which reads as an accident.
+ * numeric suffix is appended rather than stacking `(copy) (copy)`, which reads as an accident, and a
+ * duplicate of a duplicate joins the same series instead of copying the copy.
  */
 export function duplicateName(name: string, existing: readonly string[]): string {
-    const taken = new Set(existing);
-    const base = `${name} (copy)`;
-    if (!taken.has(base)) return base;
+    const stem = name.replace(COPY_SUFFIXES, '') || name;
 
-    for (let suffix = 2; ; suffix++) {
-        const candidate = `${base} ${suffix}`;
+    const taken = new Set(existing);
+    for (let suffix = 1; ; suffix++) {
+        const ending = suffix === 1 ? ' (copy)' : ` (copy) ${suffix}`;
+        const candidate = `${truncate(stem, MAX_VIEW_NAME_LENGTH - ending.length)}${ending}`;
         if (!taken.has(candidate)) return candidate;
     }
+}
+
+// Core counts UTF-16 code units, so the cut is by unit, backed off a unit rather than split a surrogate pair.
+function truncate(text: string, length: number): string {
+    const cut = text.slice(0, length);
+    return (/[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut).trimEnd();
 }
 
 /** A stored sort as the table expresses one. */
