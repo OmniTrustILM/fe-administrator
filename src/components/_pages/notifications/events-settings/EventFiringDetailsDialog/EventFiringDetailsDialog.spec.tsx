@@ -91,8 +91,15 @@ const buildCommentEntry = (): EventHistoryDto => ({
                 ignored: false,
                 triggers: [{ triggerUuid: 't-1', triggerName: 'comment_trigger', triggeredAt: '2026-05-14T10:24:13Z', records: [] }],
             },
+            {
+                objectUuid: 'comment-on-ra-profile',
+                matched: true,
+                ignored: false,
+                hostObject: { resource: Resource.RaProfiles, objectUuid: 'ra-1', name: 'RA One' },
+                triggers: [{ triggerUuid: 't-1', triggerName: 'comment_trigger', triggeredAt: '2026-05-14T10:24:13Z', records: [] }],
+            },
         ],
-        totalItems: 2,
+        totalItems: 3,
         itemsPerPage: 10,
         pageNumber: 1,
         totalPages: 1,
@@ -149,6 +156,13 @@ test.describe('EventFiringDetailsDialog', () => {
         await mount(withProviders(<EventFiringDetailsDialog isOpen={true} onClose={() => {}} entry={buildCommentEntry()} />));
         await expect(page.getByText('deleted-comment')).toBeVisible();
         await expect(page.getByRole('link', { name: 'deleted-comment' })).toHaveCount(0);
+    });
+
+    test('A host whose detail route needs more than its uuid is named in plain text, not linked', async ({ mount, page }) => {
+        await mount(withProviders(<EventFiringDetailsDialog isOpen={true} onClose={() => {}} entry={buildCommentEntry()} />));
+        const row = page.getByRole('row').filter({ hasText: 'comment-on-ra-profile' });
+        await expect(row.getByText('(RA One)')).toBeVisible();
+        await expect(row.getByRole('link', { name: 'comment-on-ra-profile' })).toHaveCount(0);
     });
 
     test('clicking Details opens evaluation details dialog', async ({ mount, page }) => {

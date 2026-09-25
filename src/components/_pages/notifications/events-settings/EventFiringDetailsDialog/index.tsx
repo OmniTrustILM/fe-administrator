@@ -30,12 +30,27 @@ const allConditionsMatched = (trigger: TriggerHistoryObjectTriggerSummaryDto) =>
 const allActionsPerformed = (trigger: TriggerHistoryObjectTriggerSummaryDto) =>
     allConditionsMatched(trigger) && !trigger.records.some((r) => r.execution);
 
+// Their detail routes also need a parent id or a version, which the host object does not carry.
+const HOSTS_WITHOUT_UUID_ROUTE = new Set<Resource>([
+    Resource.RaProfiles,
+    Resource.TokenProfiles,
+    Resource.Locations,
+    Resource.VaultProfiles,
+    Resource.NotificationProfiles,
+]);
+
 function renderObjectCell(obj: TriggerHistoryObjectSummaryDto, objectLabel: string, resource: Resource | undefined) {
     if (obj.hostObject) {
+        const { resource: hostResource, objectUuid: hostUuid, name: hostName } = obj.hostObject;
+        const label = HOSTS_WITHOUT_UUID_ROUTE.has(hostResource) ? (
+            objectLabel
+        ) : (
+            <Link to={`/${hostResource.toLowerCase()}/detail/${hostUuid}`}>{objectLabel}</Link>
+        );
         return (
             <span key="object">
-                <Link to={`/${obj.hostObject.resource.toLowerCase()}/detail/${obj.hostObject.objectUuid}`}>{objectLabel}</Link>
-                <span className="text-content-subtle"> ({obj.hostObject.name})</span>
+                {label}
+                <span className="text-content-subtle"> ({hostName})</span>
             </span>
         );
     }
