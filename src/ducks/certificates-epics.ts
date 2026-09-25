@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { EMPTY, merge, of, race, timer } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, take, takeUntil } from 'rxjs/operators';
+import { catchError, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { actions as alertActions } from './alerts';
@@ -12,7 +12,7 @@ import { transformAttributeDescriptorDtoToModel, transformAttributeRequestModelT
 import { store } from '../App';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { EntityType } from './filters';
-import { actions as pagingActions } from './paging';
+import { actions as pagingActions, selectors as pagingSelectors } from './paging';
 import {
     transformCertificateBulkDeleteRequestModelToDto,
     transformCertificateBulkDeleteResponseDtoToModel,
@@ -1108,16 +1108,31 @@ const bulkDelete: AppEpic = (action$, state, deps) => {
             const stillListsDeleted = (listAction: ReturnType<typeof slice.actions.listCertificatesSuccess>) =>
                 listAction.payload.some((certificate) => deletedUuids.includes(certificate.uuid));
 
+            // A background read keeps the selection, so a checked certificate it no longer lists is unticked here.
+            const pruneSelection$ = (listAction: ReturnType<typeof slice.actions.listCertificatesSuccess>) => {
+                const checkedRows = pagingSelectors.checkedRows(EntityType.CERTIFICATE)(state.value);
+                const listedUuids = new Set(listAction.payload.map((certificate) => certificate.uuid));
+                const stillListed = checkedRows.filter((uuid) => listedUuids.has(uuid));
+
+                return stillListed.length === checkedRows.length
+                    ? EMPTY
+                    : of(pagingActions.setCheckedRows({ entity: EntityType.CERTIFICATE, checkedRows: stillListed }));
+            };
+
             // Core deletes in the background after answering, so the read the success triggers can still
             // list the certificates. Each listing that does is followed by another read, backing off.
             const rereadUntilRemoved$ = listings$.pipe(
+                takeWhile(stillListsDeleted, true),
                 switchMap((listAction, attempt) =>
-                    stillListsDeleted(listAction)
-                        ? timer(BULK_DELETE_REREAD_BASE_DELAY_MS * 2 ** attempt).pipe(map(() => slice.actions.refreshListInBackground()))
-                        : EMPTY,
+                    merge(
+                        pruneSelection$(listAction),
+                        stillListsDeleted(listAction) && attempt < BULK_DELETE_MAX_REREADS
+                            ? timer(BULK_DELETE_REREAD_BASE_DELAY_MS * 2 ** attempt).pipe(
+                                  map(() => slice.actions.refreshListInBackground()),
+                              )
+                            : EMPTY,
+                    ),
                 ),
-                take(BULK_DELETE_MAX_REREADS),
-                takeUntil(listings$.pipe(filter((listAction) => !stillListsDeleted(listAction)))),
                 takeUntil(
                     action$.pipe(
                         filter(pagingActions.listFailure.match),

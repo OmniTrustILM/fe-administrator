@@ -939,13 +939,18 @@ describe('certificates epics', () => {
             vi.useRealTimers();
         });
 
-        function startBulkDelete(uuids: string[], bulkDeleteCertificate: () => Observable<unknown> = () => of({ status: 'SUCCESS' })) {
+        function startBulkDelete(
+            uuids: string[],
+            bulkDeleteCertificate: () => Observable<unknown> = () => of({ status: 'SUCCESS' }),
+            checkedRows: string[] = [],
+        ) {
             const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
             const action$ = new Subject<UnknownAction>();
             const deps = { apiClients: { certificates: { bulkDeleteCertificate } } };
             const emitted: UnknownAction[] = [];
             let completed = false;
-            const subscription = epics[BULK_DELETE_EPIC_INDEX](action$, of({}) as any, deps as any).subscribe({
+            const state$ = { value: { pagings: { pagings: [{ entity: EntityType.CERTIFICATE, paging: { checkedRows } }] } } };
+            const subscription = epics[BULK_DELETE_EPIC_INDEX](action$, state$ as any, deps as any).subscribe({
                 next: (action) => emitted.push(action),
                 complete: () => {
                     completed = true;
@@ -1047,6 +1052,25 @@ describe('certificates epics', () => {
             await vi.advanceTimersByTimeAsync(90_000);
 
             expect(refreshes(run.emitted)).toBe(0);
+            run.unsubscribe();
+        });
+
+        test('unticks checked certificates that a listing no longer shows', () => {
+            const run = startBulkDelete(['c1'], undefined, ['c1', 'c3']);
+
+            run.listed(['c3']);
+
+            expect(run.emitted).toContainEqual(pagingActions.setCheckedRows({ entity: EntityType.CERTIFICATE, checkedRows: ['c3'] }));
+            run.unsubscribe();
+        });
+
+        test('leaves the selection alone while every checked certificate is still listed', async () => {
+            const run = startBulkDelete(['c1'], undefined, ['c1', 'c3']);
+
+            run.listed(['c1', 'c3']);
+            await vi.advanceTimersByTimeAsync(1000);
+
+            expect(run.emitted.map((action) => action.type)).not.toContain(pagingActions.setCheckedRows.type);
             run.unsubscribe();
         });
 
