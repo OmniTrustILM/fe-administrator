@@ -25,11 +25,11 @@ export interface CryptographicAssetDto {
      */
     uuid: string;
     /**
-     * Normalized display name of the asset
+     * Normalized display name of the asset: the producers\' name, else the recorded OID. Absent when neither exists to serve, because a refuted OID is never presented as the name
      * @type {string}
      * @memberof CryptographicAssetDto
      */
-    name: string;
+    name?: string;
     /**
      * Type of the asset
      * @type {CryptographicAssetType}

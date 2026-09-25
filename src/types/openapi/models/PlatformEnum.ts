@@ -64,6 +64,8 @@ export enum PlatformEnum {
     ProtectionMethod = 'ProtectionMethod',
     CmpProfileVariant = 'CmpProfileVariant',
     ProtocolChallengeSource = 'ProtocolChallengeSource',
+    AcmeIdentifierMatchType = 'AcmeIdentifierMatchType',
+    AcmeIdentifierAuthorizationMode = 'AcmeIdentifierAuthorizationMode',
     AttributeType = 'AttributeType',
     AttributeContentType = 'AttributeContentType',
     AttributeConstraintType = 'AttributeConstraintType',

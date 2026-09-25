@@ -32,11 +32,11 @@ export interface CryptographicAssetDetailDto {
      */
     uuid: string;
     /**
-     * Normalized display name of the asset
+     * Normalized display name of the asset: the producers\' name, else the recorded OID. Absent when neither exists to serve, because a refuted OID is never presented as the name
      * @type {string}
      * @memberof CryptographicAssetDetailDto
      */
-    name: string;
+    name?: string;
     /**
      * Type of the asset
      * @type {CryptographicAssetType}
@@ -68,11 +68,11 @@ export interface CryptographicAssetDetailDto {
      */
     quarantined: boolean;
     /**
-     * Provenance of the asset\'s PQC verdict
+     * Provenance of the asset\'s PQC verdict. Absent until the first rule-set evaluation of this asset; the row-level pqcVerdict serves unknown until then
      * @type {CryptographicAssetVerdictDto}
      * @memberof CryptographicAssetDetailDto
      */
-    verdict: CryptographicAssetVerdictDto;
+    verdict?: CryptographicAssetVerdictDto;
     /**
      * Normalized filterable properties derived for the asset; absent when nothing is derivable
      * @type {CryptographicAssetNormalizedFieldsDto}

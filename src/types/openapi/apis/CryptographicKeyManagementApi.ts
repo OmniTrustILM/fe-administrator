@@ -1018,7 +1018,7 @@ export class CryptographicKeyManagementApi extends BaseAPI {
     }
 
     /**
-     * Get Cryptographic Key Detail
+     * Get Cryptographic Key Item Detail
      */
     getKeyItem({ uuid, keyItemUuid }: GetKeyItemRequest): Observable<KeyItemDetailDto>;
     getKeyItem({ uuid, keyItemUuid }: GetKeyItemRequest, opts?: OperationOpts): Observable<AjaxResponse<KeyItemDetailDto>>;

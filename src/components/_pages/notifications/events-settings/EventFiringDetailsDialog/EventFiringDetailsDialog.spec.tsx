@@ -73,6 +73,39 @@ const buildEntry = (): EventHistoryDto => ({
     } as any,
 });
 
+const buildCommentEntry = (): EventHistoryDto => ({
+    ...buildEntry(),
+    resource: Resource.Comments,
+    objectHistories: {
+        items: [
+            {
+                objectUuid: 'comment-with-host',
+                matched: true,
+                ignored: false,
+                hostObject: { resource: Resource.Certificates, objectUuid: 'cert-1', name: 'CN=host.example.com' },
+                triggers: [{ triggerUuid: 't-1', triggerName: 'comment_trigger', triggeredAt: '2026-05-14T10:24:13Z', records: [] }],
+            },
+            {
+                objectUuid: 'deleted-comment',
+                matched: true,
+                ignored: false,
+                triggers: [{ triggerUuid: 't-1', triggerName: 'comment_trigger', triggeredAt: '2026-05-14T10:24:13Z', records: [] }],
+            },
+            {
+                objectUuid: 'comment-on-ra-profile',
+                matched: true,
+                ignored: false,
+                hostObject: { resource: Resource.RaProfiles, objectUuid: 'ra-1', name: 'RA One' },
+                triggers: [{ triggerUuid: 't-1', triggerName: 'comment_trigger', triggeredAt: '2026-05-14T10:24:13Z', records: [] }],
+            },
+        ],
+        totalItems: 3,
+        itemsPerPage: 10,
+        pageNumber: 1,
+        totalPages: 1,
+    } as any,
+});
+
 const mountDialog = (mount: any, onClose: () => void = () => {}) =>
     mount(withProviders(<EventFiringDetailsDialog isOpen={true} onClose={onClose} entry={buildEntry()} />));
 
@@ -109,6 +142,27 @@ test.describe('EventFiringDetailsDialog', () => {
         const link = page.getByRole('link', { name: 'google.cz' });
         await expect(link).toBeVisible();
         await expect(link).toHaveAttribute('href', /\/certificates\/detail\/google\.cz$/);
+    });
+
+    test('Object with a host object links to the host detail page and shows the host name', async ({ mount, page }) => {
+        await mount(withProviders(<EventFiringDetailsDialog isOpen={true} onClose={() => {}} entry={buildCommentEntry()} />));
+        const link = page.getByRole('link', { name: 'comment-with-host' });
+        await expect(link).toHaveAttribute('href', /\/certificates\/detail\/cert-1$/);
+        const row = page.getByRole('row').filter({ hasText: 'comment-with-host' });
+        await expect(row.getByText('(CN=host.example.com)')).toBeVisible();
+    });
+
+    test('Comment object without a host object is plain text, not a link', async ({ mount, page }) => {
+        await mount(withProviders(<EventFiringDetailsDialog isOpen={true} onClose={() => {}} entry={buildCommentEntry()} />));
+        await expect(page.getByText('deleted-comment')).toBeVisible();
+        await expect(page.getByRole('link', { name: 'deleted-comment' })).toHaveCount(0);
+    });
+
+    test('A host whose detail route needs more than its uuid is named in plain text, not linked', async ({ mount, page }) => {
+        await mount(withProviders(<EventFiringDetailsDialog isOpen={true} onClose={() => {}} entry={buildCommentEntry()} />));
+        const row = page.getByRole('row').filter({ hasText: 'comment-on-ra-profile' });
+        await expect(row.getByText('(RA One)')).toBeVisible();
+        await expect(row.getByRole('link', { name: 'comment-on-ra-profile' })).toHaveCount(0);
     });
 
     test('clicking Details opens evaluation details dialog', async ({ mount, page }) => {

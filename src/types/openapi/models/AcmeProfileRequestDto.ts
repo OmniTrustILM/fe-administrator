@@ -11,7 +11,12 @@
  * Do not edit the class manually.
  */
 
-import type { ProtocolCertificateAssociationsRequestDto, RequestAttribute } from './';
+import type {
+    AcmeIdentifierAuthorizationMode,
+    AcmePreauthorizedIdentifierDto,
+    ProtocolCertificateAssociationsRequestDto,
+    RequestAttribute,
+} from './';
 
 /**
  * @export
@@ -114,4 +119,16 @@ export interface AcmeProfileRequestDto {
      * @memberof AcmeProfileRequestDto
      */
     eabSecretUuids?: Array<string>;
+    /**
+     * Identifiers an account may obtain from this profile without proving control of them. An order whose identifiers are all covered is ready at creation and carries no challenges.
+     * @type {Array<AcmePreauthorizedIdentifierDto>}
+     * @memberof AcmeProfileRequestDto
+     */
+    preauthorizedIdentifiers?: Array<AcmePreauthorizedIdentifierDto>;
+    /**
+     * What happens to an ordered identifier the pre-authorization policy does not cover. \'preauthorizedOrChallenge\', the default, sends it through the usual http-01 and dns-01 flow. \'preauthorizedOnly\' refuses the order, and needs at least one pre-authorized identifier - to stop a profile accepting orders at all, disable new orders instead.
+     * @type {AcmeIdentifierAuthorizationMode}
+     * @memberof AcmeProfileRequestDto
+     */
+    identifierAuthorizationMode?: AcmeIdentifierAuthorizationMode;
 }
