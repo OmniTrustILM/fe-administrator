@@ -792,6 +792,21 @@ test.describe('ViewTabs', () => {
         expect(JSON.stringify(action)).not.toContain('CK_ASSOCIATIONS');
     });
 
+    test('shows a new view only the Standard columns it can store', async ({ mount, page }) => {
+        await mount(strip({ standardColumns: [commonName, column('CK_ASSOCIATIONS', 'Associations')] }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await page.getByTestId('view-tabs-new').click();
+        await page.getByTestId('view-tabs-create').getByRole('button', { name: 'Create view' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+        const view = (await lastDispatched(page, 'listViews/createView'))?.payload?.view as Record<string, unknown>;
+        expect(view.columns).toEqual([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }]);
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+        await expect(page.getByTestId('view-tabs-tab-pending-view')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-pending-view-dirty')).toHaveCount(0);
+    });
+
     test('puts the tab back when a delete fails, and the rows with it', async ({ mount, page }) => {
         await mount(strip());
 

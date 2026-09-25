@@ -240,9 +240,11 @@ export default function ViewTabs({
 
     const create = useCallback(
         (name: string, slice: ViewSlice, restore?: ViewSlice) => {
+            const view = toCreateRequest(name, resource, slice, catalogue);
             tabBeforeCreate.current = { id: activeId, restore };
-            dispatch(listViewActions.createView({ resource, view: toCreateRequest(name, resource, slice, catalogue) }));
+            dispatch(listViewActions.createView({ resource, view }));
             setActiveId(PENDING_VIEW_UUID);
+            return view;
         },
         [dispatch, resource, activeId, catalogue],
     );
@@ -250,13 +252,15 @@ export default function ViewTabs({
     const createFromCurrent = useCallback((name: string) => create(name, currentSlice), [create, currentSlice]);
 
     // Unsorted on purpose: Standard's ordering is the page's default, not a choice the new view has made.
+    // The table takes the columns the request stores, not Standard's: a column the catalogue does not
+    // publish is dropped from the request, and showing it would mark the new view as changed.
     const createFromStandard = useCallback(
         (name: string) => {
             const slice = toStandardSlice(standardColumns);
-            create(name, slice, { columns, filters, sort });
-            applyRef.current(slice);
+            const view = create(name, slice, { columns, filters, sort });
+            applyRef.current({ ...slice, columns: resolveView(view.columns, fields, standardColumns).renderable });
         },
-        [create, standardColumns, columns, filters, sort],
+        [create, standardColumns, fields, columns, filters, sort],
     );
 
     const patchActive = useCallback(
