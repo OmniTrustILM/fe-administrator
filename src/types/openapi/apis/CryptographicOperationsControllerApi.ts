@@ -59,6 +59,20 @@ export interface ListRandomAttributesRequest {
     tokenInstanceUuid: string;
 }
 
+export interface ListSignAttributesRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
+    uuid: string;
+    keyItemUuid: string;
+}
+
+export interface ListVerifyAttributesRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
+    uuid: string;
+    keyItemUuid: string;
+}
+
 export interface ListSignatureAttributesRequest {
     tokenInstanceUuid: string;
     tokenProfileUuid: string;
@@ -242,6 +256,38 @@ export class CryptographicOperationsControllerApi extends BaseAPI {
         );
     }
 
+    listSignAttributes({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+        uuid,
+        keyItemUuid,
+    }: ListSignAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    listSignAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListSignAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    listSignAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListSignAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'listSignAttributes');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'listSignAttributes');
+        throwIfNullOrUndefined(uuid, 'uuid', 'listSignAttributes');
+        throwIfNullOrUndefined(keyItemUuid, 'keyItemUuid', 'listSignAttributes');
+
+        return this.request<Array<BaseAttributeDto>>(
+            {
+                url: '/v1/operations/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/keys/{uuid}/items/{keyItemUuid}/sign/attributes'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid))
+                    .replace('{uuid}', encodeURI(uuid))
+                    .replace('{keyItemUuid}', encodeURI(keyItemUuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
     /**
      * List of signature Attributes
      */
@@ -274,6 +320,38 @@ export class CryptographicOperationsControllerApi extends BaseAPI {
                     .replace('{uuid}', encodeURI(uuid))
                     .replace('{keyItemUuid}', encodeURI(keyItemUuid))
                     .replace('{algorithm}', encodeURI(algorithm)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    listVerifyAttributes({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+        uuid,
+        keyItemUuid,
+    }: ListVerifyAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    listVerifyAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListVerifyAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    listVerifyAttributes(
+        { tokenInstanceUuid, tokenProfileUuid, uuid, keyItemUuid }: ListVerifyAttributesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'listVerifyAttributes');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'listVerifyAttributes');
+        throwIfNullOrUndefined(uuid, 'uuid', 'listVerifyAttributes');
+        throwIfNullOrUndefined(keyItemUuid, 'keyItemUuid', 'listVerifyAttributes');
+
+        return this.request<Array<BaseAttributeDto>>(
+            {
+                url: '/v1/operations/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/keys/{uuid}/items/{keyItemUuid}/verify/attributes'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid))
+                    .replace('{uuid}', encodeURI(uuid))
+                    .replace('{keyItemUuid}', encodeURI(keyItemUuid)),
                 method: 'GET',
             },
             opts?.responseOpts,

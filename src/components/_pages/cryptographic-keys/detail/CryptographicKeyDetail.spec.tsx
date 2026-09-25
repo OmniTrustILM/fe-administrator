@@ -2,10 +2,22 @@ import type { UnknownAction } from '@reduxjs/toolkit';
 import { test, expect } from 'playwright/ct-test';
 import CryptographicKeyDetailWithStore from 'components/_pages/cryptographic-keys/detail/CryptographicKeyDetailWithStore';
 import { actions as keyActions } from 'ducks/cryptographic-keys';
+import { actions as cryptographicOperationActions } from 'ducks/cryptographic-operations';
 import { actions as profileActions } from 'ducks/token-profiles';
 import type { CryptographicKeyDetailResponseModel } from 'types/cryptographic-keys';
-import { ComplianceStatus, KeyAlgorithm, KeyFormat, KeyState, KeyType, KeyUsage, TokenInstanceStatus } from 'types/openapi';
+import {
+    AttributeContentType,
+    AttributeType,
+    ComplianceStatus,
+    KeyAlgorithm,
+    KeyFormat,
+    KeyState,
+    KeyType,
+    KeyUsage,
+    TokenInstanceStatus,
+} from 'types/openapi';
 import type { TokenProfileDetailResponseModel } from 'types/token-profiles';
+import type { AttributeDescriptorModel } from 'types/attributes';
 
 function aSynchronizedKey() {
     const key: CryptographicKeyDetailResponseModel = {
@@ -196,4 +208,119 @@ test.describe('CryptographicKeyDetail usage editing', () => {
         await page.getByTestId('key-button').click();
         await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeEnabled();
     });
+});
+
+test.describe('CryptographicKeyDetail signature attributes', () => {
+    test('Sign requires an algorithm before submitting data', async ({ mount, page }) => {
+        const tokenProfile = aTokenProfile([KeyUsage.Sign]);
+        const cryptographicKey = aSynchronizedKey().withTokenProfile(tokenProfile.uuid).withUsages([KeyUsage.Sign]).build();
+        const dispatched: UnknownAction[] = [];
+        const signatureDescriptors = [
+            {
+                type: AttributeType.Data,
+                uuid: 'signature-algorithm',
+                name: 'signatureAlgorithm',
+                contentType: AttributeContentType.String,
+                content: [{ data: 'SHA256withRSA' }],
+                properties: {
+                    label: 'Signature Algorithm',
+                    required: true,
+                    readOnly: false,
+                    visible: true,
+                    list: true,
+                    multiSelect: false,
+                },
+            } as AttributeDescriptorModel,
+        ];
+        await mount(
+            <CryptographicKeyDetailWithStore
+                cryptographicKey={cryptographicKey}
+                tokenProfile={tokenProfile}
+                signatureDescriptors={signatureDescriptors}
+                onAction={(action) => dispatched.push(action)}
+            />,
+        );
+
+        await page.getByTestId('sign-button').click();
+        const dialog = page.getByRole('dialog', { name: 'Sign Data' });
+        const algorithm = dialog.getByRole('button', { name: 'Select Signature Algorithm' });
+        await expect(algorithm).toBeVisible();
+        const data = dialog.getByRole('textbox', { name: 'File content' });
+        await data.fill('sample data');
+        await data.press('Tab');
+
+        const sign = dialog.getByRole('button', { name: 'Sign', exact: true });
+        await expect(sign).toBeDisabled();
+        await algorithm.click();
+        await page.getByRole('option', { name: 'SHA256withRSA' }).click();
+        await expect(sign).toBeEnabled();
+        await sign.click();
+        await expect
+            .poll(() => dispatched.find(cryptographicOperationActions.signData.match))
+            .toMatchObject({
+                payload: {
+                    request: {
+                        signatureAttributes: [{ name: 'signatureAlgorithm', content: [{ data: 'SHA256withRSA' }] }],
+                        data: [{ data: btoa('sample data') }],
+                    },
+                },
+            });
+    });
+
+    test('Sign stays disabled while signature attributes load', async ({ mount, page }) => {
+        const tokenProfile = aTokenProfile([KeyUsage.Sign]);
+        const cryptographicKey = aSynchronizedKey().withTokenProfile(tokenProfile.uuid).withUsages([KeyUsage.Sign]).build();
+        const dispatched: UnknownAction[] = [];
+        await mount(
+            <CryptographicKeyDetailWithStore
+                cryptographicKey={cryptographicKey}
+                tokenProfile={tokenProfile}
+                onAction={(action) => dispatched.push(action)}
+            />,
+        );
+
+        await page.getByTestId('sign-button').click();
+        await expect.poll(() => dispatched.some(cryptographicOperationActions.listSignatureAttributeDescriptors.match)).toBe(true);
+        const dialog = page.getByRole('dialog', { name: 'Sign Data' });
+        const data = dialog.getByRole('textbox', { name: 'File content' });
+        await data.fill('sample data');
+        await data.press('Tab');
+        await expect(dialog.getByRole('button', { name: 'Sign', exact: true })).toBeDisabled();
+        await dialog.locator('form').evaluate((form) => (form as HTMLFormElement).requestSubmit());
+        await expect(dialog).toBeVisible();
+        expect(dispatched.some(cryptographicOperationActions.signData.match)).toBe(false);
+    });
+
+    for (const operation of ['sign', 'verify'] as const) {
+        test(`${operation} dialog requests its operation schema`, async ({ mount, page }) => {
+            const tokenProfile = aTokenProfile([KeyUsage.Sign, KeyUsage.Verify]);
+            const cryptographicKey = aSynchronizedKey()
+                .withTokenProfile(tokenProfile.uuid)
+                .withUsages([KeyUsage.Sign, KeyUsage.Verify])
+                .build();
+            const dispatched: UnknownAction[] = [];
+            await mount(
+                <CryptographicKeyDetailWithStore
+                    cryptographicKey={cryptographicKey}
+                    tokenProfile={tokenProfile}
+                    onAction={(action) => dispatched.push(action)}
+                />,
+            );
+
+            await page.getByTestId(`${operation}-button`).click();
+            await expect(page.getByRole('dialog', { name: operation === 'sign' ? 'Sign Data' : 'Verify Signature' })).toBeVisible();
+
+            await expect
+                .poll(() => dispatched.find(cryptographicOperationActions.listSignatureAttributeDescriptors.match))
+                .toEqual(
+                    cryptographicOperationActions.listSignatureAttributeDescriptors({
+                        tokenInstanceUuid: cryptographicKey.tokenInstanceUuid!,
+                        tokenProfileUuid: tokenProfile.uuid,
+                        uuid: cryptographicKey.uuid,
+                        keyItemUuid: cryptographicKey.items[0].uuid,
+                        operation,
+                    }),
+                );
+        });
+    }
 });

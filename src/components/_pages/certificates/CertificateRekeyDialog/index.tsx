@@ -150,15 +150,16 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
             if (!key) return;
             if (!key.tokenProfileUuid) return;
             if (!key.tokenInstanceUuid) return;
-            if (key.items.filter((e) => e.type === KeyType.Private).length === 0) return;
+            const privateKeyItem = key.items.find((item) => item.type === KeyType.Private);
+            if (!privateKeyItem) return;
             dispatch(cryptographyOperationActions.clearSignatureAttributeDescriptors(type));
             dispatch(
                 cryptographyOperationActions.listSignatureAttributeDescriptors({
                     uuid: key.uuid,
                     tokenProfileUuid: key.tokenProfileUuid,
                     tokenInstanceUuid: key.tokenInstanceUuid,
-                    keyItemUuid: key.items.find((e) => e.type === KeyType.Private)!.uuid,
-                    algorithm: key.items.find((e) => e.type === KeyType.Private)!.keyAlgorithm,
+                    keyItemUuid: privateKeyItem.uuid,
+                    operation: 'sign',
                     store: type,
                 }),
             );

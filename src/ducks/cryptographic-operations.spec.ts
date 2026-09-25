@@ -1,8 +1,63 @@
 import { describe, expect, test, vi } from 'vitest';
+import { firstValueFrom, of, throwError } from 'rxjs';
+import { take, toArray } from 'rxjs/operators';
 
 vi.mock('utils/download', () => ({ downloadFile: vi.fn() }));
 
 import reducer, { actions, initialState, selectors } from './cryptographic-operations';
+import epics from './cryptographic-operations-epics';
+
+const key = { tokenInstanceUuid: 'token', tokenProfileUuid: 'profile', uuid: 'key', keyItemUuid: 'item' };
+
+async function listSignatureAttributes(operation: 'sign' | 'verify', store?: 'alt' | 'normal') {
+    const listSignAttributes = vi.fn(() => of([{ uuid: 'sign-attribute' }]));
+    const listVerifyAttributes = vi.fn(() => of([{ uuid: 'verify-attribute' }]));
+    const legacyListing = vi.fn(() => throwError(() => new Error('Legacy attribute listing is unavailable for v2 keys')));
+    const client = { listSignAttributes, listVerifyAttributes, listSignatureAttributes: legacyListing };
+    const action = actions.listSignatureAttributeDescriptors({ ...key, operation, store });
+    const epic = epics.find((candidate) => candidate.name === 'getSignatureAttributesDescriptors');
+    if (!epic) throw new Error('Signature attribute epic is missing');
+    const output$ = epic(of(action), of({}) as any, { apiClients: { cryptographicOperations: client } } as any);
+    const emitted = await firstValueFrom(output$.pipe(take(1), toArray()));
+    return { emitted, listSignAttributes, listVerifyAttributes, legacyListing };
+}
+
+describe('cryptographicOperations attribute epics', () => {
+    test('signing loads the sign schema for the normal store', async () => {
+        const { emitted, listSignAttributes, listVerifyAttributes, legacyListing } = await listSignatureAttributes('sign');
+
+        expect(listSignAttributes).toHaveBeenCalledWith(key);
+        expect(listVerifyAttributes).not.toHaveBeenCalled();
+        expect(legacyListing).not.toHaveBeenCalled();
+        expect(emitted).toEqual([
+            actions.listSignatureAttributeDescriptorsSuccess({
+                uuid: key.uuid,
+                attributeDescriptors: [{ uuid: 'sign-attribute', content: undefined } as any],
+                store: undefined,
+            }),
+        ]);
+    });
+
+    test('verification loads the verify schema', async () => {
+        const { emitted, listSignAttributes, listVerifyAttributes, legacyListing } = await listSignatureAttributes('verify');
+
+        expect(listVerifyAttributes).toHaveBeenCalledWith(key);
+        expect(listSignAttributes).not.toHaveBeenCalled();
+        expect(legacyListing).not.toHaveBeenCalled();
+        expect(emitted).toEqual([
+            actions.listSignatureAttributeDescriptorsSuccess({
+                uuid: key.uuid,
+                attributeDescriptors: [{ uuid: 'verify-attribute', content: undefined } as any],
+                store: undefined,
+            }),
+        ]);
+    });
+
+    test('alternative signing retains the alternative store', async () => {
+        const { emitted } = await listSignatureAttributes('sign', 'alt');
+        expect(emitted[0]).toMatchObject({ payload: { store: 'alt' } });
+    });
+});
 
 describe('cryptographicOperations slice', () => {
     test('returns initial state for unknown action', () => {
@@ -26,12 +81,6 @@ describe('cryptographicOperations slice', () => {
         expect(next.altSignatureAttributeDescriptors).toEqual([]);
     });
 
-    test('clearCipherAttributeDescriptors', () => {
-        const state = { ...initialState, cipherAttributeDescriptors: [{ uuid: 'c' }] } as any;
-        const next = reducer(state, actions.clearCipherAttributeDescriptors());
-        expect(next.cipherAttributeDescriptors).toEqual([]);
-    });
-
     test('clearRandomDataAttributeDescriptors', () => {
         const state = { ...initialState, randomDataAttributeDescriptors: [{ uuid: 'd' }] } as any;
         const next = reducer(state, actions.clearRandomDataAttributeDescriptors());
@@ -46,7 +95,7 @@ describe('cryptographicOperations slice', () => {
                 tokenProfileUuid: 'p',
                 uuid: 'u',
                 keyItemUuid: 'k',
-                algorithm: 'RSA' as any,
+                operation: 'sign',
             }),
         );
         expect(next.isFetchingSignatureAttributes).toBe(true);
@@ -66,27 +115,6 @@ describe('cryptographicOperations slice', () => {
         );
         expect(next.altSignatureAttributeDescriptors).toEqual([{ uuid: 'alt' }]);
         expect(next.signatureAttributeDescriptors).toEqual([]);
-    });
-
-    test('listCipherAttributeDescriptors / success / failure', () => {
-        let next = reducer(
-            initialState,
-            actions.listCipherAttributeDescriptors({
-                tokenInstanceUuid: 't',
-                tokenProfileUuid: 'p',
-                uuid: 'u',
-                keyItemUuid: 'k',
-                algorithm: 'RSA' as any,
-            }),
-        );
-        expect(next.isFetchingCipherAttributes).toBe(true);
-
-        next = reducer(next, actions.listCipherAttributeDescriptorsSuccess({ uuid: 'u', attributeDescriptors: [{ uuid: 'c' } as any] }));
-        expect(next.isFetchingCipherAttributes).toBe(false);
-        expect(next.cipherAttributeDescriptors).toEqual([{ uuid: 'c' }]);
-
-        next = reducer({ ...next, isFetchingCipherAttributes: true }, actions.listCipherAttributesFailure({ error: 'err' }));
-        expect(next.isFetchingCipherAttributes).toBe(false);
     });
 
     test('listRandomAttributeDescriptors / success / failure', () => {
@@ -147,7 +175,6 @@ describe('cryptographicOperations selectors', () => {
             ...initialState,
             signatureAttributeDescriptors: [{ uuid: 'sa' }],
             altSignatureAttributeDescriptors: [{ uuid: 'asa' }],
-            cipherAttributeDescriptors: [{ uuid: 'ca' }],
             randomDataAttributeDescriptors: [{ uuid: 'ra' }],
             isSigning: true,
             isVerifying: true,
@@ -155,14 +182,12 @@ describe('cryptographicOperations selectors', () => {
             isEncrypting: true,
             isDecrypting: true,
             isFetchingSignatureAttributes: true,
-            isFetchingCipherAttributes: true,
             isFetchingRandomDataAttributes: true,
         };
         const state = { cryptographicOperations: featureState } as any;
 
         expect(selectors.signatureAttributeDescriptors(state)).toEqual([{ uuid: 'sa' }]);
         expect(selectors.altSignatureAttributeDescriptors(state)).toEqual([{ uuid: 'asa' }]);
-        expect(selectors.cipherAttributeDescriptors(state)).toEqual([{ uuid: 'ca' }]);
         expect(selectors.randomDataAttributeDescriptors(state)).toEqual([{ uuid: 'ra' }]);
         expect(selectors.isSigning(state)).toBe(true);
         expect(selectors.isVerifying(state)).toBe(true);
@@ -170,7 +195,6 @@ describe('cryptographicOperations selectors', () => {
         expect(selectors.isEncrypting(state)).toBe(true);
         expect(selectors.isDecrypting(state)).toBe(true);
         expect(selectors.isFetchingSignatureAttributes(state)).toBe(true);
-        expect(selectors.isFetchingCipherAttributes(state)).toBe(true);
         expect(selectors.isFetchingRandomDataAttributes(state)).toBe(true);
     });
 });
