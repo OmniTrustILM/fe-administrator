@@ -56,6 +56,8 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
     // A run that rediscovered only what the inventory already held has no import to draw; a full bar says so, where an
     // empty total would read as work of unknown size.
     const nothingToImport = toImport === 0;
+    const notImported = failed ? `, ${failed} not imported` : '';
+    const importCaption = nothingToImport ? 'Nothing to import' : `${remaining} waiting${notImported}`;
 
     return (
         <Widget title="Progress" titleSize="large" refreshAction={onRefresh} className={className} dataTestId="discovery-progress">
@@ -106,12 +108,7 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
                                     </span>
                                 </>
                             }
-                            caption={
-                                <span>
-                                    {nothingToImport ? 'Nothing to import' : `${remaining} waiting${failed ? `, ${failed} failed` : ''}`} —
-                                    counted on every read
-                                </span>
-                            }
+                            caption={<span>{importCaption} — counted on every read</span>}
                         />
                     </div>
                 ) : null}

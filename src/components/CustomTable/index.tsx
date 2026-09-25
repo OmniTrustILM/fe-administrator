@@ -89,6 +89,10 @@ const emptyCheckedRows: (string | number)[] = [];
 const TRAILING_ACTION_KEY = '__trailing_action__';
 const TRAILING_ACTION_CELL = 'sticky right-0 z-10 w-px p-2.5 border-l border-divider';
 
+// A header's `maxWidth` bounds the column's values. A heading that also carries the drag grip, the sort
+// arrow and the options menu needs this much more, or those leave it no room to be read.
+const HEADER_CONTROLS_WIDTH = 100;
+
 // ARIA asks for aria-sort on the sorted header only, so an unsorted column carries no attribute
 // rather than an explicit "none" — otherwise every sortable header announces a sort state at once.
 const ariaSortValue = (sort: SortDirection | undefined) => {
@@ -650,6 +654,10 @@ function CustomTable({
             // Keyed by position rather than by `header.id`: an id may carry whitespace — `ACME Profile Name`
             // is shipped — and `aria-labelledby` is a token list, so such an id would resolve to nothing.
             const headingId = `${headingIdPrefix}${index}`;
+            const isCheckboxColumn = header.id === '__checkbox__';
+            const action = isCheckboxColumn ? undefined : renderHeaderAction?.(header);
+            const lead = isCheckboxColumn ? undefined : renderHeaderLead?.(header);
+            const maxWidth = header.maxWidth == null ? undefined : header.maxWidth + (action || lead ? HEADER_CONTROLS_WIDTH : 0);
 
             return (
                 <Fragment key={header.id}>
@@ -661,17 +669,17 @@ function CustomTable({
                             index > 0 && 'relative before:absolute before:inset-y-1.5 before:left-0 before:w-px before:bg-divider',
                         )}
                         data-id={header.id}
-                        {...(header.id === '__checkbox__' ? {} : { 'aria-labelledby': headingId })}
+                        {...(isCheckboxColumn ? {} : { 'aria-labelledby': headingId })}
                         {...(header.sortable && ariaSortValue(header.sort) ? { 'aria-sort': ariaSortValue(header.sort) } : {})}
                         style={{
                             ...(header.width ? { width: header.width } : {}),
                             ...(header.minWidth ? { minWidth: header.minWidth } : {}),
-                            ...(header.maxWidth == null ? {} : { maxWidth: `${header.maxWidth}px` }),
+                            ...(maxWidth == null ? {} : { maxWidth: `${maxWidth}px` }),
                             ...(header.align ? { textAlign: header.align } : {}),
                         }}
                     >
                         {(() => {
-                            if (header.id === '__checkbox__') {
+                            if (isCheckboxColumn) {
                                 return hasAllCheckBox && multiSelect ? (
                                     <Checkbox
                                         checked={checkAllChecked}
@@ -691,19 +699,23 @@ function CustomTable({
                             // Wrapped rather than omitted: the cell is only visually blank, and a sortable
                             // icon column still needs an accessible name on its button. The wrapper is also what
                             // the cell's `aria-labelledby` points at, so the cell is named by the heading alone.
-                            const headingContent = <span id={headingId}>{header.content}</span>;
+                            const headingContent = (
+                                <span id={headingId} className="min-w-0 truncate">
+                                    {header.content}
+                                </span>
+                            );
                             // `info` sits outside the button: a sortable heading is itself a control, and a
                             // toggletip trigger inside it would nest one interactive element in another, which
                             // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
                             const headingSide = (() => {
                                 if (header.sortable) {
                                     return (
-                                        <span className={cn('flex w-full items-center gap-1', alignment)}>
+                                        <span className={cn('flex w-full min-w-0 items-center gap-1', alignment)}>
                                             <button
                                                 type="button"
                                                 onClick={() => onColumnSortClick(header.id)}
                                                 className={cn(
-                                                    'group flex items-center gap-1 cursor-pointer',
+                                                    'group flex min-w-0 items-center gap-1 cursor-pointer',
                                                     'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 rounded-xs',
                                                     header.info ? undefined : 'w-full',
                                                     alignment,
@@ -720,7 +732,7 @@ function CustomTable({
                                 }
                                 if (header.info) {
                                     return (
-                                        <span className={cn('flex w-full items-center gap-1', alignment)}>
+                                        <span className={cn('flex w-full min-w-0 items-center gap-1', alignment)}>
                                             {headingContent} {header.info}
                                         </span>
                                     );
@@ -728,8 +740,6 @@ function CustomTable({
                                 return headingContent;
                             })();
 
-                            const action = renderHeaderAction?.(header);
-                            const lead = renderHeaderLead?.(header);
                             if (!action && !lead) return headingSide;
 
                             // The heading is what grows, so each control keeps to its own end of the cell
