@@ -14,7 +14,7 @@ import type {
 } from 'types/openapi';
 import { resetSliceState } from './reducerUtils';
 
-// Pickers resolve secrets by UUID from one page; the server caps a page at this size.
+// Page size for the picker lookup, which reads every page.
 export const SECRET_OPTIONS_PAGE_SIZE = 1000;
 
 export type State = {

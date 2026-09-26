@@ -67,6 +67,51 @@ test.describe('EabSecretsField', () => {
         expect(selected).toEqual(['s-2']);
     });
 
+    test('a bound secret that is no longer usable can still be removed, but not picked again', async ({ mount, page }) => {
+        let selected: string[] | undefined;
+        await mount(
+            withProviders(
+                <EabSecretsField
+                    value={['s-4']}
+                    onChange={(uuids) => {
+                        selected = uuids;
+                    }}
+                    secrets={[secrets[3]]}
+                />,
+            ),
+        );
+
+        await page.getByTestId('eabSecrets-trigger').click();
+        await expect(page.getByRole('option', { name: /Disabled key/ })).toHaveAttribute('aria-disabled', 'true');
+        await page.keyboard.press('Escape');
+
+        await page.getByLabel('Remove Disabled key', { exact: true }).click();
+
+        await expect.poll(() => selected).toEqual([]);
+        expect(selected).toEqual([]);
+    });
+
+    test('a bound secret stays removable when the listing returned nothing', async ({ mount, page }) => {
+        let selected: string[] | undefined;
+        await mount(
+            withProviders(
+                <EabSecretsField
+                    value={['missing-uuid']}
+                    onChange={(uuids) => {
+                        selected = uuids;
+                    }}
+                    secrets={[]}
+                    listError="Failed to list secrets"
+                />,
+            ),
+        );
+
+        await page.getByLabel('Remove missing-uuid', { exact: true }).click();
+
+        await expect.poll(() => selected).toEqual([]);
+        expect(selected).toEqual([]);
+    });
+
     test('shows the selected secrets by name, or by uuid when the secret is not listed', async ({ mount, page }) => {
         await mount(withProviders(<EabSecretsField value={['s-1', 'missing-uuid']} onChange={() => {}} secrets={secrets} />));
 

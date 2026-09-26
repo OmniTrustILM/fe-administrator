@@ -5,6 +5,7 @@ import Widget from 'components/Widget';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import type { SecretDto } from 'types/openapi';
+import { isEabSecret } from 'utils/acme-eab';
 
 type Props = Readonly<{
     secretUuids: string[];
@@ -27,9 +28,14 @@ function unresolvedLabel(isLoading: boolean, listError: string | undefined): str
 function secretCell(uuid: string, secret: SecretDto | undefined, isLoading: boolean, listError: string | undefined) {
     if (secret) {
         return (
-            <Link key="secret" to={`../../secrets/detail/${uuid}`}>
-                {secret.name}
-            </Link>
+            <span key="secret" className="inline-flex items-center gap-2">
+                <Link to={`../../secrets/detail/${uuid}`}>{secret.name}</Link>
+                {isEabSecret(secret) ? null : (
+                    <Badge color="danger" title="Disabled, or in a state the platform cannot read, so every binding against it fails">
+                        Not usable
+                    </Badge>
+                )}
+            </span>
         );
     }
     return (

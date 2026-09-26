@@ -39,7 +39,7 @@ import useAttributeEditor, { buildGroups, buildOwner } from 'utils/widget';
 import CertificateAssociationsFormWidget from 'components/CertificateAssociationsFormWidget/CertificateAssociationsFormWidget';
 import { collectFormAttributes, transformAttributes, mapProfileAttribute } from 'utils/attributes/attributes';
 import { deepEqual } from 'utils/deep-equal';
-import { sameUuidSet } from 'utils/acme-eab';
+import { eabRequestFields } from 'utils/acme-eab';
 import EabSecretsField from 'components/_pages/acme-profiles/eab/EabSecretsField';
 import GenerateEabKeyDialog from 'components/_pages/acme-profiles/eab/GenerateEabKeyDialog';
 import PreauthorizedIdentifiersFields, {
@@ -230,6 +230,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
         defaultValues,
         mode: 'onChange',
     });
+    // What the form was last filled with: the EAB list and the policy are sent only when changed from it.
+    const filledValuesRef = useRef(defaultValues);
 
     const {
         handleSubmit,
@@ -283,11 +285,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             if (values.raProfile) {
                 request.raProfileUuid = values.raProfile;
             }
-            // Omitting the list keeps what the profile has; it is sent only when the operator changed it.
-            if (editMode ? !sameUuidSet(values.eabSecretUuids, acmeProfile?.eabSecretUuids) : values.eabSecretUuids.length > 0) {
-                request.eabSecretUuids = values.eabSecretUuids;
-            }
-            Object.assign(request, policyRequestFields(values, editMode ? acmeProfile : undefined));
+            const filled = editMode ? filledValuesRef.current : undefined;
+            Object.assign(request, eabRequestFields(values, filled), policyRequestFields(values, filled));
             if (editMode) {
                 dispatch(acmeProfileActions.updateAcmeProfile({ uuid: id!, updateAcmeRequest: request }));
             } else {
@@ -295,7 +294,6 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             }
         },
         [
-            acmeProfile,
             dispatch,
             editMode,
             id,
@@ -412,6 +410,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     ...transformedInitialCustomAttributes,
                 };
                 reset(newDefaultValues, { keepDefaultValues: false });
+                filledValuesRef.current = newDefaultValues;
                 lastResetProfileIdRef.current = id;
                 lastResetEditModeRef.current = editMode;
             }

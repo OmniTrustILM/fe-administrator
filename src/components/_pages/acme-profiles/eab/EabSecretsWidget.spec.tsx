@@ -1,4 +1,4 @@
-import { type SecretDto, SecretType } from 'types/openapi';
+import { type SecretDto, SecretState, SecretType } from 'types/openapi';
 import { withProviders } from 'utils/test-helpers';
 import { expect, test } from '../../../../../playwright/ct-test';
 import EabSecretsWidget from './EabSecretsWidget';
@@ -25,6 +25,25 @@ test.describe('EabSecretsWidget', () => {
         await expect(firstRow.getByRole('button', { name: 'Copy kid' })).toBeVisible();
         await expect(firstRow).toContainText('s-1');
         await expect(page.getByText('s-2', { exact: true })).toBeVisible();
+    });
+
+    test('a bound secret that can no longer verify a binding is still linked, and marked not usable', async ({ mount, page }) => {
+        const bound = [
+            ...secrets,
+            { uuid: 's-2', name: 'Disabled key', type: SecretType.SecretKey, enabled: false },
+            { uuid: 's-3', name: 'Rejected key', type: SecretType.Generic, enabled: true, state: SecretState.Rejected },
+        ] as SecretDto[];
+        await mount(
+            withProviders(
+                <EabSecretsWidget secretUuids={['s-1', 's-2', 's-3']} secrets={bound} isLoading={false} onGenerateKey={() => {}} />,
+            ),
+        );
+
+        const row = (name: string) => page.getByRole('row').filter({ hasText: name });
+        await expect(row('EAB key one').getByText('Not usable')).toHaveCount(0);
+        await expect(row('Disabled key').getByText('Not usable')).toBeVisible();
+        await expect(row('Rejected key').getByText('Not usable')).toBeVisible();
+        await expect(page.getByRole('link', { name: 'Disabled key' })).toHaveAttribute('href', /secrets\/detail\/s-2$/);
     });
 
     test('while secrets are loading a missing name reads as loading, not as a permission problem', async ({ mount, page }) => {

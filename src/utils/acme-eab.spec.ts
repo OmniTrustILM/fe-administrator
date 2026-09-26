@@ -1,6 +1,6 @@
 import { SecretState, SecretType } from 'types/openapi';
 import { describe, expect, test } from 'vitest';
-import { isEabSecret, sameUuidSet, secretLabel } from './acme-eab';
+import { eabRequestFields, isEabSecret, sameUuidSet, secretLabel } from './acme-eab';
 
 describe('isEabSecret', () => {
     test('accepts enabled secretKey and generic secrets', () => {
@@ -42,5 +42,32 @@ describe('secretLabel', () => {
         const secrets = [{ uuid: 's-1', name: 'EAB key one' }];
         expect(secretLabel('s-1', secrets)).toBe('EAB key one');
         expect(secretLabel('s-2', secrets)).toBe('s-2');
+    });
+});
+
+describe('eabRequestFields', () => {
+    const filled = { eabSecretUuids: ['s-1', 's-2'] };
+
+    test('an edit that left the list as it was filled, even reordered, omits it', () => {
+        expect(eabRequestFields(filled, filled)).toEqual({});
+        expect(eabRequestFields({ eabSecretUuids: ['s-2', 's-1'] }, filled)).toEqual({});
+    });
+
+    test('an edit that cleared the list sends an empty array, which is what switches EAB off', () => {
+        expect(eabRequestFields({ eabSecretUuids: [] }, filled)).toEqual({ eabSecretUuids: [] });
+    });
+
+    test('an edit that changed the list sends all of it', () => {
+        expect(eabRequestFields({ eabSecretUuids: ['s-1', 's-3'] }, filled)).toEqual({ eabSecretUuids: ['s-1', 's-3'] });
+    });
+
+    test('a form that was never filled from the profile reads as unchanged, so it cannot clear the list', () => {
+        const seeded = { eabSecretUuids: [] };
+        expect(eabRequestFields(seeded, seeded)).toEqual({});
+    });
+
+    test('on create, an empty list is left out and a chosen one is sent', () => {
+        expect(eabRequestFields({ eabSecretUuids: [] }, undefined)).toEqual({});
+        expect(eabRequestFields({ eabSecretUuids: ['s-1'] }, undefined)).toEqual({ eabSecretUuids: ['s-1'] });
     });
 });
