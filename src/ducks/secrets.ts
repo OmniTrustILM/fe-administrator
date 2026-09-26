@@ -14,8 +14,14 @@ import type {
 } from 'types/openapi';
 import { resetSliceState } from './reducerUtils';
 
+// Page size for the picker lookup, which reads every page.
+export const SECRET_OPTIONS_PAGE_SIZE = 1000;
+
 export type State = {
     secrets: SecretDto[];
+    secretOptions: SecretDto[];
+    isFetchingSecretOptions: boolean;
+    secretOptionsError?: string;
     secret?: SecretDetailDto;
     versions: SecretVersionDto[];
     secretContent?: SecretContent;
@@ -41,6 +47,8 @@ export type State = {
 
 export const initialState: State = {
     secrets: [],
+    secretOptions: [],
+    isFetchingSecretOptions: false,
     versions: [],
 
     secretCreationAttributeDescriptors: [],
@@ -109,6 +117,22 @@ export const slice = createSlice({
 
         listSecretsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingList = false;
+        },
+
+        listSecretOptions: (state) => {
+            state.isFetchingSecretOptions = true;
+            state.secretOptionsError = undefined;
+        },
+
+        listSecretOptionsSuccess: (state, action: PayloadAction<{ secrets: SecretDto[] }>) => {
+            state.secretOptions = action.payload.secrets;
+            state.isFetchingSecretOptions = false;
+        },
+
+        listSecretOptionsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.secretOptions = [];
+            state.isFetchingSecretOptions = false;
+            state.secretOptionsError = action.payload.error;
         },
 
         getSecretDetail: (state, action: PayloadAction<{ uuid: string }>) => {
@@ -303,6 +327,9 @@ const versions = createSelector(state, (state) => state.versions);
 const secretContent = createSelector(state, (state) => state.secretContent);
 
 const isFetchingList = createSelector(state, (state) => state.isFetchingList);
+const secretOptions = createSelector(state, (state) => state.secretOptions);
+const isFetchingSecretOptions = createSelector(state, (state) => state.isFetchingSecretOptions);
+const secretOptionsError = createSelector(state, (state) => state.secretOptionsError);
 const isFetchingDetail = createSelector(state, (state) => state.isFetchingDetail);
 const isFetchingVersions = createSelector(state, (state) => state.isFetchingVersions);
 const isFetchingContent = createSelector(state, (state) => state.isFetchingContent);
@@ -324,6 +351,9 @@ export const selectors = {
     state,
 
     secrets,
+    secretOptions,
+    isFetchingSecretOptions,
+    secretOptionsError,
     secret,
     versions,
     secretContent,

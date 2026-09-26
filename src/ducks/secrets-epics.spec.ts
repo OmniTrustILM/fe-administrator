@@ -3,7 +3,7 @@ import type { UnknownAction } from '@reduxjs/toolkit';
 import { firstValueFrom, of, throwError } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
 
-import { actions as secretsActions } from './secrets';
+import { SECRET_OPTIONS_PAGE_SIZE, actions as secretsActions } from './secrets';
 import { actions as userInterfaceActions } from './user-interface';
 import { actions as pagingActions } from './paging';
 import { actions as appRedirectActions } from './app-redirect';
@@ -51,6 +51,7 @@ enum SecretsEpicIndex {
     AddSyncVaultProfile = 11,
     RemoveSyncVaultProfile = 12,
     GetSyncVaultProfileAttributes = 13,
+    ListSecretOptions = 14,
 }
 
 async function runEpic(
@@ -123,6 +124,80 @@ describe('secrets epics', () => {
         expect(emitted[0].type).toBe(secretsActions.listSecretsFailure.type);
         expect(emitted[1]).toEqual(pagingActions.listFailure(EntityType.SECRET));
         expect(emitted[2].type).toBe(userInterfaceActions.insertWidgetLock.type);
+    });
+
+    test('listSecretOptions asks for one full page and emits only its own success', async () => {
+        let request: any;
+        const emitted = await runEpic(
+            SecretsEpicIndex.ListSecretOptions,
+            secretsActions.listSecretOptions(),
+            {
+                secrets: {
+                    listSecrets: (args: any) => {
+                        request = args;
+                        return of({ items: [{ uuid: 's-1' }], totalItems: 1 });
+                    },
+                } as any,
+            },
+            5,
+        );
+
+        expect(request.searchRequestDto).toEqual({ itemsPerPage: SECRET_OPTIONS_PAGE_SIZE, pageNumber: 1, filters: [] });
+        expect(emitted).toEqual([secretsActions.listSecretOptionsSuccess({ secrets: [{ uuid: 's-1' }] as any })]);
+    });
+
+    test('listSecretOptions reads every page and reports them as one list', async () => {
+        const requested: number[] = [];
+        const emitted = await runEpic(
+            SecretsEpicIndex.ListSecretOptions,
+            secretsActions.listSecretOptions(),
+            {
+                secrets: {
+                    listSecrets: ({ searchRequestDto }: any) => {
+                        requested.push(searchRequestDto.pageNumber);
+                        return of({ items: [{ uuid: `s-${searchRequestDto.pageNumber}` }], totalPages: 3 });
+                    },
+                } as any,
+            },
+            5,
+        );
+
+        expect(requested).toEqual([1, 2, 3]);
+        expect(emitted).toEqual([
+            secretsActions.listSecretOptionsSuccess({ secrets: [{ uuid: 's-1' }, { uuid: 's-2' }, { uuid: 's-3' }] as any }),
+        ]);
+    });
+
+    test('listSecretOptions reports a failed later page as a failure, not a partial list', async () => {
+        const emitted = await runEpic(
+            SecretsEpicIndex.ListSecretOptions,
+            secretsActions.listSecretOptions(),
+            {
+                secrets: {
+                    listSecrets: ({ searchRequestDto }: any) =>
+                        searchRequestDto.pageNumber === 1
+                            ? of({ items: [{ uuid: 's-1' }], totalPages: 2 })
+                            : throwError(() => new Error('page 2 failed')),
+                } as any,
+            },
+            5,
+        );
+
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0].type).toBe(secretsActions.listSecretOptionsFailure.type);
+    });
+
+    test('listSecretOptions failure carries the reason without a toast, widget lock or paging change', async () => {
+        const emitted = await runEpic(
+            SecretsEpicIndex.ListSecretOptions,
+            secretsActions.listSecretOptions(),
+            { secrets: { listSecrets: () => throwError(() => new Error('denied')) } as any },
+            5,
+        );
+
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0].type).toBe(secretsActions.listSecretOptionsFailure.type);
+        expect((emitted[0] as any).payload.error).toContain('denied');
     });
 
     test('getSecretContent success emits getSecretContentSuccess', async () => {

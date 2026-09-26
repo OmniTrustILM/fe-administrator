@@ -8,6 +8,7 @@ import { actions as acmeProfileActions, selectors as acmeProfileSelectors } from
 import { actions as connectorActions } from 'ducks/connectors';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { actions as raProfileActions, selectors as raProfileSelectors } from 'ducks/ra-profiles';
+import { actions as secretsActions, selectors as secretsSelectors } from 'ducks/secrets';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
@@ -38,6 +39,13 @@ import useAttributeEditor, { buildGroups, buildOwner } from 'utils/widget';
 import CertificateAssociationsFormWidget from 'components/CertificateAssociationsFormWidget/CertificateAssociationsFormWidget';
 import { collectFormAttributes, transformAttributes, mapProfileAttribute } from 'utils/attributes/attributes';
 import { deepEqual } from 'utils/deep-equal';
+import { eabRequestFields } from 'utils/acme-eab';
+import EabSecretsField from 'components/_pages/acme-profiles/eab/EabSecretsField';
+import GenerateEabKeyDialog from 'components/_pages/acme-profiles/eab/GenerateEabKeyDialog';
+import PreauthorizedIdentifiersFields, {
+    type IdentifierPolicyFormValues,
+} from 'components/_pages/acme-profiles/identifiers/PreauthorizedIdentifiersFields';
+import { policyFormValues, policyRequestFields } from 'utils/acme-identifier-policy';
 
 type AcmeProfileFormProps = {
     acmeProfileId?: string;
@@ -59,10 +67,12 @@ type FormValues = {
     requireTermsOfService: boolean;
     requireContact: boolean;
     raProfile: string;
+    eabSecretUuids: string[];
     owner: string;
     groups: { value: string; label: string }[];
     deletedAttributes: string[];
-} & Record<`__attributes__${string}`, unknown>;
+} & IdentifierPolicyFormValues &
+    Record<`__attributes__${string}`, unknown>;
 
 export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: Readonly<AcmeProfileFormProps>) {
     const dispatch = useDispatch();
@@ -90,6 +100,10 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     const isFetchingIssuanceAttributes = useSelector(raProfileSelectors.isFetchingIssuanceAttributes);
     const isFetchingRevocationAttributes = useSelector(raProfileSelectors.isFetchingRevocationAttributes);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
+    const secrets = useSelector(secretsSelectors.secretOptions);
+    const isFetchingSecrets = useSelector(secretsSelectors.isFetchingSecretOptions);
+    const secretsListError = useSelector(secretsSelectors.secretOptionsError);
+    const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
 
     const [issueGroupAttributesCallbackAttributes, setIssueGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
     const [revokeGroupAttributesCallbackAttributes, setRevokeGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
@@ -132,6 +146,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
 
     useEffect(() => {
         dispatch(raProfileActions.listRaProfiles());
+        dispatch(secretsActions.listSecretOptions());
     }, [dispatch]);
 
     useEffect(() => {
@@ -201,6 +216,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                 editMode && acmeProfile?.raProfile
                     ? optionsForRaProfiles.find((ra) => ra.value === acmeProfile.raProfile?.uuid)?.value || ''
                     : '',
+            eabSecretUuids: getValue(acmeProfile?.eabSecretUuids, []),
+            ...policyFormValues(editMode ? acmeProfile : undefined),
             owner: editMode ? buildOwner(userOptions, acmeProfile?.certificateAssociations?.ownerUuid)?.value || '' : '',
             groups: editMode ? buildGroups(groupOptions, acmeProfile?.certificateAssociations?.groupUuids) : [],
             deletedAttributes: [],
@@ -213,6 +230,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
         defaultValues,
         mode: 'onChange',
     });
+    // What the form was last filled with: the EAB list and the policy are sent only when changed from it.
+    const filledValuesRef = useRef(defaultValues);
 
     const {
         handleSubmit,
@@ -266,6 +285,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             if (values.raProfile) {
                 request.raProfileUuid = values.raProfile;
             }
+            const filled = editMode ? filledValuesRef.current : undefined;
+            Object.assign(request, eabRequestFields(values, filled), policyRequestFields(values, filled));
             if (editMode) {
                 dispatch(acmeProfileActions.updateAcmeProfile({ uuid: id!, updateAcmeRequest: request }));
             } else {
@@ -380,6 +401,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     requireTermsOfService: acmeProfile.requireTermsOfService || false,
                     requireContact: acmeProfile.requireContact || false,
                     raProfile: optionsForRaProfiles.find((ra) => ra.value === acmeProfile.raProfile?.uuid)?.value || '',
+                    eabSecretUuids: acmeProfile.eabSecretUuids ?? [],
+                    ...policyFormValues(acmeProfile),
                     owner: buildOwner(userOptions, acmeProfile.certificateAssociations?.ownerUuid)?.value || '',
                     groups: buildGroups(groupOptions, acmeProfile.certificateAssociations?.groupUuids) || [],
                     deletedAttributes: [],
@@ -387,6 +410,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     ...transformedInitialCustomAttributes,
                 };
                 reset(newDefaultValues, { keepDefaultValues: false });
+                filledValuesRef.current = newDefaultValues;
                 lastResetProfileIdRef.current = id;
                 lastResetEditModeRef.current = editMode;
             }
@@ -407,6 +431,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     requireTermsOfService: false,
                     requireContact: false,
                     raProfile: '',
+                    eabSecretUuids: [],
+                    ...policyFormValues(undefined),
                     owner: '',
                     groups: [],
                     deletedAttributes: [],
@@ -726,6 +752,37 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                                     ]}
                                 />
                             </div>
+                        </Widget>
+
+                        <Widget title="External Account Binding" noBorder busy={isFetchingSecrets}>
+                            <div className="space-y-3">
+                                <Controller
+                                    name="eabSecretUuids"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <EabSecretsField
+                                            value={field.value ?? []}
+                                            onChange={field.onChange}
+                                            secrets={secrets}
+                                            listError={secretsListError}
+                                            disabled={isBusy}
+                                        />
+                                    )}
+                                />
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => setIsKeyDialogOpen(true)}
+                                    data-testid="generate-eab-key"
+                                >
+                                    Generate key
+                                </Button>
+                                <GenerateEabKeyDialog isOpen={isKeyDialogOpen} onClose={() => setIsKeyDialogOpen(false)} />
+                            </div>
+                        </Widget>
+
+                        <Widget title="Pre-authorized identifiers" noBorder>
+                            <PreauthorizedIdentifiersFields disabled={isBusy} />
                         </Widget>
 
                         <CertificateAssociationsFormWidget
