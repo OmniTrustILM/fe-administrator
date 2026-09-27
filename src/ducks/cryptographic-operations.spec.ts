@@ -99,13 +99,36 @@ describe('cryptographicOperations slice', () => {
             }),
         );
         expect(next.isFetchingSignatureAttributes).toBe(true);
+        expect(next.signatureAttributesLoaded).toBe(false);
 
         next = reducer(next, actions.listSignatureAttributeDescriptorsSuccess({ uuid: 'u', attributeDescriptors: [{ uuid: 'x' } as any] }));
         expect(next.isFetchingSignatureAttributes).toBe(false);
         expect(next.signatureAttributeDescriptors).toEqual([{ uuid: 'x' }]);
+        expect(next.signatureAttributesLoaded).toBe(true);
 
         next = reducer({ ...next, isFetchingSignatureAttributes: true }, actions.listSignatureAttributesFailure({ error: 'err' }));
         expect(next.isFetchingSignatureAttributes).toBe(false);
+    });
+
+    test('a failed signature attribute request leaves the attributes unloaded', () => {
+        const loaded = { ...initialState, signatureAttributesLoaded: true };
+        let next = reducer(loaded, actions.listSignatureAttributeDescriptors({ ...key, operation: 'verify' }));
+        next = reducer(next, actions.listSignatureAttributesFailure({ error: 'err' }));
+        expect(next.signatureAttributesLoaded).toBe(false);
+    });
+
+    test('an alternative signature attribute request leaves the normal attributes loaded', () => {
+        let next = reducer(
+            { ...initialState, signatureAttributesLoaded: true },
+            actions.listSignatureAttributeDescriptors({ ...key, operation: 'sign', store: 'alt' }),
+        );
+        expect(next.signatureAttributesLoaded).toBe(true);
+
+        next = reducer(
+            { ...initialState, signatureAttributesLoaded: false },
+            actions.listSignatureAttributeDescriptorsSuccess({ uuid: 'u', attributeDescriptors: [], store: 'alt' }),
+        );
+        expect(next.signatureAttributesLoaded).toBe(false);
     });
 
     test('listSignatureAttributeDescriptorsSuccess stores in alt when store=alt', () => {
@@ -183,6 +206,7 @@ describe('cryptographicOperations selectors', () => {
             isDecrypting: true,
             isFetchingSignatureAttributes: true,
             isFetchingRandomDataAttributes: true,
+            signatureAttributesLoaded: true,
         };
         const state = { cryptographicOperations: featureState } as any;
 
@@ -196,5 +220,6 @@ describe('cryptographicOperations selectors', () => {
         expect(selectors.isDecrypting(state)).toBe(true);
         expect(selectors.isFetchingSignatureAttributes(state)).toBe(true);
         expect(selectors.isFetchingRandomDataAttributes(state)).toBe(true);
+        expect(selectors.signatureAttributesLoaded(state)).toBe(true);
     });
 });

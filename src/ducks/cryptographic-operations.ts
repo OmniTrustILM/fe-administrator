@@ -25,6 +25,7 @@ export type State = {
 
     isFetchingSignatureAttributes: boolean;
     isFetchingRandomDataAttributes: boolean;
+    signatureAttributesLoaded: boolean;
 };
 
 export const initialState: State = {
@@ -40,6 +41,7 @@ export const initialState: State = {
 
     isFetchingSignatureAttributes: false,
     isFetchingRandomDataAttributes: false,
+    signatureAttributesLoaded: false,
 };
 
 export const slice = createSlice({
@@ -76,6 +78,9 @@ export const slice = createSlice({
             }>,
         ) => {
             state.isFetchingSignatureAttributes = true;
+            if (action.payload.store !== 'alt') {
+                state.signatureAttributesLoaded = false;
+            }
         },
 
         listSignatureAttributeDescriptorsSuccess: (
@@ -87,6 +92,7 @@ export const slice = createSlice({
                 state.altSignatureAttributeDescriptors = action.payload.attributeDescriptors;
             } else {
                 state.signatureAttributeDescriptors = action.payload.attributeDescriptors;
+                state.signatureAttributesLoaded = true;
             }
         },
 
@@ -190,6 +196,7 @@ const isDecrypting = createSelector(state, (state: State) => state.isDecrypting)
 
 const isFetchingSignatureAttributes = createSelector(state, (state: State) => state.isFetchingSignatureAttributes);
 const isFetchingRandomDataAttributes = createSelector(state, (state: State) => state.isFetchingRandomDataAttributes);
+const signatureAttributesLoaded = createSelector(state, (state: State) => state.signatureAttributesLoaded);
 
 export const selectors = {
     state,
@@ -206,6 +213,7 @@ export const selectors = {
 
     isFetchingSignatureAttributes,
     isFetchingRandomDataAttributes,
+    signatureAttributesLoaded,
 };
 
 export const actions = slice.actions;

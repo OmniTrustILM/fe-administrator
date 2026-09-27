@@ -36,10 +36,17 @@ type Props = Readonly<{
     cryptographicKey: CryptographicKeyDetailResponseModel;
     tokenProfile?: TokenProfileDetailResponseModel;
     signatureDescriptors?: AttributeDescriptorModel[];
+    failSignatureDescriptors?: boolean;
     onAction?: (action: UnknownAction) => void;
 }>;
 
-export default function CryptographicKeyDetailWithStore({ cryptographicKey, tokenProfile, signatureDescriptors, onAction }: Props) {
+export default function CryptographicKeyDetailWithStore({
+    cryptographicKey,
+    tokenProfile,
+    signatureDescriptors,
+    failSignatureDescriptors,
+    onAction,
+}: Props) {
     const store = useMemo(() => {
         // Resolve API requests in memory while keeping the real key/profile state transitions.
         let hasResolvedProfileRequest = false;
@@ -59,6 +66,8 @@ export default function CryptographicKeyDetailWithStore({ cryptographicKey, toke
                         attributeDescriptors: signatureDescriptors,
                     }),
                 );
+            } else if (cryptographicOperationActions.listSignatureAttributeDescriptors.match(action) && failSignatureDescriptors) {
+                api.dispatch(cryptographicOperationActions.listSignatureAttributesFailure({ error: 'Signature attributes unavailable' }));
             }
             onAction?.(action as UnknownAction);
             return result;
@@ -67,7 +76,7 @@ export default function CryptographicKeyDetailWithStore({ cryptographicKey, toke
             reducer,
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(apiResponses),
         });
-    }, [cryptographicKey, tokenProfile, signatureDescriptors, onAction]);
+    }, [cryptographicKey, tokenProfile, signatureDescriptors, failSignatureDescriptors, onAction]);
 
     return (
         <Provider store={store}>
