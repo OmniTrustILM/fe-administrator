@@ -18,11 +18,15 @@ import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders, getGroupNames, getOwnerName } from 'utils/widget';
 import { actions as groupsActions, selectors as groupsSelectors } from 'ducks/certificateGroups';
 import { actions as userAction, selectors as userSelectors } from 'ducks/users';
+import { actions as secretsActions, selectors as secretsSelectors } from 'ducks/secrets';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
 import CommentPanel from 'components/CommentPanel';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
+import EabSecretsWidget from 'components/_pages/acme-profiles/eab/EabSecretsWidget';
+import GenerateEabKeyDialog from 'components/_pages/acme-profiles/eab/GenerateEabKeyDialog';
+import PreauthorizedIdentifiersWidget from 'components/_pages/acme-profiles/identifiers/PreauthorizedIdentifiersWidget';
 
 export default function AdministratorDetail() {
     const dispatch = useDispatch();
@@ -39,9 +43,14 @@ export default function AdministratorDetail() {
     const groups = useSelector(groupsSelectors.certificateGroups);
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const deleteErrorMessage = useSelector(selectors.deleteErrorMessage);
+    const secrets = useSelector(secretsSelectors.secretOptions);
+    const isFetchingSecrets = useSelector(secretsSelectors.isFetchingSecretOptions);
+    const secretsListError = useSelector(secretsSelectors.secretOptionsError);
 
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+    const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
+    const eabSecretUuids = acmeProfile?.eabSecretUuids ?? [];
 
     const isBusy = useMemo(() => isFetchingDetail || isDisabling || isEnabling, [isFetchingDetail, isDisabling, isEnabling]);
 
@@ -60,6 +69,9 @@ export default function AdministratorDetail() {
     useEffect(() => {
         dispatch(groupsActions.listGroups());
     }, [dispatch]);
+    useEffect(() => {
+        if (eabSecretUuids.length > 0) dispatch(secretsActions.listSecretOptions());
+    }, [dispatch, eabSecretUuids.length]);
 
     useRunOnSuccessfulFinish(isUpdating, updateAcmeProfileSucceeded, () => {
         setIsEditModalOpen(false);
@@ -359,6 +371,22 @@ export default function AdministratorDetail() {
                             resource={Resource.AcmeProfiles}
                             resourceUuid={acmeProfile.uuid}
                             attributes={acmeProfile.customAttributes}
+                        />
+                    )}
+                    {acmeProfile && (
+                        <EabSecretsWidget
+                            secretUuids={eabSecretUuids}
+                            secrets={secrets}
+                            isLoading={isFetchingSecrets}
+                            listError={secretsListError}
+                            onGenerateKey={() => setIsKeyDialogOpen(true)}
+                        />
+                    )}
+                    <GenerateEabKeyDialog isOpen={isKeyDialogOpen} onClose={() => setIsKeyDialogOpen(false)} />
+                    {acmeProfile && (
+                        <PreauthorizedIdentifiersWidget
+                            identifiers={acmeProfile.preauthorizedIdentifiers ?? []}
+                            mode={acmeProfile.identifierAuthorizationMode}
                         />
                     )}
                     <Widget title={raProfileText} titleSize="large">
