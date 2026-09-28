@@ -1,9 +1,9 @@
-import { configureStore, type Middleware } from '@reduxjs/toolkit';
 import type React from 'react';
 import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
-import { type CertificatesTestState, testInitialState, testReducers } from 'ducks/test-reducers';
+import { type CertificatesTestState, testInitialState } from 'ducks/test-reducers';
+import { useRecordingStore } from 'utils/test-helpers';
 import PendingActionButtons from './index';
 import PendingActionDialogs from './PendingActionDialogs';
 import type { PendingAction } from './types';
@@ -25,23 +25,9 @@ function ButtonsAndDialogs({ certificate, compact }: Omit<PendingActionButtonsWi
 }
 
 export default function PendingActionButtonsWithStore({ preloadedState, ...props }: PendingActionButtonsWithStoreProps) {
-    const [manualIssuePayload, setManualIssuePayload] = useState<unknown>();
-
-    const store = useMemo(
-        () =>
-            configureStore({
-                reducer: testReducers,
-                middleware: (getDefaultMiddleware) =>
-                    getDefaultMiddleware({ serializableCheck: false }).concat((() => (next) => (action) => {
-                        if ((action as { type?: string }).type === 'certificates/manuallyIssueCertificate') {
-                            setManualIssuePayload((action as { payload?: unknown }).payload);
-                        }
-                        return next(action);
-                    }) as Middleware),
-                preloadedState: { ...testInitialState, certificates: { ...testInitialState.certificates, ...preloadedState } },
-            }),
-        [preloadedState],
-    );
+    const state = useMemo(() => ({ certificates: { ...testInitialState.certificates, ...preloadedState } }), [preloadedState]);
+    const { store, dispatched } = useRecordingStore(state, 'certificates/manuallyIssueCertificate');
+    const manualIssuePayload = dispatched.at(-1)?.payload;
 
     return (
         <Provider store={store}>

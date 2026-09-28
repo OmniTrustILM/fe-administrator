@@ -1,11 +1,11 @@
-import { configureStore, type Middleware } from '@reduxjs/toolkit';
 import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
-import { testInitialState, testReducers } from 'ducks/test-reducers';
+import { testInitialState, type testReducers } from 'ducks/test-reducers';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { CertificateState } from 'types/openapi';
+import { useRecordingStore } from 'utils/test-helpers';
 
 import CertificateRAProfileDialog, { type RaProfileTarget } from './index';
 
@@ -27,33 +27,13 @@ const raProfiles = [
     { uuid: 'ra-2', name: 'RA Two', authorityInstanceUuid: 'auth-2', enabled: true },
 ];
 
-type Recorded = { type: string; payload?: unknown };
-
 export function CertificateRAProfileDialogTestWrapper({
     target = { kind: 'certificate', certificate: baseCertificate },
     preloadedState,
 }: CertificateRAProfileDialogTestWrapperProps) {
-    const [dispatched, setDispatched] = useState<Recorded[]>([]);
     const [closed, setClosed] = useState<'cancel' | 'update'>();
-
-    const store = useMemo(
-        () =>
-            configureStore({
-                reducer: testReducers,
-                middleware: (getDefaultMiddleware) =>
-                    getDefaultMiddleware({ serializableCheck: false }).concat((() => (next) => (action) => {
-                        const { type, payload } = action as Recorded;
-                        if (type.startsWith('certificates/')) setDispatched((seen) => [...seen, { type, payload }]);
-                        return next(action);
-                    }) as Middleware),
-                preloadedState: {
-                    ...testInitialState,
-                    raprofiles: { ...testInitialState.raprofiles, raProfiles },
-                    ...preloadedState,
-                },
-            }),
-        [preloadedState],
-    );
+    const state = useMemo(() => ({ raprofiles: { ...testInitialState.raprofiles, raProfiles }, ...preloadedState }), [preloadedState]);
+    const { store, dispatched } = useRecordingStore(state, 'certificates/');
 
     return (
         <Provider store={store}>

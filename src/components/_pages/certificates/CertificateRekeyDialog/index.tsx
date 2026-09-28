@@ -18,7 +18,7 @@ import Button from 'components/Button';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import type { CryptographicKeyPairResponseModel } from 'types/cryptographic-keys';
-import { CertificateRequestFormat, KeyType } from 'types/openapi';
+import { CertificateRequestFormat, KeyType, Resource } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { buildValidationRules } from 'utils/validators-helper';
 import { validateRequired } from 'utils/validators';
@@ -36,7 +36,6 @@ import TabLayout from 'components/Layout/TabLayout';
 import Switch from 'components/Switch';
 import { isObjectSame } from 'utils/common-utils';
 import Container from 'components/Container';
-import { Resource } from 'types/openapi';
 
 interface FormValues {
     pkcs10: File | null;

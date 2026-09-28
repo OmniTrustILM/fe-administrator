@@ -109,7 +109,7 @@ export default function CertificateRAProfileDialog({ target, onCancel, onUpdate 
                         id="raProfile"
                         options={options}
                         value={selected ? optionValue(selected) : ''}
-                        onChange={(value) => setSelected(parseOptionValue(String(value ?? '')))}
+                        onChange={(value) => setSelected(typeof value === 'string' ? parseOptionValue(value) : undefined)}
                         placeholder="Select RA Profile"
                         label="RA Profile"
                     />

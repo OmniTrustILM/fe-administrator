@@ -18,12 +18,13 @@ test.describe('CertificateRenewDialog', () => {
     test('asks for the renew schema of the certificate RA profile', async ({ mount, page }) => {
         await mount(<CertificateRenewDialogTestWrapper />);
 
-        await expect
-            .poll(async () => JSON.parse((await page.getByTestId('dispatched').textContent()) ?? '[]'))
-            .toContainEqual({
-                type: 'certificates/getRenewAttributes',
-                payload: { raProfileUuid: 'ra-profile-uuid', authorityUuid: 'authority-uuid' },
-            });
+        const request = {
+            type: 'certificates/getRenewAttributes',
+            payload: { raProfileUuid: 'ra-profile-uuid', authorityUuid: 'authority-uuid' },
+        };
+        const dispatched = async () => JSON.parse((await page.getByTestId('dispatched').textContent()) ?? '[]');
+        await expect.poll(dispatched).toContainEqual(request);
+        expect(await dispatched()).toContainEqual(request);
     });
 
     test('an empty schema shows no attribute section and renews with no attributes', async ({ mount, page }) => {
