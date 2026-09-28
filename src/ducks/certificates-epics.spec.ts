@@ -1014,6 +1014,21 @@ describe('certificates epics', () => {
             expect((emitted[0] as any).payload.error).toContain('boom');
             expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
         });
+
+        test('closing the dialog before the answer drops it, so no schema or toast arrives for a dialog that is gone', async () => {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const actions$ = new Subject<UnknownAction>();
+            const answer$ = new Subject<any>();
+            const deps = { apiClients: { clientOperations: { listRenewCertificateAttributes: () => answer$ } } };
+            const emitted: UnknownAction[] = [];
+            epics[GET_RENEW_ATTRIBUTES_EPIC_INDEX](actions$, of({}) as any, deps as any).subscribe((a) => emitted.push(a));
+
+            actions$.next(action);
+            actions$.next(certificatesActions.clearRenewAttributes());
+            answer$.error(new Error('late failure'));
+
+            expect(emitted).toEqual([]);
+        });
     });
 
     describe('getIdentifyAttributes', () => {

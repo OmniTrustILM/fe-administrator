@@ -25,6 +25,7 @@ export function useIdentifyAttributes(raProfileUuid?: string, authorityUuid?: st
     const [callbackAttributes, setCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
 
     useEffect(() => {
+        setCallbackAttributes([]);
         if (raProfileUuid && authorityUuid) {
             dispatch(actions.getIdentifyAttributes({ raProfileUuid, authorityUuid }));
         } else {

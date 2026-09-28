@@ -1290,6 +1290,7 @@ const getRenewAttributes: AppEpic = (action$, state, deps) => {
                             ? of(failure)
                             : of(failure, appRedirectActions.fetchError({ error: err, message: 'Failed to get renew attributes' }));
                     }),
+                    takeUntil(action$.pipe(filter(slice.actions.clearRenewAttributes.match))),
                 ),
         ),
     );
