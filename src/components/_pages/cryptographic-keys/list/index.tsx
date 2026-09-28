@@ -4,6 +4,7 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 
 import type { ApiClients } from '../../../../api';
 import PagedList from 'components/PagedList/PagedList';
+import { selectors as certificateSelectors } from 'ducks/certificates';
 import { actions, selectors } from 'ducks/cryptographic-keys';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EntityType, actions as filterActions } from 'ducks/filters';
@@ -15,6 +16,7 @@ import type { SearchRequestModel } from 'types/certificate';
 import type { CryptographicKeyResponseModel } from 'types/cryptographic-keys';
 import { KeyCompromiseReason, type KeyUsage, PlatformEnum, Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { dateFormatter } from 'utils/dateUtil';
 import KeyUsageSelect from '../KeyUsageSelect';
 import { buildKeyCellRegistry, KEY_COLUMNS } from '../keyTableHelpers';
@@ -32,6 +34,8 @@ function CryptographicKeyList() {
     const isBulkUpdatingKeyUsage = useSelector(selectors.isBulkUpdatingKeyUsage);
     const isBulkCompromising = useSelector(selectors.isBulkCompromising);
     const isBulkDestroying = useSelector(selectors.isBulkDestroying);
+    const isImporting = useSelector(certificateSelectors.isImporting);
+    const importResults = useSelector(certificateSelectors.importResults);
 
     const keyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyUsage));
     const keyTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyType));
@@ -173,13 +177,17 @@ function CryptographicKeyList() {
     // Back to an unfiltered first page, so the key just created is on it. The token is what guarantees
     // the refetch: from an already unfiltered first page the resets below change nothing.
     const [refreshToken, setRefreshToken] = useState(0);
+    const refreshList = useCallback(() => setRefreshToken((token) => token + 1), []);
 
     const handleFormSuccess = useCallback(() => {
         setIsAddOpen(false);
         dispatch(filterActions.setCurrentFilters({ entity: EntityType.KEY, currentFilters: [] }));
         dispatch(pagingActions.resetPaging({ entity: EntityType.KEY }));
-        setRefreshToken((token) => token + 1);
-    }, [dispatch]);
+        refreshList();
+    }, [dispatch, refreshList]);
+
+    // An import from the Create Key dialog is listed as soon as it succeeds, however the dialog is closed after it.
+    useRunOnSuccessfulFinish(isImporting, !!importResults, refreshList);
 
     return (
         <>
@@ -207,7 +215,8 @@ function CryptographicKeyList() {
                 caption="Create Key"
                 body={<CryptographicKeyForm onSuccess={handleFormSuccess} onCancel={() => setIsAddOpen(false)} />}
                 toggle={() => {
-                    setIsAddOpen(false);
+                    // An import in flight is seen through to its results, so the dialog is not closed under it.
+                    if (!isImporting) setIsAddOpen(false);
                 }}
                 size="xl"
                 buttons={[]}

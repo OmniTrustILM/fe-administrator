@@ -1,8 +1,9 @@
 import type { AppEpic } from 'ducks';
 import { merge, of, race } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, take, takeUntil } from 'rxjs/operators';
-import { extractError } from 'utils/net';
+import { catchError, filter, map, mergeMap, switchMap, take, takeUntil, tap } from 'rxjs/operators';
+import { extractError, withReadableResponse } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
+import { fileNameFromContentDisposition, triggerBlobDownload } from 'utils/download';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 
@@ -1391,6 +1392,61 @@ const downloadCertificate: AppEpic = (action$, state$, deps) => {
     );
 };
 
+const importCertificates: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.importCertificates.match),
+        switchMap((action) =>
+            deps.apiClients.certificates
+                .importCertificates({ certificateImportRequestDto: action.payload.certificateImportRequestDto })
+                .pipe(
+                    map((response) => slice.actions.importCertificatesSuccess({ results: response.results })),
+
+                    catchError((error) =>
+                        of(
+                            slice.actions.importCertificatesFailure({ error: extractError(error, 'Failed to import certificate') }),
+                            appRedirectActions.fetchError({ error, message: 'Failed to import certificate' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
+const KEYSTORE_DOWNLOAD_FAILED = 'Failed to download the certificate with its private key';
+
+const downloadKeystore: AppEpic = (action$, _state$, deps) =>
+    action$.pipe(
+        filter(slice.actions.downloadKeystore.match),
+        switchMap((action) =>
+            deps.apiClients.certificates
+                .downloadKeystore(
+                    { uuid: action.payload.uuid, certificateKeystoreRequestDto: action.payload.certificateKeystoreRequestDto },
+                    { responseOpts: { response: 'raw' } },
+                )
+                .pipe(
+                    tap((response) =>
+                        triggerBlobDownload(
+                            response.response,
+                            fileNameFromContentDisposition(response.responseHeaders['content-disposition'], action.payload.fallbackName),
+                        ),
+                    ),
+                    mergeMap(() =>
+                        of(slice.actions.downloadKeystoreSuccess(), alertActions.success('Certificate downloaded with its private key.')),
+                    ),
+                    catchError((error) =>
+                        withReadableResponse(error).pipe(
+                            mergeMap((readable) =>
+                                of(
+                                    slice.actions.downloadKeystoreFailure({ error: extractError(readable, KEYSTORE_DOWNLOAD_FAILED) }),
+                                    appRedirectActions.fetchError({ error: readable, message: KEYSTORE_DOWNLOAD_FAILED }),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+        ),
+    );
+
 const archiveCertificate: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.archiveCertificate.match),
@@ -1538,6 +1594,8 @@ const epics = [
     getCertificateChain,
     downloadCertificateChain,
     downloadCertificate,
+    importCertificates,
+    downloadKeystore,
     archiveCertificate,
     unarchiveCertificate,
     bulkArchiveCertificates,

@@ -32,6 +32,13 @@ describe('transformTokenProfileDetailResponseDtoToModel', () => {
         const result = transformTokenProfileDetailResponseDtoToModel(dto);
         expect(result.customAttributes).toHaveLength(1);
     });
+
+    test('carries keyTransfer through unchanged', () => {
+        const keyTransfer = { importAvailable: false, exportAvailable: true, exportableKeyTypes: { keyPair: ['RSA'] } };
+        const dto = { uuid: 'tpd3', attributes: [], keyTransfer } as any;
+        const result = transformTokenProfileDetailResponseDtoToModel(dto);
+        expect(result.keyTransfer).toEqual(keyTransfer);
+    });
 });
 
 describe('transformTokenProfileAddRequestModelToDto', () => {

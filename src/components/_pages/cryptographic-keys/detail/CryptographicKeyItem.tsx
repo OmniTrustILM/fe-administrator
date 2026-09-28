@@ -7,6 +7,7 @@ import Widget from 'components/Widget';
 import WidgetButtons, { type WidgetButtonProps } from 'components/WidgetButtons';
 
 import { actions, selectors } from 'ducks/cryptographic-keys';
+import { selectors as tokenProfileSelectors } from 'ducks/token-profiles';
 
 import { type ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -16,12 +17,13 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumValueDescription } from 'components/EnumDescription';
 import Badge from 'components/Badge';
 import type { CryptographicKeyHistoryModel, CryptographicKeyItemDetailResponseModel } from 'types/cryptographic-keys';
-import { KeyCompromiseReason, KeyState, KeyUsage, PlatformEnum } from 'types/openapi';
+import { KeyCompromiseReason, KeyRequestType, KeyState, KeyType, KeyUsage, PlatformEnum } from 'types/openapi';
 import { dateFormatter } from 'utils/dateUtil';
 import KeyStateBadge from '../KeyStateBadge';
 import KeyStatus from '../KeyStatus';
 import KeyUsageSelect, { filterKeyUsagesByType } from 'components/_pages/cryptographic-keys/KeyUsageSelect';
 import SignVerifyData from './SignVerifyData';
+import KeyExportDialog from './KeyExportDialog';
 import { composeValidators, validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import EditableTableCell from 'components/CustomTable/EditableTableCell';
 import { keyWithoutTokenInstanceActionNotes } from './constants';
@@ -29,6 +31,11 @@ import { createWidgetDetailHeaders } from 'utils/widget';
 import Button from 'components/Button';
 import { Info } from 'lucide-react';
 import Container from 'components/Container';
+
+const EXPORTABLE_ITEM_TYPE_TO_KEY_REQUEST_TYPE: Partial<Record<KeyType, KeyRequestType>> = {
+    [KeyType.Private]: KeyRequestType.KeyPair,
+    [KeyType.Secret]: KeyRequestType.Secret,
+};
 
 type Props = Readonly<{
     keyUuid: string;
@@ -50,6 +57,7 @@ export default function CryptographicKeyItem({
     const dispatch = useDispatch();
 
     const isUpdatingKeyItem = useSelector(selectors.isUpdatingKeyItem);
+    const isExportingKey = useSelector(selectors.isExportingKey);
 
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
 
@@ -60,6 +68,12 @@ export default function CryptographicKeyItem({
     const [signData, setSignData] = useState<boolean>(false);
 
     const [verifyData, setVerifyData] = useState<boolean>(false);
+
+    const [exportKey, setExportKey] = useState<boolean>(false);
+
+    const tokenProfile = useSelector(tokenProfileSelectors.tokenProfile);
+    const isFetchingTokenProfile = useSelector(tokenProfileSelectors.isFetchingDetail);
+    const tokenProfileFetchSucceeded = useSelector(tokenProfileSelectors.detailFetchSucceeded);
 
     const history = useSelector(selectors.keyHistory);
 
@@ -189,8 +203,31 @@ export default function CryptographicKeyItem({
         [dispatch, keyItem, keyUuid],
     );
 
-    const buttons: WidgetButtonProps[] = useMemo(
-        () => [
+    const exportableKeyTypes = useMemo(() => {
+        if (
+            !tokenProfileUuid ||
+            !tokenInstanceUuid ||
+            isFetchingTokenProfile ||
+            !tokenProfileFetchSucceeded ||
+            tokenProfile?.uuid !== tokenProfileUuid ||
+            tokenProfile.tokenInstanceUuid !== tokenInstanceUuid
+        ) {
+            return undefined;
+        }
+        return tokenProfile.keyTransfer?.exportableKeyTypes;
+    }, [tokenProfile, isFetchingTokenProfile, tokenProfileFetchSucceeded, tokenProfileUuid, tokenInstanceUuid]);
+
+    const exportKeyRequestType = EXPORTABLE_ITEM_TYPE_TO_KEY_REQUEST_TYPE[keyItem.type];
+
+    const canExportKeyItem =
+        !!exportKeyRequestType &&
+        keyItem.exportable &&
+        keyItem.state === KeyState.Active &&
+        keyItem.enabled &&
+        !!exportableKeyTypes?.[exportKeyRequestType]?.includes(keyItem.keyAlgorithm);
+
+    const buttons: WidgetButtonProps[] = useMemo(() => {
+        const list: WidgetButtonProps[] = [
             {
                 id: 'delete',
                 icon: 'trash',
@@ -268,19 +305,33 @@ export default function CryptographicKeyItem({
                     setVerifyData(true);
                 },
             },
-        ],
-        [
-            onDisableClick,
-            onEnableClick,
-            setConfirmCompromise,
-            setConfirmDestroy,
-            keyItem.enabled,
-            keyItem.state,
-            keyItem.usage,
-            tokenInstanceUuid,
-            supportedKeyUsages,
-        ],
-    );
+        ];
+
+        if (canExportKeyItem) {
+            list.push({
+                id: 'export',
+                icon: 'download',
+                disabled: false,
+                tooltip: 'Export',
+                onClick: () => {
+                    setExportKey(true);
+                },
+            });
+        }
+
+        return list;
+    }, [
+        onDisableClick,
+        onEnableClick,
+        setConfirmCompromise,
+        setConfirmDestroy,
+        keyItem.enabled,
+        keyItem.state,
+        keyItem.usage,
+        tokenInstanceUuid,
+        supportedKeyUsages,
+        canExportKeyItem,
+    ]);
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
 
@@ -364,6 +415,10 @@ export default function CryptographicKeyItem({
                       {
                           id: 'enabled',
                           columns: ['Enabled', <StatusBadge key="enabled" enabled={keyItem.enabled} />],
+                      },
+                      {
+                          id: 'exportable',
+                          columns: ['Exportable', <StatusBadge key="exportable" enabled={keyItem.exportable} />],
                       },
                       {
                           id: 'state',
@@ -606,6 +661,25 @@ export default function CryptographicKeyItem({
                 })}
                 size="xl"
                 toggle={() => setVerifyData(false)}
+                buttons={[]}
+            />
+
+            <Dialog
+                isOpen={exportKey}
+                caption="Export key material"
+                body={
+                    <KeyExportDialog
+                        keyUuid={keyUuid}
+                        keyItem={keyItem}
+                        providerName={tokenProfile?.tokenInstanceName}
+                        onClose={() => setExportKey(false)}
+                    />
+                }
+                size="md"
+                toggle={() => {
+                    // An export in flight is seen through, so the dialog is not closed under it.
+                    if (!isExportingKey) setExportKey(false);
+                }}
                 buttons={[]}
             />
 

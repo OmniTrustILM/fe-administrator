@@ -77,6 +77,12 @@ describe('transformCryptographicKeyAddRequestModelToDto', () => {
         expect(result.attributes).toHaveLength(1);
         expect(result.customAttributes).toBeUndefined();
     });
+
+    test('carries exportable through unchanged', () => {
+        const input = { name: 'newkey', attributes: [attrItem], exportable: true } as any;
+        const result = transformCryptographicKeyAddRequestModelToDto(input);
+        expect(result.exportable).toBe(true);
+    });
 });
 
 describe('transformCryptographicKeyEditRequestModelToDto', () => {

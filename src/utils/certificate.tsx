@@ -40,6 +40,7 @@ export const emptyCertificate: CertificateDetailResponseModel = {
     privateKeyAvailability: false,
     trustedCa: false,
     hybridCertificate: false,
+    keystoreAvailable: false,
 };
 
 export function formatPEM(pemString: string, csr?: boolean) {

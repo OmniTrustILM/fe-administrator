@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import ThemeProvider from 'components/ThemeProvider';
 import CryptographicKeyDetail from 'components/_pages/cryptographic-keys/detail';
+import { answerExport, type ExportAnswer, keyExportFailure } from 'components/_pages/test-utils/exportDialogTestStore';
 import { actions as keyActions, slice as keySlice, type State as KeyState } from 'ducks/cryptographic-keys';
 import { testReducers } from 'ducks/test-reducers';
 import { actions as profileActions, slice as profileSlice, type State as ProfileState } from 'ducks/token-profiles';
@@ -26,10 +27,12 @@ function reducer(state: State | undefined, action: UnknownAction): State {
 type Props = Readonly<{
     cryptographicKey: CryptographicKeyDetailResponseModel;
     tokenProfile?: TokenProfileDetailResponseModel;
+    /** Leaves a key export in flight when absent. */
+    exportAnswer?: ExportAnswer;
     onAction?: (action: UnknownAction) => void;
 }>;
 
-export default function CryptographicKeyDetailWithStore({ cryptographicKey, tokenProfile, onAction }: Props) {
+export default function CryptographicKeyDetailWithStore({ cryptographicKey, tokenProfile, exportAnswer, onAction }: Props) {
     const store = useMemo(() => {
         // Resolve API requests in memory while keeping the real key/profile state transitions.
         let hasResolvedProfileRequest = false;
@@ -42,6 +45,10 @@ export default function CryptographicKeyDetailWithStore({ cryptographicKey, toke
             } else if (profileActions.getTokenProfileDetail.match(action) && tokenProfile && !hasResolvedProfileRequest) {
                 hasResolvedProfileRequest = true;
                 api.dispatch(profileActions.getTokenProfileDetailSuccess({ tokenProfile }));
+            } else if (keyActions.listExportKeyAttributeDescriptors.match(action)) {
+                api.dispatch(keyActions.listExportKeyAttributeDescriptorsSuccess({ request: action.payload, attributeDescriptors: [] }));
+            } else if (keyActions.exportKey.match(action)) {
+                answerExport(api, exportAnswer, keyActions.exportKeySuccess(), keyExportFailure);
             }
             onAction?.(action as UnknownAction);
             return result;
@@ -50,7 +57,7 @@ export default function CryptographicKeyDetailWithStore({ cryptographicKey, toke
             reducer,
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(apiResponses),
         });
-    }, [cryptographicKey, tokenProfile, onAction]);
+    }, [cryptographicKey, tokenProfile, exportAnswer, onAction]);
 
     return (
         <Provider store={store}>

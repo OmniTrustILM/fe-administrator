@@ -32,11 +32,17 @@ export interface CryptographicAssetStatisticsDto {
      */
     sourceCbomCount?: number;
     /**
-     * Asset count by asset type. Keys are CryptographicAssetType codes; every type is present, with 0 when none
+     * Asset count by asset type. Keys are the four CycloneDX asset type codes; every one is present, with 0 when none. Assets with no asset type are counted in untypedAssetCount instead
      * @type {{ [key: string]: number; }}
      * @memberof CryptographicAssetStatisticsDto
      */
     statByType?: { [key: string]: number };
+    /**
+     * Number of assets served with no asset type, because their producer declared none of the CycloneDX asset types. Never counted in statByType
+     * @type {number}
+     * @memberof CryptographicAssetStatisticsDto
+     */
+    untypedAssetCount?: number;
     /**
      * Asset count by PQC readiness verdict. Keys are PqcVerdict codes; every verdict is present, with 0 when none
      * @type {{ [key: string]: number; }}

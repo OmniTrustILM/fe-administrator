@@ -7,6 +7,13 @@ import { take, toArray } from 'rxjs/operators';
 // by stubbing the App module. Epic logic doesn't need the real store in unit tests.
 vi.mock('../App', () => ({ store: { dispatch: () => {} } }));
 
+// Keep the real fileNameFromContentDisposition (the download epics rely on its parsing) and
+// spy on triggerBlobDownload only, so the tests can assert what the epic handed it.
+vi.mock('utils/download', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('utils/download')>();
+    return { ...actual, triggerBlobDownload: vi.fn() };
+});
+
 // Stub the heavy transform module (it pulls in React components that drag the
 // full ducks/index.ts → store.ts chain back through this file). Tests only need
 // the identity passthrough.
@@ -34,6 +41,10 @@ vi.mock('./transform/certificates', () => ({
     transformCertificateRegistrationRequestModelToDto: (req: unknown) => req,
 }));
 
+import { AjaxError } from 'rxjs/ajax';
+import { InspectedEntryKind } from 'types/openapi';
+import { triggerBlobDownload } from 'utils/download';
+import { extractError } from 'utils/net';
 import { actions as certificatesActions } from './certificates';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
@@ -60,6 +71,8 @@ const BULK_UPDATE_RA_PROFILE_EPIC_INDEX = findEpicIndex('bulkUpdateRaProfile');
 const UPLOAD_EPIC_INDEX = findEpicIndex('uploadCertificate');
 const GET_REGISTER_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getRegisterAttributes');
 const GET_CSR_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getCsrAttributes');
+const IMPORT_CERTIFICATES_EPIC_INDEX = findEpicIndex('importCertificates');
+const DOWNLOAD_KEYSTORE_EPIC_INDEX = findEpicIndex('downloadKeystore');
 
 type ClientOpsOverrides = {
     issueCertificate?: (args: any) => any;
@@ -255,6 +268,52 @@ async function runGetCsrAttributesEpic(
     const output$ = epics[GET_CSR_ATTRIBUTES_EPIC_INDEX](of(action), of({}) as any, deps as any);
     const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
     return { emitted, calls };
+}
+
+async function runImportCertificatesEpic(
+    action: UnknownAction,
+    importCertificates: (args: any) => Observable<any>,
+    takeCount = 1,
+): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+    const calls: any[] = [];
+    const deps = {
+        apiClients: {
+            certificates: {
+                importCertificates: (args: any) => {
+                    calls.push(args);
+                    return importCertificates(args);
+                },
+            },
+        },
+    };
+    const output$ = epics[IMPORT_CERTIFICATES_EPIC_INDEX](of(action), of({}) as any, deps as any);
+    const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
+    return { emitted, calls };
+}
+
+async function runDownloadKeystoreEpic(
+    action: UnknownAction,
+    downloadKeystore: (args: any) => Observable<any>,
+    takeCount = 2,
+): Promise<{ emitted: UnknownAction[]; calls: any[]; opts: any[] }> {
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+    const calls: any[] = [];
+    const opts: any[] = [];
+    const deps = {
+        apiClients: {
+            certificates: {
+                downloadKeystore: (args: any, callOpts?: any) => {
+                    calls.push(args);
+                    opts.push(callOpts);
+                    return downloadKeystore(args);
+                },
+            },
+        },
+    };
+    const output$ = epics[DOWNLOAD_KEYSTORE_EPIC_INDEX](of(action), of({}) as any, deps as any);
+    const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
+    return { emitted, calls, opts };
 }
 
 describe('certificates epics', () => {
@@ -942,6 +1001,85 @@ describe('certificates epics', () => {
 
             expect(emitted).toEqual([]);
             subscription.unsubscribe();
+        });
+    });
+
+    describe('importCertificates', () => {
+        const certificateImportRequestDto = {
+            file: 'ZmlsZQ==',
+            entries: [{ entryReference: 'a'.repeat(64), importId: 'import-1' }],
+        };
+        const importAction = certificatesActions.importCertificates({ certificateImportRequestDto } as any);
+
+        test('importCertificates emits the success with results', async () => {
+            const results = [
+                { entryReference: 'a'.repeat(64), kind: InspectedEntryKind.Certificate, imported: true, certificateUuid: 'cert-1' },
+            ];
+            const { emitted, calls } = await runImportCertificatesEpic(importAction, () => of({ results }));
+
+            expect(calls[0]).toEqual({ certificateImportRequestDto });
+            expect(emitted).toEqual([certificatesActions.importCertificatesSuccess({ results })]);
+        });
+
+        test('importCertificates failure emits Failure and fetchError', async () => {
+            const { emitted } = await runImportCertificatesEpic(importAction, () => throwError(() => new Error('boom')), 2);
+
+            expect(emitted[0].type).toBe(certificatesActions.importCertificatesFailure.type);
+            expect((emitted[0] as any).payload.error).toContain('boom');
+            expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+        });
+    });
+
+    describe('downloadKeystore', () => {
+        const uuid = 'cert-1';
+        const certificateKeystoreRequestDto = { passphrase: 'a-very-long-passphrase' };
+        const downloadAction = certificatesActions.downloadKeystore({ uuid, certificateKeystoreRequestDto, fallbackName: 'fallback.p12' });
+
+        test('requests a raw blob response, saves it under the header name and emits success with an alert', async () => {
+            const blob = new Blob(['bytes']);
+            const { emitted, calls, opts } = await runDownloadKeystoreEpic(downloadAction, () =>
+                of({ response: blob, responseHeaders: { 'content-disposition': 'attachment; filename="web-01.p12"' } }),
+            );
+
+            expect(calls[0]).toEqual({ uuid, certificateKeystoreRequestDto });
+            expect(opts[0]).toEqual({ responseOpts: { response: 'raw' } });
+            expect(triggerBlobDownload).toHaveBeenCalledWith(blob, 'web-01.p12');
+            expect(emitted[0].type).toBe(certificatesActions.downloadKeystoreSuccess.type);
+            expect(emitted[1]).toEqual(alertActions.success('Certificate downloaded with its private key.'));
+        });
+
+        test('with no content-disposition, saves as fallbackName', async () => {
+            const blob = new Blob(['bytes']);
+            await runDownloadKeystoreEpic(downloadAction, () => of({ response: blob, responseHeaders: {} }));
+
+            expect(triggerBlobDownload).toHaveBeenCalledWith(blob, 'fallback.p12');
+        });
+
+        test('failure emits Failure and fetchError', async () => {
+            const { emitted } = await runDownloadKeystoreEpic(downloadAction, () => throwError(() => new Error('boom')));
+
+            expect(emitted[0].type).toBe(certificatesActions.downloadKeystoreFailure.type);
+            expect((emitted[0] as any).payload.error).toContain('boom');
+            expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+        });
+
+        test.each([
+            ['a string array', '["refused because the profile does not export RSA keys"]'],
+            ['a message', '{"message":"refused because the profile does not export RSA keys"}'],
+        ])("reads Core's refusal from a blob body holding %s", async (_name, body) => {
+            const refusal = new AjaxError(
+                'ajax error 422',
+                { status: 422, responseType: 'blob', response: new Blob([body]) } as never,
+                {} as never,
+            );
+            const message =
+                'Failed to download the certificate with its private key (422): refused because the profile does not export RSA keys';
+
+            const { emitted } = await runDownloadKeystoreEpic(downloadAction, () => throwError(() => refusal));
+
+            expect(emitted[0]).toEqual(certificatesActions.downloadKeystoreFailure({ error: message }));
+            const { error, message: headline } = (emitted[1] as ReturnType<typeof appRedirectActions.fetchError>).payload;
+            expect(extractError(error as AjaxError, headline)).toBe(message);
         });
     });
 });

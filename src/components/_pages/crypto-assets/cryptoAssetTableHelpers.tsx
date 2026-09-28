@@ -50,7 +50,7 @@ export function buildCryptoAssetRows(
                 )}
             </span>,
             <Badge key="type" color="secondary">
-                {getEnumLabel(typeEnum, asset.type)}
+                {getEnumLabel(typeEnum, asset.type ?? '')}
             </Badge>,
             <PqcVerdictBadge
                 key="verdict"

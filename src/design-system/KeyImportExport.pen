@@ -1,0 +1,2325 @@
+{
+  "version": "2.14",
+  "children": [
+    {
+      "type": "frame",
+      "id": "jjPoR",
+      "x": 0,
+      "y": -560,
+      "name": "Components",
+      "gap": 40,
+      "padding": 20,
+      "children": [
+        {
+          "type": "frame",
+          "id": "IiSY2",
+          "name": "Field",
+          "reusable": true,
+          "width": 280,
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "xHGiI",
+              "name": "cFl",
+              "fill": "$color.semantic.content.light",
+              "content": "Label",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "7VPXe",
+              "name": "cFb",
+              "width": "fill_container",
+              "fill": "$color.white",
+              "cornerRadius": 8,
+              "stroke": "$color.gray-300",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "padding": [
+                9,
+                13
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Objxb",
+                  "name": "cFv",
+                  "fill": "$color.semantic.content.light",
+                  "content": "Value",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Mw8fF",
+          "name": "Select",
+          "reusable": true,
+          "width": 280,
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "vep9T",
+              "name": "cSl",
+              "fill": "$color.semantic.content.light",
+              "content": "Label",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "3QqPh",
+              "name": "cSb",
+              "width": "fill_container",
+              "fill": "$color.white",
+              "cornerRadius": 8,
+              "stroke": "$color.gray-300",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "padding": [
+                9,
+                13
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "O2yTh",
+                  "name": "cSv",
+                  "fill": "$color.semantic.content.light",
+                  "content": "Value",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "icon",
+                  "id": "ClPKI",
+                  "name": "cSi",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "chevron-down",
+                  "library": "lucide",
+                  "fill": "$color.gray-700"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "WiMq9",
+          "name": "BtnPrimary",
+          "reusable": true,
+          "fill": "$color.semantic.brand-solid.light",
+          "cornerRadius": 8,
+          "gap": 8,
+          "padding": [
+            9,
+            13
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "de96A",
+              "name": "cBPl",
+              "fill": "$color.semantic.content-on-brand.light",
+              "content": "Button",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "500"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Ds15V",
+          "name": "BtnOutline",
+          "reusable": true,
+          "fill": "$color.white",
+          "cornerRadius": 8,
+          "stroke": "$color.gray-300",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "padding": [
+            9,
+            13
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "fZd96",
+              "name": "cBOl",
+              "fill": "$color.semantic.content.light",
+              "content": "Button",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "500"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Bpomb",
+          "name": "SwitchOn",
+          "reusable": true,
+          "width": 36,
+          "height": 20,
+          "fill": "$color.semantic.brand-solid.light",
+          "cornerRadius": 10,
+          "padding": 2,
+          "justifyContent": "end",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "ellipse",
+              "id": "TIVOo",
+              "name": "cSWt",
+              "fill": "$color.white",
+              "width": 16,
+              "height": 16
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "acq2Y",
+          "name": "CheckOn",
+          "reusable": true,
+          "width": 18,
+          "height": 18,
+          "fill": "$color.semantic.brand-solid.light",
+          "cornerRadius": 4,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "Es4KQ",
+              "name": "cCKi",
+              "width": 12,
+              "height": 12,
+              "icon": "check",
+              "library": "lucide",
+              "fill": "$color.white"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "d7hYX",
+          "name": "CheckOff",
+          "reusable": true,
+          "width": 18,
+          "height": 18,
+          "fill": "$color.white",
+          "cornerRadius": 4,
+          "stroke": "$color.gray-300",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner"
+        },
+        {
+          "type": "frame",
+          "id": "olnYs",
+          "name": "AlertInfo",
+          "reusable": true,
+          "width": 340,
+          "fill": "$color.semantic.info-surface.light",
+          "cornerRadius": 8,
+          "gap": 8,
+          "padding": [
+            10,
+            12
+          ],
+          "children": [
+            {
+              "type": "icon",
+              "id": "mUDM6",
+              "name": "cALi",
+              "width": 14,
+              "height": 14,
+              "icon": "info",
+              "library": "lucide",
+              "fill": "$color.semantic.info.light"
+            },
+            {
+              "type": "text",
+              "id": "L81fE",
+              "name": "cALt",
+              "fill": "$color.semantic.info.light",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Alert text",
+              "lineHeight": 1.45,
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "5EGcq",
+          "name": "Badge",
+          "reusable": true,
+          "fill": "$color.semantic.brand-subtle.light",
+          "cornerRadius": 99,
+          "padding": [
+            3,
+            10
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "0S4Vh",
+              "name": "cBGl",
+              "fill": "$color.semantic.brand.light",
+              "content": "Badge",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "500"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "6lOJg",
+          "name": "FileUpload",
+          "reusable": true,
+          "width": 340,
+          "fill": "$color.gray-100",
+          "cornerRadius": 8,
+          "stroke": "$color.gray-300",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "gap": 10,
+          "padding": [
+            12,
+            14
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "jZvKQ",
+              "name": "cUPi",
+              "width": 18,
+              "height": 18,
+              "icon": "file-key",
+              "library": "lucide",
+              "fill": "$color.semantic.brand.light"
+            },
+            {
+              "type": "frame",
+              "id": "XGNZF",
+              "name": "cUPr",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "A7Mtj",
+                  "name": "cUPn",
+                  "fill": "$color.semantic.content.light",
+                  "content": "file.p12",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "SvycN",
+                  "name": "cUPs",
+                  "fill": "$color.semantic.content-subtle.light",
+                  "content": "size - replace",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "ZH3Dm",
+      "x": 400,
+      "y": -36,
+      "name": "p1cap",
+      "fill": "$color.semantic.content-subtle.light",
+      "content": "M1 - Certificate inventory - Import certificates and keys (replaces the inventory upload dialog)",
+      "fontFamily": "Inter",
+      "fontSize": 13,
+      "fontWeight": "600"
+    },
+    {
+      "type": "frame",
+      "id": "OneeG",
+      "x": 400,
+      "y": 0,
+      "name": "p1",
+      "clip": true,
+      "width": 720,
+      "fill": "$color.white",
+      "cornerRadius": 12,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#0000001f",
+        "offset": {
+          "x": 0,
+          "y": 8
+        },
+        "blur": 24,
+        "spread": -4
+      },
+      "layout": "vertical",
+      "gap": 18,
+      "padding": [
+        40,
+        36,
+        36,
+        36
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "asfdB",
+          "name": "p1h",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "children": [
+            {
+              "type": "text",
+              "id": "8etzr",
+              "name": "p1ht",
+              "fill": "$color.semantic.content.light",
+              "content": "Import certificates and keys",
+              "fontFamily": "Inter",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "wOPXu",
+              "name": "p1hs",
+              "fill": "$color.semantic.content-subtle.light",
+              "content": "PEM, DER, PKCS7, PKCS12 or PKCS8 files. Content is shown before anything is imported.",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "id": "jM3xW",
+          "type": "ref",
+          "ref": "6lOJg",
+          "width": "fill_container",
+          "name": "p1f",
+          "x": 36,
+          "y": 105,
+          "descendants": {
+            "XGNZF": {
+              "width": "fill_container"
+            },
+            "A7Mtj": {
+              "content": "webserver-bundle.p12"
+            },
+            "SvycN": {
+              "content": "24.1 kB  -  replace",
+              "x": 491
+            }
+          }
+        },
+        {
+          "id": "X5j05",
+          "type": "ref",
+          "ref": "IiSY2",
+          "width": "fill_container",
+          "name": "p1pw",
+          "x": 36,
+          "y": 165,
+          "descendants": {
+            "xHGiI": {
+              "content": "File password"
+            },
+            "7VPXe": {
+              "width": "fill_container"
+            },
+            "Objxb": {
+              "content": "**********"
+            }
+          }
+        },
+        {
+          "type": "text",
+          "id": "sgRwU",
+          "name": "p1pwh",
+          "fill": "$color.semantic.content-subtle.light",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Required for protected files. Used only to read the file, never stored.",
+          "lineHeight": 1.45,
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "T6d28",
+          "name": "p1sec1",
+          "fill": "$color.semantic.content-subtle.light",
+          "content": "DETECTED CONTENT  -  3 ENTRIES",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "600",
+          "letterSpacing": 0.6
+        },
+        {
+          "type": "frame",
+          "id": "Kt4Wn",
+          "name": "p1e1",
+          "width": "fill_container",
+          "cornerRadius": 8,
+          "stroke": "$color.semantic.divider.light",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "gap": 12,
+          "padding": [
+            10,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "exOzb",
+              "type": "ref",
+              "ref": "acq2Y",
+              "name": "p1e1k",
+              "x": 12,
+              "y": 17.5
+            },
+            {
+              "type": "icon",
+              "id": "1Uez1",
+              "name": "p1e1i",
+              "width": 18,
+              "height": 18,
+              "icon": "key-round",
+              "library": "lucide",
+              "fill": "$color.semantic.brand.light"
+            },
+            {
+              "type": "frame",
+              "id": "eTu9q",
+              "name": "p1e1c",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 1,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "baSXE",
+                  "name": "p1e1n",
+                  "fill": "$color.semantic.content.light",
+                  "content": "web-server-01",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "XpzaZ",
+                  "name": "p1e1s",
+                  "fill": "$color.semantic.content-subtle.light",
+                  "content": "RSA-2048 private key + certificate chain (3) · CN=web-server-01.omnitrust.com",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "WCCCN",
+              "type": "ref",
+              "ref": "5EGcq",
+              "fill": "$color.semantic.brand-subtle.light",
+              "name": "p1e1b",
+              "width": "fit_content",
+              "x": 569,
+              "y": 16,
+              "descendants": {
+                "0S4Vh": {
+                  "content": "Key pair",
+                  "fill": "$color.semantic.brand.light"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "QgCEy",
+          "name": "p1e2",
+          "width": "fill_container",
+          "cornerRadius": 8,
+          "stroke": "$color.semantic.divider.light",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "gap": 12,
+          "padding": [
+            10,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "frCW7",
+              "type": "ref",
+              "ref": "acq2Y",
+              "name": "p1e2k",
+              "x": 12,
+              "y": 17.5
+            },
+            {
+              "type": "icon",
+              "id": "JG2CL",
+              "name": "p1e2i",
+              "width": 18,
+              "height": 18,
+              "icon": "file-text",
+              "library": "lucide",
+              "fill": "$color.gray-700"
+            },
+            {
+              "type": "frame",
+              "id": "tG9Su",
+              "name": "p1e2c",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 1,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "e1NBs",
+                  "name": "p1e2n",
+                  "fill": "$color.semantic.content.light",
+                  "content": "intermediate-ca-r4",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "65Vy5",
+                  "name": "p1e2s",
+                  "fill": "$color.semantic.content-subtle.light",
+                  "content": "Certificate · CN=Intermediate CA R4, O=OmniTrust",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "zEvtA",
+              "type": "ref",
+              "ref": "5EGcq",
+              "fill": "$color.gray-200",
+              "name": "p1e2b",
+              "width": "fit_content",
+              "x": 555,
+              "y": 16,
+              "descendants": {
+                "0S4Vh": {
+                  "content": "Certificate",
+                  "fill": "$color.semantic.content-muted.light"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Mvad2",
+          "name": "p1e3",
+          "width": "fill_container",
+          "cornerRadius": 8,
+          "stroke": "$color.semantic.divider.light",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "gap": 12,
+          "padding": [
+            10,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "I0PYO",
+              "type": "ref",
+              "ref": "d7hYX",
+              "name": "p1e3k",
+              "x": 12,
+              "y": 25.5
+            },
+            {
+              "type": "icon",
+              "id": "2efzg",
+              "name": "p1e3i",
+              "width": 18,
+              "height": 18,
+              "icon": "key",
+              "library": "lucide",
+              "fill": "$color.gray-500"
+            },
+            {
+              "type": "frame",
+              "id": "yvntj",
+              "name": "p1e3c",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 1,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "uOei6",
+                  "name": "p1e3n",
+                  "fill": "$color.semantic.content.light",
+                  "content": "backup-hmac",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "ajgv8",
+                  "name": "p1e3s",
+                  "fill": "$color.semantic.content-subtle.light",
+                  "content": "HMAC-SHA256 secret key",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "MCgLy",
+                  "name": "p1e3r",
+                  "fill": "$color.semantic.content-subtle.light",
+                  "content": "Not supported by the chosen token profile",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "rteX8",
+              "type": "ref",
+              "ref": "5EGcq",
+              "fill": "$color.semantic.warning-surface.light",
+              "name": "p1e3b",
+              "width": "fit_content",
+              "x": 464,
+              "y": 24,
+              "descendants": {
+                "0S4Vh": {
+                  "content": "Not supported by provider",
+                  "fill": "$color.semantic.warning.light"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "VbnLi",
+          "name": "p1sec2",
+          "fill": "$color.semantic.content-subtle.light",
+          "content": "KEY DESTINATION",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "600",
+          "letterSpacing": 0.6
+        },
+        {
+          "id": "D5KQe",
+          "type": "ref",
+          "ref": "Mw8fF",
+          "width": "fill_container",
+          "name": "p1tp",
+          "x": 36,
+          "y": 567,
+          "descendants": {
+            "vep9T": {
+              "content": "Token profile"
+            },
+            "3QqPh": {
+              "width": "fill_container"
+            },
+            "O2yTh": {
+              "content": "SoftKeyStore Provider  /  TLS Server Keys"
+            },
+            "ClPKI": {
+              "x": 619
+            }
+          }
+        },
+        {
+          "type": "text",
+          "id": "lgtHn",
+          "name": "p1tph",
+          "fill": "$color.semantic.content-subtle.light",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Only token profiles whose provider imports the selected keys are listed.",
+          "lineHeight": 1.45,
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "T7EG0q",
+          "name": "p1knGroup",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "fcJfT",
+              "name": "p1knLegend",
+              "fill": "$color.semantic.content.light",
+              "content": "Key name",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "500"
+            },
+            {
+              "id": "OoN5f",
+              "type": "ref",
+              "ref": "IiSY2",
+              "width": "fill_container",
+              "name": "p1kn",
+              "x": 0,
+              "y": 25,
+              "descendants": {
+                "xHGiI": {
+                  "content": "web-server-01"
+                },
+                "7VPXe": {
+                  "width": "fill_container"
+                },
+                "Objxb": {
+                  "content": "web-server-01"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "icI5o",
+          "name": "p1ex",
+          "width": "fill_container",
+          "gap": 12,
+          "children": [
+            {
+              "id": "rO1Dk",
+              "type": "ref",
+              "ref": "Bpomb",
+              "name": "p1exs",
+              "x": 0,
+              "y": 0,
+              "fill": "$color.gray-300",
+              "justifyContent": "start"
+            },
+            {
+              "type": "frame",
+              "id": "rla01",
+              "name": "p1exc",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "JHbfN",
+                  "name": "p1exl",
+                  "fill": "$color.semantic.content.light",
+                  "content": "Exportable",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "jIjpK",
+                  "name": "p1exh",
+                  "fill": "$color.semantic.content-subtle.light",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Can be exported later by users holding the key export permission. Off by default, and cannot be switched on later.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "sQCje",
+          "name": "p1sec3",
+          "fill": "$color.semantic.content-subtle.light",
+          "content": "IMPORT ATTRIBUTES  -  SOFTKEYSTORE PROVIDER",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "600",
+          "letterSpacing": 0.6
+        },
+        {
+          "id": "9cLqw",
+          "type": "ref",
+          "ref": "Mw8fF",
+          "width": "fill_container",
+          "name": "p1a1",
+          "x": 36,
+          "y": 881,
+          "descendants": {
+            "vep9T": {
+              "content": "Key store slot"
+            },
+            "3QqPh": {
+              "width": "fill_container"
+            },
+            "O2yTh": {
+              "content": "default"
+            },
+            "ClPKI": {
+              "x": 619
+            }
+          }
+        },
+        {
+          "id": "Z1PxN",
+          "type": "ref",
+          "ref": "olnYs",
+          "width": "fill_container",
+          "name": "p1al",
+          "height": "fit_content",
+          "x": 36,
+          "y": 957,
+          "descendants": {
+            "L81fE": {
+              "content": "Private keys are transferred protected and stored only in the provider - never in the platform. Selected certificates are registered in inventory and the leaf is associated with its key.",
+              "width": "fill_container"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "Y433A",
+          "name": "p1ft",
+          "width": "fill_container",
+          "gap": 16,
+          "justifyContent": "end",
+          "children": [
+            {
+              "id": "umkeo",
+              "type": "ref",
+              "ref": "Ds15V",
+              "name": "p1ftc",
+              "width": "fit_content",
+              "x": 426,
+              "y": 0,
+              "descendants": {
+                "fZd96": {
+                  "content": "Cancel"
+                }
+              }
+            },
+            {
+              "id": "v9RB9",
+              "type": "ref",
+              "ref": "WiMq9",
+              "name": "p1ftp",
+              "width": "fit_content",
+              "x": 515,
+              "y": 0,
+              "descendants": {
+                "de96A": {
+                  "content": "Import 2 entries"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "KtbEC",
+      "x": 1220,
+      "y": -36,
+      "name": "p2cap",
+      "fill": "$color.semantic.content-subtle.light",
+      "content": "M2 - Certificate detail - Download as PKCS12 (visible only for exportable key on a capable provider)",
+      "fontFamily": "Inter",
+      "fontSize": 13,
+      "fontWeight": "600"
+    },
+    {
+      "type": "frame",
+      "id": "VG526",
+      "x": 1220,
+      "y": 0,
+      "name": "p2",
+      "clip": true,
+      "width": 560,
+      "fill": "$color.white",
+      "cornerRadius": 12,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#0000001f",
+        "offset": {
+          "x": 0,
+          "y": 8
+        },
+        "blur": 24,
+        "spread": -4
+      },
+      "layout": "vertical",
+      "gap": 18,
+      "padding": [
+        40,
+        36,
+        36,
+        36
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "RidRO",
+          "name": "p2h",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "children": [
+            {
+              "type": "text",
+              "id": "oSHsD",
+              "name": "p2ht",
+              "fill": "$color.semantic.content.light",
+              "content": "Download certificate",
+              "fontFamily": "Inter",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "fcxLh",
+              "name": "p2hs",
+              "fill": "$color.semantic.content-subtle.light",
+              "content": "web-server-01.omnitrust.com",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "id": "TDn6E",
+          "type": "ref",
+          "ref": "Mw8fF",
+          "width": "fill_container",
+          "name": "p2fmt",
+          "x": 36,
+          "y": 105,
+          "descendants": {
+            "vep9T": {
+              "content": "Format"
+            },
+            "3QqPh": {
+              "width": "fill_container"
+            },
+            "O2yTh": {
+              "content": "PKCS12 - certificate, private key and chain (.p12)"
+            },
+            "ClPKI": {
+              "x": 459
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "kwTHp",
+          "name": "p2pwr",
+          "width": "fill_container",
+          "gap": 16,
+          "children": [
+            {
+              "id": "JLyRx",
+              "type": "ref",
+              "ref": "IiSY2",
+              "width": "fill_container",
+              "name": "p2pw1",
+              "x": 0,
+              "y": 0,
+              "descendants": {
+                "xHGiI": {
+                  "content": "Password"
+                },
+                "7VPXe": {
+                  "width": "fill_container"
+                },
+                "Objxb": {
+                  "content": "**********"
+                }
+              }
+            },
+            {
+              "id": "IToaK",
+              "type": "ref",
+              "ref": "IiSY2",
+              "width": "fill_container",
+              "name": "p2pw2",
+              "x": 252,
+              "y": 0,
+              "descendants": {
+                "xHGiI": {
+                  "content": "Confirm password"
+                },
+                "7VPXe": {
+                  "width": "fill_container"
+                },
+                "Objxb": {
+                  "content": "**********"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "Q3N30",
+          "type": "ref",
+          "ref": "olnYs",
+          "width": "fill_container",
+          "name": "p2al",
+          "height": "fit_content",
+          "x": 36,
+          "y": 257,
+          "descendants": {
+            "L81fE": {
+              "content": "The container is protected with your password. Downloading requires the key export permission and is audit-logged.",
+              "width": "fill_container"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "8O5Nh",
+          "name": "p2ft",
+          "width": "fill_container",
+          "gap": 16,
+          "justifyContent": "end",
+          "children": [
+            {
+              "id": "xvMYO",
+              "type": "ref",
+              "ref": "Ds15V",
+              "name": "p2ftc",
+              "width": "fit_content",
+              "x": 305,
+              "y": 0,
+              "descendants": {
+                "fZd96": {
+                  "content": "Cancel"
+                }
+              }
+            },
+            {
+              "id": "2d5Vx",
+              "type": "ref",
+              "ref": "WiMq9",
+              "name": "p2ftp",
+              "width": "fit_content",
+              "x": 394,
+              "y": 0,
+              "descendants": {
+                "de96A": {
+                  "content": "Download"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "6QYke",
+      "x": 1880,
+      "y": -36,
+      "name": "p3cap",
+      "fill": "$color.semantic.content-subtle.light",
+      "content": "M3 - Key detail - Export key material (PEM download)",
+      "fontFamily": "Inter",
+      "fontSize": 13,
+      "fontWeight": "600"
+    },
+    {
+      "type": "frame",
+      "id": "UDWTB",
+      "x": 1880,
+      "y": 0,
+      "name": "p3",
+      "clip": true,
+      "width": 560,
+      "fill": "$color.white",
+      "cornerRadius": 12,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#0000001f",
+        "offset": {
+          "x": 0,
+          "y": 8
+        },
+        "blur": 24,
+        "spread": -4
+      },
+      "layout": "vertical",
+      "gap": 18,
+      "padding": [
+        40,
+        36,
+        36,
+        36
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "naLt3",
+          "name": "p3h",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "children": [
+            {
+              "type": "text",
+              "id": "JGs8U",
+              "name": "p3ht",
+              "fill": "$color.semantic.content.light",
+              "content": "Export key material",
+              "fontFamily": "Inter",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "0qSH9",
+              "name": "p3hs",
+              "fill": "$color.semantic.content-subtle.light",
+              "content": "web-server-01  |  RSA-2048  |  SoftKeyStore Provider",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "id": "HRBDs",
+          "type": "ref",
+          "ref": "Mw8fF",
+          "width": "fill_container",
+          "name": "p3fmt",
+          "x": 36,
+          "y": 105,
+          "descendants": {
+            "vep9T": {
+              "content": "Format"
+            },
+            "3QqPh": {
+              "width": "fill_container"
+            },
+            "O2yTh": {
+              "content": "Encrypted PKCS8 - private key (PEM)"
+            },
+            "ClPKI": {
+              "x": 459
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "arXlr",
+          "name": "p3pwr",
+          "width": "fill_container",
+          "gap": 16,
+          "children": [
+            {
+              "id": "dIsLt",
+              "type": "ref",
+              "ref": "IiSY2",
+              "width": "fill_container",
+              "name": "p3pw1",
+              "x": 0,
+              "y": 0,
+              "descendants": {
+                "xHGiI": {
+                  "content": "Password"
+                },
+                "7VPXe": {
+                  "width": "fill_container"
+                },
+                "Objxb": {
+                  "content": "**********"
+                }
+              }
+            },
+            {
+              "id": "8cRSr",
+              "type": "ref",
+              "ref": "IiSY2",
+              "width": "fill_container",
+              "name": "p3pw2",
+              "x": 252,
+              "y": 0,
+              "descendants": {
+                "xHGiI": {
+                  "content": "Confirm password"
+                },
+                "7VPXe": {
+                  "width": "fill_container"
+                },
+                "Objxb": {
+                  "content": "**********"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "yAMvJ",
+          "type": "ref",
+          "ref": "olnYs",
+          "width": "fill_container",
+          "name": "p3al",
+          "height": "fit_content",
+          "x": 36,
+          "y": 257,
+          "descendants": {
+            "L81fE": {
+              "content": "The key is encrypted under your password inside the provider and never leaves it unprotected. Export requires the key export permission and is audit-logged.",
+              "width": "fill_container"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "DXeWE",
+          "name": "p3ft",
+          "width": "fill_container",
+          "gap": 16,
+          "justifyContent": "end",
+          "children": [
+            {
+              "id": "i1aHd",
+              "type": "ref",
+              "ref": "Ds15V",
+              "name": "p3ftc",
+              "width": "fit_content",
+              "x": 329,
+              "y": 0,
+              "descendants": {
+                "fZd96": {
+                  "content": "Cancel"
+                }
+              }
+            },
+            {
+              "id": "AwE3d",
+              "type": "ref",
+              "ref": "WiMq9",
+              "name": "p3ftp",
+              "x": 418,
+              "y": 0,
+              "descendants": {
+                "de96A": {
+                  "content": "Export"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "TErtX",
+      "x": 2540,
+      "y": -36,
+      "name": "p4cap",
+      "fill": "$color.semantic.content-subtle.light",
+      "content": "M4 - Key inventory - Create key - Import material mode",
+      "fontFamily": "Inter",
+      "fontSize": 13,
+      "fontWeight": "600"
+    },
+    {
+      "type": "frame",
+      "id": "2t78k",
+      "x": 2540,
+      "y": 0,
+      "name": "p4",
+      "clip": true,
+      "width": 720,
+      "fill": "$color.white",
+      "cornerRadius": 12,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#0000001f",
+        "offset": {
+          "x": 0,
+          "y": 8
+        },
+        "blur": 24,
+        "spread": -4
+      },
+      "layout": "vertical",
+      "gap": 18,
+      "padding": [
+        40,
+        36,
+        36,
+        36
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "oScO1",
+          "name": "p4h",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "children": [
+            {
+              "type": "text",
+              "id": "2YoLy",
+              "name": "p4ht",
+              "fill": "$color.semantic.content.light",
+              "content": "Create key",
+              "fontFamily": "Inter",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "c5XcZ",
+              "name": "p4hs",
+              "fill": "$color.semantic.content-subtle.light",
+              "content": "Import existing key material into a token profile",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "g3QPi",
+          "name": "p4tabs",
+          "gap": 4,
+          "children": [
+            {
+              "type": "frame",
+              "id": "u8P1e",
+              "name": "p4tb1",
+              "cornerRadius": 8,
+              "padding": [
+                10,
+                16
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "dSj4d",
+                  "name": "p4tb1t",
+                  "fill": "$color.gray-500",
+                  "content": "Generate new",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vGsSc",
+              "name": "p4tb2",
+              "fill": "$color.gray-200",
+              "cornerRadius": 8,
+              "padding": [
+                10,
+                16
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "UZ4Nt",
+                  "name": "p4tb2t",
+                  "fill": "$color.semantic.content.light",
+                  "content": "Import material",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "eYgGp",
+          "type": "ref",
+          "ref": "6lOJg",
+          "width": "fill_container",
+          "name": "p4f",
+          "x": 36,
+          "y": 160,
+          "descendants": {
+            "XGNZF": {
+              "width": "fill_container"
+            },
+            "A7Mtj": {
+              "content": "app-signing-key.p8"
+            },
+            "SvycN": {
+              "content": "3.1 kB  -  replace",
+              "x": 498
+            }
+          }
+        },
+        {
+          "id": "6GWci",
+          "type": "ref",
+          "ref": "IiSY2",
+          "width": "fill_container",
+          "name": "p4pw",
+          "x": 36,
+          "y": 220,
+          "descendants": {
+            "xHGiI": {
+              "content": "File password"
+            },
+            "7VPXe": {
+              "width": "fill_container"
+            },
+            "Objxb": {
+              "content": "**********"
+            }
+          }
+        },
+        {
+          "type": "text",
+          "id": "t5XuVx",
+          "name": "p4pwh",
+          "fill": "$color.semantic.content-subtle.light",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Required for protected files. Used only to read the file, never stored.",
+          "lineHeight": 1.45,
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "P33xrk",
+          "name": "p4sec1",
+          "fill": "$color.semantic.content-subtle.light",
+          "content": "DETECTED CONTENT  -  1 ENTRY",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "600",
+          "letterSpacing": 0.6
+        },
+        {
+          "type": "frame",
+          "id": "Oxnt4",
+          "name": "p4e1",
+          "width": "fill_container",
+          "cornerRadius": 8,
+          "stroke": "$color.semantic.divider.light",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "gap": 12,
+          "padding": [
+            10,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "eDMDq",
+              "type": "ref",
+              "ref": "acq2Y",
+              "name": "p1e1k",
+              "x": 12,
+              "y": 17.5
+            },
+            {
+              "type": "icon",
+              "id": "tdUwE",
+              "name": "p1e1i",
+              "width": 18,
+              "height": 18,
+              "icon": "key-round",
+              "library": "lucide",
+              "fill": "$color.semantic.brand.light"
+            },
+            {
+              "type": "frame",
+              "id": "KkxjC",
+              "name": "p1e1c",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 1,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "z1TeEs",
+                  "name": "p1e1n",
+                  "fill": "$color.semantic.content.light",
+                  "content": "Private key",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "e4Qdhz",
+                  "name": "p1e1s",
+                  "fill": "$color.semantic.content-subtle.light",
+                  "content": "RSA-2048 private key",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "xFU2Z",
+              "type": "ref",
+              "ref": "5EGcq",
+              "fill": "$color.semantic.brand-subtle.light",
+              "name": "p1e1b",
+              "width": "fit_content",
+              "x": 552,
+              "y": 16,
+              "descendants": {
+                "0S4Vh": {
+                  "content": "Private key",
+                  "fill": "$color.semantic.brand.light"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "wbrUY",
+          "name": "p4sec2",
+          "fill": "$color.semantic.content-subtle.light",
+          "content": "KEY DESTINATION",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "600",
+          "letterSpacing": 0.6
+        },
+        {
+          "id": "8MnKC",
+          "type": "ref",
+          "ref": "Mw8fF",
+          "width": "fill_container",
+          "name": "p4tp",
+          "x": 36,
+          "y": 464,
+          "descendants": {
+            "vep9T": {
+              "content": "Token profile"
+            },
+            "3QqPh": {
+              "width": "fill_container"
+            },
+            "O2yTh": {
+              "content": "SoftKeyStore Provider  /  TLS Server Keys"
+            },
+            "ClPKI": {
+              "x": 619
+            }
+          }
+        },
+        {
+          "type": "text",
+          "id": "r8zbw",
+          "name": "p4tph",
+          "fill": "$color.semantic.content-subtle.light",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Only token profiles whose provider imports the selected keys are listed.",
+          "lineHeight": 1.45,
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "k6k93t",
+          "name": "p4knGroup",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "Eptq5",
+              "name": "p4knLegend",
+              "fill": "$color.semantic.content.light",
+              "content": "Key name",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "500"
+            },
+            {
+              "id": "mCld6",
+              "type": "ref",
+              "ref": "IiSY2",
+              "width": "fill_container",
+              "name": "p4kn",
+              "x": 0,
+              "y": 25,
+              "descendants": {
+                "xHGiI": {
+                  "content": "Private key"
+                },
+                "7VPXe": {
+                  "width": "fill_container"
+                },
+                "Objxb": {
+                  "content": "app-signing-key"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "87cap",
+          "name": "p4ex",
+          "width": "fill_container",
+          "gap": 12,
+          "children": [
+            {
+              "id": "9ZK9u",
+              "type": "ref",
+              "ref": "Bpomb",
+              "name": "p4exs",
+              "x": 0,
+              "y": 0,
+              "fill": "$color.gray-300",
+              "justifyContent": "start"
+            },
+            {
+              "type": "frame",
+              "id": "OyhiQ",
+              "name": "p4exc",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "3rIdJ",
+                  "name": "p4exl",
+                  "fill": "$color.semantic.content.light",
+                  "content": "Exportable",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "grZdB",
+                  "name": "p4exh",
+                  "fill": "$color.semantic.content-subtle.light",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Can be exported later by users holding the key export permission. Off by default, and cannot be switched on later.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "4cwLR",
+          "name": "p4sec",
+          "fill": "$color.semantic.content-subtle.light",
+          "content": "IMPORT ATTRIBUTES  -  SOFTKEYSTORE PROVIDER",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "600",
+          "letterSpacing": 0.6
+        },
+        {
+          "id": "BPnPg",
+          "type": "ref",
+          "ref": "Mw8fF",
+          "width": "fill_container",
+          "name": "p4a1",
+          "x": 36,
+          "y": 778,
+          "descendants": {
+            "vep9T": {
+              "content": "Key store slot"
+            },
+            "3QqPh": {
+              "width": "fill_container"
+            },
+            "O2yTh": {
+              "content": "default"
+            },
+            "ClPKI": {
+              "x": 619
+            }
+          }
+        },
+        {
+          "id": "2LHPy",
+          "type": "ref",
+          "ref": "olnYs",
+          "width": "fill_container",
+          "name": "p4al",
+          "height": "fit_content",
+          "x": 36,
+          "y": 854,
+          "descendants": {
+            "L81fE": {
+              "content": "Private keys are transferred protected and stored only in the provider - never in the platform. Selected certificates are registered in inventory and the leaf is associated with its key.",
+              "width": "fill_container"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "yf4HU",
+          "name": "p4ft",
+          "width": "fill_container",
+          "gap": 16,
+          "justifyContent": "end",
+          "children": [
+            {
+              "id": "a0wbl",
+              "type": "ref",
+              "ref": "Ds15V",
+              "name": "p4ftc",
+              "width": "fit_content",
+              "x": 461,
+              "y": 0,
+              "descendants": {
+                "fZd96": {
+                  "content": "Cancel"
+                }
+              }
+            },
+            {
+              "id": "apER0",
+              "type": "ref",
+              "ref": "WiMq9",
+              "name": "p4ftp",
+              "width": "fit_content",
+              "x": 550,
+              "y": 0,
+              "descendants": {
+                "de96A": {
+                  "content": "Import key"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "JsEG7",
+      "x": 3320,
+      "y": -36,
+      "name": "p5cap",
+      "fill": "$color.semantic.content-subtle.light",
+      "content": "M5 - Create key from the certificate request form (+ Create new key) - Generate only",
+      "fontFamily": "Inter",
+      "fontSize": 13,
+      "fontWeight": "600"
+    },
+    {
+      "type": "frame",
+      "id": "2iJ2r",
+      "x": 3320,
+      "y": 0,
+      "name": "p5",
+      "clip": true,
+      "width": 720,
+      "fill": "$color.white",
+      "cornerRadius": 12,
+      "stroke": "$color.gray-200",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#0000001f",
+        "offset": {
+          "x": 0,
+          "y": 8
+        },
+        "blur": 24,
+        "spread": -4
+      },
+      "layout": "vertical",
+      "gap": 18,
+      "padding": [
+        40,
+        36,
+        36,
+        36
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "6uoud",
+          "name": "p5h",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "children": [
+            {
+              "type": "text",
+              "id": "YV6Mi",
+              "name": "p5ht",
+              "fill": "$color.semantic.content.light",
+              "content": "Create key",
+              "fontFamily": "Inter",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "LK66b",
+              "name": "p5hs",
+              "fill": "$color.semantic.content-subtle.light",
+              "content": "Generate a new key pair on a token profile",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "uiDoO",
+          "x": 36,
+          "y": 105,
+          "name": "p5tabs",
+          "enabled": false,
+          "gap": 4,
+          "children": [
+            {
+              "type": "frame",
+              "id": "i0rAM",
+              "name": "p5tb1",
+              "fill": "$color.gray-200",
+              "cornerRadius": 8,
+              "padding": [
+                10,
+                16
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "yOKmQ",
+                  "name": "p5tb1t",
+                  "fill": "$color.semantic.content.light",
+                  "content": "Generate new",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Zs57r",
+              "name": "p5tb2",
+              "cornerRadius": 8,
+              "padding": [
+                10,
+                16
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "62lIf",
+                  "name": "p5tb2t",
+                  "fill": "$color.gray-500",
+                  "content": "Import material",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "C9s0Z",
+          "type": "ref",
+          "ref": "Mw8fF",
+          "width": "fill_container",
+          "name": "p5tp",
+          "x": 36,
+          "y": 105,
+          "descendants": {
+            "vep9T": {
+              "content": "Token profile"
+            },
+            "3QqPh": {
+              "width": "fill_container"
+            },
+            "O2yTh": {
+              "content": "SoftKeyStore Provider  /  TLS Server Keys"
+            },
+            "ClPKI": {
+              "x": 619
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "q7bOy",
+          "name": "p5row",
+          "width": "fill_container",
+          "gap": 16,
+          "children": [
+            {
+              "id": "flM7k",
+              "type": "ref",
+              "ref": "IiSY2",
+              "width": "fill_container",
+              "name": "p5kn",
+              "x": 0,
+              "y": 0,
+              "descendants": {
+                "xHGiI": {
+                  "content": "Key name"
+                },
+                "7VPXe": {
+                  "width": "fill_container"
+                },
+                "Objxb": {
+                  "content": "web-server-01"
+                }
+              }
+            },
+            {
+              "id": "HAlsp",
+              "type": "ref",
+              "ref": "Mw8fF",
+              "width": "fill_container",
+              "name": "p5alg",
+              "x": 332,
+              "y": 0,
+              "descendants": {
+                "vep9T": {
+                  "content": "Key algorithm"
+                },
+                "3QqPh": {
+                  "width": "fill_container"
+                },
+                "O2yTh": {
+                  "content": "RSA-2048"
+                },
+                "ClPKI": {
+                  "x": 287
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "JSko1",
+          "name": "p5ex",
+          "width": "fill_container",
+          "gap": 12,
+          "children": [
+            {
+              "id": "vHndd",
+              "type": "ref",
+              "ref": "Bpomb",
+              "name": "p5exs",
+              "x": 0,
+              "y": 0
+            },
+            {
+              "type": "frame",
+              "id": "H8h70",
+              "name": "p5exc",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "SVb9e",
+                  "name": "p5exl",
+                  "fill": "$color.semantic.content.light",
+                  "content": "Exportable",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "IhvDi",
+                  "name": "p5exh",
+                  "fill": "$color.semantic.content-subtle.light",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Required to download the certificate with its private key (PKCS12) after issuance. Cannot be enabled later.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "iXPD4",
+          "name": "p5ft",
+          "width": "fill_container",
+          "gap": 16,
+          "justifyContent": "end",
+          "children": [
+            {
+              "id": "q4NCU",
+              "type": "ref",
+              "ref": "Ds15V",
+              "name": "p5ftc",
+              "width": "fit_content",
+              "x": 461,
+              "y": 0,
+              "descendants": {
+                "fZd96": {
+                  "content": "Cancel"
+                }
+              }
+            },
+            {
+              "id": "BZtMj",
+              "type": "ref",
+              "ref": "WiMq9",
+              "name": "p5ftp",
+              "width": "fit_content",
+              "x": 550,
+              "y": 0,
+              "descendants": {
+                "de96A": {
+                  "content": "Create key"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color.blue-300": {
+      "type": "color",
+      "value": "#66b2ff"
+    },
+    "color.blue-600": {
+      "type": "color",
+      "value": "#0073cf"
+    },
+    "color.blue-700": {
+      "type": "color",
+      "value": "#005ba6"
+    },
+    "color.gray-100": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.gray-200": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.gray-300": {
+      "type": "color",
+      "value": "#d4d4d4"
+    },
+    "color.gray-500": {
+      "type": "color",
+      "value": "#a8a8a8"
+    },
+    "color.gray-700": {
+      "type": "color",
+      "value": "#8c8c8c"
+    },
+    "color.gray-900": {
+      "type": "color",
+      "value": "#404040"
+    },
+    "color.semantic.brand-solid.light": {
+      "type": "color",
+      "value": "#0073cf"
+    },
+    "color.semantic.brand-subtle.light": {
+      "type": "color",
+      "value": "#e6f2ff"
+    },
+    "color.semantic.brand.light": {
+      "type": "color",
+      "value": "#0073cf"
+    },
+    "color.semantic.content-muted.light": {
+      "type": "color",
+      "value": "#525252"
+    },
+    "color.semantic.content-on-brand.light": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "color.semantic.content-subtle.light": {
+      "type": "color",
+      "value": "#6e6e6e"
+    },
+    "color.semantic.content.light": {
+      "type": "color",
+      "value": "#1f2937"
+    },
+    "color.semantic.danger-surface.light": {
+      "type": "color",
+      "value": "#fee2e2"
+    },
+    "color.semantic.danger.light": {
+      "type": "color",
+      "value": "#b91c1c"
+    },
+    "color.semantic.divider.light": {
+      "type": "color",
+      "value": "#e8e8e8"
+    },
+    "color.semantic.info-solid.light": {
+      "type": "color",
+      "value": "#2798e7"
+    },
+    "color.semantic.info-surface.light": {
+      "type": "color",
+      "value": "#e6f2ff"
+    },
+    "color.semantic.info.light": {
+      "type": "color",
+      "value": "#0369a1"
+    },
+    "color.semantic.outline.light": {
+      "type": "color",
+      "value": "#8f8f8f"
+    },
+    "color.semantic.success-solid.light": {
+      "type": "color",
+      "value": "#0d9488"
+    },
+    "color.semantic.success-surface.light": {
+      "type": "color",
+      "value": "#ccfbf1"
+    },
+    "color.semantic.success.light": {
+      "type": "color",
+      "value": "#0f766e"
+    },
+    "color.semantic.surface-raised.light": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "color.semantic.surface-sunken.light": {
+      "type": "color",
+      "value": "#f5f5f5"
+    },
+    "color.semantic.surface.light": {
+      "type": "color",
+      "value": "#f8fafc"
+    },
+    "color.semantic.warning-surface.light": {
+      "type": "color",
+      "value": "#fef9c3"
+    },
+    "color.semantic.warning.light": {
+      "type": "color",
+      "value": "#a16207"
+    },
+    "color.transparent": {
+      "type": "color",
+      "value": "#00000000"
+    },
+    "color.white": {
+      "type": "color",
+      "value": "#ffffff"
+    }
+  },
+  "fileToken": "ef3a5491-1df8-4e4f-abf0-cd06b8fa7967"
+}

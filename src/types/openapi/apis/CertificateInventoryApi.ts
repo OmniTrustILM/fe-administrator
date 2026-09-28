@@ -42,7 +42,6 @@ import type {
     FingerprintDto,
     LocationDto,
     MultipleCertificateObjectUpdateDto,
-    ProblemDetailExtended,
     RemoveCertificateDto,
     SearchFieldDataByGroupDto,
     UploadCertificateRequestDto,
@@ -451,7 +450,7 @@ export class CertificateInventoryApi extends BaseAPI {
     }
 
     /**
-     * Download a certificate, its chain and its private key as one PKCS#12 file.  This is a POST because the passphrase travels in the body: a URL is recorded by proxies, browser history and access logs, so a passphrase must never appear in one. The response is not cacheable and carries a sanitized download filename.  It is a separate operation from the certificate content download, which serves certificates only. Only a key created or imported as exportable can be included.
+     * Download a certificate, its chain and its private key as one PKCS#12 file.  This is a POST because the passphrase travels in the body: a URL is recorded by proxies, browser history and access logs, so a passphrase must never appear in one. The response is not cacheable and carries a sanitized download filename.  It is a separate operation from the certificate content download, which serves certificates only. Only a key created or imported as exportable can be included.  keytool opens the file only when its passphrase is printable ASCII.
      * Download a certificate with its private key
      */
     downloadKeystore({ uuid, certificateKeystoreRequestDto }: DownloadKeystoreRequest): Observable<Blob>;

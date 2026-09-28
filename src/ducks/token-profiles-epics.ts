@@ -41,6 +41,26 @@ const listTokenProfiles: AppEpic = (action$, state$, deps) => {
     );
 };
 
+const listImportableTokenProfiles: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listImportableTokenProfiles.match),
+        switchMap((action) =>
+            deps.apiClients.tokenProfiles.listTokenProfiles({ enabled: true, importable: action.payload.importable }).pipe(
+                map((tokenProfiles) => slice.actions.listImportableTokenProfilesSuccess({ tokenProfiles })),
+
+                catchError((error) =>
+                    of(
+                        slice.actions.listImportableTokenProfilesFailure({
+                            error: extractError(error, 'Failed to get importable token profiles'),
+                        }),
+                        appRedirectActions.fetchError({ error, message: 'Failed to get importable token profiles' }),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
 const getTokenProfileDetail: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getTokenProfileDetail.match),
@@ -373,6 +393,7 @@ const bulkUpdateKeyUsage: AppEpic = (action$, state$, deps) => {
 
 const epics = [
     listTokenProfiles,
+    listImportableTokenProfiles,
     getTokenProfileDetail,
     createTokenProfile,
     getSupportedTokenProfileKeyUsages,

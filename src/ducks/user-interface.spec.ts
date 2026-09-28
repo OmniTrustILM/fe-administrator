@@ -148,6 +148,12 @@ describe('user-interface slice', () => {
         expect(next.globalModal.cancelButtonCallback).toBe(cb);
     });
 
+    test('setCancelButtonCallback clears cancelButtonCallback with undefined', () => {
+        const withCallback = reducer(initialState, actions.setCancelButtonCallback(vi.fn()));
+        const next = reducer(withCallback, actions.setCancelButtonCallback(undefined));
+        expect(next.globalModal.cancelButtonCallback).toBeUndefined();
+    });
+
     test('setInitiateAttributeCallback sets value', () => {
         let next = reducer(initialState, actions.setInitiateAttributeCallback(true));
         expect(next.initiateAttributeCallback).toBe(true);

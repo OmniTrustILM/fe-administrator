@@ -78,6 +78,40 @@ describe('tokenProfiles slice', () => {
         expect(next.isFetchingList).toBe(false);
     });
 
+    test('listImportableTokenProfiles / success / failure', () => {
+        expect(initialState.importableTokenProfilesListed).toBe(false);
+
+        let next = reducer(
+            { ...initialState, importableTokenProfiles: [{ uuid: 'stale' } as any], importableTokenProfilesListed: true },
+            actions.listImportableTokenProfiles({ importable: ['keyPair:RSA'] }),
+        );
+        expect(next.isFetchingImportable).toBe(true);
+        expect(next.importableTokenProfiles).toEqual([]);
+        expect(next.importableTokenProfilesListed).toBe(false);
+
+        const items = [{ uuid: 'tp-1' }] as any[];
+        next = reducer(next, actions.listImportableTokenProfilesSuccess({ tokenProfiles: items }));
+        expect(next.isFetchingImportable).toBe(false);
+        expect(next.importableTokenProfiles).toEqual(items);
+        expect(next.importableTokenProfilesListed).toBe(true);
+
+        next = reducer({ ...next, isFetchingImportable: true }, actions.listImportableTokenProfilesFailure({ error: 'err' }));
+        expect(next.isFetchingImportable).toBe(false);
+        expect(next.importableTokenProfiles).toEqual(items);
+        expect(next.importableTokenProfilesListed).toBe(false);
+    });
+
+    test('listImportableTokenProfilesFailure keeps the error, which a new listing or a success clears', () => {
+        const error = 'Failed to get importable token profiles';
+        const failed = reducer(initialState, actions.listImportableTokenProfilesFailure({ error }));
+        const listing = reducer(failed, actions.listImportableTokenProfiles({ importable: ['keyPair:RSA'] }));
+        const listed = reducer(failed, actions.listImportableTokenProfilesSuccess({ tokenProfiles: [] }));
+
+        expect(failed.importableTokenProfilesError).toBe(error);
+        expect(listing.importableTokenProfilesError).toBeUndefined();
+        expect(listed.importableTokenProfilesError).toBeUndefined();
+    });
+
     test('listTokenProfiles clears existing profiles', () => {
         const state = { ...initialState, tokenProfiles: [{ uuid: 'tp-1' } as any] };
         const next = reducer(state, actions.listTokenProfiles({ enabled: true }));
@@ -507,10 +541,14 @@ describe('tokenProfiles selectors', () => {
         ...initialState,
         tokenProfile: profile,
         tokenProfiles: [profile],
+        importableTokenProfiles: [profile],
+        importableTokenProfilesListed: true,
+        importableTokenProfilesError: 'Failed to get importable token profiles',
         supportedTokenProfileKeyUsages: [KeyUsage.Sign],
         supportedTokenProfileKeyUsagesTokenInstanceUuid: 'token-1',
         checkedRows: ['tp-1'],
         isFetchingList: true,
+        isFetchingImportable: true,
         isFetchingDetail: true,
         isFetchingAttributes: true,
         isFetchingSupportedTokenProfileKeyUsages: true,
@@ -536,6 +574,37 @@ describe('tokenProfiles selectors', () => {
 
     test('tokenProfiles selector', () => {
         expect(selectors.tokenProfiles(state)).toEqual([profile]);
+    });
+
+    test('importableTokenProfiles selector', () => {
+        expect(selectors.importableTokenProfiles(state)).toEqual([profile]);
+    });
+
+    test('isFetchingImportable selector', () => {
+        expect(selectors.isFetchingImportable(state)).toBe(true);
+    });
+
+    test('isImportableTokenProfilesListed selector', () => {
+        expect(selectors.isImportableTokenProfilesListed(state)).toBe(true);
+    });
+
+    test('importableTokenProfilesError selector', () => {
+        expect(selectors.importableTokenProfilesError(state)).toBe('Failed to get importable token profiles');
+        expect(selectors.importableTokenProfilesError({ tokenprofiles: initialState } as any)).toBeUndefined();
+    });
+
+    test('loadedTokenProfile reads the detail only when it is the named profile, fetched and not being fetched again', () => {
+        const loaded = { tokenprofiles: { ...initialState, tokenProfile: profile, detailFetchSucceeded: true } } as any;
+
+        expect(selectors.loadedTokenProfile('tp-1')(loaded)).toEqual(profile);
+        expect(selectors.loadedTokenProfile('tp-2')(loaded)).toBeUndefined();
+        expect(selectors.loadedTokenProfile(undefined)(loaded)).toBeUndefined();
+        expect(
+            selectors.loadedTokenProfile('tp-1')({ tokenprofiles: { ...loaded.tokenprofiles, isFetchingDetail: true } } as any),
+        ).toBeUndefined();
+        expect(
+            selectors.loadedTokenProfile('tp-1')({ tokenprofiles: { ...loaded.tokenprofiles, detailFetchSucceeded: false } } as any),
+        ).toBeUndefined();
     });
 
     test('supportedTokenProfileKeyUsages selectors', () => {

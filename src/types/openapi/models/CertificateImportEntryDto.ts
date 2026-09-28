@@ -20,7 +20,7 @@ import type { CertificateEntryKeyDestinationDto } from './';
  */
 export interface CertificateImportEntryDto {
     /**
-     * Reference of the entry to import, derived from the entry\'s own content. Read the file first to learn it, or compute it from content already held.
+     * Reference of the entry to import. Read the file first to learn it, or compute it from content already held.  The lowercase hex SHA-256 of the entry\'s DER: of the certificate for a certificate, of the `SubjectPublicKeyInfo` for a key pair or private key, of the key as the file holds it for a secret key or a key of an algorithm the platform does not support, and of the request for a certificate request.
      * @type {string}
      * @memberof CertificateImportEntryDto
      */

@@ -1,13 +1,16 @@
 import type React from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import Label from 'components/Label';
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
 import Button from 'components/Button';
 
 type Props = {
     onFileContentLoaded: (fileContent: string) => void;
+    /**
+     * Called as the content starts to change: on each edit of the content area, and as a chosen file starts to be read.
+     * If that read fails, the content still shown is reported again through `onFileContentLoaded`.
+     */
     onContentChange?: () => void;
     id?: string;
     fileType?: string;
@@ -34,9 +37,21 @@ export default function FileUpload({
     dropZoneHintText,
 }: Readonly<Props>) {
     const [fileContent, setFileContent] = useState('');
-    const fileContentRef = useRef('');
+    // The current content as it is reported, base64-encoded: the chosen file's, or the text typed or pasted in.
+    const reportedContentRef = useRef('');
     const [fileName, setFileName] = useState('');
     const [contentType, setContentType] = useState('');
+    const [readError, setReadError] = useState<string>();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    // The reader of the latest file choice. A result from any earlier reader, or one after unmount, is ignored.
+    const readerRef = useRef<FileReader>(undefined);
+
+    useEffect(
+        () => () => {
+            readerRef.current = undefined;
+        },
+        [],
+    );
 
     const onFileLoaded = useCallback(
         (data: ProgressEvent<FileReader>, fileName: string) => {
@@ -44,6 +59,7 @@ export default function FileUpload({
             const contentType = fileInfo.split(',')[0].split(':')[1].split(';')[0];
             const fileContent = fileInfo.split(',')[1];
 
+            reportedContentRef.current = fileContent;
             setFileContent(fileContent);
             setFileName(fileName);
             setContentType(contentType);
@@ -55,10 +71,21 @@ export default function FileUpload({
     const createReader = useCallback(
         (file: File) => {
             const reader = new FileReader();
+            readerRef.current = reader;
+            setReadError(undefined);
+            onContentChange?.();
+            reader.onload = (data) => {
+                if (readerRef.current === reader) onFileLoaded(data, file.name);
+            };
+            reader.onerror = () => {
+                if (readerRef.current !== reader) return;
+                setReadError(`The file ${file.name} could not be read.`);
+                // A failed read changes nothing, so the content still shown is reported again to a caller that dropped it.
+                if (reportedContentRef.current) onFileContentLoaded(reportedContentRef.current);
+            };
             reader.readAsDataURL(file);
-            reader.onload = (data) => onFileLoaded(data, file.name);
         },
-        [onFileLoaded],
+        [onContentChange, onFileContentLoaded, onFileLoaded],
     );
 
     const onFileChanged = useCallback(
@@ -88,19 +115,22 @@ export default function FileUpload({
 
     const onFileInputTextChanged = useCallback(
         (fileContentLatest: string) => {
-            fileContentRef.current = fileContentLatest;
+            // Text typed in replaces the file: a read still running for it is ignored, and a failed read's error is cleared.
+            readerRef.current = undefined;
+            setReadError(undefined);
+            reportedContentRef.current = fileContentLatest ? btoa(fileContentLatest) : '';
             setFileContent(fileContentLatest);
             onContentChange?.();
             if (fileContentLatest) {
-                onFileContentLoaded(btoa(fileContentLatest));
+                onFileContentLoaded(reportedContentRef.current);
             }
         },
         [onContentChange, onFileContentLoaded],
     );
 
     const onFileInputTextBlurred = useCallback(() => {
-        if (!fileContentRef.current) return;
-        onFileContentLoaded(btoa(fileContentRef.current));
+        if (!reportedContentRef.current) return;
+        onFileContentLoaded(reportedContentRef.current);
     }, [onFileContentLoaded]);
 
     const resolvedContentPlaceholderText =
@@ -159,13 +189,23 @@ export default function FileUpload({
 
             <div className="text-sm text-content-subtle mt-4 mb-2">{resolvedDropZoneHintText}</div>
             <div>
-                <Label htmlFor={`${id}__fileUpload__file`} className="cursor-pointer">
-                    <Button variant="transparent" color="secondary" onClick={() => {}} className="pointer-events-none">
-                        Select file...
-                    </Button>
-                </Label>
-                <input id={`${id}__fileUpload__file`} type="file" className="hidden" onChange={onFileChanged} />
+                <Button variant="transparent" color="secondary" onClick={() => fileInputRef.current?.click()}>
+                    Select file...
+                </Button>
+                <input
+                    ref={fileInputRef}
+                    id={`${id}__fileUpload__file`}
+                    type="file"
+                    className="hidden"
+                    aria-label="Select file"
+                    onChange={onFileChanged}
+                />
             </div>
+            {readError && (
+                <p role="alert" className="mt-2 text-sm text-danger">
+                    {readError}
+                </p>
+            )}
         </section>
     );
 }

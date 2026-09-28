@@ -1,5 +1,9 @@
 import { test, expect } from '../../../../playwright/ct-test';
+import { completeFileRead, failFileRead, holdFileReads } from '../../../../playwright/fileReads';
 import FileUpload from './FileUpload';
+
+const aFile = (name: string, content: string) => ({ name, mimeType: 'text/plain', buffer: Buffer.from(content) });
+const base64 = (content: string) => Buffer.from(content).toString('base64');
 
 const mountEditableFileUpload = async (mount: any) => {
     const calls: string[] = [];
@@ -165,5 +169,122 @@ test.describe('FileUpload', () => {
 
         await expect(component.locator('textarea')).toHaveAttribute('placeholder', placeholderText);
         await expect(component.getByText(hintText)).toBeVisible();
+    });
+
+    test('reports a chosen file on a later blur of the content area, never an earlier paste', async ({ mount }) => {
+        const { component, calls } = await mountEditableFileUpload(mount);
+        await component.locator('textarea').fill('pasted');
+
+        await component.locator('input[type="file"]').setInputFiles(aFile('chosen.pem', 'chosen'));
+        await expect.poll(() => calls.at(-1)).toBe(base64('chosen'));
+        await component.locator('textarea').focus();
+        await component.locator('textarea').blur();
+
+        expect(calls.at(-1)).toBe(base64('chosen'));
+        expect(calls.slice(calls.indexOf(base64('chosen')))).not.toContain(btoa('pasted'));
+    });
+
+    test('ignores the read of an earlier file that completes after a newer one', async ({ mount, page }) => {
+        const calls: string[] = [];
+        const component = await mount(<FileUpload onFileContentLoaded={(content) => calls.push(content)} />);
+        await holdFileReads(page);
+        const input = component.locator('input[type="file"]');
+
+        await input.setInputFiles(aFile('first.pem', 'first'));
+        await input.setInputFiles(aFile('second.pem', 'second'));
+        await completeFileRead(page, 1);
+        await completeFileRead(page, 0);
+
+        expect(calls).toEqual([base64('second')]);
+        await expect(component.getByLabel('File name')).toHaveValue('second.pem');
+    });
+
+    test('says a file cannot be read and, with nothing loaded before, reports nothing', async ({ mount, page }) => {
+        const calls: string[] = [];
+        const component = await mount(<FileUpload onFileContentLoaded={(content) => calls.push(content)} />);
+        await holdFileReads(page);
+
+        await component.locator('input[type="file"]').setInputFiles(aFile('unreadable.p12', 'unreadable'));
+        await failFileRead(page, 0);
+
+        await expect(component.getByRole('alert')).toHaveText('The file unreadable.p12 could not be read.');
+        expect(calls).toEqual([]);
+    });
+
+    test('keeps the loaded file when another cannot be read, and reports its content again', async ({ mount, page }) => {
+        const calls: string[] = [];
+        const component = await mount(<FileUpload onFileContentLoaded={(content) => calls.push(content)} />);
+        await holdFileReads(page);
+        const input = component.locator('input[type="file"]');
+        await input.setInputFiles(aFile('loaded.pem', 'loaded'));
+        await completeFileRead(page, 0);
+
+        await input.setInputFiles(aFile('unreadable.p12', 'unreadable'));
+        await failFileRead(page, 1);
+
+        await expect(component.getByRole('alert')).toHaveText('The file unreadable.p12 could not be read.');
+        await expect(component.getByLabel('File name')).toHaveValue('loaded.pem');
+        await expect.poll(() => calls).toEqual([base64('loaded'), base64('loaded')]);
+    });
+
+    test('keeps text typed while a chosen file is still being read, and reports the text', async ({ mount, page }) => {
+        const calls: string[] = [];
+        const component = await mount(<FileUpload onFileContentLoaded={(content) => calls.push(content)} editable />);
+        await holdFileReads(page);
+        await component.locator('input[type="file"]').setInputFiles(aFile('late.pem', 'late'));
+        await component.locator('textarea').fill('typed');
+
+        await completeFileRead(page, 0);
+        await component.locator('textarea').blur();
+
+        await expect(component.locator('textarea')).toHaveValue('typed');
+        expect(calls).not.toContain(base64('late'));
+        expect(calls.at(-1)).toBe(btoa('typed'));
+    });
+
+    test('clears a read error once text is typed in place of the file', async ({ mount, page }) => {
+        const component = await mount(<FileUpload onFileContentLoaded={() => {}} editable />);
+        await holdFileReads(page);
+        await component.locator('input[type="file"]').setInputFiles(aFile('unreadable.p12', 'unreadable'));
+        await failFileRead(page, 0);
+        await expect(component.getByRole('alert')).toHaveText('The file unreadable.p12 could not be read.');
+
+        await component.locator('textarea').fill('typed');
+
+        await expect(component.getByRole('alert')).toHaveCount(0);
+    });
+
+    test('does nothing with a read that completes after it is unmounted', async ({ mount, page }) => {
+        const calls: string[] = [];
+        const component = await mount(<FileUpload onFileContentLoaded={(content) => calls.push(content)} />);
+        await holdFileReads(page);
+        await component.locator('input[type="file"]').setInputFiles(aFile('late.pem', 'late'));
+
+        await component.unmount();
+        await completeFileRead(page, 0);
+
+        expect(calls).toEqual([]);
+    });
+
+    test('calls onContentChange as soon as a chosen file starts to be read', async ({ mount, page }) => {
+        let changeCount = 0;
+        const component = await mount(<FileUpload onFileContentLoaded={() => {}} onContentChange={() => changeCount++} />);
+        await holdFileReads(page);
+
+        await component.locator('input[type="file"]').setInputFiles(aFile('slow.pem', 'slow'));
+
+        await expect(() => expect(changeCount).toBe(1)).toPass();
+    });
+
+    test('opens the file chooser from the keyboard, through a labelled file control', async ({ mount, page }) => {
+        const calls: string[] = [];
+        const component = await mount(<FileUpload onFileContentLoaded={(content) => calls.push(content)} />);
+
+        const fileChooser = page.waitForEvent('filechooser', { timeout: 5000 });
+        await component.getByRole('button', { name: 'Select file...' }).press('Enter');
+        await (await fileChooser).setFiles(aFile('keyboard.pem', 'keyboard'));
+
+        await expect.poll(() => calls).toEqual([base64('keyboard')]);
+        await expect(component.getByLabel('Select file', { exact: true })).toHaveAttribute('type', 'file');
     });
 });
