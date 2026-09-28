@@ -35,6 +35,14 @@ test.describe('CertificateDownloadForm', () => {
         await expect(page.getByRole('option', { name: PKCS12_OPTION_LABEL })).toHaveCount(0);
     });
 
+    test('does not offer the PKCS12 format without the key export permission', async ({ mount, page }) => {
+        await mount(<CertificateDownloadFormTestWrapper canExportKeys={false} />);
+
+        await page.getByTestId('select-certificateFormat-trigger').click();
+        await expect(page.getByRole('option', { name: 'Raw' })).toBeVisible();
+        await expect(page.getByRole('option', { name: PKCS12_OPTION_LABEL })).toHaveCount(0);
+    });
+
     test('does not offer the PKCS12 format when keystoreAvailable but the key has no private item', async ({ mount, page }) => {
         await mount(<CertificateDownloadFormTestWrapper keystoreAvailable hasPrivateKeyItem={false} />);
 

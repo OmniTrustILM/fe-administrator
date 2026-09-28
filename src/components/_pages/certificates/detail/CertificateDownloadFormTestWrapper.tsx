@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import GlobalModal from 'components/GlobalModal';
-import { type ExportAnswer, exportDialogTestStore } from 'components/_pages/test-utils/exportDialogTestStore';
+import { type ExportAnswer, exportDialogTestStore, keyExportAuth } from 'components/_pages/test-utils/exportDialogTestStore';
 import { slice as certificateSlice } from 'ducks/certificates';
 import { initialState as userInterfaceInitialState, type State as UserInterfaceState } from 'ducks/user-interface';
 import type { CertificateDetailResponseModel } from 'types/certificate';
@@ -99,6 +99,8 @@ export type CertificateDownloadFormTestWrapperProps = Readonly<{
     exportAnswer?: ExportAnswer;
     /** Shows the form in the global modal, as the certificate's Download action does, in place of on its own. */
     inGlobalModal?: boolean;
+    /** Whether the signed-in user holds the key export permission. */
+    canExportKeys?: boolean;
     onAction?: (action: UnknownAction) => void;
 }>;
 
@@ -110,6 +112,7 @@ export function CertificateDownloadFormTestWrapper({
     exportAttributeDescriptors,
     exportAnswer,
     inGlobalModal = false,
+    canExportKeys = true,
     onAction,
 }: CertificateDownloadFormTestWrapperProps) {
     const store = useMemo(
@@ -117,6 +120,7 @@ export function CertificateDownloadFormTestWrapper({
             exportDialogTestStore(
                 { exportAttributeDescriptors, exportAnswer, onAction },
                 {
+                    auth: keyExportAuth(canExportKeys),
                     enums: { platformEnums },
                     certificates: {
                         ...certificateSlice.getInitialState(),
@@ -125,7 +129,7 @@ export function CertificateDownloadFormTestWrapper({
                     ...(inGlobalModal ? { userInterface: downloadModal } : {}),
                 },
             ),
-        [keystoreAvailable, hasPrivateKeyItem, exportAttributeDescriptors, exportAnswer, inGlobalModal, onAction],
+        [keystoreAvailable, hasPrivateKeyItem, exportAttributeDescriptors, exportAnswer, inGlobalModal, canExportKeys, onAction],
     );
 
     return (

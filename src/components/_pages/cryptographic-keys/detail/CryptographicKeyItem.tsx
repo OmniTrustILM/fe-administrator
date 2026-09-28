@@ -6,6 +6,7 @@ import Widget from 'components/Widget';
 
 import WidgetButtons, { type WidgetButtonProps } from 'components/WidgetButtons';
 
+import { selectors as authSelectors } from 'ducks/auth';
 import { actions, selectors } from 'ducks/cryptographic-keys';
 import { selectors as tokenProfileSelectors } from 'ducks/token-profiles';
 
@@ -17,8 +18,9 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumValueDescription } from 'components/EnumDescription';
 import Badge from 'components/Badge';
 import type { CryptographicKeyHistoryModel, CryptographicKeyItemDetailResponseModel } from 'types/cryptographic-keys';
-import { KeyCompromiseReason, KeyRequestType, KeyState, KeyType, KeyUsage, PlatformEnum } from 'types/openapi';
+import { KeyCompromiseReason, KeyRequestType, KeyState, KeyType, KeyUsage, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { dateFormatter } from 'utils/dateUtil';
+import { hasResourceAction } from 'utils/permissions';
 import KeyStateBadge from '../KeyStateBadge';
 import KeyStatus from '../KeyStatus';
 import KeyUsageSelect, { filterKeyUsagesByType } from 'components/_pages/cryptographic-keys/KeyUsageSelect';
@@ -58,6 +60,7 @@ export default function CryptographicKeyItem({
 
     const isUpdatingKeyItem = useSelector(selectors.isUpdatingKeyItem);
     const isExportingKey = useSelector(selectors.isExportingKey);
+    const profile = useSelector(authSelectors.profile);
 
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
 
@@ -220,6 +223,7 @@ export default function CryptographicKeyItem({
     const exportKeyRequestType = EXPORTABLE_ITEM_TYPE_TO_KEY_REQUEST_TYPE[keyItem.type];
 
     const canExportKeyItem =
+        hasResourceAction(profile, Resource.Keys, ResourceAction.ExportKey) &&
         !!exportKeyRequestType &&
         keyItem.exportable &&
         keyItem.state === KeyState.Active &&

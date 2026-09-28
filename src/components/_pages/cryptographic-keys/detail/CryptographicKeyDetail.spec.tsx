@@ -259,6 +259,17 @@ test.describe('CryptographicKeyItem key export', () => {
         await expect(page.getByTestId('export-button')).toBeVisible();
     });
 
+    test('hides the Export button without the key export permission', async ({ mount, page }) => {
+        const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
+        const cryptographicKey = aKeyWithExportableItem();
+        await mount(
+            <CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} tokenProfile={tokenProfile} canExportKeys={false} />,
+        );
+
+        await expect(page.getByTestId('key-button')).toBeEnabled();
+        await expect(page.getByTestId('export-button')).toHaveCount(0);
+    });
+
     test('hides the Export button for a public key item', async ({ mount, page }) => {
         const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
         const cryptographicKey = aKeyWithExportableItem({ type: KeyType.Public });

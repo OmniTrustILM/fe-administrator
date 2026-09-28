@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import ThemeProvider from 'components/ThemeProvider';
 import CryptographicKeyDetail from 'components/_pages/cryptographic-keys/detail';
-import { answerExport, type ExportAnswer, keyExportFailure } from 'components/_pages/test-utils/exportDialogTestStore';
+import { answerExport, type ExportAnswer, keyExportAuth, keyExportFailure } from 'components/_pages/test-utils/exportDialogTestStore';
 import { actions as keyActions, slice as keySlice, type State as KeyState } from 'ducks/cryptographic-keys';
 import { testReducers } from 'ducks/test-reducers';
 import { actions as profileActions, slice as profileSlice, type State as ProfileState } from 'ducks/token-profiles';
@@ -29,10 +29,18 @@ type Props = Readonly<{
     tokenProfile?: TokenProfileDetailResponseModel;
     /** Leaves a key export in flight when absent. */
     exportAnswer?: ExportAnswer;
+    /** Whether the signed-in user holds the key export permission. */
+    canExportKeys?: boolean;
     onAction?: (action: UnknownAction) => void;
 }>;
 
-export default function CryptographicKeyDetailWithStore({ cryptographicKey, tokenProfile, exportAnswer, onAction }: Props) {
+export default function CryptographicKeyDetailWithStore({
+    cryptographicKey,
+    tokenProfile,
+    exportAnswer,
+    canExportKeys = true,
+    onAction,
+}: Props) {
     const store = useMemo(() => {
         // Resolve API requests in memory while keeping the real key/profile state transitions.
         let hasResolvedProfileRequest = false;
@@ -56,8 +64,9 @@ export default function CryptographicKeyDetailWithStore({ cryptographicKey, toke
         return configureStore({
             reducer,
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(apiResponses),
+            preloadedState: { ...reducer(undefined, { type: 'init' }), auth: keyExportAuth(canExportKeys) },
         });
-    }, [cryptographicKey, tokenProfile, exportAnswer, onAction]);
+    }, [cryptographicKey, tokenProfile, exportAnswer, canExportKeys, onAction]);
 
     return (
         <Provider store={store}>

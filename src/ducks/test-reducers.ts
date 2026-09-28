@@ -279,6 +279,7 @@ export type AuthTestState = {
         username: string;
         permissions?: {
             allowedListings?: unknown[];
+            allowedActions?: { resource: string; actions?: string[] }[];
         };
     };
 };

@@ -1,9 +1,9 @@
 import { configureStore, type Middleware, type MiddlewareAPI, type UnknownAction } from '@reduxjs/toolkit';
 import { actions as certificateActions, slice as certificateSlice, type State as CertificateState } from 'ducks/certificates';
 import { actions as keyActions, slice as keySlice, type State as KeyState } from 'ducks/cryptographic-keys';
-import { testInitialState, testReducers } from 'ducks/test-reducers';
+import { type AuthTestState, testInitialState, testReducers } from 'ducks/test-reducers';
 import { slice as userInterfaceSlice, type State as UserInterfaceState } from 'ducks/user-interface';
-import type { BaseAttributeDto } from 'types/openapi';
+import { type BaseAttributeDto, Resource, ResourceAction } from 'types/openapi';
 import { nth, type SchemaAnswer } from './testAnswers';
 
 type SharedState = Omit<ReturnType<typeof testReducers>, 'certificates' | 'cryptographicKeys' | 'userInterface'> & {
@@ -39,6 +39,17 @@ export function answerExport(
     const { delay = 0, error } = answer;
     setTimeout(() => api.dispatch(error ? failure(error) : success), delay);
 }
+
+/** The harnesses' signed-in user, who holds the key export permission unless `granted` is false. */
+export const keyExportAuth = (granted = true): AuthTestState => ({
+    profile: {
+        username: 'Test User',
+        permissions: {
+            allowedListings: [],
+            allowedActions: granted ? [{ resource: Resource.Keys, actions: [ResourceAction.ExportKey] }] : [],
+        },
+    },
+});
 
 /** The key export's failure action, for {@link answerExport}. */
 export const keyExportFailure = (error: string) => keyActions.exportKeyFailure({ error });
