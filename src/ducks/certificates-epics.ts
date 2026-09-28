@@ -1262,6 +1262,70 @@ const checkCompliance: AppEpic = (action$, state$, deps) => {
     );
 };
 
+// A 404 means the authority has no connector, so there is no schema: an outcome to render, not an error to report.
+const isSchemaAbsent = (err: unknown) => (err as { status?: unknown })?.status === 404;
+
+const getRenewAttributes: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getRenewAttributes.match),
+        switchMap((action) =>
+            deps.apiClients.clientOperations
+                .listRenewCertificateAttributes({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                })
+                .pipe(
+                    map((attributes) =>
+                        slice.actions.getRenewAttributesSuccess({
+                            raProfileUuid: action.payload.raProfileUuid,
+                            renewAttributes: attributes.map((attribute) => transformAttributeDescriptorDtoToModel(attribute)),
+                        }),
+                    ),
+
+                    catchError((err) => {
+                        const failure = slice.actions.getRenewAttributesFailure({
+                            error: extractError(err, 'Failed to get renew attributes'),
+                        });
+                        return isSchemaAbsent(err)
+                            ? of(failure)
+                            : of(failure, appRedirectActions.fetchError({ error: err, message: 'Failed to get renew attributes' }));
+                    }),
+                ),
+        ),
+    );
+};
+
+const getIdentifyAttributes: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getIdentifyAttributes.match),
+        switchMap((action) =>
+            deps.apiClients.clientOperations
+                .listIdentifyCertificateAttributes({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                })
+                .pipe(
+                    map((attributes) =>
+                        slice.actions.getIdentifyAttributesSuccess({
+                            raProfileUuid: action.payload.raProfileUuid,
+                            identifyAttributes: attributes.map((attribute) => transformAttributeDescriptorDtoToModel(attribute)),
+                        }),
+                    ),
+
+                    catchError((err) => {
+                        const failure = slice.actions.getIdentifyAttributesFailure({
+                            error: extractError(err, 'Failed to get identify attributes'),
+                        });
+                        return isSchemaAbsent(err)
+                            ? of(failure)
+                            : of(failure, appRedirectActions.fetchError({ error: err, message: 'Failed to get identify attributes' }));
+                    }),
+                    takeUntil(action$.pipe(filter(slice.actions.clearIdentifyAttributes.match))),
+                ),
+        ),
+    );
+};
+
 const getCsrAttributes: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getCsrAttributes.match),
@@ -1531,6 +1595,8 @@ const epics = [
     getIssuanceAttributes,
     getRegisterAttributes,
     getRevocationAttributes,
+    getRenewAttributes,
+    getIdentifyAttributes,
     checkCompliance,
     getCsrAttributes,
     getCertificateContent,

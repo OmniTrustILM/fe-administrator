@@ -730,6 +730,10 @@ export type CertificatesTestState = {
     issueWarnings?: { certificateUuid: string; messages: string[] };
     revocationAttributes: AttributeDescriptorModel[];
     isFetchingRevocationAttributes: boolean;
+    renewAttributes: AttributeDescriptorModel[];
+    isFetchingRenewAttributes: boolean;
+    identifyAttributes: AttributeDescriptorModel[];
+    isFetchingIdentifyAttributes: boolean;
 };
 
 const certificatesTestInitialState: CertificatesTestState = {
@@ -748,6 +752,10 @@ const certificatesTestInitialState: CertificatesTestState = {
     issueWarnings: undefined,
     revocationAttributes: [],
     isFetchingRevocationAttributes: false,
+    renewAttributes: [],
+    isFetchingRenewAttributes: false,
+    identifyAttributes: [],
+    isFetchingIdentifyAttributes: false,
 };
 
 function certificatesTestReducer(state: CertificatesTestState | undefined, _action: UnknownAction): CertificatesTestState {

@@ -30,6 +30,7 @@ import type {
     DownloadCertificateChainRequest,
     DownloadCertificateRequest,
     ListCertificateApprovalsRequest,
+    ManuallyIssueCertificateRequestDto,
 } from 'types/openapi';
 import type { RaProfileResponseModel } from 'types/ra-profiles';
 import type { UserResponseModel } from 'types/users';
@@ -97,6 +98,8 @@ export type State = {
     issuanceAttributes: { [raProfileId: string]: AttributeDescriptorModel[] };
     registerAttributes: { [raProfileId: string]: AttributeDescriptorModel[] };
     revocationAttributes: AttributeDescriptorModel[];
+    renewAttributes: AttributeDescriptorModel[];
+    identifyAttributes: AttributeDescriptorModel[];
     validationResult?: ValidationCertificateResultModel;
     approvals?: ApprovalDto[];
     certificateChain?: CertificateChainResponseModel;
@@ -149,6 +152,8 @@ export type State = {
     isFetchingIssuanceAttributes: boolean;
     isFetchingRegisterAttributes: boolean;
     isFetchingRevocationAttributes: boolean;
+    isFetchingRenewAttributes: boolean;
+    isFetchingIdentifyAttributes: boolean;
 
     isCheckingCompliance: boolean;
 
@@ -173,6 +178,8 @@ export const initialState: State = {
     issuanceAttributes: {},
     registerAttributes: {},
     revocationAttributes: [],
+    renewAttributes: [],
+    identifyAttributes: [],
     approvals: [],
 
     isFetchingValidationResult: false,
@@ -217,6 +224,8 @@ export const initialState: State = {
     isFetchingIssuanceAttributes: false,
     isFetchingRegisterAttributes: false,
     isFetchingRevocationAttributes: false,
+    isFetchingRenewAttributes: false,
+    isFetchingIdentifyAttributes: false,
 
     isCheckingCompliance: false,
 
@@ -472,7 +481,7 @@ export const slice = createSlice({
                 authorityUuid: string;
                 raProfileUuid: string;
                 uuid: string;
-                uploadRequest: CertificateUploadModel;
+                uploadRequest: ManuallyIssueCertificateRequestDto;
             }>,
         ) => {
             if (!state.finalizingIssueCertificateUuids.includes(action.payload.uuid)) {
@@ -971,6 +980,52 @@ export const slice = createSlice({
             state.isFetchingRevocationAttributes = false;
         },
 
+        getRenewAttributes: (state, action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {
+            state.isFetchingRenewAttributes = true;
+            state.renewAttributes = [];
+        },
+
+        getRenewAttributesSuccess: (
+            state,
+            action: PayloadAction<{ raProfileUuid: string; renewAttributes: AttributeDescriptorModel[] }>,
+        ) => {
+            state.isFetchingRenewAttributes = false;
+            state.renewAttributes = action.payload.renewAttributes;
+        },
+
+        getRenewAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isFetchingRenewAttributes = false;
+            state.renewAttributes = [];
+        },
+
+        clearRenewAttributes: (state) => {
+            state.renewAttributes = [];
+            state.isFetchingRenewAttributes = false;
+        },
+
+        getIdentifyAttributes: (state, action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {
+            state.isFetchingIdentifyAttributes = true;
+            state.identifyAttributes = [];
+        },
+
+        getIdentifyAttributesSuccess: (
+            state,
+            action: PayloadAction<{ raProfileUuid: string; identifyAttributes: AttributeDescriptorModel[] }>,
+        ) => {
+            state.isFetchingIdentifyAttributes = false;
+            state.identifyAttributes = action.payload.identifyAttributes;
+        },
+
+        getIdentifyAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isFetchingIdentifyAttributes = false;
+            state.identifyAttributes = [];
+        },
+
+        clearIdentifyAttributes: (state) => {
+            state.identifyAttributes = [];
+            state.isFetchingIdentifyAttributes = false;
+        },
+
         checkCompliance: (state, action: PayloadAction<CertificateComplianceCheckModel>) => {
             state.isCheckingCompliance = true;
         },
@@ -1161,6 +1216,8 @@ const certificateLocations = createSelector(state, (state) => state.certificateL
 const issuanceAttributes = createSelector(state, (state) => state.issuanceAttributes);
 const registerAttributes = createSelector(state, (state) => state.registerAttributes);
 const revocationAttributes = createSelector(state, (state) => state.revocationAttributes);
+const renewAttributes = createSelector(state, (state) => state.renewAttributes);
+const identifyAttributes = createSelector(state, (state) => state.identifyAttributes);
 const approvals = createSelector(state, (state) => state.approvals);
 
 const isFetchingApprovals = createSelector(state, (state) => state.isFetchingApprovals);
@@ -1194,6 +1251,8 @@ const isUploading = createSelector(state, (state) => state.isUploading);
 const isFetchingIssuanceAttributes = createSelector(state, (state) => state.isFetchingIssuanceAttributes);
 const isFetchingRegisterAttributes = createSelector(state, (state) => state.isFetchingRegisterAttributes);
 const isFetchingRevocationAttributes = createSelector(state, (state) => state.isFetchingRevocationAttributes);
+const isFetchingRenewAttributes = createSelector(state, (state) => state.isFetchingRenewAttributes);
+const isFetchingIdentifyAttributes = createSelector(state, (state) => state.isFetchingIdentifyAttributes);
 
 const isFetchingValidationResult = createSelector(state, (state) => state.isFetchingValidationResult);
 const validationResult = createSelector(state, (state) => state.validationResult);
@@ -1238,6 +1297,8 @@ export const selectors = {
     issuanceAttributes,
     registerAttributes,
     revocationAttributes,
+    renewAttributes,
+    identifyAttributes,
     approvals,
     isFetchingDetail,
     isFetchingHistory,
@@ -1264,6 +1325,8 @@ export const selectors = {
     isFetchingIssuanceAttributes,
     isFetchingRegisterAttributes,
     isFetchingRevocationAttributes,
+    isFetchingRenewAttributes,
+    isFetchingIdentifyAttributes,
     isFetchingValidationResult,
     validationResult,
     isFetchingCsrAttributes,

@@ -1,6 +1,15 @@
 import { test, expect } from '@playwright/experimental-ct-react';
-import { CertificateState } from 'types/openapi';
+import type { AttributeDescriptorModel } from 'types/attributes';
+import { AttributeContentType, AttributeType, CertificateState } from 'types/openapi';
 import PendingActionButtonsWithStore from './PendingActionButtonsWithStore';
+
+const identifyDescriptor: AttributeDescriptorModel = {
+    type: AttributeType.Data,
+    name: 'identifyField',
+    uuid: 'identify-data-uuid-1',
+    contentType: AttributeContentType.String,
+    properties: { label: 'Identify Field', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+} as AttributeDescriptorModel;
 
 const defaultRaProfile = { uuid: 'ra-1', authorityInstanceUuid: 'auth-1' };
 
@@ -53,6 +62,50 @@ test.describe('PendingActionButtons', () => {
         await expect(page.getByRole('button', { name: /^cancel$/i })).toBeVisible();
         await expect(page.getByRole('tab', { name: /custom attributes/i })).toHaveCount(0);
         await expect(page.getByText(/custom attributes/i)).toHaveCount(0);
+    });
+
+    test('Finalize Issue dialog renders the identify schema of the RA profile and sends the values with the issue', async ({
+        mount,
+        page,
+    }) => {
+        await mountPendingButtons(mount, CertificateState.PendingIssue, { identifyAttributes: [identifyDescriptor] });
+        await page.getByRole('button', { name: /finalize issue/i }).click();
+
+        await expect(page.getByText('Identify Attributes')).toBeVisible();
+        await page.locator('textarea').fill('certificate-content');
+        const field = page.getByTestId('text-input-__attributes__identify__.identifyField');
+        await field.click();
+        await field.fill('id-value');
+        await page
+            .getByRole('button', { name: /^finalize issue$/i })
+            .last()
+            .click();
+
+        await expect(page.getByTestId('manual-issue-payload')).not.toBeEmpty();
+        const payload = JSON.parse((await page.getByTestId('manual-issue-payload').textContent()) ?? '{}');
+        expect(payload).toMatchObject({
+            uuid: 'cert-1',
+            raProfileUuid: 'ra-1',
+            authorityUuid: 'auth-1',
+            uploadRequest: { identifyAttributes: [{ name: 'identifyField', content: [{ data: 'id-value' }] }] },
+        });
+    });
+
+    test('Finalize Issue dialog shows no identify section for an empty schema and sends none', async ({ mount, page }) => {
+        await mountPendingButtons(mount, CertificateState.PendingIssue);
+        await page.getByRole('button', { name: /finalize issue/i }).click();
+
+        await expect(page.getByRole('button', { name: /^cancel$/i })).toBeVisible();
+        await expect(page.getByText('Identify Attributes')).toHaveCount(0);
+        await page.locator('textarea').fill('certificate-content');
+        await page
+            .getByRole('button', { name: /^finalize issue$/i })
+            .last()
+            .click();
+
+        await expect(page.getByTestId('manual-issue-payload')).not.toBeEmpty();
+        const payload = JSON.parse((await page.getByTestId('manual-issue-payload').textContent()) ?? '{}');
+        expect(payload.uploadRequest.identifyAttributes).toEqual([]);
     });
 
     test('clicking Confirm Revoke opens the confirm dialog', async ({ mount, page }) => {

@@ -36,6 +36,7 @@ import TabLayout from 'components/Layout/TabLayout';
 import Switch from 'components/Switch';
 import { isObjectSame } from 'utils/common-utils';
 import Container from 'components/Container';
+import { Resource } from 'types/openapi';
 
 interface FormValues {
     pkcs10: File | null;
@@ -65,6 +66,8 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
     const altKeys = useSelector(keySelectors.altCryptographicKeyPairs);
 
     const rekeying = useSelector(certificateSelectors.isRekeying);
+    const renewAttributes = useSelector(certificateSelectors.renewAttributes);
+    const isFetchingRenewAttributes = useSelector(certificateSelectors.isFetchingRenewAttributes);
 
     const parsedCertificateRequest = useSelector(utilsCertificateRequestSelectors.parsedCertificateRequest);
 
@@ -72,6 +75,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
     const [altSignatureAttributesCallbackAttributes, setAltSignatureAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>(
         [],
     );
+    const [renewCallbackAttributes, setRenewCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
     const [fileContent, setFileContent] = useState<string>('');
     const [certificateRequest, setCertificateRequest] = useState<CertificateDetailResponseModel | undefined>();
 
@@ -89,6 +93,19 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                 : undefined,
         );
     }, [parsedCertificateRequest]);
+
+    const raProfileUuid = certificate?.raProfile?.uuid;
+    const authorityUuid = certificate?.raProfile?.authorityInstanceUuid;
+
+    // Rekey is a renew at the authority, so it takes the renew schema.
+    useEffect(() => {
+        if (raProfileUuid && authorityUuid) {
+            dispatch(certificateActions.getRenewAttributes({ raProfileUuid, authorityUuid }));
+        }
+        return () => {
+            dispatch(certificateActions.clearRenewAttributes());
+        };
+    }, [dispatch, raProfileUuid, authorityUuid]);
 
     useEffect(() => {
         dispatch(tokenProfileActions.listTokenProfiles({ enabled: true }));
@@ -116,6 +133,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                         request: fileContent || undefined,
                         format: CertificateRequestFormat.Pkcs10,
                         signatureAttributes: collectFormAttributes('signatureAttributes', signatureAttributeDescriptors, allValues),
+                        attributes: collectFormAttributes('renew', [...renewAttributes, ...renewCallbackAttributes], allValues),
                         keyUuid: values.key?.uuid || '',
                         tokenProfileUuid: values.tokenProfile || '',
                         ...(values.includeAltKey
@@ -134,7 +152,16 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
             );
             onCancel();
         },
-        [certificate, dispatch, fileContent, signatureAttributeDescriptors, altSignatureAttributeDescriptors, onCancel],
+        [
+            certificate,
+            dispatch,
+            fileContent,
+            signatureAttributeDescriptors,
+            altSignatureAttributeDescriptors,
+            renewAttributes,
+            renewCallbackAttributes,
+            onCancel,
+        ],
     );
 
     const onTokenProfileChange = useCallback(
@@ -255,6 +282,28 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         return areValuesSame;
     }, [watchedUploadCsr, fileContent, watchedKey, watchedAltKey, defaultValues]);
 
+    const renewAttributesTabs = useMemo(
+        () =>
+            renewAttributes.length > 0
+                ? [
+                      {
+                          title: 'Renew Attributes',
+                          content: (
+                              <AttributeEditor
+                                  id="renew"
+                                  attributeDescriptors={renewAttributes}
+                                  callbackParentUuid={raProfileUuid}
+                                  callbackResource={Resource.Certificates}
+                                  groupAttributesCallbackAttributes={renewCallbackAttributes}
+                                  setGroupAttributesCallbackAttributes={setRenewCallbackAttributes}
+                              />
+                          ),
+                      },
+                  ]
+                : [],
+        [renewAttributes, raProfileUuid, renewCallbackAttributes],
+    );
+
     const getSignatureAttributesTabs = useCallback(() => {
         return watchedUploadCsr
             ? []
@@ -302,6 +351,8 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         altSignatureAttributeDescriptors,
         altSignatureAttributesCallbackAttributes,
     ]);
+    const attributeTabs = [...renewAttributesTabs, ...getSignatureAttributesTabs()];
+
     const onSubmit = (values: FormValues) => {
         const allValues = watchedValues;
         submitCallback(values, allValues);
@@ -311,7 +362,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="space-y-4">
-                    <Widget noBorder busy={rekeying || isFetchingSignatureAttributes}>
+                    <Widget noBorder busy={rekeying || isFetchingSignatureAttributes || isFetchingRenewAttributes}>
                         <Controller
                             name="uploadCsr"
                             control={control}
@@ -521,12 +572,12 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                         />
                                     </>
                                 )}
-
-                                {getSignatureAttributesTabs().length ? <TabLayout noBorder tabs={getSignatureAttributesTabs()} /> : <></>}
                             </>
                         ) : (
                             <></>
                         )}
+
+                        {attributeTabs.length ? <TabLayout noBorder tabs={attributeTabs} /> : <></>}
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>
                             <Button variant="outline" onClick={onCancel} disabled={formState.isSubmitting} type="button">
@@ -536,7 +587,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                 title="Rekey"
                                 inProgressTitle="Rekeying..."
                                 inProgress={formState.isSubmitting || rekeying}
-                                disabled={!formState.isValid || !isRekeyAllowed()}
+                                disabled={!formState.isValid || !isRekeyAllowed() || isFetchingRenewAttributes}
                             />
                         </Container>
                     </Widget>

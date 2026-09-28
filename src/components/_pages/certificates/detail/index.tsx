@@ -1236,6 +1236,18 @@ export default function CertificateDetail() {
                                         </Widget>
                                     ) : null}
 
+                                    {certificate?.renewAttributes && certificate.renewAttributes.length > 0 ? (
+                                        <Widget title="Renew Attributes" titleSize="large">
+                                            <AttributeViewer attributes={certificate.renewAttributes} />
+                                        </Widget>
+                                    ) : null}
+
+                                    {certificate?.identifyAttributes && certificate.identifyAttributes.length > 0 ? (
+                                        <Widget title="Identify Attributes" titleSize="large">
+                                            <AttributeViewer attributes={certificate.identifyAttributes} />
+                                        </Widget>
+                                    ) : null}
+
                                     {certificate?.registrationRequestAttributes && certificate.registrationRequestAttributes.length > 0 ? (
                                         <Widget title="Registration Request Attributes" titleSize="large">
                                             <AttributeViewer attributes={certificate.registrationRequestAttributes} />

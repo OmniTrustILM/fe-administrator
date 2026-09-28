@@ -404,7 +404,7 @@ export default function CertificateList({
                 caption="Override RA Profile"
                 body={
                     <CertificateRAProfileDialog
-                        uuids={checkedRows}
+                        target={{ kind: 'selection', uuids: checkedRows.map(String) }}
                         onCancel={() => setUpdateRaProfile(false)}
                         onUpdate={() => setUpdateRaProfile(false)}
                     />
