@@ -90,6 +90,8 @@ type Props<TRow extends object> = {
      * omit the applied columns and ordering, blanking every attribute column and ignoring the sort.
      */
     refreshToken?: number;
+    /** Like `refreshToken`, but for a refresh the user did not ask for, so the checked rows are kept. */
+    backgroundRefreshToken?: number;
 };
 
 const EMPTY_HEADERS: TableHeader[] = [];
@@ -122,6 +124,7 @@ function PagedList<TRow extends object>({
     columnForDetail,
     extraFilterComponent,
     refreshToken,
+    backgroundRefreshToken,
 }: Readonly<Props<TRow>>) {
     const dispatch = useDispatch();
     const store = useStore<AppState>();
@@ -316,16 +319,22 @@ function PagedList<TRow extends object>({
     listRequestRef.current = listRequest;
 
     /** What the last request actually stood for, so the one effect below cannot send it twice. */
-    const lastSent = useRef<{ request: string; refreshToken: unknown; onList: typeof onListCallback } | undefined>(undefined);
+    const lastSent = useRef<
+        { request: string; refreshToken: unknown; backgroundRefreshToken: unknown; onList: typeof onListCallback } | undefined
+    >(undefined);
 
-    const getFreshData = useCallback(() => {
+    const requestList = useCallback(() => {
         // What this request asks to be projected is what the rows will carry, so a column dropped since
         // the last fetch stops counting as available and asks for a new one if it comes back. A request
         // that fails leaves no rows, and the effect below takes the claim back.
         projectedKeys.current = toProjectedKeys(listRequestRef.current.columns);
         onListCallback(listRequestRef.current);
+    }, [onListCallback]);
+
+    const getFreshData = useCallback(() => {
+        requestList();
         onCheckedRowsChanged([]);
-    }, [onListCallback, onCheckedRowsChanged]);
+    }, [requestList, onCheckedRowsChanged]);
 
     const onPageSizeChanged = useCallback(
         (pageSize: number) => {
@@ -563,20 +572,24 @@ function PagedList<TRow extends object>({
         const wanted = wantedProjection === '' ? [] : wantedProjection.split(PROJECTION_SEPARATOR);
         const needsProjection = wanted.some((key) => !projectedKeys.current.includes(key));
         const sent = lastSent.current;
-
-        if (
+        const onlyBackgroundMoved =
             !needsProjection &&
             sent?.request === listRequestSnapshot &&
             sent.refreshToken === refreshToken &&
-            sent.onList === onListCallback
-        ) {
+            sent.onList === onListCallback;
+
+        if (onlyBackgroundMoved && sent.backgroundRefreshToken === backgroundRefreshToken) {
             return;
         }
 
-        lastSent.current = { request: listRequestSnapshot, refreshToken, onList: onListCallback };
-        getFreshData();
+        lastSent.current = { request: listRequestSnapshot, refreshToken, backgroundRefreshToken, onList: onListCallback };
+        if (onlyBackgroundMoved) {
+            requestList();
+        } else {
+            getFreshData();
+        }
         setHasSentFirstRequest(true);
-    }, [getFreshData, wantedProjection, listRequestSnapshot, refreshToken, onListCallback]);
+    }, [getFreshData, requestList, wantedProjection, listRequestSnapshot, refreshToken, backgroundRefreshToken, onListCallback]);
 
     const buttons: WidgetButtonProps[] = useMemo(() => {
         const result = [];

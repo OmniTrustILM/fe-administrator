@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
-import { merge, of, race } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, take, takeUntil } from 'rxjs/operators';
+import { EMPTY, merge, of, race, timer } from 'rxjs';
+import { catchError, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile, tap, timeout } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { actions as alertActions } from './alerts';
@@ -12,7 +12,7 @@ import { transformAttributeDescriptorDtoToModel, transformAttributeRequestModelT
 import { store } from '../App';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { EntityType } from './filters';
-import { actions as pagingActions } from './paging';
+import { actions as pagingActions, selectors as pagingSelectors } from './paging';
 import {
     transformCertificateBulkDeleteRequestModelToDto,
     transformCertificateBulkDeleteResponseDtoToModel,
@@ -1100,28 +1100,99 @@ const bulkDeleteOwner: AppEpic = (action$, state, deps) => {
     );
 };
 
+const BULK_DELETE_REREAD_BASE_DELAY_MS = 1000;
+const BULK_DELETE_MAX_REREADS = 5;
+const BULK_DELETE_STILL_LISTED_MESSAGE =
+    'Some certificates selected for deletion are still listed. Refresh the list later to see whether the deletion has finished.';
+// Resets on every listing and outlasts the longest back-off step, so it only disarms a listener nothing answers.
+const BULK_DELETE_REREAD_IDLE_MS = 90_000;
+
 const bulkDelete: AppEpic = (action$, state, deps) => {
+    // Core runs each bulk delete on its own, so a later delete's watch also waits for the earlier ones.
+    const pendingUuids = new Set<string>();
+
     return action$.pipe(
         filter(slice.actions.bulkDelete.match),
-        switchMap((action) =>
-            deps.apiClients.certificates
+        switchMap((action) => {
+            const addedUuids = (action.payload.uuids ?? []).filter((uuid) => !pendingUuids.has(uuid));
+            for (const uuid of addedUuids) pendingUuids.add(uuid);
+            const forgetPending = () => pendingUuids.clear();
+
+            const listings$ = action$.pipe(filter(slice.actions.listCertificatesSuccess.match));
+            const stillListsDeleted = (listAction: ReturnType<typeof slice.actions.listCertificatesSuccess>) =>
+                listAction.payload.some((certificate) => pendingUuids.has(certificate.uuid));
+
+            // A background read keeps the selection, so a checked certificate it no longer lists is unticked here.
+            const pruneSelection$ = (listAction: ReturnType<typeof slice.actions.listCertificatesSuccess>) => {
+                const checkedRows = pagingSelectors.checkedRows(EntityType.CERTIFICATE)(state.value);
+                const listedUuids = new Set(listAction.payload.map((certificate) => certificate.uuid));
+                const stillListed = checkedRows.filter((uuid) => listedUuids.has(uuid));
+
+                return stillListed.length === checkedRows.length
+                    ? EMPTY
+                    : of(pagingActions.setCheckedRows({ entity: EntityType.CERTIFICATE, checkedRows: stillListed }));
+            };
+
+            // Core deletes in the background after answering, so the read the success triggers can still
+            // list the certificates. Each listing that does is followed by another read, backing off.
+            const rereadUntilRemoved$ = listings$.pipe(
+                timeout({
+                    each: BULK_DELETE_REREAD_IDLE_MS,
+                    with: () => {
+                        forgetPending();
+                        return EMPTY;
+                    },
+                }),
+                takeWhile((listAction, attempt) => stillListsDeleted(listAction) && attempt < BULK_DELETE_MAX_REREADS, true),
+                switchMap((listAction, attempt) => {
+                    if (!stillListsDeleted(listAction)) {
+                        forgetPending();
+                        return pruneSelection$(listAction);
+                    }
+                    if (attempt >= BULK_DELETE_MAX_REREADS) {
+                        forgetPending();
+                        return merge(pruneSelection$(listAction), of(alertActions.info(BULK_DELETE_STILL_LISTED_MESSAGE)));
+                    }
+                    return merge(
+                        pruneSelection$(listAction),
+                        timer(BULK_DELETE_REREAD_BASE_DELAY_MS * 2 ** attempt).pipe(map(() => slice.actions.refreshListInBackground())),
+                    );
+                }),
+                takeUntil(
+                    action$.pipe(
+                        filter(pagingActions.listFailure.match),
+                        filter((listFailureAction) => listFailureAction.payload === EntityType.CERTIFICATE),
+                        tap(forgetPending),
+                    ),
+                ),
+            );
+
+            return deps.apiClients.certificates
                 .bulkDeleteCertificate({ removeCertificateDto: transformCertificateBulkDeleteRequestModelToDto(action.payload) })
                 .pipe(
                     mergeMap((result) =>
-                        of(
-                            slice.actions.bulkDeleteSuccess({ response: transformCertificateBulkDeleteResponseDtoToModel(result) }),
-                            alertActions.success('Delete operation for selected certificates initiated.'),
+                        merge(
+                            of(
+                                slice.actions.bulkDeleteSuccess({ response: transformCertificateBulkDeleteResponseDtoToModel(result) }),
+                                alertActions.success('Delete operation for selected certificates initiated.'),
+                            ),
+                            rereadUntilRemoved$,
                         ),
                     ),
 
-                    catchError((err) =>
-                        of(
-                            slice.actions.bulkDeleteFailure({ error: extractError(err, 'Failed to bulk delete certificates') }),
-                            appRedirectActions.fetchError({ error: err, message: 'Failed to bulk delete certificates' }),
-                        ),
-                    ),
-                ),
-        ),
+                    catchError((err) => {
+                        for (const uuid of addedUuids) pendingUuids.delete(uuid);
+
+                        return merge(
+                            of(
+                                slice.actions.bulkDeleteFailure({ error: extractError(err, 'Failed to bulk delete certificates') }),
+                                appRedirectActions.fetchError({ error: err, message: 'Failed to bulk delete certificates' }),
+                            ),
+                            pendingUuids.size > 0 ? merge(rereadUntilRemoved$, of(slice.actions.refreshListInBackground())) : EMPTY,
+                        );
+                    }),
+                );
+        }),
     );
 };
 
