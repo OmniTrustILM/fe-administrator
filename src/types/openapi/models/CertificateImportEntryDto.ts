@@ -26,12 +26,6 @@ export interface CertificateImportEntryDto {
      */
     entryReference: string;
     /**
-     * Identifier of this entry\'s import, so a retry cannot import the same entry twice.  A replay is the same import only when this entry\'s reference and destination match the first submission, and the file carries the same content for it. A replay returns what that entry produced the first time; reuse with anything else changed is refused.  The identifier is per entry rather than per request because entries succeed and fail on their own. Repeating a request whose entries partly failed returns what already succeeded and retries only what did not, without the caller having to work out which is which.
-     * @type {string}
-     * @memberof CertificateImportEntryDto
-     */
-    importId: string;
-    /**
      * Where this entry\'s key material is stored. Required when the entry carries key material, and refused for an entry that carries only a certificate.
      * @type {CertificateEntryKeyDestinationDto}
      * @memberof CertificateImportEntryDto

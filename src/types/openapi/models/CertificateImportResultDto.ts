@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { InspectedEntryKind } from './';
+import type { ImportOutcome, InspectedEntryKind } from './';
 
 /**
  * Outcome of importing one entry
@@ -32,17 +32,29 @@ export interface CertificateImportResultDto {
      */
     kind: InspectedEntryKind;
     /**
-     * Whether this entry was imported
+     * Whether the entry\'s objects are in the inventory after the call
      * @type {boolean}
      * @memberof CertificateImportResultDto
      */
     imported: boolean;
+    /**
+     * What became of the certificate, when the entry carried one
+     * @type {ImportOutcome}
+     * @memberof CertificateImportResultDto
+     */
+    certificateOutcome?: ImportOutcome;
     /**
      * UUID of the certificate the entry produced, when it carried one
      * @type {string}
      * @memberof CertificateImportResultDto
      */
     certificateUuid?: string;
+    /**
+     * What became of the key, when the entry carried key material
+     * @type {ImportOutcome}
+     * @memberof CertificateImportResultDto
+     */
+    keyOutcome?: ImportOutcome;
     /**
      * UUID of the key the entry produced, when it carried key material
      * @type {string}

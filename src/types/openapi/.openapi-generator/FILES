@@ -411,6 +411,7 @@ models/HealthDto.ts
 models/HealthInfo.ts
 models/HealthInfoComponent.ts
 models/HealthStatus.ts
+models/ImportOutcome.ts
 models/InfoAttributeProperties.ts
 models/InfoAttributeV2.ts
 models/InfoAttributeV3.ts

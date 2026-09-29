@@ -343,6 +343,7 @@ export * from './HealthDto';
 export * from './HealthInfo';
 export * from './HealthInfoComponent';
 export * from './HealthStatus';
+export * from './ImportOutcome';
 export * from './InfoAttributeProperties';
 export * from './InfoAttributeV2';
 export * from './InfoAttributeV3';
