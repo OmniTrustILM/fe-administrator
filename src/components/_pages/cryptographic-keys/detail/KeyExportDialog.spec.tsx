@@ -2,7 +2,16 @@ import type { UnknownAction } from '@reduxjs/toolkit';
 import { test, expect, type Locator } from 'playwright/ct-test';
 import KeyExportDialogWithStore from './KeyExportDialogWithStore';
 import { actions as keyActions } from 'ducks/cryptographic-keys';
-import { AttributeContentType, AttributeType, type BaseAttributeDto } from 'types/openapi';
+import {
+    AttributeContentType,
+    AttributeType,
+    ComplianceStatus,
+    KeyAlgorithm,
+    KeyFormat,
+    KeyState,
+    KeyType,
+    type BaseAttributeDto,
+} from 'types/openapi';
 
 const pin: BaseAttributeDto = {
     uuid: 'export-pin-uuid',
@@ -28,6 +37,27 @@ test.describe('KeyExportDialog', () => {
 
         await expect(page.getByText('server-01 | RSA | Token instance')).toBeVisible();
         await expect(page.getByTestId('text-input-exportFormat')).toHaveValue('Encrypted PKCS8 – private key (PEM)');
+    });
+
+    test("names a secret key's export format as a secret key's", async ({ mount, page }) => {
+        await mount(
+            <KeyExportDialogWithStore
+                keyItem={{
+                    uuid: 'secret-item-uuid',
+                    name: 'backup-aes',
+                    type: KeyType.Secret,
+                    keyAlgorithm: KeyAlgorithm.Aes,
+                    format: KeyFormat.Raw,
+                    length: 256,
+                    enabled: true,
+                    state: KeyState.Active,
+                    complianceStatus: ComplianceStatus.NotChecked,
+                    exportable: true,
+                }}
+            />,
+        );
+
+        await expect(page.getByTestId('text-input-exportFormat')).toHaveValue('Encrypted PKCS8 – secret key (PEM)');
     });
 
     test('refuses a short passphrase with a field error', async ({ mount, page }) => {
