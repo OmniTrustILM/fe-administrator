@@ -404,6 +404,28 @@ test.describe('ViewTabs', () => {
         });
     });
 
+    test('keeps the active view and its unsaved changes while the overflow actions are walked with the arrow keys', async ({
+        mount,
+        page,
+    }) => {
+        const driftSort = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' as const };
+        await mount(strip({ views: overflowing(), driftSort }));
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await page.getByTestId('drift-sort').click();
+
+        await page.getByRole('button', { name: 'More saved views' }).click();
+        const actions = page.getByRole('menuitem', { name: 'Actions for View 6' });
+        await actions.focus();
+        await page.keyboard.press('ArrowRight');
+        await expect(page.getByRole('menuitem', { name: 'Rename…' })).toBeFocused();
+        await page.keyboard.press('ArrowLeft');
+        await expect(actions).toBeFocused();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
+        expect((await appliedSlice(page)).sort).toEqual(driftSort);
+    });
+
     test('holds the overflow actions while a mutation is in flight, but not the views themselves', async ({ mount, page }) => {
         await mount(strip({ views: overflowing(), isMutating: true }));
 

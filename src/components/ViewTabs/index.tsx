@@ -378,6 +378,9 @@ export default function ViewTabs({
 
     const onStripKeyDown = useCallback(
         (event: React.KeyboardEvent) => {
+            // Keys pressed in a menu bubble here through the React tree even though the menu is portalled out.
+            if (!(event.target instanceof HTMLElement) || event.target.getAttribute('role') !== 'tab') return;
+
             const keys: Record<string, number | undefined> = {
                 ArrowLeft: -1,
                 ArrowRight: 1,
