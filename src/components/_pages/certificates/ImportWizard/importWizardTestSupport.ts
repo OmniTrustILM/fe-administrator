@@ -56,6 +56,8 @@ export type ImportWizardAnswers = Readonly<{
     keyCustomAttributes?: CustomAttributeModel[];
     /** The resources whose custom attribute listing is left in flight. */
     pendingCustomAttributes?: Resource[];
+    /** The resources whose first custom attribute listing fails; a later one is answered. */
+    failedCustomAttributes?: Resource[];
     importAnswers?: ImportAnswer[];
     onAction?: (action: UnknownAction) => void;
 }>;
@@ -78,6 +80,7 @@ export function importWizardTestMiddleware(
         certificateCustomAttributes,
         keyCustomAttributes,
         pendingCustomAttributes,
+        failedCustomAttributes,
         importAnswers,
         onAction,
     }: ImportWizardAnswers,
@@ -87,6 +90,7 @@ export function importWizardTestMiddleware(
     let attributeListingsAnswered = 0;
     let importsAnswered = 0;
     let profileDetailsAnswered = 0;
+    const customAttributeFailuresLeft = new Set(failedCustomAttributes);
 
     const inspect = (request: { file: string; passphrase?: string; tokenProfileUuid?: string }) => {
         const answer = inspectAnswers.find(
@@ -135,6 +139,21 @@ export function importWizardTestMiddleware(
         }
     };
 
+    const listCustomAttributes = (
+        api: MiddlewareAPI,
+        resource: Resource,
+        success: UnknownAction,
+        failure: (payload: { error: string }) => UnknownAction,
+    ) => {
+        if (pendingCustomAttributes?.includes(resource)) return;
+        if (customAttributeFailuresLeft.delete(resource)) {
+            api.dispatch(failure({ error: 'Failed to get Resource Custom Attributes list' }));
+            api.dispatch(appRedirectActions.fetchError({ error: undefined, message: 'Failed to get Resource Custom Attributes list' }));
+        } else {
+            api.dispatch(success);
+        }
+    };
+
     const importEntries = (api: MiddlewareAPI) => {
         const answer = nth(importAnswers, importsAnswered++);
         if (answer?.pending) return;
@@ -161,13 +180,19 @@ export function importWizardTestMiddleware(
         } else if (certificateActions.importCertificates.match(action)) {
             importEntries(api);
         } else if (customAttributeActions.listSecondaryResourceCustomAttributes.match(action)) {
-            if (!pendingCustomAttributes?.includes(action.payload)) {
-                api.dispatch(customAttributeActions.listSecondaryResourceCustomAttributesSuccess(certificateCustomAttributes ?? []));
-            }
+            listCustomAttributes(
+                api,
+                action.payload,
+                customAttributeActions.listSecondaryResourceCustomAttributesSuccess(certificateCustomAttributes ?? []),
+                customAttributeActions.listSecondaryResourceCustomAttributesFailure,
+            );
         } else if (customAttributeActions.listResourceCustomAttributes.match(action)) {
-            if (!pendingCustomAttributes?.includes(action.payload)) {
-                api.dispatch(customAttributeActions.listResourceCustomAttributesSuccess(keyCustomAttributes ?? []));
-            }
+            listCustomAttributes(
+                api,
+                action.payload,
+                customAttributeActions.listResourceCustomAttributesSuccess(keyCustomAttributes ?? []),
+                customAttributeActions.listResourceCustomAttributesFailure,
+            );
         } else if (appRedirectActions.fetchError.match(action)) {
             api.dispatch(alertActions.error(action.payload.message));
         }

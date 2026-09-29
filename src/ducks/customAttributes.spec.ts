@@ -58,6 +58,8 @@ describe('customAttributes slice', () => {
             actions.listResourceCustomAttributesFailure({ error: 'err' }),
         );
         expect(failing.isFetchingResourceCustomAttributes).toBe(false);
+        expect(failing.resourceCustomAttributesError).toBe('err');
+        expect(reducer(failing, actions.listResourceCustomAttributes(Resource.Keys)).resourceCustomAttributesError).toBeUndefined();
     });
 
     test('listSecondaryResourceCustomAttributes / Success / Failure', () => {
@@ -74,6 +76,10 @@ describe('customAttributes slice', () => {
             actions.listSecondaryResourceCustomAttributesFailure({ error: 'err' }),
         );
         expect(failing.isFetchingResourceSecondaryCustomAttributes).toBe(false);
+        expect(failing.secondaryResourceCustomAttributesError).toBe('err');
+        expect(
+            reducer(failing, actions.listSecondaryResourceCustomAttributes(Resource.Certificates)).secondaryResourceCustomAttributesError,
+        ).toBeUndefined();
     });
 
     test('createCustomAttribute / Success / Failure', () => {
@@ -360,6 +366,8 @@ describe('customAttributes selectors', () => {
             isFetchingResources: true,
             isFetchingResourceCustomAttributes: true,
             isFetchingResourceSecondaryCustomAttributes: true,
+            resourceCustomAttributesError: 'Failed to get Resource Custom Attributes list',
+            secondaryResourceCustomAttributesError: 'Failed to get Resource Custom Attributes list',
             isDeleting: true,
             isBulkDeleting: true,
             isBulkEnabling: true,
@@ -385,6 +393,8 @@ describe('customAttributes selectors', () => {
         expect(selectors.isFetchingResources(state)).toBe(true);
         expect(selectors.isFetchingResourceCustomAttributes(state)).toBe(true);
         expect(selectors.isFetchingResourceSecondaryCustomAttributes(state)).toBe(true);
+        expect(selectors.resourceCustomAttributesError(state)).toBe('Failed to get Resource Custom Attributes list');
+        expect(selectors.secondaryResourceCustomAttributesError(state)).toBe('Failed to get Resource Custom Attributes list');
         expect(selectors.isDeleting(state)).toBe(true);
         expect(selectors.isBulkDeleting(state)).toBe(true);
         expect(selectors.isBulkEnabling(state)).toBe(true);

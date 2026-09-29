@@ -5,6 +5,7 @@ import Container from 'components/Container';
 import InfoNote from 'components/InfoNote';
 import FileUpload from 'components/Input/FileUpload/FileUpload';
 import ProgressButton from 'components/ProgressButton';
+import RetryCallout from 'components/RetryCallout';
 import Widget from 'components/Widget';
 import { selectors as authSelectors } from 'ducks/auth';
 import { actions as certificatesActions, selectors as certificatesSelectors } from 'ducks/certificates';
@@ -129,6 +130,8 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     const keyCustomAttributeDescriptors = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const isListingCertificateCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceSecondaryCustomAttributes);
     const isListingKeyCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
+    const certificateCustomAttributesError = useSelector(customAttributesSelectors.secondaryResourceCustomAttributesError);
+    const keyCustomAttributesError = useSelector(customAttributesSelectors.resourceCustomAttributesError);
     const importResults = useSelector(certificatesSelectors.importResults);
     const isImporting = useSelector(certificatesSelectors.isImporting);
     const auth = useSelector(authSelectors.profile);
@@ -202,15 +205,23 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
         [importSchema],
     );
 
-    useEffect(() => {
-        if (showCertificateCustomAttributes) {
-            dispatch(customAttributesActions.listSecondaryResourceCustomAttributes(Resource.Certificates));
-        }
-    }, [dispatch, showCertificateCustomAttributes]);
+    const listCertificateCustomAttributes = useCallback(
+        () => dispatch(customAttributesActions.listSecondaryResourceCustomAttributes(Resource.Certificates)),
+        [dispatch],
+    );
+
+    const listKeyCustomAttributes = useCallback(
+        () => dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Keys)),
+        [dispatch],
+    );
 
     useEffect(() => {
-        dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Keys));
-    }, [dispatch]);
+        if (showCertificateCustomAttributes) listCertificateCustomAttributes();
+    }, [showCertificateCustomAttributes, listCertificateCustomAttributes]);
+
+    useEffect(() => {
+        listKeyCustomAttributes();
+    }, [listKeyCustomAttributes]);
 
     useEffect(
         () => () => {
@@ -425,6 +436,10 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     const showResults = !!results && !!submission;
     const retryNeedsPassword = readWithPassword && !!results?.some((result) => !result.imported);
 
+    // A failed listing leaves required custom attributes unasked, so the entries it applies to wait for it.
+    const customAttributesFailed =
+        (withCustomAttributes && !!certificateCustomAttributesError) || (selectedKeys.length > 0 && !!keyCustomAttributesError);
+
     const canImport =
         selectedEntries.length > 0 &&
         !isInspecting &&
@@ -432,6 +447,7 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
         !passwordMissing &&
         !isListingCertificateCustomAttributes &&
         !isListingKeyCustomAttributes &&
+        !customAttributesFailed &&
         (selectedKeys.length === 0 || (importSchema?.status === 'loaded' && !!profileDetail));
 
     return (
@@ -504,15 +520,23 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
                         />
                     )}
 
-                    {selectedKeys.length > 0 && keyCustomAttributeDescriptors.length > 0 && (
+                    {selectedKeys.length > 0 && (keyCustomAttributesError || keyCustomAttributeDescriptors.length > 0) && (
                         <WizardSection id="importKeyCustomAttributes" title="Key custom attributes">
-                            <AttributeEditor id={KEY_CUSTOM_ATTRIBUTES_ID} attributeDescriptors={keyCustomAttributeDescriptors} />
+                            {keyCustomAttributesError ? (
+                                <RetryCallout message={keyCustomAttributesError} onRetry={listKeyCustomAttributes} />
+                            ) : (
+                                <AttributeEditor id={KEY_CUSTOM_ATTRIBUTES_ID} attributeDescriptors={keyCustomAttributeDescriptors} />
+                            )}
                         </WizardSection>
                     )}
 
                     {withCustomAttributes && (
                         <WizardSection id="importCertificateAttributes" title="Certificate custom attributes">
-                            <AttributeEditor id={CUSTOM_ATTRIBUTES_ID} attributeDescriptors={customAttributeDescriptors} />
+                            {certificateCustomAttributesError ? (
+                                <RetryCallout message={certificateCustomAttributesError} onRetry={listCertificateCustomAttributes} />
+                            ) : (
+                                <AttributeEditor id={CUSTOM_ATTRIBUTES_ID} attributeDescriptors={customAttributeDescriptors} />
+                            )}
                         </WizardSection>
                     )}
 

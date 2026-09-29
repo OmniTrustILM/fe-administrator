@@ -560,6 +560,51 @@ test.describe('ImportWizard', () => {
         await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeDisabled();
     });
 
+    test('says why the certificate custom attributes could not be listed, and lists them again on Retry', async ({ mount, page }) => {
+        await mount(
+            <ImportWizardWithStore
+                showCertificateCustomAttributes
+                certificateCustomAttributes={[department]}
+                failedCustomAttributes={[Resource.Certificates]}
+                inspectAnswers={[{ inspection: inspection([certificate]) }]}
+            />,
+        );
+        const section = page.getByRole('region', { name: 'Certificate custom attributes' });
+
+        await chooseFile(page);
+
+        await expect(section.getByRole('alert')).toContainText('Failed to get Resource Custom Attributes list');
+        await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeDisabled();
+
+        await section.getByRole('button', { name: 'Retry' }).click();
+
+        await expect(page.getByTestId('text-input-__attributes__customImportCertificate__.department')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeEnabled();
+    });
+
+    test('says why the key custom attributes could not be listed, and lists them again on Retry', async ({ mount, page }) => {
+        await mount(
+            <ImportWizardWithStore
+                keyCustomAttributes={[ownerTeam]}
+                failedCustomAttributes={[Resource.Keys]}
+                inspectAnswers={[{ inspection: inspection([keyPair]) }]}
+                importableTokenProfiles={[profile]}
+            />,
+        );
+        const section = page.getByRole('region', { name: 'Key custom attributes' });
+
+        await chooseFile(page);
+        await chooseProfile(page);
+
+        await expect(section.getByRole('alert')).toContainText('Failed to get Resource Custom Attributes list');
+        await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeDisabled();
+
+        await section.getByRole('button', { name: 'Retry' }).click();
+
+        await expect(page.getByTestId('text-input-__attributes__customImportKey__.ownerTeam')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeEnabled();
+    });
+
     test('says why the import attribute schema could not be listed, and lists it again on Retry', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         const failure = 'Failed to get Attributes to import a key (503): The provider is unavailable';

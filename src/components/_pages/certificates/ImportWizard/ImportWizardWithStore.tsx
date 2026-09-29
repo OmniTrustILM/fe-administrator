@@ -74,6 +74,7 @@ export function useImportTestStore(
         certificateCustomAttributes,
         keyCustomAttributes,
         pendingCustomAttributes,
+        failedCustomAttributes,
         importAnswers,
         onAction,
     }: ImportWizardAnswers,
@@ -91,6 +92,7 @@ export function useImportTestStore(
             certificateCustomAttributes,
             keyCustomAttributes,
             pendingCustomAttributes,
+            failedCustomAttributes,
             importAnswers,
             onAction,
         });
@@ -111,6 +113,7 @@ export function useImportTestStore(
         certificateCustomAttributes,
         keyCustomAttributes,
         pendingCustomAttributes,
+        failedCustomAttributes,
         importAnswers,
         onAction,
         canImportKeys,
