@@ -43,6 +43,8 @@ export interface ResourceViews {
      * are superseded rather than queued — the epic runs them under `switchMap` — so one is enough.
      */
     readEpoch?: number;
+    /** Whether the last read was answered but set aside because a write overlapped it, so `views` is not its answer. */
+    isStale?: boolean;
 }
 
 export type State = {
@@ -116,6 +118,7 @@ export const slice = createSlice({
         listViews: (state, action: PayloadAction<{ resource: Resource }>) => {
             const entry = forResource(state, action.payload.resource);
             entry.isFetching = true;
+            entry.isStale = false;
             entry.readEpoch = entry.mutationEpoch;
             state.error = undefined;
         },
@@ -138,7 +141,10 @@ export const slice = createSlice({
             // No recorded epoch means the request this answers is not one this slice saw — the state
             // was reset under it, or the views were seeded directly — and there is nothing to date it
             // against.
-            if (entry.isMutating || (issuedUnder !== undefined && issuedUnder !== entry.mutationEpoch)) return;
+            if (entry.isMutating || (issuedUnder !== undefined && issuedUnder !== entry.mutationEpoch)) {
+                entry.isStale = true;
+                return;
+            }
 
             entry.views = action.payload.views;
         },
@@ -238,6 +244,7 @@ const views = (resource: Resource) => createSelector(resourceViews(resource), (e
 const isFetching = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.isFetching);
 const hasLoaded = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.hasLoaded);
 const isMutating = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.isMutating);
+const isStale = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.isStale ?? false);
 const createdUuid = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.createdUuid);
 const error = createSelector(state, (state) => state?.error);
 
@@ -248,6 +255,7 @@ export const selectors = {
     isFetching,
     hasLoaded,
     isMutating,
+    isStale,
     createdUuid,
     error,
 };

@@ -161,6 +161,22 @@ describe('reading the saved views', () => {
         expect(certificates(failed).views.map((v) => v.uuid)).toEqual(['a', 'b']);
     });
 
+    test('marks the list stale when a write overlapped the read, and clears the mark on the next read', () => {
+        const overlapped = reduceAll(
+            [
+                actions.listViews({ resource: Resource.Certificates }),
+                actions.deleteView({ resource: Resource.Certificates, uuid: 'a' }),
+                actions.deleteViewSuccess({ resource: Resource.Certificates, uuid: 'a' }),
+                actions.listViewsSuccess({ resource: Resource.Certificates, views: [view('a', 'One')] }),
+            ],
+            listed([view('a', 'One')]),
+        );
+
+        expect(certificates(overlapped).isStale).toBe(true);
+        expect(selectors.isStale(Resource.Certificates)({ [slice.name]: overlapped } as never)).toBe(true);
+        expect(certificates(reduce(overlapped, actions.listViews({ resource: Resource.Certificates }))).isStale).toBe(false);
+    });
+
     test('resources hold their views apart', () => {
         const both = reduceAll(
             [actions.listViewsSuccess({ resource: Resource.Cryptographickeys, views: [view('k', 'Keys view')] })],

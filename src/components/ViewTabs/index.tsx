@@ -116,6 +116,7 @@ export default function ViewTabs({
     const hasLoaded = useSelector(listViewSelectors.hasLoaded(resource));
     const isFetching = useSelector(listViewSelectors.isFetching(resource));
     const isMutating = useSelector(listViewSelectors.isMutating(resource));
+    const isStale = useSelector(listViewSelectors.isStale(resource));
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
 
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
@@ -144,8 +145,9 @@ export default function ViewTabs({
      * still holds the list from its last visit, and opening on that copy applies a view as it stood
      * then: the read that replaces it moves the stored side and not the table, which reports the
      * difference as an unsaved edit nobody made, and Save to view would then write the old copy back.
+     * A read set aside because a write overlapped it leaves that copy in place too, so it is sent again.
      */
-    const hasFreshViews = requestedFor === resource && hasLoaded && !isFetching;
+    const hasFreshViews = requestedFor === resource && hasLoaded && !isFetching && !isStale;
     const isReady = isViewStripReady(hasFreshViews, isCatalogueLoaded ?? catalogue.length > 0);
 
     const activeView = useMemo(() => views.find((view) => view.uuid === activeId), [views, activeId]);
@@ -221,6 +223,10 @@ export default function ViewTabs({
         setRequestedFor(resource);
     }, [dispatch, resource]);
 
+    useEffect(() => {
+        if (requestedFor === resource && isStale && !isMutating) dispatch(listViewActions.listViews({ resource }));
+    }, [dispatch, resource, requestedFor, isStale, isMutating]);
+
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
     // after a rename, say — must not throw the user back to the tab they started on.
     const hasOpened = useRef<Resource | undefined>(undefined);
@@ -284,11 +290,12 @@ export default function ViewTabs({
 
     const createFromCurrent = useCallback(
         (name: string) => {
+            const view = create(name, currentSlice);
+            const storedKeys = new Set(view.columns.map(getColumnKey));
+            const keptColumns = columns.filter((column) => storedKeys.has(getColumnKey(column)));
             const keptFilters = withoutMissingFieldFilters(filters, catalogue);
-            const keptColumns = columns.filter((column) => !column.displayOnly);
             const isTrimmed = keptFilters.length !== filters.length || keptColumns.length !== columns.length;
             sliceAfterCreate.current = isTrimmed ? { columns: keptColumns, filters: keptFilters, sort } : undefined;
-            create(name, currentSlice);
         },
         [create, currentSlice, filters, catalogue, columns, sort],
     );

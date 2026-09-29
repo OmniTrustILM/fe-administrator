@@ -1067,6 +1067,39 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
     });
 
+    test('reads the list again when its answer is set aside, and opens on the one that lands', async ({ mount, page }) => {
+        const earlier = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME')] });
+        const current = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('SERIAL_NUMBER')] });
+        await mount(strip({ views: [earlier], isRefreshing: true, refreshedViews: [current] }));
+
+        await page.getByTestId('simulate-list-set-aside').click();
+
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+        await expect.poll(async () => (await dispatchedTypes(page)).filter((type) => type === 'listViews/listViews').length).toBe(2);
+
+        await page.getByTestId('simulate-list-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
+    });
+
+    test('drops a column whose field is gone from the table once a duplicate that leaves it out exists', async ({ mount, page }) => {
+        await mount(strip({ views: [], driftColumn: column('deleted', 'deleted', FilterFieldSource.Custom) }));
+
+        await page.getByTestId('drift-columns').click();
+        await openTabMenu(page, 'Standard');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+        expect(JSON.stringify(await lastDispatched(page, 'listViews/createView'))).not.toContain('deleted');
+
+        await page.getByTestId('simulate-create-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-created')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-view-created-dirty')).toHaveCount(0);
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
+    });
+
     test('shows a new view only the Standard columns it can store', async ({ mount, page }) => {
         await mount(strip({ standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }] }));
 

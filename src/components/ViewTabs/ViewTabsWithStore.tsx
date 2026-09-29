@@ -104,6 +104,14 @@ export default function ViewTabsWithStore({
 
                 <button
                     type="button"
+                    data-testid="simulate-list-set-aside"
+                    onClick={() => store.dispatch({ type: 'listViews/listViewsSuccess', payload: { resource, views: [], stale: true } })}
+                >
+                    set the list read aside
+                </button>
+
+                <button
+                    type="button"
                     data-testid="simulate-list-success"
                     onClick={() => store.dispatch({ type: 'listViews/listViewsSuccess', payload: { resource, views: refreshedViews } })}
                 >
