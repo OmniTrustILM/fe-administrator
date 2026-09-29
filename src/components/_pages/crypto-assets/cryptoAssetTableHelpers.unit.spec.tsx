@@ -116,6 +116,12 @@ describe('buildCryptoAssetRows', () => {
         expect(row.columns).toHaveLength(CRYPTO_ASSET_HEADERS.length);
     });
 
+    test('an asset without a type reads Untyped in its type column', async () => {
+        await renderRow([asset({ type: undefined })]);
+
+        expect(cell('type').textContent).toBe('Untyped');
+    });
+
     test('the name links to the asset detail page', async () => {
         await renderRow([asset()]);
 

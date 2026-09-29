@@ -1021,12 +1021,14 @@ describe('certificates epics', () => {
             expect(emitted).toEqual([certificatesActions.importCertificatesSuccess({ results })]);
         });
 
-        test('importCertificates failure emits Failure and fetchError', async () => {
+        test('importCertificates failure emits Failure and fetchError, named for certificates and keys', async () => {
             const { emitted } = await runImportCertificatesEpic(importAction, () => throwError(() => new Error('boom')), 2);
 
             expect(emitted[0].type).toBe(certificatesActions.importCertificatesFailure.type);
             expect((emitted[0] as any).payload.error).toContain('boom');
+            expect((emitted[0] as any).payload.error).toContain('Failed to import certificates and keys');
             expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+            expect((emitted[1] as any).payload.message).toBe('Failed to import certificates and keys');
         });
     });
 

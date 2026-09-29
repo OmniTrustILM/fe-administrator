@@ -1403,8 +1403,10 @@ const importCertificates: AppEpic = (action$, state$, deps) => {
 
                     catchError((error) =>
                         of(
-                            slice.actions.importCertificatesFailure({ error: extractError(error, 'Failed to import certificate') }),
-                            appRedirectActions.fetchError({ error, message: 'Failed to import certificate' }),
+                            slice.actions.importCertificatesFailure({
+                                error: extractError(error, 'Failed to import certificates and keys'),
+                            }),
+                            appRedirectActions.fetchError({ error, message: 'Failed to import certificates and keys' }),
                         ),
                     ),
                 ),

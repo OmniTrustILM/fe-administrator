@@ -121,7 +121,7 @@ export function importWizardTestMiddleware({
             api.dispatch(certificateActions.importCertificatesSuccess({ results: answer.results }));
             return;
         }
-        const error = answer?.error ?? 'Failed to import certificate';
+        const error = answer?.error ?? 'Failed to import certificates and keys';
         api.dispatch(certificateActions.importCertificatesFailure({ error }));
         api.dispatch(appRedirectActions.fetchError({ error: undefined, message: error }));
     };

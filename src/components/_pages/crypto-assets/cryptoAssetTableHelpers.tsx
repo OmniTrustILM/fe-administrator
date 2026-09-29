@@ -14,6 +14,9 @@ export interface BuildCryptoAssetRowsOpts {
     getEnumDescription: (enumMap: PlatformEnumMap, key: string | undefined) => string | undefined;
 }
 
+/** What an asset reads as its type when its sources could not tell one. */
+export const UNTYPED_ASSET_LABEL = 'Untyped';
+
 export const QUARANTINE_TOOLTIP = 'Sources make contradicting claims about this asset; the record is quarantined pending reconciliation';
 
 // Nothing sorts: paging is served, and core answers 422 to any sort while no field is marked sortable.
@@ -50,7 +53,7 @@ export function buildCryptoAssetRows(
                 )}
             </span>,
             <Badge key="type" color="secondary">
-                {getEnumLabel(typeEnum, asset.type ?? '')}
+                {asset.type ? getEnumLabel(typeEnum, asset.type) : UNTYPED_ASSET_LABEL}
             </Badge>,
             <PqcVerdictBadge
                 key="verdict"

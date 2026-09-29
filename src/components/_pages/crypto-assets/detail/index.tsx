@@ -16,6 +16,7 @@ import {
     CryptoAssetSummary,
     CryptoAssetVerdict,
 } from './CryptoAssetDetailSections';
+import { UNTYPED_ASSET_LABEL } from '../cryptoAssetTableHelpers';
 
 const LIST_PATH = '/cryptoassets';
 
@@ -102,7 +103,11 @@ export default function CryptoAssetDetail() {
             {breadcrumb}
             <Container>
                 <Widget title="Summary" titleSize="large" refreshAction={getFreshDetail}>
-                    <CryptoAssetSummary detail={detail} typeLabel={getEnumLabel(typeEnum, detail.type ?? '')} verdictLabel={verdictLabel} />
+                    <CryptoAssetSummary
+                        detail={detail}
+                        typeLabel={detail.type ? getEnumLabel(typeEnum, detail.type) : UNTYPED_ASSET_LABEL}
+                        verdictLabel={verdictLabel}
+                    />
                 </Widget>
                 <div className="grid gap-4 md:grid-cols-2">
                     <Widget title="Identity" titleSize="large">
