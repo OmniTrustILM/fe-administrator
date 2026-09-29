@@ -154,6 +154,18 @@ describe('sanitizeAction', () => {
         expect(sanitizeAction(detail)).toEqual(detail);
     });
 
+    test("masks a trusted certificate's uploaded content, and keeps the rest of it", () => {
+        const upload = {
+            type: 'trustedCertificates/createTrustedCertificate',
+            payload: { trustedCertificate: { name: 'root', certificateContent: 'MIIB' } },
+        };
+
+        expect(sanitizeAction(upload)).toEqual({
+            ...upload,
+            payload: { trustedCertificate: { name: 'root', certificateContent: MASKED } },
+        });
+    });
+
     test('masks the request body of an error, and keeps the rest of it', () => {
         const request = { url: '/api/v1/keys/key-1/items/item-1/export', method: 'POST', body: { passphrase: 'correct horse battery' } };
         const error = new AjaxError('ajax error 422', { status: 422, response: ['refused'] } as never, request as never);

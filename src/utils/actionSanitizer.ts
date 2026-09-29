@@ -22,12 +22,15 @@ const SECRET_CONTENT_TYPES = new Set<unknown>([AttributeContentType.Secret, Attr
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && Object.getPrototypeOf(value) === Object.prototype;
 
+const CERTIFICATE_CONTENT_FIELDS = new Set(['certificate', 'certificateContent']);
+
 // A certificate upload sends the file it read as a string, which a certificate object in a response is not.
-const isUploadedFile = (object: Record<string, unknown>, key: string) => key === 'certificate' && typeof object.certificate === 'string';
+const isCertificateContent = (object: Record<string, unknown>, key: string) =>
+    CERTIFICATE_CONTENT_FIELDS.has(key) && typeof object[key] === 'string';
 
 const isSecret = (object: Record<string, unknown>, key: string) =>
     SECRET_FIELDS.has(key) ||
-    isUploadedFile(object, key) ||
+    isCertificateContent(object, key) ||
     (key === 'content' && SECRET_CONTENT_TYPES.has(object.contentType) && Array.isArray(object.content));
 
 function mask(value: unknown): unknown {
