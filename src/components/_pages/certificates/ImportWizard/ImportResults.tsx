@@ -56,7 +56,8 @@ export default function ImportResults({ entries, results, isImporting, retryDisa
                                 <Badge color={badge.color}>{badge.label}</Badge>
                                 <div className="min-w-0 space-y-1 text-sm">
                                     <p className="font-medium text-content">{entry ? entryTitle(entry) : kindLabel(result.kind)}</p>
-                                    {result.imported ? (
+                                    {!result.imported && <p className="text-content-muted">{result.message}</p>}
+                                    {(result.certificateUuid || result.keyUuid) && (
                                         <p className="flex gap-3">
                                             {result.certificateUuid && (
                                                 <Link
@@ -75,8 +76,6 @@ export default function ImportResults({ entries, results, isImporting, retryDisa
                                                 </Link>
                                             )}
                                         </p>
-                                    ) : (
-                                        <p className="text-content-muted">{result.message}</p>
                                     )}
                                 </div>
                             </li>

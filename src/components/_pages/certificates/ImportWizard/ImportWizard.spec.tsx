@@ -1238,7 +1238,7 @@ test.describe('ImportWizard', () => {
         await expect(resultRow(page, 'intermediate-ca-r4').getByRole('link')).toHaveCount(0);
     });
 
-    test('says an entry is not imported, whatever became of its key', async ({ mount, page }) => {
+    test('says an entry is not imported, and links the key it made before it failed', async ({ mount, page }) => {
         const certificateFailedAfterKey: CertificateImportResultDto = {
             ...failedKeyPair,
             keyOutcome: ImportOutcome.Created,
@@ -1260,7 +1260,11 @@ test.describe('ImportWizard', () => {
         await expect(resultBadge(page, 'web-server-01')).toHaveText('Not imported');
         await expect(resultBadge(page, 'web-server-01')).toHaveClass(/bg-danger-surface/);
         await expect(resultRow(page, 'web-server-01')).toContainText('A certificate of the entry was not uploaded.');
-        await expect(resultRow(page, 'web-server-01').getByRole('link')).toHaveCount(0);
+        await expect(resultRow(page, 'web-server-01').getByRole('link', { name: 'Open key' })).toHaveAttribute(
+            'href',
+            `/keys/detail/${KEY_UUID}`,
+        );
+        await expect(resultRow(page, 'web-server-01').getByRole('link', { name: 'Open certificate' })).toHaveCount(0);
     });
 
     test('retries only the entry that failed', async ({ mount, page }) => {
