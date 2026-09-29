@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import { createMockStore } from 'utils/test-helpers';
-import { useIdentifyAttributes } from './useIdentifyAttributes';
+import { useOperationAttributes } from './useOperationAttributes';
 
 type Props = Readonly<{
     schema: AttributeDescriptorModel[];
@@ -11,7 +11,7 @@ type Props = Readonly<{
 
 function Probe({ callbackDescriptor }: Readonly<{ callbackDescriptor: AttributeDescriptorModel }>) {
     const [raProfileUuid, setRaProfileUuid] = useState('ra-1');
-    const identify = useIdentifyAttributes(raProfileUuid, 'auth-1');
+    const identify = useOperationAttributes('identify', raProfileUuid, 'auth-1');
     const [collected, setCollected] = useState<unknown>(null);
 
     return (
@@ -33,7 +33,7 @@ function Probe({ callbackDescriptor }: Readonly<{ callbackDescriptor: AttributeD
     );
 }
 
-export default function UseIdentifyAttributesHarness({ schema, callbackDescriptor }: Props) {
+export default function UseOperationAttributesHarness({ schema, callbackDescriptor }: Props) {
     const store = useMemo(() => createMockStore({ certificates: { identifyAttributes: schema } } as never), [schema]);
     return (
         <Provider store={store}>

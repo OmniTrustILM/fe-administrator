@@ -660,7 +660,7 @@ describe('certificates slice', () => {
         expect(next.renewAttributes).toEqual([]);
 
         const attrs = [{ uuid: 'renew-1' }] as any;
-        next = reducer(next, actions.getRenewAttributesSuccess({ raProfileUuid: 'ra-1', renewAttributes: attrs }));
+        next = reducer(next, actions.getRenewAttributesSuccess({ renewAttributes: attrs }));
         expect(next.isFetchingRenewAttributes).toBe(false);
         expect(next.renewAttributes).toEqual(attrs);
     });
@@ -688,7 +688,7 @@ describe('certificates slice', () => {
         expect(next.identifyAttributes).toEqual([]);
 
         const attrs = [{ uuid: 'identify-1' }] as any;
-        next = reducer(next, actions.getIdentifyAttributesSuccess({ raProfileUuid: 'ra-2', identifyAttributes: attrs }));
+        next = reducer(next, actions.getIdentifyAttributesSuccess({ identifyAttributes: attrs }));
         expect(next.isFetchingIdentifyAttributes).toBe(false);
         expect(next.identifyAttributes).toEqual(attrs);
     });

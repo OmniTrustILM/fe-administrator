@@ -9,8 +9,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type FieldValues, FormProvider, useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import type { CertificateDetailResponseModel } from 'types/certificate';
-import IdentifyAttributesEditor from '../IdentifyAttributesEditor';
-import { useIdentifyAttributes } from '../IdentifyAttributesEditor/useIdentifyAttributes';
+import OperationAttributesEditor from '../OperationAttributesEditor';
+import { useOperationAttributes } from '../OperationAttributesEditor/useOperationAttributes';
 
 export type RaProfileTarget = { kind: 'certificate'; certificate: CertificateDetailResponseModel } | { kind: 'selection'; uuids: string[] };
 
@@ -48,7 +48,7 @@ export default function CertificateRAProfileDialog({ target, onCancel, onUpdate 
 
     // A switch to the profile the certificate already has is a no-op, so there is nothing to identify.
     const assigned = selected?.raProfileUuid !== current?.raProfileUuid ? selected : undefined;
-    const identify = useIdentifyAttributes(assigned?.raProfileUuid, assigned?.authorityUuid);
+    const identify = useOperationAttributes('identify', assigned?.raProfileUuid, assigned?.authorityUuid);
 
     useEffect(() => {
         dispatch(raProfileActions.listRaProfiles());
@@ -118,7 +118,7 @@ export default function CertificateRAProfileDialog({ target, onCancel, onUpdate 
                 {identify.descriptors.length > 0 && (
                     <TabLayout
                         noBorder
-                        tabs={[{ title: 'Identify Attributes', content: <IdentifyAttributesEditor identify={identify} /> }]}
+                        tabs={[{ title: 'Identify Attributes', content: <OperationAttributesEditor attributes={identify} /> }]}
                     />
                 )}
 

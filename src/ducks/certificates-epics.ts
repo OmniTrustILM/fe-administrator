@@ -1278,7 +1278,6 @@ const getRenewAttributes: AppEpic = (action$, state, deps) => {
                 .pipe(
                     map((attributes) =>
                         slice.actions.getRenewAttributesSuccess({
-                            raProfileUuid: action.payload.raProfileUuid,
                             renewAttributes: attributes.map((attribute) => transformAttributeDescriptorDtoToModel(attribute)),
                         }),
                     ),
@@ -1309,7 +1308,6 @@ const getIdentifyAttributes: AppEpic = (action$, state, deps) => {
                 .pipe(
                     map((attributes) =>
                         slice.actions.getIdentifyAttributesSuccess({
-                            raProfileUuid: action.payload.raProfileUuid,
                             identifyAttributes: attributes.map((attribute) => transformAttributeDescriptorDtoToModel(attribute)),
                         }),
                     ),

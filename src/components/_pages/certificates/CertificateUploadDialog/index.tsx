@@ -17,8 +17,8 @@ import TabLayout from '../../../Layout/TabLayout';
 import ProgressButton from '../../../ProgressButton';
 import Button from 'components/Button';
 import Container from 'components/Container';
-import IdentifyAttributesEditor from '../IdentifyAttributesEditor';
-import { useIdentifyAttributes } from '../IdentifyAttributesEditor/useIdentifyAttributes';
+import OperationAttributesEditor from '../OperationAttributesEditor';
+import { useOperationAttributes } from '../OperationAttributesEditor/useOperationAttributes';
 
 type FormValues = Record<string, never>;
 
@@ -43,7 +43,7 @@ export default function CertificateUploadDialog({
     identifyRaProfile,
 }: Readonly<Props>) {
     const dispatch = useDispatch();
-    const identify = useIdentifyAttributes(identifyRaProfile?.uuid, identifyRaProfile?.authorityInstanceUuid);
+    const identify = useOperationAttributes('identify', identifyRaProfile?.uuid, identifyRaProfile?.authorityInstanceUuid);
 
     const [certificate, setCertificate] = useState<CertificateDetailResponseModel | undefined>();
     const [fileContent, setFileContent] = useState('');
@@ -95,7 +95,7 @@ export default function CertificateUploadDialog({
               ]
             : []),
         ...(identify.descriptors.length > 0
-            ? [{ title: 'Identify Attributes', content: <IdentifyAttributesEditor identify={identify} /> }]
+            ? [{ title: 'Identify Attributes', content: <OperationAttributesEditor attributes={identify} /> }]
             : []),
     ];
 

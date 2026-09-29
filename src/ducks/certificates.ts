@@ -985,10 +985,7 @@ export const slice = createSlice({
             state.renewAttributes = [];
         },
 
-        getRenewAttributesSuccess: (
-            state,
-            action: PayloadAction<{ raProfileUuid: string; renewAttributes: AttributeDescriptorModel[] }>,
-        ) => {
+        getRenewAttributesSuccess: (state, action: PayloadAction<{ renewAttributes: AttributeDescriptorModel[] }>) => {
             state.isFetchingRenewAttributes = false;
             state.renewAttributes = action.payload.renewAttributes;
         },
@@ -1008,10 +1005,7 @@ export const slice = createSlice({
             state.identifyAttributes = [];
         },
 
-        getIdentifyAttributesSuccess: (
-            state,
-            action: PayloadAction<{ raProfileUuid: string; identifyAttributes: AttributeDescriptorModel[] }>,
-        ) => {
+        getIdentifyAttributesSuccess: (state, action: PayloadAction<{ identifyAttributes: AttributeDescriptorModel[] }>) => {
             state.isFetchingIdentifyAttributes = false;
             state.identifyAttributes = action.payload.identifyAttributes;
         },

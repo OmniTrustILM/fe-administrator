@@ -18,7 +18,7 @@ import Button from 'components/Button';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import type { CryptographicKeyPairResponseModel } from 'types/cryptographic-keys';
-import { CertificateRequestFormat, KeyType, Resource } from 'types/openapi';
+import { CertificateRequestFormat, KeyType } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { buildValidationRules } from 'utils/validators-helper';
 import { validateRequired } from 'utils/validators';
@@ -36,6 +36,8 @@ import TabLayout from 'components/Layout/TabLayout';
 import Switch from 'components/Switch';
 import { isObjectSame } from 'utils/common-utils';
 import Container from 'components/Container';
+import OperationAttributesEditor from '../OperationAttributesEditor';
+import { useOperationAttributes } from '../OperationAttributesEditor/useOperationAttributes';
 
 interface FormValues {
     pkcs10: File | null;
@@ -65,8 +67,8 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
     const altKeys = useSelector(keySelectors.altCryptographicKeyPairs);
 
     const rekeying = useSelector(certificateSelectors.isRekeying);
-    const renewAttributes = useSelector(certificateSelectors.renewAttributes);
-    const isFetchingRenewAttributes = useSelector(certificateSelectors.isFetchingRenewAttributes);
+    // Rekey is a renew at the authority, so it takes the renew schema.
+    const renew = useOperationAttributes('renew', certificate?.raProfile?.uuid, certificate?.raProfile?.authorityInstanceUuid);
 
     const parsedCertificateRequest = useSelector(utilsCertificateRequestSelectors.parsedCertificateRequest);
 
@@ -74,7 +76,6 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
     const [altSignatureAttributesCallbackAttributes, setAltSignatureAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>(
         [],
     );
-    const [renewCallbackAttributes, setRenewCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
     const [fileContent, setFileContent] = useState<string>('');
     const [certificateRequest, setCertificateRequest] = useState<CertificateDetailResponseModel | undefined>();
 
@@ -92,19 +93,6 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                 : undefined,
         );
     }, [parsedCertificateRequest]);
-
-    const raProfileUuid = certificate?.raProfile?.uuid;
-    const authorityUuid = certificate?.raProfile?.authorityInstanceUuid;
-
-    // Rekey is a renew at the authority, so it takes the renew schema.
-    useEffect(() => {
-        if (raProfileUuid && authorityUuid) {
-            dispatch(certificateActions.getRenewAttributes({ raProfileUuid, authorityUuid }));
-        }
-        return () => {
-            dispatch(certificateActions.clearRenewAttributes());
-        };
-    }, [dispatch, raProfileUuid, authorityUuid]);
 
     useEffect(() => {
         dispatch(tokenProfileActions.listTokenProfiles({ enabled: true }));
@@ -132,7 +120,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                         request: fileContent || undefined,
                         format: CertificateRequestFormat.Pkcs10,
                         signatureAttributes: collectFormAttributes('signatureAttributes', signatureAttributeDescriptors, allValues),
-                        attributes: collectFormAttributes('renew', [...renewAttributes, ...renewCallbackAttributes], allValues),
+                        attributes: renew.collect(allValues),
                         keyUuid: values.key?.uuid || '',
                         tokenProfileUuid: values.tokenProfile || '',
                         ...(values.includeAltKey
@@ -151,16 +139,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
             );
             onCancel();
         },
-        [
-            certificate,
-            dispatch,
-            fileContent,
-            signatureAttributeDescriptors,
-            altSignatureAttributeDescriptors,
-            renewAttributes,
-            renewCallbackAttributes,
-            onCancel,
-        ],
+        [certificate, dispatch, fileContent, signatureAttributeDescriptors, altSignatureAttributeDescriptors, renew, onCancel],
     );
 
     const onTokenProfileChange = useCallback(
@@ -281,27 +260,8 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         return areValuesSame;
     }, [watchedUploadCsr, fileContent, watchedKey, watchedAltKey, defaultValues]);
 
-    const renewAttributesTabs = useMemo(
-        () =>
-            renewAttributes.length > 0
-                ? [
-                      {
-                          title: 'Renew Attributes',
-                          content: (
-                              <AttributeEditor
-                                  id="renew"
-                                  attributeDescriptors={renewAttributes}
-                                  callbackParentUuid={raProfileUuid}
-                                  callbackResource={Resource.Certificates}
-                                  groupAttributesCallbackAttributes={renewCallbackAttributes}
-                                  setGroupAttributesCallbackAttributes={setRenewCallbackAttributes}
-                              />
-                          ),
-                      },
-                  ]
-                : [],
-        [renewAttributes, raProfileUuid, renewCallbackAttributes],
-    );
+    const renewAttributesTabs =
+        renew.descriptors.length > 0 ? [{ title: 'Renew Attributes', content: <OperationAttributesEditor attributes={renew} /> }] : [];
 
     const getSignatureAttributesTabs = useCallback(() => {
         return watchedUploadCsr
@@ -361,7 +321,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="space-y-4">
-                    <Widget noBorder busy={rekeying || isFetchingSignatureAttributes || isFetchingRenewAttributes}>
+                    <Widget noBorder busy={rekeying || isFetchingSignatureAttributes || renew.isFetching}>
                         <Controller
                             name="uploadCsr"
                             control={control}
@@ -586,7 +546,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                 title="Rekey"
                                 inProgressTitle="Rekeying..."
                                 inProgress={formState.isSubmitting || rekeying}
-                                disabled={!formState.isValid || !isRekeyAllowed() || isFetchingRenewAttributes}
+                                disabled={!formState.isValid || !isRekeyAllowed() || renew.isFetching}
                             />
                         </Container>
                     </Widget>

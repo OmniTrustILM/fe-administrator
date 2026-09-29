@@ -983,10 +983,7 @@ describe('certificates epics', () => {
 
             expect(calls).toEqual([{ authorityUuid: 'auth-1', raProfileUuid: 'ra-1' }]);
             expect(emitted).toEqual([
-                certificatesActions.getRenewAttributesSuccess({
-                    raProfileUuid: 'ra-1',
-                    renewAttributes: [{ uuid: 'renew-attr-1' }] as any,
-                }),
+                certificatesActions.getRenewAttributesSuccess({ renewAttributes: [{ uuid: 'renew-attr-1' }] as any }),
             ]);
         });
 
@@ -1046,10 +1043,7 @@ describe('certificates epics', () => {
 
             expect(calls).toEqual([{ authorityUuid: 'auth-1', raProfileUuid: 'ra-2' }]);
             expect(emitted).toEqual([
-                certificatesActions.getIdentifyAttributesSuccess({
-                    raProfileUuid: 'ra-2',
-                    identifyAttributes: [{ uuid: 'identify-attr-1' }] as any,
-                }),
+                certificatesActions.getIdentifyAttributesSuccess({ identifyAttributes: [{ uuid: 'identify-attr-1' }] as any }),
             ]);
         });
 
