@@ -4,8 +4,8 @@ import { AttributeContentType } from 'types/openapi';
 
 export const MASKED = '<masked>';
 
-/** The payload fields that hold a passphrase or a key container. */
-const SECRET_FIELDS = new Set(['passphrase', 'passphraseConfirmation', 'inputPassphrase', 'file']);
+/** The payload fields that hold a passphrase, a key container or a secret's content. */
+const SECRET_FIELDS = new Set(['passphrase', 'passphraseConfirmation', 'inputPassphrase', 'file', 'secret']);
 
 /** The content types of the attributes whose content is a secret or a file; a credential attribute holds only a reference. */
 const SECRET_CONTENT_TYPES = new Set<unknown>([AttributeContentType.Secret, AttributeContentType.File]);
@@ -24,9 +24,9 @@ function mask(value: unknown): unknown {
 }
 
 /**
- * An action as Redux DevTools shows it. Wherever they are in its payload, passphrases and files are masked, and so is the
- * content of a secret or a file attribute, such as a provider PIN or key material, whose other fields are kept. The
- * request body of an error is masked too, since it carries them.
+ * An action as Redux DevTools shows it. Wherever they are in its payload, passphrases, files and a secret's content are
+ * masked, and so is the content of a secret or a file attribute, such as a provider PIN or key material, whose other
+ * fields are kept. The request body of an error is masked too, since it carries them.
  */
 export function sanitizeAction<A extends Action>(action: A): A {
     return 'payload' in action ? { ...action, payload: mask(action.payload) } : action;

@@ -106,6 +106,26 @@ describe('sanitizeAction', () => {
         expect(sanitizeAction(action)).toEqual(action);
     });
 
+    test("masks a secret's content wherever it is in a payload, and keeps the rest of its request", () => {
+        const action = {
+            type: 'secrets/createSecret',
+            payload: {
+                vaultUuid: 'vault-1',
+                vaultProfileUuid: 'profile-1',
+                request: { name: 'database', description: 'Primary', secret: { username: 'admin', password: 'correct horse battery' } },
+            },
+        };
+
+        expect(sanitizeAction(action)).toEqual({
+            type: 'secrets/createSecret',
+            payload: {
+                vaultUuid: 'vault-1',
+                vaultProfileUuid: 'profile-1',
+                request: { name: 'database', description: 'Primary', secret: MASKED },
+            },
+        });
+    });
+
     test('masks the request body of an error, and keeps the rest of it', () => {
         const request = { url: '/api/v1/keys/key-1/items/item-1/export', method: 'POST', body: { passphrase: 'correct horse battery' } };
         const error = new AjaxError('ajax error 422', { status: 422, response: ['refused'] } as never, request as never);
