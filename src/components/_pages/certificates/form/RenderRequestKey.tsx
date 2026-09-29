@@ -64,7 +64,7 @@ const RenderRequestKey = ({ type, name, tokenProfileField }: Props) => {
                     tokenProfileUuid: selectedKey.tokenProfileUuid,
                     tokenInstanceUuid: selectedKey.tokenInstanceUuid,
                     keyItemUuid: privateKeyItem.uuid,
-                    algorithm: privateKeyItem.keyAlgorithm,
+                    operation: 'sign',
                     store: type,
                 }),
             );
