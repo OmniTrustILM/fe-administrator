@@ -1,5 +1,6 @@
 import { firstValueFrom, type Observable, of, throwError } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
+import { FilterFieldSource, type SearchRequestDto, SortDirection } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { describe, expect, test } from 'vitest';
 import cryptoAssetEpics from './crypto-assets-epics';
@@ -55,6 +56,30 @@ describe('crypto asset epics', () => {
             pagingActions.listSuccess({ entity: EntityType.CRYPTO_ASSET, totalItems: 5903 }),
             userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.ListOfCryptoAssets),
         ]);
+    });
+
+    test('listCryptoAssets forwards the requested columns and sort, so the server orders and projects the whole inventory', async () => {
+        const searchRequest: SearchRequestDto = {
+            pageNumber: 2,
+            itemsPerPage: 25,
+            filters: [],
+            columns: [
+                { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CBOM_ASSET_NAME' },
+                { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CBOM_ASSET_SOURCE_COUNT' },
+            ],
+            sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CBOM_ASSET_SOURCE_COUNT', direction: SortDirection.Desc },
+        };
+        const forwarded: unknown[] = [];
+        const deps = createDeps({
+            listCryptographicAssets: ({ searchRequestDto }) => {
+                forwarded.push(searchRequestDto);
+                return of(emptyPage);
+            },
+        });
+
+        await run(listCryptoAssets, slice.actions.listCryptoAssets(searchRequest), deps, 4);
+
+        expect(forwarded).toEqual([searchRequest]);
     });
 
     test('a response without a total falls back to the item count rather than reporting zero', async () => {
