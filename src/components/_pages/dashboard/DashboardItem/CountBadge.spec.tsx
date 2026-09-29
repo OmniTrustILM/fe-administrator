@@ -7,7 +7,8 @@ test.describe('CountBadge', () => {
         const component = await mount(<CountBadgeWithStore title="Plain count" data={42} />);
         const heading = component.getByRole('heading', { name: 'Plain count' });
         await expect(heading).toBeVisible();
-        await expect(heading).toHaveClass(/text-\[var\(--content\)\]/);
+        const pageColor = await heading.evaluate((element) => getComputedStyle(element.ownerDocument.documentElement).color);
+        await expect(heading).toHaveCSS('color', pageColor);
         await expect(component.getByText('42')).toBeVisible();
         await expect(component.getByRole('link', { name: 'Plain count' })).toHaveCount(0);
     });

@@ -25,6 +25,7 @@ type Props = Readonly<{
     chartSize?: 'full' | 'fixed';
     showCenterLabel?: boolean;
     shrinkOnSmallScreen?: boolean;
+    footer?: React.ReactNode;
 }>;
 
 type DonutTooltipProps = Readonly<{
@@ -59,6 +60,7 @@ function DonutChart({
     chartSize = 'fixed',
     showCenterLabel = false,
     shrinkOnSmallScreen = true,
+    footer,
 }: Props) {
     const labels = useGetLabels(data);
     const values = getValues(data);
@@ -193,6 +195,7 @@ function DonutChart({
                     </div>
                 </SimpleBar>
             </div>
+            {footer}
         </Widget>
     );
 }

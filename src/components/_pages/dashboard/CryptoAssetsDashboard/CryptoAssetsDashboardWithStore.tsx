@@ -30,6 +30,7 @@ const partialStatistics = {
 };
 
 const emptyStatistics = {
+    sourceCbomCount: 0,
     statByType: {},
     statByPqcVerdict: {},
     statByAlgorithmFamily: {},
@@ -39,7 +40,12 @@ const emptyStatistics = {
 const statisticsFor = (variant: Variant) => {
     if (variant === 'partial') return partialStatistics;
     if (variant === 'empty') return emptyStatistics;
-    if (variant === 'denied') return { ...statistics, sourceCbomCount: null, syncCompleteness: null };
+    if (variant === 'denied') {
+        const deniedStatistics: Partial<typeof statistics> = { ...statistics };
+        delete deniedStatistics.sourceCbomCount;
+        delete deniedStatistics.syncCompleteness;
+        return deniedStatistics;
+    }
     return statistics;
 };
 

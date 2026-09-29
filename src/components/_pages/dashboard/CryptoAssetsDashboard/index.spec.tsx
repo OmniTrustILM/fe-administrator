@@ -16,6 +16,17 @@ test.describe('CryptoAssetsDashboard', () => {
         await expect(component.getByRole('heading', { name: 'Assets by Algorithm Family' })).toBeVisible();
     });
 
+    test('count cards run from source documents through assets and risk to families', async ({ mount }) => {
+        const component = await mount(<CryptoAssetsDashboardWithStore />);
+
+        await expect(component.getByTestId('crypto-assets-dashboard-counts').getByRole('heading')).toHaveText([
+            'Source CBOMs',
+            'Crypto Assets',
+            'Not PQC ready',
+            'Algorithm families',
+        ]);
+    });
+
     test('a fully synced estate carries no partial-sync warning', async ({ mount }) => {
         const component = await mount(<CryptoAssetsDashboardWithStore />);
 
@@ -29,10 +40,36 @@ test.describe('CryptoAssetsDashboard', () => {
         await expect(component.getByTestId('crypto-assets-dashboard-coverage-partial')).toBeVisible();
     });
 
+    test('a sync-state chart opens the CBOM inventory filtered to the selected state', async ({ mount }) => {
+        const component = await mount(
+            <CryptoAssetsDashboardWithStore
+                variant="partial"
+                initialCbomFilter={{
+                    fieldSource: FilterFieldSource.Property,
+                    condition: FilterConditionOperator.Equals,
+                    fieldIdentifier: 'CBOM_SERIAL_NUMBER',
+                    value: 'old',
+                }}
+            />,
+        );
+        const coverage = component.getByTestId('crypto-assets-dashboard-coverage');
+
+        await expect(coverage.getByTestId('donut-chart-container')).toBeVisible();
+        await expect(component.getByTestId('cbom-current-filters')).toContainText('CBOM_SERIAL_NUMBER');
+        await coverage.getByRole('button', { name: /failed\s+5/i }).click();
+
+        await expect(component.getByTestId('route')).toHaveText('/cboms');
+        const applied = JSON.parse((await component.getByTestId('cbom-current-filters').textContent()) ?? '[]');
+        expect(applied).toEqual([
+            { fieldSource: 'property', condition: 'EQUALS', fieldIdentifier: 'CBOM_ASSET_SYNC_STATE', value: ['failed'] },
+        ]);
+    });
+
     test('an estate nobody has synced says the counts are empty rather than complete', async ({ mount }) => {
         const component = await mount(<CryptoAssetsDashboardWithStore variant="empty" />);
 
         await expect(component.getByTestId('crypto-assets-dashboard-coverage-empty')).toBeVisible();
+        await expect(component.getByTestId('crypto-assets-dashboard-coverage').getByTestId('donut-chart-container')).toHaveCount(0);
         await expect(component.getByTestId('crypto-assets-dashboard-charts')).toBeEmpty();
         // Core omits a count it has nothing for, and a tile left without a number reads as a heading over a gap.
         await expect(component.getByTestId('crypto-assets-dashboard-counts').locator('.text-3xl')).toHaveText(['0', '0', '0', '0']);
@@ -64,7 +101,9 @@ test.describe('CryptoAssetsDashboard', () => {
 
     test('algorithm families remains a count with its caption and no link', async ({ mount }) => {
         const component = await mount(<CryptoAssetsDashboardWithStore />);
-        await expect(component.getByRole('heading', { name: 'Algorithm families' })).toBeVisible();
+        const heading = component.getByRole('heading', { name: 'Algorithm families' });
+        await expect(heading).toBeVisible();
+        await expect(heading.locator('xpath=ancestor::section').getByText('42', { exact: true })).toBeVisible();
         await expect(component.getByText('3,010 assets carry none')).toBeVisible();
         await expect(component.getByRole('link', { name: 'Algorithm families' })).toHaveCount(0);
     });
@@ -94,15 +133,26 @@ test.describe('CryptoAssetsDashboard', () => {
         const component = await mount(<CryptoAssetsDashboardWithStore variant="denied" />);
         await expect(component.getByRole('heading', { name: 'Source CBOMs' })).toBeVisible();
         await expect(component.getByRole('link', { name: 'Source CBOMs' })).toHaveCount(0);
-        await expect(component.getByTestId('crypto-assets-dashboard-counts').locator('[data-testid="count-badge-lock"]')).toHaveCount(1);
+        const lock = component.getByTestId('crypto-assets-dashboard-counts').locator('[data-testid="count-badge-lock"]');
+        await expect(lock).toHaveCount(1);
+        await expect(lock.locator('svg.lucide-lock')).toBeVisible();
+        await expect(component.getByText('You do not have permission to view the Source CBOM count.')).toBeVisible();
+        await expect(component.getByTestId('crypto-assets-dashboard-coverage')).toContainText('not available with your permissions');
+        await expect(component.getByTestId('crypto-assets-dashboard-coverage-empty')).toHaveCount(0);
+        await expect(component.getByTestId('crypto-assets-dashboard-coverage').getByTestId('donut-chart-container')).toHaveCount(0);
+        await expect(component.getByText(/deduplicated across 0 CBOMs/)).toHaveCount(0);
     });
 
-    test('the no-family tile asks for the empty condition rather than an empty value', async ({ mount }) => {
+    test('the algorithm-family caption opens assets with no family', async ({ mount }) => {
         const component = await mount(<CryptoAssetsDashboardWithStore />);
 
-        await component.getByRole('link', { name: 'Assets with no algorithm family' }).click();
+        await expect(component.getByRole('heading', { name: 'Assets with no algorithm family' })).toHaveCount(0);
+        await component.getByRole('link', { name: '3,010 assets carry none' }).click();
 
+        await expect(component.getByTestId('route')).toHaveText('/cryptoassets');
         const applied = JSON.parse((await component.getByTestId('current-filters').textContent()) ?? '[]');
-        expect(applied[0]).toMatchObject({ condition: 'EMPTY', fieldIdentifier: 'CBOM_ASSET_ALGORITHM_FAMILY' });
+        expect(applied).toEqual([
+            { fieldSource: 'property', condition: 'EMPTY', fieldIdentifier: 'CBOM_ASSET_ALGORITHM_FAMILY', value: [''] },
+        ]);
     });
 });
