@@ -168,12 +168,14 @@ describe('tokenProfiles slice', () => {
         expect(failedState.tokenProfile).toEqual(profile);
         expect(failedState.isFetchingDetail).toBe(false);
         expect(failedState.detailFetchSucceeded).toBe(false);
+        expect(failedState.detailError).toBe('Profile unavailable');
 
         // when
         const retryingState = reducer(failedState, actions.getTokenProfileDetail(profile));
         const next = reducer(retryingState, actions.getTokenProfileDetailSuccess({ tokenProfile: refreshedProfile }));
 
         // then
+        expect(retryingState.detailError).toBeUndefined();
         expect(next.tokenProfile).toEqual(refreshedProfile);
         expect(next.isFetchingDetail).toBe(false);
         expect(next.detailFetchSucceeded).toBe(true);
@@ -591,6 +593,13 @@ describe('tokenProfiles selectors', () => {
     test('importableTokenProfilesError selector', () => {
         expect(selectors.importableTokenProfilesError(state)).toBe('Failed to get importable token profiles');
         expect(selectors.importableTokenProfilesError({ tokenprofiles: initialState } as any)).toBeUndefined();
+    });
+
+    test('detailError selector', () => {
+        expect(selectors.detailError({ tokenprofiles: { ...initialState, detailError: 'Profile unavailable' } } as any)).toBe(
+            'Profile unavailable',
+        );
+        expect(selectors.detailError({ tokenprofiles: initialState } as any)).toBeUndefined();
     });
 
     test('loadedTokenProfile reads the detail only when it is the named profile, fetched and not being fetched again', () => {

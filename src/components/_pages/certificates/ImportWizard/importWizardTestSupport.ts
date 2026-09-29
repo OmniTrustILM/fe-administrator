@@ -34,6 +34,9 @@ export type InspectAnswer = Readonly<{
 /** The answer to one token profile listing, taken in order; a `pending` one leaves its listing in flight. */
 export type ListingAnswer = Readonly<{ tokenProfiles?: TokenProfileDto[]; error?: string; pending?: boolean }>;
 
+/** How one `getTokenProfileDetail` is answered: with the profile and its `keyTransfer`, left in flight, or refused. */
+export type TokenProfileDetailAnswer = 'loaded' | 'pending' | 'failure';
+
 /** The answer to one import request, taken in the order the requests are sent; a `pending` one leaves it in flight. */
 export type ImportAnswer = Readonly<{ results?: CertificateImportResultDto[]; error?: string; pending?: boolean }>;
 
@@ -44,6 +47,8 @@ export type ImportWizardAnswers = Readonly<{
     profileListings?: ListingAnswer[];
     /** A listed profile's `keyTransfer`, answered for `getTokenProfileDetail`, keyed by profile uuid. */
     keyTransferByProfile?: Record<string, KeyTransferCapabilityDto>;
+    /** The answers to `getTokenProfileDetail` for a listed profile, taken in order; each is `loaded` unless given. */
+    profileDetailAnswers?: TokenProfileDetailAnswer[];
     /** Answers every import attribute schema listing, unless `importAttributeListings` answers them one by one. */
     importKeyAttributes?: BaseAttributeDto[];
     importAttributeListings?: SchemaAnswer[];
@@ -58,24 +63,30 @@ export type ImportWizardAnswers = Readonly<{
 /**
  * A middleware that answers the wizard's actions from the fixtures a test passes, in place of the epics — shared by
  * every harness that mounts `ImportWizard`, standalone or embedded. A failure is answered as its epic answers it, with
- * a `fetchError` that `Alerts` shows as the app's error alert.
+ * a `fetchError` that `Alerts` shows as the app's error alert. `answersProfileDetail` is false for a harness that
+ * answers `getTokenProfileDetail` itself.
  */
-export function importWizardTestMiddleware({
-    inspectAnswers,
-    importableTokenProfiles,
-    profileListings,
-    keyTransferByProfile,
-    importKeyAttributes,
-    importAttributeListings,
-    certificateCustomAttributes,
-    keyCustomAttributes,
-    pendingCustomAttributes,
-    importAnswers,
-    onAction,
-}: ImportWizardAnswers): Middleware {
+export function importWizardTestMiddleware(
+    {
+        inspectAnswers,
+        importableTokenProfiles,
+        profileListings,
+        keyTransferByProfile,
+        profileDetailAnswers,
+        importKeyAttributes,
+        importAttributeListings,
+        certificateCustomAttributes,
+        keyCustomAttributes,
+        pendingCustomAttributes,
+        importAnswers,
+        onAction,
+    }: ImportWizardAnswers,
+    answersProfileDetail = true,
+): Middleware {
     let listingsAnswered = 0;
     let attributeListingsAnswered = 0;
     let importsAnswered = 0;
+    let profileDetailsAnswered = 0;
 
     const inspect = (request: { file: string; passphrase?: string; tokenProfileUuid?: string }) => {
         const answer = inspectAnswers.find(
@@ -110,12 +121,15 @@ export function importWizardTestMiddleware({
     };
 
     const answerProfileDetail = (api: MiddlewareAPI, uuid: string) => {
-        const listed = [...(importableTokenProfiles ?? []), ...(profileListings ?? []).flatMap((answer) => answer.tokenProfiles ?? [])];
+        const answer = nth(profileDetailAnswers, profileDetailsAnswered++) ?? 'loaded';
+        const listed = [...(importableTokenProfiles ?? []), ...(profileListings ?? []).flatMap((each) => each.tokenProfiles ?? [])];
         const summary = listed.find((each) => each.uuid === uuid);
-        if (summary && keyTransferByProfile) {
+        if (answer === 'failure') {
+            api.dispatch(tokenProfileActions.getTokenProfileDetailFailure({ error: 'Failed to get Token Profile detail' }));
+        } else if (answer === 'loaded' && summary) {
             api.dispatch(
                 tokenProfileActions.getTokenProfileDetailSuccess({
-                    tokenProfile: { ...summary, attributes: [], keyTransfer: keyTransferByProfile[uuid] },
+                    tokenProfile: { ...summary, attributes: [], keyTransfer: keyTransferByProfile?.[uuid] },
                 }),
             );
         }
@@ -140,7 +154,7 @@ export function importWizardTestMiddleware({
             api.dispatch(inspect(action.payload.inspectionRequestDto));
         } else if (tokenProfileActions.listImportableTokenProfiles.match(action)) {
             listProfiles(api);
-        } else if (tokenProfileActions.getTokenProfileDetail.match(action)) {
+        } else if (answersProfileDetail && tokenProfileActions.getTokenProfileDetail.match(action)) {
             answerProfileDetail(api, action.payload.uuid);
         } else if (keyActions.listImportKeyAttributeDescriptors.match(action)) {
             listImportAttributes(api, action.payload);

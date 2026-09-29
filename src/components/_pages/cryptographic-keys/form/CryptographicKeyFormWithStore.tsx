@@ -8,6 +8,7 @@ import {
     type ImportAnswer,
     type InspectAnswer,
     type ListingAnswer,
+    type TokenProfileDetailAnswer,
 } from 'components/_pages/certificates/ImportWizard/importWizardTestSupport';
 import { slice as certificateSlice, type State as CertificateState } from 'ducks/certificates';
 import { actions as keyActions, slice as keySlice, type State as KeyState } from 'ducks/cryptographic-keys';
@@ -30,9 +31,6 @@ type SharedState = Omit<ReturnType<typeof testReducers>, 'cryptographicKeys' | '
 };
 
 type State = SharedState & { inspections: InspectionState };
-
-/** How one `getTokenProfileDetail` is answered: with the profile and its `keyTransfer`, left in flight, or refused. */
-export type TokenProfileDetailAnswer = 'loaded' | 'pending' | 'failure';
 
 function reducer(state: State | undefined, action: UnknownAction): State {
     // The test reducers know nothing of the inspections slice, so it is kept out of what they are handed.
@@ -140,13 +138,16 @@ export function CryptographicKeyFormWithStore({
 
         // `onAction` is already captured by `apiResponses` above, for every action regardless of who
         // handles it, so it is not repeated here — otherwise every action would be recorded twice.
-        const importWizardResponses = importWizardTestMiddleware({
-            inspectAnswers: inspectAnswers ?? [],
-            importableTokenProfiles,
-            profileListings,
-            importKeyAttributes,
-            importAnswers,
-        });
+        const importWizardResponses = importWizardTestMiddleware(
+            {
+                inspectAnswers: inspectAnswers ?? [],
+                importableTokenProfiles,
+                profileListings,
+                importKeyAttributes,
+                importAnswers,
+            },
+            false,
+        );
 
         const preloadedState: State = {
             ...testInitialState,

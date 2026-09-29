@@ -590,6 +590,57 @@ test.describe('ImportWizard', () => {
         ]);
     });
 
+    test("keeps Import disabled until the chosen profile's detail has loaded", async ({ mount, page }) => {
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[{ inspection: inspection([keyPair]) }]}
+                importableTokenProfiles={[profile]}
+                profileDetailAnswers={['pending']}
+            />,
+        );
+
+        await chooseFile(page);
+        await chooseProfile(page);
+
+        await expect(page.getByTestId('select-importTokenProfile-trigger')).toHaveText(PROFILE_OPTION);
+        await expect(page.getByRole('alert')).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeDisabled();
+    });
+
+    test("says why the chosen profile's detail could not be loaded, and loads it again on Retry", async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[{ inspection: inspection([keyPair]) }]}
+                importableTokenProfiles={[profile]}
+                keyTransferByProfile={{
+                    [profile.uuid]: { importAvailable: true, exportAvailable: true, exportableKeyTypes: { keyPair: [KeyAlgorithm.Rsa] } },
+                }}
+                profileDetailAnswers={['failure', 'loaded']}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+        const exportable = page.getByTestId('switch-importExportable-input');
+
+        await chooseFile(page);
+        await chooseProfile(page);
+
+        await expect(page.getByRole('alert')).toContainText('Failed to get Token Profile detail');
+        await expect(exportable).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeDisabled();
+
+        await page.getByRole('button', { name: 'Retry' }).click();
+
+        await expect(exportable).toBeVisible();
+        await expect(page.getByText('Failed to get Token Profile detail')).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeEnabled();
+        const requested = { tokenInstanceUuid: profile.tokenInstanceUuid, uuid: profile.uuid, skipWidgetLock: true };
+        expect(actions.filter(tokenProfileActions.getTokenProfileDetail.match).map((action) => action.payload)).toEqual([
+            requested,
+            requested,
+        ]);
+    });
+
     test('offers Exportable only when the chosen profile exports every selected key, off again after a change', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         const exporting = (...algorithms: KeyAlgorithm[]) => ({

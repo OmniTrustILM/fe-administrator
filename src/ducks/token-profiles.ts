@@ -32,6 +32,8 @@ export type State = {
     isFetchingImportable: boolean;
     isFetchingDetail: boolean;
     detailFetchSucceeded: boolean;
+    /** Why the last detail request failed, until the next one. */
+    detailError?: string;
     isFetchingAttributes: boolean;
     isFetchingSupportedTokenProfileKeyUsages: boolean;
     isUpdatingKeyUsage: boolean;
@@ -139,6 +141,7 @@ export const slice = createSlice({
             }
             state.isFetchingDetail = true;
             state.detailFetchSucceeded = false;
+            state.detailError = undefined;
         },
 
         getTokenProfileDetailSuccess: (state, action: PayloadAction<{ tokenProfile: TokenProfileDetailResponseModel }>) => {
@@ -150,6 +153,7 @@ export const slice = createSlice({
         getTokenProfileDetailFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingDetail = false;
             state.detailFetchSucceeded = false;
+            state.detailError = action.payload.error;
         },
 
         clearSupportedTokenProfileKeyUsages: (state, action: PayloadAction<void>) => {
@@ -392,6 +396,7 @@ const supportedTokenProfileKeyUsagesTokenInstanceUuid = createSelector(
 const isFetchingList = createSelector(state, (state: State) => state.isFetchingList);
 const isFetchingDetail = createSelector(state, (state: State) => state.isFetchingDetail);
 const detailFetchSucceeded = createSelector(state, (state: State) => state.detailFetchSucceeded);
+const detailError = createSelector(state, (state: State) => state.detailError);
 const isFetchingAttributes = createSelector(state, (state: State) => state.isFetchingAttributes);
 const isFetchingSupportedTokenProfileKeyUsages = createSelector(state, (state: State) => state.isFetchingSupportedTokenProfileKeyUsages);
 const isCreating = createSelector(state, (state: State) => state.isCreating);
@@ -425,6 +430,7 @@ export const selectors = {
     isFetchingList,
     isFetchingDetail,
     detailFetchSucceeded,
+    detailError,
     isFetchingAttributes,
     isFetchingSupportedTokenProfileKeyUsages,
     isCreating,

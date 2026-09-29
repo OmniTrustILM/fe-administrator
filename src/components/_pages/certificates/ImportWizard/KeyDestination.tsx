@@ -38,6 +38,9 @@ type Props = Readonly<{
     /** Why those import attributes could not be listed, which `onRetryImportAttributes` lists again. */
     importAttributesError?: string;
     onRetryImportAttributes: () => void;
+    /** Why the chosen profile's detail is not loaded, which `onRetryProfileDetail` asks for again. */
+    profileDetailError?: string;
+    onRetryProfileDetail: () => void;
     /** Whether the chosen profile's provider exports every selected key, which is when a key can be imported exportable. */
     showExportable: boolean;
     /** Whether the selected keys are both key pairs and secret keys, which are imported separately. */
@@ -58,6 +61,8 @@ export default function KeyDestination({
     importAttributeDescriptors,
     importAttributesError,
     onRetryImportAttributes,
+    profileDetailError,
+    onRetryProfileDetail,
     showExportable,
     mixedKeyTypes,
     groupAttributesCallbackAttributes,
@@ -143,6 +148,8 @@ export default function KeyDestination({
                         ))}
                     </fieldset>
                 )}
+
+                {profileDetailError && <RetryCallout message={profileDetailError} onRetry={onRetryProfileDetail} />}
 
                 {showExportable && (
                     <Controller

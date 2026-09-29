@@ -184,7 +184,9 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     const mixedKeyTypes = selectedKeyTypes.size > 1;
     const keyType = selectedKeyTypes.size === 1 ? keyRequestTypeOf(selectedKeys[0]) : undefined;
     const importSchema = importSchemaFor(listedImportSchema, profile, keyType);
+    // Exportable cannot be switched on later, so keys wait for the chosen profile's detail, which says whether it is offered.
     const profileDetail = useSelector(tokenProfilesSelectors.loadedTokenProfile(profile?.uuid));
+    const profileDetailError = useSelector(tokenProfilesSelectors.detailError);
     const exportableKeyTypes = profileDetail?.keyTransfer?.exportableKeyTypes;
     const showExportable =
         !!exportableKeyTypes &&
@@ -263,14 +265,31 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
         inspect(file, profile?.uuid);
     }, [file, getValues, setValue, readWithPassword, inspect, profile]);
 
+    const loadProfileDetail = useCallback(
+        (chosen: TokenProfileDto) =>
+            dispatch(
+                tokenProfilesActions.getTokenProfileDetail({
+                    tokenInstanceUuid: chosen.tokenInstanceUuid,
+                    uuid: chosen.uuid,
+                    skipWidgetLock: true,
+                }),
+            ),
+        [dispatch],
+    );
+
     const chooseProfile = useCallback(
         (next: TokenProfileDto | undefined) => {
             if (next?.uuid === profile?.uuid) return;
             setProfile(next);
+            if (next) loadProfileDetail(next);
             if (file) inspect(file, next?.uuid);
         },
-        [file, inspect, profile],
+        [file, inspect, profile, loadProfileDetail],
     );
+
+    const reloadProfileDetail = useCallback(() => {
+        if (profile) loadProfileDetail(profile);
+    }, [profile, loadProfileDetail]);
 
     // The same file keeps the entries wanted when it is read again with another password or profile.
     useEffect(() => {
@@ -285,17 +304,6 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
         // A new file read first against the refused profile has no entries to keep, so it is read again without it.
         if (!inspection) inspect(file, undefined);
     }, [refusedProfileUuid, profile, inspection, file, inspect]);
-
-    useEffect(() => {
-        if (!profile) return;
-        dispatch(
-            tokenProfilesActions.getTokenProfileDetail({
-                tokenInstanceUuid: profile.tokenInstanceUuid,
-                uuid: profile.uuid,
-                skipWidgetLock: true,
-            }),
-        );
-    }, [dispatch, profile]);
 
     useEffect(() => {
         if (exportableShownFor.current === exportableFor) return;
@@ -424,7 +432,7 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
         !passwordMissing &&
         !isListingCertificateCustomAttributes &&
         !isListingKeyCustomAttributes &&
-        (selectedKeys.length === 0 || importSchema?.status === 'loaded');
+        (selectedKeys.length === 0 || (importSchema?.status === 'loaded' && !!profileDetail));
 
     return (
         <Widget noBorder busy={isInspecting}>
@@ -487,6 +495,8 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
                             importAttributeDescriptors={importAttributeDescriptors}
                             importAttributesError={importSchema?.status === 'failed' ? importSchema.error : undefined}
                             onRetryImportAttributes={listImportAttributes}
+                            profileDetailError={selectedKeys.length > 0 && profile ? profileDetailError : undefined}
+                            onRetryProfileDetail={reloadProfileDetail}
                             showExportable={showExportable}
                             mixedKeyTypes={mixedKeyTypes}
                             groupAttributesCallbackAttributes={importGroupAttributes}
