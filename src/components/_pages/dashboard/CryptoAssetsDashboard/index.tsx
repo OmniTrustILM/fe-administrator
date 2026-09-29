@@ -3,7 +3,7 @@ import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { EntityType } from 'ducks/filters';
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { PlatformEnum, PqcVerdict } from 'types/openapi';
+import { FilterConditionOperator, FilterFieldSource, PlatformEnum, PqcVerdict } from 'types/openapi';
 import {
     CRYPTO_ASSET_FILTER_FIELDS,
     buildEmptyFilter,
@@ -126,17 +126,23 @@ function CryptoAssetsDashboard() {
                     <CountBadge
                         data={statistics.distinctAlgorithmFamilyCount ?? 0}
                         title="Algorithm families"
-                        link={LINK}
-                        entity={EntityType.CRYPTO_ASSET}
-                        onSetFilter={() => []}
                         extraComponent={caption(`${(statistics.unassignedAssetCount ?? 0).toLocaleString()} assets carry none`)}
                     />
                 </div>
                 <div className="flex-1 min-w-[180px]">
                     <CountBadge
-                        data={statistics.sourceCbomCount ?? 0}
+                        data={statistics.sourceCbomCount === null ? null : (statistics.sourceCbomCount ?? 0)}
                         title="Source CBOMs"
-                        link={CBOMS_LINK}
+                        link={statistics.sourceCbomCount === null ? undefined : CBOMS_LINK}
+                        entity={EntityType.CBOM}
+                        onSetFilter={() => [
+                            {
+                                fieldSource: FilterFieldSource.Property,
+                                condition: FilterConditionOperator.Equals,
+                                fieldIdentifier: 'CBOM_HAS_CONTRIBUTED_ASSETS',
+                                value: true,
+                            },
+                        ]}
                         extraComponent={caption('contributing at least one asset')}
                     />
                 </div>

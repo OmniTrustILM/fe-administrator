@@ -1,13 +1,14 @@
 import { Provider, useSelector } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import ThemeProvider from 'components/ThemeProvider';
-import { EntityType, selectors as filterSelectors } from 'ducks/filters';
+import { EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
+import type { SearchFilterModel } from 'types/certificate';
 import { CryptographicAssetType, PqcVerdict } from 'types/openapi';
 import TestRouteDisplay from 'utils/TestRouteDisplay';
 import { createMockStore } from 'utils/test-helpers';
 import CryptoAssetsDashboard from './index';
 
-type Variant = 'synced' | 'partial' | 'empty';
+type Variant = 'synced' | 'partial' | 'empty' | 'denied';
 
 const statistics = {
     totalAssets: 12418,
@@ -38,18 +39,31 @@ const emptyStatistics = {
 const statisticsFor = (variant: Variant) => {
     if (variant === 'partial') return partialStatistics;
     if (variant === 'empty') return emptyStatistics;
+    if (variant === 'denied') return { ...statistics, sourceCbomCount: null, syncCompleteness: null };
     return statistics;
 };
 
 function CurrentFiltersProbe() {
     const currentFilters = useSelector(filterSelectors.currentFilters(EntityType.CRYPTO_ASSET));
-    return <span data-testid="current-filters">{JSON.stringify(currentFilters)}</span>;
+    const cbomFilters = useSelector(filterSelectors.currentFilters(EntityType.CBOM));
+    return (
+        <>
+            <span data-testid="current-filters">{JSON.stringify(currentFilters)}</span>
+            <span data-testid="cbom-current-filters">{JSON.stringify(cbomFilters)}</span>
+        </>
+    );
 }
 
-export default function CryptoAssetsDashboardWithStore({ variant = 'synced' }: Readonly<{ variant?: Variant }>) {
+export default function CryptoAssetsDashboardWithStore({
+    variant = 'synced',
+    initialCbomFilter,
+}: Readonly<{ variant?: Variant; initialCbomFilter?: SearchFilterModel }>) {
     const store = createMockStore({
         cryptoAssetsDashboard: { isFetching: false, statistics: statisticsFor(variant) },
     } as Parameters<typeof createMockStore>[0]);
+    if (initialCbomFilter) {
+        store.dispatch(filterActions.setCurrentFilters({ entity: EntityType.CBOM, currentFilters: [initialCbomFilter] }));
+    }
 
     return (
         <Provider store={store}>

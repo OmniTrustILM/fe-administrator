@@ -1,5 +1,6 @@
 import { expect, test } from '../../../../../playwright/ct-test';
 import CryptoAssetsDashboardWithStore from './CryptoAssetsDashboardWithStore';
+import { FilterConditionOperator, FilterFieldSource } from 'types/openapi';
 
 test.describe('CryptoAssetsDashboard', () => {
     test('states the coverage first, then the counts and the three distributions', async ({ mount }) => {
@@ -59,6 +60,41 @@ test.describe('CryptoAssetsDashboard', () => {
 
         await expect(component.getByTestId('current-filters')).toHaveText('[]');
         await expect(component.getByTestId('route')).toHaveText('/cryptoassets');
+    });
+
+    test('algorithm families remains a count with its caption and no link', async ({ mount }) => {
+        const component = await mount(<CryptoAssetsDashboardWithStore />);
+        await expect(component.getByRole('heading', { name: 'Algorithm families' })).toBeVisible();
+        await expect(component.getByText('3,010 assets carry none')).toBeVisible();
+        await expect(component.getByRole('link', { name: 'Algorithm families' })).toHaveCount(0);
+    });
+
+    test('source CBOMs replaces a prior CBOM filter and opens the contributing inventory', async ({ mount }) => {
+        const component = await mount(
+            <CryptoAssetsDashboardWithStore
+                initialCbomFilter={{
+                    fieldSource: FilterFieldSource.Property,
+                    condition: FilterConditionOperator.Equals,
+                    fieldIdentifier: 'CBOM_SERIAL_NUMBER',
+                    value: 'old',
+                }}
+            />,
+        );
+        await expect(component.getByTestId('cbom-current-filters')).toContainText('CBOM_SERIAL_NUMBER');
+        await component.getByRole('link', { name: 'Source CBOMs' }).click();
+
+        await expect(component.getByTestId('route')).toHaveText('/cboms');
+        const applied = JSON.parse((await component.getByTestId('cbom-current-filters').textContent()) ?? '[]');
+        expect(applied).toEqual([
+            { fieldSource: 'property', condition: 'EQUALS', fieldIdentifier: 'CBOM_HAS_CONTRIBUTED_ASSETS', value: true },
+        ]);
+    });
+
+    test('source CBOMs is unavailable and unlinked when CBOM access is denied', async ({ mount }) => {
+        const component = await mount(<CryptoAssetsDashboardWithStore variant="denied" />);
+        await expect(component.getByRole('heading', { name: 'Source CBOMs' })).toBeVisible();
+        await expect(component.getByRole('link', { name: 'Source CBOMs' })).toHaveCount(0);
+        await expect(component.getByTestId('crypto-assets-dashboard-counts').locator('[data-testid="count-badge-lock"]')).toHaveCount(1);
     });
 
     test('the no-family tile asks for the empty condition rather than an empty value', async ({ mount }) => {
