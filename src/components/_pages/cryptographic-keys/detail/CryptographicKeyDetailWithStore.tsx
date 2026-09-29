@@ -6,21 +6,30 @@ import ThemeProvider from 'components/ThemeProvider';
 import CryptographicKeyDetail from 'components/_pages/cryptographic-keys/detail';
 import { answerExport, type ExportAnswer, keyExportAuth, keyExportFailure } from 'components/_pages/test-utils/exportDialogTestStore';
 import { actions as keyActions, slice as keySlice, type State as KeyState } from 'ducks/cryptographic-keys';
-import { testReducers } from 'ducks/test-reducers';
+import {
+    actions as cryptographicOperationActions,
+    slice as cryptographicOperationSlice,
+    type State as CryptographicOperationState,
+} from 'ducks/cryptographic-operations';
+import { testInitialState, testReducers } from 'ducks/test-reducers';
 import { actions as profileActions, slice as profileSlice, type State as ProfileState } from 'ducks/token-profiles';
 import type { CryptographicKeyDetailResponseModel } from 'types/cryptographic-keys';
 import type { TokenProfileDetailResponseModel } from 'types/token-profiles';
+import type { AttributeDescriptorModel } from 'types/attributes';
 
-type State = Omit<ReturnType<typeof testReducers>, 'cryptographicKeys' | 'tokenprofiles'> & {
+type State = Omit<ReturnType<typeof testReducers>, 'cryptographicKeys' | 'tokenprofiles' | 'cryptographicOperations'> & {
     cryptographicKeys: KeyState;
     tokenprofiles: ProfileState;
+    cryptographicOperations: CryptographicOperationState;
 };
 
 function reducer(state: State | undefined, action: UnknownAction): State {
+    const testState = state && { ...state, cryptographicOperations: testInitialState.cryptographicOperations };
     return {
-        ...testReducers(state, action),
+        ...testReducers(testState, action),
         cryptographicKeys: keySlice.reducer(state?.cryptographicKeys, action),
         tokenprofiles: profileSlice.reducer(state?.tokenprofiles, action),
+        cryptographicOperations: cryptographicOperationSlice.reducer(state?.cryptographicOperations, action),
     };
 }
 
@@ -31,6 +40,8 @@ type Props = Readonly<{
     exportAnswer?: ExportAnswer;
     /** Whether the signed-in user holds the key export permission. */
     canExportKeys?: boolean;
+    signatureDescriptors?: AttributeDescriptorModel[];
+    failSignatureDescriptors?: boolean;
     onAction?: (action: UnknownAction) => void;
 }>;
 
@@ -39,6 +50,8 @@ export default function CryptographicKeyDetailWithStore({
     tokenProfile,
     exportAnswer,
     canExportKeys = true,
+    signatureDescriptors,
+    failSignatureDescriptors,
     onAction,
 }: Props) {
     const store = useMemo(() => {
@@ -57,6 +70,15 @@ export default function CryptographicKeyDetailWithStore({
                 api.dispatch(keyActions.listExportKeyAttributeDescriptorsSuccess({ request: action.payload, attributeDescriptors: [] }));
             } else if (keyActions.exportKey.match(action)) {
                 answerExport(api, exportAnswer, keyActions.exportKeySuccess(), keyExportFailure);
+            } else if (cryptographicOperationActions.listSignatureAttributeDescriptors.match(action) && signatureDescriptors) {
+                api.dispatch(
+                    cryptographicOperationActions.listSignatureAttributeDescriptorsSuccess({
+                        uuid: action.payload.uuid,
+                        attributeDescriptors: signatureDescriptors,
+                    }),
+                );
+            } else if (cryptographicOperationActions.listSignatureAttributeDescriptors.match(action) && failSignatureDescriptors) {
+                api.dispatch(cryptographicOperationActions.listSignatureAttributesFailure({ error: 'Signature attributes unavailable' }));
             }
             onAction?.(action as UnknownAction);
             return result;
@@ -66,7 +88,7 @@ export default function CryptographicKeyDetailWithStore({
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(apiResponses),
             preloadedState: { ...reducer(undefined, { type: 'init' }), auth: keyExportAuth(canExportKeys) },
         });
-    }, [cryptographicKey, tokenProfile, exportAnswer, canExportKeys, onAction]);
+    }, [cryptographicKey, tokenProfile, exportAnswer, canExportKeys, signatureDescriptors, failSignatureDescriptors, onAction]);
 
     return (
         <Provider store={store}>
