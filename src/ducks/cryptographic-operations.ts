@@ -10,13 +10,11 @@ import type {
     CryptographicKeyVerifyDataRequestModel,
     CryptographicKeyVerifyResponseModel,
 } from 'types/cryptographic-operations';
-import type { KeyAlgorithm } from 'types/openapi';
 import { downloadFile } from 'utils/download';
 
 export type State = {
     signatureAttributeDescriptors?: AttributeDescriptorModel[];
     altSignatureAttributeDescriptors?: AttributeDescriptorModel[];
-    cipherAttributeDescriptors?: AttributeDescriptorModel[];
     randomDataAttributeDescriptors?: AttributeDescriptorModel[];
 
     isEncrypting: boolean;
@@ -26,12 +24,11 @@ export type State = {
     isGeneratingRandomData: boolean;
 
     isFetchingSignatureAttributes: boolean;
-    isFetchingCipherAttributes: boolean;
     isFetchingRandomDataAttributes: boolean;
+    signatureAttributesLoaded: boolean;
 };
 
 export const initialState: State = {
-    cipherAttributeDescriptors: [],
     signatureAttributeDescriptors: [],
     altSignatureAttributeDescriptors: [],
     randomDataAttributeDescriptors: [],
@@ -43,8 +40,8 @@ export const initialState: State = {
     isGeneratingRandomData: false,
 
     isFetchingSignatureAttributes: false,
-    isFetchingCipherAttributes: false,
     isFetchingRandomDataAttributes: false,
+    signatureAttributesLoaded: false,
 };
 
 export const slice = createSlice({
@@ -65,10 +62,6 @@ export const slice = createSlice({
             }
         },
 
-        clearCipherAttributeDescriptors: (state, action: PayloadAction<void>) => {
-            state.cipherAttributeDescriptors = [];
-        },
-
         clearRandomDataAttributeDescriptors: (state, action: PayloadAction<void>) => {
             state.randomDataAttributeDescriptors = [];
         },
@@ -80,11 +73,14 @@ export const slice = createSlice({
                 tokenProfileUuid: string;
                 uuid: string;
                 keyItemUuid: string;
-                algorithm: KeyAlgorithm;
+                operation: 'sign' | 'verify';
                 store?: 'alt' | 'normal';
             }>,
         ) => {
             state.isFetchingSignatureAttributes = true;
+            if (action.payload.store !== 'alt') {
+                state.signatureAttributesLoaded = false;
+            }
         },
 
         listSignatureAttributeDescriptorsSuccess: (
@@ -96,37 +92,12 @@ export const slice = createSlice({
                 state.altSignatureAttributeDescriptors = action.payload.attributeDescriptors;
             } else {
                 state.signatureAttributeDescriptors = action.payload.attributeDescriptors;
+                state.signatureAttributesLoaded = true;
             }
         },
 
         listSignatureAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingSignatureAttributes = false;
-        },
-
-        listCipherAttributeDescriptors: (
-            state,
-            action: PayloadAction<{
-                tokenInstanceUuid: string;
-                tokenProfileUuid: string;
-                uuid: string;
-                keyItemUuid: string;
-                algorithm: KeyAlgorithm;
-            }>,
-        ) => {
-            state.isFetchingCipherAttributes = true;
-        },
-
-        listCipherAttributeDescriptorsSuccess: (
-            state,
-            action: PayloadAction<{ uuid: string; attributeDescriptors: AttributeDescriptorModel[] }>,
-        ) => {
-            state.isFetchingCipherAttributes = false;
-
-            state.cipherAttributeDescriptors = action.payload.attributeDescriptors;
-        },
-
-        listCipherAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
-            state.isFetchingCipherAttributes = false;
         },
 
         listRandomAttributeDescriptors: (state, action: PayloadAction<{ tokenInstanceUuid: string }>) => {
@@ -215,7 +186,6 @@ const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const signatureAttributeDescriptors = createSelector(state, (state: State) => state.signatureAttributeDescriptors);
 const altSignatureAttributeDescriptors = createSelector(state, (state: State) => state.altSignatureAttributeDescriptors);
-const cipherAttributeDescriptors = createSelector(state, (state: State) => state.cipherAttributeDescriptors);
 const randomDataAttributeDescriptors = createSelector(state, (state: State) => state.randomDataAttributeDescriptors);
 
 const isSigning = createSelector(state, (state: State) => state.isSigning);
@@ -225,15 +195,14 @@ const isEncrypting = createSelector(state, (state: State) => state.isEncrypting)
 const isDecrypting = createSelector(state, (state: State) => state.isDecrypting);
 
 const isFetchingSignatureAttributes = createSelector(state, (state: State) => state.isFetchingSignatureAttributes);
-const isFetchingCipherAttributes = createSelector(state, (state: State) => state.isFetchingCipherAttributes);
 const isFetchingRandomDataAttributes = createSelector(state, (state: State) => state.isFetchingRandomDataAttributes);
+const signatureAttributesLoaded = createSelector(state, (state: State) => state.signatureAttributesLoaded);
 
 export const selectors = {
     state,
 
     signatureAttributeDescriptors,
     altSignatureAttributeDescriptors,
-    cipherAttributeDescriptors,
     randomDataAttributeDescriptors,
 
     isSigning,
@@ -243,8 +212,8 @@ export const selectors = {
     isDecrypting,
 
     isFetchingSignatureAttributes,
-    isFetchingCipherAttributes,
     isFetchingRandomDataAttributes,
+    signatureAttributesLoaded,
 };
 
 export const actions = slice.actions;

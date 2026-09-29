@@ -17,6 +17,7 @@ import {
     STANDARD_VIEW_NAME,
     duplicateName,
     isSliceDirty,
+    newViewName,
     resolveInitialViewId,
     resolveView,
     splitTabs,
@@ -228,6 +229,17 @@ describe('duplicateName', () => {
     it('does not split a character that straddles the cut', () => {
         const name = duplicateName(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)}\u{1F600}`, []);
         expect(name).toBe(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)} (copy)`);
+    });
+});
+
+describe('newViewName', () => {
+    it('offers a neutral name that owes nothing to any existing view', () => {
+        expect(newViewName(['Expiry watch', STANDARD_VIEW_NAME])).toBe('New view');
+    });
+
+    it('numbers the name once it is taken, because names are unique per resource', () => {
+        expect(newViewName(['New view'])).toBe('New view 2');
+        expect(newViewName(['New view', 'New view 2'])).toBe('New view 3');
     });
 });
 

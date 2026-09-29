@@ -129,6 +129,16 @@ export function duplicateName(name: string, existing: readonly string[]): string
     }
 }
 
+export function newViewName(existing: readonly string[]): string {
+    const taken = new Set(existing);
+    if (!taken.has('New view')) return 'New view';
+
+    for (let suffix = 2; ; suffix++) {
+        const candidate = `New view ${suffix}`;
+        if (!taken.has(candidate)) return candidate;
+    }
+}
+
 // Core counts UTF-16 code units, so the cut is by unit, backed off a unit rather than split a surrogate pair.
 function truncate(text: string, length: number): string {
     const cut = text.slice(0, length);
