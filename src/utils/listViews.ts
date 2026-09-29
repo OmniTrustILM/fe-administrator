@@ -195,37 +195,48 @@ function secretFieldKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<s
  * filter still applies to the table in front of the user; it is only kept out of what is written
  * back. A presence-only condition on the same field survives, because it carries nothing to leak.
  *
- * A create also drops the filters {@link withoutMissingFieldFilters} drops, which Core refuses in a new row
- * but lets an update keep.
+ * It also drops the filters {@link withoutMissingFieldFilters} drops, which Core refuses unless the stored
+ * row already filters on that field.
  */
 export function toStorableFilters(
     filters: readonly SearchFilterModel[],
     catalogue: readonly SearchFieldDataByGroupDto[],
-    write: ViewWrite,
+    held: readonly StoredField[],
 ): SearchFilterModel[] {
     const secret = secretFieldKeys(catalogue);
-    const kept = write === 'create' ? withoutMissingFieldFilters(filters, catalogue) : filters;
 
-    return kept.filter((filter) => !(secret.has(getColumnKey(filter)) && carriesValue(filter)));
+    return withoutMissingFieldFilters(filters, catalogue, held).filter(
+        (filter) => !(secret.has(getColumnKey(filter)) && carriesValue(filter)),
+    );
 }
 
 /**
- * The filters minus any on an attribute that has left the catalogue, such as a deleted custom attribute.
- * A property filter is kept: Core checks it against every field the resource defines, which the published
- * catalogue need not list. An empty catalogue is read as "has not arrived", so nothing is dropped.
+ * The filters minus any on an attribute that has left the catalogue, such as a deleted custom attribute,
+ * unless `held` names its field. A property filter is kept: Core checks it against every field the resource
+ * defines, which the published catalogue need not list. An empty catalogue is read as "has not arrived", so
+ * nothing is dropped.
  */
 export function withoutMissingFieldFilters(
     filters: readonly SearchFilterModel[],
     catalogue: readonly SearchFieldDataByGroupDto[],
+    held: readonly StoredField[] = [],
 ): SearchFilterModel[] {
     const published = catalogueKeys(catalogue);
     if (published.size === 0) return [...filters];
 
-    return filters.filter((filter) => filter.fieldSource === FilterFieldSource.Property || published.has(getColumnKey(filter)));
+    const carried = new Set(held.map(getColumnKey));
+
+    return filters.filter((filter) => {
+        const key = getColumnKey(filter);
+        return filter.fieldSource === FilterFieldSource.Property || published.has(key) || carried.has(key);
+    });
 }
 
-/** Whether a write starts a new row or rewrites one Core already holds. */
-export type ViewWrite = 'create' | 'update';
+/**
+ * A field a stored row already holds, as a column or a filter. Core lets an update keep such a field after it
+ * has left the catalogue, but not introduce one, and a create carries nothing already, so it passes none.
+ */
+export type StoredField = Pick<ListViewColumnModel, 'fieldSource' | 'fieldIdentifier'>;
 
 function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<string> {
     const keys = new Set<string>();
@@ -252,24 +263,30 @@ export interface ViewSchema {
  * other platform column is always kept: Core validates against every field the resource defines, and the
  * published catalogue can leave out one the listing still shows.
  *
- * A column that is neither published nor a platform column is a stored one whose field is gone, such as a
- * deleted attribute. An update keeps it, so the column comes back when the field does, and Core accepts a
- * column the row already carries. A create drops it, because Core holds a new row to the live catalogue.
+ * A column that is neither published nor a platform column has a field that is gone, such as a deleted
+ * attribute. It is kept when `held` names it, so the column comes back when the field does, and Core accepts
+ * a column the stored row already carries. Otherwise it is dropped, because Core refuses a missing field that
+ * a write introduces, and a create introduces every field it names.
  *
  * An empty catalogue is read as "has not arrived", so a failed read does not empty every view. The raw
  * groups are read rather than {@link toCatalogueFields}, because a column the listing cannot display is
  * still one the API accepts. See {@link toStoredColumnsKeepingUnavailable}.
  */
-export function toStorableColumns(columns: readonly ListViewColumnModel[], schema: ViewSchema, write: ViewWrite): ListViewColumnModel[] {
+export function toStorableColumns(
+    columns: readonly ListViewColumnModel[],
+    schema: ViewSchema,
+    held: readonly StoredField[],
+): ListViewColumnModel[] {
     const platform = new Map(schema.standardColumns.map((column) => [getColumnKey(column), column]));
     const published = catalogueKeys(schema.catalogue);
+    const carried = new Set(held.map(getColumnKey));
 
     return columns.filter((column) => {
         const key = getColumnKey(column);
         const standard = platform.get(key);
         if (standard) return !standard.displayOnly;
 
-        return write === 'update' || published.size === 0 || published.has(key);
+        return published.size === 0 || published.has(key) || carried.has(key);
     });
 }
 
@@ -419,8 +436,8 @@ export function toCreateRequest(
     return {
         name,
         resource,
-        columns: toStorableColumns(toStoredColumns(slice.columns), schema, 'create'),
-        filters: toStorableFilters(slice.filters, schema.catalogue, 'create'),
+        columns: toStorableColumns(toStoredColumns(slice.columns), schema, []),
+        filters: toStorableFilters(slice.filters, schema.catalogue, []),
         sort: toStoredSort(slice.sort),
         defaultView,
     };
@@ -457,7 +474,7 @@ export function toUpdateRequest(
 
     return {
         ...row,
-        columns: toStorableColumns(row.columns ?? [], schema, 'update'),
-        filters: toStorableFilters(row.filters ?? [], schema.catalogue, 'update'),
+        columns: toStorableColumns(row.columns ?? [], schema, view.columns),
+        filters: toStorableFilters(row.filters ?? [], schema.catalogue, view.filters ?? []),
     };
 }

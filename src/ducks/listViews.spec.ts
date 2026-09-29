@@ -134,6 +134,33 @@ describe('reading the saved views', () => {
         expect(selectors.error({ [slice.name]: failed } as never)).toBe('nope');
     });
 
+    test('a failed read drops the list an earlier visit left, so no save is built on it', () => {
+        const failed = reduceAll(
+            [
+                actions.listViews({ resource: Resource.Certificates }),
+                actions.listViewsFailure({ resource: Resource.Certificates, error: 'nope' }),
+            ],
+            listed([view('a', 'One')]),
+        );
+
+        expect(certificates(failed).views).toEqual([]);
+        expect(certificates(failed).readEpoch).toBeUndefined();
+    });
+
+    test('a failed read leaves the rows of a write still in flight to its outcome', () => {
+        const failed = reduceAll(
+            [
+                actions.listViews({ resource: Resource.Certificates }),
+                actions.deleteView({ resource: Resource.Certificates, uuid: 'a' }),
+                actions.listViewsFailure({ resource: Resource.Certificates, error: 'nope' }),
+                actions.deleteViewFailure({ resource: Resource.Certificates, error: 'nope' }),
+            ],
+            listed([view('a', 'One'), view('b', 'Two')]),
+        );
+
+        expect(certificates(failed).views.map((v) => v.uuid)).toEqual(['a', 'b']);
+    });
+
     test('resources hold their views apart', () => {
         const both = reduceAll(
             [actions.listViewsSuccess({ resource: Resource.Cryptographickeys, views: [view('k', 'Keys view')] })],

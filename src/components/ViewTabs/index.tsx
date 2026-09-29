@@ -121,7 +121,7 @@ export default function ViewTabs({
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
     const [requestedFor, setRequestedFor] = useState<Resource | undefined>(undefined);
-    const [dismissedNotice, setDismissedNotice] = useState<string | undefined>(undefined);
+    const [dismissedNotices, setDismissedNotices] = useState<ReadonlySet<string>>(() => new Set());
 
     const fields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
     const schema = useMemo<ViewSchema>(() => ({ catalogue, standardColumns }), [catalogue, standardColumns]);
@@ -170,7 +170,7 @@ export default function ViewTabs({
         if (!activeView) return toStandardSlice(standardColumns, standardSort);
 
         const slice = toViewSlice(activeView, fields, standardColumns);
-        return { ...slice, filters: toStorableFilters(slice.filters, catalogue, 'update') };
+        return { ...slice, filters: toStorableFilters(slice.filters, catalogue, activeView.filters ?? []) };
     }, [activeView, fields, standardColumns, standardSort, catalogue]);
 
     /** The stored columns this table cannot render, which the notice names. */
@@ -185,9 +185,13 @@ export default function ViewTabs({
     /**
      * The live filters minus the ones a view must not carry, which is what a view is compared against
      * and what a save writes back. See {@link toStorableFilters}: a filter value typed against secret
-     * content would otherwise be copied into storage that does not protect it.
+     * content would otherwise be copied into storage that does not protect it, and a filter on a field
+     * that has left the catalogue is refused unless the active view already filters on it.
      */
-    const storableFilters = useMemo(() => toStorableFilters(filters, catalogue, 'update'), [filters, catalogue]);
+    const storableFilters = useMemo(
+        () => toStorableFilters(filters, catalogue, activeView?.filters ?? []),
+        [filters, catalogue, activeView],
+    );
 
     const currentSlice = useMemo<ViewSlice>(() => ({ columns, filters: storableFilters, sort }), [columns, storableFilters, sort]);
     const isDirty = isSliceDirty(storedSlice, currentSlice, activeView ? 'view' : 'standard');
@@ -488,7 +492,7 @@ export default function ViewTabs({
                 </div>
             </SimpleBar>
 
-            {resolved && noticeKey !== dismissedNotice && (
+            {resolved && !(noticeKey && dismissedNotices.has(noticeKey)) && (
                 <UnresolvedColumnsNotice
                     unavailable={unavailable}
                     storedCount={resolved.columns.length}
@@ -502,7 +506,9 @@ export default function ViewTabs({
                             ? () => patchActive({ columns: toStoredColumns(resolved.columns.filter((column) => column.available)) })
                             : undefined
                     }
-                    onDismiss={() => setDismissedNotice(noticeKey)}
+                    onDismiss={() => {
+                        if (noticeKey) setDismissedNotices((dismissed) => new Set(dismissed).add(noticeKey));
+                    }}
                     isBusy={isMutating}
                     dataTestId={`${dataTestId}-notice`}
                 />

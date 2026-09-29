@@ -997,6 +997,62 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
     });
 
+    test('keeps a notice dismissed on one view while the notice of another is dismissed too', async ({ mount, page }) => {
+        const first = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        const second = audit({ columns: [stored('COMMON_NAME'), stored('withdrawn', FilterFieldSource.Custom)] });
+        await mount(strip({ views: [first, second] }));
+
+        await page.getByTestId('view-tabs-notice-dismiss').click();
+        await page.getByTestId('view-tabs-tab-view-2').click();
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('withdrawn cannot be shown');
+        await page.getByTestId('view-tabs-notice-dismiss').click();
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
+    });
+
+    test('leaves a filter whose field is gone out of a save when the view did not already hold it', async ({ mount, page }) => {
+        const deadFilter: SearchFilterModel = {
+            fieldSource: FilterFieldSource.Custom,
+            fieldIdentifier: 'retired',
+            condition: FilterConditionOperator.Equals,
+            value: 'x',
+        };
+        await mount(strip({ views: [expiryWatch({ defaultView: true })], driftFilter: deadFilter }));
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual([]);
+    });
+
+    test('keeps a filter whose field is gone through a save when the view already held it', async ({ mount, page }) => {
+        const deadFilter: SearchFilterModel = {
+            fieldSource: FilterFieldSource.Custom,
+            fieldIdentifier: 'retired',
+            condition: FilterConditionOperator.Equals,
+            value: 'x',
+        };
+        await mount(
+            strip({
+                views: [expiryWatch({ defaultView: true, filters: [stateFilter, deadFilter] })],
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+            }),
+        );
+
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual([stateFilter, deadFilter]);
+    });
+
     test('opens on the list its own read returns, not on the one an earlier visit left', async ({ mount, page }) => {
         const earlier = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME')] });
         const current = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('SERIAL_NUMBER')] });

@@ -149,6 +149,10 @@ export const slice = createSlice({
             // Loaded in the sense the strip needs: the read has settled, so Standard opens rather than
             // the strip waiting forever for a list that is not coming.
             entry.hasLoaded = true;
+            entry.readEpoch = undefined;
+            // A list held from an earlier visit is not what Core holds now, and a full-row save built on it would
+            // overwrite any newer change. An optimistic write in flight keeps its rows, which its outcome settles.
+            if (!entry.isMutating) entry.views = [];
             state.error = action.payload.error;
         },
 
