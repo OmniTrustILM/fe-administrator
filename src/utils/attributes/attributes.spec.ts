@@ -629,67 +629,41 @@ describe('attributes utils', () => {
             expect(result).toEqual([]);
         });
 
+        const optionalDescriptor = (name: string, contentType: AttributeContentType) =>
+            ({
+                type: AttributeType.Data,
+                name,
+                uuid: `u-${name}`,
+                contentType,
+                content: [],
+                properties: { required: false, label: name, readOnly: false, visible: true, list: false },
+            }) as any;
+
+        const collectOmittingEmpty = (name: string, contentType: AttributeContentType, value: unknown) =>
+            collectFormAttributes('id1', [optionalDescriptor(name, contentType)], { __attributes__id1__: { [name]: value } }, undefined, {
+                omitEmptyContent: true,
+            }).map((attribute) => attribute.content);
+
         test('omits a blank secret attribute and keeps an entered one', () => {
-            // given
-            const descriptors = [
-                {
-                    type: AttributeType.Data,
-                    name: 'pin',
-                    uuid: 'u-pin',
-                    contentType: AttributeContentType.Secret,
-                    content: [],
-                    properties: { required: false, label: 'PIN', readOnly: false, visible: true, list: false },
-                },
-            ] as any[];
-
-            // when
-            const blank = collectFormAttributes('id1', descriptors, { __attributes__id1__: { pin: '' } }, undefined, {
-                omitEmptyContent: true,
-            });
-            const entered = collectFormAttributes('id1', descriptors, { __attributes__id1__: { pin: '1234' } }, undefined, {
-                omitEmptyContent: true,
-            });
-
-            // then
-            expect(blank).toEqual([]);
-            expect(entered[0].content).toEqual([{ data: { secret: '1234' } }]);
+            expect(collectOmittingEmpty('pin', AttributeContentType.Secret, '')).toEqual([]);
+            expect(collectOmittingEmpty('pin', AttributeContentType.Secret, '1234')).toEqual([[{ data: { secret: '1234' } }]]);
         });
 
         test('omits a blank codeblock attribute and keeps an entered one', () => {
-            // given
             const language = ProgrammingLanguageEnum.Javascript;
-            const descriptors = [
-                {
-                    type: AttributeType.Data,
-                    name: 'script',
-                    uuid: 'u-script',
-                    contentType: AttributeContentType.Codeblock,
-                    content: [],
-                    properties: { required: false, label: 'Script', readOnly: false, visible: true, list: false },
-                },
-            ] as any[];
 
-            // when
-            const blank = collectFormAttributes(
-                'id1',
-                descriptors,
-                { __attributes__id1__: { script: { code: '', language } } },
-                undefined,
-                {
-                    omitEmptyContent: true,
-                },
-            );
-            const entered = collectFormAttributes(
-                'id1',
-                descriptors,
-                { __attributes__id1__: { script: { code: 'return 1;', language } } },
-                undefined,
-                { omitEmptyContent: true },
-            );
+            expect(collectOmittingEmpty('script', AttributeContentType.Codeblock, { code: '', language })).toEqual([]);
+            expect(collectOmittingEmpty('script', AttributeContentType.Codeblock, { code: 'return 1;', language })).toEqual([
+                [{ data: { code: btoa('return 1;'), language } }],
+            ]);
+        });
 
-            // then
-            expect(blank).toEqual([]);
-            expect(entered[0].content).toEqual([{ data: { code: btoa('return 1;'), language } }]);
+        test('keeps object content that carries blank secret or code properties of its own', () => {
+            const withBlankCode = { code: '', enabled: true };
+            const withBlankSecret = { secret: '', enabled: true };
+
+            expect(collectOmittingEmpty('settings', AttributeContentType.Object, withBlankCode)).toEqual([[{ data: withBlankCode }]]);
+            expect(collectOmittingEmpty('settings', AttributeContentType.Object, withBlankSecret)).toEqual([[{ data: withBlankSecret }]]);
         });
 
         test('processes Custom attribute descriptors', () => {

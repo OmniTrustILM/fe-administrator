@@ -351,12 +351,12 @@ function stripEmptyResourceContent(
 const isBlankValue = (value: unknown): boolean => value === undefined || value === null || value === '';
 
 // Secret and Codeblock content wrap the entered value in an object, so a blank one is never a blank `data`.
-const isEmptyAttributeContentItem = (item: FormAttributeContentItem): boolean => {
+// Keyed on the content type, because Object content may carry `secret` or `code` properties of its own.
+const isEmptyAttributeContentItem = (item: FormAttributeContentItem, contentType: AttributeContentType): boolean => {
     if (isBlankValue(item.data)) return true;
     if (typeof item.data !== 'object') return false;
-    const data = item.data as { secret?: unknown; code?: unknown };
-    if ('secret' in data) return isBlankValue(data.secret);
-    if ('code' in data) return isBlankValue(data.code);
+    if (contentType === AttributeContentType.Secret) return isBlankValue((item.data as { secret?: unknown }).secret);
+    if (contentType === AttributeContentType.Codeblock) return isBlankValue((item.data as { code?: unknown }).code);
     return false;
 };
 
@@ -403,8 +403,8 @@ export function collectFormAttributes(
         if (descriptor.contentType === AttributeContentType.Resource) {
             content = stripEmptyResourceContent(content);
         } else if (options?.omitEmptyContent && Array.isArray(content)) {
-            content = content.filter((item) => !isEmptyAttributeContentItem(item));
-        } else if (options?.omitEmptyContent && !Array.isArray(content) && isEmptyAttributeContentItem(content)) {
+            content = content.filter((item) => !isEmptyAttributeContentItem(item, descriptor.contentType));
+        } else if (options?.omitEmptyContent && !Array.isArray(content) && isEmptyAttributeContentItem(content, descriptor.contentType)) {
             content = undefined;
         }
 
