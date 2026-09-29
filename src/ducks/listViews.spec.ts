@@ -159,6 +159,7 @@ describe('reading the saved views', () => {
         );
 
         expect(certificates(failed).views.map((v) => v.uuid)).toEqual(['a', 'b']);
+        expect(certificates(failed).isStale).toBe(true);
     });
 
     test('marks the list stale when a write overlapped the read, and clears the mark on the next read', () => {

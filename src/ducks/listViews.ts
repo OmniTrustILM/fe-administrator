@@ -157,8 +157,10 @@ export const slice = createSlice({
             entry.hasLoaded = true;
             entry.readEpoch = undefined;
             // A list held from an earlier visit is not what Core holds now, and a full-row save built on it would
-            // overwrite any newer change. An optimistic write in flight keeps its rows, which its outcome settles.
-            if (!entry.isMutating) entry.views = [];
+            // overwrite any newer change. An optimistic write in flight keeps its rows, and the list is read again
+            // once that write settles.
+            if (entry.isMutating) entry.isStale = true;
+            else entry.views = [];
             state.error = action.payload.error;
         },
 

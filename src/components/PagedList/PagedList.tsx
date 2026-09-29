@@ -202,9 +202,14 @@ function PagedList<TRow extends object>({
         () => (columnsResource ? listViewSelectors.isFetching(columnsResource) : () => false),
         [columnsResource],
     );
+    const selectIsStaleViews = useMemo(
+        () => (columnsResource ? listViewSelectors.isStale(columnsResource) : () => false),
+        [columnsResource],
+    );
     const hasLoadedViews = useSelector(selectHasLoadedViews);
     const isFetchingViews = useSelector(selectIsFetchingViews);
-    const isStripReady = isViewStripReady(hasLoadedViews && !isFetchingViews, hasSettledCatalogue);
+    const isStaleViews = useSelector(selectIsStaleViews);
+    const isStripReady = isViewStripReady(hasLoadedViews && !isFetchingViews && !isStaleViews, hasSettledCatalogue);
 
     const totalItems = useSelector(selectors.totalItems(entity));
     const checkedRows = useSelector(selectors.checkedRows(entity));
