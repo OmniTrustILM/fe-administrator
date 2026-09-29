@@ -8,7 +8,7 @@ import { LockTypeEnum } from 'types/user-interface';
 type Props = Readonly<{
     data?: number | null;
     title: string;
-    link: string;
+    link?: string;
     extraComponent?: React.ReactNode;
     entity?: EntityType;
     onSetFilter?: () => SearchFilterModel[];
@@ -34,7 +34,9 @@ function CountBadge({
     const dispatch = useDispatch();
 
     const applyFilter =
-        entity && onSetFilter ? () => dispatch(filterActions.setCurrentFilters({ entity, currentFilters: onSetFilter() })) : undefined;
+        link && entity && onSetFilter
+            ? () => dispatch(filterActions.setCurrentFilters({ entity, currentFilters: onSetFilter() }))
+            : undefined;
 
     return (
         <Widget
@@ -42,7 +44,7 @@ function CountBadge({
             onTitleLinkClick={applyFilter}
             title={title}
             className="h-full"
-            titleColor="var(--brand)"
+            titleColor={link ? 'var(--brand)' : 'var(--content)'}
             titleBoldness="semi-bold"
             titleSize="large"
         >

@@ -3,6 +3,15 @@ import CountBadgeWithStore from './CountBadgeWithStore';
 import { LockTypeEnum } from 'types/user-interface';
 
 test.describe('CountBadge', () => {
+    test('should render a plain count without a link', async ({ mount }) => {
+        const component = await mount(<CountBadgeWithStore title="Plain count" data={42} />);
+        const heading = component.getByRole('heading', { name: 'Plain count' });
+        await expect(heading).toBeVisible();
+        await expect(heading).toHaveClass(/text-\[var\(--content\)\]/);
+        await expect(component.getByText('42')).toBeVisible();
+        await expect(component.getByRole('link', { name: 'Plain count' })).toHaveCount(0);
+    });
+
     test('should render title, link and data', async ({ mount }) => {
         const component = await mount(<CountBadgeWithStore title="Total certificates" link="/certificates" data={42} />);
         await expect(component.getByRole('heading', { name: 'Total certificates' })).toBeVisible();
