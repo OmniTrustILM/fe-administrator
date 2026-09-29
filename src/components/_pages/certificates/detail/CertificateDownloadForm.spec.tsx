@@ -50,6 +50,31 @@ test.describe('CertificateDownloadForm', () => {
         await expect(page.getByRole('option', { name: PKCS12_OPTION_LABEL })).toHaveCount(0);
     });
 
+    test('spaces the chain switch from the format, and the format from the PKCS12 password', async ({ mount, page }) => {
+        await mount(<CertificateDownloadFormTestWrapper keystoreAvailable />);
+        const boxOf = async (locator: Locator) => (await locator.boundingBox())!;
+
+        const chainSwitch = await boxOf(page.getByTestId('switch-certificateChainSwitch'));
+        const formatLabel = await boxOf(page.locator('label[for="certificateFormat"]'));
+        expect(formatLabel.y - (chainSwitch.y + chainSwitch.height)).toBeGreaterThanOrEqual(12);
+
+        await chooseFormat(page, PKCS12_OPTION_LABEL);
+
+        const format = await boxOf(page.getByTestId('select-certificateFormat-trigger'));
+        const passwordLabel = await boxOf(page.locator('label[for="passphrase"]'));
+        expect(passwordLabel.y - (format.y + format.height)).toBeGreaterThanOrEqual(12);
+    });
+
+    test('shows no chain switch once PKCS12 is chosen, whose container always carries the chain', async ({ mount, page }) => {
+        await mount(<CertificateDownloadFormTestWrapper keystoreAvailable />);
+
+        await chooseFormat(page, PKCS12_OPTION_LABEL);
+
+        await expect(page.getByTestId('switch-certificateChainSwitch')).toHaveCount(0);
+        await chooseFormat(page, 'Raw');
+        await expect(page.getByTestId('switch-certificateChainSwitch')).toBeVisible();
+    });
+
     test('choosing PKCS12 shows the password fields and the info text in place of the encoding choice', async ({ mount, page }) => {
         await mount(<CertificateDownloadFormTestWrapper keystoreAvailable />);
 
@@ -85,7 +110,7 @@ test.describe('CertificateDownloadForm', () => {
         await expect(modal).toHaveCount(0);
     });
 
-    test('locks the format and the chain switch while a PKCS12 download runs', async ({ mount, page }) => {
+    test('locks the format while a PKCS12 download runs', async ({ mount, page }) => {
         await mount(<CertificateDownloadFormTestWrapper inGlobalModal />);
         const modal = page.getByRole('dialog', { name: 'Download' });
         await chooseFormat(page, PKCS12_OPTION_LABEL);
@@ -94,7 +119,6 @@ test.describe('CertificateDownloadForm', () => {
         await modal.getByRole('button', { name: 'Download' }).click();
         await expect(modal.getByRole('button', { name: 'Downloading...' })).toBeDisabled();
 
-        await expect(modal.getByLabel('Certificate Chain')).toBeDisabled();
         await expect(modal.getByTestId('select-certificateFormat-trigger')).toBeDisabled();
     });
 

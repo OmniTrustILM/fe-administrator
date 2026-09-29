@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import AttributeEditor from 'components/Attributes/AttributeEditor';
 import Button from 'components/Button';
 import Callout from 'components/Callout';
+import Container from 'components/Container';
 import InfoNote from 'components/InfoNote';
 import PassphraseFields, { type PassphraseFormValues } from 'components/PassphraseFields';
 import ProgressButton from 'components/ProgressButton';
@@ -101,7 +102,7 @@ export default function ExportPassphraseForm({
                     </Callout>
                 )}
                 <InfoNote>{info}</InfoNote>
-                <div className="flex justify-end gap-2">
+                <Container className="flex-row justify-end modal-footer" gap={4}>
                     <Button variant="outline" type="button" disabled={busy} onClick={onCancel}>
                         Cancel
                     </Button>
@@ -112,7 +113,7 @@ export default function ExportPassphraseForm({
                         inProgressTitle={busyLabel}
                         disabled={schema?.status !== 'loaded'}
                     />
-                </div>
+                </Container>
             </form>
         </FormProvider>
     );

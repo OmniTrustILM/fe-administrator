@@ -530,7 +530,7 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
                         </WizardSection>
                     )}
 
-                    {withCustomAttributes && (
+                    {withCustomAttributes && (certificateCustomAttributesError || customAttributeDescriptors.length > 0) && (
                         <WizardSection id="importCertificateAttributes" title="Certificate custom attributes">
                             {certificateCustomAttributesError ? (
                                 <RetryCallout message={certificateCustomAttributesError} onRetry={listCertificateCustomAttributes} />

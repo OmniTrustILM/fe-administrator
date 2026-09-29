@@ -197,16 +197,19 @@ const CertificateDownloadForm = () => {
 
     return (
         <>
-            <Switch
-                id="certificateChainSwitch"
-                label="Certificate Chain"
-                checked={isDownloadFormCertificateChain ?? false}
-                disabled={isDownloadingKeystore}
-                onChange={() => {
-                    setIsDownloadFormCertificateChain(!isDownloadFormCertificateChain);
-                    setCertificateFormatValue('');
-                }}
-            />
+            {/* A PKCS12 container always carries the chain, so the switch is only for the other formats. */}
+            {!isPkcs12Chosen && (
+                <Switch
+                    id="certificateChainSwitch"
+                    label="Certificate Chain"
+                    className="mb-4"
+                    checked={isDownloadFormCertificateChain ?? false}
+                    onChange={() => {
+                        setIsDownloadFormCertificateChain(!isDownloadFormCertificateChain);
+                        setCertificateFormatValue('');
+                    }}
+                />
+            )}
 
             {!isDownloadFormCertificateChain && (
                 <Select
@@ -271,13 +274,15 @@ const CertificateDownloadForm = () => {
                 (isPkcs12Chosen ? (
                     certificate?.key &&
                     privateKeyItem && (
-                        <KeystoreDownloadDialog
-                            certificateUuid={certificate.uuid}
-                            certificateName={certificate.commonName}
-                            keyUuid={certificate.key.uuid}
-                            privateKeyItemUuid={privateKeyItem.uuid}
-                            onClose={() => dispatch(userInterfaceActions.hideGlobalModal())}
-                        />
+                        <div className="mt-4">
+                            <KeystoreDownloadDialog
+                                certificateUuid={certificate.uuid}
+                                certificateName={certificate.commonName}
+                                keyUuid={certificate.key.uuid}
+                                privateKeyItemUuid={privateKeyItem.uuid}
+                                onClose={() => dispatch(userInterfaceActions.hideGlobalModal())}
+                            />
+                        </div>
                     )
                 ) : (
                     <DropDownListForm

@@ -52,8 +52,10 @@ export default function ImportResults({ entries, results, isImporting, retryDisa
                         const entry = entries.find((each) => each.entryReference === result.entryReference);
                         const badge = badgeOf(result);
                         return (
-                            <li key={result.entryReference} className="flex items-start gap-3 rounded-lg border border-outline px-4 py-3">
-                                <Badge color={badge.color}>{badge.label}</Badge>
+                            <li
+                                key={result.entryReference}
+                                className="flex items-start justify-between gap-3 rounded-lg border border-outline px-4 py-3"
+                            >
                                 <div className="min-w-0 space-y-1 text-sm">
                                     <p className="font-medium text-content">{entry ? entryTitle(entry) : kindLabel(result.kind)}</p>
                                     {!result.imported && <p className="text-content-muted">{result.message}</p>}
@@ -78,6 +80,7 @@ export default function ImportResults({ entries, results, isImporting, retryDisa
                                         </p>
                                     )}
                                 </div>
+                                <Badge color={badge.color}>{badge.label}</Badge>
                             </li>
                         );
                     })}

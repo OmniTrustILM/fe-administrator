@@ -190,6 +190,7 @@ async function chooseProfile(page: Page, option = PROFILE_OPTION) {
 
 const resultRow = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title });
 const resultBadge = (page: Page, title: string) => resultRow(page, title).getByTestId('badge');
+const boxOf = async (locator: Locator) => (await locator.boundingBox())!;
 
 test.describe('ImportWizard', () => {
     test('imports a certificate-only file', async ({ mount, page }) => {
@@ -1165,6 +1166,40 @@ test.describe('ImportWizard', () => {
 
         await expect.poll(() => importRequests(actions)).toHaveLength(1);
         expect(importRequests(actions)[0].customAttributes).toBeUndefined();
+    });
+
+    test('shows no certificate custom attributes section when none are defined', async ({ mount, page }) => {
+        await mount(
+            <ImportWizardWithStore
+                showCertificateCustomAttributes
+                certificateCustomAttributes={[]}
+                inspectAnswers={[{ inspection: inspection([certificate]) }]}
+            />,
+        );
+
+        await chooseFile(page);
+
+        await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeEnabled();
+        await expect(page.getByRole('heading', { name: 'Certificate custom attributes' })).toHaveCount(0);
+    });
+
+    test('lines up the result titles, with each badge at the end of its row', async ({ mount, page }) => {
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[{ inspection: inspection([keyPair, certificate]) }]}
+                importableTokenProfiles={[profile]}
+                importAnswers={[{ results: [adoptedKeyPair, failedCertificate] }]}
+            />,
+        );
+
+        await chooseFile(page);
+        await chooseProfile(page);
+        await page.getByRole('button', { name: 'Import 2 entries' }).click();
+
+        const keyPairTitle = await boxOf(resultRow(page, 'web-server-01').getByText('web-server-01', { exact: true }));
+        const certificateTitle = await boxOf(resultRow(page, 'intermediate-ca-r4').getByText('intermediate-ca-r4', { exact: true }));
+        expect(Math.abs(keyPairTitle.x - certificateTitle.x)).toBeLessThan(2);
+        expect((await boxOf(resultBadge(page, 'web-server-01'))).x).toBeGreaterThan(keyPairTitle.x + keyPairTitle.width);
     });
 
     test('moves focus from the form to the results heading once the results replace it', async ({ mount, page }) => {
