@@ -226,6 +226,13 @@ describe('duplicateName', () => {
         expect(duplicateName(taken[0], taken)).toBe('Report (copy)');
     });
 
+    it('keeps advancing the series when the cut exposes a copy suffix inside the stem', () => {
+        const stem = 'x'.repeat(MAX_VIEW_NAME_LENGTH - ' (copy)tail'.length - 3);
+        const first = duplicateName(`${stem} (copy)tail`, []);
+        expect(first).toBe(`${stem} (copy)`);
+        expect(duplicateName(first, [first])).toBe(`${stem} (copy) 2`);
+    });
+
     it('does not split a character that straddles the cut', () => {
         const name = duplicateName(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)}\u{1F600}`, []);
         expect(name).toBe(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)} (copy)`);

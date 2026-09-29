@@ -124,7 +124,7 @@ export function duplicateName(name: string, existing: readonly string[]): string
     const taken = new Set(existing);
     for (let suffix = sourceSuffix; ; suffix = suffix < Number.MAX_SAFE_INTEGER ? suffix + 1 : 1) {
         const ending = suffix === 1 ? ' (copy)' : ` (copy) ${suffix}`;
-        const candidate = `${truncate(stem, MAX_VIEW_NAME_LENGTH - ending.length)}${ending}`;
+        const candidate = `${fitStem(stem, MAX_VIEW_NAME_LENGTH - ending.length)}${ending}`;
         if (!taken.has(candidate)) return candidate;
     }
 }
@@ -137,6 +137,12 @@ export function newViewName(existing: readonly string[]): string {
         const candidate = `New view ${suffix}`;
         if (!taken.has(candidate)) return candidate;
     }
+}
+
+// A cut can end the stem on a copy suffix that sat mid-name, which would stack a second one onto it.
+function fitStem(stem: string, length: number): string {
+    const cut = truncate(stem, length);
+    return cut.replace(COPY_SUFFIXES, '').trimEnd() || cut;
 }
 
 // Core counts UTF-16 code units, so the cut is by unit, backed off a unit rather than split a surrogate pair.
