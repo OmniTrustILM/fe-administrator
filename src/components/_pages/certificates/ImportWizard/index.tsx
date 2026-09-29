@@ -127,6 +127,8 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     const listedImportSchema = useSelector(keysSelectors.importKeyAttributes);
     const customAttributeDescriptors = useSelector(customAttributesSelectors.secondaryResourceCustomAttributes);
     const keyCustomAttributeDescriptors = useSelector(customAttributesSelectors.resourceCustomAttributes);
+    const isListingCertificateCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceSecondaryCustomAttributes);
+    const isListingKeyCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const importResults = useSelector(certificatesSelectors.importResults);
     const isImporting = useSelector(certificatesSelectors.isImporting);
     const auth = useSelector(authSelectors.profile);
@@ -422,6 +424,8 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
         !isInspecting &&
         !isImporting &&
         !passwordMissing &&
+        !isListingCertificateCustomAttributes &&
+        !isListingKeyCustomAttributes &&
         (selectedKeys.length === 0 || importSchema?.status === 'loaded');
 
     return (

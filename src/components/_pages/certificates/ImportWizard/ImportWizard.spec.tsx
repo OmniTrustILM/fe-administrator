@@ -12,6 +12,7 @@ import {
     AttributeType,
     InspectedEntryKind,
     KeyAlgorithm,
+    Resource,
     TokenInstanceStatus,
     type BaseAttributeDto,
     type CertificateImportResultDto,
@@ -437,6 +438,37 @@ test.describe('ImportWizard', () => {
                 inspectAnswers={[{ inspection: inspection([keyPair]) }]}
                 importableTokenProfiles={[profile]}
                 importAttributeListings={[{ pending: true }]}
+            />,
+        );
+
+        await chooseFile(page);
+        await chooseProfile(page);
+
+        await expect(page.getByTestId('select-importTokenProfile-trigger')).toHaveText(PROFILE_OPTION);
+        await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeDisabled();
+    });
+
+    test('keeps Import disabled until the certificate custom attributes are listed', async ({ mount, page }) => {
+        await mount(
+            <ImportWizardWithStore
+                showCertificateCustomAttributes
+                pendingCustomAttributes={[Resource.Certificates]}
+                inspectAnswers={[{ inspection: inspection([certificate]) }]}
+            />,
+        );
+
+        await chooseFile(page);
+
+        await expect(page.getByRole('checkbox', { name: 'intermediate-ca-r4' })).toBeChecked();
+        await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeDisabled();
+    });
+
+    test('keeps Import disabled until the key custom attributes are listed', async ({ mount, page }) => {
+        await mount(
+            <ImportWizardWithStore
+                pendingCustomAttributes={[Resource.Keys]}
+                inspectAnswers={[{ inspection: inspection([keyPair]) }]}
+                importableTokenProfiles={[profile]}
             />,
         );
 

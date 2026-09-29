@@ -12,6 +12,7 @@ import type {
     CertificateImportResultDto,
     InspectionResponseDto,
     KeyTransferCapabilityDto,
+    Resource,
     TokenProfileDto,
 } from 'types/openapi';
 import { nth, type SchemaAnswer } from '../../test-utils/testAnswers';
@@ -48,6 +49,8 @@ export type ImportWizardAnswers = Readonly<{
     importAttributeListings?: SchemaAnswer[];
     certificateCustomAttributes?: CustomAttributeModel[];
     keyCustomAttributes?: CustomAttributeModel[];
+    /** The resources whose custom attribute listing is left in flight. */
+    pendingCustomAttributes?: Resource[];
     importAnswers?: ImportAnswer[];
     onAction?: (action: UnknownAction) => void;
 }>;
@@ -66,6 +69,7 @@ export function importWizardTestMiddleware({
     importAttributeListings,
     certificateCustomAttributes,
     keyCustomAttributes,
+    pendingCustomAttributes,
     importAnswers,
     onAction,
 }: ImportWizardAnswers): Middleware {
@@ -143,9 +147,13 @@ export function importWizardTestMiddleware({
         } else if (certificateActions.importCertificates.match(action)) {
             importEntries(api);
         } else if (customAttributeActions.listSecondaryResourceCustomAttributes.match(action)) {
-            api.dispatch(customAttributeActions.listSecondaryResourceCustomAttributesSuccess(certificateCustomAttributes ?? []));
+            if (!pendingCustomAttributes?.includes(action.payload)) {
+                api.dispatch(customAttributeActions.listSecondaryResourceCustomAttributesSuccess(certificateCustomAttributes ?? []));
+            }
         } else if (customAttributeActions.listResourceCustomAttributes.match(action)) {
-            api.dispatch(customAttributeActions.listResourceCustomAttributesSuccess(keyCustomAttributes ?? []));
+            if (!pendingCustomAttributes?.includes(action.payload)) {
+                api.dispatch(customAttributeActions.listResourceCustomAttributesSuccess(keyCustomAttributes ?? []));
+            }
         } else if (appRedirectActions.fetchError.match(action)) {
             api.dispatch(alertActions.error(action.payload.message));
         }

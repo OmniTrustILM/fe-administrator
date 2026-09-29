@@ -72,6 +72,7 @@ export function useImportTestStore(
         importAttributeListings,
         certificateCustomAttributes,
         keyCustomAttributes,
+        pendingCustomAttributes,
         importAnswers,
         onAction,
     }: ImportWizardAnswers,
@@ -87,6 +88,7 @@ export function useImportTestStore(
             importAttributeListings,
             certificateCustomAttributes,
             keyCustomAttributes,
+            pendingCustomAttributes,
             importAnswers,
             onAction,
         });
@@ -105,6 +107,7 @@ export function useImportTestStore(
         importAttributeListings,
         certificateCustomAttributes,
         keyCustomAttributes,
+        pendingCustomAttributes,
         importAnswers,
         onAction,
         canImportKeys,
