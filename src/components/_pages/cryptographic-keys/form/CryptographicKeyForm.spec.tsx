@@ -14,7 +14,7 @@ import { actions as connectorActions } from 'ducks/connectors';
 import { actions as certificateActions } from 'ducks/certificates';
 import { actions as tokenProfilesActions } from 'ducks/token-profiles';
 import type { UnknownAction } from '@reduxjs/toolkit';
-import type { DataAttributeModel } from 'types/attributes';
+import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import type { TokenProfileResponseModel } from 'types/token-profiles';
 import type { CertificateImportResultDto, InspectedEntryDto } from 'types/openapi';
 
@@ -517,6 +517,42 @@ test.describe('CryptographicKeyForm', () => {
         expect(detailRequests(actions).slice(requestedBefore)).toEqual([
             { tokenInstanceUuid: profile.tokenInstanceUuid, uuid: profile.uuid, skipWidgetLock: true },
         ]);
+    });
+
+    test('asks for the custom attributes of a certificate found in the file', async ({ mount, page }) => {
+        const department = {
+            uuid: '9b722a5e-45b1-44df-888e-45e973c22a4a',
+            name: 'department',
+            type: AttributeType.Custom,
+            contentType: AttributeContentType.String,
+            properties: { label: 'Department', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
+        } as CustomAttributeModel;
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute="/keys/create"
+                routePath="/keys/create"
+                tokenProfiles={[aTokenProfile().build()]}
+                inspectAnswers={[
+                    {
+                        inspection: {
+                            containerDigest: 'digest-1',
+                            entries: [{ entryReference: 'entry-certificate', kind: InspectedEntryKind.Certificate, subjectDn: 'CN=ca' }],
+                        },
+                    },
+                ]}
+                certificateCustomAttributes={[department]}
+            />,
+        );
+
+        await page.getByRole('tab', { name: 'Import material' }).click();
+        await page.locator('#importWizard__fileUpload__file').setInputFiles({
+            name: 'ca.pem',
+            mimeType: 'application/x-pem-file',
+            buffer: Buffer.from('3082097a020103308209400609', 'hex'),
+        });
+
+        await expect(page.getByRole('heading', { name: 'Certificate custom attributes' })).toBeVisible();
+        await expect(page.getByTestId('text-input-__attributes__customImportCertificate__.department')).toBeVisible();
     });
 
     test('keeps to the Import material tab while an import runs', async ({ mount, page }) => {

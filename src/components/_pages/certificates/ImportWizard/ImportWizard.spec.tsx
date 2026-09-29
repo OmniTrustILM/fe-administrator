@@ -197,7 +197,6 @@ test.describe('ImportWizard', () => {
         const actions: UnknownAction[] = [];
         await mount(
             <ImportWizardWithStore
-                showCertificateCustomAttributes
                 certificateCustomAttributes={[department]}
                 inspectAnswers={[{ inspection: inspection([certificate, signingRequest]) }]}
                 importAnswers={[{ results: [importedCertificate] }]}
@@ -555,7 +554,6 @@ test.describe('ImportWizard', () => {
     test('keeps Import disabled until the certificate custom attributes are listed', async ({ mount, page }) => {
         await mount(
             <ImportWizardWithStore
-                showCertificateCustomAttributes
                 pendingCustomAttributes={[Resource.Certificates]}
                 inspectAnswers={[{ inspection: inspection([certificate]) }]}
             />,
@@ -586,7 +584,6 @@ test.describe('ImportWizard', () => {
     test('says why the certificate custom attributes could not be listed, and lists them again on Retry', async ({ mount, page }) => {
         await mount(
             <ImportWizardWithStore
-                showCertificateCustomAttributes
                 certificateCustomAttributes={[department]}
                 failedCustomAttributes={[Resource.Certificates]}
                 inspectAnswers={[{ inspection: inspection([certificate]) }]}
@@ -1147,30 +1144,10 @@ test.describe('ImportWizard', () => {
         expect(profileListings(actions)).toEqual([]);
     });
 
-    test('sends no custom attributes while certificate custom attributes are off', async ({ mount, page }) => {
-        const actions: UnknownAction[] = [];
-        await mount(
-            <ImportWizardWithStore
-                certificateCustomAttributes={[department]}
-                inspectAnswers={[{ inspection: inspection([certificate]) }]}
-                importAnswers={[{ results: [importedCertificate] }]}
-                onAction={(action) => actions.push(action)}
-            />,
-        );
-
-        await chooseFile(page);
-        await expect(page.getByRole('heading', { name: 'Certificate custom attributes' })).toHaveCount(0);
-        await page.getByRole('button', { name: 'Import 1 entry' }).click();
-
-        await expect.poll(() => importRequests(actions)).toHaveLength(1);
-        expect(importRequests(actions)[0].customAttributes).toBeUndefined();
-    });
-
     test('sends no custom attributes when only a key is selected', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         await mount(
             <ImportWizardWithStore
-                showCertificateCustomAttributes
                 certificateCustomAttributes={[department]}
                 inspectAnswers={[{ inspection: inspection([secretKey]) }]}
                 importableTokenProfiles={[profile]}
@@ -1192,11 +1169,7 @@ test.describe('ImportWizard', () => {
 
     test('shows no certificate custom attributes section when none are defined', async ({ mount, page }) => {
         await mount(
-            <ImportWizardWithStore
-                showCertificateCustomAttributes
-                certificateCustomAttributes={[]}
-                inspectAnswers={[{ inspection: inspection([certificate]) }]}
-            />,
+            <ImportWizardWithStore certificateCustomAttributes={[]} inspectAnswers={[{ inspection: inspection([certificate]) }]} />,
         );
 
         await chooseFile(page);
@@ -1243,7 +1216,6 @@ test.describe('ImportWizard', () => {
         const done: CertificateImportResultDto[][] = [];
         await mount(
             <ImportWizardWithStore
-                showCertificateCustomAttributes
                 certificateCustomAttributes={[department]}
                 keyCustomAttributes={[ownerTeam]}
                 inspectAnswers={[{ inspection: inspection([keyPair, certificate]) }]}
@@ -1396,7 +1368,6 @@ test.describe('ImportWizard', () => {
     test('goes back from the results to the form with every value kept', async ({ mount, page }) => {
         await mount(
             <ImportWizardWithStore
-                showCertificateCustomAttributes
                 certificateCustomAttributes={[department]}
                 inspectAnswers={[{ inspection: inspection([keyPair, certificate]) }]}
                 importableTokenProfiles={[profile]}

@@ -394,6 +394,8 @@ function customAttributesTestReducer(
             };
         case 'customAttributes/listResourceCustomAttributesFailure':
             return { ...state, isFetchingResourceCustomAttributes: false };
+        case 'customAttributes/listSecondaryResourceCustomAttributesSuccess':
+            return { ...state, secondaryResourceCustomAttributes: (a.payload as unknown[]) ?? [] };
         case 'customAttributes/loadCustomAttributeContent': {
             const payload = a.payload as CustomAttributesTestState['resourceCustomAttributesContents'][number] | undefined;
             if (!payload) return state;

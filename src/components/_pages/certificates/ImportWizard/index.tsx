@@ -70,7 +70,6 @@ type Submission = {
 
 type Props = Readonly<{
     presetTokenProfileUuid?: string;
-    showCertificateCustomAttributes: boolean;
     onCancel: () => void;
     onDone: (results: CertificateImportResultDto[]) => void;
 }>;
@@ -115,7 +114,7 @@ const importSchemaFor = (
     keyType: KeyRequestType | undefined,
 ) => (profile && keyType && listed?.request.tokenProfileUuid === profile.uuid && listed.request.type === keyType ? listed : undefined);
 
-export default function ImportWizard({ presetTokenProfileUuid, showCertificateCustomAttributes, onCancel, onDone }: Props) {
+export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone }: Props) {
     const dispatch = useDispatch();
 
     const inspection = useSelector(inspectionsSelectors.inspection);
@@ -198,7 +197,7 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     // The switch is for the chosen profile and the selected keys, so it is off again whenever either changes.
     const exportableFor = `${profile?.uuid}:${selectedKeys.map((entry) => entry.entryReference).join()}`;
     const exportableShownFor = useRef(exportableFor);
-    const withCustomAttributes = showCertificateCustomAttributes && selectedEntries.some(hasCertificate);
+    const withCustomAttributes = selectedEntries.some(hasCertificate);
     const passwordMissing = readWithPassword && !passphrase;
     const importAttributeDescriptors = useMemo(
         () => (importSchema?.status === 'loaded' ? importSchema.descriptors.map(transformAttributeDescriptorDtoToModel) : NO_ATTRIBUTES),
@@ -216,8 +215,8 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     );
 
     useEffect(() => {
-        if (showCertificateCustomAttributes) listCertificateCustomAttributes();
-    }, [showCertificateCustomAttributes, listCertificateCustomAttributes]);
+        listCertificateCustomAttributes();
+    }, [listCertificateCustomAttributes]);
 
     useEffect(() => {
         listKeyCustomAttributes();

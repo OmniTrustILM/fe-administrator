@@ -698,7 +698,6 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                             content: (
                                 <ImportWizard
                                     presetTokenProfileUuid={tokenProfile?.uuid}
-                                    showCertificateCustomAttributes={false}
                                     onCancel={onCancelClick}
                                     onDone={handleCreateSuccess}
                                 />

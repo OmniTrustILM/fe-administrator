@@ -17,7 +17,7 @@ import { actions as customAttributeActions } from 'ducks/customAttributes';
 import { slice as inspectionSlice, type State as InspectionState } from 'ducks/inspections';
 import { testInitialState, testReducers } from 'ducks/test-reducers';
 import { actions as tokenProfileActions, slice as tokenProfileSlice, type State as TokenProfileState } from 'ducks/token-profiles';
-import type { AttributeDescriptorModel } from 'types/attributes';
+import type { AttributeDescriptorModel, CustomAttributeModel } from 'types/attributes';
 import type { BaseAttributeDto, KeyRequestType, KeyTransferCapabilityDto, TokenProfileDto } from 'types/openapi';
 import type { TokenProfileResponseModel } from 'types/token-profiles';
 import { createMockStore } from 'utils/test-helpers';
@@ -68,6 +68,7 @@ export type CryptographicKeyFormWithStoreProps = Readonly<{
     importableTokenProfiles?: TokenProfileDto[];
     profileListings?: ListingAnswer[];
     importKeyAttributes?: BaseAttributeDto[];
+    certificateCustomAttributes?: CustomAttributeModel[];
     importAnswers?: ImportAnswer[];
 }>;
 
@@ -90,6 +91,7 @@ export function CryptographicKeyFormWithStore({
     importableTokenProfiles,
     profileListings,
     importKeyAttributes,
+    certificateCustomAttributes,
     importAnswers,
 }: CryptographicKeyFormWithStoreProps) {
     const store = useMemo(() => {
@@ -144,6 +146,7 @@ export function CryptographicKeyFormWithStore({
                 importableTokenProfiles,
                 profileListings,
                 importKeyAttributes,
+                certificateCustomAttributes,
                 importAnswers,
             },
             false,
@@ -177,6 +180,7 @@ export function CryptographicKeyFormWithStore({
         importableTokenProfiles,
         profileListings,
         importKeyAttributes,
+        certificateCustomAttributes,
         importAnswers,
     ]);
 

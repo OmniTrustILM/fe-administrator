@@ -12,7 +12,7 @@ export default function CertificateImportDialog({ onCancel, onDone }: Props) {
             <p className="text-sm text-content-muted mb-4">
                 PEM, DER, PKCS7, PKCS12 or PKCS8 files. Content is shown before anything is imported.
             </p>
-            <ImportWizard showCertificateCustomAttributes onCancel={onCancel} onDone={onDone} />
+            <ImportWizard onCancel={onCancel} onDone={onDone} />
         </>
     );
 }

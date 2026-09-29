@@ -48,7 +48,6 @@ function reducer(state: State | undefined, action: UnknownAction): State {
 export type ImportWizardWithStoreProps = ImportWizardAnswers &
     Readonly<{
         presetTokenProfileUuid?: string;
-        showCertificateCustomAttributes?: boolean;
         /** Whether the signed-in user holds the key import permission. */
         canImportKeys?: boolean;
         onCancel?: () => void;
@@ -123,7 +122,6 @@ export function useImportTestStore(
 /** Mounts the wizard alone against {@link useImportTestStore}'s store. */
 export function ImportWizardWithStore({
     presetTokenProfileUuid,
-    showCertificateCustomAttributes = false,
     canImportKeys,
     onCancel = noop,
     onDone = noop,
@@ -134,12 +132,7 @@ export function ImportWizardWithStore({
     return (
         <Provider store={store}>
             <MemoryRouter>
-                <ImportWizard
-                    presetTokenProfileUuid={presetTokenProfileUuid}
-                    showCertificateCustomAttributes={showCertificateCustomAttributes}
-                    onCancel={onCancel}
-                    onDone={onDone}
-                />
+                <ImportWizard presetTokenProfileUuid={presetTokenProfileUuid} onCancel={onCancel} onDone={onDone} />
                 <Alerts />
             </MemoryRouter>
         </Provider>
