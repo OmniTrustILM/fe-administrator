@@ -92,9 +92,8 @@ test.describe('KeyExportDialog', () => {
         await enterText(page.getByTestId('text-input-passphraseConfirmation'), 'correct horse caf\u00e9');
         await page.getByRole('button', { name: 'Export' }).click();
 
-        await expect
-            .poll(() => exportRequests(actions).map((request) => request.keyExportRequestDto.passphrase))
-            .toEqual(['correct horse caf\u00e9']);
+        await expect.poll(() => exportRequests(actions)).toHaveLength(1);
+        expect(exportRequests(actions)[0].keyExportRequestDto.passphrase).toBe('correct horse caf\u00e9');
     });
 
     test('stays open and busy while the export runs, and closes once it succeeds', async ({ mount, page }) => {
