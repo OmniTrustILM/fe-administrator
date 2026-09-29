@@ -272,6 +272,33 @@ test.describe('CryptographicKeyItem key export', () => {
         await expect(page.getByTestId('export-button')).toBeVisible();
     });
 
+    test("asks for the profile's detail again when the key details are refreshed, and offers Export once it loads", async ({
+        mount,
+        page,
+    }) => {
+        const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
+        const cryptographicKey = aKeyWithExportableItem();
+        const actions: UnknownAction[] = [];
+        await mount(
+            <CryptographicKeyDetailWithStore
+                cryptographicKey={cryptographicKey}
+                tokenProfile={tokenProfile}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+        await expect(page.getByTestId('export-button')).toBeVisible();
+        await page.getByRole('button', { name: 'Refresh profile', exact: true }).click();
+        await page.getByRole('button', { name: 'Fail profile request' }).click();
+        await expect(page.getByTestId('export-button')).toHaveCount(0);
+        const requested = actions.filter(profileActions.getTokenProfileDetail.match).length;
+
+        await page.getByRole('button', { name: 'Refresh', exact: true }).first().click();
+
+        await expect.poll(() => actions.filter(profileActions.getTokenProfileDetail.match).length).toBe(requested + 1);
+        await page.getByRole('button', { name: 'Complete profile request' }).click();
+        await expect(page.getByTestId('export-button')).toBeVisible();
+    });
+
     test('hides the Export button without the key export permission', async ({ mount, page }) => {
         const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
         const cryptographicKey = aKeyWithExportableItem();
