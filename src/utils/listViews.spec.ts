@@ -218,6 +218,13 @@ describe('duplicateName', () => {
         expect(duplicateName(huge, [huge])).toBe('Report (copy)');
     });
 
+    it('restarts the series instead of counting past the largest safe number', () => {
+        const taken = [Number.MAX_SAFE_INTEGER - 1, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER + 1].map(
+            (suffix) => `Report (copy) ${suffix}`,
+        );
+        expect(duplicateName(taken[0], taken)).toBe('Report (copy)');
+    });
+
     it('does not split a character that straddles the cut', () => {
         const name = duplicateName(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)}\u{1F600}`, []);
         expect(name).toBe(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)} (copy)`);

@@ -119,10 +119,10 @@ export function duplicateName(name: string, existing: readonly string[]): string
 
     // Numbering resumes at the source's own number: a shortened stem was cut for that suffix, and a lower one would cut it wider.
     const parsed = Number(LAST_COPY_NUMBER.exec(name)?.[1] ?? 1);
-    const sourceSuffix = parsed >= 1 && Number.isSafeInteger(parsed + 1) ? parsed : 1;
+    const sourceSuffix = parsed >= 1 && Number.isSafeInteger(parsed) ? parsed : 1;
 
     const taken = new Set(existing);
-    for (let suffix = sourceSuffix; ; suffix++) {
+    for (let suffix = sourceSuffix; ; suffix = suffix < Number.MAX_SAFE_INTEGER ? suffix + 1 : 1) {
         const ending = suffix === 1 ? ' (copy)' : ` (copy) ${suffix}`;
         const candidate = `${truncate(stem, MAX_VIEW_NAME_LENGTH - ending.length)}${ending}`;
         if (!taken.has(candidate)) return candidate;
