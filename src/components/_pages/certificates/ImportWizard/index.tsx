@@ -100,6 +100,13 @@ const inspectionOutcome = ({ file, inspection, error, status, inspectedProfileUu
     return { refusedProfileUuid, profileRefusal, inspected: !!file && !!inspection && (!error || !!profileRefusal) };
 };
 
+/**
+ * A protected file asks for its password. An inspection does not say whether a file is protected, only that Core refused
+ * to read it (422), as it refuses one without the right password; a file read with a password keeps the field, since its
+ * import needs the password again.
+ */
+const asksForPassword = (readWithPassword: boolean, status: number | undefined) => readWithPassword || status === 422;
+
 /** The listed import attribute schema, once it is listed for the chosen profile and the selected keys' type. */
 const importSchemaFor = (
     listed: AttributeSchema<ImportKeyAttributesRequest> | undefined,
@@ -445,7 +452,7 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
                             {inspectionError}
                         </Callout>
                     )}
-                    {!showResults && (
+                    {!showResults && asksForPassword(readWithPassword, inspectionErrorStatus) && (
                         <FilePassword onLeave={onPasswordLeave} notice={inspected && passwordMissing ? PASSWORD_AGAIN : undefined} />
                     )}
 

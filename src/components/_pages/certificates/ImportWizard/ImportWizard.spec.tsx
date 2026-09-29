@@ -254,13 +254,62 @@ test.describe('ImportWizard', () => {
         await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeEnabled();
     });
 
+    test('asks for no file password before a file is read, nor for a file that is not protected', async ({ mount, page }) => {
+        await mount(<ImportWizardWithStore inspectAnswers={[{ inspection: inspection([certificate]) }]} />);
+
+        await expect(page.getByLabel('File password')).toHaveCount(0);
+
+        await chooseFile(page);
+
+        await expect(page.getByRole('checkbox', { name: 'intermediate-ca-r4' })).toBeChecked();
+        await expect(page.getByLabel('File password')).toHaveCount(0);
+    });
+
+    for (const [when, enterPassword] of [
+        ['when the field is left', (field: Locator) => field.blur()],
+        ['when Enter is pressed', (field: Locator) => field.press('Enter')],
+    ] as const) {
+        test(`asks for the password of a file Core refused to read, and reads the file again with it ${when}`, async ({ mount, page }) => {
+            const actions: UnknownAction[] = [];
+            const refusal =
+                "Failed to read the uploaded file (422): The file's integrity check failed: the passphrase is wrong or missing, or the file is damaged.";
+            await mount(
+                <ImportWizardWithStore
+                    inspectAnswers={[
+                        { passphrase: 'correct horse battery', inspection: inspection([keyPair]) },
+                        { error: refusal, status: 422 },
+                    ]}
+                    importableTokenProfiles={[profile]}
+                    onAction={(action) => actions.push(action)}
+                />,
+            );
+            const password = page.getByLabel('File password');
+            await expect(password).toHaveCount(0);
+
+            await chooseFile(page);
+
+            await expect(page.getByRole('alert')).toHaveText(refusal);
+            await expect(password).toBeVisible();
+
+            await password.fill('correct horse battery');
+            await enterPassword(password);
+
+            await expect(page.getByRole('checkbox', { name: 'web-server-01' })).toBeChecked();
+            await expect(page.getByRole('alert')).toHaveCount(0);
+            await expect(password).toHaveValue('correct horse battery');
+            await expect
+                .poll(() => inspectRequests(actions))
+                .toEqual([{ file: FILE_BASE64 }, { file: FILE_BASE64, passphrase: 'correct horse battery' }]);
+        });
+    }
+
     test('shows why a protected file cannot be read', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         await mount(
             <ImportWizardWithStore
                 inspectAnswers={[
                     { passphrase: 'correct horse battery', inspection: inspection([keyPair]) },
-                    { error: 'The file could not be opened with the given password.' },
+                    { error: 'The file could not be opened with the given password.', status: 422 },
                 ]}
                 importableTokenProfiles={[profile]}
                 onAction={(action) => actions.push(action)}
@@ -268,8 +317,9 @@ test.describe('ImportWizard', () => {
         );
 
         const password = page.getByLabel('File password');
-        await password.fill('wrong password');
         await chooseFile(page);
+        await password.fill('wrong password');
+        await password.blur();
 
         await expect(page.getByRole('alert')).toHaveText('The file could not be opened with the given password.');
         await expect(password).toHaveValue('wrong password');
@@ -280,6 +330,7 @@ test.describe('ImportWizard', () => {
         await expect
             .poll(() => inspectRequests(actions))
             .toEqual([
+                { file: FILE_BASE64 },
                 { file: FILE_BASE64, passphrase: 'wrong password' },
                 { file: FILE_BASE64, passphrase: 'correct horse battery' },
             ]);
@@ -293,7 +344,7 @@ test.describe('ImportWizard', () => {
             <ImportWizardWithStore
                 inspectAnswers={[
                     { passphrase: 'correct horse battery', inspection: inspection([certificate]) },
-                    { error: 'The file could not be opened with the given password.' },
+                    { error: 'The file could not be opened with the given password.', status: 422 },
                 ]}
                 importAnswers={[{ results: [importedCertificate] }]}
                 onAction={(action) => actions.push(action)}
@@ -301,7 +352,6 @@ test.describe('ImportWizard', () => {
         );
 
         const password = page.getByLabel('File password');
-        await password.fill('wrong password');
         await chooseFile(page);
         await expect(page.getByRole('alert')).toHaveText('The file could not be opened with the given password.');
 
@@ -311,10 +361,7 @@ test.describe('ImportWizard', () => {
         await expect(page.getByRole('checkbox', { name: 'intermediate-ca-r4' })).toBeChecked();
         await password.press('Enter');
 
-        expect(inspectRequests(actions)).toEqual([
-            { file: FILE_BASE64, passphrase: 'wrong password' },
-            { file: FILE_BASE64, passphrase: 'correct horse battery' },
-        ]);
+        expect(inspectRequests(actions)).toEqual([{ file: FILE_BASE64 }, { file: FILE_BASE64, passphrase: 'correct horse battery' }]);
         expect(importRequests(actions)).toHaveLength(0);
     });
 
@@ -717,8 +764,9 @@ test.describe('ImportWizard', () => {
             />,
         );
         const password = page.getByLabel('File password');
-        await password.fill('correct horse battery');
         await chooseFile(page);
+        await password.fill('correct horse battery');
+        await password.blur();
         await chooseProfile(page);
 
         await password.fill('wrong password');
@@ -734,6 +782,7 @@ test.describe('ImportWizard', () => {
         await expect(page.getByTestId('select-importTokenProfile-trigger')).toHaveText(PROFILE_OPTION);
         await expect(page.getByRole('alert')).toHaveCount(0);
         expect(inspectRequests(actions)).toEqual([
+            { file: FILE_BASE64 },
             { file: FILE_BASE64, passphrase: 'correct horse battery' },
             { file: FILE_BASE64, passphrase: 'correct horse battery', tokenProfileUuid: profile.uuid },
             { file: FILE_BASE64, passphrase: 'wrong password', tokenProfileUuid: profile.uuid },
@@ -1061,15 +1110,16 @@ test.describe('ImportWizard', () => {
         const actions: UnknownAction[] = [];
         await mount(
             <ImportWizardWithStore
-                inspectAnswers={[{ passphrase: 'correct horse battery', inspection: inspection([keyPair, certificate]) }]}
+                inspectAnswers={[{ passphrase: 'correct horse battery', inspection: inspection([keyPair, certificate]) }, { status: 422 }]}
                 importableTokenProfiles={[profile]}
                 importAnswers={[{ results: [importedKeyPair, failedCertificate] }, { results: [importedCertificate] }]}
                 onAction={(action) => actions.push(action)}
             />,
         );
 
-        await page.getByLabel('File password').fill('correct horse battery');
         await chooseFile(page);
+        await page.getByLabel('File password').fill('correct horse battery');
+        await page.getByLabel('File password').blur();
         await chooseProfile(page);
         await page.getByRole('button', { name: 'Import 2 entries' }).click();
 
@@ -1084,14 +1134,14 @@ test.describe('ImportWizard', () => {
             .poll(() => importRequests(actions).map((request) => request.passphrase))
             .toEqual(['correct horse battery', 'correct horse battery']);
         await expect(page.getByLabel('File password')).toHaveCount(0);
-        expect(inspectRequests(actions)).toHaveLength(2);
+        expect(inspectRequests(actions)).toHaveLength(3);
     });
 
     test('asks for the file password again after the import is refused', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         await mount(
             <ImportWizardWithStore
-                inspectAnswers={[{ passphrase: 'correct horse battery', inspection: inspection([certificate]) }]}
+                inspectAnswers={[{ passphrase: 'correct horse battery', inspection: inspection([certificate]) }, { status: 422 }]}
                 importAnswers={[{ error: 'The import could not be completed.' }, { results: [importedCertificate] }]}
                 onAction={(action) => actions.push(action)}
             />,
@@ -1099,8 +1149,9 @@ test.describe('ImportWizard', () => {
 
         const password = page.getByLabel('File password');
         const importButton = page.getByRole('button', { name: 'Import 1 entry' });
-        await password.fill('correct horse battery');
         await chooseFile(page);
+        await password.fill('correct horse battery');
+        await password.blur();
         await importButton.click();
 
         await expect(page.getByRole('alert')).toContainText('The import could not be completed.');
@@ -1116,7 +1167,7 @@ test.describe('ImportWizard', () => {
         await expect
             .poll(() => importRequests(actions).map((request) => request.passphrase))
             .toEqual(['correct horse battery', 'correct horse battery']);
-        expect(inspectRequests(actions)).toHaveLength(1);
+        expect(inspectRequests(actions)).toHaveLength(2);
     });
 
     test('forgets the inspection when it closes', async ({ mount, page }) => {
