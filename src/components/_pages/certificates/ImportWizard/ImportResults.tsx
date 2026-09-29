@@ -21,9 +21,13 @@ const OUTCOME_BADGES: Record<ImportOutcome, ResultBadge> = {
     [ImportOutcome.Adopted]: { label: 'Private key added to an existing key', color: 'success' },
 };
 
-/** What became of the entry. A key entry's certificates follow its key, so the key's outcome is the entry's. */
+const CERTIFICATE_ADDED: ResultBadge = { label: 'Certificate added to an existing key', color: 'success' };
+
+/** What became of the entry. A key entry's certificates follow its key, so the key's outcome is the entry's, unless a new
+ * certificate joined a key already held. */
 function badgeOf(result: CertificateImportResultDto): ResultBadge {
     if (!result.imported) return NOT_IMPORTED;
+    if (result.keyOutcome === ImportOutcome.Existing && result.certificateOutcome === ImportOutcome.Created) return CERTIFICATE_ADDED;
     const outcome = result.keyOutcome ?? result.certificateOutcome;
     return outcome ? OUTCOME_BADGES[outcome] : IMPORTED;
 }

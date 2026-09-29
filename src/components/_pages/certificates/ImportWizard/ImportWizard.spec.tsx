@@ -1306,6 +1306,25 @@ test.describe('ImportWizard', () => {
         await expect(resultBadge(page, 'intermediate-ca-r4')).toHaveClass(/bg-surface-sunken/);
     });
 
+    test('says a certificate was added to a key already held', async ({ mount, page }) => {
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[{ inspection: inspection([keyPair]) }]}
+                importableTokenProfiles={[profile]}
+                importAnswers={[
+                    { results: [{ ...importedKeyPair, keyOutcome: ImportOutcome.Existing, certificateOutcome: ImportOutcome.Created }] },
+                ]}
+            />,
+        );
+
+        await chooseFile(page);
+        await chooseProfile(page);
+        await page.getByRole('button', { name: 'Import 1 entry' }).click();
+
+        await expect(resultBadge(page, 'web-server-01')).toHaveText('Certificate added to an existing key');
+        await expect(resultBadge(page, 'web-server-01')).toHaveClass(/bg-success-surface/);
+    });
+
     test('links only the objects Core returns a UUID for', async ({ mount, page }) => {
         const keyPairWithKeyUuidOnly: CertificateImportResultDto = {
             entryReference: keyPair.entryReference,

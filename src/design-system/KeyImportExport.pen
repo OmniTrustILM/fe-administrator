@@ -5198,6 +5198,49 @@
         },
         {
           "type": "frame",
+          "id": "EDRGk",
+          "name": "lgRow",
+          "width": "fill_container",
+          "gap": 16,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "sDvHB",
+              "name": "lgBadge",
+              "width": 260,
+              "children": [
+                {
+                  "id": "rsHwh",
+                  "type": "ref",
+                  "ref": "5EGcq",
+                  "name": "lgB",
+                  "fill": "$color.semantic.success-surface.light",
+                  "descendants": {
+                    "0S4Vh": {
+                      "content": "Certificate added to an existing key",
+                      "fill": "$color.semantic.success.light"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "VBV6A",
+              "name": "lgM",
+              "fill": "$color.semantic.content-muted.light",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "A new certificate joined a key the inventory already holds; the key is left as it is and the certificate links to it.",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
           "id": "xmHZp",
           "name": "lgRow",
           "width": "fill_container",
