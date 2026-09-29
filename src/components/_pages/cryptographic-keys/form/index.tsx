@@ -1,6 +1,7 @@
 import AttributeEditor from 'components/Attributes/AttributeEditor';
 import TabLayout from 'components/Layout/TabLayout';
 import ProgressButton from 'components/ProgressButton';
+import RetryCallout from 'components/RetryCallout';
 import ImportWizard from 'components/_pages/certificates/ImportWizard';
 
 import Widget from 'components/Widget';
@@ -248,6 +249,9 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
     });
 
     const tokenProfileDetail = useSelector(tokenProfilesSelectors.loadedTokenProfile(watchedTokenProfileUuid));
+    const profileDetailError = useSelector(tokenProfilesSelectors.detailError);
+    // Exportable cannot be switched on later, so Create waits while the chosen profile's detail, which offers it, loads.
+    const awaitingProfileDetail = useSelector(tokenProfilesSelectors.isFetchingDetail) && !editMode;
 
     const showExportable = !!watchedType && !!tokenProfileDetail?.keyTransfer?.exportableKeyTypes?.[watchedType]?.length;
 
@@ -635,6 +639,10 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                     />
                 )}
 
+                {!editMode && tokenProfile && profileDetailError && (
+                    <RetryCallout message={profileDetailError} onRetry={() => loadProfileDetail(tokenProfile)} />
+                )}
+
                 {showExportable && (
                     <Controller
                         name="exportable"
@@ -666,7 +674,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                         title={editMode ? 'Update' : 'Create'}
                         inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
                         inProgress={isSubmitting}
-                        disabled={!isDirty || isSubmitting || !isValid}
+                        disabled={!isDirty || isSubmitting || !isValid || awaitingProfileDetail}
                         type="submit"
                     />
                 </Container>

@@ -327,49 +327,95 @@ test.describe('CryptographicKeyForm', () => {
         expect(created.payload.cryptographicKeyAddRequest.exportable).toBe(true);
     });
 
-    for (const answer of ['pending', 'failure'] as const) {
-        test(`hides the Exportable switch and sends it off once the profile's detail is ${answer === 'pending' ? 'being fetched again' : 'refused'}`, async ({
-            mount,
-            page,
-        }) => {
-            const profile = aTokenProfile().build();
-            const actions: UnknownAction[] = [];
-            await mount(
-                <CryptographicKeyFormWithStore
-                    initialRoute="/keys/create"
-                    routePath="/keys/create"
-                    tokenProfiles={[profile]}
-                    supportedKeyRequestTypesByProfile={{ [profile.uuid]: [KeyRequestType.KeyPair] }}
-                    keyTransferByProfile={{
-                        [profile.uuid]: {
-                            importAvailable: false,
-                            exportAvailable: true,
-                            exportableKeyTypes: { [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] },
-                        },
-                    }}
-                    tokenProfileDetailAnswers={['loaded', answer]}
-                    onAction={(action) => actions.push(action)}
-                />,
-            );
+    const exportingKeyPairs = {
+        importAvailable: false,
+        exportAvailable: true,
+        exportableKeyTypes: { [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] },
+    };
 
-            await selectTokenProfile(page, profile);
-            await selectKeyType(page, KeyRequestType.KeyPair);
-            await clickExportableSwitch(page);
-            await expect(page.getByTestId('switch-exportable-input')).toBeChecked();
+    test("keeps Create disabled while the profile's detail is being fetched again", async ({ mount, page }) => {
+        const profile = aTokenProfile().build();
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute="/keys/create"
+                routePath="/keys/create"
+                tokenProfiles={[profile]}
+                supportedKeyRequestTypesByProfile={{ [profile.uuid]: [KeyRequestType.KeyPair] }}
+                keyTransferByProfile={{ [profile.uuid]: exportingKeyPairs }}
+                tokenProfileDetailAnswers={['loaded', 'pending']}
+            />,
+        );
+        const create = page.getByRole('button', { name: 'Create' });
 
-            await page.getByRole('button', { name: 'Fetch the token profile detail again' }).click();
+        await selectTokenProfile(page, profile);
+        await selectKeyType(page, KeyRequestType.KeyPair);
+        const nameInput = page.getByTestId('text-input-name');
+        await nameInput.click();
+        await nameInput.fill('web-server-01');
+        await expect(create).toBeEnabled();
 
-            await expect(page.getByTestId('switch-exportable')).toHaveCount(0);
-            const nameInput = page.getByTestId('text-input-name');
-            await nameInput.click();
-            await nameInput.fill('web-server-01');
-            await page.getByRole('button', { name: 'Create' }).click();
+        await page.getByRole('button', { name: 'Fetch the token profile detail again' }).click();
 
-            await expect.poll(() => actions.filter(keyActions.createCryptographicKey.match)).toHaveLength(1);
-            const [created] = actions.filter(keyActions.createCryptographicKey.match);
-            expect(created.payload.cryptographicKeyAddRequest.exportable).toBe(false);
-        });
-    }
+        await expect(page.getByTestId('switch-exportable')).toHaveCount(0);
+        await expect(create).toBeDisabled();
+    });
+
+    test("says why the profile's detail was refused, and creates the key without Exportable", async ({ mount, page }) => {
+        const profile = aTokenProfile().build();
+        const actions: UnknownAction[] = [];
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute="/keys/create"
+                routePath="/keys/create"
+                tokenProfiles={[profile]}
+                supportedKeyRequestTypesByProfile={{ [profile.uuid]: [KeyRequestType.KeyPair] }}
+                keyTransferByProfile={{ [profile.uuid]: exportingKeyPairs }}
+                tokenProfileDetailAnswers={['loaded', 'failure']}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+
+        await selectTokenProfile(page, profile);
+        await selectKeyType(page, KeyRequestType.KeyPair);
+        await clickExportableSwitch(page);
+        await expect(page.getByTestId('switch-exportable-input')).toBeChecked();
+
+        await page.getByRole('button', { name: 'Fetch the token profile detail again' }).click();
+
+        await expect(page.getByRole('alert')).toContainText('Failed to get Token Profile detail');
+        await expect(page.getByTestId('switch-exportable')).toHaveCount(0);
+        const nameInput = page.getByTestId('text-input-name');
+        await nameInput.click();
+        await nameInput.fill('web-server-01');
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        await expect.poll(() => actions.filter(keyActions.createCryptographicKey.match)).toHaveLength(1);
+        const [created] = actions.filter(keyActions.createCryptographicKey.match);
+        expect(created.payload.cryptographicKeyAddRequest.exportable).toBe(false);
+    });
+
+    test("fetches a refused profile's detail again on Retry, and offers Exportable once it loads", async ({ mount, page }) => {
+        const profile = aTokenProfile().build();
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute="/keys/create"
+                routePath="/keys/create"
+                tokenProfiles={[profile]}
+                supportedKeyRequestTypesByProfile={{ [profile.uuid]: [KeyRequestType.KeyPair] }}
+                keyTransferByProfile={{ [profile.uuid]: exportingKeyPairs }}
+                tokenProfileDetailAnswers={['failure', 'loaded']}
+            />,
+        );
+
+        await selectTokenProfile(page, profile);
+        await selectKeyType(page, KeyRequestType.KeyPair);
+        await expect(page.getByRole('alert')).toContainText('Failed to get Token Profile detail');
+
+        await page.getByRole('button', { name: 'Retry' }).click();
+
+        await expect(page.getByTestId('switch-exportable-input')).toBeVisible();
+        await expect(page.getByText('Failed to get Token Profile detail')).toHaveCount(0);
+    });
 
     for (const [where, usesGlobalModal, hint] of [
         [
