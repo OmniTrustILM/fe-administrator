@@ -79,6 +79,8 @@ export default function FileUpload({
             };
             reader.onerror = () => {
                 if (readerRef.current !== reader) return;
+                // Choosing the file the input still holds fires no change, so it is cleared for the file to be chosen again.
+                if (fileInputRef.current) fileInputRef.current.value = '';
                 setReadError(`The file ${file.name} could not be read.`);
                 // A failed read changes nothing, so the content still shown is reported again to a caller that dropped it.
                 if (reportedContentRef.current) onFileContentLoaded(reportedContentRef.current);

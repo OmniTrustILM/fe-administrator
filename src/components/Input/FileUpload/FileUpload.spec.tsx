@@ -227,6 +227,19 @@ test.describe('FileUpload', () => {
         await expect.poll(() => calls).toEqual([base64('loaded'), base64('loaded')]);
     });
 
+    test('lets a file that could not be read be chosen again', async ({ mount, page }) => {
+        const component = await mount(<FileUpload onFileContentLoaded={() => {}} id="upload" />);
+        await holdFileReads(page);
+        const input = component.locator('#upload__fileUpload__file');
+
+        await input.setInputFiles(aFile('unreadable.p12', 'unreadable'));
+        await failFileRead(page, 0);
+
+        await expect(component.getByRole('alert')).toHaveText('The file unreadable.p12 could not be read.');
+        // setInputFiles fires a change even for the file the input holds, so the emptied input is asserted, not a second choice.
+        await expect(input).toHaveValue('');
+    });
+
     test('keeps text typed while a chosen file is still being read, and reports the text', async ({ mount, page }) => {
         const calls: string[] = [];
         const component = await mount(<FileUpload onFileContentLoaded={(content) => calls.push(content)} editable />);
