@@ -1,6 +1,6 @@
 import type { UnknownAction } from '@reduxjs/toolkit';
 import { test, expect, type Locator, type Page } from '../../../../../playwright/ct-test';
-import { completeFileRead, holdFileReads } from '../../../../../playwright/fileReads';
+import { completeFileRead, failFileRead, holdFileReads } from '../../../../../playwright/fileReads';
 import ImportWizardWithStore from 'components/_pages/certificates/ImportWizard/ImportWizardWithStore';
 import { actions as certificateActions } from 'ducks/certificates';
 import { actions as keyActions } from 'ducks/cryptographic-keys';
@@ -383,6 +383,67 @@ test.describe('ImportWizard', () => {
 
         expect(inspectRequests(actions)).toEqual([{ file: FILE_BASE64 }, { file: FILE_BASE64, passphrase: 'correct horse battery' }]);
         expect(importRequests(actions)).toHaveLength(0);
+    });
+
+    test('reads another file without the password given for the previous one', async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[
+                    { file: OTHER_FILE_BASE64, inspection: inspection([certificate]) },
+                    { passphrase: 'correct horse battery', inspection: inspection([keyPair]) },
+                    { error: 'The file could not be opened with the given password.', status: 422 },
+                ]}
+                importableTokenProfiles={[profile]}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+        const password = page.getByLabel('File password');
+        await chooseFile(page);
+        await password.fill('correct horse battery');
+        await password.blur();
+        await expect(page.getByRole('checkbox', { name: 'web-server-01' })).toBeChecked();
+
+        await chooseFile(page, OTHER_FILE, 'intermediate-ca.pem');
+
+        await expect(page.getByRole('checkbox', { name: 'intermediate-ca-r4' })).toBeVisible();
+        await expect
+            .poll(() => inspectRequests(actions))
+            .toEqual([{ file: FILE_BASE64 }, { file: FILE_BASE64, passphrase: 'correct horse battery' }, { file: OTHER_FILE_BASE64 }]);
+        await expect(password).toHaveCount(0);
+    });
+
+    test('keeps the password when a newly chosen file cannot be read', async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[
+                    { passphrase: 'correct horse battery', inspection: inspection([keyPair]) },
+                    { error: 'The file could not be opened with the given password.', status: 422 },
+                ]}
+                importableTokenProfiles={[profile]}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+        const password = page.getByLabel('File password');
+        await chooseFile(page);
+        await password.fill('correct horse battery');
+        await password.blur();
+        await expect(page.getByRole('checkbox', { name: 'web-server-01' })).toBeChecked();
+        await holdFileReads(page);
+
+        await chooseFile(page, OTHER_FILE, 'other-bundle.p12');
+        await failFileRead(page, 0);
+
+        await expect(page.getByRole('checkbox', { name: 'web-server-01' })).toBeChecked();
+        await expect(password).toHaveValue('correct horse battery');
+        await expect
+            .poll(() => inspectRequests(actions))
+            .toEqual([
+                { file: FILE_BASE64 },
+                { file: FILE_BASE64, passphrase: 'correct horse battery' },
+                { file: FILE_BASE64, passphrase: 'correct horse battery' },
+            ]);
     });
 
     test('shows the key destination for a key pair', async ({ mount, page }) => {

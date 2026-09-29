@@ -152,6 +152,8 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     const [submission, setSubmission] = useState<Submission>();
     const [results, setResults] = useState<CertificateImportResultDto[]>();
     const inspectedDigest = useRef<string | undefined>(undefined);
+    // The content last loaded, which `file` no longer holds once another file starts to be read.
+    const loadedContent = useRef('');
 
     const { refusedProfileUuid, profileRefusal, inspected } = inspectionOutcome({
         file,
@@ -240,10 +242,13 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
 
     const onFileContentLoaded = useCallback(
         (content: string) => {
+            // A password is given for one file, so another file is read without it.
+            if (content !== loadedContent.current) setValue('passphrase', '');
+            loadedContent.current = content;
             setFile(content);
             inspect(content, profile?.uuid);
         },
-        [inspect, profile],
+        [inspect, profile, setValue],
     );
 
     const onPasswordLeave = useCallback(() => {
