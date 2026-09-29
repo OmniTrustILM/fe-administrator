@@ -565,7 +565,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             if (isFetchingRequestAttributes || issueWarnings) {
                 return;
             }
-            handleSubmit(onSubmit)(event);
+            void handleSubmit(onSubmit)(event);
         },
         [handleSubmit, isFetchingRequestAttributes, issueWarnings, onSubmit],
     );
