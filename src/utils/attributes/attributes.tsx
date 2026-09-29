@@ -385,6 +385,37 @@ function shouldSkipAttribute(
     return { skip: false, descriptor, attributeName };
 }
 
+const normalizeAttributeValue = (
+    descriptor: DataAttributeModel | CustomAttributeModel,
+    value: unknown,
+): FormAttributeContentItem | FormAttributeContentItem[] =>
+    Array.isArray(value)
+        ? value.map((item: unknown) => getAttributeFormValue(descriptor.contentType, descriptor.content, item))
+        : getAttributeFormValue(descriptor.contentType, descriptor.content, value);
+
+// Undefined leaves the attribute out of the request.
+function toAttributeContent(descriptor: DataAttributeModel | CustomAttributeModel, value: unknown): FormAttributeContentItem[] | undefined {
+    const normalized = normalizeAttributeValue(descriptor, value);
+    const content = descriptor.contentType === AttributeContentType.Resource ? stripEmptyResourceContent(normalized) : normalized;
+    if (content === undefined || Array.isArray(content)) return content;
+    return content.data === undefined ? undefined : [content];
+}
+
+// Blank values are dropped before normalising as well, because Date and Datetime normalisation throws on a blank value.
+// Resource content needs no separate stripping here: its blank selections already count as empty.
+function toNonEmptyAttributeContent(
+    descriptor: DataAttributeModel | CustomAttributeModel,
+    value: unknown,
+): FormAttributeContentItem[] | undefined {
+    const nonBlankValue = withoutBlankItems(value);
+    if (isBlankValue(nonBlankValue)) return undefined;
+    const normalized = normalizeAttributeValue(descriptor, nonBlankValue);
+    const content = (Array.isArray(normalized) ? normalized : [normalized]).filter(
+        (item) => !isEmptyAttributeContentItem(item, descriptor.contentType),
+    );
+    return content.length > 0 ? content : undefined;
+}
+
 export function collectFormAttributes(
     id: string,
     descriptors: AttributeDescriptorModel[] | undefined,
@@ -404,26 +435,11 @@ export function collectFormAttributes(
         if (guard.skip) continue;
         const { descriptor, attributeName } = guard;
 
-        const rawValue = options?.omitEmptyContent ? withoutBlankItems(attributes[attribute]) : attributes[attribute];
-        // Dropped before normalising as well, because Date and Datetime normalisation throws on a blank value.
-        if (options?.omitEmptyContent && isBlankValue(rawValue)) continue;
-        let content: FormAttributeContentItem | FormAttributeContentItem[] | undefined = Array.isArray(rawValue)
-            ? rawValue.map((i: unknown) => getAttributeFormValue(descriptor.contentType, descriptor.content, i))
-            : getAttributeFormValue(descriptor.contentType, descriptor.content, rawValue);
+        const contentArray = options?.omitEmptyContent
+            ? toNonEmptyAttributeContent(descriptor, attributes[attribute])
+            : toAttributeContent(descriptor, attributes[attribute]);
+        if (contentArray === undefined) continue;
 
-        if (descriptor.contentType === AttributeContentType.Resource) {
-            content = stripEmptyResourceContent(content);
-        } else if (options?.omitEmptyContent && Array.isArray(content)) {
-            content = content.filter((item) => !isEmptyAttributeContentItem(item, descriptor.contentType));
-        } else if (options?.omitEmptyContent && !Array.isArray(content) && isEmptyAttributeContentItem(content, descriptor.contentType)) {
-            content = undefined;
-        }
-
-        if (content === undefined) continue;
-        if (options?.omitEmptyContent && Array.isArray(content) && content.length === 0) continue;
-        if (!Array.isArray(content) && content.data === undefined) continue;
-
-        const contentArray = Array.isArray(content) ? content : [content];
         const existing = existingAttributes?.find((a) => a.name === attributeName);
         const existingVersion = (existing as { version?: AttributeVersion })?.version;
         const version = resolveFinalAttributeVersion(existingVersion, resolveAttributeVersion(descriptor));
