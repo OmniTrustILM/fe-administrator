@@ -105,6 +105,7 @@ export function splitTabs(tabs: readonly ViewTab[], activeId: string, cap: numbe
 export const MAX_VIEW_NAME_LENGTH = 255;
 
 const COPY_SUFFIXES = /(?: \(copy\)(?: \d+)?)+$/;
+const LAST_COPY_NUMBER = / \(copy\)(?: (\d+))?$/;
 
 /**
  * The name a duplicate is auto-named with, so duplicating never interrupts with a dialog.
@@ -116,8 +117,11 @@ const COPY_SUFFIXES = /(?: \(copy\)(?: \d+)?)+$/;
 export function duplicateName(name: string, existing: readonly string[]): string {
     const stem = name.replace(COPY_SUFFIXES, '') || name;
 
+    // Numbering resumes at the source's own number: a shortened stem was cut for that suffix, and a lower one would cut it wider.
+    const sourceSuffix = Math.max(1, Number(LAST_COPY_NUMBER.exec(name)?.[1] ?? 1));
+
     const taken = new Set(existing);
-    for (let suffix = 1; ; suffix++) {
+    for (let suffix = sourceSuffix; ; suffix++) {
         const ending = suffix === 1 ? ' (copy)' : ` (copy) ${suffix}`;
         const candidate = `${truncate(stem, MAX_VIEW_NAME_LENGTH - ending.length)}${ending}`;
         if (!taken.has(candidate)) return candidate;

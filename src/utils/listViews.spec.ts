@@ -208,6 +208,9 @@ describe('duplicateName', () => {
         const second = duplicateName(first, [first]);
         expect(second).toHaveLength(MAX_VIEW_NAME_LENGTH);
         expect(second.endsWith(' (copy) 2')).toBe(true);
+
+        const third = duplicateName(second, [first, second]);
+        expect(third).toBe(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - ' (copy) 3'.length)} (copy) 3`);
     });
 
     it('does not split a character that straddles the cut', () => {
