@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import GlobalModal from 'components/GlobalModal';
-import { type ExportAnswer, exportDialogTestStore, keyExportAuth } from 'components/_pages/test-utils/exportDialogTestStore';
+import { type ExportAnswer, exportDialogTestStore, keyPermissionsAuth } from 'components/_pages/test-utils/exportDialogTestStore';
 import { slice as certificateSlice } from 'ducks/certificates';
 import { initialState as userInterfaceInitialState, type State as UserInterfaceState } from 'ducks/user-interface';
 import type { CertificateDetailResponseModel } from 'types/certificate';
@@ -120,7 +120,7 @@ export function CertificateDownloadFormTestWrapper({
             exportDialogTestStore(
                 { exportAttributeDescriptors, exportAnswer, onAction },
                 {
-                    auth: keyExportAuth(canExportKeys),
+                    auth: keyPermissionsAuth({ exportKey: canExportKeys }),
                     enums: { platformEnums },
                     certificates: {
                         ...certificateSlice.getInitialState(),

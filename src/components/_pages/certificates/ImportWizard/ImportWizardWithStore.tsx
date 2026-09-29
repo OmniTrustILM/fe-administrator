@@ -12,6 +12,7 @@ import { slice as inspectionSlice, type State as InspectionState } from 'ducks/i
 import { testReducers } from 'ducks/test-reducers';
 import { slice as tokenProfileSlice, type State as TokenProfileState } from 'ducks/token-profiles';
 import type { CertificateImportResultDto } from 'types/openapi';
+import { keyPermissionsAuth } from '../../test-utils/exportDialogTestStore';
 import { importWizardTestMiddleware, type ImportWizardAnswers } from './importWizardTestSupport';
 
 export type { ImportAnswer, ImportWizardAnswers, InspectAnswer, ListingAnswer } from './importWizardTestSupport';
@@ -48,6 +49,8 @@ export type ImportWizardWithStoreProps = ImportWizardAnswers &
     Readonly<{
         presetTokenProfileUuid?: string;
         showCertificateCustomAttributes?: boolean;
+        /** Whether the signed-in user holds the key import permission. */
+        canImportKeys?: boolean;
         onCancel?: () => void;
         onDone?: (results: CertificateImportResultDto[]) => void;
     }>;
@@ -56,21 +59,24 @@ const noop = () => {};
 
 /**
  * Builds the store every harness mounts against, with {@link importWizardTestMiddleware} answering its API actions.
- * The store is built inside the mounted component, since one built in the test body does not cross the Playwright CT
- * boundary.
+ * Its signed-in user holds the key import permission unless `canImportKeys` is false. The store is built inside the
+ * mounted component, since one built in the test body does not cross the Playwright CT boundary.
  */
-export function useImportTestStore({
-    inspectAnswers,
-    importableTokenProfiles,
-    profileListings,
-    keyTransferByProfile,
-    importKeyAttributes,
-    importAttributeListings,
-    certificateCustomAttributes,
-    keyCustomAttributes,
-    importAnswers,
-    onAction,
-}: ImportWizardAnswers) {
+export function useImportTestStore(
+    {
+        inspectAnswers,
+        importableTokenProfiles,
+        profileListings,
+        keyTransferByProfile,
+        importKeyAttributes,
+        importAttributeListings,
+        certificateCustomAttributes,
+        keyCustomAttributes,
+        importAnswers,
+        onAction,
+    }: ImportWizardAnswers,
+    canImportKeys = true,
+) {
     return useMemo(() => {
         const apiResponses = importWizardTestMiddleware({
             inspectAnswers,
@@ -88,6 +94,7 @@ export function useImportTestStore({
         return configureStore({
             reducer,
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(apiResponses),
+            preloadedState: { ...reducer(undefined, { type: 'init' }), auth: keyPermissionsAuth({ importKey: canImportKeys }) },
         });
     }, [
         inspectAnswers,
@@ -100,6 +107,7 @@ export function useImportTestStore({
         keyCustomAttributes,
         importAnswers,
         onAction,
+        canImportKeys,
     ]);
 }
 
@@ -107,11 +115,12 @@ export function useImportTestStore({
 export function ImportWizardWithStore({
     presetTokenProfileUuid,
     showCertificateCustomAttributes = false,
+    canImportKeys,
     onCancel = noop,
     onDone = noop,
     ...fixtures
 }: ImportWizardWithStoreProps) {
-    const store = useImportTestStore(fixtures);
+    const store = useImportTestStore(fixtures, canImportKeys);
 
     return (
         <Provider store={store}>

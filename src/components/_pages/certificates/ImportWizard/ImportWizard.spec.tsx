@@ -807,6 +807,38 @@ test.describe('ImportWizard', () => {
         await expect(page.getByText("The platform does not support this key's algorithm")).toBeVisible();
     });
 
+    test('imports only the certificates without the key import permission', async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        const refusal = 'Importing keys needs the key import permission.';
+        await mount(
+            <ImportWizardWithStore
+                canImportKeys={false}
+                inspectAnswers={[{ inspection: inspection([keyPair, certificate]) }]}
+                importableTokenProfiles={[profile]}
+                importAnswers={[{ results: [importedCertificate] }]}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+
+        await chooseFile(page);
+
+        const key = page.getByRole('checkbox', { name: 'web-server-01' });
+        await expect(key).toBeDisabled();
+        await expect(key).not.toBeChecked();
+        await expect(key).toHaveAccessibleDescription(refusal);
+        await expect(page.getByText(refusal)).toBeVisible();
+        await expect(page.getByRole('checkbox', { name: 'intermediate-ca-r4' })).toBeChecked();
+        await expect(page.getByRole('heading', { name: 'Key destination' })).toHaveCount(0);
+
+        await page.getByRole('button', { name: 'Import 1 entry' }).click();
+
+        await expect.poll(() => importRequests(actions)).toHaveLength(1);
+        expect(importRequests(actions)[0].entries).toEqual([
+            { entryReference: certificate.entryReference, importId: expect.stringMatching(UUID) },
+        ]);
+        expect(profileListings(actions)).toEqual([]);
+    });
+
     test('sends no custom attributes while certificate custom attributes are off', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         await mount(

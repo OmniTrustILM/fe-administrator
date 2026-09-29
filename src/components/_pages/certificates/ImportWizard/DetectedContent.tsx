@@ -28,10 +28,11 @@ function describe(entry: InspectedEntryDto, algorithm: string | undefined): stri
 type Props = Readonly<{
     entries: InspectedEntryDto[];
     selected: string[];
+    mayImportKeys: boolean;
     onToggle: (entry: InspectedEntryDto, checked: boolean) => void;
 }>;
 
-export default function DetectedContent({ entries, selected, onToggle }: Props) {
+export default function DetectedContent({ entries, selected, mayImportKeys, onToggle }: Props) {
     const keyAlgorithmEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyAlgorithm));
 
     return (
@@ -39,7 +40,7 @@ export default function DetectedContent({ entries, selected, onToggle }: Props) 
             <ul className="space-y-2">
                 {entries.map((entry) => {
                     const id = `importEntry-${entry.entryReference}`;
-                    const reason = unselectableReason(entry);
+                    const reason = unselectableReason(entry, mayImportKeys);
                     const algorithm =
                         entry.keyAlgorithm && entry.keyAlgorithm !== KeyAlgorithm.Unknown
                             ? getEnumLabel(keyAlgorithmEnum, entry.keyAlgorithm)

@@ -20,6 +20,7 @@ import type { AttributeDescriptorModel } from 'types/attributes';
 import type { BaseAttributeDto, KeyRequestType, KeyTransferCapabilityDto, TokenProfileDto } from 'types/openapi';
 import type { TokenProfileResponseModel } from 'types/token-profiles';
 import { createMockStore } from 'utils/test-helpers';
+import { keyPermissionsAuth } from '../../test-utils/exportDialogTestStore';
 import { nth } from '../../test-utils/testAnswers';
 
 type SharedState = Omit<ReturnType<typeof testReducers>, 'cryptographicKeys' | 'tokenprofiles' | 'certificates'> & {
@@ -59,6 +60,8 @@ export type CryptographicKeyFormWithStoreProps = Readonly<{
     tokenProfileDetailAnswers?: TokenProfileDetailAnswer[];
     keyDetail?: KeyState['cryptographicKey'];
     attributeDescriptors?: AttributeDescriptorModel[];
+    /** Whether the signed-in user holds the key import permission. */
+    canImportKeys?: boolean;
     onAction?: (action: UnknownAction) => void;
     onSuccess?: () => void;
     onCancel?: () => void;
@@ -81,6 +84,7 @@ export function CryptographicKeyFormWithStore({
     tokenProfileDetailAnswers,
     keyDetail,
     attributeDescriptors,
+    canImportKeys = true,
     onAction,
     onSuccess,
     onCancel,
@@ -91,7 +95,8 @@ export function CryptographicKeyFormWithStore({
     importAnswers,
 }: CryptographicKeyFormWithStoreProps) {
     const store = useMemo(() => {
-        if (!tokenProfiles) return createMockStore();
+        const auth = keyPermissionsAuth({ importKey: canImportKeys });
+        if (!tokenProfiles) return createMockStore({ auth });
 
         const summaries = new Map(tokenProfiles.map((profile) => [profile.uuid, profile]));
         let detailRequestsAnswered = 0;
@@ -145,6 +150,7 @@ export function CryptographicKeyFormWithStore({
 
         const preloadedState: State = {
             ...testInitialState,
+            auth,
             tokenprofiles: { ...tokenProfileSlice.getInitialState(), tokenProfiles },
             cryptographicKeys: { ...keySlice.getInitialState(), cryptographicKey: keyDetail },
             certificates: certificateSlice.getInitialState(),
@@ -164,6 +170,7 @@ export function CryptographicKeyFormWithStore({
         tokenProfileDetailAnswers,
         keyDetail,
         attributeDescriptors,
+        canImportKeys,
         onAction,
         inspectAnswers,
         importableTokenProfiles,

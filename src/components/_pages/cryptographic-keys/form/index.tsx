@@ -32,10 +32,11 @@ import { selectors as enumSelectors, getEnumLabel, getEnumDescription } from 'du
 import { validateAlphaNumericWithSpecialChars, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from '../../../../ducks/customAttributes';
-import { type KeyRequestType, PlatformEnum, Resource } from 'types/openapi';
+import { type KeyRequestType, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import Container from 'components/Container';
 import Button from 'components/Button';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
+import { hasResourceAction } from 'utils/permissions';
 
 const EXPORTABLE_HINT_FOR_REQUEST =
     'Required to download the certificate with its private key (PKCS12) after issuance. Cannot be enabled later.';
@@ -673,9 +674,11 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
         </FormProvider>
     );
 
+    const offersImport = !editMode && !usesGlobalModal && hasResourceAction(auth, Resource.Keys, ResourceAction.ImportKey);
+
     return (
         <Widget noBorder busy={isBusy}>
-            {!editMode && !usesGlobalModal ? (
+            {offersImport ? (
                 <TabLayout
                     noBorder
                     onTabChange={setActiveTab}

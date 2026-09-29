@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import ThemeProvider from 'components/ThemeProvider';
 import CryptographicKeyDetail from 'components/_pages/cryptographic-keys/detail';
-import { answerExport, type ExportAnswer, keyExportAuth, keyExportFailure } from 'components/_pages/test-utils/exportDialogTestStore';
+import { answerExport, type ExportAnswer, keyExportFailure, keyPermissionsAuth } from 'components/_pages/test-utils/exportDialogTestStore';
 import { actions as keyActions, slice as keySlice, type State as KeyState } from 'ducks/cryptographic-keys';
 import {
     actions as cryptographicOperationActions,
@@ -86,7 +86,7 @@ export default function CryptographicKeyDetailWithStore({
         return configureStore({
             reducer,
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(apiResponses),
-            preloadedState: { ...reducer(undefined, { type: 'init' }), auth: keyExportAuth(canExportKeys) },
+            preloadedState: { ...reducer(undefined, { type: 'init' }), auth: keyPermissionsAuth({ exportKey: canExportKeys }) },
         });
     }, [cryptographicKey, tokenProfile, exportAnswer, canExportKeys, signatureDescriptors, failSignatureDescriptors, onAction]);
 

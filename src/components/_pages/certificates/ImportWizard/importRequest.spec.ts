@@ -60,12 +60,29 @@ describe('importRequest', () => {
         expect(unselectableReason({ ...keyPair, importable: true })).toBeUndefined();
         expect(unselectableReason(certificate)).toBeUndefined();
     });
+    test('refuses an entry carrying key material without the key import permission, but not a certificate', () => {
+        const refusal = 'Importing keys needs the key import permission.';
+        expect(unselectableReason(keyPair, false)).toBe(refusal);
+        expect(unselectableReason(ecKey, false)).toBe(refusal);
+        expect(isSelectable(keyPair, false)).toBe(false);
+        expect(unselectableReason(certificate, false)).toBeUndefined();
+        expect(isSelectable(certificate, false)).toBe(true);
+    });
+    test('says the key import permission is missing after the platform and before the token profile', () => {
+        expect(unselectableReason({ ...ecKey, keyAlgorithm: KeyAlgorithm.Unknown }, false)).toBe(
+            "The platform does not support this key's algorithm",
+        );
+        expect(unselectableReason({ ...keyPair, importable: false }, false)).toBe('Importing keys needs the key import permission.');
+    });
     test('lists the keys the platform supports, whatever the token profile answered', () => {
         const refused = { ...keyPair, importable: false };
         expect(supportedKeys([refused, { ...ecKey, keyAlgorithm: KeyAlgorithm.Unknown }, certificate, request, ecKey])).toEqual([
             refused,
             ecKey,
         ]);
+    });
+    test('lists no keys without the key import permission', () => {
+        expect(supportedKeys([keyPair, certificate, ecKey], false)).toEqual([]);
     });
     test('tells the entries that carry a certificate', () => {
         expect([keyPair, certificate, ecKey, request].map(hasCertificate)).toEqual([true, true, false, false]);

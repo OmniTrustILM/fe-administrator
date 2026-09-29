@@ -226,6 +226,23 @@ test.describe('CryptographicKeyForm', () => {
         await expect(page.getByText('Token Profile *')).toBeVisible();
     });
 
+    test('does not offer the Import material tab without the key import permission', async ({ mount, page }) => {
+        const profile = aTokenProfile().build();
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute="/keys/create"
+                routePath="/keys/create"
+                tokenProfiles={[profile]}
+                canImportKeys={false}
+            />,
+        );
+
+        await expect(page.getByRole('button', { name: 'Create' })).toBeVisible();
+        await expect(page.getByText('Token Profile *')).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Import material' })).toHaveCount(0);
+        await expect(page.getByRole('tab', { name: 'Generate new' })).toHaveCount(0);
+    });
+
     test('shows the Exportable switch only for a key type the profile can export, resets it on change, and submits it', async ({
         mount,
         page,

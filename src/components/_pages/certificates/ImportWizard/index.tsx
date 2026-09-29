@@ -6,6 +6,7 @@ import InfoNote from 'components/InfoNote';
 import FileUpload from 'components/Input/FileUpload/FileUpload';
 import ProgressButton from 'components/ProgressButton';
 import Widget from 'components/Widget';
+import { selectors as authSelectors } from 'ducks/auth';
 import { actions as certificatesActions, selectors as certificatesSelectors } from 'ducks/certificates';
 import {
     actions as keysActions,
@@ -23,6 +24,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import {
     Resource,
+    ResourceAction,
     type CertificateImportResultDto,
     type InspectedEntryDto,
     type InspectionResponseDto,
@@ -31,6 +33,7 @@ import {
     type TokenProfileDto,
 } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
+import { hasResourceAction } from 'utils/permissions';
 import DetectedContent, { entryCount } from './DetectedContent';
 import FilePassword, { type FilePasswordValues } from './FilePassword';
 import ImportResults from './ImportResults';
@@ -119,6 +122,8 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     const keyCustomAttributeDescriptors = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const importResults = useSelector(certificatesSelectors.importResults);
     const isImporting = useSelector(certificatesSelectors.isImporting);
+    const auth = useSelector(authSelectors.profile);
+    const mayImportKeys = hasResourceAction(auth, Resource.Keys, ResourceAction.ImportKey);
 
     const methods = useForm<FormValues>({ defaultValues: DEFAULT_VALUES, mode: 'onChange' });
     const { control, getValues, handleSubmit, setValue } = methods;
@@ -150,12 +155,15 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     });
     const entries = useMemo(() => (inspected && inspection ? inspection.entries : []), [inspected, inspection]);
     const selectedEntries = useMemo(
-        () => entries.filter((entry) => isSelectable(entry) && desired.includes(entry.entryReference)),
-        [entries, desired],
+        () => entries.filter((entry) => isSelectable(entry, mayImportKeys) && desired.includes(entry.entryReference)),
+        [entries, desired, mayImportKeys],
     );
     const selectedKeys = useMemo(() => selectedEntries.filter((entry) => keyRequestTypeOf(entry)), [selectedEntries]);
     // The keys wanted, with those the chosen profile refuses, so that another profile can be chosen for them.
-    const desiredKeys = useMemo(() => supportedKeys(entries).filter((entry) => desired.includes(entry.entryReference)), [entries, desired]);
+    const desiredKeys = useMemo(
+        () => supportedKeys(entries, mayImportKeys).filter((entry) => desired.includes(entry.entryReference)),
+        [entries, desired, mayImportKeys],
+    );
     const showDestination = desiredKeys.length > 0;
     const codes = importableCodes(desiredKeys).join(',');
     const profilesListed = !!codes && listedCodes === codes && profilesListingSucceeded;
@@ -445,6 +453,7 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
                         <DetectedContent
                             entries={entries}
                             selected={selectedEntries.map((entry) => entry.entryReference)}
+                            mayImportKeys={mayImportKeys}
                             onToggle={(entry, checked) =>
                                 setDesired((current) =>
                                     checked ? [...current, entry.entryReference] : current.filter((each) => each !== entry.entryReference),

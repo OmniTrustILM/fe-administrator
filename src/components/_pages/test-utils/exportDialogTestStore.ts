@@ -40,13 +40,18 @@ export function answerExport(
     setTimeout(() => api.dispatch(error ? failure(error) : success), delay);
 }
 
-/** The harnesses' signed-in user, who holds the key export permission unless `granted` is false. */
-export const keyExportAuth = (granted = true): AuthTestState => ({
+/** The harnesses' signed-in user, who holds the key import and the key export permission unless a test takes one away. */
+export const keyPermissionsAuth = ({ importKey = true, exportKey = true } = {}): AuthTestState => ({
     profile: {
         username: 'Test User',
         permissions: {
             allowedListings: [],
-            allowedActions: granted ? [{ resource: Resource.Keys, actions: [ResourceAction.ExportKey] }] : [],
+            allowedActions: [
+                {
+                    resource: Resource.Keys,
+                    actions: [...(importKey ? [ResourceAction.ImportKey] : []), ...(exportKey ? [ResourceAction.ExportKey] : [])],
+                },
+            ],
         },
     },
 });

@@ -47,19 +47,21 @@ export function isSupported(entry: InspectedEntryDto): boolean {
     return !unsupportedReason(entry);
 }
 
-export function unselectableReason(entry: InspectedEntryDto): string | undefined {
+export function unselectableReason(entry: InspectedEntryDto, mayImportKeys = true): string | undefined {
     const unsupported = unsupportedReason(entry);
-    if (unsupported || entry.importable !== false) return unsupported;
+    if (unsupported) return unsupported;
+    if (keyRequestTypeOf(entry) && !mayImportKeys) return 'Importing keys needs the key import permission.';
+    if (entry.importable !== false) return undefined;
     return entry.notImportableReason ?? 'Not supported by the chosen token profile';
 }
 
-export function isSelectable(entry: InspectedEntryDto): boolean {
-    return !unselectableReason(entry);
+export function isSelectable(entry: InspectedEntryDto, mayImportKeys = true): boolean {
+    return !unselectableReason(entry, mayImportKeys);
 }
 
-/** The key entries the platform can import, including those the chosen token profile refused. */
-export function supportedKeys(entries: InspectedEntryDto[]): InspectedEntryDto[] {
-    return entries.filter((entry) => keyRequestTypeOf(entry) && isSupported(entry));
+/** The key entries the platform can import and the user may, including those the chosen token profile refused. */
+export function supportedKeys(entries: InspectedEntryDto[], mayImportKeys = true): InspectedEntryDto[] {
+    return mayImportKeys ? entries.filter((entry) => keyRequestTypeOf(entry) && isSupported(entry)) : [];
 }
 
 // Core writes a DN unescaped, its RDNs joined by ", " and a multi-valued RDN's parts by "+", so a new part starts only
