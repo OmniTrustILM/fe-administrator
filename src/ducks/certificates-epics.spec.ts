@@ -16,6 +16,7 @@ vi.mock('./transform/certificates', () => ({
     transformSearchRequestModelToDto: (req: unknown) => req,
     transformCertificateBulkDeleteRequestModelToDto: (req: unknown) => req,
     transformCertificateBulkObjectModelToDto: (req: unknown) => req,
+    transformCertificateObjectModelToDto: (req: unknown) => req,
     transformCertificateRenewRequestModelToDto: (req: unknown) => req,
     transformCertificateRekeyRequestModelToDto: (req: unknown) => req,
     transformCertificateSignRequestModelToDto: (req: unknown) => req,
@@ -62,6 +63,7 @@ const GET_REGISTER_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getRegisterAttributes'
 const GET_CSR_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getCsrAttributes');
 const GET_RENEW_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getRenewAttributes');
 const GET_IDENTIFY_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getIdentifyAttributes');
+const UPDATE_RA_PROFILE_EPIC_INDEX = findEpicIndex('updateRaProfile');
 
 type ClientOpsOverrides = {
     issueCertificate?: (args: any) => any;
@@ -1091,6 +1093,36 @@ describe('certificates epics', () => {
             answer$.complete();
 
             expect(emitted).toEqual([]);
+        });
+    });
+
+    describe('updateRaProfile', () => {
+        test('re-reads the certificate after the switch, since core replaces its identify values and metadata', async () => {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const deps = {
+                apiClients: {
+                    certificates: { updateCertificateObjects: () => of(undefined) },
+                    raProfiles: {
+                        getRaProfile: () => of({ uuid: 'ra-2', name: 'RA Two', enabled: true, authorityInstanceUuid: 'auth-2' }),
+                    },
+                },
+            };
+            const action = certificatesActions.updateRaProfile({
+                uuid: 'cert-1',
+                updateRaProfileRequest: { raProfileUuid: 'ra-2', attributes: [] },
+                authorityUuid: 'auth-2',
+            });
+
+            const emitted = await firstValueFrom(
+                epics[UPDATE_RA_PROFILE_EPIC_INDEX](of(action), of({}) as any, deps as any).pipe(toArray()),
+            );
+
+            expect(emitted.map((a) => a.type)).toEqual([
+                certificatesActions.updateRaProfileSuccess.type,
+                certificatesActions.getCertificateHistory.type,
+                certificatesActions.getCertificateDetail.type,
+            ]);
+            expect(emitted[2]).toEqual(certificatesActions.getCertificateDetail({ uuid: 'cert-1' }));
         });
     });
 });

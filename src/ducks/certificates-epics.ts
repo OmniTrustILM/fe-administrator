@@ -708,6 +708,7 @@ const updateRaProfile: AppEpic = (action$, state, deps) => {
                                             raProfile: transformRaProfileResponseDtoToModel(raProfile),
                                         }),
                                         slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
+                                        slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
                                     ),
                                 ),
 
