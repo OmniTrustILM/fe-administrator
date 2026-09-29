@@ -149,6 +149,50 @@ test.describe('KeyExportDialog', () => {
         await expect(page.getByRole('button', { name: 'Export' })).toBeDisabled();
     });
 
+    test('sends nothing on Enter until the export attribute schema has loaded', async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        await mount(
+            <KeyExportDialogWithStore
+                exportAttributeListings={[{ error: SCHEMA_FAILURE }, { descriptors: [] }]}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+
+        await enterText(page.getByTestId('text-input-passphrase'), 'correct horse battery');
+        await enterText(page.getByTestId('text-input-passphraseConfirmation'), 'correct horse battery');
+        await page.getByTestId('text-input-passphraseConfirmation').press('Enter');
+        await page.getByRole('button', { name: 'Retry' }).click();
+        await expect(page.getByRole('button', { name: 'Export' })).toBeEnabled();
+        expect(exportRequests(actions)).toHaveLength(0);
+
+        await page.getByRole('button', { name: 'Export' }).click();
+
+        await expect.poll(() => exportRequests(actions)).toHaveLength(1);
+    });
+
+    test('sends one export however often Enter is pressed while it runs', async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        let closed = 0;
+        await mount(
+            <KeyExportDialogWithStore
+                exportAnswer={{ delay: 1000 }}
+                onClose={() => {
+                    closed += 1;
+                }}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+
+        await enterText(page.getByTestId('text-input-passphrase'), 'correct horse battery');
+        await enterText(page.getByTestId('text-input-passphraseConfirmation'), 'correct horse battery');
+        await page.getByRole('button', { name: 'Export' }).click();
+        await expect(page.getByRole('button', { name: 'Exporting...' })).toBeDisabled();
+        await page.getByTestId('text-input-passphraseConfirmation').press('Enter');
+
+        await expect.poll(() => closed).toBe(1);
+        expect(exportRequests(actions)).toHaveLength(1);
+    });
+
     test('says why the export attribute schema could not be listed, and lists it again on Retry', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         await mount(

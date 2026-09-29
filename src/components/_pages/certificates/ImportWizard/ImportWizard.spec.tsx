@@ -514,6 +514,28 @@ test.describe('ImportWizard', () => {
         ]);
     });
 
+    test('imports nothing on Enter in a key name before a token profile is chosen', async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[{ inspection: inspection([keyPair]) }]}
+                importableTokenProfiles={[profile]}
+                importAnswers={[{ results: [importedKeyPair] }]}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+
+        await chooseFile(page);
+        await page.getByRole('textbox', { name: 'web-server-01' }).press('Enter');
+        await chooseProfile(page);
+        await expect(page.getByRole('button', { name: 'Import 1 entry' })).toBeEnabled();
+        expect(importRequests(actions)).toHaveLength(0);
+
+        await page.getByRole('button', { name: 'Import 1 entry' }).click();
+
+        await expect.poll(() => importRequests(actions)).toHaveLength(1);
+    });
+
     test('keeps Import disabled until the import attribute schema has loaded', async ({ mount, page }) => {
         await mount(
             <ImportWizardWithStore
