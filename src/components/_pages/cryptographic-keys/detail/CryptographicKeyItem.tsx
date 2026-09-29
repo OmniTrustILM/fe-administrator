@@ -420,10 +420,15 @@ export default function CryptographicKeyItem({
                           id: 'enabled',
                           columns: ['Enabled', <StatusBadge key="enabled" enabled={keyItem.enabled} />],
                       },
-                      {
-                          id: 'exportable',
-                          columns: ['Exportable', <StatusBadge key="exportable" enabled={keyItem.exportable} />],
-                      },
+                      // Only private and secret keys are exported, so a public key item has no Exportable row.
+                      ...(EXPORTABLE_ITEM_TYPE_TO_KEY_REQUEST_TYPE[keyItem.type]
+                          ? [
+                                {
+                                    id: 'exportable',
+                                    columns: ['Exportable', <StatusBadge key="exportable" enabled={keyItem.exportable} />],
+                                },
+                            ]
+                          : []),
                       {
                           id: 'state',
                           columns: [

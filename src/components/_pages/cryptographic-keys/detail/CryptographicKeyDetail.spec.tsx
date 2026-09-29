@@ -377,6 +377,14 @@ test.describe('CryptographicKeyItem key export', () => {
         await expect(dialog).toHaveCount(0);
     });
 
+    test('shows no Exportable row for a public key item, which is public', async ({ mount, page }) => {
+        const cryptographicKey = aKeyWithExportableItem({ type: KeyType.Public, format: KeyFormat.SubjectPublicKeyInfo });
+        await mount(<CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} />);
+
+        await expect(page.locator('tr[data-id="enabled"]')).toBeVisible();
+        await expect(page.locator('tr[data-id="exportable"]')).toHaveCount(0);
+    });
+
     for (const exportable of [true, false]) {
         test(`shows the Exportable row as ${exportable ? 'Enabled' : 'Disabled'}`, async ({ mount, page }) => {
             const cryptographicKey = aKeyWithExportableItem({ exportable });
