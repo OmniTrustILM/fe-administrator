@@ -1209,6 +1209,7 @@ test.describe('ImportWizard', () => {
         await expect(resultBadge(page, 'web-server-01')).toHaveText('Not imported');
         await expect(resultBadge(page, 'web-server-01')).toHaveClass(/bg-danger-surface/);
         await expect(resultRow(page, 'web-server-01')).toContainText('A certificate of the entry was not uploaded.');
+        await expect(resultRow(page, 'web-server-01').getByRole('link')).toHaveCount(0);
     });
 
     test('retries only the entry that failed', async ({ mount, page }) => {
