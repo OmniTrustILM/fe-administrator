@@ -350,14 +350,23 @@ function stripEmptyResourceContent(
 
 const isBlankValue = (value: unknown): boolean => value === undefined || value === null || value === '';
 
-// Secret and Codeblock content wrap the entered value in an object, so a blank one is never a blank `data`.
-// Keyed on the content type, because Object content may carry `secret` or `code` properties of its own.
+const withoutBlankItems = (value: unknown): unknown => (Array.isArray(value) ? value.filter((item) => !isBlankValue(item)) : value);
+
+// Secret, Codeblock and File content wrap the entered value in an object, so a blank one is never a blank `data`.
+// Keyed on the content type, because Object content may carry the same property names of its own. A selected
+// zero-byte file still has a name or type, so a file is empty only when all three of its fields are blank.
+const WRAPPED_VALUE_FIELDS: Partial<Record<AttributeContentType, readonly string[]>> = {
+    [AttributeContentType.Secret]: ['secret'],
+    [AttributeContentType.Codeblock]: ['code'],
+    [AttributeContentType.File]: ['content', 'fileName', 'mimeType'],
+};
+
 const isEmptyAttributeContentItem = (item: FormAttributeContentItem, contentType: AttributeContentType): boolean => {
     if (isBlankValue(item.data)) return true;
-    if (typeof item.data !== 'object') return false;
-    if (contentType === AttributeContentType.Secret) return isBlankValue((item.data as { secret?: unknown }).secret);
-    if (contentType === AttributeContentType.Codeblock) return isBlankValue((item.data as { code?: unknown }).code);
-    return false;
+    const fields = WRAPPED_VALUE_FIELDS[contentType];
+    if (!fields || typeof item.data !== 'object') return false;
+    const data = item.data as Record<string, unknown>;
+    return fields.every((field) => isBlankValue(data[field]));
 };
 
 function shouldSkipAttribute(
@@ -395,7 +404,9 @@ export function collectFormAttributes(
         if (guard.skip) continue;
         const { descriptor, attributeName } = guard;
 
-        const rawValue = attributes[attribute];
+        const rawValue = options?.omitEmptyContent ? withoutBlankItems(attributes[attribute]) : attributes[attribute];
+        // Dropped before normalising as well, because Date and Datetime normalisation throws on a blank value.
+        if (options?.omitEmptyContent && isBlankValue(rawValue)) continue;
         let content: FormAttributeContentItem | FormAttributeContentItem[] | undefined = Array.isArray(rawValue)
             ? rawValue.map((i: unknown) => getAttributeFormValue(descriptor.contentType, descriptor.content, i))
             : getAttributeFormValue(descriptor.contentType, descriptor.content, rawValue);

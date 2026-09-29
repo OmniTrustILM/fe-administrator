@@ -658,12 +658,34 @@ describe('attributes utils', () => {
             ]);
         });
 
-        test('keeps object content that carries blank secret or code properties of its own', () => {
+        test('omits a file attribute with no file selected and keeps a selected one', () => {
+            const zeroByteFile = { content: '', fileName: 'empty.txt', mimeType: 'text/plain' };
+            const selectedFile = { content: btoa('pem'), fileName: 'ca.pem', mimeType: 'application/x-pem-file' };
+
+            expect(collectOmittingEmpty('bundle', AttributeContentType.File, { content: '', fileName: '', mimeType: '' })).toEqual([]);
+            // The editor registers the three fields without values, so an untouched file field holds undefined ones.
+            expect(
+                collectOmittingEmpty('bundle', AttributeContentType.File, { content: undefined, fileName: undefined, mimeType: undefined }),
+            ).toEqual([]);
+            expect(collectOmittingEmpty('bundle', AttributeContentType.File, zeroByteFile)).toEqual([[{ data: zeroByteFile }]]);
+            expect(collectOmittingEmpty('bundle', AttributeContentType.File, selectedFile)).toEqual([[{ data: selectedFile }]]);
+        });
+
+        test('omits a cleared date or datetime attribute instead of failing to normalise it', () => {
+            expect(collectOmittingEmpty('notBefore', AttributeContentType.Date, '')).toEqual([]);
+            expect(collectOmittingEmpty('notBefore', AttributeContentType.Datetime, '')).toEqual([]);
+            expect(collectOmittingEmpty('notBefore', AttributeContentType.Date, '2026-09-29')).toEqual([[{ data: '2026-09-29' }]]);
+            expect(collectOmittingEmpty('notBefore', AttributeContentType.Date, ['2026-09-29', ''])).toEqual([[{ data: '2026-09-29' }]]);
+        });
+
+        test('keeps object content that carries blank secret, code or file properties of its own', () => {
             const withBlankCode = { code: '', enabled: true };
             const withBlankSecret = { secret: '', enabled: true };
+            const fileShaped = { content: '', fileName: '', mimeType: '' };
 
             expect(collectOmittingEmpty('settings', AttributeContentType.Object, withBlankCode)).toEqual([[{ data: withBlankCode }]]);
             expect(collectOmittingEmpty('settings', AttributeContentType.Object, withBlankSecret)).toEqual([[{ data: withBlankSecret }]]);
+            expect(collectOmittingEmpty('settings', AttributeContentType.Object, fileShaped)).toEqual([[{ data: fileShaped }]]);
         });
 
         test('processes Custom attribute descriptors', () => {
