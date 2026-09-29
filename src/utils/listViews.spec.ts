@@ -213,6 +213,11 @@ describe('duplicateName', () => {
         expect(third).toBe(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - ' (copy) 3'.length)} (copy) 3`);
     });
 
+    it('restarts the series when the source number is too large to count past', () => {
+        const huge = 'Report (copy) 100000000000000000000';
+        expect(duplicateName(huge, [huge])).toBe('Report (copy)');
+    });
+
     it('does not split a character that straddles the cut', () => {
         const name = duplicateName(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)}\u{1F600}`, []);
         expect(name).toBe(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)} (copy)`);

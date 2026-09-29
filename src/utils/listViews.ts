@@ -118,7 +118,8 @@ export function duplicateName(name: string, existing: readonly string[]): string
     const stem = name.replace(COPY_SUFFIXES, '') || name;
 
     // Numbering resumes at the source's own number: a shortened stem was cut for that suffix, and a lower one would cut it wider.
-    const sourceSuffix = Math.max(1, Number(LAST_COPY_NUMBER.exec(name)?.[1] ?? 1));
+    const parsed = Number(LAST_COPY_NUMBER.exec(name)?.[1] ?? 1);
+    const sourceSuffix = parsed >= 1 && Number.isSafeInteger(parsed + 1) ? parsed : 1;
 
     const taken = new Set(existing);
     for (let suffix = sourceSuffix; ; suffix++) {
