@@ -191,6 +191,12 @@ describe('net utils', () => {
             expect(extractError(readable as AjaxError, 'Failed')).toBe('Failed (422): The profile does not export RSA keys.');
         });
 
+        test('keeps the error message when the blob body is empty', async () => {
+            const readable = await firstValueFrom(withReadableResponse(refusal('')));
+
+            expect(extractError(readable as AjaxError, 'Failed')).toBe('Failed (422): ajax error 422');
+        });
+
         test('keeps the raw text of a JSON body that holds no message', async () => {
             const readable = await firstValueFrom(withReadableResponse(refusal('{"code":"X"}')));
 

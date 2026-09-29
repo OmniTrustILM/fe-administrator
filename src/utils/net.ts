@@ -36,7 +36,8 @@ function readableBody(text: string): unknown {
 export function withReadableResponse<T>(error: T): Observable<T> {
     if (!(error instanceof AjaxError) || !(error.response instanceof Blob)) return of(error);
     return from(error.response.text()).pipe(
-        map((text) => Object.assign(Object.create(AjaxError.prototype), error, { response: readableBody(text) })),
+        // An error's message need not be enumerable, which Object.assign would skip, so it is copied by name.
+        map((text) => Object.assign(Object.create(AjaxError.prototype), error, { message: error.message, response: readableBody(text) })),
         catchError(() => of(error)),
     );
 }
