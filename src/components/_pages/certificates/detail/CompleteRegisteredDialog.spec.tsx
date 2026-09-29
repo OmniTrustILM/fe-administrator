@@ -12,6 +12,23 @@ const csrDataDescriptor: AttributeDescriptorModel = {
     properties: { label: 'Data Field', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
 } as AttributeDescriptorModel;
 
+const commonNameDescriptor: AttributeDescriptorModel = {
+    type: AttributeType.Data,
+    name: 'commonName',
+    uuid: 'csr-cn-uuid',
+    contentType: AttributeContentType.String,
+    properties: { label: 'Common Name', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
+} as AttributeDescriptorModel;
+
+const sanWithDefaultDescriptor: AttributeDescriptorModel = {
+    type: AttributeType.Data,
+    name: 'SAN_DNS',
+    uuid: 'csr-san-uuid',
+    contentType: AttributeContentType.String,
+    properties: { label: 'Subject Alternative Name', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+    content: [{ data: 'default.example.com' }],
+} as AttributeDescriptorModel;
+
 test.describe('CompleteRegisteredDialog', () => {
     test('renders the Challenge input and CSR upload input', async ({ mount, page }) => {
         await mount(<CompleteRegisteredDialogTestWrapper />);
@@ -246,5 +263,51 @@ test.describe('CompleteRegisteredDialog', () => {
         await page.getByRole('option', { name: 'Existing Key' }).click();
 
         await expect(page.getByTestId('text-input-__attributes__csrAttributes__.dataField')).toBeVisible({ timeout: 15000 });
+    });
+
+    test('completeRegisteredCertificate payload omits a request attribute whose default was cleared', async ({ mount, page }) => {
+        const dispatched: { type: string; payload?: any }[] = [];
+
+        await mount(
+            <CompleteRegisteredDialogTestWrapper
+                challenged={false}
+                onAction={(a) => dispatched.push(a)}
+                preloadedState={{
+                    certificates: {
+                        ...testInitialState.certificates,
+                        csrAttributeDescriptors: [commonNameDescriptor, sanWithDefaultDescriptor],
+                    },
+                    tokenprofiles: { tokenProfiles: [{ uuid: 'token-profile-uuid', name: 'Test Token Profile' }] } as any,
+                    cryptographicKeys: {
+                        ...testInitialState.cryptographicKeys,
+                        // Selecting a key reads its items to fetch signature descriptors; none means no fetch.
+                        cryptographicKeyPairs: [{ uuid: 'key-uuid', name: 'Test Key', tokenProfileUuid: 'token-profile-uuid', items: [] }],
+                    } as any,
+                }}
+            />,
+        );
+
+        await page.getByTestId('completeKeySource-trigger').click();
+        await page.getByRole('option', { name: 'Existing Key' }).click();
+        await page.getByTestId('select-tokenProfileUuid-trigger').click();
+        await page.getByRole('option', { name: 'Test Token Profile' }).click();
+        await page.getByTestId('select-keyUuid-trigger').click();
+        await page.getByRole('option', { name: 'Test Key' }).click();
+
+        const commonNameInput = page.getByTestId('text-input-__attributes__csrAttributes__.commonName');
+        await commonNameInput.click();
+        await commonNameInput.fill('cmp-device-07');
+        const sanInput = page.getByTestId('text-input-__attributes__csrAttributes__.SAN_DNS');
+        await expect(sanInput).toHaveValue('default.example.com');
+        await sanInput.click();
+        await sanInput.fill('');
+
+        await page.getByTestId('completeRegisteredSubmit').click();
+
+        await expect.poll(() => dispatched.find((a) => a.type === 'certificates/completeRegisteredCertificate')).toBeTruthy();
+        const action = dispatched.find((a) => a.type === 'certificates/completeRegisteredCertificate');
+        // Core builds the CSR from these attributes and must match it to the registered identity.
+        const csrAttributes = action?.payload.csrAttributes as { name: string }[];
+        expect(csrAttributes.map((a) => a.name)).toEqual(['commonName']);
     });
 });

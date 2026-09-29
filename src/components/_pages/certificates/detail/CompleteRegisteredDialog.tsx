@@ -128,7 +128,9 @@ export default function CompleteRegisteredDialog({ certificate, onCancel }: Prop
             const signatureAttrs = isUploadSource
                 ? undefined
                 : collectFormAttributes('signatureAttributes', signatureAttributeDescriptors, combinedValues);
-            const csrAttrs = isUploadSource ? undefined : collectFormAttributes('csrAttributes', csrAttributeDescriptors, combinedValues);
+            const csrAttrs = isUploadSource
+                ? undefined
+                : collectFormAttributes('csrAttributes', csrAttributeDescriptors, combinedValues, undefined, { omitEmptyContent: true });
 
             dispatch(
                 certificateActions.completeRegisteredCertificate({
