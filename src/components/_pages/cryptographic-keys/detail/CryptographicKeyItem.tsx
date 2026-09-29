@@ -576,16 +576,17 @@ export default function CryptographicKeyItem({
             <Dialog
                 isOpen={signData}
                 caption="Sign Data"
-                body={SignVerifyData({
-                    action: 'sign',
-                    visible: signData,
-                    onClose: () => setSignData(false),
-                    tokenUuid: tokenInstanceUuid,
-                    keyUuid: keyUuid,
-                    keyItemUuid: keyItem.uuid,
-                    algorithm: keyItem.keyAlgorithm,
-                    tokenProfileUuid: tokenProfileUuid,
-                })}
+                body={
+                    <SignVerifyData
+                        action="sign"
+                        visible={signData}
+                        onClose={() => setSignData(false)}
+                        tokenUuid={tokenInstanceUuid}
+                        keyUuid={keyUuid}
+                        keyItemUuid={keyItem.uuid}
+                        tokenProfileUuid={tokenProfileUuid}
+                    />
+                }
                 size="xl"
                 toggle={() => setSignData(false)}
                 buttons={[]}
@@ -594,16 +595,17 @@ export default function CryptographicKeyItem({
             <Dialog
                 isOpen={verifyData}
                 caption="Verify Signature"
-                body={SignVerifyData({
-                    action: 'verify',
-                    visible: verifyData,
-                    onClose: () => setVerifyData(false),
-                    tokenUuid: tokenInstanceUuid,
-                    keyUuid: keyUuid,
-                    keyItemUuid: keyItem.uuid,
-                    algorithm: keyItem.keyAlgorithm,
-                    tokenProfileUuid: tokenProfileUuid,
-                })}
+                body={
+                    <SignVerifyData
+                        action="verify"
+                        visible={verifyData}
+                        onClose={() => setVerifyData(false)}
+                        tokenUuid={tokenInstanceUuid}
+                        keyUuid={keyUuid}
+                        keyItemUuid={keyItem.uuid}
+                        tokenProfileUuid={tokenProfileUuid}
+                    />
+                }
                 size="xl"
                 toggle={() => setVerifyData(false)}
                 buttons={[]}
