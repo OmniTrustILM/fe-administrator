@@ -249,8 +249,8 @@ export default function ViewTabs({
     const tabBeforeCreate = useRef<{ id: string; restore?: ViewSlice }>({ id: STANDARD_VIEW_ID });
 
     // A create leaves out display-only columns and filters on a field that is gone, and the table has to follow
-    // once the view exists: a dropped filter would make its next save carry one Core refuses for that row, and a
-    // dropped column would vanish only when the view is next opened.
+    // once the view exists, or it keeps listing under a filter and showing a column the view does not hold, which
+    // reopening the view would not.
     const sliceAfterCreate = useRef<ViewSlice | undefined>(undefined);
 
     // A created view arrives with the uuid the API gave it, replacing the optimistic row the strip
