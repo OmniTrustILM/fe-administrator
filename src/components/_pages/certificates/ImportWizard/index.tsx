@@ -168,7 +168,7 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     const selectedKeys = useMemo(() => selectedEntries.filter((entry) => keyRequestTypeOf(entry)), [selectedEntries]);
     // The keys wanted, with those the chosen profile refuses, so that another profile can be chosen for them.
     const desiredKeys = useMemo(
-        () => supportedKeys(entries, mayImportKeys).filter((entry) => desired.includes(entry.entryReference)),
+        () => supportedKeys(entries).filter((entry) => mayImportKeys && desired.includes(entry.entryReference)),
         [entries, desired, mayImportKeys],
     );
     const showDestination = desiredKeys.length > 0;
@@ -275,8 +275,11 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     }, [inspection]);
 
     useEffect(() => {
-        if (refusedProfileUuid && profile?.uuid === refusedProfileUuid) setProfile(undefined);
-    }, [refusedProfileUuid, profile]);
+        if (!refusedProfileUuid || profile?.uuid !== refusedProfileUuid) return;
+        setProfile(undefined);
+        // A new file read first against the refused profile has no entries to keep, so it is read again without it.
+        if (!inspection) inspect(file, undefined);
+    }, [refusedProfileUuid, profile, inspection, file, inspect]);
 
     useEffect(() => {
         if (!profile) return;

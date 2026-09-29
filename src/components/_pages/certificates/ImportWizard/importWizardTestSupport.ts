@@ -17,10 +17,12 @@ import type {
 import { nth, type SchemaAnswer } from '../../test-utils/testAnswers';
 
 /**
- * An inspection answer; one that names a passphrase or a token profile answers only a request sent with it. A failure
+ * An inspection answer; one that names a file, a passphrase or a token profile answers only a request sent with it. A failure
  * carries Core's HTTP `status`, if it had one.
  */
 export type InspectAnswer = Readonly<{
+    /** The file's content, base64-encoded. */
+    file?: string;
     passphrase?: string;
     tokenProfileUuid?: string;
     inspection?: InspectionResponseDto;
@@ -71,9 +73,10 @@ export function importWizardTestMiddleware({
     let attributeListingsAnswered = 0;
     let importsAnswered = 0;
 
-    const inspect = (request: { passphrase?: string; tokenProfileUuid?: string }) => {
+    const inspect = (request: { file: string; passphrase?: string; tokenProfileUuid?: string }) => {
         const answer = inspectAnswers.find(
             (candidate) =>
+                (candidate.file === undefined || candidate.file === request.file) &&
                 (candidate.passphrase === undefined || candidate.passphrase === request.passphrase) &&
                 (candidate.tokenProfileUuid === undefined || candidate.tokenProfileUuid === request.tokenProfileUuid),
         );

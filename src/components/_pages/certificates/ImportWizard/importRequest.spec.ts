@@ -81,9 +81,6 @@ describe('importRequest', () => {
             ecKey,
         ]);
     });
-    test('lists no keys without the key import permission', () => {
-        expect(supportedKeys([keyPair, certificate, ecKey], false)).toEqual([]);
-    });
     test('tells the entries that carry a certificate', () => {
         expect([keyPair, certificate, ecKey, request].map(hasCertificate)).toEqual([true, true, false, false]);
     });

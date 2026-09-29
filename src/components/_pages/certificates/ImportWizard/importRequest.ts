@@ -59,9 +59,9 @@ export function isSelectable(entry: InspectedEntryDto, mayImportKeys = true): bo
     return !unselectableReason(entry, mayImportKeys);
 }
 
-/** The key entries the platform can import and the user may, including those the chosen token profile refused. */
-export function supportedKeys(entries: InspectedEntryDto[], mayImportKeys = true): InspectedEntryDto[] {
-    return mayImportKeys ? entries.filter((entry) => keyRequestTypeOf(entry) && isSupported(entry)) : [];
+/** The key entries the platform can import, including those the chosen token profile refused. */
+export function supportedKeys(entries: InspectedEntryDto[]): InspectedEntryDto[] {
+    return entries.filter((entry) => keyRequestTypeOf(entry) && isSupported(entry));
 }
 
 // Core writes a DN unescaped, its RDNs joined by ", " and a multi-valued RDN's parts by "+", so a new part starts only

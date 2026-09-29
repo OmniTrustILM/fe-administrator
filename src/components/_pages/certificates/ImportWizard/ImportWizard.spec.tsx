@@ -22,6 +22,8 @@ import {
 
 const FILE = Buffer.from('3082097a020103308209400609', 'hex');
 const FILE_BASE64 = FILE.toString('base64');
+const OTHER_FILE = Buffer.from('3082097a020103308209400611', 'hex');
+const OTHER_FILE_BASE64 = OTHER_FILE.toString('base64');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const keyPair: InspectedEntryDto = {
@@ -151,12 +153,8 @@ const importRequests = (actions: UnknownAction[]) =>
 const profileListings = (actions: UnknownAction[]) =>
     actions.filter(tokenProfileActions.listImportableTokenProfiles.match).map((action) => action.payload);
 
-async function chooseFile(page: Page) {
-    await page.locator('#importWizard__fileUpload__file').setInputFiles({
-        name: 'webserver-bundle.p12',
-        mimeType: 'application/x-pkcs12',
-        buffer: FILE,
-    });
+async function chooseFile(page: Page, buffer = FILE, name = 'webserver-bundle.p12') {
+    await page.locator('#importWizard__fileUpload__file').setInputFiles({ name, mimeType: 'application/x-pkcs12', buffer });
 }
 
 /** A text field stays read-only until it is focused, so it is clicked before it is filled. */
@@ -749,6 +747,37 @@ test.describe('ImportWizard', () => {
             ]);
         });
     }
+
+    test('reads a new file again without the profile Core refused it against, so its entries show', async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        const refusal = 'Failed to read the uploaded file (403): Access denied to the token profile';
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[
+                    { file: OTHER_FILE_BASE64, tokenProfileUuid: profile.uuid, error: refusal, status: 403 },
+                    { file: OTHER_FILE_BASE64, inspection: inspection([keyPair]) },
+                    { tokenProfileUuid: profile.uuid, inspection: inspection([{ ...keyPair, importable: true }]) },
+                    { inspection: inspection([keyPair]) },
+                ]}
+                importableTokenProfiles={[profile, hsmProfile]}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+        await chooseFile(page);
+        await chooseProfile(page);
+        await expect.poll(() => inspectRequests(actions)).toHaveLength(2);
+
+        await chooseFile(page, OTHER_FILE, 'other-bundle.p12');
+
+        await expect(page.getByRole('checkbox', { name: 'web-server-01' })).toBeVisible();
+        await expect(page.getByTestId('select-importTokenProfile-trigger')).toHaveText('Select token profile');
+        expect(inspectRequests(actions)).toEqual([
+            { file: FILE_BASE64 },
+            { file: FILE_BASE64, tokenProfileUuid: profile.uuid },
+            { file: OTHER_FILE_BASE64, tokenProfileUuid: profile.uuid },
+            { file: OTHER_FILE_BASE64 },
+        ]);
+    });
 
     test('keeps the chosen profile when the file cannot be read with the password given', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
