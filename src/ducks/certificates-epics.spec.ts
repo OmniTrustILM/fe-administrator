@@ -1095,14 +1095,12 @@ describe('certificates epics', () => {
     });
 
     describe('updateRaProfile', () => {
-        test('re-reads the certificate after the switch, since core replaces its identify values and metadata', async () => {
+        const runUpdateRaProfile = (getRaProfile: () => Observable<unknown>) => {
             const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
             const deps = {
                 apiClients: {
                     certificates: { updateCertificateObjects: () => of(undefined) },
-                    raProfiles: {
-                        getRaProfile: () => of({ uuid: 'ra-2', name: 'RA Two', enabled: true, authorityInstanceUuid: 'auth-2' }),
-                    },
+                    raProfiles: { getRaProfile },
                 },
             };
             const action = certificatesActions.updateRaProfile({
@@ -1110,9 +1108,12 @@ describe('certificates epics', () => {
                 updateRaProfileRequest: { raProfileUuid: 'ra-2', attributes: [] },
                 authorityUuid: 'auth-2',
             });
+            return firstValueFrom(epics[UPDATE_RA_PROFILE_EPIC_INDEX](of(action), of({}) as any, deps as any).pipe(toArray()));
+        };
 
-            const emitted = await firstValueFrom(
-                epics[UPDATE_RA_PROFILE_EPIC_INDEX](of(action), of({}) as any, deps as any).pipe(toArray()),
+        test('re-reads the certificate after the switch, since core replaces its identify values and metadata', async () => {
+            const emitted = await runUpdateRaProfile(() =>
+                of({ uuid: 'ra-2', name: 'RA Two', enabled: true, authorityInstanceUuid: 'auth-2' }),
             );
 
             expect(emitted.map((a) => a.type)).toEqual([
@@ -1121,6 +1122,16 @@ describe('certificates epics', () => {
                 certificatesActions.getCertificateDetail.type,
             ]);
             expect(emitted[2]).toEqual(certificatesActions.getCertificateDetail({ uuid: 'cert-1' }));
+        });
+
+        test('still re-reads the certificate when the profile lookup fails, since the switch itself went through', async () => {
+            const emitted = await runUpdateRaProfile(() => throwError(() => new Error('lookup failed')));
+
+            expect(emitted.map((a) => a.type)).toEqual([
+                certificatesActions.updateRaProfileFailure.type,
+                appRedirectActions.fetchError.type,
+                certificatesActions.getCertificateDetail.type,
+            ]);
         });
     });
 

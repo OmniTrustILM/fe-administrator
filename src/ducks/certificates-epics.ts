@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { EMPTY, merge, of, race, timer } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile, tap, timeout } from 'rxjs/operators';
+import { catchError, endWith, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile, tap, timeout } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { actions as alertActions } from './alerts';
@@ -708,7 +708,6 @@ const updateRaProfile: AppEpic = (action$, state, deps) => {
                                             raProfile: transformRaProfileResponseDtoToModel(raProfile),
                                         }),
                                         slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
-                                        slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
                                     ),
                                 ),
 
@@ -718,6 +717,8 @@ const updateRaProfile: AppEpic = (action$, state, deps) => {
                                         appRedirectActions.fetchError({ error: err, message: 'Failed to update RA profile' }),
                                     ),
                                 ),
+                                // The switch has already gone through, so the certificate is re-read even when the lookup fails.
+                                endWith(slice.actions.getCertificateDetail({ uuid: action.payload.uuid })),
                             ),
                     ),
 
