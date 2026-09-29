@@ -13,8 +13,13 @@ const SECRET_CONTENT_TYPES = new Set<unknown>([AttributeContentType.Secret, Attr
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && Object.getPrototypeOf(value) === Object.prototype;
 
+// A certificate upload sends the file it read as a string, which a certificate object in a response is not.
+const isUploadedFile = (object: Record<string, unknown>, key: string) => key === 'certificate' && typeof object.certificate === 'string';
+
 const isSecret = (object: Record<string, unknown>, key: string) =>
-    SECRET_FIELDS.has(key) || (key === 'content' && SECRET_CONTENT_TYPES.has(object.contentType) && Array.isArray(object.content));
+    SECRET_FIELDS.has(key) ||
+    isUploadedFile(object, key) ||
+    (key === 'content' && SECRET_CONTENT_TYPES.has(object.contentType) && Array.isArray(object.content));
 
 function mask(value: unknown): unknown {
     if (value instanceof AjaxError) return { ...value, request: { ...value.request, body: MASKED } };
@@ -24,9 +29,9 @@ function mask(value: unknown): unknown {
 }
 
 /**
- * An action as Redux DevTools shows it. Wherever they are in its payload, passphrases, files and a secret's content are
- * masked, and so is the content of a secret or a file attribute, such as a provider PIN or key material, whose other
- * fields are kept. The request body of an error is masked too, since it carries them.
+ * An action as Redux DevTools shows it. Wherever they are in its payload, passphrases, files, an uploaded certificate's
+ * content and a secret's content are masked, and so is the content of a secret or a file attribute, such as a provider
+ * PIN or key material, whose other fields are kept. The request body of an error is masked too, since it carries them.
  */
 export function sanitizeAction<A extends Action>(action: A): A {
     return 'payload' in action ? { ...action, payload: mask(action.payload) } : action;

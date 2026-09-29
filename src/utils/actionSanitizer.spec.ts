@@ -126,6 +126,14 @@ describe('sanitizeAction', () => {
         });
     });
 
+    test("masks an uploaded certificate's file content, and keeps a certificate object as it is", () => {
+        const upload = { type: 'utilsCertificate/parseCertificate', payload: { certificate: 'MIIB', parseType: 'basic' } };
+        const detail = { type: 'certificates/getCertificateDetailSuccess', payload: { certificate: { uuid: 'uuid', commonName: 'cn' } } };
+
+        expect(sanitizeAction(upload)).toEqual({ ...upload, payload: { certificate: MASKED, parseType: 'basic' } });
+        expect(sanitizeAction(detail)).toEqual(detail);
+    });
+
     test('masks the request body of an error, and keeps the rest of it', () => {
         const request = { url: '/api/v1/keys/key-1/items/item-1/export', method: 'POST', body: { passphrase: 'correct horse battery' } };
         const error = new AjaxError('ajax error 422', { status: 422, response: ['refused'] } as never, request as never);
