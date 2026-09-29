@@ -5,6 +5,7 @@ import { actions as certificatesActions, selectors as certificatesSelectors } fr
 import { actions as userInterfaceActions } from 'ducks/user-interface';
 import type { RequestAttribute } from 'types/openapi';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
+import { keystorePassphraseProblem } from 'utils/passphrase';
 
 export const KEYSTORE_FORMAT_OPTION = {
     value: 'pkcs12',
@@ -62,6 +63,7 @@ export default function KeystoreDownloadDialog({ certificateUuid, certificateNam
             keyUuid={keyUuid}
             keyItemUuid={privateKeyItemUuid}
             info={KEYSTORE_INFO}
+            passphraseProblem={keystorePassphraseProblem}
             submitLabel="Download"
             busyLabel="Downloading..."
             busy={isDownloadingKeystore}

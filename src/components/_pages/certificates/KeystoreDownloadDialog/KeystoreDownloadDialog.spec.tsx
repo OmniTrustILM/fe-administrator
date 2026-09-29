@@ -54,6 +54,20 @@ test.describe('KeystoreDownloadDialog', () => {
         expect(downloadRequests(actions)).toHaveLength(0);
     });
 
+    test('refuses a passphrase outside printable ASCII with a field error', async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        await mount(<KeystoreDownloadDialogWithStore onAction={(action) => actions.push(action)} />);
+
+        await enterText(page.getByTestId('text-input-passphrase'), 'correct horse caf\u00e9');
+        await enterText(page.getByTestId('text-input-passphraseConfirmation'), 'correct horse caf\u00e9');
+        await page.getByRole('button', { name: 'Download' }).click();
+
+        await expect(
+            page.getByText('Use printable ASCII characters only, so every tool, including Java keytool, can open the file'),
+        ).toBeVisible();
+        expect(downloadRequests(actions)).toHaveLength(0);
+    });
+
     test('stays open and busy while the download runs, and closes once it succeeds', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         let closed = 0;

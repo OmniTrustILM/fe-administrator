@@ -21,6 +21,8 @@ type Props = Readonly<{
     keyUuid: string;
     keyItemUuid: string;
     info: ReactNode;
+    /** What is wrong with a passphrase, if anything; the general passphrase rule unless it is given. */
+    passphraseProblem?: (value: string) => string | undefined;
     submitLabel: string;
     busyLabel: string;
     busy: boolean;
@@ -36,6 +38,7 @@ export default function ExportPassphraseForm({
     keyUuid,
     keyItemUuid,
     info,
+    passphraseProblem,
     submitLabel,
     busyLabel,
     busy,
@@ -91,7 +94,7 @@ export default function ExportPassphraseForm({
     return (
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(submit)} className="space-y-4">
-                <PassphraseFields />
+                <PassphraseFields problem={passphraseProblem} />
                 {schema?.status === 'failed' && <RetryCallout message={schema.error} onRetry={listSchema} />}
                 {exportAttributeDescriptors.length > 0 && (
                     <AttributeEditor id={ATTRIBUTES_ID} attributeDescriptors={exportAttributeDescriptors} />

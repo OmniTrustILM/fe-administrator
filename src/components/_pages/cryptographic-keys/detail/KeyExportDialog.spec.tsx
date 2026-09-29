@@ -84,6 +84,19 @@ test.describe('KeyExportDialog', () => {
         expect(exportRequests(actions)).toHaveLength(0);
     });
 
+    test('accepts a passphrase outside printable ASCII, which a PKCS8 file can use', async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        await mount(<KeyExportDialogWithStore onAction={(action) => actions.push(action)} />);
+
+        await enterText(page.getByTestId('text-input-passphrase'), 'correct horse caf\u00e9');
+        await enterText(page.getByTestId('text-input-passphraseConfirmation'), 'correct horse caf\u00e9');
+        await page.getByRole('button', { name: 'Export' }).click();
+
+        await expect
+            .poll(() => exportRequests(actions).map((request) => request.keyExportRequestDto.passphrase))
+            .toEqual(['correct horse caf\u00e9']);
+    });
+
     test('stays open and busy while the export runs, and closes once it succeeds', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         let closed = 0;
