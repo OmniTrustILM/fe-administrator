@@ -348,8 +348,17 @@ function stripEmptyResourceContent(
     return content;
 }
 
-const isEmptyAttributeContentItem = (item: FormAttributeContentItem): boolean =>
-    item.data === undefined || item.data === null || item.data === '';
+const isBlankValue = (value: unknown): boolean => value === undefined || value === null || value === '';
+
+// Secret and Codeblock content wrap the entered value in an object, so a blank one is never a blank `data`.
+const isEmptyAttributeContentItem = (item: FormAttributeContentItem): boolean => {
+    if (isBlankValue(item.data)) return true;
+    if (typeof item.data !== 'object') return false;
+    const data = item.data as { secret?: unknown; code?: unknown };
+    if ('secret' in data) return isBlankValue(data.secret);
+    if ('code' in data) return isBlankValue(data.code);
+    return false;
+};
 
 function shouldSkipAttribute(
     attribute: string,

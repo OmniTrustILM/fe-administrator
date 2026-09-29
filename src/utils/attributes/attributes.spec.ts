@@ -629,6 +629,69 @@ describe('attributes utils', () => {
             expect(result).toEqual([]);
         });
 
+        test('omits a blank secret attribute and keeps an entered one', () => {
+            // given
+            const descriptors = [
+                {
+                    type: AttributeType.Data,
+                    name: 'pin',
+                    uuid: 'u-pin',
+                    contentType: AttributeContentType.Secret,
+                    content: [],
+                    properties: { required: false, label: 'PIN', readOnly: false, visible: true, list: false },
+                },
+            ] as any[];
+
+            // when
+            const blank = collectFormAttributes('id1', descriptors, { __attributes__id1__: { pin: '' } }, undefined, {
+                omitEmptyContent: true,
+            });
+            const entered = collectFormAttributes('id1', descriptors, { __attributes__id1__: { pin: '1234' } }, undefined, {
+                omitEmptyContent: true,
+            });
+
+            // then
+            expect(blank).toEqual([]);
+            expect(entered[0].content).toEqual([{ data: { secret: '1234' } }]);
+        });
+
+        test('omits a blank codeblock attribute and keeps an entered one', () => {
+            // given
+            const language = ProgrammingLanguageEnum.Javascript;
+            const descriptors = [
+                {
+                    type: AttributeType.Data,
+                    name: 'script',
+                    uuid: 'u-script',
+                    contentType: AttributeContentType.Codeblock,
+                    content: [],
+                    properties: { required: false, label: 'Script', readOnly: false, visible: true, list: false },
+                },
+            ] as any[];
+
+            // when
+            const blank = collectFormAttributes(
+                'id1',
+                descriptors,
+                { __attributes__id1__: { script: { code: '', language } } },
+                undefined,
+                {
+                    omitEmptyContent: true,
+                },
+            );
+            const entered = collectFormAttributes(
+                'id1',
+                descriptors,
+                { __attributes__id1__: { script: { code: 'return 1;', language } } },
+                undefined,
+                { omitEmptyContent: true },
+            );
+
+            // then
+            expect(blank).toEqual([]);
+            expect(entered[0].content).toEqual([{ data: { code: btoa('return 1;'), language } }]);
+        });
+
         test('processes Custom attribute descriptors', () => {
             const descriptors = [
                 {
