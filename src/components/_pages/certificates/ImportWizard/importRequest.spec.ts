@@ -112,35 +112,10 @@ describe('importRequest', () => {
     ])("reads the common name of %s, as Core writes a DN, as '%s'", (subjectDn, name) => {
         expect(defaultKeyName({ entryReference: 'e'.repeat(64), kind: InspectedEntryKind.Certificate, subjectDn })).toBe(name);
     });
-    test("keeps an entry's importId while its terms are unchanged, and gives it a new one once they change", () => {
-        const importIds: Record<string, string> = {};
-        const importIdFor = (terms: string) => {
-            importIds[terms] ??= crypto.randomUUID();
-            return importIds[terms];
-        };
-        const destination = { tokenProfileUuid: 'tp', exportable: false, keyNames: { [keyPair.entryReference]: 'web-01' } };
-        const input = { file: 'ZmlsZQ==', selected: [keyPair, certificate], importIdFor, destination };
-        const importIdsOf = (request: ReturnType<typeof buildImportRequest>) => request.entries.map((entry) => entry.importId);
-
-        const first = importIdsOf(buildImportRequest(input));
-        const retry = importIdsOf(buildImportRequest(input));
-        const renamed = importIdsOf(
-            buildImportRequest({ ...input, destination: { ...destination, keyNames: { [keyPair.entryReference]: 'web-02' } } }),
-        );
-        const withCustomAttributes = importIdsOf(buildImportRequest({ ...input, customAttributes: [{ name: 'department' } as never] }));
-
-        expect(retry).toEqual(first);
-        expect(renamed[0]).not.toBe(first[0]);
-        expect(renamed[1]).toBe(first[1]);
-        expect(withCustomAttributes[0]).not.toBe(first[0]);
-        expect(withCustomAttributes[1]).not.toBe(first[1]);
-        expect(new Set([...first, ...renamed, ...withCustomAttributes]).size).toBe(5);
-    });
     test('gives only key entries a destination, not exportable by default, and sends an empty name as absent', () => {
         const request = buildImportRequest({
             file: 'ZmlsZQ==',
             selected: [keyPair, certificate],
-            importIdFor: () => crypto.randomUUID(),
             destination: { tokenProfileUuid: 'tp', exportable: false, keyNames: { [keyPair.entryReference]: '' } },
         });
         expect(request.entries[0].keyDestination).toEqual({

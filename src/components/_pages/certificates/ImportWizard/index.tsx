@@ -151,8 +151,6 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
     const [pending, setPending] = useState(false);
     const [submission, setSubmission] = useState<Submission>();
     const [results, setResults] = useState<CertificateImportResultDto[]>();
-    // Each importId by the terms it was given for, so that an entry sent again with other terms gets a new one.
-    const importIds = useRef<Record<string, string>>({});
     const inspectedDigest = useRef<string | undefined>(undefined);
 
     const { refusedProfileUuid, profileRefusal, inspected } = inspectionOutcome({
@@ -347,10 +345,6 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
 
     const send = useCallback(
         (sent: Submission, entriesToImport: InspectedEntryDto[], filePassphrase: string) => {
-            const importIdFor = (terms: string) => {
-                importIds.current[terms] ??= crypto.randomUUID();
-                return importIds.current[terms];
-            };
             setPending(true);
             dispatch(
                 certificatesActions.importCertificates({
@@ -358,7 +352,6 @@ export default function ImportWizard({ presetTokenProfileUuid, showCertificateCu
                         file,
                         passphrase: filePassphrase,
                         selected: entriesToImport,
-                        importIdFor,
                         destination: sent.destination,
                         customAttributes: sent.customAttributes,
                     }),

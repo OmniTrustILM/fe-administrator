@@ -106,11 +106,6 @@ export type ImportRequestInput = {
     file: string;
     passphrase?: string;
     selected: InspectedEntryDto[];
-    /**
-     * The importId for an entry's terms, as Core's import digest reads them: the entry, where its key goes and the
-     * custom attributes its certificates get. The same terms keep their importId; Core refuses one again with others.
-     */
-    importIdFor: (terms: string) => string;
     destination?: ImportDestination;
     customAttributes?: RequestAttribute[];
 };
@@ -132,8 +127,7 @@ export function buildImportRequest(input: ImportRequestInput): CertificateImport
                           customAttributes: destination.customAttributes,
                       }
                     : undefined;
-            const terms = JSON.stringify([entry.entryReference, keyDestination, customAttributes]);
-            return { entryReference: entry.entryReference, importId: input.importIdFor(terms), keyDestination };
+            return { entryReference: entry.entryReference, keyDestination };
         }),
     };
 }

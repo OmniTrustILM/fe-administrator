@@ -1011,7 +1011,7 @@ describe('certificates epics', () => {
     describe('importCertificates', () => {
         const certificateImportRequestDto = {
             file: 'ZmlsZQ==',
-            entries: [{ entryReference: 'a'.repeat(64), importId: 'import-1' }],
+            entries: [{ entryReference: 'a'.repeat(64) }],
         };
         const importAction = certificatesActions.importCertificates({ certificateImportRequestDto } as any);
 

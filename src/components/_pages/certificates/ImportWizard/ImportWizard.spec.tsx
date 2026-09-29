@@ -10,6 +10,7 @@ import type { CustomAttributeModel } from 'types/attributes';
 import {
     AttributeContentType,
     AttributeType,
+    ImportOutcome,
     InspectedEntryKind,
     KeyAlgorithm,
     Resource,
@@ -25,7 +26,6 @@ const FILE = Buffer.from('3082097a020103308209400609', 'hex');
 const FILE_BASE64 = FILE.toString('base64');
 const OTHER_FILE = Buffer.from('3082097a020103308209400611', 'hex');
 const OTHER_FILE_BASE64 = OTHER_FILE.toString('base64');
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const keyPair: InspectedEntryDto = {
     entryReference: '61f5ee3d2ea6f8961482a666a63e71c6afe96a541d65325cadb70b44bbb05979',
@@ -146,6 +146,25 @@ const importedCertificate: CertificateImportResultDto = {
     imported: true,
     certificateUuid: 'ddae8243-3d2d-4721-900e-408064fc2d97',
 };
+const adoptedKeyPair: CertificateImportResultDto = {
+    ...importedKeyPair,
+    certificateOutcome: ImportOutcome.Existing,
+    keyOutcome: ImportOutcome.Adopted,
+};
+const createdEcKey: CertificateImportResultDto = {
+    entryReference: ecPrivateKey.entryReference,
+    kind: ecPrivateKey.kind,
+    imported: true,
+    keyOutcome: ImportOutcome.Created,
+    keyUuid: '6b8d0f2a-4c6e-4a8b-9d1f-3e5a7c9b1d4f',
+};
+// Core returns no UUID for an object the caller may not see in detail.
+const existingCertificate: CertificateImportResultDto = {
+    entryReference: certificate.entryReference,
+    kind: certificate.kind,
+    imported: true,
+    certificateOutcome: ImportOutcome.Existing,
+};
 
 const inspectRequests = (actions: UnknownAction[]) =>
     actions.filter(inspectionActions.inspectFile.match).map((action) => action.payload.inspectionRequestDto);
@@ -170,6 +189,7 @@ async function chooseProfile(page: Page, option = PROFILE_OPTION) {
 }
 
 const resultRow = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title });
+const resultBadge = (page: Page, title: string) => resultRow(page, title).getByTestId('badge');
 
 test.describe('ImportWizard', () => {
     test('imports a certificate-only file', async ({ mount, page }) => {
@@ -199,7 +219,8 @@ test.describe('ImportWizard', () => {
         await expect.poll(() => importRequests(actions)).toHaveLength(1);
         const [request] = importRequests(actions);
         expect(request.file).toBe(FILE_BASE64);
-        expect(request.entries).toEqual([{ entryReference: certificate.entryReference, importId: expect.stringMatching(UUID) }]);
+        expect(request.entries).toEqual([{ entryReference: certificate.entryReference }]);
+        expect(request.entries[0]).not.toHaveProperty('importId');
         expect(request.entries[0].keyDestination).toBeUndefined();
         expect(request.customAttributes).toEqual([
             expect.objectContaining({ name: 'department', content: [expect.objectContaining({ data: 'Platform' })] }),
@@ -418,7 +439,6 @@ test.describe('ImportWizard', () => {
         expect(importRequests(actions)[0].entries).toEqual([
             {
                 entryReference: keyPair.entryReference,
-                importId: expect.stringMatching(UUID),
                 keyDestination: {
                     tokenProfileUuid: profile.uuid,
                     keyName: 'web-server-2026',
@@ -943,9 +963,7 @@ test.describe('ImportWizard', () => {
         await page.getByRole('button', { name: 'Import 1 entry' }).click();
 
         await expect.poll(() => importRequests(actions)).toHaveLength(1);
-        expect(importRequests(actions)[0].entries).toEqual([
-            { entryReference: certificate.entryReference, importId: expect.stringMatching(UUID) },
-        ]);
+        expect(importRequests(actions)[0].entries).toEqual([{ entryReference: certificate.entryReference }]);
         expect(profileListings(actions)).toEqual([]);
     });
 
@@ -1036,7 +1054,6 @@ test.describe('ImportWizard', () => {
         await expect.poll(() => importRequests(actions)).toHaveLength(2);
         const [first, retry] = importRequests(actions);
         const firstKeyEntry = first.entries.find((entry) => entry.entryReference === keyPair.entryReference);
-        expect(firstKeyEntry?.importId).toMatch(UUID);
         expect(firstKeyEntry?.keyDestination?.customAttributes).toEqual([
             expect.objectContaining({ name: 'ownerTeam', content: [expect.objectContaining({ data: 'PKI' })] }),
         ]);
@@ -1060,7 +1077,80 @@ test.describe('ImportWizard', () => {
         await expect.poll(() => done).toEqual([[importedKeyPair, importedCertificate]]);
     });
 
-    test('retries only the entry that failed, with the importId it was first sent with', async ({ mount, page }) => {
+    test('says what became of each entry', async ({ mount, page }) => {
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[{ inspection: inspection([keyPair, ecPrivateKey, certificate]) }]}
+                importableTokenProfiles={[profile]}
+                importAnswers={[{ results: [adoptedKeyPair, createdEcKey, existingCertificate] }]}
+            />,
+        );
+
+        await chooseFile(page);
+        await chooseProfile(page);
+        await page.getByRole('button', { name: 'Import 3 entries' }).click();
+
+        await expect(resultBadge(page, 'web-server-01')).toHaveText('Private key added to an existing key');
+        await expect(resultBadge(page, 'web-server-01')).toHaveClass(/bg-success-surface/);
+        await expect(resultBadge(page, 'signing-ec')).toHaveText('Imported');
+        await expect(resultBadge(page, 'signing-ec')).toHaveClass(/bg-success-surface/);
+        await expect(resultBadge(page, 'intermediate-ca-r4')).toHaveText('Already in inventory');
+        await expect(resultBadge(page, 'intermediate-ca-r4')).toHaveClass(/bg-surface-sunken/);
+    });
+
+    test('links only the objects Core returns a UUID for', async ({ mount, page }) => {
+        const keyPairWithKeyUuidOnly: CertificateImportResultDto = {
+            entryReference: keyPair.entryReference,
+            kind: keyPair.kind,
+            imported: true,
+            certificateOutcome: ImportOutcome.Existing,
+            keyOutcome: ImportOutcome.Adopted,
+            keyUuid: KEY_UUID,
+        };
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[{ inspection: inspection([keyPair, certificate]) }]}
+                importableTokenProfiles={[profile]}
+                importAnswers={[{ results: [keyPairWithKeyUuidOnly, existingCertificate] }]}
+            />,
+        );
+
+        await chooseFile(page);
+        await chooseProfile(page);
+        await page.getByRole('button', { name: 'Import 2 entries' }).click();
+
+        const keyPairRow = resultRow(page, 'web-server-01');
+        await expect(keyPairRow.getByRole('link', { name: 'Open key' })).toHaveAttribute('href', `/keys/detail/${KEY_UUID}`);
+        await expect(keyPairRow.getByRole('link', { name: 'Open certificate' })).toHaveCount(0);
+        await expect(resultRow(page, 'intermediate-ca-r4')).toBeVisible();
+        await expect(resultRow(page, 'intermediate-ca-r4').getByRole('link')).toHaveCount(0);
+    });
+
+    test('says an entry is not imported, whatever became of its key', async ({ mount, page }) => {
+        const certificateFailedAfterKey: CertificateImportResultDto = {
+            ...failedKeyPair,
+            keyOutcome: ImportOutcome.Created,
+            keyUuid: KEY_UUID,
+            message: 'A certificate of the entry was not uploaded.',
+        };
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[{ inspection: inspection([keyPair]) }]}
+                importableTokenProfiles={[profile]}
+                importAnswers={[{ results: [certificateFailedAfterKey] }]}
+            />,
+        );
+
+        await chooseFile(page);
+        await chooseProfile(page);
+        await page.getByRole('button', { name: 'Import 1 entry' }).click();
+
+        await expect(resultBadge(page, 'web-server-01')).toHaveText('Not imported');
+        await expect(resultBadge(page, 'web-server-01')).toHaveClass(/bg-danger-surface/);
+        await expect(resultRow(page, 'web-server-01')).toContainText('A certificate of the entry was not uploaded.');
+    });
+
+    test('retries only the entry that failed', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         await mount(
             <ImportWizardWithStore
@@ -1080,9 +1170,8 @@ test.describe('ImportWizard', () => {
 
         await expect(resultRow(page, 'intermediate-ca-r4')).toContainText('Imported');
         const [first, retry] = importRequests(actions);
-        const importId = first.entries.find((entry) => entry.entryReference === certificate.entryReference)?.importId;
-        expect(importId).toMatch(UUID);
-        expect(retry.entries).toEqual([{ entryReference: certificate.entryReference, importId }]);
+        expect(first.entries.map((entry) => entry.entryReference)).toEqual([keyPair.entryReference, certificate.entryReference]);
+        expect(retry.entries).toEqual([{ entryReference: certificate.entryReference }]);
     });
 
     test('goes back from the results to the form with every value kept', async ({ mount, page }) => {
@@ -1116,7 +1205,7 @@ test.describe('ImportWizard', () => {
         await expect(page.getByRole('button', { name: 'Import 2 entries' })).toBeEnabled();
     });
 
-    test('sends a changed entry again with a new importId, and an unchanged one with its own', async ({ mount, page }) => {
+    test('sends what the form holds after going back to edit', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         await mount(
             <ImportWizardWithStore
@@ -1135,13 +1224,15 @@ test.describe('ImportWizard', () => {
         await page.getByRole('button', { name: 'Import 2 entries' }).click();
 
         await expect(resultRow(page, 'web-server-01')).toContainText('Imported');
-        const [first, second] = importRequests(actions).map((request) =>
-            Object.fromEntries(request.entries.map((entry) => [entry.entryReference, entry])),
-        );
-        expect(second[keyPair.entryReference].keyDestination?.keyName).toBe('web-server-2026');
-        expect(second[keyPair.entryReference].importId).toMatch(UUID);
-        expect(second[keyPair.entryReference].importId).not.toBe(first[keyPair.entryReference].importId);
-        expect(second[certificate.entryReference].importId).toBe(first[certificate.entryReference].importId);
+        const [first, second] = importRequests(actions);
+        expect(first.entries[0].keyDestination?.keyName).toBe('web-server-01');
+        expect(second.entries).toEqual([
+            {
+                entryReference: keyPair.entryReference,
+                keyDestination: expect.objectContaining({ tokenProfileUuid: profile.uuid, keyName: 'web-server-2026' }),
+            },
+            { entryReference: certificate.entryReference },
+        ]);
     });
 
     test('asks for the key custom attributes and sends them with each key entry', async ({ mount, page }) => {

@@ -1,14 +1,32 @@
-import Badge from 'components/Badge';
+import Badge, { type BadgeColor } from 'components/Badge';
 import Button from 'components/Button';
 import Container from 'components/Container';
 import ProgressButton from 'components/ProgressButton';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { Resource, type CertificateImportResultDto, type InspectedEntryDto } from 'types/openapi';
+import { ImportOutcome, Resource, type CertificateImportResultDto, type InspectedEntryDto } from 'types/openapi';
 import { entryTitle, kindLabel } from './importRequest';
 import WizardSection from './WizardSection';
 
 const LINK_CLASS = 'font-medium text-brand hover:text-brand-hover';
+
+type ResultBadge = { label: string; color: BadgeColor };
+
+const IMPORTED: ResultBadge = { label: 'Imported', color: 'success' };
+const NOT_IMPORTED: ResultBadge = { label: 'Not imported', color: 'danger' };
+// An object already in the inventory is left as it was, so it is not badged as a success.
+const OUTCOME_BADGES: Record<ImportOutcome, ResultBadge> = {
+    [ImportOutcome.Created]: IMPORTED,
+    [ImportOutcome.Existing]: { label: 'Already in inventory', color: 'secondary' },
+    [ImportOutcome.Adopted]: { label: 'Private key added to an existing key', color: 'success' },
+};
+
+/** What became of the entry. A key entry's certificates follow its key, so the key's outcome is the entry's. */
+function badgeOf(result: CertificateImportResultDto): ResultBadge {
+    if (!result.imported) return NOT_IMPORTED;
+    const outcome = result.keyOutcome ?? result.certificateOutcome;
+    return outcome ? OUTCOME_BADGES[outcome] : IMPORTED;
+}
 
 type Props = Readonly<{
     entries: InspectedEntryDto[];
@@ -32,11 +50,10 @@ export default function ImportResults({ entries, results, isImporting, retryDisa
                 <ul className="space-y-2">
                     {results.map((result) => {
                         const entry = entries.find((each) => each.entryReference === result.entryReference);
+                        const badge = badgeOf(result);
                         return (
                             <li key={result.entryReference} className="flex items-start gap-3 rounded-lg border border-outline px-4 py-3">
-                                <Badge color={result.imported ? 'success' : 'danger'}>
-                                    {result.imported ? 'Imported' : 'Not imported'}
-                                </Badge>
+                                <Badge color={badge.color}>{badge.label}</Badge>
                                 <div className="min-w-0 space-y-1 text-sm">
                                     <p className="font-medium text-content">{entry ? entryTitle(entry) : kindLabel(result.kind)}</p>
                                     {result.imported ? (
