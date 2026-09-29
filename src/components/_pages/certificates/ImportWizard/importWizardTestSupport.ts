@@ -37,8 +37,11 @@ export type ListingAnswer = Readonly<{ tokenProfiles?: TokenProfileDto[]; error?
 /** How one `getTokenProfileDetail` is answered: with the profile and its `keyTransfer`, left in flight, or refused. */
 export type TokenProfileDetailAnswer = 'loaded' | 'pending' | 'failure';
 
-/** The answer to one import request, taken in the order the requests are sent; a `pending` one leaves it in flight. */
-export type ImportAnswer = Readonly<{ results?: CertificateImportResultDto[]; error?: string; pending?: boolean }>;
+/**
+ * The answer to one import request, taken in the order the requests are sent: its `results`, or a refusal with `error`,
+ * given after `delay` milliseconds when it is set. A `pending` one leaves it in flight.
+ */
+export type ImportAnswer = Readonly<{ results?: CertificateImportResultDto[]; error?: string; pending?: boolean; delay?: number }>;
 
 export type ImportWizardAnswers = Readonly<{
     inspectAnswers: InspectAnswer[];
@@ -157,13 +160,17 @@ export function importWizardTestMiddleware(
     const importEntries = (api: MiddlewareAPI) => {
         const answer = nth(importAnswers, importsAnswered++);
         if (answer?.pending) return;
-        if (answer?.results) {
-            api.dispatch(certificateActions.importCertificatesSuccess({ results: answer.results }));
-            return;
-        }
-        const error = answer?.error ?? 'Failed to import certificates and keys';
-        api.dispatch(certificateActions.importCertificatesFailure({ error }));
-        api.dispatch(appRedirectActions.fetchError({ error: undefined, message: error }));
+        const respond = () => {
+            if (answer?.results) {
+                api.dispatch(certificateActions.importCertificatesSuccess({ results: answer.results }));
+                return;
+            }
+            const error = answer?.error ?? 'Failed to import certificates and keys';
+            api.dispatch(certificateActions.importCertificatesFailure({ error }));
+            api.dispatch(appRedirectActions.fetchError({ error: undefined, message: error }));
+        };
+        if (answer?.delay) setTimeout(respond, answer.delay);
+        else respond();
     };
 
     return (api) => (next) => (action) => {

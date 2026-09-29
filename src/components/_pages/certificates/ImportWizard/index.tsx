@@ -61,8 +61,9 @@ type FormValues = KeyDestinationValues & FilePasswordValues & { inspectedPassphr
 
 const DEFAULT_VALUES: FormValues = { passphrase: '', inspectedPassphrase: '', exportable: false, keyNames: {} };
 
-/** What was sent, so a retry sends the failed entries to the same destination. */
+/** What was sent, so a retry sends the failed entries of the same file to the same destination. */
 type Submission = {
+    file: string;
     entries: InspectedEntryDto[];
     destination?: ImportDestination;
     customAttributes?: RequestAttribute[];
@@ -372,7 +373,7 @@ export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone 
             dispatch(
                 certificatesActions.importCertificates({
                     certificateImportRequestDto: buildImportRequest({
-                        file,
+                        file: sent.file,
                         passphrase: filePassphrase,
                         selected: entriesToImport,
                         destination: sent.destination,
@@ -381,7 +382,7 @@ export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone 
                 }),
             );
         },
-        [dispatch, file],
+        [dispatch],
     );
 
     const onSubmit = useCallback(
@@ -401,6 +402,7 @@ export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone 
                       }
                     : undefined;
             const sent: Submission = {
+                file,
                 entries: selectedEntries,
                 destination,
                 customAttributes: withCustomAttributes
@@ -411,6 +413,7 @@ export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone 
             send(sent, selectedEntries, values.passphrase);
         },
         [
+            file,
             selectedEntries,
             selectedKeys,
             profile,

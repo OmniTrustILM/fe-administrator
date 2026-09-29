@@ -1197,6 +1197,28 @@ test.describe('ImportWizard', () => {
         expect((await boxOf(resultBadge(page, 'web-server-01'))).x).toBeGreaterThan(keyPairTitle.x + keyPairTitle.width);
     });
 
+    test('retries with the file the failed entries were read from, even when another file is chosen while importing', async ({
+        mount,
+        page,
+    }) => {
+        const actions: UnknownAction[] = [];
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[{ inspection: inspection([certificate]) }, { inspection: inspection([signingRequest]) }]}
+                importAnswers={[{ results: [failedCertificate], delay: 500 }, { results: [importedCertificate] }]}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+
+        await chooseFile(page);
+        await page.getByRole('button', { name: 'Import 1 entry' }).click();
+        await chooseFile(page, OTHER_FILE, 'other.pem');
+        await page.getByRole('button', { name: 'Retry failed entries' }).click();
+
+        await expect.poll(() => importRequests(actions)).toHaveLength(2);
+        expect(importRequests(actions).map((request) => request.file)).toEqual([FILE_BASE64, FILE_BASE64]);
+    });
+
     test('moves focus from the form to the results heading once the results replace it', async ({ mount, page }) => {
         await mount(
             <ImportWizardWithStore
