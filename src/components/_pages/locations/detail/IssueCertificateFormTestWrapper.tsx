@@ -1,12 +1,10 @@
-import { configureStore, type Middleware } from '@reduxjs/toolkit';
+import type { UnknownAction } from '@reduxjs/toolkit';
 import { useMemo, useState } from 'react';
-import { Provider } from 'react-redux';
-import { MemoryRouter } from 'react-router';
 
-import { testInitialState, testReducers } from 'ducks/test-reducers';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { LocationResponseModel } from 'types/locations';
 import type { RaProfileResponseModel } from 'types/ra-profiles';
+import { createMockStore, withProviders } from 'utils/test-helpers';
 
 import { IssueCertificateForm } from './index';
 
@@ -25,38 +23,33 @@ const testRaProfiles = [{ uuid: 'ra-1', name: 'RA One', authorityInstanceUuid: '
  */
 export function IssueCertificateFormTestWrapper({ csrAttributeDescriptors, onAction }: IssueCertificateFormTestWrapperProps) {
     const store = useMemo(() => {
-        const onActionMiddleware: Middleware = () => (next) => (action) => {
-            onAction?.(action as { type: string; payload?: unknown });
-            return next(action);
-        };
-        return configureStore({
-            reducer: testReducers,
-            middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(onActionMiddleware),
-            preloadedState: testInitialState,
-        });
+        const mockStore = createMockStore();
+        const dispatch = mockStore.dispatch;
+        mockStore.dispatch = ((action: UnknownAction) => {
+            onAction?.(action);
+            return dispatch(action);
+        }) as typeof dispatch;
+        return mockStore;
     }, [onAction]);
 
     const [issueCallbackAttributes, setIssueCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
     const [csrCallbackAttributes, setCsrCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
 
-    return (
-        <Provider store={store}>
-            <MemoryRouter>
-                <IssueCertificateForm
-                    location={testLocation}
-                    issuanceAttributeDescriptors={[]}
-                    issueGroupAttributesCallbackAttributes={issueCallbackAttributes}
-                    setIssueGroupAttributesCallbackAttributes={setIssueCallbackAttributes}
-                    csrAttributeDescriptors={csrAttributeDescriptors}
-                    csrGroupAttributesCallbackAttributes={csrCallbackAttributes}
-                    setCsrGroupAttributesCallbackAttributes={setCsrCallbackAttributes}
-                    resourceCustomAttributes={[]}
-                    raProfiles={testRaProfiles}
-                    isPushingCertificate={false}
-                    setIssueDialog={() => {}}
-                />
-            </MemoryRouter>
-        </Provider>
+    return withProviders(
+        <IssueCertificateForm
+            location={testLocation}
+            issuanceAttributeDescriptors={[]}
+            issueGroupAttributesCallbackAttributes={issueCallbackAttributes}
+            setIssueGroupAttributesCallbackAttributes={setIssueCallbackAttributes}
+            csrAttributeDescriptors={csrAttributeDescriptors}
+            csrGroupAttributesCallbackAttributes={csrCallbackAttributes}
+            setCsrGroupAttributesCallbackAttributes={setCsrCallbackAttributes}
+            resourceCustomAttributes={[]}
+            raProfiles={testRaProfiles}
+            isPushingCertificate={false}
+            setIssueDialog={() => {}}
+        />,
+        { store },
     );
 }
 

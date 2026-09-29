@@ -2,6 +2,15 @@ import { test, expect } from '../../../../../playwright/ct-test';
 import { testInitialState } from 'ducks/test-reducers';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import { AttributeContentType, AttributeType } from 'types/openapi';
+import {
+    csrAttributesState,
+    type DispatchedAction,
+    existingKeyState,
+    fillCommonNameAndClearSan,
+    onlyCommonNameSubmitted,
+    selectExistingKey,
+    submittedCsrAttributes,
+} from '../../test-utils/blankRequestAttribute';
 import { CertificateFormTestWrapper } from './CertificateFormTestWrapper';
 
 const csrDataDescriptor: AttributeDescriptorModel = {
@@ -10,24 +19,6 @@ const csrDataDescriptor: AttributeDescriptorModel = {
     uuid: 'csr-data-uuid-1',
     contentType: AttributeContentType.String,
     properties: { label: 'Data Field', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
-} as AttributeDescriptorModel;
-
-const commonNameDescriptor: AttributeDescriptorModel = {
-    type: AttributeType.Data,
-    name: 'commonName',
-    uuid: 'csr-cn-uuid',
-    contentType: AttributeContentType.String,
-    properties: { label: 'Common Name', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
-} as AttributeDescriptorModel;
-
-// The form pre-fills the default content, so clearing the field is what produces an empty value.
-const sanWithDefaultDescriptor: AttributeDescriptorModel = {
-    type: AttributeType.Data,
-    name: 'SAN_DNS',
-    uuid: 'csr-san-uuid',
-    contentType: AttributeContentType.String,
-    properties: { label: 'Subject Alternative Name', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
-    content: [{ data: 'default.example.com' }],
 } as AttributeDescriptorModel;
 
 // A selectable RA Profile: raProfileOptions filters to profiles that carry an authorityInstanceUuid.
@@ -59,16 +50,6 @@ const customAttrDescriptor: AttributeDescriptorModel = {
     // required so the editor renders an editable input directly (optional custom attrs hide behind an add-control).
     properties: { label: 'Custom Field', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
 } as AttributeDescriptorModel;
-
-async function fillCommonNameAndClearSan(page: import('@playwright/test').Page) {
-    const commonNameInput = page.getByTestId('text-input-__attributes__csrAttributes__.commonName');
-    await commonNameInput.click();
-    await commonNameInput.fill('cmp-device-07');
-    const sanInput = page.getByTestId('text-input-__attributes__csrAttributes__.SAN_DNS');
-    await expect(sanInput).toHaveValue('default.example.com');
-    await sanInput.click();
-    await sanInput.fill('');
-}
 
 async function fillRegisterBasics(page: import('@playwright/test').Page) {
     await page.getByTestId('requestType-register').click();
@@ -657,77 +638,48 @@ test.describe('CertificateForm', () => {
     });
 
     test('registerCertificate payload omits a request attribute whose default was cleared', async ({ mount, page }) => {
-        const dispatched: { type: string; payload?: any }[] = [];
-
+        const dispatched: DispatchedAction[] = [];
+        const raprofiles = { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] };
         await mount(
-            <CertificateFormTestWrapper
-                onAction={(a) => dispatched.push(a)}
-                preloadedState={{
-                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
-                    certificates: {
-                        ...testInitialState.certificates,
-                        csrAttributeDescriptors: [commonNameDescriptor, sanWithDefaultDescriptor],
-                    },
-                }}
-            />,
+            <CertificateFormTestWrapper onAction={(a) => dispatched.push(a)} preloadedState={{ raprofiles, ...csrAttributesState }} />,
         );
 
         await fillRegisterBasics(page);
         await fillCommonNameAndClearSan(page);
-
         await page.getByRole('button', { name: 'Create' }).click();
 
-        await expect.poll(() => dispatched.find((a) => a.type === 'certificates/registerCertificate')).toBeTruthy();
-        const action = dispatched.find((a) => a.type === 'certificates/registerCertificate');
         // An empty SAN would become part of the registered identity, which no CSR can ever match.
-        const csrAttributes = action?.payload.registerRequest.csrAttributes as { name: string; content?: { data?: unknown }[] }[];
-        expect(csrAttributes.map((a) => a.name)).toEqual(['commonName']);
-        expect(csrAttributes[0].content?.[0]?.data).toBe('cmp-device-07');
+        const submitted = await submittedCsrAttributes(
+            dispatched,
+            'certificates/registerCertificate',
+            (p) => p.registerRequest.csrAttributes,
+        );
+        expect(submitted).toEqual(onlyCommonNameSubmitted);
     });
 
     test('issueCertificate payload omits a request attribute whose default was cleared on the existing-key path', async ({
         mount,
         page,
     }) => {
-        const dispatched: { type: string; payload?: any }[] = [];
-
+        const dispatched: DispatchedAction[] = [];
+        const raprofiles = { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] };
         await mount(
             <CertificateFormTestWrapper
                 onAction={(a) => dispatched.push(a)}
-                preloadedState={{
-                    raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
-                    certificates: {
-                        ...testInitialState.certificates,
-                        csrAttributeDescriptors: [commonNameDescriptor, sanWithDefaultDescriptor],
-                    },
-                    tokenprofiles: { tokenProfiles: [{ uuid: 'token-profile-uuid', name: 'Test Token Profile' }] } as any,
-                    cryptographicKeys: {
-                        ...testInitialState.cryptographicKeys,
-                        // Selecting a key reads its items to fetch signature descriptors; none means no fetch.
-                        cryptographicKeyPairs: [{ uuid: 'key-uuid', name: 'Test Key', tokenProfileUuid: 'token-profile-uuid', items: [] }],
-                    } as any,
-                }}
+                preloadedState={{ raprofiles, ...csrAttributesState, ...existingKeyState }}
             />,
         );
 
         await page.getByTestId('select-raProfile-trigger').click();
         await page.getByRole('option', { name: 'RA One' }).click();
-        await page.getByTestId('keySource-trigger').click();
-        await page.getByRole('option', { name: 'Existing Key' }).click();
-        await page.getByTestId('select-tokenProfileUuid-trigger').click();
-        await page.getByRole('option', { name: 'Test Token Profile' }).click();
-        await page.getByTestId('select-keyUuid-trigger').click();
-        await page.getByRole('option', { name: 'Test Key' }).click();
+        await selectExistingKey(page, 'keySource');
         await page.getByRole('tab', { name: 'Request Attributes' }).click();
         await fillCommonNameAndClearSan(page);
-
         await page.getByRole('button', { name: 'Create' }).click();
 
-        await expect.poll(() => dispatched.find((a) => a.type === 'certificates/issueCertificate')).toBeTruthy();
-        const action = dispatched.find((a) => a.type === 'certificates/issueCertificate');
         // Core generates the CSR from these attributes, so an empty value would put an empty SAN into it.
-        const csrAttributes = action?.payload.signRequest.csrAttributes as { name: string }[];
-        expect(csrAttributes.map((a) => a.name)).toEqual(['commonName']);
+        const submitted = await submittedCsrAttributes(dispatched, 'certificates/issueCertificate', (p) => p.signRequest.csrAttributes);
+        expect(submitted).toEqual(onlyCommonNameSubmitted);
     });
 
     test('registerCertificate payload omits owner/groups when left empty', async ({ mount, page }) => {
