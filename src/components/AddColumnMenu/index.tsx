@@ -6,7 +6,7 @@ import SourceBadge, { DEFAULT_SOURCE_LABELS, SOURCE_COLORS } from 'components/So
 import { Plus, RotateCcw, Search } from 'lucide-react';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
-import { getColumnKey } from 'utils/tableColumns';
+import { countStorableColumns, getColumnKey } from 'utils/tableColumns';
 import { type MenuSourceColumn, toMenuContents } from './sourceColumns';
 
 const LOCKED_AT_LAST_COLUMN = 'A view must keep at least one column';
@@ -130,7 +130,8 @@ export default function AddColumnMenu({
     }, []);
 
     const isLocked = onToggle === undefined;
-    const isAtLastColumn = columns.length === 1;
+    const isAtLastColumn = countStorableColumns(columns) === 1;
+    const displayOnlyKeys = useMemo(() => new Set(columns.filter((column) => column.displayOnly).map(getColumnKey)), [columns]);
 
     // The rule in force, named once where it can be read: a disabled checkbox is out of the tab
     // order, so a keyboard user never reaches whatever the control itself might say.
@@ -213,7 +214,11 @@ export default function AddColumnMenu({
                                             field={field}
                                             isSelected
                                             sourceLabel={DEFAULT_SOURCE_LABELS[field.fieldSource]}
-                                            lockReason={isLocked || isAtLastColumn ? lockNotice : undefined}
+                                            lockReason={
+                                                isLocked || (isAtLastColumn && !displayOnlyKeys.has(getColumnKey(field)))
+                                                    ? lockNotice
+                                                    : undefined
+                                            }
                                             withSourceBadge
                                             itemClassName="min-w-0 basis-full sm:basis-1/4"
                                             onToggle={onToggleField}

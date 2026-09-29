@@ -110,6 +110,8 @@ type MountOptions = {
     standardColumns?: ColumnDefinition[];
     isMutating?: boolean;
     hasLoaded?: boolean;
+    isRefreshing?: boolean;
+    refreshedViews?: ListViewModel[];
     withheldCatalogue?: boolean;
     isCatalogueLoaded?: boolean;
     renderableProperties?: string[];
@@ -124,6 +126,8 @@ const strip = ({
     standardColumns: standard = standardColumns,
     isMutating,
     hasLoaded,
+    isRefreshing,
+    refreshedViews,
     withheldCatalogue,
     isCatalogueLoaded,
     renderableProperties,
@@ -138,6 +142,8 @@ const strip = ({
         standardColumns={standard}
         isMutating={isMutating}
         hasLoaded={hasLoaded}
+        isRefreshing={isRefreshing}
+        refreshedViews={refreshedViews}
         withheldCatalogue={withheldCatalogue}
         isCatalogueLoaded={isCatalogueLoaded}
         renderableProperties={renderableProperties}
@@ -835,7 +841,9 @@ test.describe('ViewTabs', () => {
     });
 
     test('drops a display-only column the catalogue does not publish when duplicating', async ({ mount, page }) => {
-        await mount(strip({ views: [], standardColumns: [commonName, column('CK_ASSOCIATIONS', 'Associations')] }));
+        await mount(
+            strip({ views: [], standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }] }),
+        );
 
         await openTabMenu(page, 'Standard');
         await page.getByRole('menuitem', { name: 'Duplicate' }).click();
@@ -846,10 +854,165 @@ test.describe('ViewTabs', () => {
             view: { columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }] },
         });
         expect(JSON.stringify(action)).not.toContain('CK_ASSOCIATIONS');
+
+        await page.getByTestId('simulate-create-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-created')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-view-created-dirty')).toHaveCount(0);
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+    });
+
+    test('stores a platform column the catalogue leaves out, so the new view opens unchanged', async ({ mount, page }) => {
+        const certificateType = column('CERTIFICATE_TYPE', 'Certificate Type');
+        await mount(strip({ views: [], standardColumns: [commonName, certificateType] }));
+
+        await page.getByTestId('view-tabs-new').click();
+        await page.getByTestId('view-tabs-create').getByRole('button', { name: 'Create view' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+        const action = await lastDispatched(page, 'listViews/createView');
+        expect(action?.payload).toMatchObject({ view: { columns: [stored('COMMON_NAME'), stored('CERTIFICATE_TYPE')] } });
+
+        await page.getByTestId('simulate-create-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-created')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-view-created-dirty')).toHaveCount(0);
+    });
+
+    test('saves a platform column the catalogue leaves out into the view', async ({ mount, page }) => {
+        const certificateType = column('CERTIFICATE_TYPE', 'Certificate Type');
+        await mount(
+            strip({
+                views: [expiryWatch({ defaultView: true, columns: [stored('CERTIFICATE_TYPE')] })],
+                standardColumns: [commonName, certificateType],
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+            }),
+        );
+
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toMatchObject({ view: { columns: [stored('CERTIFICATE_TYPE')] } });
+    });
+
+    test('keeps a column whose field is gone, in place, when the view is saved', async ({ mount, page }) => {
+        const dormant = expiryWatch({
+            defaultView: true,
+            columns: [stored('retired', FilterFieldSource.Custom), stored('COMMON_NAME')],
+        });
+        await mount(
+            strip({
+                views: [dormant],
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+            }),
+        );
+
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect((action?.payload?.view as { columns: unknown } | undefined)?.columns).toEqual([
+            stored('retired', FilterFieldSource.Custom),
+            stored('COMMON_NAME'),
+        ]);
+    });
+
+    test('carries a column whose field is gone through a rename', async ({ mount, page }) => {
+        const dormant = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        await mount(strip({ views: [dormant] }));
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Rename…' }).click();
+        await page.getByTestId('view-tabs-rename-input').click();
+        await page.getByTestId('view-tabs-rename-input').fill('Expiring soon');
+        await page.getByTestId('view-tabs-rename').getByRole('button', { name: 'Rename' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect((action?.payload?.view as { columns: unknown } | undefined)?.columns).toEqual([
+            stored('COMMON_NAME'),
+            stored('retired', FilterFieldSource.Custom),
+        ]);
+    });
+
+    test('opens a view that fell back to a platform set with a display-only column unchanged', async ({ mount, page }) => {
+        const dormant = expiryWatch({ defaultView: true, columns: [stored('retired', FilterFieldSource.Custom)] });
+        await mount(
+            strip({ views: [dormant], standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }] }),
+        );
+
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('showing the standard columns');
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('offers Revert on Standard once a display-only column it ships is taken off', async ({ mount, page }) => {
+        await mount(
+            strip({ views: [], standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }] }),
+        );
+
+        await expect(page.getByTestId('view-tabs-tab-standard-dirty')).toHaveCount(0);
+        await page.getByTestId('drift-drop-last-column').click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard-dirty')).toBeVisible();
+    });
+
+    test('leaves a filter whose field is gone out of a duplicate', async ({ mount, page }) => {
+        const deadFilter: SearchFilterModel = {
+            fieldSource: FilterFieldSource.Custom,
+            fieldIdentifier: 'retired',
+            condition: FilterConditionOperator.Equals,
+            value: 'x',
+        };
+        await mount(strip({ views: [expiryWatch({ defaultView: true, filters: [stateFilter, deadFilter] })] }));
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+        const action = await lastDispatched(page, 'listViews/createView');
+        expect(JSON.stringify(action)).not.toContain('retired');
+        expect(action?.payload).toMatchObject({ view: { filters: [stateFilter] } });
+
+        await page.getByTestId('simulate-create-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-created')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-view-created-dirty')).toHaveCount(0);
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+    });
+
+    test('hides the notice about an unavailable column when it is dismissed', async ({ mount, page }) => {
+        const dormant = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        await mount(strip({ views: [dormant] }));
+
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
+
+        await page.getByTestId('view-tabs-notice-dismiss').click();
+
+        await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('opens on the list its own read returns, not on the one an earlier visit left', async ({ mount, page }) => {
+        const earlier = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME')] });
+        const current = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('SERIAL_NUMBER')] });
+        await mount(strip({ views: [earlier], isRefreshing: true, refreshedViews: [current] }));
+
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+
+        await page.getByTestId('simulate-list-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
     });
 
     test('shows a new view only the Standard columns it can store', async ({ mount, page }) => {
-        await mount(strip({ standardColumns: [commonName, column('CK_ASSOCIATIONS', 'Associations')] }));
+        await mount(strip({ standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }] }));
 
         await page.getByTestId('view-tabs-tab-view-1').click();
         await page.getByTestId('view-tabs-new').click();

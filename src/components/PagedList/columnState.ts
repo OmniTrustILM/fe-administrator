@@ -5,7 +5,7 @@ import { FilterFieldSource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { toColumnDefinition } from 'utils/columnPicker';
 import { toStoredSort } from 'utils/listViews';
-import { type ColumnSort, getColumnKey, getSortKey, parseColumnKey, toRequestColumns } from 'utils/tableColumns';
+import { type ColumnSort, countStorableColumns, getColumnKey, getSortKey, parseColumnKey, toRequestColumns } from 'utils/tableColumns';
 
 /**
  * The ordering a header click asks for, or `undefined` when the click cannot become one. The header id
@@ -49,11 +49,12 @@ export function toggleColumn(
     shipped: readonly ColumnDefinition[] = [],
 ): ColumnDefinition[] {
     const key = getColumnKey(field);
-    if (!columns.some((column) => getColumnKey(column) === key)) {
+    const shown = columns.find((column) => getColumnKey(column) === key);
+    if (!shown) {
         const asShipped = shipped.find((column) => getColumnKey(column) === key);
         return [asShipped ?? toColumnDefinition(field), ...columns];
     }
-    if (columns.length === 1) return columns;
+    if (!shown.displayOnly && countStorableColumns(columns) === 1) return columns;
     return columns.filter((column) => getColumnKey(column) !== key);
 }
 

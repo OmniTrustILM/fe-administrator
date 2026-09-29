@@ -20,6 +20,10 @@ type Props = Readonly<{
     isMutating?: boolean;
     /** Preloads the list read as still in flight, which is what the strip waits for before rendering. */
     hasLoaded?: boolean;
+    /** Preloads a list from an earlier visit with the read that replaces it still in flight. */
+    isRefreshing?: boolean;
+    /** What the in-flight list read answers with, once `simulate-list-success` is pressed. */
+    refreshedViews?: ListViewModel[];
     /** Withholds the catalogue until released, so a test can make it land after the views did. */
     withheldCatalogue?: boolean;
     /** Passed straight through, so a test can say the catalogue read has settled on nothing. */
@@ -54,6 +58,8 @@ export default function ViewTabsWithStore({
     standardColumns,
     isMutating = false,
     hasLoaded = true,
+    isRefreshing = false,
+    refreshedViews = [],
     withheldCatalogue = false,
     isCatalogueLoaded,
     renderableProperties,
@@ -64,7 +70,7 @@ export default function ViewTabsWithStore({
     const [store] = useState(() =>
         createMockStore({
             listViews: {
-                byResource: { [resource]: { views, isFetching: !hasLoaded, hasLoaded, isMutating } },
+                byResource: { [resource]: { views, isFetching: !hasLoaded || isRefreshing, hasLoaded, isMutating } },
                 dispatched: [],
             },
         }),
@@ -94,6 +100,14 @@ export default function ViewTabsWithStore({
 
                 <button type="button" data-testid="release-catalogue" onClick={() => setIsCatalogueReleased(true)}>
                     release the catalogue
+                </button>
+
+                <button
+                    type="button"
+                    data-testid="simulate-list-success"
+                    onClick={() => store.dispatch({ type: 'listViews/listViewsSuccess', payload: { resource, views: refreshedViews } })}
+                >
+                    answer the list read
                 </button>
 
                 {/* Stands in for the epic (a component test runs none): answers the create in flight
@@ -146,6 +160,13 @@ export default function ViewTabsWithStore({
                     onClick={() => setSlice((current) => ({ ...current, columns: [...current.columns, driftColumn as ColumnDefinition] }))}
                 >
                     add a column
+                </button>
+                <button
+                    type="button"
+                    data-testid="drift-drop-last-column"
+                    onClick={() => setSlice((current) => ({ ...current, columns: current.columns.slice(0, -1) }))}
+                >
+                    remove the last column
                 </button>
                 <button type="button" data-testid="drift-sort" onClick={() => setSlice((current) => ({ ...current, sort: driftSort }))}>
                     sort the table

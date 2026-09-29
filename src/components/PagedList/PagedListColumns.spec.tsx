@@ -326,6 +326,27 @@ test.describe('PagedList · configurable columns', () => {
         await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
     });
 
+    test('withholds the strip while a catalogue from an earlier visit is being read again', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                refreshedCatalogue={catalogue}
+                views={[expiryWatch]}
+                isRefetchingCatalogue
+                withCatalogueControl
+            />,
+        );
+
+        await expect(page.getByTestId('list-requests')).toBeVisible();
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+
+        await page.getByTestId('land-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs')).toBeVisible();
+    });
+
     test('makes the Standard tab sortable from the catalogue, though the shipped set cannot declare it', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={shippedColumns} catalogue={catalogue} />);
 

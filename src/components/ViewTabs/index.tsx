@@ -28,8 +28,10 @@ import {
     toTabs,
     toUpdateRequest,
     toViewSlice,
+    type ViewSchema,
+    withoutMissingFieldFilters,
 } from 'utils/listViews';
-import type { ColumnSort } from 'utils/tableColumns';
+import { type ColumnSort, getColumnKey } from 'utils/tableColumns';
 import NameViewDialog from './NameViewDialog';
 import UnresolvedColumnsNotice from './UnresolvedColumnsNotice';
 import ViewSummaryBar from './ViewSummaryBar';
@@ -41,7 +43,8 @@ export type ViewTabsProps = Readonly<{
     catalogue: SearchFieldDataByGroupDto[];
     /**
      * Whether the catalogue read has settled. The strip waits for it, because until then every stored
-     * column resolves to nothing.
+     * column resolves to nothing. A page re-reading a catalogue it already holds should report the
+     * re-read as unsettled, or the strip opens on the copy the re-read is about to replace.
      *
      * A page that tracks its own fetch state should say so here. The fallback reads a non-empty
      * catalogue as an arrived one, which cannot tell a read still in flight from a resource that
@@ -111,13 +114,17 @@ export default function ViewTabs({
 
     const views = useSelector(listViewSelectors.views(resource));
     const hasLoaded = useSelector(listViewSelectors.hasLoaded(resource));
+    const isFetching = useSelector(listViewSelectors.isFetching(resource));
     const isMutating = useSelector(listViewSelectors.isMutating(resource));
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
 
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
+    const [requestedFor, setRequestedFor] = useState<Resource | undefined>(undefined);
+    const [dismissedNotice, setDismissedNotice] = useState<string | undefined>(undefined);
 
     const fields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
+    const schema = useMemo<ViewSchema>(() => ({ catalogue, standardColumns }), [catalogue, standardColumns]);
 
     /**
      * The strip is held back until the view list has settled and the catalogue has arrived, and shows
@@ -132,8 +139,14 @@ export default function ViewTabs({
      * a resource whose catalogue publishes only fields the listing cannot display resolves to no
      * displayable fields at all, and gating on those would hide the strip for good — Standard needs
      * none of them.
+     *
+     * The list half waits for the read this strip sent, not for any settled one. A page opened again
+     * still holds the list from its last visit, and opening on that copy applies a view as it stood
+     * then: the read that replaces it moves the stored side and not the table, which reports the
+     * difference as an unsaved edit nobody made, and Save to view would then write the old copy back.
      */
-    const isReady = isViewStripReady(hasLoaded, isCatalogueLoaded ?? catalogue.length > 0);
+    const hasFreshViews = requestedFor === resource && hasLoaded && !isFetching;
+    const isReady = isViewStripReady(hasFreshViews, isCatalogueLoaded ?? catalogue.length > 0);
 
     const activeView = useMemo(() => views.find((view) => view.uuid === activeId), [views, activeId]);
     const tabs = useMemo(() => toTabs(views), [views]);
@@ -157,21 +170,27 @@ export default function ViewTabs({
         if (!activeView) return toStandardSlice(standardColumns, standardSort);
 
         const slice = toViewSlice(activeView, fields, standardColumns);
-        return { ...slice, filters: toStorableFilters(slice.filters, catalogue) };
+        return { ...slice, filters: toStorableFilters(slice.filters, catalogue, 'update') };
     }, [activeView, fields, standardColumns, standardSort, catalogue]);
 
     /** The stored columns this table cannot render, which the notice names. */
     const unavailable = useMemo(() => resolved?.columns.filter((column) => !column.available) ?? [], [resolved]);
+
+    // A dismissal holds for the view and the columns it named, so a column that goes missing later is reported again.
+    const noticeKey = useMemo(
+        () => (activeView ? [activeView.uuid, ...unavailable.map(getColumnKey)].join('|') : undefined),
+        [activeView, unavailable],
+    );
 
     /**
      * The live filters minus the ones a view must not carry, which is what a view is compared against
      * and what a save writes back. See {@link toStorableFilters}: a filter value typed against secret
      * content would otherwise be copied into storage that does not protect it.
      */
-    const storableFilters = useMemo(() => toStorableFilters(filters, catalogue), [filters, catalogue]);
+    const storableFilters = useMemo(() => toStorableFilters(filters, catalogue, 'update'), [filters, catalogue]);
 
     const currentSlice = useMemo<ViewSlice>(() => ({ columns, filters: storableFilters, sort }), [columns, storableFilters, sort]);
-    const isDirty = isSliceDirty(storedSlice, currentSlice);
+    const isDirty = isSliceDirty(storedSlice, currentSlice, activeView ? 'view' : 'standard');
 
     // `onApply` is typically an inline callback, so holding it in a ref keeps the load effect below
     // from re-running — and re-applying the view — on every render of the page around it.
@@ -195,6 +214,7 @@ export default function ViewTabs({
 
     useEffect(() => {
         dispatch(listViewActions.listViews({ resource }));
+        setRequestedFor(resource);
     }, [dispatch, resource]);
 
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
@@ -218,6 +238,11 @@ export default function ViewTabs({
     // replaced the table's slice with Standard's, so it also holds the slice its failure puts back.
     const tabBeforeCreate = useRef<{ id: string; restore?: ViewSlice }>({ id: STANDARD_VIEW_ID });
 
+    // A create leaves out display-only columns and filters on a field that is gone, and the table has to follow
+    // once the view exists: a dropped filter would make its next save carry one Core refuses for that row, and a
+    // dropped column would vanish only when the view is next opened.
+    const sliceAfterCreate = useRef<ViewSlice | undefined>(undefined);
+
     // A created view arrives with the uuid the API gave it, replacing the optimistic row the strip
     // has been showing, and the tab under the cursor has to follow it rather than vanish. A failed
     // create takes that row away instead, which would leave every tab unselected.
@@ -226,6 +251,8 @@ export default function ViewTabs({
 
         if (createdUuid) {
             setActiveId(createdUuid);
+            if (sliceAfterCreate.current) applyRef.current(sliceAfterCreate.current);
+            sliceAfterCreate.current = undefined;
             return;
         }
 
@@ -234,6 +261,7 @@ export default function ViewTabs({
             // ordering it was trying to keep are still on the table, and a failure is not a reason to
             // drop them.
             const { id, restore } = tabBeforeCreate.current;
+            sliceAfterCreate.current = undefined;
             setActiveId(views.some((view) => view.uuid === id) ? id : STANDARD_VIEW_ID);
             if (restore) applyRef.current(restore);
         }
@@ -241,23 +269,33 @@ export default function ViewTabs({
 
     const create = useCallback(
         (name: string, slice: ViewSlice, restore?: ViewSlice) => {
-            const view = toCreateRequest(name, resource, slice, catalogue);
+            const view = toCreateRequest(name, resource, slice, schema);
             tabBeforeCreate.current = { id: activeId, restore };
             dispatch(listViewActions.createView({ resource, view }));
             setActiveId(PENDING_VIEW_UUID);
             return view;
         },
-        [dispatch, resource, activeId, catalogue],
+        [dispatch, resource, activeId, schema],
     );
 
-    const createFromCurrent = useCallback((name: string) => create(name, currentSlice), [create, currentSlice]);
+    const createFromCurrent = useCallback(
+        (name: string) => {
+            const keptFilters = withoutMissingFieldFilters(filters, catalogue);
+            const keptColumns = columns.filter((column) => !column.displayOnly);
+            const isTrimmed = keptFilters.length !== filters.length || keptColumns.length !== columns.length;
+            sliceAfterCreate.current = isTrimmed ? { columns: keptColumns, filters: keptFilters, sort } : undefined;
+            create(name, currentSlice);
+        },
+        [create, currentSlice, filters, catalogue, columns, sort],
+    );
 
     // Unsorted on purpose: Standard's ordering is the page's default, not a choice the new view has made.
-    // The table takes the columns the request stores, not Standard's: a column the catalogue does not
-    // publish is dropped from the request, and showing it would mark the new view as changed.
+    // The table takes the columns the request stores, not Standard's: a display-only column is dropped
+    // from the request, and the table should show the view it now names.
     const createFromStandard = useCallback(
         (name: string) => {
             const slice = toStandardSlice(standardColumns);
+            sliceAfterCreate.current = undefined;
             const view = create(name, slice, { columns, filters, sort });
             applyRef.current({ ...slice, columns: resolveView(view.columns, fields, standardColumns).renderable });
         },
@@ -267,9 +305,9 @@ export default function ViewTabs({
     const patchActive = useCallback(
         (patch: Parameters<typeof toUpdateRequest>[2]) => {
             if (!activeView) return;
-            dispatch(listViewActions.updateView({ resource, uuid: activeView.uuid, view: toUpdateRequest(activeView, catalogue, patch) }));
+            dispatch(listViewActions.updateView({ resource, uuid: activeView.uuid, view: toUpdateRequest(activeView, schema, patch) }));
         },
-        [dispatch, resource, activeView, catalogue],
+        [dispatch, resource, activeView, schema],
     );
 
     // The view a delete took off the strip, and the tab the strip moved to instead. A delete is
@@ -450,7 +488,7 @@ export default function ViewTabs({
                 </div>
             </SimpleBar>
 
-            {resolved && (
+            {resolved && noticeKey !== dismissedNotice && (
                 <UnresolvedColumnsNotice
                     unavailable={unavailable}
                     storedCount={resolved.columns.length}
@@ -464,6 +502,7 @@ export default function ViewTabs({
                             ? () => patchActive({ columns: toStoredColumns(resolved.columns.filter((column) => column.available)) })
                             : undefined
                     }
+                    onDismiss={() => setDismissedNotice(noticeKey)}
                     isBusy={isMutating}
                     dataTestId={`${dataTestId}-notice`}
                 />

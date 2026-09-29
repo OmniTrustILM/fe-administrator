@@ -9,6 +9,7 @@ import type { ColumnDefinition } from 'types/tableColumns';
 import { durationFormatter } from 'utils/dateUtil';
 import { toCreateRequest, toStandardSlice } from 'utils/listViews';
 import { buildCbomCellRegistry, CBOM_COLUMNS } from './cboms/cbomTableHelpers';
+import { CERTIFICATE_COLUMNS } from './certificates/certificateTableHelpers';
 import { buildConnectorCellRegistry, buildConnectorColumns } from './connectors/connectorTableHelpers';
 import { buildDiscoveryCellRegistry, DISCOVERY_COLUMNS } from './discoveries/discoveryTableHelpers';
 import { buildSecretCellRegistry, SECRET_COLUMNS } from './secrets/secretTableHelpers';
@@ -154,8 +155,15 @@ describe.each(inventories)('$name default columns', ({ resource, columns, regist
         expect(identifiersOf(columns).filter((identifier) => !catalogued.includes(identifier))).toEqual(displayOnly);
     });
 
+    it('marks exactly the columns outside the catalogue as display-only', () => {
+        expect(identifiersOf(columns.filter((column) => column.displayOnly))).toEqual(displayOnly);
+    });
+
     it('saves as a view, dropping only the display-only columns', () => {
-        const request = toCreateRequest('Standard (copy)', resource, toStandardSlice(columns), catalogueOf(catalogued));
+        const request = toCreateRequest('Standard (copy)', resource, toStandardSlice(columns), {
+            catalogue: catalogueOf(catalogued),
+            standardColumns: columns,
+        });
 
         expect(request.columns.map((column) => column.fieldIdentifier)).toEqual(
             identifiersOf(columns).filter((identifier) => !displayOnly.includes(identifier)),
@@ -169,6 +177,20 @@ describe.each(inventories)('$name default columns', ({ resource, columns, regist
             .filter((identifier) => !known.includes(identifier));
 
         expect(stray).toEqual([]);
+    });
+});
+
+describe('certificate default columns', () => {
+    it('save in full, although the published catalogue leaves Certificate Type out', () => {
+        const published = CERTIFICATE_COLUMNS.map((column) => column.fieldIdentifier).filter(
+            (identifier) => identifier !== 'CERTIFICATE_TYPE',
+        );
+        const request = toCreateRequest('New view', Resource.Certificates, toStandardSlice(CERTIFICATE_COLUMNS), {
+            catalogue: catalogueOf(published),
+            standardColumns: CERTIFICATE_COLUMNS,
+        });
+
+        expect(request.columns.map((column) => column.fieldIdentifier)).toEqual(identifiersOf(CERTIFICATE_COLUMNS));
     });
 });
 

@@ -21,7 +21,7 @@ import type { ViewSlice } from 'types/listViews';
 import type { Resource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { moveColumn, toCatalogueFields } from 'utils/columnPicker';
-import { type ColumnSort, buildColumnHeaders, getColumnHeading, getColumnKey } from 'utils/tableColumns';
+import { type ColumnSort, buildColumnHeaders, countStorableColumns, getColumnHeading, getColumnKey } from 'utils/tableColumns';
 import {
     buildListRequest,
     getRenderableProperties,
@@ -145,6 +145,9 @@ function PagedList<TRow extends object>({
     const catalogue = useSelector(filterSelectors.availableFilters(entity));
     const hasLoadedCatalogue = useSelector(filterSelectors.hasLoadedFilters(entity));
     const hasCatalogueFailed = useSelector(filterSelectors.hasFailedFilters(entity));
+    const isFetchingCatalogue = useSelector(filterSelectors.isFetchingFilters(entity));
+    // A page opened again still holds the catalogue it read last time, and the strip must not open on that copy.
+    const hasSettledCatalogue = hasLoadedCatalogue && !isFetchingCatalogue;
 
     // Taken apart rather than depended on whole: an unmemoised config would rebuild `getFreshData`
     // every render, and the effect watching it would refetch forever.
@@ -169,8 +172,8 @@ function PagedList<TRow extends object>({
      * Sortability merged in, from the catalogue once it has answered and from the page's own declared
      * ordering until then. Applied to whatever set is on the table rather than to the standard one
      * alone: a selection replaces that set, and the catalogue can still answer after one was taken —
-     * the duck keeps a resource's fields across visits, so the strip opens on the held answer while
-     * the refetch is out, and merging only into the standard set would freeze that selection on it.
+     * the duck keeps a resource's fields across visits, so the held answer is merged until the refetch
+     * lands, and merging only into the standard set would freeze a selection on it.
      */
     const withSortability = useCallback(
         (columns: ColumnDefinition[]) =>
@@ -195,8 +198,13 @@ function PagedList<TRow extends object>({
         () => (columnsResource ? listViewSelectors.hasLoaded(columnsResource) : () => false),
         [columnsResource],
     );
+    const selectIsFetchingViews = useMemo(
+        () => (columnsResource ? listViewSelectors.isFetching(columnsResource) : () => false),
+        [columnsResource],
+    );
     const hasLoadedViews = useSelector(selectHasLoadedViews);
-    const isStripReady = isViewStripReady(hasLoadedViews, hasLoadedCatalogue);
+    const isFetchingViews = useSelector(selectIsFetchingViews);
+    const isStripReady = isViewStripReady(hasLoadedViews && !isFetchingViews, hasSettledCatalogue);
 
     const totalItems = useSelector(selectors.totalItems(entity));
     const checkedRows = useSelector(selectors.checkedRows(entity));
@@ -239,7 +247,8 @@ function PagedList<TRow extends object>({
         (key: string) => {
             // An empty selection reads as "back to Standard", so the last column standing holds here as
             // it does in the menu, rather than resetting the table to a set nobody asked for.
-            if (appliedColumns.length === 1) return;
+            const target = appliedColumns.find((column) => getColumnKey(column) === key);
+            if (!target?.displayOnly && countStorableColumns(appliedColumns) === 1) return;
             applyColumns(appliedColumns.filter((column) => getColumnKey(column) !== key));
         },
         [applyColumns, appliedColumns],
@@ -450,7 +459,7 @@ function PagedList<TRow extends object>({
                     onRename={(next) => onRenameColumn(header.id, next)}
                     defaultHeading={shippedHeadings.get(header.id) ?? column.catalogueLabel}
                     onRemove={() => onRemoveColumn(header.id)}
-                    isLastColumn={appliedColumns.length === 1}
+                    isLastColumn={!column.displayOnly && countStorableColumns(appliedColumns) === 1}
                     dataTestId={`column-header-menu-${header.id}`}
                 />
             );
@@ -673,7 +682,7 @@ function PagedList<TRow extends object>({
                 <ViewTabs
                     resource={columnsResource}
                     catalogue={catalogue}
-                    isCatalogueLoaded={hasLoadedCatalogue}
+                    isCatalogueLoaded={hasSettledCatalogue}
                     standardColumns={sortableStandardColumns}
                     standardSort={defaultSort}
                     renderableProperties={renderableProperties}

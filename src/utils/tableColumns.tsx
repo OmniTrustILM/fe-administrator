@@ -117,6 +117,14 @@ export function getColumnKey(column: Pick<ColumnDefinition, 'fieldSource' | 'fie
     return `${column.fieldSource}:${column.fieldIdentifier}`;
 }
 
+/**
+ * How many of the columns a view can store. The last of them cannot be removed: a display-only column is
+ * never stored, so a table left with only those would save as a view with no columns at all.
+ */
+export function countStorableColumns(columns: readonly ColumnDefinition[]): number {
+    return columns.filter((column) => !column.displayOnly).length;
+}
+
 const FIELD_SOURCES: ReadonlySet<string> = new Set<string>(Object.values(FilterFieldSource));
 
 /**
