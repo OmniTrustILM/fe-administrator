@@ -4,11 +4,10 @@ import { EntityType, actions as filterActions } from 'ducks/filters';
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
-import { CbomAssetSyncState, FilterConditionOperator, FilterFieldSource, PlatformEnum, PqcVerdict } from 'types/openapi';
+import { FilterConditionOperator, FilterFieldSource, PlatformEnum, PqcVerdict } from 'types/openapi';
 import { LockTypeEnum } from 'types/user-interface';
 import {
     CRYPTO_ASSET_FILTER_FIELDS,
-    FALLBACK_SERIES_COLOR,
     buildEmptyFilter,
     buildEqualsFilter,
     formatShareOfEstate,
@@ -24,15 +23,7 @@ import HorizontalBarChart from '../DashboardItem/HorizontalBarChart';
 
 const LINK = '../cryptoassets';
 const CBOMS_LINK = '../cboms';
-const CBOMS_REDIRECT = '/cboms';
 const REDIRECT = '/cryptoassets';
-
-const SYNC_STATE_CHART_COLORS: Record<string, string> = {
-    [CbomAssetSyncState.Synced]: '#12a393',
-    [CbomAssetSyncState.InProgress]: '#0b76cf',
-    [CbomAssetSyncState.Pending]: '#b68b06',
-    [CbomAssetSyncState.Failed]: '#EF4444',
-};
 
 function caption(text: string) {
     return <span className="text-sm text-content-subtle">{text}</span>;
@@ -73,7 +64,6 @@ function CryptoAssetsDashboard() {
 
     const sourceCbomCount = statistics.sourceCbomCount;
     const cbomCountUnavailable = sourceCbomCount == null;
-    const coverageData = Object.fromEntries(completeness.states.map((state) => [getEnumLabel(syncStateEnum, state.code), state.count]));
     const typeKeys = Object.keys(statistics.statByType ?? {});
     const verdictKeys = Object.keys(statistics.statByPqcVerdict ?? {});
     const notReadyCount = statistics.statByPqcVerdict?.[PqcVerdict.NotReady];
@@ -81,54 +71,6 @@ function CryptoAssetsDashboard() {
 
     return (
         <div>
-            <div className="mb-4 md:mb-8" data-testid="crypto-assets-dashboard-coverage">
-                {cbomCountUnavailable || completeness.total === 0 ? (
-                    <div className="rounded-xl border border-divider bg-surface-raised p-4 md:p-5">
-                        <div className="flex flex-wrap items-baseline justify-between gap-2">
-                            <span className="font-bold text-content">Inventory coverage</span>
-                            {completeness.lastCompletedSyncAt &&
-                                caption(`Last completed sync ${dateFormatter(completeness.lastCompletedSyncAt)}`)}
-                        </div>
-                        {cbomCountUnavailable ? (
-                            <p className="mt-2 text-sm text-content-muted" data-testid="crypto-assets-dashboard-coverage-unavailable">
-                                CBOM inventory coverage is not available with your permissions.
-                            </p>
-                        ) : (
-                            <p className="mt-2 text-sm text-content-muted" data-testid="crypto-assets-dashboard-coverage-empty">
-                                No CBOM document has been synced into the inventory yet, so the counts below are empty rather than complete.
-                            </p>
-                        )}
-                    </div>
-                ) : (
-                    <DonutChart
-                        title="Inventory coverage"
-                        data={coverageData}
-                        entity={EntityType.CBOM}
-                        redirect={CBOMS_REDIRECT}
-                        onSetFilter={(index) => buildEqualsFilter('CBOM_ASSET_SYNC_STATE', completeness.states[index].code)}
-                        colorOptions={{
-                            colors: completeness.states.map((state) => SYNC_STATE_CHART_COLORS[state.code] ?? FALLBACK_SERIES_COLOR),
-                        }}
-                        showCenterLabel
-                        showValuesInLegend
-                        footer={
-                            <div className="mt-4 space-y-1">
-                                <p className="text-sm text-content" data-testid="crypto-assets-dashboard-coverage-summary">
-                                    {`Synced ${completeness.synced.toLocaleString()} of ${completeness.total.toLocaleString()} CBOM documents`}
-                                </p>
-                                {completeness.lastCompletedSyncAt &&
-                                    caption(`Last completed sync ${dateFormatter(completeness.lastCompletedSyncAt)}`)}
-                                {!completeness.isComplete && (
-                                    <p className="text-sm text-warning" data-testid="crypto-assets-dashboard-coverage-partial">
-                                        The estate is only partly synced. A document still syncing may add assets to these counts later.
-                                    </p>
-                                )}
-                            </div>
-                        }
-                    />
-                )}
-            </div>
-
             <div className="flex flex-row gap-4 md:gap-8 mb-4 md:mb-8 flex-wrap" data-testid="crypto-assets-dashboard-counts">
                 <div className="flex-1 min-w-[180px]">
                     <CountBadge
@@ -193,6 +135,58 @@ function CryptoAssetsDashboard() {
                         }
                     />
                 </div>
+            </div>
+
+            <div
+                className="mb-4 md:mb-8 rounded-xl border border-divider bg-surface-raised p-4 md:p-5 shadow-2xs"
+                data-testid="crypto-assets-dashboard-coverage"
+            >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h5 className="text-base font-bold text-content">Inventory coverage</h5>
+                    {completeness.lastCompletedSyncAt &&
+                        caption(`Latest successful asset sync ${dateFormatter(completeness.lastCompletedSyncAt)}`)}
+                </div>
+                {cbomCountUnavailable ? (
+                    <p className="mt-2 text-sm text-content-muted" data-testid="crypto-assets-dashboard-coverage-unavailable">
+                        CBOM inventory coverage is not available with your permissions.
+                    </p>
+                ) : completeness.total === 0 ? (
+                    <p className="mt-2 text-sm text-content-muted" data-testid="crypto-assets-dashboard-coverage-empty">
+                        The asset counts are empty until a CBOM document has been synced into the inventory.
+                    </p>
+                ) : (
+                    <>
+                        <p className="mt-2 text-sm text-content" data-testid="crypto-assets-dashboard-coverage-summary">
+                            {`Synced ${completeness.synced.toLocaleString()} of ${completeness.total.toLocaleString()} CBOM documents`}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
+                            {completeness.states.map((state) => (
+                                <span key={state.code} className="text-sm text-content-muted tabular-nums">
+                                    <Link
+                                        to={CBOMS_LINK}
+                                        className="text-brand hover:underline"
+                                        onClick={() =>
+                                            dispatch(
+                                                filterActions.setCurrentFilters({
+                                                    entity: EntityType.CBOM,
+                                                    currentFilters: buildEqualsFilter('CBOM_ASSET_SYNC_STATE', state.code),
+                                                }),
+                                            )
+                                        }
+                                    >
+                                        {getEnumLabel(syncStateEnum, state.code)}
+                                    </Link>
+                                    : {state.count.toLocaleString()}
+                                </span>
+                            ))}
+                        </div>
+                        {!completeness.isComplete && (
+                            <p className="mt-2 text-sm text-warning" data-testid="crypto-assets-dashboard-coverage-partial">
+                                Coverage is incomplete; asset counts may change as remaining CBOMs sync.
+                            </p>
+                        )}
+                    </>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8" data-testid="crypto-assets-dashboard-charts">

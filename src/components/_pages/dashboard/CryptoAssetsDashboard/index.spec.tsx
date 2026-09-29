@@ -3,10 +3,20 @@ import CryptoAssetsDashboardWithStore from './CryptoAssetsDashboardWithStore';
 import { FilterConditionOperator, FilterFieldSource } from 'types/openapi';
 
 test.describe('CryptoAssetsDashboard', () => {
-    test('states the coverage first, then the counts and the three distributions', async ({ mount }) => {
+    test('places text coverage below the count cards and above three charts', async ({ mount }) => {
         const component = await mount(<CryptoAssetsDashboardWithStore />);
 
+        const charts = component.getByTestId('crypto-assets-dashboard-charts');
+        await expect(
+            component.locator('[data-testid="crypto-assets-dashboard-counts"] + [data-testid="crypto-assets-dashboard-coverage"]'),
+        ).toBeVisible();
+        await expect(
+            component.locator('[data-testid="crypto-assets-dashboard-coverage"] + [data-testid="crypto-assets-dashboard-charts"]'),
+        ).toBeVisible();
+        await expect(charts.getByRole('heading')).toHaveText(['Assets by Type', 'Assets by PQC Readiness', 'Assets by Algorithm Family']);
+        await expect(component.getByTestId('crypto-assets-dashboard-coverage').getByTestId('donut-chart-container')).toHaveCount(0);
         await expect(component.getByTestId('crypto-assets-dashboard-coverage-summary')).toHaveText('Synced 37 of 37 CBOM documents');
+        await expect(component.getByTestId('crypto-assets-dashboard-coverage')).toContainText('Latest successful asset sync');
         await expect(component.getByRole('heading', { name: 'Crypto Assets' })).toBeVisible();
         await expect(component.getByRole('heading', { name: 'Not PQC ready' })).toBeVisible();
         await expect(component.getByRole('heading', { name: 'Algorithm families' })).toBeVisible();
@@ -33,14 +43,14 @@ test.describe('CryptoAssetsDashboard', () => {
         await expect(component.getByTestId('crypto-assets-dashboard-coverage-partial')).toHaveCount(0);
     });
 
-    test('a partly synced estate says so before any count is read', async ({ mount }) => {
+    test('a partly synced estate reports incomplete coverage', async ({ mount }) => {
         const component = await mount(<CryptoAssetsDashboardWithStore variant="partial" />);
 
         await expect(component.getByTestId('crypto-assets-dashboard-coverage-summary')).toHaveText('Synced 12 of 37 CBOM documents');
         await expect(component.getByTestId('crypto-assets-dashboard-coverage-partial')).toBeVisible();
     });
 
-    test('a sync-state chart opens the CBOM inventory filtered to the selected state', async ({ mount }) => {
+    test('a sync-state link opens the CBOM inventory filtered to the selected state', async ({ mount }) => {
         const component = await mount(
             <CryptoAssetsDashboardWithStore
                 variant="partial"
@@ -54,9 +64,11 @@ test.describe('CryptoAssetsDashboard', () => {
         );
         const coverage = component.getByTestId('crypto-assets-dashboard-coverage');
 
-        await expect(coverage.getByTestId('donut-chart-container')).toBeVisible();
+        await expect(coverage.getByTestId('donut-chart-container')).toHaveCount(0);
+        await expect(coverage.getByRole('link')).toHaveText([/^synced$/i, /^pending$/i, /^failed$/i]);
+        await expect(coverage).toContainText('failed: 5');
         await expect(component.getByTestId('cbom-current-filters')).toContainText('CBOM_SERIAL_NUMBER');
-        await coverage.getByRole('button', { name: /failed\s+5/i }).click();
+        await coverage.getByRole('link', { name: /^failed$/i }).click();
 
         await expect(component.getByTestId('route')).toHaveText('/cboms');
         const applied = JSON.parse((await component.getByTestId('cbom-current-filters').textContent()) ?? '[]');
@@ -140,6 +152,9 @@ test.describe('CryptoAssetsDashboard', () => {
         await expect(component.getByTestId('crypto-assets-dashboard-coverage')).toContainText('not available with your permissions');
         await expect(component.getByTestId('crypto-assets-dashboard-coverage-empty')).toHaveCount(0);
         await expect(component.getByTestId('crypto-assets-dashboard-coverage').getByTestId('donut-chart-container')).toHaveCount(0);
+        await expect(component.getByTestId('crypto-assets-dashboard-charts').getByTestId('crypto-assets-dashboard-coverage')).toHaveCount(
+            0,
+        );
         await expect(component.getByText(/deduplicated across 0 CBOMs/)).toHaveCount(0);
     });
 
