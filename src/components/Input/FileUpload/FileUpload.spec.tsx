@@ -240,6 +240,17 @@ test.describe('FileUpload', () => {
         await expect(input).toHaveValue('');
     });
 
+    test('lets a file that was read be chosen again, to replace the content edited since', async ({ mount }) => {
+        const { component, calls } = await mountEditableFileUpload(mount);
+        const input = component.locator('input[type="file"]');
+
+        await input.setInputFiles(aFile('chosen.pem', 'chosen'));
+        await expect.poll(() => calls.at(-1)).toBe(base64('chosen'));
+        await component.locator('textarea').fill('edited');
+
+        await expect(input).toHaveValue('');
+    });
+
     test('keeps text typed while a chosen file is still being read, and reports the text', async ({ mount, page }) => {
         const calls: string[] = [];
         const component = await mount(<FileUpload onFileContentLoaded={(content) => calls.push(content)} editable />);

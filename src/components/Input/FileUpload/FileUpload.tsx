@@ -79,8 +79,6 @@ export default function FileUpload({
             };
             reader.onerror = () => {
                 if (readerRef.current !== reader) return;
-                // Choosing the file the input still holds fires no change, so it is cleared for the file to be chosen again.
-                if (fileInputRef.current) fileInputRef.current.value = '';
                 setReadError(`The file ${file.name} could not be read.`);
                 // A failed read changes nothing, so the content still shown is reported again to a caller that dropped it.
                 if (reportedContentRef.current) onFileContentLoaded(reportedContentRef.current);
@@ -92,11 +90,10 @@ export default function FileUpload({
 
     const onFileChanged = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
-            if (!e.target.files || e.target.files.length === 0) {
-                return;
-            }
-
-            createReader(e.target.files[0]);
+            const file = e.target.files?.[0];
+            // Choosing the file the input still holds fires no change, so the input is emptied once its file is taken.
+            e.target.value = '';
+            if (file) createReader(file);
         },
         [createReader],
     );
