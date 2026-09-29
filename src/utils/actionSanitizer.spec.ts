@@ -126,6 +126,26 @@ describe('sanitizeAction', () => {
         });
     });
 
+    test('masks a password and a client or shared secret, and keeps the rest of the request', () => {
+        const action = {
+            type: 'tspProfiles/createBasicCredential',
+            payload: {
+                request: { username: 'signer', password: 'correct horse battery' },
+                oauth: { clientId: 'ilm', clientSecret: 'client secret' },
+                cmp: { name: 'cmp', sharedSecret: 'shared secret' },
+            },
+        };
+
+        expect(sanitizeAction(action)).toEqual({
+            ...action,
+            payload: {
+                request: { username: 'signer', password: MASKED },
+                oauth: { clientId: 'ilm', clientSecret: MASKED },
+                cmp: { name: 'cmp', sharedSecret: MASKED },
+            },
+        });
+    });
+
     test("masks an uploaded certificate's file content, and keeps a certificate object as it is", () => {
         const upload = { type: 'utilsCertificate/parseCertificate', payload: { certificate: 'MIIB', parseType: 'basic' } };
         const detail = { type: 'certificates/getCertificateDetailSuccess', payload: { certificate: { uuid: 'uuid', commonName: 'cn' } } };
