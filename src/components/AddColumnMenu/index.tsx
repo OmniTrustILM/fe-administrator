@@ -37,6 +37,8 @@ type Props = Readonly<{
     onToggle?: (field: SourcedCatalogueField) => void;
     /** Puts the platform's own column set back. Left out where there is nothing to go back to. */
     onReset?: () => void;
+    /** Which columns a view can store, so the last of them is the one held. Defaults to every column not display-only. */
+    isStorable?: (column: ColumnDefinition) => boolean;
     dataTestId?: string;
 }>;
 
@@ -94,6 +96,7 @@ export default function AddColumnMenu({
     columns,
     onToggle,
     onReset,
+    isStorable,
     dataTestId = 'add-column-menu',
 }: Props) {
     const [isOpen, setIsOpen] = useState(false);
@@ -130,7 +133,7 @@ export default function AddColumnMenu({
     }, []);
 
     const isLocked = onToggle === undefined;
-    const isAtLastColumn = countStorableColumns(columns) === 1;
+    const isAtLastColumn = countStorableColumns(columns, isStorable) === 1;
     const displayOnlyKeys = useMemo(() => new Set(columns.filter((column) => column.displayOnly).map(getColumnKey)), [columns]);
 
     // The rule in force, named once where it can be read: a disabled checkbox is out of the tab

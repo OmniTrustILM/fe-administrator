@@ -288,17 +288,30 @@ export function toStorableColumns(
     schema: ViewSchema,
     held: readonly StoredField[],
 ): ListViewColumnModel[] {
+    const carried = new Set(held.map(getColumnKey));
+    const isStorable = storableColumnTest(schema, carried);
+
+    return columns.filter(isStorable);
+}
+
+/**
+ * Whether a create would store the column, by the rules of {@link toStorableColumns}. What the table's
+ * last-column lock counts, so the column it keeps is one a new view can hold.
+ */
+export function storableColumnTest(
+    schema: ViewSchema,
+    carried: ReadonlySet<string> = new Set(),
+): (column: Pick<ColumnDefinition, 'fieldSource' | 'fieldIdentifier'>) => boolean {
     const platform = new Map(schema.standardColumns.map((column) => [getColumnKey(column), column]));
     const published = catalogueKeys(schema.catalogue);
-    const carried = new Set(held.map(getColumnKey));
 
-    return columns.filter((column) => {
+    return (column) => {
         const key = getColumnKey(column);
         const standard = platform.get(key);
         if (standard) return !standard.displayOnly;
 
         return published.size === 0 || published.has(key) || carried.has(key);
-    });
+    };
 }
 
 /**

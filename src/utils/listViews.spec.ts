@@ -23,6 +23,7 @@ import {
     toColumnSort,
     toCreateRequest,
     toStandardSlice,
+    storableColumnTest,
     toStorableColumns,
     toStorableFilters,
     toStoredColumns,
@@ -640,6 +641,24 @@ describe('toUpdateRequest', () => {
         });
 
         expect(patched.columns).toEqual([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }]);
+    });
+});
+
+describe('storableColumnTest', () => {
+    const isStorable = storableColumnTest(schemaOf(secretCatalogue, displayOnlyStatus));
+
+    it('counts a published column and a platform column the catalogue leaves out', () => {
+        expect(isStorable({ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'cost_centre' })).toBe(true);
+        expect(isStorable(standardColumns[0])).toBe(true);
+    });
+
+    it('does not count a display-only column or one whose field is gone, since a create drops both', () => {
+        expect(isStorable(displayOnlyStatus[1])).toBe(false);
+        expect(isStorable(retired)).toBe(false);
+    });
+
+    it('counts every column while the catalogue has not arrived', () => {
+        expect(storableColumnTest(schemaOf([]))(retired)).toBe(true);
     });
 });
 

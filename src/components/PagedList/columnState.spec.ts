@@ -369,6 +369,14 @@ describe('toggleColumn', () => {
         expect(toggleColumn([columns[0], duration], durationField)).toEqual([columns[0]]);
     });
 
+    it('keeps the last column a view can store when the other one has lost its field', () => {
+        const gone: ColumnDefinition = { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', catalogueLabel: 'retired' };
+        const withGone = [columns[0], gone];
+        const isStorable = (column: ColumnDefinition) => column !== gone;
+
+        expect(toggleColumn(withGone, commonName, [], isStorable)).toBe(withGone);
+    });
+
     it('tells a field of one source from the same identifier under another', () => {
         const customCommonName = { ...commonName, fieldSource: FilterFieldSource.Custom } as SourcedCatalogueField;
 

@@ -47,6 +47,7 @@ export function toggleColumn(
     columns: ColumnDefinition[],
     field: SourcedCatalogueField,
     shipped: readonly ColumnDefinition[] = [],
+    isStorable: (column: ColumnDefinition) => boolean = (column) => !column.displayOnly,
 ): ColumnDefinition[] {
     const key = getColumnKey(field);
     const shown = columns.find((column) => getColumnKey(column) === key);
@@ -54,7 +55,7 @@ export function toggleColumn(
         const asShipped = shipped.find((column) => getColumnKey(column) === key);
         return [asShipped ?? toColumnDefinition(field), ...columns];
     }
-    if (!shown.displayOnly && countStorableColumns(columns) === 1) return columns;
+    if (isStorable(shown) && countStorableColumns(columns, isStorable) === 1) return columns;
     return columns.filter((column) => getColumnKey(column) !== key);
 }
 

@@ -21,6 +21,7 @@ import type { ViewSlice } from 'types/listViews';
 import type { Resource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { moveColumn, toCatalogueFields } from 'utils/columnPicker';
+import { storableColumnTest } from 'utils/listViews';
 import { type ColumnSort, buildColumnHeaders, countStorableColumns, getColumnHeading, getColumnKey } from 'utils/tableColumns';
 import {
     buildListRequest,
@@ -182,6 +183,10 @@ function PagedList<TRow extends object>({
     );
 
     const sortableStandardColumns = useMemo(() => withSortability(standardColumns ?? NO_COLUMNS), [withSortability, standardColumns]);
+    const isStorable = useMemo(
+        () => storableColumnTest({ catalogue, standardColumns: sortableStandardColumns }),
+        [catalogue, sortableStandardColumns],
+    );
 
     // Holds only the deviation and falls back, so a config arriving after the first render cannot
     // leave the table with no columns at all.
@@ -253,15 +258,15 @@ function PagedList<TRow extends object>({
             // An empty selection reads as "back to Standard", so the last column standing holds here as
             // it does in the menu, rather than resetting the table to a set nobody asked for.
             const target = appliedColumns.find((column) => getColumnKey(column) === key);
-            if (!target?.displayOnly && countStorableColumns(appliedColumns) === 1) return;
+            if ((target === undefined || isStorable(target)) && countStorableColumns(appliedColumns, isStorable) === 1) return;
             applyColumns(appliedColumns.filter((column) => getColumnKey(column) !== key));
         },
-        [applyColumns, appliedColumns],
+        [applyColumns, appliedColumns, isStorable],
     );
 
     const onToggleColumn = useCallback(
-        (field: SourcedCatalogueField) => applyColumns(toggleColumn(appliedColumns, field, sortableStandardColumns)),
-        [applyColumns, appliedColumns, sortableStandardColumns],
+        (field: SourcedCatalogueField) => applyColumns(toggleColumn(appliedColumns, field, sortableStandardColumns, isStorable)),
+        [applyColumns, appliedColumns, sortableStandardColumns, isStorable],
     );
 
     const addColumnMenu = useMemo(
@@ -275,9 +280,10 @@ function PagedList<TRow extends object>({
                     // set wholesale, so a change made before that would be wiped without a trace.
                     onToggle={isStripReady ? onToggleColumn : undefined}
                     onReset={isStripReady ? onResetColumns : undefined}
+                    isStorable={isStorable}
                 />
             ) : undefined,
-        [isColumnDriven, catalogueFields, hasLoadedCatalogue, appliedColumns, onToggleColumn, onResetColumns, isStripReady],
+        [isColumnDriven, catalogueFields, hasLoadedCatalogue, appliedColumns, onToggleColumn, onResetColumns, isStripReady, isStorable],
     );
 
     const currentFiltersSnapshot = useMemo(() => JSON.stringify(currentFilters ?? []), [currentFilters]);
@@ -464,7 +470,7 @@ function PagedList<TRow extends object>({
                     onRename={(next) => onRenameColumn(header.id, next)}
                     defaultHeading={shippedHeadings.get(header.id) ?? column.catalogueLabel}
                     onRemove={() => onRemoveColumn(header.id)}
-                    isLastColumn={!column.displayOnly && countStorableColumns(appliedColumns) === 1}
+                    isLastColumn={isStorable(column) && countStorableColumns(appliedColumns, isStorable) === 1}
                     dataTestId={`column-header-menu-${header.id}`}
                 />
             );
@@ -479,6 +485,7 @@ function PagedList<TRow extends object>({
             onRenameColumn,
             onRemoveColumn,
             shippedHeadings,
+            isStorable,
         ],
     );
 
