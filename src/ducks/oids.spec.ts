@@ -14,6 +14,7 @@ vi.mock('./transform/certificates', () => ({
 
 import reducer, { actions, initialState, selectors } from './oids';
 import epics from './oid-epics';
+import { actions as appRedirectActions } from './app-redirect';
 import { FilterConditionOperator, FilterFieldSource, OidCategory } from 'types/openapi';
 
 const reducerKey = () => 'oids';
@@ -79,6 +80,24 @@ describe('oids slice', () => {
         next = reducer({ ...next, isCreating: true }, actions.createOIDFailure({ error: 'err' }));
         expect(next.isCreating).toBe(false);
         expect(next.createOidSucceeded).toBe(false);
+    });
+
+    test('a refused module is stored from the failure and cleared by the next submission or on request', () => {
+        const refusal = "The extension's ASN.1 module is empty";
+        let next = reducer(initialState, actions.createOIDFailure({ error: 'err', valueSchemaError: refusal }));
+        expect(next.valueSchemaError).toBe(refusal);
+        next = reducer(next, actions.createOID({ oid: { oid: '1.2.3' } as any }));
+        expect(next.valueSchemaError).toBeUndefined();
+
+        next = reducer(next, actions.updateOIDFailure({ error: 'err', valueSchemaError: refusal }));
+        expect(next.valueSchemaError).toBe(refusal);
+        next = reducer(next, actions.updateOID({ oid: '1.2.3', data: {} as any }));
+        expect(next.valueSchemaError).toBeUndefined();
+
+        next = reducer(next, actions.createOIDFailure({ error: 'err', valueSchemaError: refusal }));
+        next = reducer(next, actions.clearValueSchemaError());
+        expect(next.valueSchemaError).toBeUndefined();
+        expect(selectors.valueSchemaError({ oids: next } as any)).toBeUndefined();
     });
 
     test('updateOID / success / failure', () => {
@@ -394,6 +413,48 @@ describe('oid-epics', () => {
 
         expect(errored).toBe(false);
         expect(out.some((a) => a.type === actions.listSystemOidsFailure.type)).toBe(true);
+    });
+
+    const runEpic = async (name: string, action: unknown, apiClient: Record<string, unknown>) => {
+        const epic = epics.find((e) => e.name === name)!;
+        const out: any[] = [];
+        await new Promise<void>((resolve) => {
+            epic(of(action) as any, {} as any, { apiClients: { oids: apiClient } } as any).subscribe({
+                next: (a) => out.push(a),
+                complete: () => resolve(),
+            });
+        });
+        return out;
+    };
+    const moduleRefusal = {
+        status: 422,
+        response: ["The extension's ASN.1 module uses AUTOMATIC TAGS, which this platform does not support"],
+    };
+
+    test('createOID epic hands a refused module to the form instead of the error alert', async () => {
+        const createCustomOidEntry = vi.fn().mockReturnValue(throwError(() => moduleRefusal));
+        const out = await runEpic('createOID', actions.createOID({ oid: { oid: '1.2.3' } as any }), { createCustomOidEntry });
+
+        expect(out).toHaveLength(1);
+        expect(out[0].type).toBe(actions.createOIDFailure.type);
+        expect(out[0].payload.valueSchemaError).toBe(moduleRefusal.response[0]);
+    });
+
+    test('createOID epic keeps the error alert for any other failure', async () => {
+        const createCustomOidEntry = vi.fn().mockReturnValue(throwError(() => ({ status: 422, response: ['OID already exists'] })));
+        const out = await runEpic('createOID', actions.createOID({ oid: { oid: '1.2.3' } as any }), { createCustomOidEntry });
+
+        expect(out.map((a) => a.type)).toEqual([actions.createOIDFailure.type, appRedirectActions.fetchError.type]);
+        expect(out[0].payload.valueSchemaError).toBeUndefined();
+    });
+
+    test('updateOID epic hands a refused module to the form instead of the error alert', async () => {
+        const editCustomOidEntry = vi.fn().mockReturnValue(throwError(() => moduleRefusal));
+        const out = await runEpic('updateOID', actions.updateOID({ oid: '1.2.3', data: {} as any }), { editCustomOidEntry });
+
+        expect(out).toHaveLength(1);
+        expect(out[0].type).toBe(actions.updateOIDFailure.type);
+        expect(out[0].payload.valueSchemaError).toBe(moduleRefusal.response[0]);
     });
 
     test('listSystemOids epic maps a failure to listSystemOidsFailure', async () => {

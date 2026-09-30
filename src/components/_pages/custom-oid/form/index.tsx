@@ -24,7 +24,12 @@ import {
     getExtensionValueEncodingOptions,
     buildOidAdditionalProperties,
 } from 'utils/oid';
-import { getJsonSchemaDocumentError } from 'utils/strictJson';
+
+const VALUE_SCHEMA_EXAMPLE = `Demo DEFINITIONS IMPLICIT TAGS ::= BEGIN
+ServiceEntitlement ::= SEQUENCE {
+    serviceId  UTF8String (SIZE (5..32)),
+    tier       INTEGER (1..3) }
+END`;
 
 type CustomOIDFormProps = Readonly<{
     oidId?: string;
@@ -53,6 +58,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
     const isFetching = useSelector(selectors.isFetching);
     const isCreating = useSelector(selectors.isCreating);
     const isUpdating = useSelector(selectors.isUpdating);
+    const valueSchemaError = useSelector(selectors.valueSchemaError);
 
     const [oid, setOid] = useState<CustomOidEntryRequestDto>();
 
@@ -120,8 +126,22 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
         handleSubmit,
         control,
         reset,
+        setError,
         formState: { isDirty, isSubmitting, isValid },
     } = methods;
+
+    // Core is the only reader of the ASN.1 module, so its refusal is the field's validation error.
+    useEffect(() => {
+        if (valueSchemaError) setError('valueSchema', { type: 'server', message: valueSchemaError }, { shouldFocus: true });
+    }, [valueSchemaError, setError]);
+
+    // A refusal belongs to the submission that caused it, not to the next time the form opens.
+    useEffect(
+        () => () => {
+            dispatch(actions.clearValueSchemaError());
+        },
+        [dispatch],
+    );
 
     useEffect(() => {
         if (editMode && oid) {
@@ -360,22 +380,25 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                                     <Controller
                                         name="valueSchema"
                                         control={control}
-                                        rules={{ validate: (value) => getJsonSchemaDocumentError(value ?? '') ?? true }}
                                         render={({ field, fieldState }) => (
                                             <>
                                                 <TextArea
                                                     {...field}
                                                     id="valueSchema"
-                                                    label="Value Schema (JSON Schema)"
-                                                    rows={5}
-                                                    placeholder="Enter an inline JSON Schema (draft 2020-12) describing the extension's JSON value"
+                                                    label="Value Schema (ASN.1 Module)"
+                                                    rows={6}
+                                                    placeholder={VALUE_SCHEMA_EXAMPLE}
                                                     invalid={!!fieldState.error}
-                                                    error={getFieldErrorMessage(fieldState)}
+                                                    error={fieldState.error?.message}
                                                 />
                                                 {!fieldState.error && (
-                                                    <p className="mt-1 text-xs text-content-subtle">
-                                                        Optional. Describes the shape of the extension's structural ASN.1 JSON value. Remote
-                                                        $ref is not supported.
+                                                    <p className="mt-1 text-xs text-content-subtle" data-testid="valueSchema-hint">
+                                                        Optional. An ASN.1 module whose first type is the extension's value; with one, a
+                                                        value can be written in JER (X.697) instead of base64-encoded DER. Supported:
+                                                        SEQUENCE, SET, SEQUENCE OF, SET OF, CHOICE, tagged types, BOOLEAN, INTEGER, NULL,
+                                                        OCTET STRING, BIT STRING, OBJECT IDENTIFIER, UTF8String, IA5String, PrintableString
+                                                        and GeneralizedTime, with SIZE and value-range constraints. AUTOMATIC TAGS, IMPORTS
+                                                        and extension markers are not supported.
                                                     </p>
                                                 )}
                                             </>

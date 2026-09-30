@@ -115,7 +115,7 @@ function AttributeEditorInner({
     const formValues = watch();
 
     // Fetched once per editor, not per field: every extension-mapped AttributeFieldInput reads the
-    // DER OID set from this registry to decide whether it accepts a structural ASN.1 JSON tree.
+    // DER OID set from this registry to decide whether it takes a JER value or base64 DER.
     const hasExtensionMappedAttribute = useMemo(
         () => attributeDescriptors.some((d) => getMappedExtensionOids(getFieldMapping(d)).length > 0),
         [attributeDescriptors],

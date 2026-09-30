@@ -7,6 +7,7 @@ import { EntityType } from './filters';
 import { transformSearchRequestModelToDto } from 'ducks/transform/certificates';
 import { actions as appRedirectActions } from './app-redirect';
 import { extractError } from 'utils/net';
+import { extractValueSchemaError } from 'utils/oid';
 import type { OidCategory } from 'types/openapi';
 import { FilterConditionOperator, FilterFieldSource } from 'types/openapi';
 import type { SearchRequestModel } from 'types/certificate';
@@ -119,12 +120,17 @@ const createOID: AppEpic = (action$, state, deps) => {
                         appRedirectActions.redirect({ url: `../custom-oids/detail/${oid.oid}` }),
                     ),
                 ),
-                catchError((error) =>
-                    of(
-                        slice.actions.createOIDFailure({ error: extractError(error, 'Failed to add Custom OID') }),
-                        appRedirectActions.fetchError({ error, message: 'Failed to add Custom OID' }),
-                    ),
-                ),
+                catchError((error) => {
+                    const valueSchemaError = extractValueSchemaError(error);
+                    const failure = slice.actions.createOIDFailure({
+                        error: extractError(error, 'Failed to add Custom OID'),
+                        valueSchemaError,
+                    });
+                    // The form shows a refused module on its field, so an alert would only repeat it.
+                    return valueSchemaError
+                        ? of(failure)
+                        : of(failure, appRedirectActions.fetchError({ error, message: 'Failed to add Custom OID' }));
+                }),
             ),
         ),
     );
@@ -143,12 +149,16 @@ const updateOID: AppEpic = (action$, state, deps) => {
                             appRedirectActions.redirect({ url: `../custom-oids/detail/${oid.oid}` }),
                         ),
                     ),
-                    catchError((error) =>
-                        of(
-                            slice.actions.updateOIDFailure({ error: extractError(error, 'Failed to update Custom OID') }),
-                            appRedirectActions.fetchError({ error, message: 'Failed to update Custom OID' }),
-                        ),
-                    ),
+                    catchError((error) => {
+                        const valueSchemaError = extractValueSchemaError(error);
+                        const failure = slice.actions.updateOIDFailure({
+                            error: extractError(error, 'Failed to update Custom OID'),
+                            valueSchemaError,
+                        });
+                        return valueSchemaError
+                            ? of(failure)
+                            : of(failure, appRedirectActions.fetchError({ error, message: 'Failed to update Custom OID' }));
+                    }),
                 );
         }),
     );

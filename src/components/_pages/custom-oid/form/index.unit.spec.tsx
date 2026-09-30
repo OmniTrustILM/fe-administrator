@@ -31,8 +31,11 @@ vi.mock('components/TextInput', () => ({
     ),
 }));
 vi.mock('components/TextArea', () => ({
-    default: ({ id, value, onChange }: any) => (
-        <textarea data-testid={`textarea-${id}`} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
+    default: ({ id, value, onChange, error }: any) => (
+        <>
+            <textarea data-testid={`textarea-${id}`} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
+            {error && <span data-testid={`error-${id}`}>{error}</span>}
+        </>
     ),
 }));
 vi.mock('components/Input/MultipleValueTextInput', () => ({
@@ -55,6 +58,13 @@ vi.mock('components/ProgressButton', () => ({
         </button>
     ),
 }));
+
+const MODULE = `Demo DEFINITIONS IMPLICIT TAGS ::= BEGIN
+ServiceEntitlement ::= SEQUENCE {
+    serviceId  UTF8String (SIZE (5..32)),
+    tier       INTEGER (1..3) }
+END
+`;
 
 function buildState() {
     return {
@@ -89,6 +99,28 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
         setter?.call(el, val);
         el?.dispatchEvent(new Event('input', { bubbles: true }));
     };
+
+    const setValueSchema = (val: string) => {
+        const area = container.querySelector<HTMLTextAreaElement>('[data-testid="textarea-valueSchema"]');
+        if (!area) throw new Error('valueSchema textarea not rendered');
+        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+        setter?.call(area, val);
+        area.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+
+    const submit = () => container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    async function fillDerExtension() {
+        selectValueById = { categorySelect: OidCategory.CertificateExtension, valueEncodingSelect: ExtensionValueEncoding.Der };
+        await act(async () => setInput('oid', '1.2.3.4'));
+        await act(async () => setInput('displayName', 'My Extension'));
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="select-categorySelect"]')?.click();
+        });
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="select-valueEncodingSelect"]')?.click();
+        });
+    }
 
     beforeEach(() => {
         container = document.createElement('div');
@@ -215,39 +247,70 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
         expect(container.querySelector('[data-testid="textarea-valueSchema"]')).not.toBeNull();
     });
 
-    it('dispatches createOID carrying the valueSchema for a DER extension', async () => {
-        selectValueById = { categorySelect: OidCategory.CertificateExtension, valueEncodingSelect: ExtensionValueEncoding.Der };
+    it('dispatches createOID carrying the ASN.1 module exactly as entered', async () => {
         await render();
-
-        await act(async () => setInput('oid', '1.2.3.4'));
-        await act(async () => setInput('displayName', 'My Extension'));
-        await act(async () => {
-            container.querySelector<HTMLButtonElement>('[data-testid="select-categorySelect"]')?.click();
-        });
-        await act(async () => {
-            container.querySelector<HTMLButtonElement>('[data-testid="select-valueEncodingSelect"]')?.click();
-        });
-        await act(async () => {
-            const area = container.querySelector<HTMLTextAreaElement>('[data-testid="textarea-valueSchema"]');
-            if (!area) throw new Error('valueSchema textarea not rendered');
-            const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
-            setter?.call(area, '{"type":"object"}');
-            area.dispatchEvent(new Event('input', { bubbles: true }));
-        });
-        await act(async () => {
-            container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-        });
+        await fillDerExtension();
+        await act(async () => setValueSchema(MODULE));
+        await act(async () => submit());
 
         expect(dispatchFn).toHaveBeenCalledWith(
             expect.objectContaining({
                 type: expect.stringContaining('createOID'),
                 payload: {
                     oid: expect.objectContaining({
-                        additionalProperties: expect.objectContaining({ valueSchema: '{"type":"object"}' }),
+                        additionalProperties: expect.objectContaining({ valueSchema: MODULE }),
                     }),
                 },
             }),
         );
+    });
+
+    it('leaves checking the module to Core: text that is not a module still submits', async () => {
+        await render();
+        await fillDerExtension();
+        await act(async () => setValueSchema('this is not a module'));
+        await act(async () => submit());
+
+        expect(container.querySelector('[data-testid="error-valueSchema"]')).toBeNull();
+        expect(dispatchFn).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: expect.stringContaining('createOID'),
+                payload: {
+                    oid: expect.objectContaining({
+                        additionalProperties: expect.objectContaining({ valueSchema: 'this is not a module' }),
+                    }),
+                },
+            }),
+        );
+    });
+
+    it("shows Core's 422 refusal of the module on the field until the module is edited", async () => {
+        await render();
+        await fillDerExtension();
+        await act(async () => setValueSchema('M DEFINITIONS AUTOMATIC TAGS ::= BEGIN Ext ::= SEQUENCE { a INTEGER } END'));
+        await act(async () => submit());
+        expect(container.querySelector('[data-testid="valueSchema-hint"]')).not.toBeNull();
+
+        const refusal = "The extension's ASN.1 module uses AUTOMATIC TAGS, which this platform does not support";
+        const refused = buildState();
+        const refusedState = { ...refused, oids: { ...refused.oids, valueSchemaError: refusal } };
+        useSelectorMock.mockImplementation((selector: any) => selector(refusedState));
+        await act(async () => {
+            root.render(<CustomOIDForm onCancel={() => {}} />);
+        });
+
+        expect(container.querySelector('[data-testid="error-valueSchema"]')?.textContent).toBe(refusal);
+        expect(container.querySelector('[data-testid="valueSchema-hint"]')).toBeNull();
+
+        await act(async () => setValueSchema(MODULE));
+        expect(container.querySelector('[data-testid="error-valueSchema"]')).toBeNull();
+    });
+
+    it('clears a stored module refusal when the form closes', async () => {
+        await render();
+        act(() => root.unmount());
+        expect(dispatchFn).toHaveBeenCalledWith(expect.objectContaining({ type: expect.stringContaining('clearValueSchemaError') }));
+        root = createRoot(container);
     });
 
     it('pre-populates the Value Schema in edit mode', async () => {
@@ -260,7 +323,7 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
             additionalProperties: {
                 defaultCritical: false,
                 valueEncoding: ExtensionValueEncoding.Der,
-                valueSchema: '{"type":"object"}',
+                valueSchema: MODULE,
             },
         } as any;
         useSelectorMock.mockImplementation((selector: any) => selector(state));
@@ -271,7 +334,7 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
 
         const area = container.querySelector<HTMLTextAreaElement>('[data-testid="textarea-valueSchema"]');
         expect(area).not.toBeNull();
-        expect(area?.value).toBe('{"type":"object"}');
+        expect(area?.value).toBe(MODULE);
     });
 
     it('pre-populates Default Critical and Value Encoding in edit mode', async () => {

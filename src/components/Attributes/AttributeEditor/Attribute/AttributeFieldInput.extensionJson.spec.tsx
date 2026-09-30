@@ -16,7 +16,13 @@ const extensionDescriptor = (extensionOid: string, contentType = 'text'): Attrib
         fieldMapping: { objectType: 'x509Certificate', fields: [{ fieldType: 'extension', extensionOid }] },
     }) as unknown as AttributeDescriptorModel;
 
-/** OID registry with one DER-encoded and one string-encoded certificate extension. */
+const BASIC_CONSTRAINTS_MODULE = `BasicConstraints DEFINITIONS IMPLICIT TAGS ::= BEGIN
+BasicConstraints ::= SEQUENCE {
+    cA                 BOOLEAN DEFAULT FALSE,
+    pathLenConstraint  INTEGER (0..MAX) OPTIONAL }
+END`;
+
+/** OID registry with a DER extension described by a module, a DER extension without one, and a string-encoded extension. */
 const oidsState = {
     oids: {
         oids: [],
@@ -27,6 +33,12 @@ const oidsState = {
             {
                 oid: '2.5.29.19',
                 displayName: 'Basic Constraints',
+                category: 'certificateExtension',
+                additionalProperties: { defaultCritical: false, valueEncoding: 'DER', valueSchema: BASIC_CONSTRAINTS_MODULE },
+            },
+            {
+                oid: '2.5.29.101',
+                displayName: 'Undescribed Extension',
                 category: 'certificateExtension',
                 additionalProperties: { defaultCritical: false, valueEncoding: 'DER' },
             },
@@ -48,8 +60,8 @@ const oidsState = {
     },
 };
 
-test.describe('extension value JSON input', () => {
-    test('a DER-mapped extension attribute offers the JSON-tree hint and validates while typing', async ({ mount, page }) => {
+test.describe('extension value input', () => {
+    test('a DER extension with a module offers the JER hint and validates a JER value while typing', async ({ mount, page }) => {
         await mount(
             <AttributeEditorTestWrapper
                 id={EDITOR_ID}
@@ -58,18 +70,27 @@ test.describe('extension value JSON input', () => {
             />,
         );
 
-        await expect(page.getByTestId(`${FIELD}-json-tree-hint`)).toContainText('ASN.1 JSON tree');
+        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toContainText('is read as JER (X.697)');
+        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toContainText('anything else as base64-encoded DER');
 
         const input = page.locator(`[id="${FIELD}"]`);
         // Duplicate keys survive JSON.parse, so this is exactly the case the strict check must catch.
-        await input.fill('{"sequence":[{"integer":1,"integer":2}]}');
-        await expect(page.getByTestId(`${FIELD}-json-tree-error`)).toContainText('Duplicate key');
+        await input.fill('{"cA":true,"cA":false}');
+        await expect(page.getByTestId(`${FIELD}-jer-error`)).toContainText('Duplicate key');
 
-        await input.fill('{"sequence":[{"boolean":true},{"integer":0}]}');
-        await expect(page.getByTestId(`${FIELD}-json-tree-error`)).toHaveCount(0);
+        // Every character Core's JerCodec reads as the start of a JER value gets the same check.
+        for (const malformed of ['[1,', '"unterminated', '-']) {
+            await input.fill('{}');
+            await expect(page.getByTestId(`${FIELD}-jer-error`)).toHaveCount(0);
+            await input.fill(malformed);
+            await expect(page.getByTestId(`${FIELD}-jer-error`)).toBeVisible();
+        }
+
+        await input.fill('{"cA":true,"pathLenConstraint":0}');
+        await expect(page.getByTestId(`${FIELD}-jer-error`)).toHaveCount(0);
     });
 
-    test('a DER-mapped String attribute still gets a textarea — a structural JSON value needs room', async ({ mount, page }) => {
+    test('a DER-mapped String attribute still gets a textarea, since a JER value needs room', async ({ mount, page }) => {
         await mount(
             <AttributeEditorTestWrapper
                 id={EDITOR_ID}
@@ -79,10 +100,10 @@ test.describe('extension value JSON input', () => {
         );
 
         await expect(page.locator(`textarea[id="${FIELD}"]`)).toBeVisible();
-        await expect(page.getByTestId(`${FIELD}-json-tree-hint`)).toBeVisible();
+        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toBeVisible();
     });
 
-    test('a value not starting with { is read as base64 DER and never JSON-validated', async ({ mount, page }) => {
+    test('a value not starting with {, [, " or - is read as base64 DER and never JSON-validated', async ({ mount, page }) => {
         await mount(
             <AttributeEditorTestWrapper
                 id={EDITOR_ID}
@@ -93,10 +114,27 @@ test.describe('extension value JSON input', () => {
 
         const input = page.locator(`[id="${FIELD}"]`);
         await input.fill('MAMBAf8=');
-        await expect(page.getByTestId(`${FIELD}-json-tree-error`)).toHaveCount(0);
+        await expect(page.getByTestId(`${FIELD}-jer-error`)).toHaveCount(0);
     });
 
-    test('an extension with a string encoding gets no JSON treatment — { is literal text there', async ({ mount, page }) => {
+    test('a DER extension without a module asks for base64 DER and offers no JER treatment', async ({ mount, page }) => {
+        await mount(
+            <AttributeEditorTestWrapper
+                id={EDITOR_ID}
+                attributeDescriptors={[extensionDescriptor('2.5.29.101')]}
+                preloadedState={oidsState}
+            />,
+        );
+
+        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toContainText('base64-encoded DER');
+        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toContainText('no ASN.1 module');
+
+        const input = page.locator(`[id="${FIELD}"]`);
+        await input.fill('{not json at all');
+        await expect(page.getByTestId(`${FIELD}-jer-error`)).toHaveCount(0);
+    });
+
+    test('an extension with a string encoding gets no DER treatment, since { is literal text there', async ({ mount, page }) => {
         await mount(
             <AttributeEditorTestWrapper
                 id={EDITOR_ID}
@@ -106,10 +144,10 @@ test.describe('extension value JSON input', () => {
         );
 
         await expect(page.locator(`[id="${FIELD}"]`)).toBeVisible();
-        await expect(page.getByTestId(`${FIELD}-json-tree-hint`)).toHaveCount(0);
+        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toHaveCount(0);
 
         const input = page.locator(`[id="${FIELD}"]`);
         await input.fill('{not json at all');
-        await expect(page.getByTestId(`${FIELD}-json-tree-error`)).toHaveCount(0);
+        await expect(page.getByTestId(`${FIELD}-jer-error`)).toHaveCount(0);
     });
 });

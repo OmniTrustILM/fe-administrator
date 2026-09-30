@@ -1123,6 +1123,7 @@ export type OidsTestState = {
     isUpdating: boolean;
     updateOidSucceeded: boolean;
     isDeleting: boolean;
+    valueSchemaError?: string;
 };
 
 const oidsTestInitialState: OidsTestState = {

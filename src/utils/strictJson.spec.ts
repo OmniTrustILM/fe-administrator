@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getExtensionJsonTreeError, getJsonSchemaDocumentError, JSON_SCHEMA_2020_12_DIALECT, parseStrictJson } from './strictJson';
+import { getJerValueError, getJsonSchemaDocumentError, isJerValue, JSON_SCHEMA_2020_12_DIALECT, parseStrictJson } from './strictJson';
 
 describe('parseStrictJson', () => {
     it('parses every JSON value kind', () => {
@@ -52,14 +52,30 @@ describe('parseStrictJson', () => {
     });
 });
 
-describe('getExtensionJsonTreeError', () => {
-    it('accepts a well-formed structural ASN.1 tree', () => {
-        expect(getExtensionJsonTreeError('{"sequence":[{"boolean":true},{"integer":0}]}')).toBeUndefined();
+describe('isJerValue', () => {
+    it('reads a value starting with {, [, " or - as JER', () => {
+        expect(isJerValue('{"serviceId":"svc-billing","tier":1}')).toBe(true);
+        expect(isJerValue('  [1,2]')).toBe(true);
+        expect(isJerValue('"svc-billing"')).toBe(true);
+        expect(isJerValue('-1')).toBe(true);
+    });
+
+    it('reads anything else as base64 DER', () => {
+        expect(isJerValue('MAMBAf8=')).toBe(false);
+        expect(isJerValue('')).toBe(false);
+    });
+});
+
+describe('getJerValueError', () => {
+    it('accepts a well-formed JER value', () => {
+        expect(getJerValueError('{"serviceId":"svc-billing","tier":1}')).toBeUndefined();
+        expect(getJerValueError('-1')).toBeUndefined();
     });
 
     it('reports duplicate keys and trailing content', () => {
-        expect(getExtensionJsonTreeError('{"integer":1,"integer":2}')).toContain('Duplicate key');
-        expect(getExtensionJsonTreeError('{"boolean":true}}')).toContain('trailing content');
+        expect(getJerValueError('{"tier":1,"tier":2}')).toContain('Duplicate key');
+        expect(getJerValueError('{"tier":1}}')).toContain('trailing content');
+        expect(getJerValueError('"unterminated')).toBeDefined();
     });
 });
 

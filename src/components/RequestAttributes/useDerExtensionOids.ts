@@ -21,32 +21,39 @@ export function useFetchExtensionOidRegistry(enabled: boolean): void {
     }, [dispatch, enabled]);
 }
 
+export interface DerExtensionOids {
+    /** Every registered extension whose value encoding is DER; each takes its value as base64 DER. */
+    all: Set<string>;
+    /** Those an ASN.1 module describes, registered or shipped with Core; only these also take a JER value. */
+    withModule: Set<string>;
+}
+
 /**
- * The dotted OIDs of every registered certificate extension (system + custom) whose value encoding
- * is DER. Whether an extension-mapped attribute accepts a structural ASN.1 JSON tree comes from the
- * OID registry, and only DER-encoded extensions do — for the string encodings a value starting with
- * `{` is literal text, so offering JSON validation there would reject valid values.
+ * The registered certificate extensions (system + custom) whose value encoding is DER, from the
+ * OID registry. Only a DER extension takes a JER value, and only when a module describes it: for
+ * the string encodings a value starting with `{` is literal text, so offering JSON validation there
+ * would reject valid values.
  *
  * Selection only; the registry fetch is `useFetchExtensionOidRegistry`.
  */
-export function useDerExtensionOids(): Set<string> {
+export function useDerExtensionOids(): DerExtensionOids {
     const systemOidsByCategory = useSelector(oidSelectors.systemOidsByCategory);
     const oidsByCategory = useSelector(oidSelectors.oidsByCategory);
 
     return useMemo(() => {
-        const derOids = new Set<string>();
+        const all = new Set<string>();
+        const withModule = new Set<string>();
         const entries = [
             ...(systemOidsByCategory[OidCategory.CertificateExtension] ?? []),
             ...(oidsByCategory[OidCategory.CertificateExtension] ?? []),
         ];
         for (const entry of entries) {
-            if (
-                isCertificateExtensionProperties(entry.additionalProperties) &&
-                entry.additionalProperties.valueEncoding === ExtensionValueEncoding.Der
-            ) {
-                derOids.add(entry.oid);
+            const props = entry.additionalProperties;
+            if (isCertificateExtensionProperties(props) && props.valueEncoding === ExtensionValueEncoding.Der) {
+                all.add(entry.oid);
+                if (props.valueSchema) withModule.add(entry.oid);
             }
         }
-        return derOids;
+        return { all, withModule };
     }, [systemOidsByCategory, oidsByCategory]);
 }

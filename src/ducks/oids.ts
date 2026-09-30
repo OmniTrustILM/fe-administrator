@@ -22,6 +22,8 @@ export type State = {
     isUpdating: boolean;
     updateOidSucceeded: boolean;
     isDeleting: boolean;
+    /** Core's refusal of the ASN.1 module the last create or update sent, shown on the form's field. */
+    valueSchemaError?: string;
 };
 
 export const initialState: State = {
@@ -116,6 +118,7 @@ export const slice = createSlice({
         createOID: (state, action: PayloadAction<{ oid: OIDRequestModel }>) => {
             state.isCreating = true;
             state.createOidSucceeded = false;
+            state.valueSchemaError = undefined;
         },
 
         createOIDSuccess: (state, action: PayloadAction<{ oid: OIDResponseModel }>) => {
@@ -124,14 +127,16 @@ export const slice = createSlice({
             state.oid = action.payload.oid;
         },
 
-        createOIDFailure: (state, action: PayloadAction<{ error: string }>) => {
+        createOIDFailure: (state, action: PayloadAction<{ error: string; valueSchemaError?: string }>) => {
             state.isCreating = false;
             state.createOidSucceeded = false;
+            state.valueSchemaError = action.payload.valueSchemaError;
         },
 
         updateOID: (state, action: PayloadAction<{ oid: string; data: OIDUpdateRequestModel }>) => {
             state.isUpdating = true;
             state.updateOidSucceeded = false;
+            state.valueSchemaError = undefined;
         },
 
         updateOIDSuccess: (state, action: PayloadAction<{ oid: OIDResponseModel }>) => {
@@ -140,9 +145,14 @@ export const slice = createSlice({
             state.oid = action.payload.oid;
         },
 
-        updateOIDFailure: (state, action: PayloadAction<{ error: string }>) => {
+        updateOIDFailure: (state, action: PayloadAction<{ error: string; valueSchemaError?: string }>) => {
             state.isUpdating = false;
             state.updateOidSucceeded = false;
+            state.valueSchemaError = action.payload.valueSchemaError;
+        },
+
+        clearValueSchemaError: (state) => {
+            state.valueSchemaError = undefined;
         },
 
         deleteOID: (state, action: PayloadAction<{ oid: string }>) => {
@@ -206,6 +216,7 @@ const createOidSucceeded = createSelector(state, (state) => state.createOidSucce
 const isUpdating = createSelector(state, (state) => state.isUpdating);
 const updateOidSucceeded = createSelector(state, (state) => state.updateOidSucceeded);
 const isDeleting = createSelector(state, (state) => state.isDeleting);
+const valueSchemaError = createSelector(state, (state) => state.valueSchemaError);
 
 export const selectors = {
     state,
@@ -226,6 +237,7 @@ export const selectors = {
     isUpdating,
     updateOidSucceeded,
     isDeleting,
+    valueSchemaError,
 };
 
 export const actions = slice.actions;

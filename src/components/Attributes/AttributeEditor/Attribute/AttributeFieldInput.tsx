@@ -11,7 +11,7 @@ import { AttributeContentType } from 'types/openapi';
 import RequestAttributeMappingBadge from 'components/RequestAttributes/RequestAttributeMappingBadge';
 import { useDerExtensionOids } from 'components/RequestAttributes/useDerExtensionOids';
 import { getFieldMapping, getMappedExtensionOids } from 'utils/requestAttributes';
-import { getExtensionJsonTreeError } from 'utils/strictJson';
+import { getJerValueError, isJerValue } from 'utils/strictJson';
 import { getCodeBlockLanguage } from '../../../../utils/attributes/attributes';
 import { getHighLightedCode } from '../../CodeBlock';
 import {
@@ -151,12 +151,15 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
     const { submitCount } = useFormState({ control });
     const formValues = watch();
 
-    // An attribute mapped onto a DER-encoded extension (per the OID registry) accepts its value as
-    // a structural ASN.1 JSON tree: a value starting with `{` is read as a tree, anything else as
-    // base64 DER. The registry fetch is the editor's job (once per form).
+    // An attribute mapped onto a DER-encoded extension (per the OID registry) takes its value as
+    // base64 DER, or written in JER when an ASN.1 module describes the extension. A JER value has to
+    // encode for every DER extension the attribute maps to, so each one needs a module. The registry
+    // fetch is the editor's job (once per form).
     const mappedExtensionOids = getMappedExtensionOids(getFieldMapping(descriptor));
     const derExtensionOids = useDerExtensionOids();
-    const acceptsJsonTree = mappedExtensionOids.some((oid) => derExtensionOids.has(oid));
+    const mappedDerOids = mappedExtensionOids.filter((oid) => derExtensionOids.all.has(oid));
+    const isDerTarget = mappedDerOids.length > 0;
+    const acceptsJer = isDerTarget && mappedDerOids.every((oid) => derExtensionOids.withModule.has(oid));
 
     // Attribute should not be rendered in form but its value should be sent to BE
     if (descriptor.properties.visible === false) {
@@ -207,12 +210,11 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
     const regexpConstraint = getRegexpConstraint(descriptor);
 
     const baseValidator = buildAttributeValidators(descriptor);
-    const jsonTreeErrorFor = (value: unknown): string | undefined => {
-        if (!acceptsJsonTree || typeof value !== 'string' || !value.trim().startsWith('{')) return undefined;
-        return getExtensionJsonTreeError(value);
+    const jerErrorFor = (value: unknown): string | undefined => {
+        if (!acceptsJer || typeof value !== 'string' || !isJerValue(value)) return undefined;
+        return getJerValueError(value);
     };
-    const validate: FieldValidator = (value, allValues, fieldState) =>
-        baseValidator(value, allValues, fieldState) ?? jsonTreeErrorFor(value);
+    const validate: FieldValidator = (value, allValues, fieldState) => baseValidator(value, allValues, fieldState) ?? jerErrorFor(value);
     // Request attributes carry a description equal to their label; showing it just repeats the label
     // under the field, so only render the description when it adds information.
     const showDescription = !!descriptor.description && descriptor.description.trim() !== (descriptor.properties.label ?? '').trim();
@@ -225,9 +227,9 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
             render={({ field, fieldState }) => {
                 const fieldErrorVisible = fieldState.invalid && (fieldState.isTouched || submitCount > 0);
                 // Well-formedness feedback while typing: the touched/submit-gated area below only
-                // reports after the field is left, and a malformed tree (duplicate keys, trailing
+                // reports after the field is left, and a malformed JER value (duplicate keys, trailing
                 // content) would otherwise stay invisible until the backend rejects it.
-                const liveJsonTreeError = fieldErrorVisible ? undefined : jsonTreeErrorFor(field.value);
+                const liveJerError = fieldErrorVisible ? undefined : jerErrorFor(field.value);
                 return (
                     <>
                         {showLabel && (
@@ -247,7 +249,7 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                                 field={field}
                                 fieldState={fieldState}
                                 submitCount={submitCount}
-                                multiline={acceptsJsonTree}
+                                multiline={isDerTarget}
                             />
                         </div>
                         {showDescriptionAndError && (
@@ -262,16 +264,16 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                                         {descriptor.description}
                                     </p>
                                 )}
-                                {acceptsJsonTree && (
-                                    <p className="mt-1 text-xs text-content-muted" data-testid={`${name}-json-tree-hint`}>
-                                        {
-                                            'A value starting with { is read as a structural ASN.1 JSON tree; anything else as base64-encoded DER.'
-                                        }
+                                {isDerTarget && (
+                                    <p className="mt-1 text-xs text-content-muted" data-testid={`${name}-der-value-hint`}>
+                                        {acceptsJer
+                                            ? 'A value starting with {, [, " or - is read as JER (X.697) against the extension\'s ASN.1 module; anything else as base64-encoded DER.'
+                                            : 'Enter the value as base64-encoded DER. This extension has no ASN.1 module, so its value cannot be written in JER.'}
                                     </p>
                                 )}
-                                {liveJsonTreeError !== undefined && (
-                                    <div className="mt-1 text-sm text-danger" data-testid={`${name}-json-tree-error`}>
-                                        {liveJsonTreeError}
+                                {liveJerError !== undefined && (
+                                    <div className="mt-1 text-sm text-danger" data-testid={`${name}-jer-error`}>
+                                        {liveJerError}
                                     </div>
                                 )}
                                 {descriptor.contentType !== AttributeContentType.Boolean && fieldErrorVisible && (
