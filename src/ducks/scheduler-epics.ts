@@ -1,6 +1,7 @@
 import type { AppEpic } from 'ducks';
 import { concat, from, iif, of } from 'rxjs';
 import { catchError, concatMap, exhaustMap, filter, map, mergeMap, switchMap, toArray } from 'rxjs/operators';
+import { bulkDeleteFailureMessage, deleteSequentially } from 'utils/bulk-delete';
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
@@ -10,7 +11,7 @@ import { store } from '../App';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { EntityType } from './filters';
 import { actions as pagingActions } from './paging';
-import { slice } from './scheduler';
+import { selectors, slice } from './scheduler';
 import { transformSearchRequestModelToDto } from './transform/certificates';
 import {
     transformSchedulerJobDetailDtoToModel,
@@ -130,31 +131,19 @@ const bulkDeleteSchedulerJobs: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.bulkDeleteSchedulerJobs.match),
         exhaustMap((action) => {
-            return from(action.payload.uuids).pipe(
-                concatMap((uuid) =>
-                    deps.apiClients.scheduler.deleteScheduledJob({ uuid }).pipe(
-                        map(() => ({ uuid, ok: true })),
-                        catchError(() => of({ uuid, ok: false })),
-                    ),
-                ),
-                toArray(),
-                mergeMap((results) => {
-                    const deletedUuids = results.filter((result) => result.ok).map((result) => result.uuid);
-                    const failedDeletes = results.length - deletedUuids.length;
-
-                    if (failedDeletes === 0) {
+            // Read now: the list refresh that follows a delete empties the store before a failure comes back.
+            const jobs = selectors.schedulerJobs(state$.value).map((job) => ({ uuid: job.uuid, name: job.jobName }));
+            return deleteSequentially(action.payload.uuids, (uuid) => deps.apiClients.scheduler.deleteScheduledJob({ uuid })).pipe(
+                mergeMap(({ deletedUuids, failures }) => {
+                    if (failures.length === 0) {
                         return of(slice.actions.bulkDeleteSchedulerJobsSuccess({ uuids: deletedUuids }));
                     }
 
+                    const message = bulkDeleteFailureMessage(failures, 'scheduled job', jobs);
                     return of(
                         slice.actions.bulkDeleteSchedulerJobsSuccess({ uuids: deletedUuids }),
-                        slice.actions.bulkDeleteSchedulerJobsFailure({
-                            error: `Failed to delete ${failedDeletes} scheduled job${failedDeletes === 1 ? '' : 's'}`,
-                        }),
-                        appRedirectActions.fetchError({
-                            error: undefined,
-                            message: `Failed to delete ${failedDeletes} scheduled job${failedDeletes === 1 ? '' : 's'}`,
-                        }),
+                        slice.actions.bulkDeleteSchedulerJobsFailure({ error: message }),
+                        appRedirectActions.fetchError({ error: undefined, message }),
                     );
                 }),
                 catchError((err) =>
