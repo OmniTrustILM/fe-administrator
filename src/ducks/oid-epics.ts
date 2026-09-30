@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { slice } from 'ducks/oids';
-import { catchError, defer, filter, groupBy, mergeMap, of, switchMap, takeUntil } from 'rxjs';
+import { catchError, defer, exhaustMap, filter, groupBy, mergeMap, of, switchMap, takeUntil } from 'rxjs';
 import { store } from '../App';
 import { actions as pagingActions } from './paging';
 import { EntityType } from './filters';
@@ -106,18 +106,26 @@ const getExtensionOidDetail: AppEpic = (action$, state, deps) => {
     );
     return action$.pipe(
         filter(slice.actions.getExtensionOidDetail.match),
-        mergeMap((action) =>
-            deps.apiClients.oids.getCustomOidEntry({ oid: action.payload.oid }).pipe(
-                mergeMap((oid) => of(slice.actions.getExtensionOidDetailSuccess({ oid }))),
-                catchError((error) =>
-                    of(
-                        slice.actions.getExtensionOidDetailFailure({
-                            oid: action.payload.oid,
-                            error: extractError(error, 'Failed to load OID entry'),
-                        }),
+        // One request per OID at a time: editors mounted together ask for the same OID before either
+        // sees the other's request in the store, and the second ask is dropped here. The reload above
+        // ends the request in flight, so the ask that follows a reload is served.
+        groupBy((action) => action.payload.oid),
+        mergeMap((group$) =>
+            group$.pipe(
+                exhaustMap((action) =>
+                    deps.apiClients.oids.getCustomOidEntry({ oid: action.payload.oid }).pipe(
+                        mergeMap((oid) => of(slice.actions.getExtensionOidDetailSuccess({ oid }))),
+                        catchError((error) =>
+                            of(
+                                slice.actions.getExtensionOidDetailFailure({
+                                    oid: action.payload.oid,
+                                    error: extractError(error, 'Failed to load OID entry'),
+                                }),
+                            ),
+                        ),
+                        takeUntil(extensionListReloaded$),
                     ),
                 ),
-                takeUntil(extensionListReloaded$),
             ),
         ),
     );
