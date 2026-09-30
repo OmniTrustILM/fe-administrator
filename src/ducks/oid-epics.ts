@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { slice } from 'ducks/oids';
-import { catchError, defer, filter, groupBy, mergeMap, of, switchMap } from 'rxjs';
+import { catchError, defer, exhaustMap, filter, groupBy, mergeMap, of, switchMap } from 'rxjs';
 import { store } from '../App';
 import { actions as pagingActions } from './paging';
 import { EntityType } from './filters';
@@ -91,6 +91,31 @@ const listSystemOids: AppEpic = (action$, state$, deps) => {
                 mergeMap((oids) => of(slice.actions.listSystemOidsSuccess({ oids: oids ?? [] }))),
                 catchError((error) =>
                     of(slice.actions.listSystemOidsFailure({ error: extractError(error, 'Failed to load system OID entries') })),
+                ),
+            ),
+        ),
+    );
+};
+
+const getExtensionOidDetail: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getExtensionOidDetail.match),
+        // One request per OID, and a repeated request for the same OID waits for the one in flight.
+        groupBy((action) => action.payload.oid),
+        mergeMap((group$) =>
+            group$.pipe(
+                exhaustMap((action) =>
+                    deps.apiClients.oids.getCustomOidEntry({ oid: action.payload.oid }).pipe(
+                        mergeMap((oid) => of(slice.actions.getExtensionOidDetailSuccess({ oid }))),
+                        catchError((error) =>
+                            of(
+                                slice.actions.getExtensionOidDetailFailure({
+                                    oid: action.payload.oid,
+                                    error: extractError(error, 'Failed to load OID entry'),
+                                }),
+                            ),
+                        ),
+                    ),
                 ),
             ),
         ),
@@ -198,6 +223,16 @@ const bulkDeleteOIDs: AppEpic = (action$, state, deps) => {
     );
 };
 
-const epics = [listOIDs, listOidsByCategory, listSystemOids, createOID, updateOID, deleteOID, getOID, bulkDeleteOIDs];
+const epics = [
+    listOIDs,
+    listOidsByCategory,
+    listSystemOids,
+    getExtensionOidDetail,
+    createOID,
+    updateOID,
+    deleteOID,
+    getOID,
+    bulkDeleteOIDs,
+];
 
 export default epics;

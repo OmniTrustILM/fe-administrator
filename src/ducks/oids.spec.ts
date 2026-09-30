@@ -100,6 +100,13 @@ describe('oids slice', () => {
         expect(selectors.valueSchemaError({ oids: next } as any)).toBeUndefined();
     });
 
+    test('getExtensionOidDetailSuccess keeps each custom extension detail by OID', () => {
+        const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'M' } } as any;
+        const next = reducer(initialState, actions.getExtensionOidDetailSuccess({ oid: detail }));
+        expect(next.extensionOidDetails).toEqual({ '1.2.3': detail });
+        expect(selectors.extensionOidDetails({ oids: next } as any)).toEqual({ '1.2.3': detail });
+    });
+
     test('updateOID / success / failure', () => {
         let next = reducer(initialState, actions.updateOID({ oid: '1.2.3', data: { description: 'Updated' } as any }));
         expect(next.isUpdating).toBe(true);
@@ -455,6 +462,22 @@ describe('oid-epics', () => {
         expect(out).toHaveLength(1);
         expect(out[0].type).toBe(actions.updateOIDFailure.type);
         expect(out[0].payload.valueSchemaError).toBe(moduleRefusal.response[0]);
+    });
+
+    test('getExtensionOidDetail epic reads the custom entry detail', async () => {
+        const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER' } };
+        const getCustomOidEntry = vi.fn().mockReturnValue(of(detail));
+        const out = await runEpic('getExtensionOidDetail', actions.getExtensionOidDetail({ oid: '1.2.3' }), { getCustomOidEntry });
+
+        expect(getCustomOidEntry).toHaveBeenCalledWith({ oid: '1.2.3' });
+        expect(out).toEqual([actions.getExtensionOidDetailSuccess({ oid: detail as any })]);
+    });
+
+    test('getExtensionOidDetail epic maps a failure without an alert', async () => {
+        const getCustomOidEntry = vi.fn().mockReturnValue(throwError(() => new Error('boom')));
+        const out = await runEpic('getExtensionOidDetail', actions.getExtensionOidDetail({ oid: '1.2.3' }), { getCustomOidEntry });
+
+        expect(out.map((a) => a.type)).toEqual([actions.getExtensionOidDetailFailure.type]);
     });
 
     test('listSystemOids epic maps a failure to listSystemOidsFailure', async () => {

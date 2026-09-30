@@ -237,7 +237,10 @@ export function parseStrictJson(text: string): StrictJsonResult {
     }
 }
 
-/** The characters a JER value can begin with that base64 never contains, as Core's `JerCodec` reads them. */
+/**
+ * The characters that always mark a value as JER, since base64 never contains them. Core's `JerCodec`
+ * also reads `true`, `false`, `null` and a number that is not complete DER as JER; those are left to Core.
+ */
 const JER_VALUE_STARTS = new Set(['{', '[', '"', '-']);
 
 /** Whether an extension value is written in JER (X.697) rather than handed over as base64 DER. */

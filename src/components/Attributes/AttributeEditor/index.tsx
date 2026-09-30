@@ -116,11 +116,11 @@ function AttributeEditorInner({
 
     // Fetched once per editor, not per field: every extension-mapped AttributeFieldInput reads the
     // DER OID set from this registry to decide whether it takes a JER value or base64 DER.
-    const hasExtensionMappedAttribute = useMemo(
-        () => attributeDescriptors.some((d) => getMappedExtensionOids(getFieldMapping(d)).length > 0),
+    const mappedExtensionOids = useMemo(
+        () => [...new Set(attributeDescriptors.flatMap((d) => getMappedExtensionOids(getFieldMapping(d))))],
         [attributeDescriptors],
     );
-    useFetchExtensionOidRegistry(hasExtensionMappedAttribute);
+    useFetchExtensionOidRegistry(mappedExtensionOids);
 
     const isRunningCallback = useSelector(connectorSelectors.isRunningCallback);
     const initiateAttributeCallback = useSelector(userInterfaceSelectors.selectInitiateAttributeCallback);

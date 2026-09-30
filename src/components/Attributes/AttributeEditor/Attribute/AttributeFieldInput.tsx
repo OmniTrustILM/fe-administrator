@@ -146,6 +146,8 @@ function StandardInputControl({
     );
 }
 
+const NO_MODULE_JER_ERROR = 'This extension has no ASN.1 module, so its value must be base64-encoded DER.';
+
 export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Readonly<AttributeFieldInputProps>): React.ReactNode {
     const { setValue, control, watch } = useFormContext();
     const { submitCount } = useFormState({ control });
@@ -211,8 +213,8 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
 
     const baseValidator = buildAttributeValidators(descriptor);
     const jerErrorFor = (value: unknown): string | undefined => {
-        if (!acceptsJer || typeof value !== 'string' || !isJerValue(value)) return undefined;
-        return getJerValueError(value);
+        if (!isDerTarget || typeof value !== 'string' || !isJerValue(value)) return undefined;
+        return acceptsJer ? getJerValueError(value) : NO_MODULE_JER_ERROR;
     };
     const validate: FieldValidator = (value, allValues, fieldState) => baseValidator(value, allValues, fieldState) ?? jerErrorFor(value);
     // Request attributes carry a description equal to their label; showing it just repeats the label
@@ -267,7 +269,7 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                                 {isDerTarget && (
                                     <p className="mt-1 text-xs text-content-muted" data-testid={`${name}-der-value-hint`}>
                                         {acceptsJer
-                                            ? 'A value starting with {, [, " or - is read as JER (X.697) against the extension\'s ASN.1 module; anything else as base64-encoded DER.'
+                                            ? 'Write the value in JER (X.697) against the extension\'s ASN.1 module, or give it as base64-encoded DER. A value starting with {, [, " or - is always read as JER.'
                                             : 'Enter the value as base64-encoded DER. This extension has no ASN.1 module, so its value cannot be written in JER.'}
                                     </p>
                                 )}

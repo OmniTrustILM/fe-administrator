@@ -27,7 +27,8 @@ END`;
 const oidsState = {
     oids: {
         oids: [],
-        oidsByCategory: {},
+        // The custom list carries no additionalProperties; only the detail says how an extension is encoded.
+        oidsByCategory: { certificateExtension: [{ oid: '1.3.6.1.4.1.99999.1', displayName: 'Custom', category: 'certificateExtension' }] },
         oidsByCategoryError: {},
         oidsByCategoryLoaded: {},
         systemOids: [
@@ -51,6 +52,14 @@ const oidsState = {
             },
         ],
         systemOidsLoaded: true,
+        extensionOidDetails: {
+            '1.3.6.1.4.1.99999.1': {
+                oid: '1.3.6.1.4.1.99999.1',
+                displayName: 'Custom',
+                category: 'certificateExtension',
+                additionalProperties: { defaultCritical: false, valueEncoding: 'DER', valueSchema: BASIC_CONSTRAINTS_MODULE },
+            },
+        },
         systemOidsError: false,
         isFetching: false,
         isCreating: false,
@@ -83,8 +92,8 @@ test.describe('extension value input', () => {
     test('a DER extension with a module offers the JER hint and validates a JER value while typing', async ({ mount, page }) => {
         const { input, hint, jerError } = await mountField(mount, page, '2.5.29.19');
 
-        await expect(hint).toContainText('is read as JER (X.697)');
-        await expect(hint).toContainText('anything else as base64-encoded DER');
+        await expect(hint).toContainText('in JER (X.697)');
+        await expect(hint).toContainText('always read as JER');
 
         // Duplicate keys survive JSON.parse, so this is exactly the case the strict check must catch.
         await input.fill('{"cA":true,"cA":false}');
@@ -116,14 +125,25 @@ test.describe('extension value input', () => {
         await expect(jerError).toHaveCount(0);
     });
 
-    test('a DER extension without a module asks for base64 DER and offers no JER treatment', async ({ mount, page }) => {
+    test('a DER extension without a module asks for base64 DER and refuses a JER value', async ({ mount, page }) => {
         const { input, hint, jerError } = await mountField(mount, page, '2.5.29.101');
 
         await expect(hint).toContainText('base64-encoded DER');
         await expect(hint).toContainText('no ASN.1 module');
 
-        await input.fill('{not json at all');
+        await input.fill('{"cA":true}');
+        await expect(jerError).toContainText('no ASN.1 module, so its value must be base64-encoded DER');
+
+        await input.fill('MAMBAf8=');
         await expect(jerError).toHaveCount(0);
+    });
+
+    test('a custom DER extension takes JER when its detail carries a module', async ({ mount, page }) => {
+        const { input, hint, jerError } = await mountField(mount, page, '1.3.6.1.4.1.99999.1');
+
+        await expect(hint).toContainText('in JER (X.697)');
+        await input.fill('{"cA":true,"cA":false}');
+        await expect(jerError).toContainText('Duplicate key');
     });
 
     test('an extension with a string encoding gets no DER treatment, since { is literal text there', async ({ mount, page }) => {

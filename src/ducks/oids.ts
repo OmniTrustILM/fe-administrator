@@ -15,6 +15,11 @@ export type State = {
     systemOids: OIDResponseModel[];
     systemOidsLoaded: boolean;
     systemOidsError: boolean;
+    /**
+     * Custom extension OIDs read one by one: the custom list carries no `additionalProperties`, so
+     * an extension's encoding and module are known only from its detail.
+     */
+    extensionOidDetails: Record<string, OIDResponseModel>;
 
     isFetching: boolean;
     isCreating: boolean;
@@ -35,6 +40,7 @@ export const initialState: State = {
     systemOids: [],
     systemOidsLoaded: false,
     systemOidsError: false,
+    extensionOidDetails: {},
 
     isFetching: false,
     isCreating: false,
@@ -101,6 +107,14 @@ export const slice = createSlice({
             state.systemOidsLoaded = false;
             state.systemOidsError = true;
         },
+
+        getExtensionOidDetail: (state, action: PayloadAction<{ oid: string }>) => {},
+
+        getExtensionOidDetailSuccess: (state, action: PayloadAction<{ oid: OIDResponseModel }>) => {
+            state.extensionOidDetails[action.payload.oid.oid] = action.payload.oid;
+        },
+
+        getExtensionOidDetailFailure: (state, action: PayloadAction<{ oid: string; error: string }>) => {},
 
         getOID: (state, action: PayloadAction<{ oid: string }>) => {
             state.isFetching = true;
@@ -201,6 +215,7 @@ const oid = createSelector(state, (state) => state.oid);
 const systemOids = createSelector(state, (state) => state.systemOids);
 const systemOidsLoaded = createSelector(state, (state) => state.systemOidsLoaded);
 const systemOidsError = createSelector(state, (state) => state.systemOidsError);
+const extensionOidDetails = createSelector(state, (state) => state.extensionOidDetails);
 const systemOidsByCategory = createSelector(systemOids, (systemOids) =>
     systemOids.reduce<Partial<Record<OidCategory, OIDResponseModel[]>>>((acc, entry) => {
         const categoryOids = acc[entry.category] ?? [];
@@ -230,6 +245,7 @@ export const selectors = {
     systemOidsLoaded,
     systemOidsError,
     systemOidsByCategory,
+    extensionOidDetails,
 
     isFetching,
     isCreating,
