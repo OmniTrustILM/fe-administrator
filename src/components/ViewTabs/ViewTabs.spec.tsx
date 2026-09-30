@@ -1117,7 +1117,29 @@ test.describe('ViewTabs', () => {
         expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual([]);
     });
 
-    test('keeps a filter whose field is gone through a save when the view already held it', async ({ mount, page }) => {
+    test('keeps a presence filter whose field is gone through a save when the view already held it', async ({ mount, page }) => {
+        const deadFilter: SearchFilterModel = {
+            fieldSource: FilterFieldSource.Custom,
+            fieldIdentifier: 'retired',
+            condition: FilterConditionOperator.NotEmpty,
+        };
+        await mount(
+            strip({
+                views: [expiryWatch({ defaultView: true, filters: [stateFilter, deadFilter] })],
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+            }),
+        );
+
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual([stateFilter, deadFilter]);
+    });
+
+    test('leaves the value of a filter whose field is gone out of a save, since it may be secret content', async ({ mount, page }) => {
         const deadFilter: SearchFilterModel = {
             fieldSource: FilterFieldSource.Custom,
             fieldIdentifier: 'retired',
@@ -1137,7 +1159,7 @@ test.describe('ViewTabs', () => {
 
         await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
         const action = await lastDispatched(page, 'listViews/updateView');
-        expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual([stateFilter, deadFilter]);
+        expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual([stateFilter]);
     });
 
     test('opens on the list its own read returns, not on the one an earlier visit left', async ({ mount, page }) => {

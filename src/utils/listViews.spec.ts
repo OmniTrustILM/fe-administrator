@@ -116,6 +116,12 @@ const filter = (source: FilterFieldSource, identifier: string, value?: unknown) 
     ...(value === undefined ? {} : { value }),
 });
 
+const presence = (source: FilterFieldSource, identifier: string) => ({
+    fieldSource: source,
+    fieldIdentifier: identifier,
+    condition: FilterConditionOperator.NotEmpty,
+});
+
 describe('toTabs', () => {
     it('puts Standard first and keeps the API order of the stored views', () => {
         const tabs = toTabs([view('a', 'Expiry watch'), view('b', 'Compliance audit')]);
@@ -582,19 +588,25 @@ describe('toUpdateRequest', () => {
         expect(toUpdateRequest(stored, schema, patch).columns).toEqual(stored.columns);
     });
 
-    it('keeps a stored filter whose field is gone, which Core accepts from the row that holds it', () => {
+    it('keeps a stored presence filter whose field is gone, which Core accepts from the row that holds it', () => {
+        const stored = view('a', 'Expiry watch', { filters: [presence(FilterFieldSource.Custom, 'retired')] });
+
+        expect(toUpdateRequest(stored, schema, { name: 'Expiry' }).filters).toEqual([presence(FilterFieldSource.Custom, 'retired')]);
+    });
+
+    it('drops a stored valued filter whose field is gone on a rename, since it may be secret content', () => {
         const stored = view('a', 'Expiry watch', { filters: [filter(FilterFieldSource.Custom, 'retired', 'x')] });
 
-        expect(toUpdateRequest(stored, schema, { name: 'Expiry' }).filters).toEqual([filter(FilterFieldSource.Custom, 'retired', 'x')]);
+        expect(toUpdateRequest(stored, schema, { name: 'Expiry' }).filters).toEqual([]);
     });
 
     it('drops a filter whose field is gone that the patch introduces, which Core refuses for this row', () => {
-        const stored = view('a', 'Expiry watch', { filters: [filter(FilterFieldSource.Custom, 'retired', 'x')] });
+        const stored = view('a', 'Expiry watch', { filters: [presence(FilterFieldSource.Custom, 'retired')] });
         const patched = toUpdateRequest(stored, schema, {
-            filters: [filter(FilterFieldSource.Custom, 'retired', 'x'), filter(FilterFieldSource.Custom, 'deleted', 'x')],
+            filters: [presence(FilterFieldSource.Custom, 'retired'), presence(FilterFieldSource.Custom, 'deleted')],
         });
 
-        expect(patched.filters).toEqual([filter(FilterFieldSource.Custom, 'retired', 'x')]);
+        expect(patched.filters).toEqual([presence(FilterFieldSource.Custom, 'retired')]);
     });
 
     it('drops a column whose field is gone that the patch introduces, and keeps the one the row held', () => {
@@ -758,20 +770,30 @@ describe('toStorableFilters', () => {
         expect(toStorableFilters(filters, withoutSecret, [])).toEqual(filters);
     });
 
-    it('keeps a filter whose field is gone when the stored row already filters on that field', () => {
-        const filters = [filter(FilterFieldSource.Custom, 'retired', 'y')];
+    it('keeps a presence filter whose field is gone when the stored row already filters on that field', () => {
+        const filters = [presence(FilterFieldSource.Custom, 'retired')];
 
         expect(toStorableFilters(filters, catalogue, [retired])).toEqual(filters);
     });
 
+    it('drops a valued filter whose field is gone although the stored row holds it, since its content may be a secret', () => {
+        expect(toStorableFilters([filter(FilterFieldSource.Custom, 'retired', 'y')], catalogue, [retired])).toEqual([]);
+    });
+
+    it('keeps a valued attribute filter while the catalogue has not arrived', () => {
+        const filters = [filter(FilterFieldSource.Custom, 'retired', 'y')];
+
+        expect(toStorableFilters(filters, [], [retired])).toEqual(filters);
+    });
+
     it('drops a filter whose field is gone when the stored row does not filter on it', () => {
         const kept = toStorableFilters(
-            [filter(FilterFieldSource.Custom, 'retired', 'x'), filter(FilterFieldSource.Custom, 'deleted', 'x')],
+            [presence(FilterFieldSource.Custom, 'retired'), presence(FilterFieldSource.Custom, 'deleted')],
             catalogue,
             [retired],
         );
 
-        expect(kept).toEqual([filter(FilterFieldSource.Custom, 'retired', 'x')]);
+        expect(kept).toEqual([presence(FilterFieldSource.Custom, 'retired')]);
     });
 });
 

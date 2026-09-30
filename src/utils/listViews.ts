@@ -196,7 +196,9 @@ function secretFieldKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<s
  * back. A presence-only condition on the same field survives, because it carries nothing to leak.
  *
  * It also drops the filters {@link withoutMissingFieldFilters} drops, which Core refuses unless the stored
- * row already filters on that field.
+ * row already filters on that field. A held filter on an attribute that has left the catalogue keeps only a
+ * presence-only condition: with the field gone nothing says whether its content was a secret, so a value on
+ * it is treated as one.
  */
 export function toStorableFilters(
     filters: readonly SearchFilterModel[],
@@ -204,10 +206,14 @@ export function toStorableFilters(
     held: readonly StoredField[],
 ): SearchFilterModel[] {
     const secret = secretFieldKeys(catalogue);
+    const published = catalogueKeys(catalogue);
+    const mayBeSecret = (filter: SearchFilterModel) => {
+        const key = getColumnKey(filter);
+        const isGone = published.size > 0 && filter.fieldSource !== FilterFieldSource.Property && !published.has(key);
+        return secret.has(key) || isGone;
+    };
 
-    return withoutMissingFieldFilters(filters, catalogue, held).filter(
-        (filter) => !(secret.has(getColumnKey(filter)) && carriesValue(filter)),
-    );
+    return withoutMissingFieldFilters(filters, catalogue, held).filter((filter) => !(mayBeSecret(filter) && carriesValue(filter)));
 }
 
 /**
