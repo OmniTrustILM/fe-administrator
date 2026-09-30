@@ -1,6 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { SearchRequestModel } from 'types/certificate';
-import type { OidCategory } from 'types/openapi';
+import { OidCategory } from 'types/openapi';
 import type { OIDRequestModel, OIDResponseModel, OIDUpdateRequestModel } from 'types/oids';
 import { resetSliceState } from 'ducks/reducerUtils';
 import type { AppState } from 'ducks';
@@ -82,6 +82,11 @@ export const slice = createSlice({
             state.oidsByCategory[action.payload.category] = action.payload.oids;
             state.oidsByCategoryError[action.payload.category] = false;
             state.oidsByCategoryLoaded[action.payload.category] = true;
+            // A fresh custom extension list may follow edits or deletions made since the details
+            // were read, so they are read again for the OIDs still mapped.
+            if (action.payload.category === OidCategory.CertificateExtension) {
+                state.extensionOidDetails = {};
+            }
         },
 
         listOidsByCategoryFailure: (state, action: PayloadAction<{ category: OidCategory; error: string }>) => {

@@ -107,6 +107,17 @@ describe('oids slice', () => {
         expect(selectors.extensionOidDetails({ oids: next } as any)).toEqual({ '1.2.3': detail });
     });
 
+    test('a reloaded custom extension list drops the cached extension details', () => {
+        const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'M' } } as any;
+        let next = reducer(initialState, actions.getExtensionOidDetailSuccess({ oid: detail }));
+
+        next = reducer(next, actions.listOidsByCategorySuccess({ category: OidCategory.RdnAttributeType, oids: [] }));
+        expect(next.extensionOidDetails).toEqual({ '1.2.3': detail });
+
+        next = reducer(next, actions.listOidsByCategorySuccess({ category: OidCategory.CertificateExtension, oids: [] }));
+        expect(next.extensionOidDetails).toEqual({});
+    });
+
     test('updateOID / success / failure', () => {
         let next = reducer(initialState, actions.updateOID({ oid: '1.2.3', data: { description: 'Updated' } as any }));
         expect(next.isUpdating).toBe(true);
