@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Subject } from 'rxjs';
 import type { CreateSecretRequest, SecretDto } from 'types/openapi';
 import { withProviders } from 'utils/test-helpers';
 import { createEabSecretStore, type EabKeyApiBehaviour, stubEabKeyApi, VAULT_PATH_ATTRIBUTE } from './eabKeyFixture';
@@ -10,14 +11,18 @@ type Props = EabKeyApiBehaviour &
         selectable?: boolean;
         vaultProfileHasAttribute?: boolean;
         attributesLoading?: boolean;
+        // The create stays pending until the `resolve-create` button is clicked.
+        holdCreate?: boolean;
     }>;
 
 export default function GenerateEabKeyDialogHarness({
     selectable = true,
     vaultProfileHasAttribute = false,
     attributesLoading = false,
+    holdCreate = false,
     ...behaviour
 }: Props) {
+    const createGate = useMemo(() => new Subject<void>(), []);
     const [isOpen, setIsOpen] = useState(false);
     const [renders, setRenders] = useState(0);
     const [requests, setRequests] = useState<CreateSecretRequest[]>([]);
@@ -34,7 +39,13 @@ export default function GenerateEabKeyDialogHarness({
         [],
     );
     // biome-ignore lint/correctness/useExhaustiveDependencies: one stub per mount, so its generation count survives re-renders
-    const api = useMemo(() => stubEabKeyApi(behaviour, (request) => setRequests((current) => [...current, request])), []);
+    const api = useMemo(
+        () =>
+            stubEabKeyApi({ ...behaviour, createGate: holdCreate ? createGate : undefined }, (request) =>
+                setRequests((current) => [...current, request]),
+            ),
+        [],
+    );
 
     return withProviders(
         <div>
@@ -44,6 +55,9 @@ export default function GenerateEabKeyDialogHarness({
             <span data-testid="state">{isOpen ? 'open' : 'closed'}</span>
             <button type="button" data-testid="rerender" data-renders={renders} onClick={() => setRenders((count) => count + 1)}>
                 Rerender
+            </button>
+            <button type="button" data-testid="resolve-create" onClick={() => createGate.next()}>
+                Resolve create
             </button>
             <pre data-testid="create-requests">{JSON.stringify(requests)}</pre>
             <pre data-testid="store-actions">{JSON.stringify(actions)}</pre>

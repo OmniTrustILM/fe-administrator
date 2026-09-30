@@ -79,8 +79,8 @@ describe('newEabSecretProblem', () => {
         enabled: true,
         ...overrides,
     });
-    const problem = (secret: ReturnType<typeof created>, needsApproval: boolean | undefined, enableError?: string) =>
-        newEabSecretProblem({ secret, vaultProfileName: 'Vault One', needsApproval, enableError });
+    const problem = (secret: ReturnType<typeof created>, needsApproval: boolean | undefined, enableError?: string, stateRead = true) =>
+        newEabSecretProblem({ secret, vaultProfileName: 'Vault One', needsApproval, enableError, stateRead });
 
     test('an enabled secret whose vault profile needs no approval binds right away', () => {
         expect(problem(created(), false)).toBeUndefined();
@@ -122,5 +122,12 @@ describe('newEabSecretProblem', () => {
             'Not selected: whether vault profile Vault One requires approval of new secrets could not be checked. Add it to the profile yourself if it needs none, or once it is approved.',
         );
         expect(problem(created({ state: SecretState.Active }), undefined)).toBeUndefined();
+    });
+
+    test('a secret that could not be read back is left out even when every other check passed', () => {
+        expect(problem(created(), false, undefined, false)).toBe(
+            'Not selected: the secret could not be read back from vault profile Vault One, so it is not confirmed usable. Once it shows as active, add it to the profile.',
+        );
+        expect(problem(created(), true, undefined, false)).toContain('requires approval');
     });
 });

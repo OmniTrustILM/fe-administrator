@@ -165,8 +165,20 @@ test.describe('GenerateEabKeyDialog', () => {
         await expect(page.getByTestId('selected')).toHaveText('[]');
     });
 
+    test('a secret that could not be read back is not selected, whatever the other checks said', async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness getSecretFails />);
+        await page.getByTestId('open').click();
+
+        await fillEabSecretForm(page, 'acme-eab');
+        await createButton(page).click();
+
+        await expect(page.getByTestId('eab-secret-outcome')).toContainText('could not be read back');
+        await expect(page.getByTestId('eab-key-id')).toContainText(CREATED_SECRET_UUID);
+        await expect(page.getByTestId('selected')).toHaveText('[]');
+    });
+
     test('the dialog cannot be closed while the secret is being created', async ({ mount, page }) => {
-        await mount(<GenerateEabKeyDialogHarness createDelayMs={1500} />);
+        await mount(<GenerateEabKeyDialogHarness holdCreate />);
         await page.getByTestId('open').click();
 
         await fillEabSecretForm(page, 'acme-eab');
@@ -179,6 +191,7 @@ test.describe('GenerateEabKeyDialog', () => {
         await expect(page.getByTestId('state')).toHaveText('open');
         await expect(page.getByTestId('eab-key-id')).toHaveCount(0);
 
+        await page.getByTestId('resolve-create').dispatchEvent('click');
         await expect(page.getByTestId('eab-secret-outcome')).toHaveText(EAB_SECRET_SELECTED);
         await dialog.getByRole('button', { name: 'Close', exact: true }).last().click();
         await expect(page.getByTestId('state')).toHaveText('closed');

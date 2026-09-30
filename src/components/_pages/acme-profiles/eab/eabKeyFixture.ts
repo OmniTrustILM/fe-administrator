@@ -1,4 +1,4 @@
-import { delay, of, throwError } from 'rxjs';
+import { map, type Observable, of, take, throwError } from 'rxjs';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import {
     type ApprovalProfileDto,
@@ -56,10 +56,12 @@ export type EabKeyApiBehaviour = Readonly<{
     generatedKey?: string;
     generateFails?: boolean;
     createFails?: boolean;
-    createDelayMs?: number;
+    // Holds the create reply until this emits, so a test decides when the create finishes.
+    createGate?: Observable<unknown>;
     enableFails?: boolean;
     approvalRequired?: boolean;
     approvalLookupFails?: boolean;
+    getSecretFails?: boolean;
     // What the secret has become by the time it is read again; Core settles it after replying to the create.
     stateAfterCreate?: SecretState;
 }>;
@@ -84,8 +86,7 @@ function createdSecret(request: CreateSecretRequest): SecretDetailDto {
 
 export function stubEabKeyApi(behaviour: EabKeyApiBehaviour, onCreate: (request: CreateSecretRequest) => void): EabKeyApi {
     let generations = 0;
-    let requests: CreateSecretRequest[] = [];
-    const lastRequest = () => requests[requests.length - 1].secretRequestDto;
+    let lastCreate: CreateSecretRequest | undefined;
     return {
         generateKey: () => {
             generations += 1;
@@ -94,23 +95,25 @@ export function stubEabKeyApi(behaviour: EabKeyApiBehaviour, onCreate: (request:
                 : of({ key: `${behaviour.generatedKey ?? 'generated-key'}-${generations}` });
         },
         createSecret: (request) => {
-            requests = [...requests, request];
+            lastCreate = request;
             onCreate(request);
             if (behaviour.createFails) return throwError(() => new Error('Secret with name already exists'));
-            return of(createdSecret(request)).pipe(delay(behaviour.createDelayMs ?? 0));
+            const reply = behaviour.createGate ?? of(undefined);
+            return reply.pipe(
+                take(1),
+                map(() => createdSecret(request)),
+            );
         },
         enableSecret: () => (behaviour.enableFails ? throwError(() => new Error('Access Denied')) : of(undefined)),
-        getSecret: (uuid) =>
-            of({
-                ...createdSecret({
-                    vaultUuid: VAULT_PROFILE.vaultInstance.uuid,
-                    vaultProfileUuid: VAULT_PROFILE.uuid,
-                    secretRequestDto: lastRequest(),
-                }),
+        getSecret: (uuid) => {
+            if (behaviour.getSecretFails || !lastCreate) return throwError(() => new Error('Service Unavailable'));
+            return of({
+                ...createdSecret(lastCreate),
                 uuid,
                 enabled: !behaviour.enableFails,
                 state: behaviour.stateAfterCreate ?? SecretState.Inactive,
-            }),
+            });
+        },
         vaultProfileApprovalProfiles: () => {
             if (behaviour.approvalLookupFails) return throwError(() => new Error('Access Denied'));
             return of(behaviour.approvalRequired ? [{ uuid: 'ap-1', name: 'Four eyes' } as ApprovalProfileDto] : []);

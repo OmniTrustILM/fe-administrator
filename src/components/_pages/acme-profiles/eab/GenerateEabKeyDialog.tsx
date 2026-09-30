@@ -115,20 +115,23 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
                     }).pipe(
                         switchMap((checks) =>
                             calls.getSecret(secret.uuid).pipe(
-                                catchError(() => of({ ...secret, enabled: checks.enable.enabled })),
-                                map((current) => ({ secret: current, ...checks })),
+                                map((current) => ({ secret: current, stateRead: true, ...checks })),
+                                catchError(() =>
+                                    of({ secret: { ...secret, enabled: checks.enable.enabled }, stateRead: false, ...checks }),
+                                ),
                             ),
                         ),
                     ),
                 ),
             )
             .subscribe({
-                next: ({ secret, enable, needsApproval }) => {
+                next: ({ secret, stateRead, enable, needsApproval }) => {
                     const problem = newEabSecretProblem({
                         secret,
                         vaultProfileName: secret.sourceVaultProfile.name,
                         needsApproval,
                         enableError: enable.enableError,
+                        stateRead,
                     });
                     setIsCreating(false);
                     setCreated({ secret, problem });
