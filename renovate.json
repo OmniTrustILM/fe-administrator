@@ -19,6 +19,12 @@
         {
             "matchPackageNames": ["tailwindcss", "@tailwindcss/vite"],
             "enabled": false
+        },
+        {
+            "description": "Keep @playwright/test on the version of @playwright/experimental-ct-react. The component-test packages stopped publishing at 1.62.1, and a newer @playwright/test brings a second Playwright whose types do not match the component-test expect. Raise both together once a newer component-test release exists.",
+            "matchPackageNames": ["@playwright/test", "@playwright/experimental-ct-react"],
+            "groupName": "playwright",
+            "allowedVersions": "<=1.62.1"
         }
     ],
     "lockFileMaintenance": {
